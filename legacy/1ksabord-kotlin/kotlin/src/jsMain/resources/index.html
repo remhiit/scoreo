@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🏴‍☠️ 1000 Sabords - Compteur de points</title>
+    <style>
+        :root {
+            --bg: #0f0e17;
+            --surface: #1a1932;
+            --surface2: #242347;
+            --surface3: #2e2d54;
+            --primary: #e6a817;
+            --primary-dark: #b8860b;
+            --danger: #e74c3c;
+            --success: #2ecc71;
+            --text: #f0e6d3;
+            --text-dim: #8a8198;
+            --accent: #ff6b35;
+            --radius: 10px;
+        }
+
+        [data-theme="light"] {
+            --bg: #f4efe6;
+            --surface: #ffffff;
+            --surface2: #ede8de;
+            --surface3: #d6cfc3;
+            --primary: #c4900a;
+            --primary-dark: #a67708;
+            --danger: #c0392b;
+            --success: #27ae60;
+            --text: #2c3e50;
+            --text-dim: #7f8c8d;
+            --accent: #d35400;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        #app {
+            max-width: 700px;
+            margin: 0 auto;
+            padding: 16px;
+        }
+
+        .screen { display: none; }
+        .screen.active { display: block; }
+
+        /* ===== SETUP SCREEN ===== */
+        .setup-header { text-align: center; padding: 40px 0 30px; }
+        .setup-header h1 { font-size: 2.2em; color: var(--primary); text-shadow: 2px 2px 4px rgba(0,0,0,0.5); }
+        .setup-header .subtitle { color: var(--text-dim); margin-top: 8px; font-size: 1.1em; }
+
+        .input-row { display: flex; gap: 8px; margin-bottom: 16px; }
+        .input-row input {
+            flex: 1; padding: 12px 16px;
+            border: 2px solid var(--surface3); border-radius: var(--radius);
+            background: var(--surface); color: var(--text);
+            font-size: 1em; outline: none; transition: border-color 0.2s;
+        }
+        .input-row input:focus { border-color: var(--primary); }
+
+        button {
+            padding: 12px 20px; border: none; border-radius: var(--radius);
+            font-size: 1em; font-weight: 600; cursor: pointer;
+            transition: all 0.2s; color: var(--bg);
+        }
+        button:active { transform: scale(0.96); }
+
+        .btn-primary { background: var(--primary); color: var(--bg); }
+        .btn-primary:hover { background: var(--primary-dark); }
+        .btn-primary:disabled { background: var(--surface3); color: var(--text-dim); cursor: not-allowed; transform: none; }
+        .btn-secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--surface3); }
+        .btn-secondary:hover { background: var(--surface3); }
+        .btn-danger { background: var(--danger); color: white; }
+        .btn-small { padding: 6px 12px; font-size: 0.85em; }
+
+        .player-list { list-style: none; margin-bottom: 20px; }
+        .player-list li {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 10px 16px; background: var(--surface);
+            border-radius: var(--radius); margin-bottom: 6px;
+            border-left: 4px solid var(--primary);
+        }
+        .player-list li .player-name-display { font-size: 1.05em; }
+        .player-list li .remove-btn {
+            background: none; border: none; color: var(--danger);
+            font-size: 1.3em; cursor: pointer; padding: 2px 8px; border-radius: 4px;
+        }
+        .player-list li .remove-btn:hover { background: rgba(231,76,60,0.15); }
+
+        .known-players { margin-top: 14px; margin-bottom: 10px; }
+        .known-players-label { font-size: 0.78em; color: var(--text-dim); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.05em; }
+        .known-players-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+        .known-player-chip { display: flex; align-items: center; }
+        .known-player-chip .btn-small { border-radius: var(--radius) 0 0 var(--radius); border-right: none; }
+        .chip-forget {
+            background: var(--surface2); color: var(--text-dim);
+            border: 1px solid var(--surface3); border-left: none;
+            border-radius: 0 var(--radius) var(--radius) 0;
+            cursor: pointer; font-size: 0.75em; padding: 0 8px;
+            line-height: 1; height: 100%; transition: background 0.15s, color 0.15s;
+        }
+        .chip-forget:hover { background: rgba(231,76,60,0.2); color: var(--danger); }
+
+        .historique-btn { width: 100%; margin-top: 12px; }
+        .modal-large { max-width: 520px; width: 95vw; max-height: 80vh; overflow: hidden; display: flex; flex-direction: column; text-align: left; }
+        .modal-header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+        .modal-header-row h3 { margin: 0; }
+        .modal-header-row .remove-btn {
+            background: none; border: none; color: var(--text-dim);
+            font-size: 1.1em; cursor: pointer; padding: 4px 8px;
+            border-radius: 4px; line-height: 1; transition: background 0.15s, color 0.15s;
+        }
+        .modal-header-row .remove-btn:hover { background: rgba(231,76,60,0.15); color: var(--danger); }
+        .historique-liste { overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 10px; padding-right: 4px; margin-bottom: 16px; }
+        .historique-carte { background: var(--surface2); border-radius: var(--radius); padding: 12px 14px; }
+        .historique-meta { font-size: 0.78em; color: var(--text-dim); margin-bottom: 8px; }
+        .historique-carte-cliquable { cursor: pointer; transition: background 0.15s; }
+        .historique-carte-cliquable:hover { background: var(--surface3); }
+        .historique-hint { font-size: 0.72em; color: var(--primary); text-align: right; margin-top: 4px; opacity: 0.8; }
+        .badge-magie { background: var(--accent); color: #000; padding: 2px 7px; border-radius: var(--radius); font-weight: bold; font-size: 0.85em; }
+        .chip-wins { background: var(--surface3); padding: 1px 5px; border-radius: var(--radius); font-size: 0.8em; pointer-events: none; }
+        .stats-section-titre { margin: 16px 0 8px; font-size: 1em; color: var(--text); }
+        .magie-pirate-banner { background: var(--accent); color: #000; padding: 10px 14px; border-radius: var(--radius); font-weight: bold; text-align: center; margin-top: 10px; animation: pulse 1s ease-in-out infinite alternate; }
+        @keyframes pulse { from { opacity: 0.85; } to { opacity: 1; transform: scale(1.02); } }
+        .historique-joueurs { display: flex; flex-direction: column; gap: 3px; }
+        .hist-joueur { font-size: 0.95em; font-weight: 500; }
+        .historique-vide { color: var(--text-dim); text-align: center; padding: 24px 0; }
+
+        .start-btn { width: 100%; padding: 16px; font-size: 1.15em; margin-top: 10px; }
+
+        .player-colors {
+            --c0: #e6a817; --c1: #e74c3c; --c2: #2ecc71; --c3: #3498db;
+            --c4: #9b59b6; --c5: #e67e22; --c6: #1abc9c; --c7: #fd79a8;
+        }
+
+        /* ===== GAME SCREEN ===== */
+        .game-header {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 16px; flex-wrap: wrap; gap: 8px;
+        }
+        .game-header h2 { font-size: 1.3em; color: var(--primary); }
+        .round-badge { background: var(--surface2); padding: 6px 14px; border-radius: 20px; font-size: 0.9em; color: var(--text-dim); }
+        .final-round-badge { background: var(--danger); color: white; animation: pulse 1.5s infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
+
+        .scoreboard-wrap { overflow-x: auto; margin-bottom: 20px; border-radius: var(--radius); border: 1px solid var(--surface3); }
+        .modal-large .scoreboard-wrap { flex: 1; overflow: auto; margin-bottom: 12px; }
+        .stats-scroll { flex: 1; overflow: auto; display: flex; flex-direction: column; gap: 16px; margin-bottom: 12px; }
+        .stats-scroll .scoreboard-wrap { overflow-x: auto; border-radius: var(--radius); border: 1px solid var(--surface3); width: 100%; box-sizing: border-box; }
+        .scoreboard { width: 100%; border-collapse: collapse; font-size: 0.95em; }
+        .scoreboard th, .scoreboard td { padding: 8px 12px; text-align: center; white-space: nowrap; }
+        .scoreboard thead th { background: var(--surface2); position: sticky; top: 0; font-weight: 700; border-bottom: 2px solid var(--primary-dark); }
+        .scoreboard thead th.current-player { color: var(--primary); text-decoration: underline; text-underline-offset: 4px; }
+        .scoreboard tbody td { background: var(--surface); border-bottom: 1px solid var(--surface2); }
+        .scoreboard tbody td.zero-score { color: var(--text-dim); }
+        .scoreboard tbody td.negative-score { color: var(--danger); }
+        .scoreboard tbody td.skull-island-score { color: var(--accent); }
+        .scoreboard tbody tr:hover td { background: var(--surface2); }
+        .scoreboard .round-label { text-align: left; color: var(--text-dim); font-size: 0.85em; background: var(--surface) !important; }
+        .scoreboard tfoot td { background: var(--surface2); font-weight: 700; font-size: 1.1em; border-top: 2px solid var(--primary-dark); }
+        .scoreboard tfoot td.leading { color: var(--primary); }
+        .scoreboard tfoot td.over-6000 { color: var(--success); }
+
+        .turn-panel { background: var(--surface); border-radius: var(--radius); padding: 20px; margin-bottom: 16px; border: 1px solid var(--surface3); overflow: hidden; }
+        .current-turn-info { text-align: center; margin-bottom: 16px; }
+        .current-turn-info .player-name { font-size: 1.3em; font-weight: 700; }
+        .current-turn-info .turn-label { font-size: 0.85em; color: var(--text-dim); }
+
+        .tabs { display: flex; gap: 4px; margin-bottom: 16px; background: var(--surface2); border-radius: var(--radius); padding: 4px; }
+        .tab-btn { flex: 1; padding: 10px; border: none; border-radius: 7px; background: transparent; color: var(--text-dim); font-size: 0.9em; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+        .tab-btn.active { background: var(--surface3); color: var(--text); }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        .manual-entry { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+        .manual-entry input { flex: 1; min-width: 80px; padding: 14px 16px; border: 2px solid var(--surface3); border-radius: var(--radius); background: var(--surface2); color: var(--text); font-size: 1.2em; text-align: center; outline: none; }
+        .manual-entry input:focus { border-color: var(--primary); }
+        .manual-entry .btn-primary { min-width: 100px; }
+
+        .quick-scores { margin-top: 12px; }
+        .quick-scores-group { margin-bottom: 10px; }
+        .quick-scores-group-title { font-size: 0.75em; color: var(--text-dim); margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .quick-scores-row { display: flex; gap: 5px; flex-wrap: wrap; }
+        .quick-scores-row button { flex: 1; min-width: 55px; padding: 6px 4px; font-size: 0.8em; }
+
+        .card-selector { margin-bottom: 16px; }
+        .card-selector label { display: block; font-size: 0.85em; color: var(--text-dim); margin-bottom: 6px; }
+        .card-selector select { width: 100%; padding: 10px 14px; border: 2px solid var(--surface3); border-radius: var(--radius); background: var(--surface2); color: var(--text); font-size: 1em; outline: none; cursor: pointer; }
+        .card-selector select:focus { border-color: var(--primary); }
+
+        .dice-counters { display: grid; gap: 6px; margin-bottom: 12px; }
+        .dice-row { display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: var(--surface2); border-radius: 8px; }
+        .dice-row .dice-icon { font-size: 1.3em; width: 36px; text-align: center; }
+        .dice-row .dice-label { flex: 1; font-size: 0.9em; }
+        .dice-row .dice-controls { display: flex; align-items: center; gap: 4px; }
+        .dice-row .dice-controls button { width: 36px; height: 36px; border-radius: 50%; background: var(--surface3); color: var(--text); font-size: 1.2em; display: flex; align-items: center; justify-content: center; padding: 0; }
+        .dice-row .dice-controls button:hover { background: var(--primary-dark); }
+        .dice-row .dice-controls .count { width: 32px; text-align: center; font-size: 1.2em; font-weight: 700; }
+
+        .dice-total { text-align: center; padding: 8px; border-radius: 8px; font-weight: 600; margin-bottom: 12px; }
+        .dice-total.valid   { background: rgba(46,204,113,0.15); color: var(--success); }
+        .dice-total.warning { background: rgba(230,168,23,0.1);  color: var(--text-dim); }
+
+        .card-info { background: rgba(230,168,23,0.1); border: 1px solid rgba(230,168,23,0.3); border-radius: 8px; padding: 10px 14px; margin-bottom: 12px; font-size: 0.9em; color: var(--primary); }
+        .card-info:empty { display: none; }
+
+        .calc-result { background: var(--surface2); border-radius: var(--radius); padding: 16px; margin-bottom: 16px; text-align: center; }
+        .calc-result .score-value { font-size: 2em; font-weight: 700; }
+        .calc-result .score-value.positive { color: var(--success); }
+        .calc-result .score-value.negative { color: var(--danger); }
+        .calc-result .score-value.zero { color: var(--text-dim); }
+        .calc-result .score-value.skull-island { color: var(--accent); }
+        .calc-result .breakdown { font-size: 0.85em; color: var(--text-dim); margin-top: 8px; line-height: 1.6; }
+
+        .skull-island-info { background: rgba(255,107,53,0.15); border: 1px solid rgba(255,107,53,0.3); border-radius: 8px; padding: 12px; margin-bottom: 12px; text-align: center; }
+        .skull-island-info .skull-title { font-weight: 700; color: var(--accent); font-size: 1.1em; margin-bottom: 4px; }
+        .skull-island-info .skull-desc { font-size: 0.85em; color: var(--text-dim); }
+
+        .calc-submit { width: 100%; padding: 14px; font-size: 1.05em; }
+
+        .game-actions { display: flex; gap: 8px; }
+        .game-actions button { flex: 1; }
+
+        /* ===== END SCREEN ===== */
+        .end-screen { text-align: center; padding: 40px 0; }
+        .end-screen .trophy { font-size: 4em; margin-bottom: 16px; }
+        .end-screen h2 { font-size: 1.8em; color: var(--primary); margin-bottom: 8px; }
+        .end-screen .winner-score { font-size: 1.2em; color: var(--text-dim); margin-bottom: 30px; }
+        .final-ranking { list-style: none; margin-bottom: 30px; }
+        .final-ranking li { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; background: var(--surface); border-radius: var(--radius); margin-bottom: 6px; }
+        .final-ranking li:first-child { background: rgba(230,168,23,0.15); border: 2px solid var(--primary); }
+        .final-ranking .rank { font-size: 1.3em; margin-right: 12px; }
+        .final-ranking .name { flex: 1; font-weight: 600; }
+        .final-ranking .score { font-size: 1.1em; font-weight: 700; }
+        .new-game-btn { width: 100%; padding: 16px; font-size: 1.1em; }
+
+        /* Modal */
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 100; padding: 16px; }
+        .modal { background: var(--surface); border-radius: var(--radius); padding: 24px; max-width: 360px; width: 100%; text-align: center; }
+        .modal h3 { margin-bottom: 12px; }
+        .modal p { color: var(--text-dim); margin-bottom: 20px; font-size: 0.95em; }
+        .modal-actions { display: flex; gap: 8px; }
+        .modal-actions button { flex: 1; }
+
+        /* Theme toggle */
+        .theme-toggle { position: fixed; top: 12px; right: 12px; z-index: 50; width: 40px; height: 40px; border-radius: 50%; background: var(--surface2); border: 1px solid var(--surface3); color: var(--text); font-size: 1.2em; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0; transition: background 0.2s, transform 0.2s; box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
+        .theme-toggle:hover { background: var(--surface3); transform: scale(1.1); }
+        [data-theme="light"] .modal-overlay { background: rgba(0,0,0,0.4); }
+
+        /* ===== LAYOUT DEUX COLONNES (jeu) ===== */
+        .game-layout { display: flex; flex-direction: column; gap: 16px; }
+        .game-col-left, .game-col-right { min-width: 0; }
+
+        @media (max-width: 480px) {
+            #app { padding: 10px; }
+            .setup-header h1 { font-size: 1.7em; }
+            .turn-panel { padding: 14px; }
+            .dice-row { padding: 6px 8px; }
+            .dice-row .dice-controls button { width: 40px; height: 40px; font-size: 1.3em; }
+            .game-header { flex-direction: column; align-items: flex-start; gap: 4px; }
+            .manual-entry input { width: 100%; }
+            .quick-scores-row button { min-width: 60px; flex: 0 1 auto; }
+        }
+
+        @media (min-width: 768px) {
+            #app { max-width: 1040px; padding: 24px; }
+            .setup-header { padding: 60px 0 40px; }
+            .setup-inner { max-width: 480px; margin: 0 auto; }
+            .game-layout { flex-direction: row; align-items: start; }
+            .game-col-left { flex: 1 1 0; }
+            .game-col-right { flex: 0 1 420px; min-width: 280px; }
+            .scoreboard-wrap { margin-bottom: 12px; }
+        }
+    </style>
+</head>
+<body>
+    <div id="app" class="player-colors"></div>
+    <!-- JS généré par Kotlin/JS (./gradlew jsBrowserDevelopmentRun ou jsBrowserProductionWebpack) -->
+    <script src="app.js"></script>
+</body>
+</html>
