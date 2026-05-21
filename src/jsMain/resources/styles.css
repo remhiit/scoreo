@@ -1,0 +1,261 @@
+*, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+:root {
+    --primary: #6750a4;
+    --primary-light: #eaddff;
+    --surface: #fffbfe;
+    --surface-variant: #f4eff4;
+    --on-surface: #1c1b1f;
+    --on-surface-variant: #49454f;
+    --outline: #cac4d0;
+    --error: #b3261e;
+    --radius: 12px;
+    --nav-height: 64px;
+}
+
+html, body {
+    width: 100%;
+    height: 100%;
+    background: var(--surface);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    color: var(--on-surface);
+    font-size: 16px;
+}
+
+#root {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+/* ── Layout ── */
+
+.app-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px 16px calc(var(--nav-height) + 16px);
+    max-width: 600px;
+    width: 100%;
+    margin: 0 auto;
+}
+
+/* ── Bottom nav ── */
+
+.bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: var(--nav-height);
+    background: var(--surface);
+    border-top: 1px solid var(--outline);
+    display: flex;
+    align-items: stretch;
+    z-index: 100;
+}
+
+.nav-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    cursor: pointer;
+    border: none;
+    background: transparent;
+    color: var(--on-surface-variant);
+    font-size: 12px;
+    padding: 8px 4px;
+    transition: color 0.15s, background 0.15s;
+}
+
+.nav-item:hover {
+    background: var(--surface-variant);
+}
+
+.nav-item.active {
+    color: var(--primary);
+    font-weight: 600;
+}
+
+.nav-icon {
+    font-size: 22px;
+    line-height: 1;
+}
+
+/* ── Typography ── */
+
+h1 { font-size: 22px; font-weight: 600; margin-bottom: 16px; color: var(--on-surface); }
+h2 { font-size: 18px; font-weight: 500; margin-bottom: 12px; }
+
+/* ── Card ── */
+
+.card {
+    background: var(--surface-variant);
+    border-radius: var(--radius);
+    padding: 12px 16px;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.card-title { font-weight: 500; font-size: 15px; }
+.card-sub { font-size: 13px; color: var(--on-surface-variant); margin-top: 2px; }
+.card-badge {
+    background: var(--primary-light);
+    color: var(--primary);
+    border-radius: 99px;
+    padding: 2px 10px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+/* ── Form ── */
+
+.form-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+    align-items: flex-start;
+}
+
+.input {
+    flex: 1;
+    border: 1.5px solid var(--outline);
+    border-radius: var(--radius);
+    padding: 10px 14px;
+    font-size: 15px;
+    outline: none;
+    background: var(--surface);
+    color: var(--on-surface);
+    transition: border-color 0.15s;
+}
+
+.input:focus { border-color: var(--primary); }
+.input.error { border-color: var(--error); }
+
+.error-msg {
+    color: var(--error);
+    font-size: 13px;
+    margin-top: -12px;
+    margin-bottom: 12px;
+}
+
+/* ── Buttons ── */
+
+.btn {
+    border: none;
+    border-radius: var(--radius);
+    padding: 10px 20px;
+    font-size: 15px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: opacity 0.15s;
+    white-space: nowrap;
+}
+
+.btn:hover { opacity: 0.85; }
+.btn:disabled { opacity: 0.4; cursor: default; }
+
+.btn-primary { background: var(--primary); color: #fff; }
+.btn-secondary { background: var(--surface-variant); color: var(--on-surface); }
+.btn-full { width: 100%; margin-top: 8px; }
+
+/* ── Select ── */
+
+.select {
+    width: 100%;
+    border: 1.5px solid var(--outline);
+    border-radius: var(--radius);
+    padding: 10px 14px;
+    font-size: 15px;
+    background: var(--surface);
+    color: var(--on-surface);
+    outline: none;
+    margin-bottom: 16px;
+    cursor: pointer;
+}
+
+.select:focus { border-color: var(--primary); }
+
+/* ── Section label ── */
+
+.section-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--on-surface-variant);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 8px;
+    margin-top: 16px;
+}
+
+/* ── Player picker ── */
+
+.player-list-pick {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 16px;
+}
+
+.player-pick-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 12px;
+    border-radius: var(--radius);
+    background: var(--surface-variant);
+    cursor: pointer;
+    transition: background 0.1s;
+}
+
+.player-pick-row.selected { background: var(--primary-light); }
+
+.player-pick-row input[type="checkbox"] { accent-color: var(--primary); width: 16px; height: 16px; }
+
+.score-input {
+    width: 80px;
+    border: 1.5px solid var(--outline);
+    border-radius: 8px;
+    padding: 6px 10px;
+    font-size: 14px;
+    text-align: center;
+    background: var(--surface);
+    color: var(--on-surface);
+    outline: none;
+    margin-left: auto;
+}
+
+.score-input:focus { border-color: var(--primary); }
+
+/* ── History card ── */
+
+.match-card { margin-bottom: 12px; }
+.match-card .card-sub { margin-top: 4px; }
+
+/* ── Empty state ── */
+
+.empty {
+    text-align: center;
+    color: var(--on-surface-variant);
+    padding: 40px 0;
+    font-size: 15px;
+}
+
+/* ── Win/Loss badge ── */
+
+.stats {
+    display: flex;
+    gap: 6px;
+}
+
+.stat-win { color: #2e7d32; font-weight: 600; font-size: 13px; }
+.stat-loss { color: #c62828; font-weight: 600; font-size: 13px; }
