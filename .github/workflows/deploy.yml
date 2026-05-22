@@ -20,6 +20,8 @@ jobs:
     environment:
       name: github-pages
       url: ${{ steps.deploy.outputs.page_url }}
+    env:
+      npm_config_registry: https://registry.npmjs.org
 
     steps:
       - uses: actions/checkout@v4

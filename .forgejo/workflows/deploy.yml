@@ -9,6 +9,8 @@ jobs:
   deploy:
     runs-on: docker
     container: gradle:8.12-jdk21
+    env:
+      npm_config_registry: https://registry.npmjs.org
 
     steps:
       - uses: actions/checkout@v4
