@@ -87,16 +87,31 @@ Single `styles.css` file with CSS custom properties (design tokens), a fixed bot
 
 ## CI/CD & Deployment
 
-**Forgejo Actions** (`.forgejo/workflows/deploy.yml`) — runs on every push to `main`.
+Two workflows run on every push to `main`, both build the same production artifact.
+
+### Codeberg Pages — Forgejo Actions
+
+File: `.forgejo/workflows/deploy.yml`
 
 Steps:
-1. Build the production bundle: `./gradlew jsBrowserProductionWebpack`
-2. Copy static assets (`index.html`, `styles.css`) into `build/kotlin-webpack/js/productionExecutable/`
-3. Publish to **Codeberg Pages** via [`git-pages/action@v2`](https://codeberg.org/git-pages/action)
+1. Build: `./gradlew jsBrowserProductionWebpack` (container `eclipse-temurin:21-jdk`)
+2. Copy `index.html` + `styles.css` into `build/kotlin-webpack/js/productionExecutable/`
+3. Publish via [`git-pages/action@v2`](https://codeberg.org/git-pages/action)
 
-Published URL: `https://<username>.codeberg.page/Scoreo/`
+URL: `https://<username>.codeberg.page/Scoreo/`
 
-Runner image: `eclipse-temurin:21-jdk`. Gradle wrapper cache is preserved across runs.
+### GitHub Pages — GitHub Actions
+
+File: `.github/workflows/deploy.yml`
+
+Steps:
+1. Build: `./gradlew jsBrowserProductionWebpack` (`ubuntu-latest`, `actions/setup-java` temurin 21)
+2. Copy `index.html` + `styles.css` into `build/kotlin-webpack/js/productionExecutable/`
+3. Publish via `actions/upload-pages-artifact` + `actions/deploy-pages`
+
+URL: `https://<username>.github.io/Scoreo/`
+
+> Enable in *Settings → Pages → Source: GitHub Actions*.
 
 ## Backward Compatibility
 

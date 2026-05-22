@@ -41,11 +41,12 @@ Then open `http://localhost:9191`.
 
 ### Deployment
 
-The site is automatically deployed to **Codeberg Pages** on every push to `main` via Forgejo Actions (`.forgejo/workflows/deploy.yml`).
+The site is automatically deployed on every push to `main`:
 
-The published URL is: `https://<username>.codeberg.page/Scoreo/`
+- **Codeberg Pages** via Forgejo Actions (`.forgejo/workflows/deploy.yml`) → `https://<username>.codeberg.page/Scoreo/`
+- **GitHub Pages** via GitHub Actions (`.github/workflows/deploy.yml`) → `https://<username>.github.io/Scoreo/`
 
-> To enable: activate Actions in *Settings → Units → Overview* and ensure a runner is available.
+> GitHub Pages: enable in *Settings → Pages → Source: GitHub Actions*.
 
 ### Run tests
 
