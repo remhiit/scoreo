@@ -85,6 +85,19 @@ Single `styles.css` file with CSS custom properties (design tokens), a fixed bot
 - **Current**: localStorage via `LocalStorage*Repository` (`scoreo_players`, `scoreo_gametypes`, `scoreo_matches` keys)
 - **Future**: optional sync to a remote backend (additional infrastructure adapter)
 
+## CI/CD & Deployment
+
+**Forgejo Actions** (`.forgejo/workflows/deploy.yml`) — runs on every push to `main`.
+
+Steps:
+1. Build the production bundle: `./gradlew jsBrowserProductionWebpack`
+2. Copy static assets (`index.html`, `styles.css`) into `build/kotlin-webpack/js/productionExecutable/`
+3. Publish to **Codeberg Pages** via [`git-pages/action@v2`](https://codeberg.org/git-pages/action)
+
+Published URL: `https://<username>.codeberg.page/Scoreo/`
+
+Runner image: `eclipse-temurin:21-jdk`. Gradle wrapper cache is preserved across runs.
+
 ## Backward Compatibility
 
 Data stored in `localStorage` must remain readable after an app update.

@@ -1,0 +1,38 @@
+name: Deploy to Codeberg Pages
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: docker
+    container: eclipse-temurin:21-jdk
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ hashFiles('**/*.gradle.kts', 'gradle/libs.versions.toml') }}
+          restore-keys: gradle-
+
+      - name: Build production
+        run: |
+          chmod +x gradlew
+          ./gradlew jsBrowserProductionWebpack
+
+      - name: Copy static assets
+        run: cp src/jsMain/resources/index.html src/jsMain/resources/styles.css build/kotlin-webpack/js/productionExecutable/
+
+      - name: Deploy to Codeberg Pages
+        uses: https://codeberg.org/git-pages/action@v2
+        with:
+          site: "https://${{ forge.repository_owner }}.codeberg.page/Scoreo/"
+          token: ${{ forge.token }}
+          source: build/kotlin-webpack/js/productionExecutable/
