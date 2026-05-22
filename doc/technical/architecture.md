@@ -94,7 +94,7 @@ Two workflows run on every push to `main`, both build the same production artifa
 File: `.forgejo/workflows/deploy.yml`
 
 Steps:
-1. Build: `./gradlew jsBrowserProductionWebpack` (container `eclipse-temurin:21-jdk`)
+1. Build: `gradle jsBrowserProductionWebpack` (container `gradle:8.12-jdk21`)
 2. Copy `index.html` + `styles.css` into `build/kotlin-webpack/js/productionExecutable/`
 3. Publish via [`git-pages/action@v2`](https://codeberg.org/git-pages/action)
 
@@ -105,13 +105,17 @@ URL: `https://<username>.codeberg.page/Scoreo/`
 File: `.github/workflows/deploy.yml`
 
 Steps:
-1. Build: `./gradlew jsBrowserProductionWebpack` (`ubuntu-latest`, `actions/setup-java` temurin 21)
-2. Copy `index.html` + `styles.css` into `build/kotlin-webpack/js/productionExecutable/`
-3. Publish via `actions/upload-pages-artifact` + `actions/deploy-pages`
+1. Set up JDK 21 (`actions/setup-java` temurin)
+2. Set up Gradle via [`gradle/actions/setup-gradle@v4`](https://github.com/gradle/actions) with `gradle-version: wrapper` (reads version from `gradle-wrapper.properties`, no JAR needed)
+3. Build: `gradle jsBrowserProductionWebpack`
+4. Copy `index.html` + `styles.css` into `build/kotlin-webpack/js/productionExecutable/`
+5. Publish via `actions/upload-pages-artifact` + `actions/deploy-pages`
 
 URL: `https://<username>.github.io/Scoreo/`
 
 > Enable in *Settings → Pages → Source: GitHub Actions*.
+
+> Note: `gradle-wrapper.jar` is **not** committed to the repository. CI tools bootstrap Gradle directly from `gradle-wrapper.properties`.
 
 ## Backward Compatibility
 

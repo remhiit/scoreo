@@ -29,12 +29,14 @@ jobs:
         with:
           distribution: temurin
           java-version: 21
-          cache: gradle
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: wrapper
 
       - name: Build production
-        run: |
-          chmod +x gradlew
-          ./gradlew jsBrowserProductionWebpack
+        run: gradle jsBrowserProductionWebpack
 
       - name: Copy static assets
         run: cp src/jsMain/resources/index.html src/jsMain/resources/styles.css build/kotlin-webpack/js/productionExecutable/
