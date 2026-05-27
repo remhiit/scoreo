@@ -11,10 +11,10 @@ import org.jetbrains.compose.web.dom.Span
 import org.jetbrains.compose.web.dom.Text
 
 @Composable
-fun PlayerScreen(handler: PlayerHandler) {
+fun PlayerScreen(handler: PlayerHandler, showTitle: Boolean = true) {
     val state = handler.state
 
-    H1 { Text("Players") }
+    if (showTitle) H1 { Text("Players") }
 
     Div(attrs = { classes("form-row") }) {
         Input(type = InputType.Text, attrs = {

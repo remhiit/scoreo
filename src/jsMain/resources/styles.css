@@ -259,3 +259,80 @@ h2 { font-size: 18px; font-weight: 500; margin-bottom: 12px; }
 
 .stat-win { color: #2e7d32; font-weight: 600; font-size: 13px; }
 .stat-loss { color: #c62828; font-weight: 600; font-size: 13px; }
+
+/* ── Setup tabs ── */
+
+.tab-bar {
+    display: flex;
+    border-bottom: 2px solid var(--outline);
+    margin-bottom: 16px;
+}
+
+.tab-btn {
+    flex: 1;
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -2px;
+    padding: 10px 16px;
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--on-surface-variant);
+    cursor: pointer;
+    transition: color 0.15s, border-color 0.15s;
+}
+
+.tab-btn:hover { background: var(--surface-variant); }
+
+.tab-btn.active {
+    color: var(--primary);
+    border-bottom-color: var(--primary);
+    font-weight: 600;
+}
+
+/* ── Setup shortcut hint ── */
+
+.setup-hint {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    padding: 32px 0;
+    color: var(--on-surface-variant);
+    font-size: 14px;
+}
+
+/* ── Inline creation ── */
+
+.btn-add {
+    background: transparent;
+    border: 1.5px solid var(--outline);
+    border-radius: 50%;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    color: var(--primary);
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: background 0.15s;
+}
+
+.btn-add:hover { background: var(--primary-light); }
+
+.inline-form {
+    background: var(--surface-variant);
+    border-radius: var(--radius);
+    padding: 12px;
+    margin-bottom: 12px;
+}
+
+.inline-form .select { margin-bottom: 8px; }
+
+.empty-inline {
+    color: var(--on-surface-variant);
+    font-size: 13px;
+    padding: 8px 0 12px;
+}

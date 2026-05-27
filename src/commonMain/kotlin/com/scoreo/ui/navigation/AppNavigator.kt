@@ -4,15 +4,16 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 
+enum class SetupSection { PLAYERS, GAME_TYPES }
+
 sealed class Screen {
-    data object Players : Screen()
-    data object GameTypes : Screen()
     data object CreateMatch : Screen()
     data object History : Screen()
+    data class Setup(val focusSection: SetupSection? = null) : Screen()
 }
 
 class AppNavigator {
-    var current by mutableStateOf<Screen>(Screen.Players)
+    var current by mutableStateOf<Screen>(Screen.CreateMatch)
         private set
 
     fun navigate(screen: Screen) {

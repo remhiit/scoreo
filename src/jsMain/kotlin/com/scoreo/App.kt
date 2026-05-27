@@ -15,13 +15,12 @@ import com.scoreo.domain.port.PlayerRepository
 import com.scoreo.ui.creatematch.CreateMatchHandler
 import com.scoreo.ui.creatematch.CreateMatchScreen
 import com.scoreo.ui.gametype.GameTypeHandler
-import com.scoreo.ui.gametype.GameTypeScreen
 import com.scoreo.ui.history.HistoryHandler
 import com.scoreo.ui.history.HistoryScreen
 import com.scoreo.ui.navigation.AppNavigator
 import com.scoreo.ui.navigation.Screen
 import com.scoreo.ui.player.PlayerHandler
-import com.scoreo.ui.player.PlayerScreen
+import com.scoreo.ui.setup.SetupScreen
 import org.jetbrains.compose.web.dom.Button
 import org.jetbrains.compose.web.dom.Div
 import org.jetbrains.compose.web.dom.Span
@@ -54,14 +53,14 @@ fun App(
             getPlayers = GetPlayersUseCase(playerRepository),
             getGameTypes = GetGameTypesUseCase(gameTypeRepository),
             createMatch = CreateMatchUseCase(matchRepository, gameTypeRepository),
+            addPlayer = AddPlayerUseCase(playerRepository),
+            addGameType = AddGameTypeUseCase(gameTypeRepository),
             currentDate = currentDate,
         )
     }
 
     Div(attrs = { classes("app-content") }) {
-        when (navigator.current) {
-            is Screen.Players -> PlayerScreen(playerHandler)
-            is Screen.GameTypes -> GameTypeScreen(gameTypeHandler)
+        when (val screen = navigator.current) {
             is Screen.CreateMatch -> CreateMatchScreen(
                 handler = createMatchHandler,
                 onSaved = {
@@ -79,22 +78,24 @@ fun App(
                 }
                 HistoryScreen(historyHandler)
             }
+            is Screen.Setup -> SetupScreen(
+                playerHandler = playerHandler,
+                gameTypeHandler = gameTypeHandler,
+                focusSection = screen.focusSection,
+            )
         }
     }
 
     Div(attrs = { classes("bottom-nav") }) {
-        NavItem("👤", "Players", navigator.current is Screen.Players) {
-            navigator.navigate(Screen.Players)
-        }
-        NavItem("🎮", "Games", navigator.current is Screen.GameTypes) {
-            navigator.navigate(Screen.GameTypes)
-        }
         NavItem("➕", "New match", navigator.current is Screen.CreateMatch) {
             createMatchHandler.refreshLists()
             navigator.navigate(Screen.CreateMatch)
         }
         NavItem("📋", "History", navigator.current is Screen.History) {
             navigator.navigate(Screen.History)
+        }
+        NavItem("⚙️", "Setup", navigator.current is Screen.Setup) {
+            navigator.navigate(Screen.Setup())
         }
     }
 }
@@ -110,3 +111,4 @@ private fun NavItem(icon: String, label: String, active: Boolean, onClick: () ->
         Span { Text(label) }
     }
 }
+

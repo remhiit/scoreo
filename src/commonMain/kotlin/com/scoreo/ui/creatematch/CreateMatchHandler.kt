@@ -3,6 +3,8 @@ package com.scoreo.ui.creatematch
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import com.scoreo.application.AddGameTypeUseCase
+import com.scoreo.application.AddPlayerUseCase
 import com.scoreo.application.CreateMatchUseCase
 import com.scoreo.application.GetGameTypesUseCase
 import com.scoreo.application.GetPlayersUseCase
@@ -13,6 +15,8 @@ class CreateMatchHandler(
     private val getPlayers: GetPlayersUseCase,
     private val getGameTypes: GetGameTypesUseCase,
     private val createMatch: CreateMatchUseCase,
+    private val addPlayer: AddPlayerUseCase,
+    private val addGameType: AddGameTypeUseCase,
     private val currentDate: () -> String,
 ) {
     var state by mutableStateOf(
@@ -71,6 +75,62 @@ class CreateMatchHandler(
                         state.manualWinners.toList() else emptyList(),
                 )
                 state = state.copy(saved = true)
+            }
+
+            is CreateMatchIntent.ToggleAddGameForm ->
+                state = state.copy(
+                    showAddGameForm = !state.showAddGameForm,
+                    inlineGameName = "",
+                    inlineGameError = null,
+                )
+
+            is CreateMatchIntent.UpdateInlineGameName ->
+                state = state.copy(inlineGameName = intent.name, inlineGameError = null)
+
+            is CreateMatchIntent.SelectInlineGameWinCondition ->
+                state = state.copy(inlineGameWinCondition = intent.winCondition)
+
+            is CreateMatchIntent.AddInlineGameType -> {
+                val name = state.inlineGameName.trim()
+                if (name.isBlank()) {
+                    state = state.copy(inlineGameError = "Name cannot be empty")
+                    return
+                }
+                val created = addGameType(name, state.inlineGameWinCondition)
+                val updatedList = getGameTypes()
+                state = state.copy(
+                    availableGameTypes = updatedList,
+                    selectedGameType = created,
+                    showAddGameForm = false,
+                    inlineGameName = "",
+                    inlineGameWinCondition = WinCondition.HIGHEST_SCORE,
+                    inlineGameError = null,
+                )
+            }
+
+            is CreateMatchIntent.ToggleAddPlayerForm ->
+                state = state.copy(
+                    showAddPlayerForm = !state.showAddPlayerForm,
+                    inlinePlayerName = "",
+                    inlinePlayerError = null,
+                )
+
+            is CreateMatchIntent.UpdateInlinePlayerName ->
+                state = state.copy(inlinePlayerName = intent.name, inlinePlayerError = null)
+
+            is CreateMatchIntent.AddInlinePlayer -> {
+                val name = state.inlinePlayerName.trim()
+                if (name.isBlank()) {
+                    state = state.copy(inlinePlayerError = "Name cannot be empty")
+                    return
+                }
+                addPlayer(name)
+                state = state.copy(
+                    availablePlayers = getPlayers(),
+                    showAddPlayerForm = false,
+                    inlinePlayerName = "",
+                    inlinePlayerError = null,
+                )
             }
         }
     }

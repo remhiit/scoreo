@@ -14,10 +14,10 @@ import org.jetbrains.compose.web.dom.Span
 import org.jetbrains.compose.web.dom.Text
 
 @Composable
-fun GameTypeScreen(handler: GameTypeHandler) {
+fun GameTypeScreen(handler: GameTypeHandler, showTitle: Boolean = true) {
     val state = handler.state
 
-    H1 { Text("Game Types") }
+    if (showTitle) H1 { Text("Game Types") }
 
     Div(attrs = { classes("form-row") }) {
         Input(type = InputType.Text, attrs = {

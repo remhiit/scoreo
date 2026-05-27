@@ -57,19 +57,24 @@ src/
       port/        # Repository interfaces (input/output ports)
     application/   # Use cases (domain orchestration, no framework deps)
     ui/
-      navigation/  # AppNavigator, Screen sealed class
+      navigation/  # AppNavigator, Screen sealed class, SetupSection enum
       player/      # PlayerHandler, PlayerState, PlayerIntent
       gametype/    # GameTypeHandler, GameTypeState, GameTypeIntent
       creatematch/ # CreateMatchHandler, CreateMatchState, CreateMatchIntent
       history/     # HistoryHandler, MatchDisplay
   jsMain/kotlin/com/scoreo/
-    App.kt          # Root composable: HTML layout + navigation bar
+    App.kt          # Root composable: HTML layout + 3-tab navigation bar
     Main.kt         # Entry point: renderComposable
-    infrastructure/ # In-memory storage adapters
-    ui/             # Compose HTML screens (PlayerScreen, GameTypeScreen, etc.)
+    infrastructure/ # LocalStorage storage adapters
+    ui/
+      player/       # PlayerScreen (also used inside SetupScreen)
+      gametype/     # GameTypeScreen (also used inside SetupScreen)
+      creatematch/  # CreateMatchScreen — primary screen (default)
+      history/      # HistoryScreen
+      setup/        # SetupScreen — merged Players + Games management with tabs
   jsMain/resources/
     index.html      # PWA shell (div#root entry point)
-    styles.css      # Design system (layout, components, nav bar)
+    styles.css      # Design system (layout, components, nav bar, tabs)
   commonTest/kotlin/com/scoreo/
     domain/         # Domain unit tests (GameTypeTest)
     application/    # Use case tests (CreateMatchUseCase, GetPlayerStats, etc.)
