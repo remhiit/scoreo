@@ -12,7 +12,6 @@ import com.scoreo.ui.player.PlayerHandler
 import com.scoreo.ui.player.PlayerScreen
 import org.jetbrains.compose.web.dom.Button
 import org.jetbrains.compose.web.dom.Div
-import org.jetbrains.compose.web.dom.H1
 import org.jetbrains.compose.web.dom.Text
 
 @Composable
@@ -24,8 +23,6 @@ fun SetupScreen(
     var activeTab by remember(focusSection) {
         mutableStateOf(focusSection ?: SetupSection.PLAYERS)
     }
-
-    H1 { Text("Setup") }
 
     Div(attrs = { classes("tab-bar") }) {
         Button(attrs = {

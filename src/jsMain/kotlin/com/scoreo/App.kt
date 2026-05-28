@@ -1,7 +1,10 @@
 package com.scoreo
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import com.scoreo.application.AddGameTypeUseCase
 import com.scoreo.application.AddPlayerUseCase
 import com.scoreo.application.CreateMatchUseCase
@@ -17,8 +20,10 @@ import com.scoreo.ui.creatematch.CreateMatchScreen
 import com.scoreo.ui.gametype.GameTypeHandler
 import com.scoreo.ui.history.HistoryHandler
 import com.scoreo.ui.history.HistoryScreen
+import com.scoreo.ui.home.HomeScreen
 import com.scoreo.ui.navigation.AppNavigator
 import com.scoreo.ui.navigation.Screen
+import com.scoreo.ui.navigation.SetupSection
 import com.scoreo.ui.player.PlayerHandler
 import com.scoreo.ui.setup.SetupScreen
 import org.jetbrains.compose.web.dom.Button
@@ -34,6 +39,7 @@ fun App(
     currentDate: () -> String,
 ) {
     val navigator = remember { AppNavigator() }
+    var burgerOpen by remember { mutableStateOf(false) }
 
     val playerHandler = remember {
         PlayerHandler(
@@ -59,13 +65,49 @@ fun App(
         )
     }
 
+    val screenTitle = when (navigator.current) {
+        is Screen.Home -> "Scoreo"
+        is Screen.CreateMatch -> "New Match"
+        is Screen.History -> "History"
+        is Screen.Setup -> "Setup"
+    }
+    val canGoBack = navigator.current !is Screen.Home
+
+    // ── App header ────────────────────────────────────────────
+    Div(attrs = { classes("app-header") }) {
+        if (canGoBack) {
+            Button(attrs = {
+                classes("back-btn")
+                onClick { navigator.navigate(Screen.Home) }
+            }) { Text("←") }
+        } else {
+            Div(attrs = { classes("header-spacer") }) {}
+        }
+        Span(attrs = { classes("header-title") }) { Text(screenTitle) }
+        Button(attrs = {
+            classes("burger-btn")
+            onClick { burgerOpen = true }
+        }) { Text("☰") }
+    }
+
+    // ── Screen content ────────────────────────────────────────
     Div(attrs = { classes("app-content") }) {
         when (val screen = navigator.current) {
+            is Screen.Home -> HomeScreen(
+                playerHandler = playerHandler,
+                onNewMatch = {
+                    createMatchHandler.refreshLists()
+                    navigator.navigate(Screen.CreateMatch)
+                },
+                onConfigurePlayers = {
+                    navigator.navigate(Screen.Setup(SetupSection.PLAYERS))
+                },
+            )
             is Screen.CreateMatch -> CreateMatchScreen(
                 handler = createMatchHandler,
                 onSaved = {
                     playerHandler.refresh()
-                    navigator.navigate(Screen.History)
+                    navigator.navigate(Screen.Home)
                 },
             )
             is Screen.History -> {
@@ -86,28 +128,40 @@ fun App(
         }
     }
 
-    Div(attrs = { classes("bottom-nav") }) {
-        NavItem("➕", "New match", navigator.current is Screen.CreateMatch) {
-            createMatchHandler.refreshLists()
-            navigator.navigate(Screen.CreateMatch)
-        }
-        NavItem("📋", "History", navigator.current is Screen.History) {
-            navigator.navigate(Screen.History)
-        }
-        NavItem("⚙️", "Setup", navigator.current is Screen.Setup) {
-            navigator.navigate(Screen.Setup())
+    // ── Burger menu ───────────────────────────────────────────
+    if (burgerOpen) {
+        Div(attrs = {
+            classes("burger-overlay")
+            onClick { burgerOpen = false }
+        }) {}
+        Div(attrs = { classes("burger-menu") }) {
+            Button(attrs = {
+                classes("burger-close")
+                onClick { burgerOpen = false }
+            }) { Text("✕") }
+            BurgerItem("📋", "History") {
+                burgerOpen = false
+                navigator.navigate(Screen.History)
+            }
+            BurgerItem("👤", "Players") {
+                burgerOpen = false
+                navigator.navigate(Screen.Setup(SetupSection.PLAYERS))
+            }
+            BurgerItem("🎮", "Games") {
+                burgerOpen = false
+                navigator.navigate(Screen.Setup(SetupSection.GAME_TYPES))
+            }
         }
     }
 }
 
 @Composable
-private fun NavItem(icon: String, label: String, active: Boolean, onClick: () -> Unit) {
+private fun BurgerItem(icon: String, label: String, onClick: () -> Unit) {
     Button(attrs = {
-        classes("nav-item")
-        if (active) classes("active")
+        classes("burger-item")
         onClick { onClick() }
     }) {
-        Span(attrs = { classes("nav-icon") }) { Text(icon) }
+        Span(attrs = { classes("burger-item-icon") }) { Text(icon) }
         Span { Text(label) }
     }
 }

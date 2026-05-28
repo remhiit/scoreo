@@ -6,7 +6,6 @@ import com.scoreo.domain.model.WinCondition
 import org.jetbrains.compose.web.attributes.InputType
 import org.jetbrains.compose.web.dom.Button
 import org.jetbrains.compose.web.dom.Div
-import org.jetbrains.compose.web.dom.H1
 import org.jetbrains.compose.web.dom.Input
 import org.jetbrains.compose.web.dom.Label
 import org.jetbrains.compose.web.dom.Option
@@ -24,8 +23,6 @@ fun CreateMatchScreen(handler: CreateMatchHandler, onSaved: () -> Unit) {
             onSaved()
         }
     }
-
-    H1 { Text("New Match") }
 
     // ── Game type section ──────────────────────────────────────
     SectionHeader("Game type") { handler.handle(CreateMatchIntent.ToggleAddGameForm) }

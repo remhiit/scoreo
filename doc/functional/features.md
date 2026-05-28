@@ -24,23 +24,31 @@
 
 ## User Flow
 
-The app is centered on **recording a match** as the primary action.
-
-1. **On first open**: user lands directly on "New Match"
-2. **Setup (one-time)**: players and game types are configured once via the "Setup" tab (⚙️)
-   - "Setup" tab contains two sub-sections: **Players** and **Games**
-3. **Recording a match**: tap "New Match" (➕) → select game, select players, enter scores, save
-   - If no games are configured yet: an inline shortcut leads directly to the Games setup section
-   - If no players are configured yet: an inline shortcut leads directly to the Players setup section
-4. **After saving**: app navigates automatically to History
-5. **History**: lists all past matches with scores and winner(s)
+1. **Home**: default screen — shows all players with their stats (wins / losses / win %)
+   - Tap **▶ New Match** (FAB) to start a match
+   - If no players yet: empty state with shortcut to player setup
+2. **New Match**: select a game type and players, enter scores, save
+   - Inline shortcuts to add a game type or player on the fly if none exist
+   - After saving: returns to Home (player stats refresh automatically)
+3. **History**: list of all past matches — accessible via the burger menu (☰)
+4. **Setup**: manage players and game types — accessible via the burger menu (☰)
 
 ## Navigation
 
-Bottom nav bar with 3 tabs:
+Top header bar present on all screens:
 
-| Tab | Icon | Description |
-|---|---|---|
-| New match | ➕ | Primary action — record a match (default screen) |
-| History | 📋 | Full match history |
-| Setup | ⚙️ | Manage players and game types (one-time setup) |
+| Element | Description |
+|---|---|
+| ← Back | Returns to Home (visible on all screens except Home) |
+| Title | Current screen name |
+| ☰ Burger | Opens side menu |
+
+**Burger menu (☰)** contains:
+
+| Item | Description |
+|---|---|
+| 📋 History | Full match history |
+| 👤 Players | Manage player profiles |
+| 🎮 Games | Manage game types |
+
+No bottom navigation bar.

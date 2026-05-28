@@ -2,15 +2,12 @@ package com.scoreo.ui.history
 
 import androidx.compose.runtime.Composable
 import org.jetbrains.compose.web.dom.Div
-import org.jetbrains.compose.web.dom.H1
 import org.jetbrains.compose.web.dom.Span
 import org.jetbrains.compose.web.dom.Text
 
 @Composable
 fun HistoryScreen(handler: HistoryHandler) {
     val matches = handler.state
-
-    H1 { Text("History") }
 
     if (matches.isEmpty()) {
         Div(attrs = { classes("empty") }) { Text("No matches yet.") }
