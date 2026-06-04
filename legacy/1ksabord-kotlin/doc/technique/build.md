@@ -23,17 +23,12 @@ Toutes les commandes s'exécutent depuis le répertoire `kotlin/`.
 ### gradle.properties
 
 ```properties
-# Proxy (environnement EDF)
-systemProp.http.proxyHost=vip-users.proxy.edf.fr:3131
-systemProp.https.proxyHost=vip-users.proxy.edf.fr:3131
-
 # Utiliser npm au lieu de yarn
 kotlin.js.yarn=false
 ```
 
-Le proxy est configuré pour l'environnement EDF. `kotlin.js.yarn=false`
-force l'utilisation de npm (yarn est incompatible avec le miroir
-Artifactory qui manque `format-util`).
+`kotlin.js.yarn=false` force l'utilisation de npm (yarn est incompatible
+avec ce projet).
 
 ## Fichiers de build
 
