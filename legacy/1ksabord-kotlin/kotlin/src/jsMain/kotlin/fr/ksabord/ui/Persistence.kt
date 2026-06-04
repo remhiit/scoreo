@@ -18,7 +18,8 @@ internal const val CLÉ_PARTIE    = "partie"
 internal const val CLÉ_JOUEURS   = "joueurs_connus"
 internal const val CLÉ_HISTORIQUE = "historique_parties"
 
-internal val formatJson = Json { ignoreUnknownKeys = true }
+internal val formatJson       = Json { ignoreUnknownKeys = true }
+internal val formatJsonPretty = Json { prettyPrint = true; ignoreUnknownKeys = true }
 
 // ==================== Instantané de Partie ====================
 
@@ -114,6 +115,10 @@ fun oublierJoueurConnu(nom: String) {
 
 // ==================== Historique des parties terminées ====================
 
+/** Génère un UUID via l'API crypto (navigateur ou Node.js). */
+internal fun genererUuid(): String =
+    js("crypto.randomUUID()").unsafeCast<String>()
+
 /**
  * Archive la partie courante dans l'historique (sans limite de nombre).
  * Doit être appelé juste avant de réinitialiser la partie.
@@ -124,6 +129,7 @@ fun archiverPartieTerminée() {
         .sortedByDescending { it.score }
 
     val entrée = PartieTerminée(
+        uuid          = genererUuid(),
         horodatage    = Date.now().toLong(),
         classement    = classement,
         nombreManches = partie.mancheActuelle(),
@@ -136,11 +142,23 @@ fun archiverPartieTerminée() {
     localStorage.setItem(CLÉ_HISTORIQUE, formatJson.encodeToString(liste))
 }
 
-/** Renvoie la liste des parties terminées, de la plus récente à la plus ancienne. */
+/**
+ * Renvoie la liste des parties terminées, de la plus récente à la plus ancienne.
+ * Assure la rétrocompatibilité : si une entrée n'a pas d'UUID, en génère un et persiste.
+ */
 fun obtenirHistoriqueParties(): List<PartieTerminée> {
     val json = localStorage.getItem(CLÉ_HISTORIQUE) ?: return emptyList()
     return try {
-        formatJson.decodeFromString<List<PartieTerminée>>(json)
+        val parties = formatJson.decodeFromString<List<PartieTerminée>>(json)
+        var modifié = false
+        val avecUuid = parties.map { p ->
+            if (p.uuid.isEmpty()) {
+                modifié = true
+                p.copy(uuid = genererUuid())
+            } else p
+        }
+        if (modifié) localStorage.setItem(CLÉ_HISTORIQUE, formatJson.encodeToString(avecUuid))
+        avecUuid
     } catch (e: Exception) {
         emptyList()
     }
@@ -150,6 +168,32 @@ fun obtenirHistoriqueParties(): List<PartieTerminée> {
 fun effacerHistoriqueParties() {
     localStorage.removeItem(CLÉ_HISTORIQUE)
 }
+
+// ==================== Classes pour export JSON externe ====================
+
+@Serializable
+data class ExportSabords(
+    val game: String,
+    val exportedAt: Long,
+    val gameCount: Int,
+    val games: List<ExportPartie>,
+)
+
+@Serializable
+data class ExportPartie(
+    val id: String,
+    val timestamp: Long,
+    val rounds: Int,
+    val ranking: List<ExportClassement>,
+    val details: List<ÉvénementCoup>,
+)
+
+@Serializable
+data class ExportClassement(
+    val name: String,
+    val score: Int,
+    val rank: Int,
+)
 
 // ==================== Export / Import ====================
 
@@ -187,8 +231,56 @@ fun exporterHistorique() {
 }
 
 /**
+ * Exporte l'historique en JSON clair (non compressé) destiné à un système
+ * de scores multi-jeux. Produit un fichier .json avec une enveloppe descriptive.
+ */
+fun exporterHistoriqueJson() {
+    val historique = obtenirHistoriqueParties()
+    if (historique.isEmpty()) {
+        window.alert("Aucune partie à exporter.")
+        return
+    }
+    val jeux = historique.map { p ->
+        val classement = p.classement.mapIndexed { i, j ->
+            ExportClassement(name = j.nom, score = j.score, rank = i + 1)
+        }
+        ExportPartie(
+            id        = p.uuid,
+            timestamp = p.horodatage,
+            rounds    = p.nombreManches,
+            ranking   = classement,
+            details   = p.coups,
+        )
+    }
+    val envelope = ExportSabords(
+        game       = "1000 Sabords",
+        exportedAt = Date.now().toLong(),
+        gameCount  = jeux.size,
+        games      = jeux,
+    )
+    val json = formatJsonPretty.encodeToString(envelope)
+
+    window.asDynamic().__sabords_export = json
+    js("""
+        (function() {
+            var data = window.__sabords_export;
+            delete window.__sabords_export;
+            var blob = new Blob([data], { type: 'application/json' });
+            var url  = URL.createObjectURL(blob);
+            var a    = document.createElement('a');
+            a.href     = url;
+            a.download = '1000sabords-historique.json';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            setTimeout(function() { URL.revokeObjectURL(url); }, 100);
+        })();
+    """)
+}
+
+/**
  * Traite le contenu d'un fichier importé (base64 LZW) :
- * décompresse, fusionne avec l'historique existant (déduplique par horodatage),
+ * décompresse, fusionne avec l'historique existant (déduplique par uuid),
  * et ajoute les joueurs inconnus aux joueurs connus.
  */
 fun traiterImport(contenu: String) {
@@ -196,9 +288,12 @@ fun traiterImport(contenu: String) {
         val json       = décompresserLZW(contenu)
         val importées  = formatJson.decodeFromString<List<PartieTerminée>>(json)
 
-        val existant              = obtenirHistoriqueParties()
-        val horodatagesExistants  = existant.map { it.horodatage }.toSet()
-        val nouvelles             = importées.filter { it.horodatage !in horodatagesExistants }
+        val existant    = obtenirHistoriqueParties()
+        val uuidsExistants = existant.map { it.uuid }.filter { it.isNotEmpty() }.toSet()
+        val nouvelles = importées.filter { p ->
+            p.uuid.isNotEmpty() && p.uuid !in uuidsExistants
+                    || p.uuid.isEmpty() && p.horodatage !in existant.map { it.horodatage }
+        }
 
         if (nouvelles.isEmpty()) {
             window.alert("Toutes les parties sont déjà présentes (aucun doublon importé).")

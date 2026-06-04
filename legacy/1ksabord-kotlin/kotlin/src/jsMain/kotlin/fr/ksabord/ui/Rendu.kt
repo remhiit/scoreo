@@ -446,7 +446,9 @@ fun renduModalHistorique(): String {
     val btnEffacer = if (historique.isEmpty()) "" else
         """<button class="btn-danger btn-small" data-action="clear-history">🗑 Effacer</button>"""
     val btnExporter = if (historique.isEmpty()) "" else
-        """<button class="btn-secondary btn-small" data-action="export-history">📤 Exporter</button>"""
+        """<button class="btn-secondary btn-small" data-action="export-history">📤 .sabords</button>"""
+    val btnExporterJson = if (historique.isEmpty()) "" else
+        """<button class="btn-secondary btn-small" data-action="export-history-json">📄 JSON</button>"""
 
     return """
         <div class="modal modal-large">
@@ -458,6 +460,7 @@ fun renduModalHistorique(): String {
             <div class="modal-actions">
                 $btnEffacer
                 $btnExporter
+                $btnExporterJson
                 <button class="btn-secondary" data-action="dismiss-modal">Fermer</button>
             </div>
         </div>

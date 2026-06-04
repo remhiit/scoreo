@@ -72,6 +72,7 @@ data class RésultatJoueur(
 /** Instantané d'une partie terminée, conservé dans l'historique. */
 @Serializable
 data class PartieTerminée(
+    val uuid:           String             = "",  // identifiant unique (crypto.randomUUID en JS)
     val horodatage:     Long,
     val classement:     List<RésultatJoueur>,  // trié par score décroissant
     val nombreManches:  Int,
