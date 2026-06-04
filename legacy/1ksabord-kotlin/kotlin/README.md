@@ -61,16 +61,20 @@ src/
 │   ├── Modeles.kt           # Tour, RésultatScore — objets valeur immuables
 │   ├── CalculateurScore.kt  # calculerScore(dés, carte) — service domaine pur
 │   └── Partie.kt            # Partie — racine d'agrégat + singleton `val partie`
-├── commonTest/kotlin/fr/ksabord/   ← 82 tests unitaires
+├── commonTest/kotlin/fr/ksabord/   ← 91 tests unitaires (domaine)
 │   ├── ScoreCalculateurTest.kt     # Tests du service calculerScore
 │   ├── EtatTest.kt                 # Tests de la Partie (totalJoueur, manches…)
 │   └── RèglesTest.kt               # Tests exhaustifs des règles officielles
 ├── jsMain/kotlin/fr/ksabord/ui/    ← IHM web uniquement
 │   ├── EtatTour.kt          # État du tour courant (dés, carte, onglet, multiplicateur)
-│   ├── Persistence.kt       # Sauvegarde/restauration localStorage (partie + joueurs connus)
+│   ├── Persistence.kt       # Sauvegarde/restauration localStorage (partie + joueurs connus + export)
+│   ├── Compression.kt       # LZW compression/décompression pour .sabords
 │   ├── Actions.kt           # Handlers d'actions utilisateur → appels sur Partie
+│   ├── Stats.kt             # Calcul des statistiques joueurs
 │   ├── Rendu.kt             # Génération HTML (strings de template Kotlin)
 │   └── Main.kt              # main() + délégation d'événements (data-action)
+├── jsTest/kotlin/fr/ksabord/      ← 13 tests (persistence, UUID, export JSON)
+│   └── PersistenceTest.kt
 ├── jsMain/resources/
 │   └── index.html           # CSS complet + <div id="app"> + <script src="app.js">
 └── androidMain/kotlin/fr/ksabord/  ← squelette Android (commenté, prêt à activer)

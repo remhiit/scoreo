@@ -49,7 +49,11 @@ kotlin {
 
         // ── Cible JS ──
         val jsMain by getting
-        val jsTest by getting
+        val jsTest by getting {
+            dependencies {
+                implementation(kotlin("test"))
+            }
+        }
 
         // ── Cible Android (à activer avec le SDK) ──
         // val androidMain by getting {
