@@ -16,6 +16,7 @@ KMP project: pirate dice game score tracker. Kotlin/JS web (active), Android ske
 Build after any change to Kotlin source, CSS, or HTML. Always run from `kotlin/`.
 
 Always update README.md when making impactful changes (new features, build commands, architecture changes, activated targets, CI/CD, etc.).
+Always update `doc/` documentation in sync with any code evolution — new features, refactoring, config changes, workflow updates. Doc is not optional.
 
 ## Key constraints from copilot-instructions.md
 
