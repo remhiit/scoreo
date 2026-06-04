@@ -55,7 +55,7 @@ Always update `doc/` documentation in sync with any code evolution — new featu
 
 ## Quirks & gotchas
 
-- **gradle.properties**: proxy configured (`vip-users.proxy.edf.fr:3131`), `kotlin.js.yarn=false` (uses npm)
+- **gradle.properties**: `kotlin.js.yarn=false` (utilise npm)
 - Android target in `build.gradle.kts` is **commented out** — needs SDK + uncommenting
 - Game types: `CoupCalculateur`, `CoupManuel`, `CoupÎleCrânes` — sealed subclass of `ÉvénementCoup` (serialized with `@SerialName`)
 - Magic Pirate win: 9 diamonds or 9 gold → instant victory, no post-game wait
