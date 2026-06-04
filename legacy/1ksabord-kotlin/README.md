@@ -42,6 +42,12 @@ Le projet suit une **architecture hexagonale** (Ports & Adapters) combinée à u
 - Les **adaptateurs** (UI web, ViewModel Android, persistence localStorage) dépendent du domaine, jamais l'inverse
 - Le **langage ubiquitaire** est le français : `Partie`, `Tour`, `LancerDés`, `calculerScore`…
 
+## Déploiement
+
+Un workflow **GitHub Actions** (`.github/workflows/deploy-pages.yml`) build et déploie automatiquement l'application sur **GitHub Pages** à chaque push sur `main`.
+
+Activer dans Settings → Pages → Source: **GitHub Actions**.
+
 Voir [`kotlin/README.md`](kotlin/README.md) pour le schéma complet, les détails DDD et les commandes de build.
 
 
