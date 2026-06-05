@@ -18,8 +18,12 @@ Boutons supplémentaires :
 |---|---|
 | 📜 Historique | Consulter les 20 dernières parties archivées |
 | 📊 Statistiques | Voir les stats des joueurs connus |
-| 📤 Exporter | Télécharger l'historique au format `.sabords` |
+| 📤 Exporter | Ouvre une modale pour exporter l'historique (1kSaBord ou JSON) |
 | 📥 Importer | Importer un fichier `.sabords` |
+
+La modale d'export propose deux formats :
+- **📤 1kSaBord** — format compressé (LZW + base64, extension `.sabords`)
+- **📄 JSON** — format clair et lisible pour intégration externe
 
 ## Écran de jeu
 

@@ -61,9 +61,11 @@ Chaque fonction dans `Actions.kt` correspond à une valeur de
 | `basculer-thème` | `basculerThème()` | Change thème sombre/lumineux |
 | `afficher-stats` | `afficherStats()` | Ouvre la modale stats |
 | `afficher-historique` | `afficherHistorique()` | Ouvre la modale historique |
+| `show-export-modal` | `afficherModalExport()` | Ouvre la modale de choix d'export |
 | `détail-partie` | `afficherDétailPartie(index)` | Détail d'une partie archivée |
 | `vider-historique` | `viderHistorique()` | Efface tout l'historique |
-| `exporter` | `exporterHistorique()` | Télécharge un fichier `.sabords` |
+| `export-history` | `exporterHistorique()` | Télécharge un fichier `.sabords` (LZW) |
+| `export-history-json` | `exporterHistoriqueJson()` | Télécharge un fichier `.json` |
 | `importer` | `lancerImport()` | Ouvre le sélecteur de fichier |
 | `confirmer-nouvelle` | `confirmerNouvellePartie()` | Confirme la réinitialisation |
 | `annuler-nouvelle` | (inline) | Ferme la confirmation |

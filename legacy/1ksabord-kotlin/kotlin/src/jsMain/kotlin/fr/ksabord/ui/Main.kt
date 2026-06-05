@@ -53,6 +53,7 @@ fun gérerAction(action: String, élément: HTMLElement) {
         "forget-known-player"     -> supprimerJoueurConnu(élément.getAttribute("data-name")!!)
         "show-history"            -> afficherHistorique()
         "show-stats"              -> afficherStats()
+        "show-export-modal"       -> afficherModalExport()
         "export-history"          -> exporterHistorique()
         "export-history-json"     -> exporterHistoriqueJson()
         "import-history"          -> lancerImport()
