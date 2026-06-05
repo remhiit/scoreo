@@ -213,21 +213,25 @@ fun exporterHistorique() {
     // Passer les données via une propriété globale temporaire :
     // js() ne peut pas capturer de variables Kotlin, on bridge via window.
     window.asDynamic().__sabords_export = compressé
-    js("""
-        (function() {
-            var data = window.__sabords_export;
-            delete window.__sabords_export;
-            var blob = new Blob([data], { type: 'text/plain' });
-            var url  = URL.createObjectURL(blob);
-            var a    = document.createElement('a');
-            a.href     = url;
-            a.download = '1000sabords.sabords';
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            setTimeout(function() { URL.revokeObjectURL(url); }, 100);
-        })();
-    """)
+    try {
+        js("""
+            (function() {
+                var data = window.__sabords_export;
+                delete window.__sabords_export;
+                var blob = new Blob([data], { type: 'text/plain' });
+                var url  = URL.createObjectURL(blob);
+                var a    = document.createElement('a');
+                a.href     = url;
+                a.download = '1000sabords.sabords';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                setTimeout(function() { URL.revokeObjectURL(url); }, 100);
+            })();
+        """)
+    } finally {
+        js("delete window.__sabords_export")
+    }
 }
 
 /**
@@ -261,21 +265,25 @@ fun exporterHistoriqueJson() {
     val json = formatJsonPretty.encodeToString(envelope)
 
     window.asDynamic().__sabords_export = json
-    js("""
-        (function() {
-            var data = window.__sabords_export;
-            delete window.__sabords_export;
-            var blob = new Blob([data], { type: 'application/json' });
-            var url  = URL.createObjectURL(blob);
-            var a    = document.createElement('a');
-            a.href     = url;
-            a.download = '1000sabords-historique.json';
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            setTimeout(function() { URL.revokeObjectURL(url); }, 100);
-        })();
-    """)
+    try {
+        js("""
+            (function() {
+                var data = window.__sabords_export;
+                delete window.__sabords_export;
+                var blob = new Blob([data], { type: 'application/json' });
+                var url  = URL.createObjectURL(blob);
+                var a    = document.createElement('a');
+                a.href     = url;
+                a.download = '1000sabords-historique.json';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                setTimeout(function() { URL.revokeObjectURL(url); }, 100);
+            })();
+        """)
+    } finally {
+        js("delete window.__sabords_export")
+    }
 }
 
 /**

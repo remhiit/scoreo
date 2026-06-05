@@ -129,8 +129,8 @@
         .badge-magie { background: var(--accent); color: #000; padding: 2px 7px; border-radius: var(--radius); font-weight: bold; font-size: 0.85em; }
         .chip-wins { background: var(--surface3); padding: 1px 5px; border-radius: var(--radius); font-size: 0.8em; pointer-events: none; }
         .stats-section-titre { margin: 16px 0 8px; font-size: 1em; color: var(--text); }
-        .magie-pirate-banner { background: var(--accent); color: #000; padding: 10px 14px; border-radius: var(--radius); font-weight: bold; text-align: center; margin-top: 10px; animation: pulse 1s ease-in-out infinite alternate; }
-        @keyframes pulse { from { opacity: 0.85; } to { opacity: 1; transform: scale(1.02); } }
+        .magie-pirate-banner { background: var(--accent); color: #000; padding: 10px 14px; border-radius: var(--radius); font-weight: bold; text-align: center; margin-top: 10px; animation: pulse-magie 1s ease-in-out infinite alternate; }
+        @keyframes pulse-magie { from { opacity: 0.85; } to { opacity: 1; transform: scale(1.02); } }
         .historique-joueurs { display: flex; flex-direction: column; gap: 3px; }
         .hist-joueur { font-size: 0.95em; font-weight: 500; }
         .historique-vide { color: var(--text-dim); text-align: center; padding: 24px 0; }
@@ -149,8 +149,8 @@
         }
         .game-header h2 { font-size: 1.3em; color: var(--primary); }
         .round-badge { background: var(--surface2); padding: 6px 14px; border-radius: 20px; font-size: 0.9em; color: var(--text-dim); }
-        .final-round-badge { background: var(--danger); color: white; animation: pulse 1.5s infinite; }
-        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
+        .final-round-badge { background: var(--danger); color: white; animation: pulse-badge 1.5s infinite; }
+        @keyframes pulse-badge { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
 
         .scoreboard-wrap { overflow-x: auto; margin-bottom: 20px; border-radius: var(--radius); border: 1px solid var(--surface3); }
         .modal-large .scoreboard-wrap { flex: 1; overflow: auto; margin-bottom: 12px; }

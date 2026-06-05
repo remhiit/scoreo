@@ -473,7 +473,7 @@ fun renduModalExport(): String {
             <button class="btn-secondary" data-action="export-history">📤 1kSaBord</button>
             <button class="btn-secondary" data-action="export-history-json">📄 JSON</button>
             <button class="btn-secondary" data-action="dismiss-modal">Annuler</button>
-        </div>"""
+        </div>""".trimIndent()
     }
     return """
         <div class="modal">
