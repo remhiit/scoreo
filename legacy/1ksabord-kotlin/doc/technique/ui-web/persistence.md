@@ -47,6 +47,10 @@ destiné à des systèmes de scores multi-jeux.
 
 ### Export / Import
 
+Les boutons d'export sont dans l'écran de configuration (bouton "📤 Exporter")
+et ouvrent une modale proposant deux formats. Les boutons d'export ont été
+retirés de la modale d'historique.
+
 | Fonction | Description |
 |---|---|
 | `exporterHistorique()` | Compresse en LZW, crée un Blob, déclenche le téléchargement `.sabords` |
@@ -74,9 +78,8 @@ automatiquement lors de l'archivage via `crypto.randomUUID()`. Cela permet :
 
 ## Export JSON (format interopérable)
 
-Bouton `📄 JSON` dans la modale d'historique. Produit un fichier
-`1000sabords-historique.json` non compressé, pretty-print, destiné à
-des systèmes de gestion de scores multi-jeux.
+Produit un fichier `1000sabords-historique.json` non compressé,
+pretty-print, destiné à des systèmes de gestion de scores multi-jeux.
 
 ```json
 {

@@ -90,6 +90,7 @@ fun renduÉcranConfig(): String {
         """<button class="btn-secondary historique-btn" data-action="show-stats">📊 Statistiques</button>"""
     else ""
     val boutonImport = """<button class="btn-secondary historique-btn" data-action="import-history">📥 Importer</button>"""
+    val boutonExport = """<button class="btn-secondary historique-btn" data-action="show-export-modal">📤 Exporter</button>"""
 
     return """
         <div class="screen active">
@@ -110,6 +111,7 @@ fun renduÉcranConfig(): String {
                 $boutonHistorique
                 $boutonStats
                 $boutonImport
+                $boutonExport
             </div>
         </div>
     """.trimIndent()
@@ -445,10 +447,6 @@ fun renduModalHistorique(): String {
 
     val btnEffacer = if (historique.isEmpty()) "" else
         """<button class="btn-danger btn-small" data-action="clear-history">🗑 Effacer</button>"""
-    val btnExporter = if (historique.isEmpty()) "" else
-        """<button class="btn-secondary btn-small" data-action="export-history">📤 .sabords</button>"""
-    val btnExporterJson = if (historique.isEmpty()) "" else
-        """<button class="btn-secondary btn-small" data-action="export-history-json">📄 JSON</button>"""
 
     return """
         <div class="modal modal-large">
@@ -459,13 +457,28 @@ fun renduModalHistorique(): String {
             <div class="historique-liste">$contenu</div>
             <div class="modal-actions">
                 $btnEffacer
-                $btnExporter
-                $btnExporterJson
                 <button class="btn-secondary" data-action="dismiss-modal">Fermer</button>
             </div>
         </div>
     """.trimIndent()
 }
+
+// ==================== Modal export ====================
+
+fun renduModalExport(): String = """
+    <div class="modal">
+        <div class="modal-header-row">
+            <h3>📤 Exporter l'historique</h3>
+            <button class="remove-btn" data-action="dismiss-modal" title="Fermer">✕</button>
+        </div>
+        <p style="text-align:center;padding:12px 0">Choisissez le format d'export :</p>
+        <div class="modal-actions" style="justify-content:center">
+            <button class="btn-secondary" data-action="export-history">📤 1kSaBord</button>
+            <button class="btn-secondary" data-action="export-history-json">📄 JSON</button>
+            <button class="btn-secondary" data-action="dismiss-modal">Annuler</button>
+        </div>
+    </div>
+""".trimIndent()
 
 // ==================== Modal détail d'une partie ====================
 

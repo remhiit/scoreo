@@ -234,6 +234,17 @@ fun lancerImport() {
     input.click()
 }
 
+fun afficherModalExport() {
+    val overlay = document.createElement("div").apply {
+        className = "modal-overlay"
+        innerHTML = renduModalExport()
+    }
+    document.body?.appendChild(overlay)
+    overlay.addEventListener("click", { e ->
+        if (e.target == overlay) overlay.remove()
+    })
+}
+
 fun afficherStats() {
     val overlay = document.createElement("div").apply {
         className = "modal-overlay"
