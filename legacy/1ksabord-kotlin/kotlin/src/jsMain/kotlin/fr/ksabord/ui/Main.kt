@@ -7,17 +7,17 @@ import org.w3c.dom.events.EventListener
 
 fun main() {
     // Restaurer le thème sauvegardé
-    val thèmeSauvegardé = localStorage.getItem("theme")
-    if (thèmeSauvegardé != null) {
-        document.documentElement?.setAttribute("data-theme", thèmeSauvegardé)
+    val themeSauvegarde = localStorage.getItem("theme")
+    if (themeSauvegarde != null) {
+        document.documentElement?.setAttribute("data-theme", themeSauvegarde)
     }
 
     // Délégation d'événements : tous les boutons/liens utilisent data-action
     document.addEventListener("click", EventListener { event ->
         val cible          = event.target as? HTMLElement ?: return@EventListener
-        val élémentAction  = cible.closest("[data-action]") as? HTMLElement ?: return@EventListener
-        val action         = élémentAction.getAttribute("data-action") ?: return@EventListener
-        gérerAction(action, élémentAction)
+        val elementAction  = cible.closest("[data-action]") as? HTMLElement ?: return@EventListener
+        val action         = elementAction.getAttribute("data-action") ?: return@EventListener
+        gererAction(action, elementAction)
     })
 
     // Restaurer la partie sauvegardée (silencieux si rien n'est trouvé)
@@ -26,38 +26,38 @@ fun main() {
     render()
 }
 
-fun gérerAction(action: String, élément: HTMLElement) {
+fun gererAction(action: String, element: HTMLElement) {
     when (action) {
         "add-player"              -> ajouterJoueur()
-        "remove-player"           -> retirerJoueur(élément.getAttribute("data-index")!!.toInt())
-        "start-game"              -> démarrerPartie()
-        "change-dice"             -> changerDé(
-                                         élément.getAttribute("data-type")!!,
-                                         élément.getAttribute("data-delta")!!.toInt(),
+        "remove-player"           -> retirerJoueur(element.getAttribute("data-index")!!.toInt())
+        "start-game"              -> demarrerPartie()
+        "change-dice"             -> changerDe(
+                                         element.getAttribute("data-type")!!,
+                                         element.getAttribute("data-delta")!!.toInt(),
                                      )
-        "switch-tab"              -> changerOnglet(élément.getAttribute("data-tab")!!)
+        "switch-tab"              -> changerOnglet(element.getAttribute("data-tab")!!)
         "submit-calc-score"       -> soumettreScoreCalcul()
         "submit-manual-score"     -> soumettreScoreManuel()
-        "reset-manual-score"      -> réinitialiserScoreManuel()
-        "quick-score"             -> scoreRapide(élément.getAttribute("data-score")!!.toInt())
+        "reset-manual-score"      -> reinitialiserScoreManuel()
+        "quick-score"             -> scoreRapide(element.getAttribute("data-score")!!.toInt())
         "set-manual-multiplier"   -> basculerMultiplicateur()
         "clear-manual-multiplier" -> effacerMultiplicateur()
-        "quick-skull-island"      -> îleRapide(élément.getAttribute("data-skulls")!!.toInt())
+        "quick-skull-island"      -> ileRapide(element.getAttribute("data-skulls")!!.toInt())
         "undo-last"               -> annulerDernier()
         "show-confirm-new-game"   -> confirmerNouvellePartie()
-        "reset-game"              -> réinitialiserPartie()
-        "toggle-theme"            -> basculerThème()
-        "dismiss-modal"           -> (élément.closest(".modal-overlay") as? HTMLElement)?.remove()
-        "new-game"                -> réinitialiserPartie()
-        "add-known-player"        -> ajouterJoueurParNom(élément.getAttribute("data-name")!!)
-        "forget-known-player"     -> supprimerJoueurConnu(élément.getAttribute("data-name")!!)
+        "reset-game"              -> reinitialiserPartie()
+        "toggle-theme"            -> basculerTheme()
+        "dismiss-modal"           -> (element.closest(".modal-overlay") as? HTMLElement)?.remove()
+        "new-game"                -> reinitialiserPartie()
+        "add-known-player"        -> ajouterJoueurParNom(element.getAttribute("data-name")!!)
+        "forget-known-player"     -> supprimerJoueurConnu(element.getAttribute("data-name")!!)
         "show-history"            -> afficherHistorique()
         "show-stats"              -> afficherStats()
         "show-export-modal"       -> afficherModalExport()
         "export-history"          -> exporterHistorique()
         "export-history-json"     -> exporterHistoriqueJson()
         "import-history"          -> lancerImport()
-        "show-game-detail"        -> afficherDétailPartie(élément.getAttribute("data-index")!!.toInt())
+        "show-game-detail"        -> afficherDetailPartie(element.getAttribute("data-index")!!.toInt())
         "clear-history"           -> viderHistorique()
     }
 }

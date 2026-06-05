@@ -7,19 +7,19 @@ import kotlinx.serialization.Serializable
  * Toutes les propriétés sont en lecture seule — une modification produit une copie.
  */
 @Serializable
-data class LancerDés(
-    val crânes:     Int = 0,
+data class LancerDes(
+    val cranes:     Int = 0,
     val diamants:   Int = 0,
     val or:         Int = 0,
     val singes:     Int = 0,
     val perroquets: Int = 0,
     val sabres:     Int = 0,
 ) {
-    val total: Int get() = crânes + diamants + or + singes + perroquets + sabres
+    val total: Int get() = cranes + diamants + or + singes + perroquets + sabres
 
     /** Renvoie la valeur d'un dé par son identifiant HTML. */
     fun valeur(id: String): Int = when (id) {
-        "skulls"   -> crânes
+        "skulls"   -> cranes
         "diamonds" -> diamants
         "gold"     -> or
         "monkeys"  -> singes
@@ -29,8 +29,8 @@ data class LancerDés(
     }
 
     /** Renvoie un nouvel objet avec la valeur du dé identifié mise à jour. */
-    fun avecValeur(id: String, valeur: Int): LancerDés = when (id) {
-        "skulls"   -> copy(crânes     = valeur)
+    fun avecValeur(id: String, valeur: Int): LancerDes = when (id) {
+        "skulls"   -> copy(cranes     = valeur)
         "diamonds" -> copy(diamants   = valeur)
         "gold"     -> copy(or         = valeur)
         "monkeys"  -> copy(singes     = valeur)

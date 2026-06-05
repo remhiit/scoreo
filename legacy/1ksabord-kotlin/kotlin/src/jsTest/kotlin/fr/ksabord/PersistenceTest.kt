@@ -33,22 +33,22 @@ class PersistenceTest {
                 };
             }
         """)
-        partie.réinitialiser()
+        partie.reinitialiser()
         localStorage.removeItem(CLÉ_HISTORIQUE)
         localStorage.removeItem(CLÉ_JOUEURS)
     }
 
     // ===== helpers =====
 
-    private fun créerPartieTerminée(
+    private fun creerPartieTerminee(
         horodatage: Long = 1000L,
         uuid: String = genererUuid(),
         joueurs: List<Pair<String, Int>> = listOf("Alice" to 1200, "Bob" to 800),
-    ): PartieTerminée {
+    ): PartieTerminee {
         val classement = joueurs.mapIndexed { i, (nom, score) ->
-            RésultatJoueur(nom, score, i)
+            ResultatJoueur(nom, score, i)
         }.sortedByDescending { it.score }
-        return PartieTerminée(
+        return PartieTerminee(
             uuid = uuid,
             horodatage = horodatage,
             classement = classement,
@@ -57,13 +57,13 @@ class PersistenceTest {
         )
     }
 
-    private fun stockerPartie(p: PartieTerminée) {
+    private fun stockerPartie(p: PartieTerminee) {
         localStorage.setItem(CLÉ_HISTORIQUE, formatJson.encodeToString(listOf(p)))
     }
 
     // ===== genererUuid =====
 
-    @Test fun genererUuid_retourneUneChaîneNonVide() {
+    @Test fun genererUuid_retourneUneChaineNonVide() {
         assertTrue(genererUuid().isNotEmpty())
     }
 
@@ -78,28 +78,28 @@ class PersistenceTest {
         assertEquals(10, uuids.distinct().size)
     }
 
-    // ===== archiverPartieTerminée → uuid présent =====
+    // ===== archiverPartieTerminee → uuid présent =====
 
-    @Test fun archiverPartieTerminée_génèreUnUUID() {
+    @Test fun archiverPartieTerminee_genereUnUUID() {
         partie.joueurs.add("Alice"); partie.joueurs.add("Bob")
         partie.commencer()
         partie.ajouterCoup(CoupManuel("Alice", 500, 1, 500))
         partie.ajouterCoup(CoupManuel("Bob", 300, 1, 300))
-        archiverPartieTerminée()
+        archiverPartieTerminee()
 
         val historique = obtenirHistoriqueParties()
         assertEquals(1, historique.size)
         assertTrue(historique[0].uuid.isNotEmpty())
     }
 
-    @Test fun archiverPartieTerminée_uuidUniqueÀChaqueFois() {
+    @Test fun archiverPartieTerminee_uuidUniqueÀChaqueFois() {
         partie.joueurs.add("Alice"); partie.joueurs.add("Bob")
         repeat(3) {
             partie.commencer()
             partie.ajouterCoup(CoupManuel("Alice", 100, 1, 100))
             partie.ajouterCoup(CoupManuel("Bob", 100, 1, 100))
-            archiverPartieTerminée()
-            partie.réinitialiser()
+            archiverPartieTerminee()
+            partie.reinitialiser()
         }
         val historique = obtenirHistoriqueParties()
         assertEquals(3, historique.size)
@@ -108,7 +108,7 @@ class PersistenceTest {
 
     // ===== backfill : obtenirHistoriqueParties avec legacy =====
 
-    @Test fun obtenirHistoriqueParties_backfillGénèreUUIDPourLegacy() {
+    @Test fun obtenirHistoriqueParties_backfillGenereUUIDPourLegacy() {
         val legacy = """[{"horodatage":100,"classement":[{"nom":"Alice","score":500,"indexCouleur":0}],"nombreManches":2,"coups":[]}]"""
         localStorage.setItem(CLÉ_HISTORIQUE, legacy)
 
@@ -122,14 +122,14 @@ class PersistenceTest {
         localStorage.setItem(CLÉ_HISTORIQUE, legacy)
         obtenirHistoriqueParties()
 
-        val rechargé = localStorage.getItem(CLÉ_HISTORIQUE)
-        assertNotNull(rechargé)
-        assertTrue(rechargé!!.contains("uuid"))
+        val recharge = localStorage.getItem(CLÉ_HISTORIQUE)
+        assertNotNull(recharge)
+        assertTrue(recharge!!.contains("uuid"))
     }
 
-    @Test fun obtenirHistoriqueParties_neModifiePasLesEntréesAvecUUID() {
+    @Test fun obtenirHistoriqueParties_neModifiePasLesEntreesAvecUUID() {
         val uuid = genererUuid()
-        stockerPartie(créerPartieTerminée(uuid = uuid))
+        stockerPartie(creerPartieTerminee(uuid = uuid))
 
         val historique = obtenirHistoriqueParties()
         assertEquals(uuid, historique[0].uuid)
@@ -139,15 +139,15 @@ class PersistenceTest {
 
     @Test fun exportPartie_idCorrespondÀUUID() {
         val uuid = genererUuid()
-        stockerPartie(créerPartieTerminée(uuid = uuid))
+        stockerPartie(creerPartieTerminee(uuid = uuid))
 
         val exportData = construireExportJson()
         assertEquals("1000 Sabords", exportData.game)
         assertEquals(uuid, exportData.games[0].id)
     }
 
-    @Test fun exportPartie_classementRangéCorrespondÀIndex() {
-        stockerPartie(créerPartieTerminée(joueurs = listOf("Bob" to 800, "Alice" to 1200)))
+    @Test fun exportPartie_classementRangeCorrespondAIndex() {
+        stockerPartie(creerPartieTerminee(joueurs = listOf("Bob" to 800, "Alice" to 1200)))
 
         val ranking = construireExportJson().games[0].ranking
         assertEquals("Alice", ranking[0].name)
@@ -158,15 +158,15 @@ class PersistenceTest {
 
     @Test fun exportPartie_detailsContientCoups() {
         val coups = listOf(CoupManuel("Alice", 500, 1, 500))
-        stockerPartie(créerPartieTerminée().copy(coups = coups))
+        stockerPartie(creerPartieTerminee().copy(coups = coups))
 
         val details = construireExportJson().games[0].details
         assertEquals(500, (details[0] as CoupManuel).score)
     }
 
     @Test fun exportContientPlusieursParties() {
-        val p1 = créerPartieTerminée(horodatage = 100L)
-        val p2 = créerPartieTerminée(horodatage = 200L)
+        val p1 = creerPartieTerminee(horodatage = 100L)
+        val p2 = creerPartieTerminee(horodatage = 200L)
         localStorage.setItem(CLÉ_HISTORIQUE, formatJson.encodeToString(listOf(p1, p2)))
 
         val exportData = construireExportJson()
@@ -175,7 +175,7 @@ class PersistenceTest {
     }
 
     @Test fun exportFormatJsonValide() {
-        stockerPartie(créerPartieTerminée())
+        stockerPartie(creerPartieTerminee())
 
         val json = formatJsonPretty.encodeToString(construireExportJson())
         assertTrue(json.isNotEmpty())

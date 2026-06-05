@@ -19,8 +19,8 @@ Le projet applique conjointement l'**architecture hexagonale**
          │         HEXAGONE — DOMAINE PUR        │
          │       fr.ksabord.domaine              │
          │                                       │
-         │  Partie  ·  LancerDés  ·  Tour        │
-         │  RésultatScore  ·  calculerScore()    │
+         │  Partie  ·  LancerDes  ·  Tour        │
+         │  ResultatScore  ·  calculerScore()    │
          └───────────────┬──────────────────────┘
                          │ appels sortants (persistence)
                          ▼
@@ -41,11 +41,11 @@ jamais l'inverse.
 
 | Concept DDD | Implémentation |
 |---|---|
-| **Langage ubiquitaire** | Terminologie française dans tout le code (`Partie`, `Tour`, `LancerDés`) |
+| **Langage ubiquitaire** | Terminologie française dans tout le code (`Partie`, `Tour`, `LancerDes`) |
 | **Contexte borné — domaine** | `fr.ksabord.domaine` — logique métier pure, multiplateforme |
 | **Contexte borné — interface** | `fr.ksabord.ui` — UI, état du tour, persistence JS |
 | **Racine d'agrégat** | `Partie` — encapsule joueurs, historique et invariants |
-| **Objets valeur** | `LancerDés`, `Tour`, `RésultatScore` — immuables |
+| **Objets valeur** | `LancerDes`, `Tour`, `ResultatScore` — immuables |
 | **Service domaine** | `calculerScore(dés, carte)` — pur, sans état global |
 
 ## Arbre des dépendances

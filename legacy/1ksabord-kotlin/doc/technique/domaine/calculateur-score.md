@@ -7,7 +7,7 @@ Fichier : `src/commonMain/kotlin/fr/ksabord/domaine/CalculateurScore.kt`
 ## Point d'entrée unique
 
 ```kotlin
-fun calculerScore(dés: LancerDés, carte: String): RésultatScore
+fun calculerScore(dés: LancerDes, carte: String): ResultatScore
 ```
 
 ## Algorithme (simplifié)
@@ -24,7 +24,7 @@ fun calculerScore(dés: LancerDés, carte: String): RésultatScore
 6. **Détecter le coffre plein** — 8 dés scorants → +500 pts
 7. **Détecter le pirate magique** — 9 diamants ou 9 ors
 8. **Appliquer le capitaine** (×2) si la carte l'active
-9. **Construire `RésultatScore`** avec score, détails, flags
+9. **Construire `ResultatScore`** avec score, details, flags
 
 ## Gestion des cartes
 
