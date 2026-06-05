@@ -18,12 +18,12 @@ Les adaptateurs (Actions.kt, Persistence.kt) y accèdent directement.
 
 | Propriété | Type | Description |
 |---|---|---|
-| `joueurs` | `MutableList<RésultatJoueur>` | Liste des joueurs (nom, score, couleur) |
-| `historique` | `MutableList<ÉvénementCoup>` | Tous les coups joués (event sourcing) |
+| `joueurs` | `MutableList<ResultatJoueur>` | Liste des joueurs (nom, score, couleur) |
+| `historique` | `MutableList<EvenementCoup>` | Tous les coups joués (event sourcing) |
 | `indexJoueurActuel` | `Int` | Index du joueur en train de jouer |
 | `dernierTour` | `Boolean` | Vrai si c'est le dernier tour |
-| `numéroDernierTour` | `Int` | Numéro de la manche de dernier tour |
-| `commencée` | `Boolean` | Vrai si la partie a démarré |
+| `numeroDernierTour` | `Int` | Numéro de la manche de dernier tour |
+| `commencee` | `Boolean` | Vrai si la partie a démarré |
 | `magiquePirate` | `Boolean` | Vrai si victoire par pirate magique |
 
 ## Méthodes publiques
@@ -35,7 +35,7 @@ Les adaptateurs (Actions.kt, Persistence.kt) y accèdent directement.
 | `commencer()` | Initialise la partie avec les joueurs configurés |
 | `ajouterCoup(coup)` | Ajoute un coup, passe au joueur suivant |
 | `annulerDernier()` | Annule le dernier coup (défait le score) |
-| `réinitialiser()` | Remet la partie à zéro |
+| `reinitialiser()` | Remet la partie à zéro |
 | `terminerParMagiePirate()` | Flag victoire magique |
 
 ### Requêtes (lecture seule)
@@ -47,7 +47,7 @@ Les adaptateurs (Actions.kt, Persistence.kt) y accèdent directement.
 | `mancheActuelle(): Int` | Numéro de la manche en cours |
 | `totalMax(): Int` | Score maximum parmi les joueurs |
 | `manches(): Int` | Nombre de manches jouées |
-| `estTerminée(): Boolean` | Vrai si partie finie |
+| `estTerminee(): Boolean` | Vrai si partie finie |
 
 ## Invariants
 

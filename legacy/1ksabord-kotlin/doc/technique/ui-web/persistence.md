@@ -15,7 +15,7 @@ destiné à des systèmes de scores multi-jeux.
 |---|---|---|
 | `"partie"` | Partie en cours (état complet) | JSON |
 | `"joueurs_connus"` | Liste des noms de joueurs connus | JSON (List<String>) |
-| `"historique_parties"` | Historique des parties terminées (illimité) | JSON (List<PartieTerminée>) |
+| `"historique_parties"` | Historique des parties terminées (illimité) | JSON (List<PartieTerminee>) |
 | `"theme"` | Préférence de thème (`"dark"` ou `"light"`) | Texte brut |
 
 ## Fonctions
@@ -26,13 +26,13 @@ destiné à des systèmes de scores multi-jeux.
 |---|---|
 | `sauvegarderPartie()` | Sérialise et sauvegarde l'état de `partie` |
 | `restaurerPartie(): Boolean` | Restaure la partie depuis localStorage |
-| `effacerPartieSauvegardée()` | Supprime la sauvegarde |
+| `effacerPartieSauvegardee()` | Supprime la sauvegarde |
 
 ### Joueurs connus
 
 | Fonction | Description |
 |---|---|
-| `mettreÀJourJoueursConnus()` | Ajoute les joueurs actuels à la liste des connus |
+| `mettreAJourJoueursConnus()` | Ajoute les joueurs actuels à la liste des connus |
 | `obtenirJoueursConnus(): List<String>` | Récupère la liste des joueurs connus |
 | `oublierJoueurConnu(nom)` | Supprime un joueur de la liste |
 
@@ -40,8 +40,8 @@ destiné à des systèmes de scores multi-jeux.
 
 | Fonction | Description |
 |---|---|
-| `archiverPartieTerminée()` | Archive la partie terminée dans l'historique (génère un UUID) |
-| `obtenirHistoriqueParties(): List<PartieTerminée>` | Récupère l'historique (backfill UUID pour legacy) |
+| `archiverPartieTerminee()` | Archive la partie terminée dans l'historique (génère un UUID) |
+| `obtenirHistoriqueParties(): List<PartieTerminee>` | Récupère l'historique (backfill UUID pour legacy) |
 | `effacerHistoriqueParties()` | Vide l'historique |
 | `genererUuid(): String` | Génère un UUID v4 via `crypto.randomUUID()` |
 
@@ -59,7 +59,7 @@ retirés de la modale d'historique.
 
 ## Identifiant UUID
 
-Chaque `PartieTerminée` possède un champ `uuid: String` (UUID v4) généré
+Chaque `PartieTerminee` possède un champ `uuid: String` (UUID v4) généré
 automatiquement lors de l'archivage via `crypto.randomUUID()`. Cela permet :
 
 - Une identification stable entre systèmes
@@ -139,8 +139,8 @@ sérialisables).
 ```kotlin
 @Serializable
 private data class SnapshotPartie(
-    val joueurs:            List<RésultatJoueur>,
-    val historique:         List<ÉvénementCoup>,
+    val joueurs:            List<ResultatJoueur>,
+    val historique:         List<EvenementCoup>,
     val index:              Int,
     val dernierTour:        Boolean,
     val numeroDernierTour:  Int,

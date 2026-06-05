@@ -17,15 +17,15 @@ fun escHtml(str: String): String {
     return div.innerHTML
 }
 
-fun icôneThème(): String =
+fun iconeTheme(): String =
     if (document.documentElement?.getAttribute("data-theme") == "light") "🌙" else "☀️"
 
 // ==================== Rendu principal ====================
 
 fun render() {
     val app = document.getElementById("app") as? HTMLElement ?: return
-    val btnThème = """<button class="theme-toggle" data-action="toggle-theme" title="Changer de thème">${icôneThème()}</button>"""
-    app.innerHTML = btnThème + if (!partie.commencée) renduÉcranConfig() else renduÉcranJeu()
+    val btnTheme = """<button class="theme-toggle" data-action="toggle-theme" title="Changer de thème">${iconeTheme()}</button>"""
+    app.innerHTML = btnTheme + if (!partie.commencee) renduEcranConfig() else renduEcranJeu()
     postRendu()
 }
 
@@ -39,8 +39,8 @@ fun postRendu() {
     })
     document.getElementById("card-select")?.addEventListener("change", {
         val sel = document.getElementById("card-select") as? HTMLSelectElement
-        carteSelectionnée = sel?.value ?: "none"
-        mettreÀJourCalcul()
+        carteSelectionnee = sel?.value ?: "none"
+        mettreAJourCalcul()
     })
     document.getElementById("manual-score-input")?.addEventListener("keydown", {
         if (it.asDynamic().key == "Enter") soumettreScoreManuel()
@@ -49,8 +49,8 @@ fun postRendu() {
 
 // ==================== Écran de configuration ====================
 
-fun renduÉcranConfig(): String {
-    val élémentsJoueurs = partie.joueurs.mapIndexed { i, p ->
+fun renduEcranConfig(): String {
+    val elementsJoueurs = partie.joueurs.mapIndexed { i, p ->
         """<li style="border-left-color: ${COULEURS_JOUEURS[i]}">
             <span class="player-name-display">${escHtml(p)}</span>
             <button class="remove-btn" data-action="remove-player" data-index="$i" title="Retirer">✕</button>
@@ -79,8 +79,8 @@ fun renduÉcranConfig(): String {
         append("""</div></div>""")
     }
 
-    val désactivéAjouter  = if (partie.joueurs.size >= 8) "disabled" else ""
-    val désactivéDémarrer = if (partie.joueurs.size < 2)  "disabled" else ""
+    val desactiveAjouter  = if (partie.joueurs.size >= 8) "disabled" else ""
+    val desactiveDemarrer = if (partie.joueurs.size < 2)  "disabled" else ""
 
     val boutonHistorique = """<button class="btn-secondary historique-btn" data-action="show-history">📜 Historique des parties</button>"""
     val boutonStats = """<button class="btn-secondary historique-btn" data-action="show-stats">📊 Statistiques</button>"""
@@ -96,11 +96,11 @@ fun renduÉcranConfig(): String {
                 </div>
                 <div class="input-row">
                     <input type="text" id="player-input" placeholder="Nom du joueur" maxlength="15">
-                    <button class="btn-primary" data-action="add-player" $désactivéAjouter>Ajouter</button>
+                    <button class="btn-primary" data-action="add-player" $desactiveAjouter>Ajouter</button>
                 </div>
-                <ul class="player-list">$élémentsJoueurs</ul>
+                <ul class="player-list">$elementsJoueurs</ul>
                 $chipsConnus
-                <button class="btn-primary start-btn" data-action="start-game" $désactivéDémarrer>
+                <button class="btn-primary start-btn" data-action="start-game" $desactiveDemarrer>
                     ⚓ Commencer la partie (${partie.joueurs.size} joueurs)
                 </button>
                 $boutonHistorique
@@ -114,12 +114,12 @@ fun renduÉcranConfig(): String {
 
 // ==================== Écran de jeu ====================
 
-fun renduÉcranJeu(): String {
+fun renduEcranJeu(): String {
     val manche         = partie.mancheActuelle()
     val positionTour   = partie.historique.size % partie.joueurs.size
 
-    if (partie.magiquePirate || (partie.dernierTour && manche > partie.numéroDernierTour && positionTour == 0)) {
-        return renduÉcranFin()
+    if (partie.magiquePirate || (partie.dernierTour && manche > partie.numeroDernierTour && positionTour == 0)) {
+        return renduEcranFin()
     }
 
     val manches         = partie.manches()
@@ -129,7 +129,7 @@ fun renduÉcranJeu(): String {
     val couleurActuelle = COULEURS_JOUEURS[partie.indexJoueurActuel]
 
     // En-têtes du tableau des scores
-    val entêtesCellules = partie.joueurs.mapIndexed { i, p ->
+    val entesCellules = partie.joueurs.mapIndexed { i, p ->
         val cls = if (i == partie.indexJoueurActuel) "current-player" else ""
         """<th class="$cls" style="color: ${COULEURS_JOUEURS[i]}">${escHtml(p)}</th>"""
     }.joinToString("")
@@ -166,29 +166,29 @@ fun renduÉcranJeu(): String {
     }.joinToString("")
 
     // Badge de tour
-    val mancheAffichée  = (manche + if (positionTour > 0) 1 else 0).coerceAtLeast(1)
+    val mancheAffichee  = (manche + if (positionTour > 0) 1 else 0).coerceAtLeast(1)
     val classeBadge     = if (partie.dernierTour) "round-badge final-round-badge" else "round-badge"
-    val labelBadge      = if (partie.dernierTour) "⚠️ Dernier tour!" else "Tour $mancheAffichée"
+    val labelBadge      = if (partie.dernierTour) "⚠️ Dernier tour!" else "Tour $mancheAffichee"
 
     // Compteurs de dés
-    val lignesDés = TYPES_DÉS.joinToString("") { td ->
+    val lignesDes = TYPES_DES.joinToString("") { td ->
         """<div class="dice-row">
-            <span class="dice-icon">${td.icône}</span>
+            <span class="dice-icon">${td.icone}</span>
             <span class="dice-label">${td.label}</span>
             <div class="dice-controls">
                 <button data-action="change-dice" data-type="${td.id}" data-delta="-1">−</button>
-                <span class="count" id="dice-${td.id}">${dés.valeur(td.id)}</span>
+                <span class="count" id="dice-${td.id}">${des.valeur(td.id)}</span>
                 <button data-action="change-dice" data-type="${td.id}" data-delta="1">+</button>
             </div>
         </div>"""
     }
 
-    val totalDés    = dés.total
-    val classeTotal = if (totalDés == 8) "valid" else "warning"
-    val icôneTotale = if (totalDés == 8) "✅" else "⚠️"
+    val totalDes    = des.total
+    val classeTotal = if (totalDes == 8) "valid" else "warning"
+    val iconeTotale = if (totalDes == 8) "✅" else "⚠️"
 
     // Info contextuelle sur la carte
-    val infoCarteHtml = when (carteSelectionnée) {
+    val infoCarteHtml = when (carteSelectionnee) {
         "diamond" -> "💎 +1 diamant ajouté par la carte · 🪄 8 diamants aux dés = <strong>Magie Pirate !</strong>"
         "gold"    -> "🪙 +1 pièce d'or ajoutée par la carte · 🪄 8 pièces d'or aux dés = <strong>Magie Pirate !</strong>"
         "skull1"  -> "💀 +1 crâne ajouté par la carte (ne comptez pas dans les dés)"
@@ -202,37 +202,37 @@ fun renduÉcranJeu(): String {
     }
 
     // Prévisualisation du score (calculateur)
-    val aperçuScoreHtml = if (totalDés > 0) buildString {
-        val résultat = calculerScore(dés, carteSelectionnée)
+    val apercuScoreHtml = if (totalDes > 0) buildString {
+        val resultat = calculerScore(des, carteSelectionnee)
         val classeValeur = when {
-            résultat.îleCrânes   -> "skull-island"
-            résultat.score > 0   -> "positive"
-            résultat.score < 0   -> "negative"
+            resultat.ileCranes   -> "skull-island"
+            resultat.score > 0   -> "positive"
+            resultat.score < 0   -> "negative"
             else                 -> "zero"
         }
         append("""<div class="calc-result">
             <div class="score-value $classeValeur">
-                ${if (résultat.îleCrânes) "☠️" else ""} ${résultat.score} pts
+                ${if (resultat.ileCranes) "☠️" else ""} ${resultat.score} pts
             </div>
-            <div class="breakdown">${escHtml(résultat.détails).replace("\n", "<br>")}</div>
+            <div class="breakdown">${escHtml(resultat.details).replace("\n", "<br>")}</div>
         </div>""")
-        if (résultat.magiquePirate) {
+        if (resultat.magiquePirate) {
             append("""<div class="magie-pirate-banner">🪄 MAGIE PIRATE — Victoire légendaire !</div>""")
         }
-        if (résultat.îleCrânes) {
+        if (resultat.ileCranes) {
             append("""<div class="skull-island-info">
                 <div class="skull-title">☠️ Île de la Tête de Mort</div>
-                <div class="skull-desc">Chaque adversaire perdra ${-résultat.pénalitéÎle} pts</div>
+                <div class="skull-desc">Chaque adversaire perdra ${-resultat.penaliteIle} pts</div>
             </div>""")
         }
     } else ""
 
     // Options du sélecteur de carte
     val optionsCarte = CARTES.joinToString("") { c ->
-        """<option value="${c.id}" ${if (c.id == carteSelectionnée) "selected" else ""}>${c.label}</option>"""
+        """<option value="${c.id}" ${if (c.id == carteSelectionnee) "selected" else ""}>${c.label}</option>"""
     }
 
-    val désactivéAnnuler = if (partie.historique.isEmpty()) "disabled" else ""
+    val desactiveAnnuler = if (partie.historique.isEmpty()) "disabled" else ""
     val calcActif        = if (tabActif == "calc")   "active" else ""
     val manuelActif      = if (tabActif == "manual") "active" else ""
 
@@ -247,13 +247,13 @@ fun renduÉcranJeu(): String {
                 <div class="game-col-left">
                     <div class="scoreboard-wrap">
                         <table class="scoreboard">
-                            <thead><tr><th></th>$entêtesCellules</tr></thead>
+                            <thead><tr><th></th>$entesCellules</tr></thead>
                             <tbody>$lignesTableau</tbody>
                             <tfoot><tr><td class="round-label"><strong>Total</strong></td>$cellulesPied</tr></tfoot>
                         </table>
                     </div>
                     <div class="game-actions">
-                        <button class="btn-secondary" data-action="undo-last" $désactivéAnnuler title="Annuler le coup précédent">↩ Annuler le coup</button>
+                        <button class="btn-secondary" data-action="undo-last" $desactiveAnnuler title="Annuler le coup précédent">↩ Annuler le coup</button>
                         <button class="btn-danger"    data-action="show-confirm-new-game">🔄 Nouvelle partie</button>
                     </div>
                 </div>
@@ -275,13 +275,13 @@ fun renduÉcranJeu(): String {
                                 <label>Carte piochée :</label>
                                 <select id="card-select">$optionsCarte</select>
                             </div>
-                            <div class="dice-counters">$lignesDés</div>
-                            <div class="dice-total $classeTotal">$icôneTotale $totalDés / 8 dés</div>
+                            <div class="dice-counters">$lignesDes</div>
+                            <div class="dice-total $classeTotal">$iconeTotale $totalDes / 8 dés</div>
                             <button class="btn-primary calc-submit" data-action="submit-calc-score">
                                 Valider le score
                             </button>
                             <div class="card-info" id="card-info">$infoCarteHtml</div>
-                            $aperçuScoreHtml
+                            $apercuScoreHtml
                         </div>
 
                         <div class="tab-content $manuelActif" id="content-manual">
@@ -357,7 +357,7 @@ private fun renduScoresRapides(): String = buildString {
 
 // ==================== Écran de fin ====================
 
-fun renduÉcranFin(): String {
+fun renduEcranFin(): String {
     val classement = partie.joueurs
         .mapIndexed { i, nom -> Triple(nom, partie.totalJoueur(i), i) }
         .sortedByDescending { it.second }
@@ -391,28 +391,28 @@ fun renduÉcranFin(): String {
 
 // ==================== Modal historique ====================
 
-private fun renduCelluleCoup(coup: ÉvénementCoup): String {
-    val estÎle = coup is CoupÎleCrânes || (coup is CoupCalculateur && coup.îleCrânes)
+private fun renduCelluleCoup(coup: EvenementCoup): String {
+    val estIle = coup is CoupIleCranes || (coup is CoupCalculateur && coup.ileCranes)
     val score = when (coup) {
         is CoupCalculateur -> coup.score
         is CoupManuel      -> coup.score
-        is CoupÎleCrânes   -> 0
+        is CoupIleCranes   -> 0
     }
     val cls = when {
-        estÎle     -> "skull-island-score"
+        estIle     -> "skull-island-score"
         score == 0 -> "zero-score"
         score < 0  -> "negative-score"
         else       -> ""
     }
     val affichage = when {
-        coup is CoupÎleCrânes                            -> "☠️ (${coup.pénalitéParAdversaire})"
-        coup is CoupCalculateur && coup.îleCrânes        -> "☠️ (${coup.pénalitéÎle})"
+        coup is CoupIleCranes                            -> "☠️ (${coup.penaliteParAdversaire})"
+        coup is CoupCalculateur && coup.ileCranes        -> "☠️ (${coup.penaliteIle})"
         else                                             -> score.toString()
     }
     val titre = when (coup) {
-        is CoupCalculateur -> escHtml(coup.détails)
-        is CoupManuel      -> "Saisie: ${coup.scoreEntré}${if (coup.multiplicateur > 1) " ×${coup.multiplicateur}" else ""}"
-        is CoupÎleCrânes   -> "☠️ ${coup.nombreCrânes} crânes → ${coup.pénalitéParAdversaire} pts/adversaire${if (coup.multiplicateur > 1) " ×${coup.multiplicateur}" else ""}"
+        is CoupCalculateur -> escHtml(coup.details)
+        is CoupManuel      -> "Saisie: ${coup.scoreEntre}${if (coup.multiplicateur > 1) " ×${coup.multiplicateur}" else ""}"
+        is CoupIleCranes   -> "☠️ ${coup.nombreCranes} crânes → ${coup.penaliteParAdversaire} pts/adversaire${if (coup.multiplicateur > 1) " ×${coup.multiplicateur}" else ""}"
     }
     return """<td class="$cls" title="$titre">$affichage</td>"""
 }
@@ -488,7 +488,7 @@ fun renduModalExport(): String {
 
 // ==================== Modal détail d'une partie ====================
 
-fun renduModalDétailPartie(p: PartieTerminée): String {
+fun renduModalDetailPartie(p: PartieTerminee): String {
     val date       = Date(p.horodatage.toDouble())
     val dateStr    = date.toLocaleDateString() + " " + date.toLocaleTimeString()
     val badgeMagie = if (p.magiquePirate) """<span class="badge-magie">🪄 Magie Pirate</span>""" else ""
@@ -514,7 +514,7 @@ fun renduModalDétailPartie(p: PartieTerminée): String {
     val joueursOrdre = p.classement.sortedBy { it.indexCouleur }
     val n            = joueursOrdre.size
 
-    val entêtes = joueursOrdre.joinToString("") { j ->
+    val entes = joueursOrdre.joinToString("") { j ->
         """<th style="color:${COULEURS_JOUEURS[j.indexCouleur]}">${escHtml(j.nom)}</th>"""
     }
 
@@ -547,7 +547,7 @@ fun renduModalDétailPartie(p: PartieTerminée): String {
             <div class="historique-meta" style="margin-bottom:12px">$dateStr · ${p.nombreManches} manches $badgeMagie</div>
             <div class="scoreboard-wrap">
                 <table class="scoreboard">
-                    <thead><tr><th></th>$entêtes</tr></thead>
+                    <thead><tr><th></th>$entes</tr></thead>
                     <tbody>$lignes</tbody>
                     <tfoot><tr><td class="round-label"><strong>Total</strong></td>$totaux</tr></tfoot>
                 </table>
@@ -586,7 +586,7 @@ fun renduModalStats(): String {
             <td class="round-label">$rang</td>
             <td style="text-align:left"><strong>${escHtml(s.nom)}</strong></td>
             <td class="${if (i == 0) "leading" else ""}">${s.victoires}</td>
-            <td style="color:var(--text-dim)">${s.partiesJouées}</td>
+            <td style="color:var(--text-dim)">${s.partiesJouees}</td>
             <td style="color:var(--text-dim)">${s.tauxVictoire}%</td>
         </tr>"""
     }.joinToString("")

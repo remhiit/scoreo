@@ -26,7 +26,7 @@ internal val formatJsonPretty = Json { prettyPrint = true; ignoreUnknownKeys = t
 @Serializable
 private data class SnapshotPartie(
     val joueurs:            List<String>,
-    val historique:         List<ÉvénementCoup>,
+    val historique:         List<EvenementCoup>,
     val index:              Int,
     val dernierTour:        Boolean,
     val numeroDernierTour:  Int,
@@ -50,8 +50,8 @@ fun sauvegarderPartie() {
         historique        = partie.historique.toList(),
         index             = partie.indexJoueurActuel,
         dernierTour       = partie.dernierTour,
-        numeroDernierTour = partie.numéroDernierTour,
-        commencee         = partie.commencée,
+        numeroDernierTour = partie.numeroDernierTour,
+        commencee         = partie.commencee,
         magiquePirate     = partie.magiquePirate,
     )
     localStorage.setItem(CLÉ_PARTIE, formatJson.encodeToString(snapshot))
@@ -69,8 +69,8 @@ fun restaurerPartie(): Boolean {
         partie.historique.addAll(snapshot.historique)
         partie.indexJoueurActuel = snapshot.index
         partie.dernierTour       = snapshot.dernierTour
-        partie.numéroDernierTour = snapshot.numeroDernierTour
-        partie.commencée         = snapshot.commencee
+        partie.numeroDernierTour = snapshot.numeroDernierTour
+        partie.commencee         = snapshot.commencee
         partie.magiquePirate     = snapshot.magiquePirate
         true
     } catch (e: Exception) {
@@ -80,7 +80,7 @@ fun restaurerPartie(): Boolean {
 }
 
 /** Supprime la sauvegarde de la partie en cours. */
-fun effacerPartieSauvegardée() {
+fun effacerPartieSauvegardee() {
     localStorage.removeItem(CLÉ_PARTIE)
 }
 
@@ -90,7 +90,7 @@ fun effacerPartieSauvegardée() {
  * Ajoute les joueurs de la partie en cours à la liste des joueurs connus
  * et sauvegarde cette liste triée alphabétiquement.
  */
-fun mettreÀJourJoueursConnus() {
+fun mettreAJourJoueursConnus() {
     val connus = obtenirJoueursConnus().toMutableSet()
     connus.addAll(partie.joueurs)
     localStorage.setItem(CLÉ_JOUEURS, formatJson.encodeToString(connus.sorted()))
@@ -123,12 +123,12 @@ internal fun genererUuid(): String =
  * Archive la partie courante dans l'historique (sans limite de nombre).
  * Doit être appelé juste avant de réinitialiser la partie.
  */
-fun archiverPartieTerminée() {
+fun archiverPartieTerminee() {
     val classement = partie.joueurs
-        .mapIndexed { i, nom -> RésultatJoueur(nom, partie.totalJoueur(i), i) }
+        .mapIndexed { i, nom -> ResultatJoueur(nom, partie.totalJoueur(i), i) }
         .sortedByDescending { it.score }
 
-    val entrée = PartieTerminée(
+    val entree = PartieTerminee(
         uuid          = genererUuid(),
         horodatage    = Date.now().toLong(),
         classement    = classement,
@@ -138,26 +138,26 @@ fun archiverPartieTerminée() {
     )
 
     val liste = obtenirHistoriqueParties().toMutableList()
-    liste.add(0, entrée)
+    liste.add(0, entree)
     localStorage.setItem(CLÉ_HISTORIQUE, formatJson.encodeToString(liste))
 }
 
 /**
  * Renvoie la liste des parties terminées, de la plus récente à la plus ancienne.
- * Assure la rétrocompatibilité : si une entrée n'a pas d'UUID, en génère un et persiste.
+ * Assure la rétrocompatibilité : si une entree n'a pas d'UUID, en génère un et persiste.
  */
-fun obtenirHistoriqueParties(): List<PartieTerminée> {
+fun obtenirHistoriqueParties(): List<PartieTerminee> {
     val json = localStorage.getItem(CLÉ_HISTORIQUE) ?: return emptyList()
     return try {
-        val parties = formatJson.decodeFromString<List<PartieTerminée>>(json)
-        var modifié = false
+        val parties = formatJson.decodeFromString<List<PartieTerminee>>(json)
+        var modifie = false
         val avecUuid = parties.map { p ->
             if (p.uuid.isEmpty()) {
-                modifié = true
+                modifie = true
                 p.copy(uuid = genererUuid())
             } else p
         }
-        if (modifié) localStorage.setItem(CLÉ_HISTORIQUE, formatJson.encodeToString(avecUuid))
+        if (modifie) localStorage.setItem(CLÉ_HISTORIQUE, formatJson.encodeToString(avecUuid))
         avecUuid
     } catch (e: Exception) {
         emptyList()
@@ -185,7 +185,7 @@ data class ExportPartie(
     val timestamp: Long,
     val rounds: Int,
     val ranking: List<ExportClassement>,
-    val details: List<ÉvénementCoup>,
+    val details: List<EvenementCoup>,
 )
 
 @Serializable
@@ -208,11 +208,11 @@ fun exporterHistorique() {
         return
     }
     val json      = formatJson.encodeToString(historique)
-    val compressé = compresserLZW(json)
+    val compresse = compresserLZW(json)
 
     // Passer les données via une propriété globale temporaire :
     // js() ne peut pas capturer de variables Kotlin, on bridge via window.
-    window.asDynamic().__sabords_export = compressé
+    window.asDynamic().__sabords_export = compresse
     try {
         js("""
             (function() {
@@ -235,7 +235,7 @@ fun exporterHistorique() {
 }
 
 /**
- * Exporte l'historique en JSON clair (non compressé) destiné à un système
+ * Exporte l'historique en JSON clair (non compresse) destiné à un système
  * de scores multi-jeux. Produit un fichier .json avec une enveloppe descriptive.
  */
 fun exporterHistoriqueJson() {
@@ -293,12 +293,12 @@ fun exporterHistoriqueJson() {
  */
 fun traiterImport(contenu: String) {
     try {
-        val json       = décompresserLZW(contenu)
-        val importées  = formatJson.decodeFromString<List<PartieTerminée>>(json)
+        val json       = decompresserLZW(contenu)
+        val importees  = formatJson.decodeFromString<List<PartieTerminee>>(json)
 
         val existant    = obtenirHistoriqueParties()
         val uuidsExistants = existant.map { it.uuid }.filter { it.isNotEmpty() }.toSet()
-        val nouvelles = importées.filter { p ->
+        val nouvelles = importees.filter { p ->
             p.uuid.isNotEmpty() && p.uuid !in uuidsExistants
                     || p.uuid.isEmpty() && p.horodatage !in existant.map { it.horodatage }
         }
@@ -309,15 +309,15 @@ fun traiterImport(contenu: String) {
         }
 
         // Fusionner et trier par date décroissante
-        val fusionné = (existant + nouvelles).sortedByDescending { it.horodatage }
-        localStorage.setItem(CLÉ_HISTORIQUE, formatJson.encodeToString(fusionné))
+        val fusionne = (existant + nouvelles).sortedByDescending { it.horodatage }
+        localStorage.setItem(CLÉ_HISTORIQUE, formatJson.encodeToString(fusionne))
 
         // Ajouter les joueurs inconnus
         val joueursConnus = obtenirJoueursConnus().toMutableSet()
         val avant         = joueursConnus.size
         for (p in nouvelles) p.classement.forEach { joueursConnus.add(it.nom) }
-        val joueursAjoutés = joueursConnus.size - avant
-        if (joueursAjoutés > 0) {
+        val joueursAjoutes = joueursConnus.size - avant
+        if (joueursAjoutes > 0) {
             localStorage.setItem(CLÉ_JOUEURS, formatJson.encodeToString(joueursConnus.sorted()))
         }
 
@@ -328,7 +328,7 @@ fun traiterImport(contenu: String) {
 
         val msg = buildString {
             append("${nouvelles.size} partie(s) importée(s).")
-            if (joueursAjoutés > 0) append("\n$joueursAjoutés nouveau(x) joueur(s) ajouté(s).")
+            if (joueursAjoutes > 0) append("\n$joueursAjoutes nouveau(x) joueur(s) ajouté(s).")
         }
         window.alert(msg)
     } catch (e: Exception) {

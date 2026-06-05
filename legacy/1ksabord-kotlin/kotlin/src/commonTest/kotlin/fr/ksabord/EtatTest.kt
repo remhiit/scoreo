@@ -11,22 +11,22 @@ class EtatTest {
 
     @BeforeTest
     fun setUp() {
-        partie.réinitialiser()
+        partie.reinitialiser()
     }
 
     private fun coup(indexJoueur: Int, score: Int): CoupManuel =
         CoupManuel(
             joueur         = partie.joueurs[indexJoueur],
-            scoreEntré     = score,
+            scoreEntre     = score,
             multiplicateur = 1,
             score          = score,
         )
 
-    private fun coupÎle(indexJoueur: Int, pénalité: Int, crânes: Int = (-pénalité / 100)): CoupÎleCrânes =
-        CoupÎleCrânes(
+    private fun coupIle(indexJoueur: Int, penalite: Int, cranes: Int = (-penalite / 100)): CoupIleCranes =
+        CoupIleCranes(
             joueur                = partie.joueurs[indexJoueur],
-            nombreCrânes          = crânes,
-            pénalitéParAdversaire = pénalité,
+            nombreCranes          = cranes,
+            penaliteParAdversaire = penalite,
             multiplicateur        = 1,
         )
 
@@ -52,7 +52,7 @@ class EtatTest {
         assertEquals(500, partie.totalJoueur(1))
     }
 
-    @Test fun totalJoueur_bloquéÀZéro() {
+    @Test fun totalJoueur_bloqueAZero() {
         partie.joueurs.add("Alice")
         partie.historique.add(coup(0, -500))
         assertEquals(0, partie.totalJoueur(0))
@@ -75,35 +75,35 @@ class EtatTest {
 
     // ===== Île de la Tête de Mort (îleCrânes) =====
 
-    @Test fun île_pénalitéAppliquéeAuxAutres() {
+    @Test fun ile_penaliteAppliqueeAuxAutres() {
         partie.joueurs.add("Alice"); partie.joueurs.add("Bob")
         partie.historique.add(coup(0, 200))                            // Alice +200
         partie.historique.add(coup(1, 100))                            // Bob +100
-        partie.historique.add(coupÎle(0, -300))                        // Alice île → -300 aux autres
+        partie.historique.add(coupIle(0, -300))                        // Alice île → -300 aux autres
         // Bob : 100 + (-300) = -200 → clamp → 0
         assertEquals(0,   partie.totalJoueur(1))
-        // Alice : 200 (pas de pénalité sur soi-même)
+        // Alice : 200 (pas de penalite sur soi-même)
         assertEquals(200, partie.totalJoueur(0))
     }
 
-    @Test fun île_joueurNePerdPasLuiMême() {
+    @Test fun ile_joueurNePerdPasLuiMeme() {
         partie.joueurs.add("Alice"); partie.joueurs.add("Bob")
-        partie.historique.add(coupÎle(1, -400))  // Bob île
+        partie.historique.add(coupIle(1, -400))  // Bob île
         assertEquals(0, partie.totalJoueur(1))   // Bob : score île = 0
         assertEquals(0, partie.totalJoueur(0))   // Alice : 0 + (-400) → clamp
     }
 
-    @Test fun île_pénalitéRespecteLeCamp() {
+    @Test fun ile_penaliteRespecteLeCamp() {
         partie.joueurs.add("Alice"); partie.joueurs.add("Bob")
         partie.historique.add(coup(0, 1000))
-        partie.historique.add(coupÎle(1, -600))  // Bob île (-600)
+        partie.historique.add(coupIle(1, -600))  // Bob île (-600)
         assertEquals(400, partie.totalJoueur(0))  // 1000 - 600 = 400
     }
 
-    @Test fun plusieursÎles_cumulatif() {
+    @Test fun plusieursIles_cumulatif() {
         partie.joueurs.add("Alice"); partie.joueurs.add("Bob")
-        partie.historique.add(coupÎle(0, -300))  // Alice île
-        partie.historique.add(coupÎle(1, -500))  // Bob île
+        partie.historique.add(coupIle(0, -300))  // Alice île
+        partie.historique.add(coupIle(1, -500))  // Bob île
         assertEquals(0, partie.totalJoueur(0))
         assertEquals(0, partie.totalJoueur(1))
     }
@@ -201,7 +201,7 @@ class EtatTest {
         assertEquals(1200, partie.totalMax())
     }
 
-    @Test fun totalMax_avecNégatifsCampés() {
+    @Test fun totalMax_avecNegatifsCampes() {
         partie.joueurs.add("Alice"); partie.joueurs.add("Bob")
         partie.historique.add(coup(0, -500))  // campé à 0
         partie.historique.add(coup(1, 200))
@@ -210,25 +210,25 @@ class EtatTest {
 
     // ===== MAGIE PIRATE =====
 
-    @Test fun terminerParMagiePirate_estTerminéeImmédiatement() {
+    @Test fun terminerParMagiePirate_estTermineeImmediatement() {
         partie.joueurs.add("Alice"); partie.joueurs.add("Bob")
         partie.commencer()
         // Alice joue et déclenche la Magie Pirate sans avoir complété la manche
         partie.terminerParMagiePirate()
-        assertTrue(partie.estTerminée())
+        assertTrue(partie.estTerminee())
     }
 
-    @Test fun magiquePirate_faux_parDéfaut() {
+    @Test fun magiquePirate_faux_parDefaut() {
         assertFalse(partie.magiquePirate)
     }
 
-    @Test fun réinitialiser_réinitialise_magiquePirate() {
+    @Test fun reinitialiser_reinitialise_magiquePirate() {
         partie.terminerParMagiePirate()
-        partie.réinitialiser()
+        partie.reinitialiser()
         assertFalse(partie.magiquePirate)
     }
 
-    @Test fun annulerDernier_réinitialise_magiquePirate() {
+    @Test fun annulerDernier_reinitialise_magiquePirate() {
         partie.joueurs.add("Alice"); partie.joueurs.add("Bob")
         partie.commencer()
         partie.ajouterCoup(coup(0, 5400))

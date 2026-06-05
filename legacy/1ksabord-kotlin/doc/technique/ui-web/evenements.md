@@ -49,7 +49,7 @@ Chaque fonction dans `Actions.kt` correspond à une valeur de
 | `démarrer` | `démarrerPartie()` | Démarre la partie |
 | `nouvelle-partie` | `confirmerNouvellePartie()` | Nouvelle partie avec confirmation |
 | `changer-dé` | `changerDé(type, delta)` | Modifie un compteur de dés |
-| `maj-calcul` | `mettreÀJourCalcul()` | Recalcule le score affiché |
+| `maj-calcul` | `mettreAJourCalcul()` | Recalcule le score affiché |
 | `changer-onglet` | `changerOnglet(onglet)` | Bascule entre onglets calc/manual |
 | `soumettre-calcul` | `soumettreScoreCalcul()` | Valide le score calculé |
 | `soumettre-manuel` | `soumettreScoreManuel()` | Valide le score saisi manuellement |
@@ -58,7 +58,7 @@ Chaque fonction dans `Actions.kt` correspond à une valeur de
 | `effacer-mult` | `effacerMultiplicateur()` | Remet le multiplicateur à 1 |
 | `île-rapide` | `îleRapide(crânes)` | Bouton rapide pour l'Île |
 | `annuler` | `annulerDernier()` | Annule le dernier coup |
-| `basculer-thème` | `basculerThème()` | Change thème sombre/lumineux |
+| `basculer-thème` | `basculerTheme()` | Change thème sombre/lumineux |
 | `afficher-stats` | `afficherStats()` | Ouvre la modale stats |
 | `afficher-historique` | `afficherHistorique()` | Ouvre la modale historique |
 | `show-export-modal` | `afficherModalExport()` | Ouvre la modale de choix d'export |

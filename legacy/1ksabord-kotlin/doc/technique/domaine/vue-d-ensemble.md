@@ -10,17 +10,17 @@ aucune dépendance vers une plateforme (DOM, Android, etc.).
 |---|---|
 | `Constantes.kt` | Définitions des types de dés, cartes, bonus, couleurs |
 | `LancerDes.kt` | Objet valeur immutable représentant un jet de dés |
-| `Modeles.kt` | Tour, RésultatScore, ÉvénementCoup (event sourcing) |
+| `Modeles.kt` | Tour, ResultatScore, EvenementCoup (event sourcing) |
 | `CalculateurScore.kt` | Pure fonction de calcul de score |
 | `Partie.kt` | Agrégat racine + singleton mutable |
 
 ## Principes
 
-- **Immutabilité** — `LancerDés`, `Tour`, `RésultatScore` sont
+- **Immutabilité** — `LancerDes`, `Tour`, `ResultatScore` sont
   immuables (data classes avec `copy()`)
 - **Pureté** — `calculerScore()` n'a aucun effet de bord, aucun
   état global
-- **Event sourcing** — chaque action de jeu est un `ÉvénementCoup`
+- **Event sourcing** — chaque action de jeu est un `EvenementCoup`
   stocké dans l'historique
 - **Sérialisation** — tous les objets métier sont `@Serializable`
   (kotlinx-serialization) pour la persistance

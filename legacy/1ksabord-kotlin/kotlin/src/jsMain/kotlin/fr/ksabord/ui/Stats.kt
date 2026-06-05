@@ -6,14 +6,14 @@ import fr.ksabord.domaine.*
 data class StatsJoueur(
     val nom:           String,
     val victoires:     Int,
-    val partiesJouées: Int,
+    val partiesJouees: Int,
 ) {
     val tauxVictoire: Int get() =
-        if (partiesJouées == 0) 0 else victoires * 100 / partiesJouées
+        if (partiesJouees == 0) 0 else victoires * 100 / partiesJouees
 }
 
 /** Bilan face-à-face entre deux joueurs calculé depuis l'historique des parties. */
-data class StatsFaceÀFace(
+data class StatsFaceAFace(
     val joueur1:          String,
     val joueur2:          String,
     val victoiresJoueur1: Int,
@@ -39,26 +39,26 @@ fun calculerStatsJoueurs(): List<StatsJoueur> {
 }
 
 /** Calcule le bilan face-à-face entre deux joueurs. */
-fun calculerFaceÀFace(nom1: String, nom2: String): StatsFaceÀFace {
+fun calculerFaceAFace(nom1: String, nom2: String): StatsFaceAFace {
     val historique = obtenirHistoriqueParties()
     val ensemble   = historique.filter { p ->
         p.classement.any { j -> j.nom == nom1 } && p.classement.any { j -> j.nom == nom2 }
     }
     val v1 = ensemble.count { p -> p.classement.firstOrNull()?.nom == nom1 }
     val v2 = ensemble.count { p -> p.classement.firstOrNull()?.nom == nom2 }
-    return StatsFaceÀFace(nom1, nom2, v1, v2)
+    return StatsFaceAFace(nom1, nom2, v1, v2)
 }
 
 /**
  * Calcule les bilans face-à-face pour toutes les paires de joueurs
  * ayant joué au moins une partie ensemble.
  */
-fun calculerToutesPaires(): List<StatsFaceÀFace> {
+fun calculerToutesPaires(): List<StatsFaceAFace> {
     val joueurs = calculerStatsJoueurs().map { it.nom }
-    val paires  = mutableListOf<StatsFaceÀFace>()
+    val paires  = mutableListOf<StatsFaceAFace>()
     for (i in joueurs.indices) {
         for (j in i + 1 until joueurs.size) {
-            val faf = calculerFaceÀFace(joueurs[i], joueurs[j])
+            val faf = calculerFaceAFace(joueurs[i], joueurs[j])
             if (faf.partiesEnsemble > 0) paires.add(faf)
         }
     }

@@ -43,25 +43,25 @@ fun supprimerJoueurConnu(nom: String) {
     render()
 }
 
-fun démarrerPartie() {
+fun demarrerPartie() {
     if (partie.joueurs.size < 2) return
     partie.commencer()
-    mettreÀJourJoueursConnus()
-    réinitialiserTour()
+    mettreAJourJoueursConnus()
+    reinitialiserTour()
     sauvegarderPartie()
     render()
 }
 
-fun changerDé(type: String, delta: Int) {
-    val actuel = dés.valeur(type)
+fun changerDe(type: String, delta: Int) {
+    val actuel = des.valeur(type)
     val nouvel = actuel + delta
-    val total  = dés.total + delta
+    val total  = des.total + delta
     if (nouvel < 0 || nouvel > 8 || total > 8 || total < 0) return
-    dés = dés.avecValeur(type, nouvel)
-    mettreÀJourCalcul()
+    des = des.avecValeur(type, nouvel)
+    mettreAJourCalcul()
 }
 
-fun mettreÀJourCalcul() {
+fun mettreAJourCalcul() {
     render()
     if (tabActif != "calc") changerOnglet(tabActif)
 }
@@ -81,20 +81,20 @@ fun changerOnglet(onglet: String) {
 
 fun soumettreScoreCalcul() {
     val carte    = carteActuelle()
-    val résultat = calculerScore(dés, carte)
-    if (résultat.magiquePirate) {
+    val resultat = calculerScore(des, carte)
+    if (resultat.magiquePirate) {
         partie.terminerParMagiePirate()
     }
     enregistrerCoup(CoupCalculateur(
         joueur        = partie.joueurs[partie.indexJoueurActuel],
         carte         = carte,
-        dés           = dés,
-        score         = résultat.score,
-        détails       = résultat.détails,
-        bust          = résultat.bust,
-        îleCrânes     = résultat.îleCrânes,
-        pénalitéÎle   = résultat.pénalitéÎle,
-        magiquePirate = résultat.magiquePirate,
+        des           = des,
+        score         = resultat.score,
+        details       = resultat.details,
+        bust          = resultat.bust,
+        ileCranes     = resultat.ileCranes,
+        penaliteIle   = resultat.penaliteIle,
+        magiquePirate = resultat.magiquePirate,
     ))
 }
 
@@ -104,7 +104,7 @@ fun soumettreScoreManuel() {
     val multiplicateur = multiplicateurManuel
     enregistrerCoup(CoupManuel(
         joueur         = partie.joueurs[partie.indexJoueurActuel],
-        scoreEntré     = score,
+        scoreEntre     = score,
         multiplicateur = multiplicateur,
         score          = score * multiplicateur,
     ))
@@ -129,32 +129,32 @@ fun effacerMultiplicateur() {
     badge?.style?.display = "none"
 }
 
-fun réinitialiserScoreManuel() {
+fun reinitialiserScoreManuel() {
     (document.getElementById("manual-score-input") as? HTMLInputElement)?.value = "0"
     effacerMultiplicateur()
 }
 
-fun îleRapide(crânes: Int) {
+fun ileRapide(cranes: Int) {
     val multiplicateur        = multiplicateurManuel
-    val pénalitéParAdversaire = -(crânes * 100) * multiplicateur
-    enregistrerCoup(CoupÎleCrânes(
+    val penaliteParAdversaire = -(cranes * 100) * multiplicateur
+    enregistrerCoup(CoupIleCranes(
         joueur                = partie.joueurs[partie.indexJoueurActuel],
-        nombreCrânes          = crânes,
-        pénalitéParAdversaire = pénalitéParAdversaire,
+        nombreCranes          = cranes,
+        penaliteParAdversaire = penaliteParAdversaire,
         multiplicateur        = multiplicateur,
     ))
     multiplicateurManuel = 1
 }
 
-fun enregistrerCoup(coup: ÉvénementCoup) {
+fun enregistrerCoup(coup: EvenementCoup) {
     partie.ajouterCoup(coup)
-    if (partie.estTerminée()) {
-        archiverPartieTerminée()
-        effacerPartieSauvegardée()
+    if (partie.estTerminee()) {
+        archiverPartieTerminee()
+        effacerPartieSauvegardee()
     } else {
         sauvegarderPartie()
     }
-    réinitialiserTour()
+    reinitialiserTour()
     render()
 }
 
@@ -162,7 +162,7 @@ fun annulerDernier() {
     if (partie.historique.isEmpty()) return
     partie.annulerDernier()
     sauvegarderPartie()
-    réinitialiserTour()
+    reinitialiserTour()
     render()
 }
 
@@ -186,22 +186,22 @@ fun confirmerNouvellePartie() {
     })
 }
 
-fun réinitialiserPartie() {
-    partie.réinitialiser()
-    effacerPartieSauvegardée()
+fun reinitialiserPartie() {
+    partie.reinitialiser()
+    effacerPartieSauvegardee()
     tabActif = "calc"
-    réinitialiserTour()
+    reinitialiserTour()
     document.querySelectorAll(".modal-overlay").asList()
         .forEach { (it as? HTMLElement)?.remove() }
     render()
 }
 
-fun basculerThème() {
+fun basculerTheme() {
     val html      = document.documentElement ?: return
     val estClair  = html.getAttribute("data-theme") == "light"
-    val nouveauThème = if (estClair) "dark" else "light"
-    html.setAttribute("data-theme", nouveauThème)
-    localStorage.setItem("theme", nouveauThème)
+    val nouveauTheme = if (estClair) "dark" else "light"
+    html.setAttribute("data-theme", nouveauTheme)
+    localStorage.setItem("theme", nouveauTheme)
     render()
 }
 
@@ -267,11 +267,11 @@ fun afficherHistorique() {
     })
 }
 
-fun afficherDétailPartie(index: Int) {
+fun afficherDetailPartie(index: Int) {
     val p = obtenirHistoriqueParties().getOrNull(index) ?: return
     val overlay = document.createElement("div").apply {
         className = "modal-overlay"
-        innerHTML = renduModalDétailPartie(p)
+        innerHTML = renduModalDetailPartie(p)
     }
     document.body?.appendChild(overlay)
     overlay.addEventListener("click", { e ->

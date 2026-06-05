@@ -7,11 +7,11 @@ package fr.ksabord.domaine
  */
 class Partie {
     val joueurs              = mutableListOf<String>()
-    val historique           = mutableListOf<ÉvénementCoup>()
+    val historique           = mutableListOf<EvenementCoup>()
     var indexJoueurActuel: Int = 0
     var dernierTour: Boolean   = false
-    var numéroDernierTour: Int = -1
-    var commencée: Boolean     = false
+    var numeroDernierTour: Int = -1
+    var commencee: Boolean     = false
     var magiquePirate: Boolean = false
 
     // ==================== Requêtes ====================
@@ -28,35 +28,35 @@ class Partie {
 
     fun totalMax(): Int = joueurs.indices.maxOfOrNull { totalJoueur(it) } ?: 0
 
-    fun manches(): List<List<ÉvénementCoup>> {
-        val résultat = mutableListOf<List<ÉvénementCoup>>()
+    fun manches(): List<List<EvenementCoup>> {
+        val resultat = mutableListOf<List<EvenementCoup>>()
         val n = joueurs.size
         var i = 0
         while (i < historique.size) {
-            résultat.add(historique.subList(i, minOf(i + n, historique.size)).toList())
+            resultat.add(historique.subList(i, minOf(i + n, historique.size)).toList())
             i += n
         }
-        return résultat
+        return resultat
     }
 
     // ==================== Commandes ====================
 
     fun commencer() {
-        commencée = true
+        commencee = true
         indexJoueurActuel = 0
         historique.clear()
         dernierTour = false
-        numéroDernierTour = -1
+        numeroDernierTour = -1
         magiquePirate = false
     }
 
-    fun ajouterCoup(coup: ÉvénementCoup) {
+    fun ajouterCoup(coup: EvenementCoup) {
         historique.add(coup)
         if (!dernierTour) {
             for (nom in joueurs) {
                 if (totalJoueurParNom(nom) >= 6000) {
                     dernierTour = true
-                    numéroDernierTour = mancheActuelle()
+                    numeroDernierTour = mancheActuelle()
                     break
                 }
             }
@@ -69,30 +69,30 @@ class Partie {
         historique.removeAt(historique.lastIndex)
         indexJoueurActuel = if (indexJoueurActuel == 0) joueurs.size - 1 else indexJoueurActuel - 1
         dernierTour = false
-        numéroDernierTour = -1
+        numeroDernierTour = -1
         magiquePirate = false
         for (h in historique.indices) {
             if (!dernierTour) {
-                val dépasseSeuil = joueurs.any { nom ->
+                val depasseSeuil = joueurs.any { nom ->
                     var t = 0
                     for (j in 0..h) t = maxOf(0, t + historique[j].contributionPour(nom))
                     t >= 6000
                 }
-                if (dépasseSeuil) {
+                if (depasseSeuil) {
                     dernierTour = true
-                    numéroDernierTour = (h + 1) / joueurs.size
+                    numeroDernierTour = (h + 1) / joueurs.size
                 }
             }
         }
     }
 
-    fun réinitialiser() {
+    fun reinitialiser() {
         joueurs.clear()
         historique.clear()
         indexJoueurActuel = 0
         dernierTour = false
-        numéroDernierTour = -1
-        commencée = false
+        numeroDernierTour = -1
+        commencee = false
         magiquePirate = false
     }
 
@@ -102,10 +102,10 @@ class Partie {
     }
 
     /** Vrai quand toutes les manches du dernier tour ont été jouées, ou si Magie Pirate. */
-    fun estTerminée(): Boolean {
+    fun estTerminee(): Boolean {
         if (magiquePirate) return true
         if (!dernierTour || joueurs.isEmpty()) return false
-        return mancheActuelle() > numéroDernierTour && historique.size % joueurs.size == 0
+        return mancheActuelle() > numeroDernierTour && historique.size % joueurs.size == 0
     }
 }
 

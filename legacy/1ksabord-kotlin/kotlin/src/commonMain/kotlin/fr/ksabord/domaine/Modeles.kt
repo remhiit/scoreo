@@ -4,7 +4,7 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.SerialName
 
 @Serializable
-sealed class ÉvénementCoup {
+sealed class EvenementCoup {
     abstract val joueur: String
 
     /**
@@ -12,9 +12,9 @@ sealed class ÉvénementCoup {
      * Tient compte des pénalités île appliquées aux adversaires.
      */
     fun contributionPour(nom: String): Int = when (this) {
-        is CoupCalculateur -> if (joueur == nom) score else if (îleCrânes) pénalitéÎle else 0
+        is CoupCalculateur -> if (joueur == nom) score else if (ileCranes) penaliteIle else 0
         is CoupManuel      -> if (joueur == nom) score else 0
-        is CoupÎleCrânes   -> if (joueur != nom) pénalitéParAdversaire else 0
+        is CoupIleCranes   -> if (joueur != nom) penaliteParAdversaire else 0
     }
 }
 
@@ -23,47 +23,47 @@ sealed class ÉvénementCoup {
 data class CoupCalculateur(
     override val joueur:        String,
     val carte:                  String,
-    val dés:                    LancerDés,
+    val des:                    LancerDes,
     val score:                  Int,
-    val détails:                String,
+    val details:                String,
     val bust:                   Boolean,
-    val îleCrânes:              Boolean,
-    val pénalitéÎle:            Int,       // négatif, par adversaire ; 0 sinon
+    val ileCranes:              Boolean,
+    val penaliteIle:            Int,       // négatif, par adversaire ; 0 sinon
     val magiquePirate:          Boolean,
-) : ÉvénementCoup()
+) : EvenementCoup()
 
 @Serializable
 @SerialName("manuel")
 data class CoupManuel(
     override val joueur:        String,
-    val scoreEntré:             Int,       // valeur saisie avant multiplicateur
+    val scoreEntre:             Int,       // valeur saisie avant multiplicateur
     val multiplicateur:         Int,       // 1 ou 2
-    val score:                  Int,       // scoreEntré × multiplicateur
-) : ÉvénementCoup()
+    val score:                  Int,       // scoreEntre × multiplicateur
+) : EvenementCoup()
 
 @Serializable
 @SerialName("ile")
-data class CoupÎleCrânes(
+data class CoupIleCranes(
     override val joueur:                String,
-    val nombreCrânes:                   Int,
-    val pénalitéParAdversaire:          Int,   // négatif
+    val nombreCranes:                   Int,
+    val penaliteParAdversaire:          Int,   // négatif
     val multiplicateur:                 Int,
-) : ÉvénementCoup()
+) : EvenementCoup()
 
 /** Objet valeur renvoyé par le service CalculateurScore. */
-data class RésultatScore(
+data class ResultatScore(
     val score:         Int,
-    val détails:       String,
+    val details:       String,
     val bust:          Boolean,
-    val îleCrânes:     Boolean = false,
-    val nombreCrânes:  Int     = 0,
-    val pénalitéÎle:   Int     = 0,
+    val ileCranes:     Boolean = false,
+    val nombreCranes:  Int     = 0,
+    val penaliteIle:   Int     = 0,
     val magiquePirate: Boolean = false,
 )
 
 /** Score final d'un joueur à l'issue d'une partie. */
 @Serializable
-data class RésultatJoueur(
+data class ResultatJoueur(
     val nom:         String,
     val score:       Int,
     val indexCouleur: Int,
@@ -71,11 +71,11 @@ data class RésultatJoueur(
 
 /** Instantané d'une partie terminée, conservé dans l'historique. */
 @Serializable
-data class PartieTerminée(
+data class PartieTerminee(
     val uuid:           String             = "",  // identifiant unique (crypto.randomUUID en JS)
     val horodatage:     Long,
-    val classement:     List<RésultatJoueur>,  // trié par score décroissant
+    val classement:     List<ResultatJoueur>,  // trié par score décroissant
     val nombreManches:  Int,
     val magiquePirate:  Boolean            = false,
-    val coups:          List<ÉvénementCoup> = emptyList(),  // historique complet (event sourcing)
+    val coups:          List<EvenementCoup> = emptyList(),  // historique complet (event sourcing)
 )
