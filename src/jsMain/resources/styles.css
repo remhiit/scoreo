@@ -648,3 +648,82 @@ h2 { font-size: 18px; font-weight: 500; margin-bottom: 12px; }
     justify-content: flex-end;
     margin-top: 20px;
 }
+
+/* ── Import screen ── */
+
+.import-zone {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    padding: 48px 24px;
+    border: 2px dashed var(--outline);
+    border-radius: var(--radius);
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+}
+
+.import-zone:hover {
+    border-color: var(--primary);
+    background: var(--primary-light);
+}
+
+.import-zone input[type="file"] {
+    margin-top: 8px;
+}
+
+.import-zone-icon {
+    font-size: 40px;
+}
+
+.import-zone-text {
+    font-size: 15px;
+    color: var(--on-surface-variant);
+}
+
+.import-preview {
+    background: var(--surface-variant);
+    border-radius: var(--radius);
+    padding: 16px;
+    margin-bottom: 16px;
+}
+
+.import-preview-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 4px 0;
+    font-size: 15px;
+}
+
+.import-preview-label {
+    color: var(--on-surface-variant);
+}
+
+.import-preview-value {
+    font-weight: 600;
+}
+
+.import-result {
+    background: var(--surface-variant);
+    border-radius: var(--radius);
+    padding: 16px;
+    margin-bottom: 16px;
+}
+
+.import-result-line {
+    font-size: 15px;
+    padding: 4px 0;
+}
+
+.import-success { color: #2e7d32; font-weight: 600; }
+.import-warn { color: #e65100; font-weight: 600; }
+.import-error { color: #c62828; font-weight: 600; }
+
+.import-failed-id {
+    font-size: 12px;
+    font-weight: 400;
+    padding-left: 20px;
+    color: var(--on-surface-variant);
+    font-family: monospace;
+}

@@ -57,7 +57,21 @@ Top header bar present on all screens:
 | Item | Description |
 |---|---|
 | 📋 History | Full match history |
+| 📥 Import | Import matches from a JSON file |
 | 👤 Players | Manage player profiles |
 | 🎮 Games | Manage game types |
 
 No bottom navigation bar.
+
+## Import
+
+- Accessible via **📥 Import** in the burger menu (☰)
+- Upload a `.json` file conforming to the schema at `src/ressource/schemas/import.json-schema`
+- **Preview** step shows game name and total matches found
+- **Execute** imports match-by-match:
+  - ✅ **Imported** — saved successfully
+  - ⚠️ **Skipped** — duplicate match ID already exists
+  - ❌ **Failed** — round detail scores don't sum to the ranking total
+- Unknown game types are auto-created with `winCondition = MANUAL`
+- Unknown players are auto-created
+- After execution, player stats refresh and navigates back to Home

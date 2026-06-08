@@ -63,6 +63,7 @@ src/
       creatematch/ # CreateMatchHandler, CreateMatchState, CreateMatchIntent
       scoredetail/ # ScoreDetailHandler, ScoreDetailState, ScoreDetailIntent
       history/     # HistoryHandler, MatchDisplay
+      import/      # ImportHandler, ImportState, ImportIntent
   jsMain/kotlin/com/scoreo/
     App.kt          # Root composable: HTML layout + 3-tab navigation bar
     Main.kt         # Entry point: renderComposable
@@ -73,6 +74,7 @@ src/
       creatematch/  # CreateMatchScreen — game & player selection
       scoredetail/  # ScoreDetailScreen — multi-round score table
       history/      # HistoryScreen
+      import/       # ImportScreen — file upload, preview, execution, result
       setup/        # SetupScreen — merged Players + Games management with tabs
   jsMain/resources/
     index.html      # PWA shell (div#root entry point)
@@ -90,6 +92,7 @@ Single `styles.css` file with CSS custom properties (design tokens), a fixed bot
 ## Persistence
 
 - **Current**: localStorage via `LocalStorage*Repository` (`scoreo_players`, `scoreo_gametypes`, `scoreo_matches` keys)
+- **Import**: `ImportMatchesUseCase` reads the same repositories and writes through `MatchRepository.save()`
 - **Future**: optional sync to a remote backend (additional infrastructure adapter)
 
 ## CI/CD & Deployment

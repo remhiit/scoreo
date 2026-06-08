@@ -12,6 +12,7 @@ import com.scoreo.application.GetGameTypesUseCase
 import com.scoreo.application.GetMatchesUseCase
 import com.scoreo.application.GetPlayerStatsUseCase
 import com.scoreo.application.GetPlayersUseCase
+import com.scoreo.application.ImportMatchesUseCase
 import com.scoreo.domain.port.GameTypeRepository
 import com.scoreo.domain.port.MatchRepository
 import com.scoreo.domain.port.PlayerRepository
@@ -25,6 +26,8 @@ import com.scoreo.ui.navigation.AppNavigator
 import com.scoreo.ui.navigation.Screen
 import com.scoreo.ui.navigation.SetupSection
 import com.scoreo.ui.player.PlayerHandler
+import com.scoreo.ui.import.ImportHandler
+import com.scoreo.ui.import.ImportScreen
 import com.scoreo.ui.scoredetail.ScoreDetailHandler
 import com.scoreo.ui.scoredetail.ScoreDetailScreen
 import com.scoreo.ui.setup.SetupScreen
@@ -69,6 +72,7 @@ fun App(
         is Screen.Home -> "Scoreo"
         is Screen.CreateMatch -> "New Match"
         is Screen.History -> "History"
+        is Screen.Import -> "Import"
         is Screen.Setup -> "Setup"
         is Screen.ScoreDetail -> "Score Detail"
     }
@@ -120,6 +124,25 @@ fun App(
                 }
                 HistoryScreen(historyHandler)
             }
+            is Screen.Import -> {
+                val importHandler = remember {
+                    ImportHandler(
+                        importUseCase = ImportMatchesUseCase(
+                            playerRepository = playerRepository,
+                            gameTypeRepository = gameTypeRepository,
+                            matchRepository = matchRepository,
+                            currentDate = currentDate,
+                        ),
+                    )
+                }
+                ImportScreen(
+                    handler = importHandler,
+                    onDone = {
+                        playerHandler.refresh()
+                        navigator.navigate(Screen.Home)
+                    },
+                )
+            }
             is Screen.Setup -> SetupScreen(
                 playerHandler = playerHandler,
                 gameTypeHandler = gameTypeHandler,
@@ -166,6 +189,10 @@ fun App(
             BurgerItem("📋", "History") {
                 burgerOpen = false
                 navigator.navigate(Screen.History)
+            }
+            BurgerItem("📥", "Import") {
+                burgerOpen = false
+                navigator.navigate(Screen.Import)
             }
             BurgerItem("👤", "Players") {
                 burgerOpen = false
