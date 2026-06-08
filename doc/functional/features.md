@@ -66,7 +66,10 @@ No bottom navigation bar.
 ## Import
 
 - Accessible via **📥 Import** in the burger menu (☰)
-- Upload a `.json` file conforming to the schema at `src/ressource/schemas/import.json-schema`
+- Upload a `.json` file conforming to the schema at `src/ressource/schemas/import/v1.1.json-schema`
+- The `version` field is **required** and must match `1.x` (e.g. `"1.0"`, `"1.1"`)
+- Version `1.0`: initial format (no `winCondition`)
+- Version `1.1`: adds optional `winCondition` field
 - **Preview** step shows game name and total matches found
 - **Execute** imports match-by-match:
   - ✅ **Imported** — saved successfully

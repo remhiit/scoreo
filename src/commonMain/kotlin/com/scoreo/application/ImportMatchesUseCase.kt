@@ -10,9 +10,27 @@ import com.scoreo.domain.port.MatchRepository
 import com.scoreo.domain.port.PlayerRepository
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
+
+data class SemanticVersion(val major: Int, val minor: Int) {
+    companion object {
+        fun parse(s: String): SemanticVersion {
+            val parts = s.split(".")
+            require(parts.size == 2) { "Invalid version format: $s (expected major.minor)" }
+            return SemanticVersion(
+                major = parts[0].toIntOrNull() ?: error("Invalid major version: $s"),
+                minor = parts[1].toIntOrNull() ?: error("Invalid minor version: $s"),
+            )
+        }
+    }
+}
+
+object ImportVersions {
+    val CURRENT = SemanticVersion(1, 1)
+}
 
 data class ImportResult(
     val imported: Int = 0,
@@ -38,7 +56,7 @@ class ImportMatchesUseCase(
 
     fun execute(jsonString: String): Result<ImportResult> = runCatching {
         val root = parseRoot(jsonString)
-        val gameType = resolveGameType(root.game)
+        val gameType = resolveGameType(root.game, root.winCondition)
         val existingPlayers = playerRepository.getAll().toMutableList()
         var imported = 0
         val skipped = mutableListOf<String>()
@@ -97,14 +115,27 @@ class ImportMatchesUseCase(
 
     private fun parseRoot(jsonString: String): ImportRoot {
         val element = kotlinx.serialization.json.Json.parseToJsonElement(jsonString).jsonObject
+        val rawVersion = (element["version"] as? JsonPrimitive)?.content
+            ?: error("Missing 'version' field")
+        val version = SemanticVersion.parse(rawVersion)
+        return when (version.major) {
+            1 -> parseV1(element, version)
+            else -> error("Unsupported version $rawVersion, expected ${ImportVersions.CURRENT.major}.x")
+        }
+    }
+
+    private fun parseV1(element: JsonObject, version: SemanticVersion): ImportRoot {
         val game = (element["game"] as? JsonPrimitive)?.content
             ?: error("Missing 'game' field")
         val games = (element["games"] as? JsonArray)
             ?: error("Missing 'games' array")
         if (games.isEmpty()) error("'games' array is empty")
+        val winCondition = (element["winCondition"] as? JsonPrimitive)?.content
         return ImportRoot(
             game = game,
             games = games.map { parseGame(it) },
+            version = version,
+            winCondition = winCondition,
         )
     }
 
@@ -149,10 +180,11 @@ class ImportMatchesUseCase(
         return ImportRoundScore(name = name, score = score)
     }
 
-    private fun resolveGameType(name: String): GameType {
+    private fun resolveGameType(name: String, winCondition: String? = null): GameType {
         val existing = gameTypeRepository.getAll().find { it.name == name }
         if (existing != null) return existing
-        val gameType = GameType(id = IdGenerator.newId(), name = name, winCondition = WinCondition.MANUAL)
+        val wc = winCondition?.let { WinCondition.valueOf(it) } ?: WinCondition.MANUAL
+        val gameType = GameType(id = IdGenerator.newId(), name = name, winCondition = wc)
         gameTypeRepository.save(gameType)
         return gameType
     }
@@ -171,8 +203,10 @@ class ImportMatchesUseCase(
 }
 
 private data class ImportRoot(
+    val version: SemanticVersion,
     val game: String,
     val games: List<ImportGame>,
+    val winCondition: String? = null,
 )
 
 private data class ImportGame(
