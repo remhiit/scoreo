@@ -83,20 +83,26 @@ pretty-print, destiné à des systèmes de gestion de scores multi-jeux.
 
 ```json
 {
+  "version": "1.1",
   "game": "1000 Sabords",
   "exportedAt": 1717500000000,
   "gameCount": 2,
+  "winCondition": "HIGHEST_SCORE",
   "games": [
     {
       "id": "a1b2c3d4-...",
-      "timestamp": 1717500000000,
-      "rounds": 8,
+      "date": 1717500000000,
       "ranking": [
         { "name": "Alice", "score": 7200, "rank": 1 },
-        { "name": "Bob", "score": 5400, "rank": 2 }
+        { "name": "Bob",   "score": 5400, "rank": 2 }
       ],
       "details": [
-        { "type": "calculateur", "joueur": "Alice", "score": 1200, ... }
+        {
+          "scores": [
+            { "name": "Alice", "score": 1200 },
+            { "name": "Bob",   "score": 800 }
+          ]
+        }
       ]
     }
   ]
@@ -107,9 +113,11 @@ Champs de l'enveloppe :
 
 | Champ | Type | Description |
 |---|---|---|
+| `version` | String | Version du format d'export (`"1.1"`) |
 | `game` | String | Identifiant du jeu (`"1000 Sabords"`) |
-| `exportedAt` | Long | Timestamp de l'export (ms) |
-| `gameCount` | Int | Nombre de parties exportées |
+| `exportedAt` | Long | Timestamp de l'export (ms, optionnel) |
+| `gameCount` | Int | Nombre de parties exportées (optionnel) |
+| `winCondition` | String | Condition de victoire du jeu (`"HIGHEST_SCORE"`) — optionnel |
 | `games` | Array | Liste des parties |
 
 Champs d'une partie (`games[]`) :
@@ -117,10 +125,14 @@ Champs d'une partie (`games[]`) :
 | Champ | Type | Description |
 |---|---|---|
 | `id` | String | UUID unique de la partie |
-| `timestamp` | Long | Date de fin de partie (ms) |
-| `rounds` | Int | Nombre de manches jouées |
+| `date` | Long | Date de fin de partie (ms, optionnel) |
 | `ranking` | Array | Classement final (trié par score décroissant) |
-| `details` | Array | Coups joués (event sourcing, vide si absent) |
+| `details` | Array | Rounds joués — chaque round contient `scores: [{name, score}]` (optionnel) |
+
+Le format `details` respecte le [contrat Scoreo](/doc/scoreo-import-schema.json) :
+chaque round aggrège les scores de tous les joueurs (somme des contributions
+via `EvenementCoup.contributionPour()`). La somme des scores par joueur dans
+les rounds correspond au `score` du `ranking`.
 
 ## Import `.sabords`
 
@@ -139,7 +151,7 @@ sérialisables).
 ```kotlin
 @Serializable
 private data class SnapshotPartie(
-    val joueurs:            List<ResultatJoueur>,
+    val joueurs:            List<String>,
     val historique:         List<EvenementCoup>,
     val index:              Int,
     val dernierTour:        Boolean,

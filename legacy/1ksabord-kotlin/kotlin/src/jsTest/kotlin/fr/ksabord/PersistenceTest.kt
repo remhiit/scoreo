@@ -156,12 +156,16 @@ class PersistenceTest {
         assertEquals(2, ranking[1].rank)
     }
 
-    @Test fun exportPartie_detailsContientCoups() {
+    @Test fun exportPartie_detailsContientScoresParRound() {
         val coups = listOf(CoupManuel("Alice", 500, 1, 500))
         stockerPartie(creerPartieTerminee().copy(coups = coups))
 
         val details = construireExportJson().games[0].details
-        assertEquals(500, (details[0] as CoupManuel).score)
+        assertEquals(1, details.size)
+        val aliceScore = details[0].scores.first { it.name == "Alice" }
+        assertEquals(500, aliceScore.score)
+        val bobScore = details[0].scores.first { it.name == "Bob" }
+        assertEquals(0, bobScore.score)
     }
 
     @Test fun exportContientPlusieursParties() {
@@ -172,6 +176,13 @@ class PersistenceTest {
         val exportData = construireExportJson()
         assertEquals(2, exportData.gameCount)
         assertEquals(2, exportData.games.size)
+    }
+
+    @Test fun exportContientVersionEtWinCondition() {
+        stockerPartie(creerPartieTerminee())
+        val exportData = construireExportJson()
+        assertEquals("1.1", exportData.version)
+        assertEquals("HIGHEST_SCORE", exportData.winCondition)
     }
 
     @Test fun exportFormatJsonValide() {
@@ -193,18 +204,28 @@ internal fun construireExportJson(): ExportSabords {
         val classement = p.classement.mapIndexed { i, j ->
             ExportClassement(name = j.nom, score = j.score, rank = i + 1)
         }
+        val joueurs = p.classement.map { it.nom }
+        val tailleManche = joueurs.size
+        val details = if (p.coups.isEmpty()) emptyList()
+        else p.coups.chunked(tailleManche).map { roundCoups ->
+            val scores = joueurs.map { nom ->
+                ScoreExport(name = nom, score = roundCoups.sumOf { coup -> coup.contributionPour(nom) })
+            }
+            RoundExport(scores = scores)
+        }
         ExportPartie(
-            id        = p.uuid,
-            timestamp = p.horodatage,
-            rounds    = p.nombreManches,
-            ranking   = classement,
-            details   = p.coups,
+            id      = p.uuid,
+            date    = p.horodatage,
+            ranking = classement,
+            details = details,
         )
     }
     return ExportSabords(
-        game       = "1000 Sabords",
-        exportedAt = kotlin.js.Date.now().toLong(),
-        gameCount  = jeux.size,
-        games      = jeux,
+        version      = "1.1",
+        game         = "1000 Sabords",
+        exportedAt   = kotlin.js.Date.now().toLong(),
+        gameCount    = jeux.size,
+        winCondition = "HIGHEST_SCORE",
+        games        = jeux,
     )
 }
