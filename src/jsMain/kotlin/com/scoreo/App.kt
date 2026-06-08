@@ -25,6 +25,8 @@ import com.scoreo.ui.navigation.AppNavigator
 import com.scoreo.ui.navigation.Screen
 import com.scoreo.ui.navigation.SetupSection
 import com.scoreo.ui.player.PlayerHandler
+import com.scoreo.ui.scoredetail.ScoreDetailHandler
+import com.scoreo.ui.scoredetail.ScoreDetailScreen
 import com.scoreo.ui.setup.SetupScreen
 import org.jetbrains.compose.web.dom.Button
 import org.jetbrains.compose.web.dom.Div
@@ -58,10 +60,8 @@ fun App(
         CreateMatchHandler(
             getPlayers = GetPlayersUseCase(playerRepository),
             getGameTypes = GetGameTypesUseCase(gameTypeRepository),
-            createMatch = CreateMatchUseCase(matchRepository, gameTypeRepository),
             addPlayer = AddPlayerUseCase(playerRepository),
             addGameType = AddGameTypeUseCase(gameTypeRepository),
-            currentDate = currentDate,
         )
     }
 
@@ -70,6 +70,7 @@ fun App(
         is Screen.CreateMatch -> "New Match"
         is Screen.History -> "History"
         is Screen.Setup -> "Setup"
+        is Screen.ScoreDetail -> "Score Detail"
     }
     val canGoBack = navigator.current !is Screen.Home
 
@@ -105,9 +106,8 @@ fun App(
             )
             is Screen.CreateMatch -> CreateMatchScreen(
                 handler = createMatchHandler,
-                onSaved = {
-                    playerHandler.refresh()
-                    navigator.navigate(Screen.Home)
+                onNext = { gameTypeId, playerIds ->
+                    navigator.navigate(Screen.ScoreDetail(gameTypeId, playerIds))
                 },
             )
             is Screen.History -> {
@@ -125,6 +125,30 @@ fun App(
                 gameTypeHandler = gameTypeHandler,
                 focusSection = screen.focusSection,
             )
+            is Screen.ScoreDetail -> {
+                val scoreDetailHandler = remember(screen) {
+                    val gameType = gameTypeRepository.findById(screen.gameTypeId)
+                        ?: error("GameType not found")
+                    val players = playerRepository.getAll().filter { it.id in screen.playerIds }
+                    ScoreDetailHandler(
+                        gameType = gameType,
+                        players = players,
+                        createMatch = CreateMatchUseCase(matchRepository, gameTypeRepository),
+                        currentDate = currentDate,
+                    )
+                }
+                ScoreDetailScreen(
+                    handler = scoreDetailHandler,
+                    onSaved = {
+                        playerHandler.refresh()
+                        navigator.navigate(Screen.Home)
+                    },
+                    onCancel = {
+                        createMatchHandler.reset()
+                        navigator.navigate(Screen.Home)
+                    },
+                )
+            }
         }
     }
 

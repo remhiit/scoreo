@@ -27,11 +27,20 @@
 1. **Home**: default screen — shows all players with their stats (wins / losses / win %)
    - Tap **▶ New Match** (FAB) to start a match
    - If no players yet: empty state with shortcut to player setup
-2. **New Match**: select a game type and players, enter scores, save
+2. **New Match**: select a game type and players
    - Inline shortcuts to add a game type or player on the fly if none exist
+   - Tap **Suivant →** to proceed to score entry
+3. **Score Detail**: multi-round score table (columns = players, rows = rounds)
+   - Header row: player names
+   - Total row: auto-calculated sum per player
+   - Editable round rows with **✕** to delete a round
+   - **＋** button at the bottom to add a new round
+   - Tap **Terminer la partie** to save
+   - If game type is **Manual**: modal appears to select winner(s) showing each player's total score
+   - Tap **Annuler** to discard and return Home
    - After saving: returns to Home (player stats refresh automatically)
-3. **History**: list of all past matches — accessible via the burger menu (☰)
-4. **Setup**: manage players and game types — accessible via the burger menu (☰)
+4. **History**: list of all past matches — accessible via the burger menu (☰)
+5. **Setup**: manage players and game types — accessible via the burger menu (☰)
 
 ## Navigation
 

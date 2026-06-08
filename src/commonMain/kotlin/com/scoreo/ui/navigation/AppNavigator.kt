@@ -11,6 +11,7 @@ sealed class Screen {
     data object CreateMatch : Screen()
     data object History : Screen()
     data class Setup(val focusSection: SetupSection) : Screen()
+    data class ScoreDetail(val gameTypeId: String, val playerIds: List<String>) : Screen()
 }
 
 class AppNavigator {

@@ -9,10 +9,7 @@ data class CreateMatchState(
     val availablePlayers: List<Player> = emptyList(),
     val selectedGameType: GameType? = null,
     val selectedPlayers: List<Player> = emptyList(),
-    val scores: Map<String, String> = emptyMap(),
-    val manualWinners: Set<String> = emptySet(),
     val error: String? = null,
-    val saved: Boolean = false,
     // Inline game type form
     val showAddGameForm: Boolean = false,
     val inlineGameName: String = "",

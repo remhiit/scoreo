@@ -61,6 +61,7 @@ src/
       player/      # PlayerHandler, PlayerState, PlayerIntent
       gametype/    # GameTypeHandler, GameTypeState, GameTypeIntent
       creatematch/ # CreateMatchHandler, CreateMatchState, CreateMatchIntent
+      scoredetail/ # ScoreDetailHandler, ScoreDetailState, ScoreDetailIntent
       history/     # HistoryHandler, MatchDisplay
   jsMain/kotlin/com/scoreo/
     App.kt          # Root composable: HTML layout + 3-tab navigation bar
@@ -69,7 +70,8 @@ src/
     ui/
       player/       # PlayerScreen (also used inside SetupScreen)
       gametype/     # GameTypeScreen (also used inside SetupScreen)
-      creatematch/  # CreateMatchScreen — primary screen (default)
+      creatematch/  # CreateMatchScreen — game & player selection
+      scoredetail/  # ScoreDetailScreen — multi-round score table
       history/      # HistoryScreen
       setup/        # SetupScreen — merged Players + Games management with tabs
   jsMain/resources/

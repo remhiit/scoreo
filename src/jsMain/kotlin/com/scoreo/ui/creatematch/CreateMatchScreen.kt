@@ -1,28 +1,19 @@
 package com.scoreo.ui.creatematch
 
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import com.scoreo.domain.model.WinCondition
 import org.jetbrains.compose.web.attributes.InputType
 import org.jetbrains.compose.web.dom.Button
 import org.jetbrains.compose.web.dom.Div
 import org.jetbrains.compose.web.dom.Input
-import org.jetbrains.compose.web.dom.Label
 import org.jetbrains.compose.web.dom.Option
 import org.jetbrains.compose.web.dom.Select
 import org.jetbrains.compose.web.dom.Span
 import org.jetbrains.compose.web.dom.Text
 
 @Composable
-fun CreateMatchScreen(handler: CreateMatchHandler, onSaved: () -> Unit) {
+fun CreateMatchScreen(handler: CreateMatchHandler, onNext: (gameTypeId: String, playerIds: List<String>) -> Unit) {
     val state = handler.state
-
-    LaunchedEffect(state.saved) {
-        if (state.saved) {
-            handler.reset()
-            onSaved()
-        }
-    }
 
     // ── Game type section ──────────────────────────────────────
     SectionHeader("Game type") { handler.handle(CreateMatchIntent.ToggleAddGameForm) }
@@ -80,7 +71,7 @@ fun CreateMatchScreen(handler: CreateMatchHandler, onSaved: () -> Unit) {
     }
 
     // ── Players section ────────────────────────────────────────
-    SectionHeader("Players & scores") { handler.handle(CreateMatchIntent.ToggleAddPlayerForm) }
+    SectionHeader("Players") { handler.handle(CreateMatchIntent.ToggleAddPlayerForm) }
 
     if (state.showAddPlayerForm) {
         Div(attrs = { classes("inline-form") }) {
@@ -108,7 +99,6 @@ fun CreateMatchScreen(handler: CreateMatchHandler, onSaved: () -> Unit) {
         Div(attrs = { classes("player-list-pick") }) {
             state.availablePlayers.forEach { player ->
                 val isSelected = player in state.selectedPlayers
-                val isManual = state.selectedGameType?.winCondition == WinCondition.MANUAL
 
                 Div(attrs = {
                     classes("player-pick-row")
@@ -121,39 +111,6 @@ fun CreateMatchScreen(handler: CreateMatchHandler, onSaved: () -> Unit) {
                         onChange { handler.handle(CreateMatchIntent.TogglePlayer(player)) }
                     })
                     Span(attrs = { style { property("flex", "1") } }) { Text(player.name) }
-
-                    if (isSelected) {
-                        Input(type = InputType.Text, attrs = {
-                            classes("score-input")
-                            value(state.scores[player.id] ?: "")
-                            attr("placeholder", "Score")
-                            onInput { handler.handle(CreateMatchIntent.UpdateScore(player.id, it.value)) }
-                            onClick { it.stopPropagation() }
-                        })
-                        if (isManual) {
-                            Label(attrs = {
-                                style {
-                                    property("display", "flex")
-                                    property("align-items", "center")
-                                    property("gap", "4px")
-                                    property("margin-left", "8px")
-                                    property("cursor", "pointer")
-                                }
-                                onClick { it.stopPropagation() }
-                            }) {
-                                Input(type = InputType.Checkbox, attrs = {
-                                    checked(player.id in state.manualWinners)
-                                    onChange { event ->
-                                        val checked = (event.target as org.w3c.dom.HTMLInputElement).checked
-                                        handler.handle(
-                                            CreateMatchIntent.UpdateManualWinner(player.id, checked)
-                                        )
-                                    }
-                                })
-                                Span { Text("W") }
-                            }
-                        }
-                    }
                 }
             }
         }
@@ -165,8 +122,12 @@ fun CreateMatchScreen(handler: CreateMatchHandler, onSaved: () -> Unit) {
 
     Button(attrs = {
         classes("btn", "btn-primary", "btn-full")
-        onClick { handler.handle(CreateMatchIntent.SaveMatch) }
-    }) { Text("Save match") }
+        onClick {
+            if (handler.validateSelection()) {
+                onNext(state.selectedGameType!!.id, state.selectedPlayers.map { it.id })
+            }
+        }
+    }) { Text("Suivant →") }
 }
 
 @Composable
@@ -193,5 +154,3 @@ private fun SectionHeader(label: String, onAdd: () -> Unit) {
         }) { Text("＋") }
     }
 }
-
-
