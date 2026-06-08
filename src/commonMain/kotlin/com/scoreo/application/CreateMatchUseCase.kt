@@ -19,7 +19,7 @@ class CreateMatchUseCase(
             "GameType $gameTypeId not found"
         }
         val match = Match(
-            id = generateId(),
+            id = IdGenerator.newId(),
             date = date,
             gameTypeId = gameTypeId,
             playerScores = playerScores,
@@ -28,7 +28,4 @@ class CreateMatchUseCase(
         matchRepository.save(match)
         return match
     }
-
-    private fun generateId(): String =
-        (1..12).map { "abcdefghijklmnopqrstuvwxyz0123456789".random() }.joinToString("")
 }

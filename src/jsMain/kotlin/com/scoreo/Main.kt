@@ -3,6 +3,9 @@ package com.scoreo
 import com.scoreo.infrastructure.LocalStorageGameTypeRepository
 import com.scoreo.infrastructure.LocalStorageMatchRepository
 import com.scoreo.infrastructure.LocalStoragePlayerRepository
+import kotlinx.datetime.Clock
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
 import org.jetbrains.compose.web.renderComposable
 
 fun main() {
@@ -15,7 +18,7 @@ fun main() {
             playerRepository = playerRepository,
             gameTypeRepository = gameTypeRepository,
             matchRepository = matchRepository,
-            currentDate = { js("new Date().toISOString().split('T')[0]") as String },
+            currentDate = { Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).date.toString() },
         )
     }
 }

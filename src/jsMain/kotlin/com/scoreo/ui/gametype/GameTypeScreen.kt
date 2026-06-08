@@ -68,8 +68,3 @@ fun GameTypeScreen(handler: GameTypeHandler, showTitle: Boolean = true) {
     }
 }
 
-private fun WinCondition.label() = when (this) {
-    WinCondition.HIGHEST_SCORE -> "Highest score"
-    WinCondition.LOWEST_SCORE -> "Lowest score"
-    WinCondition.MANUAL -> "Manual"
-}

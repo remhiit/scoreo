@@ -143,9 +143,10 @@ fun CreateMatchScreen(handler: CreateMatchHandler, onSaved: () -> Unit) {
                             }) {
                                 Input(type = InputType.Checkbox, attrs = {
                                     checked(player.id in state.manualWinners)
-                                    onChange {
+                                    onChange { event ->
+                                        val checked = (event.target as org.w3c.dom.HTMLInputElement).checked
                                         handler.handle(
-                                            CreateMatchIntent.UpdateManualWinner(player.id, it.value)
+                                            CreateMatchIntent.UpdateManualWinner(player.id, checked)
                                         )
                                     }
                                 })
@@ -193,9 +194,4 @@ private fun SectionHeader(label: String, onAdd: () -> Unit) {
     }
 }
 
-private fun WinCondition.label() = when (this) {
-    WinCondition.HIGHEST_SCORE -> "Highest score"
-    WinCondition.LOWEST_SCORE -> "Lowest score"
-    WinCondition.MANUAL -> "Manual"
-}
 

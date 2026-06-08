@@ -2,7 +2,6 @@ package com.scoreo.application
 
 import com.scoreo.FakeGameTypeRepository
 import com.scoreo.FakeMatchRepository
-import com.scoreo.FakePlayerRepository
 import com.scoreo.domain.model.GameType
 import com.scoreo.domain.model.Match
 import com.scoreo.domain.model.PlayerScore

@@ -21,7 +21,8 @@ class HistoryHandler(
     private val getPlayers: GetPlayersUseCase,
     private val getGameTypes: GetGameTypesUseCase,
 ) {
-    val state by mutableStateOf(buildState())
+    val state: List<MatchDisplay>
+        get() = buildState()
 
     private fun buildState(): List<MatchDisplay> {
         val playerMap = getPlayers().associateBy { it.id }

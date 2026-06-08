@@ -10,7 +10,7 @@ sealed class Screen {
     data object Home : Screen()
     data object CreateMatch : Screen()
     data object History : Screen()
-    data class Setup(val focusSection: SetupSection? = null) : Screen()
+    data class Setup(val focusSection: SetupSection) : Screen()
 }
 
 class AppNavigator {
