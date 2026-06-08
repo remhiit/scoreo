@@ -173,19 +173,26 @@ fun effacerHistoriqueParties() {
 
 @Serializable
 data class ExportSabords(
-    val game: String,
-    val exportedAt: Long,
-    val gameCount: Int,
-    val games: List<ExportPartie>,
+    val version:      String,
+    val game:         String,
+    val exportedAt:   Long,
+    val gameCount:    Int,
+    val winCondition: String? = null,
+    val games:        List<ExportPartie>,
 )
+
+@Serializable
+data class ScoreExport(val name: String, val score: Int)
+
+@Serializable
+data class RoundExport(val scores: List<ScoreExport>)
 
 @Serializable
 data class ExportPartie(
     val id: String,
-    val timestamp: Long,
-    val rounds: Int,
+    val date: Long,
     val ranking: List<ExportClassement>,
-    val details: List<EvenementCoup>,
+    val details: List<RoundExport> = emptyList(),
 )
 
 @Serializable
@@ -248,19 +255,29 @@ fun exporterHistoriqueJson() {
         val classement = p.classement.mapIndexed { i, j ->
             ExportClassement(name = j.nom, score = j.score, rank = i + 1)
         }
+        val joueurs = p.classement.map { it.nom }
+        val tailleManche = joueurs.size
+        val details = if (p.coups.isEmpty()) emptyList()
+        else p.coups.chunked(tailleManche).map { roundCoups ->
+            val scores = joueurs.map { nom ->
+                ScoreExport(name = nom, score = roundCoups.sumOf { coup -> coup.contributionPour(nom) })
+            }
+            RoundExport(scores = scores)
+        }
         ExportPartie(
-            id        = p.uuid,
-            timestamp = p.horodatage,
-            rounds    = p.nombreManches,
-            ranking   = classement,
-            details   = p.coups,
+            id      = p.uuid,
+            date    = p.horodatage,
+            ranking = classement,
+            details = details,
         )
     }
     val envelope = ExportSabords(
-        game       = "1000 Sabords",
-        exportedAt = Date.now().toLong(),
-        gameCount  = jeux.size,
-        games      = jeux,
+        version      = "1.1",
+        game         = "1000 Sabords",
+        exportedAt   = Date.now().toLong(),
+        gameCount    = jeux.size,
+        winCondition = "HIGHEST_SCORE",
+        games        = jeux,
     )
     val json = formatJsonPretty.encodeToString(envelope)
 
