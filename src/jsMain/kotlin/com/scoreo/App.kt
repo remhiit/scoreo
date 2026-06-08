@@ -38,7 +38,7 @@ fun App(
     playerRepository: PlayerRepository,
     gameTypeRepository: GameTypeRepository,
     matchRepository: MatchRepository,
-    currentDate: () -> String,
+    currentDate: () -> Long,
 ) {
     val navigator = remember { AppNavigator() }
     var burgerOpen by remember { mutableStateOf(false) }

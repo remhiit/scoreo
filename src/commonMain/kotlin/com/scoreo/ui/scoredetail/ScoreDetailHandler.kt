@@ -13,7 +13,7 @@ class ScoreDetailHandler(
     private val gameType: GameType,
     private val players: List<Player>,
     private val createMatch: CreateMatchUseCase,
-    private val currentDate: () -> String,
+    private val currentDate: () -> Long,
 ) {
     var state by mutableStateOf(ScoreDetailState(gameType = gameType, players = players))
         private set

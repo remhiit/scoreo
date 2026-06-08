@@ -25,7 +25,7 @@ fun HistoryScreen(handler: HistoryHandler) {
                         Span(attrs = { classes("card-title") }) {
                             Text(display.gameType?.name ?: "Unknown game")
                         }
-                        Span(attrs = { classes("card-sub") }) { Text(display.match.date) }
+                        Span(attrs = { classes("card-sub") }) { Text(display.dateFormatted) }
                     }
                     display.match.playerScores.forEach { ps ->
                         val player = display.players[ps.playerId]

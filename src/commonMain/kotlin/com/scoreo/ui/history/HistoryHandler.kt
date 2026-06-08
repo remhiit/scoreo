@@ -8,12 +8,16 @@ import com.scoreo.application.GetPlayersUseCase
 import com.scoreo.domain.model.GameType
 import com.scoreo.domain.model.Match
 import com.scoreo.domain.model.Player
+import kotlinx.datetime.Instant
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
 
 data class MatchDisplay(
     val match: Match,
     val gameType: GameType?,
     val players: Map<String, Player>,
     val winners: List<String>,
+    val dateFormatted: String,
 )
 
 class HistoryHandler(
@@ -29,11 +33,17 @@ class HistoryHandler(
         val gameTypeMap = getGameTypes().associateBy { it.id }
         return getMatches().sortedByDescending { it.date }.map { match ->
             val gameType = gameTypeMap[match.gameTypeId]
+            val dateFormatted = try {
+                Instant.fromEpochMilliseconds(match.date)
+                    .toLocalDateTime(TimeZone.currentSystemDefault())
+                    .date.toString()
+            } catch (_: Exception) { "??" }
             MatchDisplay(
                 match = match,
                 gameType = gameType,
                 players = playerMap,
                 winners = gameType?.let { match.getWinners(it) } ?: emptyList(),
+                dateFormatted = dateFormatted,
             )
         }
     }

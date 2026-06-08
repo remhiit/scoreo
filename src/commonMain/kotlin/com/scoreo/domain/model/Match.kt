@@ -5,7 +5,7 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class Match(
     val id: String,
-    val date: String,
+    val date: Long,
     val gameTypeId: String,
     val playerScores: List<PlayerScore>,
     val manualWinners: List<String> = emptyList(),

@@ -18,7 +18,7 @@ fun main() {
             playerRepository = playerRepository,
             gameTypeRepository = gameTypeRepository,
             matchRepository = matchRepository,
-            currentDate = { Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).date.toString() },
+            currentDate = { Clock.System.now().toEpochMilliseconds() },
         )
     }
 }

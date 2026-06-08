@@ -12,7 +12,7 @@ class CreateMatchUseCase(
     operator fun invoke(
         gameTypeId: String,
         playerScores: List<PlayerScore>,
-        date: String,
+        date: Long,
         manualWinners: List<String> = emptyList(),
     ): Match {
         requireNotNull(gameTypeRepository.findById(gameTypeId)) {

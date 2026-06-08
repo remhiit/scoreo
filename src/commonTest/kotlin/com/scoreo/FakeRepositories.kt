@@ -17,4 +17,5 @@ class FakeMatchRepository : MatchRepository {
     private val items = mutableListOf<Match>()
     override fun getAll(): List<Match> = items.toList()
     override fun save(match: Match) { items.add(match) }
+    override fun findById(id: String): Match? = items.find { it.id == id }
 }

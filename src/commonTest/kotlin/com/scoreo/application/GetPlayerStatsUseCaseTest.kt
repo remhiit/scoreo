@@ -22,7 +22,7 @@ class GetPlayerStatsUseCaseTest {
         val gameTypeRepo = FakeGameTypeRepository()
         val matchRepo = FakeMatchRepository()
         gameTypeRepo.save(GameType("gt1", "Game", WinCondition.HIGHEST_SCORE))
-        matchRepo.save(Match("m1", "2026-01-01", "gt1", listOf(PlayerScore("alice", 10), PlayerScore("bob", 5))))
+        matchRepo.save(Match("m1", 1767225600000L, "gt1", listOf(PlayerScore("alice", 10), PlayerScore("bob", 5))))
 
         val stats = GetPlayerStatsUseCase(matchRepo, gameTypeRepo)()
 
@@ -37,7 +37,7 @@ class GetPlayerStatsUseCaseTest {
         val gameTypeRepo = FakeGameTypeRepository()
         val matchRepo = FakeMatchRepository()
         gameTypeRepo.save(GameType("gt1", "Game", WinCondition.HIGHEST_SCORE))
-        matchRepo.save(Match("m1", "2026-01-01", "gt1", listOf(PlayerScore("alice", 10), PlayerScore("bob", 10))))
+        matchRepo.save(Match("m1", 1767225600000L, "gt1", listOf(PlayerScore("alice", 10), PlayerScore("bob", 10))))
 
         val stats = GetPlayerStatsUseCase(matchRepo, gameTypeRepo)()
 
@@ -52,8 +52,8 @@ class GetPlayerStatsUseCaseTest {
         val gameTypeRepo = FakeGameTypeRepository()
         val matchRepo = FakeMatchRepository()
         gameTypeRepo.save(GameType("gt1", "Game", WinCondition.HIGHEST_SCORE))
-        matchRepo.save(Match("m1", "2026-01-01", "gt1", listOf(PlayerScore("alice", 10), PlayerScore("bob", 5))))
-        matchRepo.save(Match("m2", "2026-01-02", "gt1", listOf(PlayerScore("alice", 3), PlayerScore("bob", 8))))
+        matchRepo.save(Match("m1", 1767225600000L, "gt1", listOf(PlayerScore("alice", 10), PlayerScore("bob", 5))))
+        matchRepo.save(Match("m2", 1767312000000L, "gt1", listOf(PlayerScore("alice", 3), PlayerScore("bob", 8))))
 
         val stats = GetPlayerStatsUseCase(matchRepo, gameTypeRepo)()
 
@@ -68,7 +68,7 @@ class GetPlayerStatsUseCaseTest {
         val gameTypeRepo = FakeGameTypeRepository()
         val matchRepo = FakeMatchRepository()
         gameTypeRepo.save(GameType("gt1", "Game", WinCondition.MANUAL))
-        matchRepo.save(Match("m1", "2026-01-01", "gt1",
+        matchRepo.save(Match("m1", 1767225600000L, "gt1",
             listOf(PlayerScore("alice", 10), PlayerScore("bob", 5)),
             manualWinners = listOf("bob")))
 

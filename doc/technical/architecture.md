@@ -137,3 +137,17 @@ In practice:
 
 This applies to: `Player`, `GameType`, `Match`, `PlayerScore`, `WinCondition`.
 
+**Current entity formats:**
+
+| Entity | Fields |
+|---|---|
+| `Player` | `id: String` (UUID v4), `name: String` |
+| `GameType` | `id: String` (UUID v4), `name: String`, `winCondition: WinCondition` |
+| `Match` | `id: String` (UUID v4), `date: Long` (epoch ms), `gameTypeId: String`, `playerScores: List<PlayerScore>`, `manualWinners: List<String>` |
+| `PlayerScore` | `playerId: String`, `score: Int` |
+| `WinCondition` | Enum: `HIGHEST_SCORE`, `LOWEST_SCORE`, `MANUAL` |
+
+**Migration mechanism:** `LocalStorageMatchRepository.getAll()` runs a transparent migration on every read.
+It detects old-format data (String dates, non-UUID ids) and converts them in-place.
+See `doc/technical/migrations.md` for details.
+
