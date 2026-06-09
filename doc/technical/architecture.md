@@ -92,7 +92,7 @@ Single `styles.css` file with CSS custom properties (design tokens), a fixed bot
 ## Persistence
 
 - **Current**: localStorage via `LocalStorage*Repository` (`scoreo_players`, `scoreo_gametypes`, `scoreo_matches` keys)
-- **Import**: `ImportMatchesUseCase` reads the same repositories and writes through `MatchRepository.save()`
+- **Import**: `ImportMatchesUseCase` reads the same repositories and writes through `MatchRepository.save()`, `GameTypeRepository.save()`, and `PlayerRepository.save()`
 - **Future**: optional sync to a remote backend (additional infrastructure adapter)
 
 ## CI/CD & Deployment

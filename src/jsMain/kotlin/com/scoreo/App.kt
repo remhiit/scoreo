@@ -139,6 +139,7 @@ fun App(
                     handler = importHandler,
                     onDone = {
                         playerHandler.refresh()
+                        gameTypeHandler.refresh()
                         navigator.navigate(Screen.Home)
                     },
                 )

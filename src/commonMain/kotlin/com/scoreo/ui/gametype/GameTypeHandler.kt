@@ -13,6 +13,10 @@ class GameTypeHandler(
     var state by mutableStateOf(GameTypeState(gameTypes = getGameTypes()))
         private set
 
+    fun refresh() {
+        state = state.copy(gameTypes = getGameTypes())
+    }
+
     fun handle(intent: GameTypeIntent) {
         when (intent) {
             is GameTypeIntent.UpdateName ->

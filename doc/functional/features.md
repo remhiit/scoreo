@@ -75,6 +75,6 @@ No bottom navigation bar.
   - ✅ **Imported** — saved successfully
   - ⚠️ **Skipped** — duplicate match ID already exists
   - ❌ **Failed** — round detail scores don't sum to the ranking total
-- Unknown game types are auto-created with `winCondition = MANUAL`
+- Unknown game types are auto-created (with `winCondition` from the file, or `MANUAL` by default) and saved to the game types collection
 - Unknown players are auto-created
-- After execution, player stats refresh and navigates back to Home
+- After execution, player stats and game types refresh, then navigates back to Home
