@@ -8,7 +8,6 @@ enum class SetupSection { PLAYERS, GAME_TYPES }
 
 sealed class Screen {
     data object Home : Screen()
-    data object CreateMatch : Screen()
     data object History : Screen()
     data object Import : Screen()
     data class Setup(val focusSection: SetupSection) : Screen()

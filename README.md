@@ -13,12 +13,12 @@ Scoreo is a Progressive Web App (PWA) built with Kotlin/JS for tracking game res
 ### Prerequisites
 
 - JDK 17+ (e.g. [BellSoft Liberica](https://bell-sw.com/) via [sdkman](https://sdkman.io/))
-- Gradle 8.12+ (or use the `gradlew` wrapper)
+- Gradle 8.12+ (or use the `./gradlew` wrapper)
 
 ### Development build
 
 ```bash
-gradle jsBrowserDevelopmentRun --continuous
+./gradlew jsBrowserDevelopmentRun --continuous
 ```
 
 Opens a dev server with hot reload at `http://localhost:9191`.
@@ -26,7 +26,7 @@ Opens a dev server with hot reload at `http://localhost:9191`.
 ### Production build
 
 ```bash
-gradle jsBrowserProductionWebpack
+./gradlew jsBrowserProductionWebpack
 ```
 
 Output lands in `build/kotlin-webpack/js/productionExecutable/`. Copy assets and serve:
@@ -51,9 +51,9 @@ The site is automatically deployed on every push to `main`:
 ### Run tests
 
 ```bash
-gradle jvmTest
+./gradlew jvmTest
 ```
 
 ## Documentation
 
-See the [`doc/`](doc/) directory for detailed documentation.
+See [`doc/`](doc/) for detailed documentation — features, architecture, deployment, glossary.

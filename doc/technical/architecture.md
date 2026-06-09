@@ -40,7 +40,7 @@
 
 - **Domain layer**: pure Kotlin, no framework dependency — entities (`Player`, `GameType`, `Match`) and use cases
 - **UI adapter**: Compose HTML screens in `jsMain`, wiring Intents to use cases
-- **Storage adapter**: in-memory (dev); will be replaced by localStorage/IndexedDB adapter
+- **Storage adapter**: localStorage via `LocalStorage*Repository` classes (scoreo_players, scoreo_gametypes, scoreo_matches keys)
 
 ## Web Target
 
@@ -49,45 +49,17 @@ Entry point: `src/jsMain/kotlin/com/scoreo/Main.kt` → `renderComposable(rootEl
 
 ## Source package structure
 
-```
-src/
-  commonMain/kotlin/com/scoreo/
-    domain/
-      model/       # Entities: Player, GameType, Match, PlayerScore, WinCondition
-      port/        # Repository interfaces (input/output ports)
-    application/   # Use cases (domain orchestration, no framework deps)
-    ui/
-      navigation/  # AppNavigator, Screen sealed class, SetupSection enum
-      player/      # PlayerHandler, PlayerState, PlayerIntent
-      gametype/    # GameTypeHandler, GameTypeState, GameTypeIntent
-      creatematch/ # CreateMatchHandler, CreateMatchState, CreateMatchIntent
-      scoredetail/ # ScoreDetailHandler, ScoreDetailState, ScoreDetailIntent
-      history/     # HistoryHandler, MatchDisplay
-      import/      # ImportHandler, ImportState, ImportIntent
-  jsMain/kotlin/com/scoreo/
-    App.kt          # Root composable: HTML layout + 3-tab navigation bar
-    Main.kt         # Entry point: renderComposable
-    infrastructure/ # LocalStorage storage adapters
-    ui/
-      player/       # PlayerScreen (also used inside SetupScreen)
-      gametype/     # GameTypeScreen (also used inside SetupScreen)
-      creatematch/  # CreateMatchScreen — game & player selection
-      scoredetail/  # ScoreDetailScreen — multi-round score table
-      history/      # HistoryScreen
-      import/       # ImportScreen — file upload, preview, execution, result
-      setup/        # SetupScreen — merged Players + Games management with tabs
-  jsMain/resources/
-    index.html      # PWA shell (div#root entry point)
-    styles.css      # Design system (layout, components, nav bar, tabs)
-  commonTest/kotlin/com/scoreo/
-    domain/         # Domain unit tests (GameTypeTest)
-    application/    # Use case tests (CreateMatchUseCase, GetPlayerStats, etc.)
-    ui/             # Handler tests (PlayerHandlerTest)
-```
+Sources suivent la convention Compose Multiplatform :
+
+- **`commonMain/`** — code partagé (domaine, application, handlers/intents/states MVI)
+- **`jsMain/`** — code spécifique au navigateur (écrans Compose HTML, infrastructure localStorage)
+- **`commonTest/`** — tests unitaires JVM (use cases, handlers)
+
+Voir `find src -type d` pour la liste exhaustive des packages.
 
 ## Styling
 
-Single `styles.css` file with CSS custom properties (design tokens), a fixed bottom navigation bar (`position: fixed; bottom: 0`), and minimal component styles (cards, inputs, buttons).
+Single `styles.css` file with CSS custom properties (design tokens), a fixed top header bar, and minimal component styles (cards, inputs, buttons, modals, score table).
 
 ## Persistence
 
@@ -95,37 +67,7 @@ Single `styles.css` file with CSS custom properties (design tokens), a fixed bot
 - **Import**: `ImportMatchesUseCase` reads the same repositories and writes through `MatchRepository.save()`, `GameTypeRepository.save()`, and `PlayerRepository.save()`
 - **Future**: optional sync to a remote backend (additional infrastructure adapter)
 
-## CI/CD & Deployment
-
-Two workflows run on every push to `main`, both build the same production artifact.
-
-### Codeberg Pages — Forgejo Actions
-
-File: `.forgejo/workflows/deploy.yml`
-
-Steps:
-1. Build: `gradle jsBrowserProductionWebpack` (container `gradle:8.12-jdk21`)
-2. Copy `index.html` + `styles.css` into `build/kotlin-webpack/js/productionExecutable/`
-3. Publish via [`git-pages/action@v2`](https://codeberg.org/git-pages/action)
-
-URL: `https://<username>.codeberg.page/Scoreo/`
-
-### GitHub Pages — GitHub Actions
-
-File: `.github/workflows/deploy.yml`
-
-Steps:
-1. Set up JDK 21 (`actions/setup-java` temurin)
-2. Set up Gradle via [`gradle/actions/setup-gradle@v4`](https://github.com/gradle/actions) with `gradle-version: wrapper` (reads version from `gradle-wrapper.properties`, no JAR needed)
-3. Build: `gradle jsBrowserProductionWebpack`
-4. Copy `index.html` + `styles.css` into `build/kotlin-webpack/js/productionExecutable/`
-5. Publish via `actions/upload-pages-artifact` + `actions/deploy-pages`
-
-URL: `https://<username>.github.io/Scoreo/`
-
-> Enable in *Settings → Pages → Source: GitHub Actions*.
-
-> Note: `gradle-wrapper.jar` is **not** committed to the repository. CI tools bootstrap Gradle directly from `gradle-wrapper.properties`.
+See [`deployment.md`](deployment.md) for CI/CD and deployment details.
 
 ## Backward Compatibility
 

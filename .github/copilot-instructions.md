@@ -19,8 +19,8 @@ PWA for tracking game/match results between friends, built with Kotlin/JS.
 - **Build system:** Gradle (Kotlin DSL)
 - **UI pattern:** MVI (Model-View-Intent)
 - **Application architecture:** Hexagonal (Ports & Adapters)
-- **Styling:** `src/jsMain/resources/styles.css` — CSS custom properties, fixed bottom nav
-- **Storage:** In-memory (dev); localStorage/IndexedDB planned
+- **Styling:** `src/jsMain/resources/styles.css` — CSS custom properties, fixed top header
+- **Storage:** localStorage via `LocalStorage*Repository` (scoreo_players, scoreo_gametypes, scoreo_matches keys)
 
 See [`doc/technical/architecture.md`](../doc/technical/architecture.md) for the full architecture description.
 See [`doc/functional/features.md`](../doc/functional/features.md) for the feature list.
@@ -39,22 +39,23 @@ Any change to a serialized domain model (`Player`, `GameType`, `Match`, `PlayerS
 
 When implementing a new feature, update `doc/functional/` with the relevant user-facing behavior.
 When making a technical decision (architecture, library choice, data model, etc.), document it in `doc/technical/`.
+When adding a new handler or use case, add a corresponding test file in `src/commonTest/` under the matching package.
 
 ## Build Commands
 
 ```bash
 # Dev server (hot reload, port 9191)
-gradle jsBrowserDevelopmentRun --continuous
+./gradlew jsBrowserDevelopmentRun --continuous
 
 # Production build
-gradle jsBrowserProductionWebpack
+./gradlew jsBrowserProductionWebpack
 # Then copy assets and serve:
 # cp src/jsMain/resources/{index.html,styles.css} build/kotlin-webpack/js/productionExecutable/
 # cd build/kotlin-webpack/js/productionExecutable && python3 -m http.server 9191
 
 # Run all tests (JVM — fast, no browser needed)
-gradle jvmTest
+./gradlew jvmTest
 
 # Run a single test class
-gradle jvmTest --tests "com.scoreo.ui.player.PlayerHandlerTest"
+./gradlew jvmTest --tests "com.scoreo.ui.player.PlayerHandlerTest"
 ```

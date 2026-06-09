@@ -16,8 +16,7 @@ import com.scoreo.application.ImportMatchesUseCase
 import com.scoreo.domain.port.GameTypeRepository
 import com.scoreo.domain.port.MatchRepository
 import com.scoreo.domain.port.PlayerRepository
-import com.scoreo.ui.creatematch.CreateMatchHandler
-import com.scoreo.ui.creatematch.CreateMatchScreen
+
 import com.scoreo.ui.gametype.GameTypeHandler
 import com.scoreo.ui.history.HistoryHandler
 import com.scoreo.ui.history.HistoryScreen
@@ -59,18 +58,12 @@ fun App(
             getGameTypes = GetGameTypesUseCase(gameTypeRepository),
         )
     }
-    val createMatchHandler = remember {
-        CreateMatchHandler(
-            getPlayers = GetPlayersUseCase(playerRepository),
-            getGameTypes = GetGameTypesUseCase(gameTypeRepository),
-            addPlayer = AddPlayerUseCase(playerRepository),
-            addGameType = AddGameTypeUseCase(gameTypeRepository),
-        )
-    }
+    val getGameTypesUseCase = remember { GetGameTypesUseCase(gameTypeRepository) }
+    val addGameTypeUseCase = remember { AddGameTypeUseCase(gameTypeRepository) }
+    val addPlayerUseCase = remember { AddPlayerUseCase(playerRepository) }
 
     val screenTitle = when (navigator.current) {
         is Screen.Home -> "Scoreo"
-        is Screen.CreateMatch -> "New Match"
         is Screen.History -> "History"
         is Screen.Import -> "Import"
         is Screen.Setup -> "Setup"
@@ -100,18 +93,18 @@ fun App(
         when (val screen = navigator.current) {
             is Screen.Home -> HomeScreen(
                 playerHandler = playerHandler,
-                onNewMatch = {
-                    createMatchHandler.refreshLists()
-                    navigator.navigate(Screen.CreateMatch)
+                getGameTypes = { getGameTypesUseCase() },
+                onAddGameType = { name, wc -> addGameTypeUseCase(name, wc) },
+                onAddPlayer = { name ->
+                    val player = addPlayerUseCase(name)
+                    playerHandler.refresh()
+                    player
+                },
+                onStartGame = { gameTypeId, playerIds ->
+                    navigator.navigate(Screen.ScoreDetail(gameTypeId, playerIds))
                 },
                 onConfigurePlayers = {
                     navigator.navigate(Screen.Setup(SetupSection.PLAYERS))
-                },
-            )
-            is Screen.CreateMatch -> CreateMatchScreen(
-                handler = createMatchHandler,
-                onNext = { gameTypeId, playerIds ->
-                    navigator.navigate(Screen.ScoreDetail(gameTypeId, playerIds))
                 },
             )
             is Screen.History -> {
@@ -168,7 +161,6 @@ fun App(
                         navigator.navigate(Screen.Home)
                     },
                     onCancel = {
-                        createMatchHandler.reset()
                         navigator.navigate(Screen.Home)
                     },
                 )

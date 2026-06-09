@@ -200,11 +200,56 @@ html, body {
     display: flex;
     align-items: center;
     justify-content: space-between;
+    cursor: pointer;
+    transition: background 0.1s, box-shadow 0.1s;
+}
+
+.home-player-card:hover {
+    background: var(--primary-light);
+}
+
+.home-player-card.selected {
+    background: var(--primary-light);
+    box-shadow: inset 0 0 0 2px var(--primary);
 }
 
 .home-player-name {
     font-weight: 500;
     font-size: 15px;
+}
+
+.home-player-check {
+    font-size: 18px;
+    color: var(--primary);
+    font-weight: 700;
+    margin-left: 12px;
+}
+
+.home-add-player-toggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 12px;
+    color: var(--on-surface-variant);
+    font-size: 14px;
+}
+
+.home-add-player-form {
+    margin-top: 8px;
+}
+
+.fab-error {
+    position: fixed;
+    bottom: 80px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--error);
+    color: #fff;
+    padding: 8px 16px;
+    border-radius: var(--radius);
+    font-size: 13px;
+    z-index: 50;
+    white-space: nowrap;
 }
 
 .home-empty {
@@ -245,6 +290,17 @@ html, body {
 .fab:hover {
     opacity: 0.9;
     box-shadow: 0 6px 20px rgba(103, 80, 164, 0.5);
+}
+
+.fab-disabled {
+    opacity: 0.5;
+    cursor: default;
+    box-shadow: 0 2px 8px rgba(103, 80, 164, 0.2);
+}
+
+.fab-disabled:hover {
+    opacity: 0.5;
+    box-shadow: 0 2px 8px rgba(103, 80, 164, 0.2);
 }
 
 /* ── Typography ── */
