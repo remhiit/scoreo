@@ -7,7 +7,7 @@ import com.scoreo.domain.model.PlayerScore
 import com.scoreo.domain.model.WinCondition
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertFailsWith
+import kotlin.test.assertTrue
 
 class CreateMatchUseCaseTest {
 
@@ -22,22 +22,23 @@ class CreateMatchUseCaseTest {
     @Test
     fun `creates match with valid data`() {
         val (useCase, matchRepo) = setup(WinCondition.HIGHEST_SCORE)
-        useCase("gt1", listOf(PlayerScore("p1", 10), PlayerScore("p2", 5)), 1767225600000L)
+        val result = useCase("gt1", listOf(PlayerScore("p1", 10), PlayerScore("p2", 5)), 1767225600000L)
+        assertTrue(result.isSuccess)
         assertEquals(1, matchRepo.getAll().size)
     }
 
     @Test
-    fun `throws when game type not found`() {
+    fun `fails when game type not found`() {
         val (useCase, _) = setup(WinCondition.HIGHEST_SCORE)
-        assertFailsWith<IllegalArgumentException> {
-            useCase("unknown", listOf(PlayerScore("p1", 10)), 1767225600000L)
-        }
+        val result = useCase("unknown", listOf(PlayerScore("p1", 10)), 1767225600000L)
+        assertTrue(result.isFailure)
     }
 
     @Test
     fun `stores manual winners when MANUAL condition`() {
         val (useCase, matchRepo) = setup(WinCondition.MANUAL)
-        useCase("gt1", listOf(PlayerScore("p1", 10), PlayerScore("p2", 5)), 1767225600000L, manualWinners = listOf("p1"))
+        val result = useCase("gt1", listOf(PlayerScore("p1", 10), PlayerScore("p2", 5)), 1767225600000L, manualWinners = listOf("p1"))
+        assertTrue(result.isSuccess)
         assertEquals(listOf("p1"), matchRepo.getAll().first().manualWinners)
     }
 }

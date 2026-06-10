@@ -2,6 +2,7 @@ package com.scoreo.ui.history
 
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import com.scoreo.application.GetGameTypesUseCase
 import com.scoreo.application.GetMatchesUseCase
 import com.scoreo.application.GetPlayersUseCase
@@ -25,13 +26,13 @@ class HistoryHandler(
     private val getPlayers: GetPlayersUseCase,
     private val getGameTypes: GetGameTypesUseCase,
 ) {
-    val state: List<MatchDisplay>
-        get() = buildState()
+    var state by mutableStateOf(emptyList<MatchDisplay>())
+        private set
 
-    private fun buildState(): List<MatchDisplay> {
+    fun refresh() {
         val playerMap = getPlayers().associateBy { it.id }
         val gameTypeMap = getGameTypes().associateBy { it.id }
-        return getMatches().sortedByDescending { it.date }.map { match ->
+        state = getMatches().sortedByDescending { it.date }.map { match ->
             val gameType = gameTypeMap[match.gameTypeId]
             val dateFormatted = try {
                 Instant.fromEpochMilliseconds(match.date)

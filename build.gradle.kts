@@ -33,6 +33,11 @@ kotlin {
         }
         commonTest.dependencies {
             implementation(kotlin("test"))
+            implementation(libs.kotlinx.serialization.json)
         }
     }
+}
+
+tasks.named<Copy>("jsBrowserDistribution") {
+    duplicatesStrategy = DuplicatesStrategy.INCLUDE
 }

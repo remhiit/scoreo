@@ -83,13 +83,13 @@ html, body {
 }
 
 .header-spacer {
-    width: 40px;
-    height: 40px;
+    width: 44px;
+    height: 44px;
 }
 
 .back-btn {
-    width: 40px;
-    height: 40px;
+    width: 44px;
+    height: 44px;
     border: none;
     background: transparent;
     font-size: 20px;
@@ -106,8 +106,8 @@ html, body {
 .back-btn:hover { background: var(--primary-light); }
 
 .burger-btn {
-    width: 40px;
-    height: 40px;
+    width: 44px;
+    height: 44px;
     border: none;
     background: transparent;
     font-size: 20px;
@@ -150,11 +150,11 @@ html, body {
     align-self: flex-end;
     margin-right: 12px;
     margin-bottom: 8px;
-    width: 36px;
-    height: 36px;
+    width: 44px;
+    height: 44px;
     border: none;
     background: transparent;
-    font-size: 18px;
+    font-size: 20px;
     color: var(--on-surface-variant);
     cursor: pointer;
     border-radius: 50%;
@@ -366,7 +366,7 @@ h2 { font-size: 18px; font-weight: 500; margin-bottom: 12px; }
 .btn {
     border: none;
     border-radius: var(--radius);
-    padding: 10px 20px;
+    padding: 12px 24px;
     font-size: 15px;
     font-weight: 500;
     cursor: pointer;
@@ -488,7 +488,7 @@ h2 { font-size: 18px; font-weight: 500; margin-bottom: 12px; }
     background: transparent;
     border: none;
     box-shadow: inset 0 -2px 0 transparent;
-    padding: 12px 16px 10px;
+    padding: 14px 16px;
     font-size: 15px;
     font-weight: 500;
     color: var(--on-surface-variant);
@@ -522,12 +522,12 @@ h2 { font-size: 18px; font-weight: 500; margin-bottom: 12px; }
     background: transparent;
     border: 1.5px solid var(--outline);
     border-radius: 50%;
-    width: 28px;
-    height: 28px;
+    width: 44px;
+    height: 44px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 16px;
+    font-size: 22px;
     color: var(--primary);
     cursor: pointer;
     flex-shrink: 0;
@@ -600,7 +600,7 @@ h2 { font-size: 18px; font-weight: 500; margin-bottom: 12px; }
 }
 
 .score-table-action {
-    width: 28px;
+    width: 44px;
     padding: 4px;
 }
 
@@ -609,8 +609,8 @@ h2 { font-size: 18px; font-weight: 500; margin-bottom: 12px; }
     border: none;
     color: var(--on-surface-variant);
     cursor: pointer;
-    font-size: 13px;
-    padding: 2px 4px;
+    font-size: 20px;
+    padding: 12px;
     border-radius: 4px;
     line-height: 1;
 }
@@ -630,7 +630,7 @@ h2 { font-size: 18px; font-weight: 500; margin-bottom: 12px; }
     background: transparent;
     border: 1.5px dashed var(--outline);
     border-radius: var(--radius);
-    padding: 6px 24px;
+    padding: 12px 24px;
     font-size: 20px;
     color: var(--primary);
     cursor: pointer;

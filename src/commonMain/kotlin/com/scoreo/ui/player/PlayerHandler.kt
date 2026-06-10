@@ -6,6 +6,7 @@ import androidx.compose.runtime.setValue
 import com.scoreo.application.AddPlayerUseCase
 import com.scoreo.application.GetPlayerStatsUseCase
 import com.scoreo.application.GetPlayersUseCase
+import com.scoreo.ui.util.requireNonBlank
 
 class PlayerHandler(
     private val addPlayer: AddPlayerUseCase,
@@ -22,8 +23,9 @@ class PlayerHandler(
             is PlayerIntent.UpdateInput -> state = state.copy(inputName = intent.name, error = null)
             is PlayerIntent.AddPlayer -> {
                 val name = state.inputName.trim()
-                if (name.isBlank()) {
-                    state = state.copy(error = "Name cannot be empty")
+                val error = requireNonBlank(name)
+                if (error != null) {
+                    state = state.copy(error = error)
                     return
                 }
                 addPlayer(name)

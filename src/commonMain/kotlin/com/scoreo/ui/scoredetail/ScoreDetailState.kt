@@ -11,4 +11,11 @@ data class ScoreDetailState(
     val modalWinners: Set<String> = emptySet(),
     val error: String? = null,
     val saved: Boolean = false,
-)
+) {
+    val totals: Map<String, Int>
+        get() = players.associate { player ->
+            player.id to rounds.sumOf { round ->
+                round[player.id]?.trim()?.toIntOrNull() ?: 0
+            }
+        }
+}

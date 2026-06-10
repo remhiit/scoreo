@@ -31,7 +31,7 @@ class ScoreDetailHandler(
             }
 
             is ScoreDetailIntent.RemoveRound -> {
-                if (state.rounds.size > 1) {
+                if (state.rounds.size > 1 && intent.index in state.rounds.indices) {
                     val rounds = state.rounds.toMutableList()
                     rounds.removeAt(intent.index)
                     state = state.copy(rounds = rounds)
@@ -83,18 +83,18 @@ class ScoreDetailHandler(
 
     private fun saveMatch(manualWinners: List<String>) {
         val playerScores = players.map { player ->
-            val total = state.rounds.sumOf { round ->
-                round[player.id]?.trim()?.toIntOrNull() ?: 0
-            }
-            PlayerScore(playerId = player.id, score = total)
+            PlayerScore(playerId = player.id, score = state.totals[player.id] ?: 0)
         }
-        createMatch(
+        val result = createMatch(
             gameTypeId = gameType.id,
             playerScores = playerScores,
             date = currentDate(),
             manualWinners = manualWinners,
         )
-        state = state.copy(saved = true)
+        result.fold(
+            onSuccess = { state = state.copy(saved = true) },
+            onFailure = { e -> state = state.copy(error = e.message) },
+        )
     }
 
     fun reset() {

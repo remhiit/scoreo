@@ -42,10 +42,7 @@ fun ScoreDetailScreen(
         Tr {
             state.players.forEach { player ->
                 Td(attrs = { classes("score-table-cell", "score-table-total") }) {
-                    val total = state.rounds.sumOf { round ->
-                        round[player.id]?.trim()?.toIntOrNull() ?: 0
-                    }
-                    Text("$total")
+                    Text("${state.totals[player.id] ?: 0}")
                 }
             }
             if (state.rounds.size > 1) {
@@ -106,9 +103,7 @@ fun ScoreDetailScreen(
         Div(attrs = { classes("modal-content") }) {
             Div(attrs = { classes("modal-title") }) { Text("Sélectionner le(s) gagnant(s)") }
             state.players.forEach { player ->
-                val total = state.rounds.sumOf { round ->
-                    round[player.id]?.trim()?.toIntOrNull() ?: 0
-                }
+                val total = state.totals[player.id] ?: 0
                 Div(attrs = { classes("modal-row") }) {
                     Input(type = InputType.Checkbox, attrs = {
                         checked(player.id in state.modalWinners)

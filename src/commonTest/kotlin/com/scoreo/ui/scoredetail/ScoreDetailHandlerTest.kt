@@ -27,6 +27,13 @@ class ScoreDetailHandlerTest {
         return Pair(handler, matchRepo)
     }
 
+    private fun ScoreDetailHandler.givenManualGameWithScores(): ScoreDetailHandler {
+        handle(ScoreDetailIntent.UpdateScore(0, "alice", "10"))
+        handle(ScoreDetailIntent.UpdateScore(0, "bob", "5"))
+        handle(ScoreDetailIntent.Terminate)
+        return this
+    }
+
     @Test
     fun `initial state has one empty round and no modal`() {
         val (handler, _) = buildHandler()
@@ -63,6 +70,20 @@ class ScoreDetailHandlerTest {
     }
 
     @Test
+    fun `RemoveRound with negative index does nothing`() {
+        val (handler, _) = buildHandler()
+        handler.handle(ScoreDetailIntent.RemoveRound(-1))
+        assertEquals(1, handler.state.rounds.size)
+    }
+
+    @Test
+    fun `RemoveRound with out of bounds index does nothing`() {
+        val (handler, _) = buildHandler()
+        handler.handle(ScoreDetailIntent.RemoveRound(99))
+        assertEquals(1, handler.state.rounds.size)
+    }
+
+    @Test
     fun `UpdateScore stores value and clears error`() {
         val (handler, _) = buildHandler()
         handler.handle(ScoreDetailIntent.UpdateScore(0, "alice", "10"))
@@ -94,9 +115,7 @@ class ScoreDetailHandlerTest {
     @Test
     fun `Terminate with MANUAL winCondition opens modal instead of saving`() {
         val (handler, matchRepo) = buildHandler(winCondition = WinCondition.MANUAL)
-        handler.handle(ScoreDetailIntent.UpdateScore(0, "alice", "10"))
-        handler.handle(ScoreDetailIntent.UpdateScore(0, "bob", "5"))
-        handler.handle(ScoreDetailIntent.Terminate)
+        handler.givenManualGameWithScores()
         assertTrue(handler.state.showWinnerModal)
         assertFalse(handler.state.saved)
         assertEquals(0, matchRepo.getAll().size)
@@ -107,7 +126,7 @@ class ScoreDetailHandlerTest {
         val (handler, matchRepo) = buildHandler()
         handler.handle(ScoreDetailIntent.UpdateScore(0, "alice", "abc"))
         handler.handle(ScoreDetailIntent.Terminate)
-        assertNotNull(handler.state.error)
+        assertEquals("Invalid score for Alice in round 1", handler.state.error)
         assertFalse(handler.state.saved)
         assertEquals(0, matchRepo.getAll().size)
     }
@@ -116,16 +135,14 @@ class ScoreDetailHandlerTest {
     fun `Terminate with empty score sets error`() {
         val (handler, matchRepo) = buildHandler()
         handler.handle(ScoreDetailIntent.Terminate)
-        assertNotNull(handler.state.error)
+        assertEquals("Invalid score for Alice in round 1", handler.state.error)
         assertFalse(handler.state.saved)
     }
 
     @Test
     fun `DismissModal closes modal and clears error`() {
         val (handler, _) = buildHandler(winCondition = WinCondition.MANUAL)
-        handler.handle(ScoreDetailIntent.UpdateScore(0, "alice", "10"))
-        handler.handle(ScoreDetailIntent.UpdateScore(0, "bob", "5"))
-        handler.handle(ScoreDetailIntent.Terminate)
+        handler.givenManualGameWithScores()
         assertTrue(handler.state.showWinnerModal)
         handler.handle(ScoreDetailIntent.DismissModal)
         assertFalse(handler.state.showWinnerModal)
@@ -135,9 +152,7 @@ class ScoreDetailHandlerTest {
     @Test
     fun `ToggleModalWinner adds and removes winner`() {
         val (handler, _) = buildHandler(winCondition = WinCondition.MANUAL)
-        handler.handle(ScoreDetailIntent.UpdateScore(0, "alice", "10"))
-        handler.handle(ScoreDetailIntent.UpdateScore(0, "bob", "5"))
-        handler.handle(ScoreDetailIntent.Terminate)
+        handler.givenManualGameWithScores()
         handler.handle(ScoreDetailIntent.ToggleModalWinner("alice"))
         assertTrue("alice" in handler.state.modalWinners)
         handler.handle(ScoreDetailIntent.ToggleModalWinner("alice"))
@@ -147,11 +162,9 @@ class ScoreDetailHandlerTest {
     @Test
     fun `ConfirmWinners with empty selection sets error and does not save`() {
         val (handler, matchRepo) = buildHandler(winCondition = WinCondition.MANUAL)
-        handler.handle(ScoreDetailIntent.UpdateScore(0, "alice", "10"))
-        handler.handle(ScoreDetailIntent.UpdateScore(0, "bob", "5"))
-        handler.handle(ScoreDetailIntent.Terminate)
+        handler.givenManualGameWithScores()
         handler.handle(ScoreDetailIntent.ConfirmWinners)
-        assertNotNull(handler.state.error)
+        assertEquals("Select at least one winner", handler.state.error)
         assertFalse(handler.state.saved)
         assertEquals(0, matchRepo.getAll().size)
     }
@@ -159,9 +172,7 @@ class ScoreDetailHandlerTest {
     @Test
     fun `ConfirmWinners with valid selection saves match with manual winners`() {
         val (handler, matchRepo) = buildHandler(winCondition = WinCondition.MANUAL)
-        handler.handle(ScoreDetailIntent.UpdateScore(0, "alice", "10"))
-        handler.handle(ScoreDetailIntent.UpdateScore(0, "bob", "5"))
-        handler.handle(ScoreDetailIntent.Terminate)
+        handler.givenManualGameWithScores()
         handler.handle(ScoreDetailIntent.ToggleModalWinner("alice"))
         handler.handle(ScoreDetailIntent.ConfirmWinners)
         assertTrue(handler.state.saved)

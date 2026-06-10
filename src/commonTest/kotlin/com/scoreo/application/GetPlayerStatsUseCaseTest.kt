@@ -64,6 +64,17 @@ class GetPlayerStatsUseCaseTest {
     }
 
     @Test
+    fun `ignores matches with unknown game type`() {
+        val gameTypeRepo = FakeGameTypeRepository()
+        val matchRepo = FakeMatchRepository()
+        matchRepo.save(Match("m1", 1000L, "unknown_gt", listOf(PlayerScore("alice", 10))))
+
+        val stats = GetPlayerStatsUseCase(matchRepo, gameTypeRepo)()
+
+        assertEquals(emptyMap(), stats)
+    }
+
+    @Test
     fun `uses manual winners for MANUAL condition`() {
         val gameTypeRepo = FakeGameTypeRepository()
         val matchRepo = FakeMatchRepository()

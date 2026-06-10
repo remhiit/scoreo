@@ -5,6 +5,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import com.scoreo.application.AddGameTypeUseCase
 import com.scoreo.application.GetGameTypesUseCase
+import com.scoreo.ui.util.requireNonBlank
 
 class GameTypeHandler(
     private val addGameType: AddGameTypeUseCase,
@@ -25,8 +26,9 @@ class GameTypeHandler(
                 state = state.copy(selectedWinCondition = intent.winCondition)
             is GameTypeIntent.AddGameType -> {
                 val name = state.inputName.trim()
-                if (name.isBlank()) {
-                    state = state.copy(error = "Name cannot be empty")
+                val error = requireNonBlank(name)
+                if (error != null) {
+                    state = state.copy(error = error)
                     return
                 }
                 addGameType(name, state.selectedWinCondition)

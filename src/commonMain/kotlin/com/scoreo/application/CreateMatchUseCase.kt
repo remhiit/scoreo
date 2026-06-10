@@ -14,10 +14,9 @@ class CreateMatchUseCase(
         playerScores: List<PlayerScore>,
         date: Long,
         manualWinners: List<String> = emptyList(),
-    ): Match {
-        requireNotNull(gameTypeRepository.findById(gameTypeId)) {
-            "GameType $gameTypeId not found"
-        }
+    ): Result<Match> = runCatching {
+        val gameType = gameTypeRepository.findById(gameTypeId)
+            ?: error("GameType $gameTypeId not found")
         val match = Match(
             id = IdGenerator.newId(),
             date = date,
@@ -26,6 +25,6 @@ class CreateMatchUseCase(
             manualWinners = manualWinners,
         )
         matchRepository.save(match)
-        return match
+        match
     }
 }

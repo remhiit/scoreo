@@ -8,7 +8,6 @@ import com.scoreo.application.GetPlayerStatsUseCase
 import com.scoreo.application.GetPlayersUseCase
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
@@ -62,7 +61,7 @@ class PlayerHandlerTest {
         handler.handle(PlayerIntent.AddPlayer)
 
         assertTrue(handler.state.players.isEmpty())
-        assertNotNull(handler.state.error)
+        assertEquals("Name cannot be empty", handler.state.error)
     }
 
     @Test
@@ -72,7 +71,7 @@ class PlayerHandlerTest {
         handler.handle(PlayerIntent.AddPlayer)
 
         assertTrue(handler.state.players.isEmpty())
-        assertNotNull(handler.state.error)
+        assertEquals("Name cannot be empty", handler.state.error)
     }
 
     @Test

@@ -11,6 +11,7 @@ import com.scoreo.domain.model.GameType
 import com.scoreo.domain.model.Player
 import com.scoreo.domain.model.WinCondition
 import com.scoreo.ui.player.PlayerHandler
+import com.scoreo.ui.util.requireNonBlank
 import org.jetbrains.compose.web.attributes.InputType
 import org.jetbrains.compose.web.dom.Button
 import org.jetbrains.compose.web.dom.Div
@@ -123,8 +124,9 @@ fun HomeScreen(
                             classes("btn", "btn-primary")
                             onClick {
                                 val name = addPlayerInput.trim()
-                                if (name.isBlank()) {
-                                    addPlayerError = "Name cannot be empty"
+                                val error = requireNonBlank(name)
+                                if (error != null) {
+                                    addPlayerError = error
                                     return@onClick
                                 }
                                 val player = onAddPlayer(name)
@@ -253,8 +255,9 @@ fun HomeScreen(
                         classes("btn", "btn-primary", "btn-full")
                         onClick {
                             val name = inlineGameName.trim()
-                            if (name.isBlank()) {
-                                inlineGameError = "Name cannot be empty"
+                            val error = requireNonBlank(name)
+                            if (error != null) {
+                                inlineGameError = error
                                 return@onClick
                             }
                             val created = onAddGameType(name, inlineGameWinCondition)

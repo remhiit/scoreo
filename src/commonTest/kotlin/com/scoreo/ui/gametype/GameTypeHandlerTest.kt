@@ -6,7 +6,6 @@ import com.scoreo.application.GetGameTypesUseCase
 import com.scoreo.domain.model.WinCondition
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
@@ -60,7 +59,7 @@ class GameTypeHandlerTest {
         handler.handle(GameTypeIntent.UpdateName("   "))
         handler.handle(GameTypeIntent.AddGameType)
         assertTrue(handler.state.gameTypes.isEmpty())
-        assertNotNull(handler.state.error)
+        assertEquals("Name cannot be empty", handler.state.error)
     }
 
     @Test
@@ -68,7 +67,7 @@ class GameTypeHandlerTest {
         val handler = buildHandler()
         handler.handle(GameTypeIntent.AddGameType)
         assertTrue(handler.state.gameTypes.isEmpty())
-        assertNotNull(handler.state.error)
+        assertEquals("Name cannot be empty", handler.state.error)
     }
 
     @Test
