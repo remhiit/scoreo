@@ -8,4 +8,5 @@ data class PlayerState(
     val stats: Map<String, PlayerStats> = emptyMap(),
     val inputName: String = "",
     val error: String? = null,
+    val deleteConfirmPlayerId: String? = null,
 )

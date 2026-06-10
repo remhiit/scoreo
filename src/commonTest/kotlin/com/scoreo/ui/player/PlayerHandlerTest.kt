@@ -4,8 +4,14 @@ import com.scoreo.FakeGameTypeRepository
 import com.scoreo.FakeMatchRepository
 import com.scoreo.FakePlayerRepository
 import com.scoreo.application.AddPlayerUseCase
+import com.scoreo.application.DeletePlayerUseCase
 import com.scoreo.application.GetPlayerStatsUseCase
 import com.scoreo.application.GetPlayersUseCase
+import com.scoreo.domain.model.GameType
+import com.scoreo.domain.model.Match
+import com.scoreo.domain.model.Player
+import com.scoreo.domain.model.PlayerScore
+import com.scoreo.domain.model.WinCondition
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
@@ -13,12 +19,16 @@ import kotlin.test.assertTrue
 
 class PlayerHandlerTest {
 
-    private fun buildHandler(repo: FakePlayerRepository = FakePlayerRepository()) =
-        PlayerHandler(
-            addPlayer = AddPlayerUseCase(repo),
-            getPlayers = GetPlayersUseCase(repo),
-            getPlayerStats = GetPlayerStatsUseCase(FakeMatchRepository(), FakeGameTypeRepository()),
-        )
+    private fun buildHandler(
+        repo: FakePlayerRepository = FakePlayerRepository(),
+        matchRepo: FakeMatchRepository = FakeMatchRepository(),
+        gameTypeRepo: FakeGameTypeRepository = FakeGameTypeRepository(),
+    ) = PlayerHandler(
+        addPlayer = AddPlayerUseCase(repo),
+        getPlayers = GetPlayersUseCase(repo),
+        getPlayerStats = GetPlayerStatsUseCase(matchRepo, gameTypeRepo),
+        deletePlayer = DeletePlayerUseCase(repo),
+    )
 
     @Test
     fun `initial state has empty player list and empty input`() {
@@ -84,5 +94,92 @@ class PlayerHandlerTest {
         handler.handle(PlayerIntent.AddPlayer)
 
         assertEquals(2, handler.state.players.size)
+    }
+
+    @Test
+    fun `ShowDeleteConfirm sets deleteConfirmPlayerId`() {
+        val repo = FakePlayerRepository()
+        repo.save(Player("p1", "Alice"))
+        val handler = buildHandler(repo)
+
+        handler.handle(PlayerIntent.ShowDeleteConfirm("p1"))
+
+        assertEquals("p1", handler.state.deleteConfirmPlayerId)
+    }
+
+    @Test
+    fun `DismissDeleteConfirm clears deleteConfirmPlayerId`() {
+        val repo = FakePlayerRepository()
+        repo.save(Player("p1", "Alice"))
+        val handler = buildHandler(repo)
+
+        handler.handle(PlayerIntent.ShowDeleteConfirm("p1"))
+        handler.handle(PlayerIntent.DismissDeleteConfirm)
+
+        assertNull(handler.state.deleteConfirmPlayerId)
+    }
+
+    @Test
+    fun `DeletePlayer removes player from active list`() {
+        val repo = FakePlayerRepository()
+        repo.save(Player("p1", "Alice"))
+        repo.save(Player("p2", "Bob"))
+        val handler = buildHandler(repo)
+
+        handler.handle(PlayerIntent.ShowDeleteConfirm("p1"))
+        handler.handle(PlayerIntent.DeletePlayer("p1"))
+
+        assertEquals(1, handler.state.players.size)
+        assertEquals("Bob", handler.state.players.first().name)
+        assertNull(handler.state.deleteConfirmPlayerId)
+    }
+
+    @Test
+    fun `DeletePlayer with anonymize blanks the name`() {
+        val repo = FakePlayerRepository()
+        repo.save(Player("p1", "Alice"))
+        val handler = buildHandler(repo)
+
+        handler.handle(PlayerIntent.DeletePlayer("p1", anonymize = true))
+
+        assertTrue(handler.state.players.isEmpty())
+        val all = repo.getAll(includeInactive = true)
+        assertEquals(1, all.size)
+        assertEquals("", all.first().name)
+        assertEquals(false, all.first().active)
+    }
+
+    @Test
+    fun `DeletePlayer without anonymize keeps the name`() {
+        val repo = FakePlayerRepository()
+        repo.save(Player("p1", "Alice"))
+        val handler = buildHandler(repo)
+
+        handler.handle(PlayerIntent.DeletePlayer("p1", anonymize = false))
+
+        assertTrue(handler.state.players.isEmpty())
+        val all = repo.getAll(includeInactive = true)
+        assertEquals(1, all.size)
+        assertEquals("Alice", all.first().name)
+        assertEquals(false, all.first().active)
+    }
+
+    @Test
+    fun `DeletePlayer keeps stats for remaining players`() {
+        val repo = FakePlayerRepository()
+        val matchRepo = FakeMatchRepository()
+        val gameTypeRepo = FakeGameTypeRepository()
+        repo.save(Player("p1", "Alice"))
+        repo.save(Player("p2", "Bob"))
+        gameTypeRepo.save(GameType("gt1", "Test", WinCondition.HIGHEST_SCORE))
+        matchRepo.save(Match("m1", 1000L, "gt1", listOf(PlayerScore("p1", 10), PlayerScore("p2", 5))))
+        val handler = buildHandler(repo, matchRepo, gameTypeRepo)
+
+        handler.handle(PlayerIntent.DeletePlayer("p1"))
+
+        assertEquals(1, handler.state.players.size)
+        assertEquals("Bob", handler.state.players.first().name)
+        val bobStats = handler.state.stats["p2"]
+        assertTrue(bobStats != null && bobStats.losses == 1)
     }
 }

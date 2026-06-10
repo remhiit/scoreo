@@ -84,6 +84,7 @@ class HistoryHandlerTest {
         val display = handler2.state.first()
         assertNotNull(display.players["p1"])
         assertEquals("Alice", display.players["p1"]?.name)
+        assertEquals("Alice", display.playerLabels["p1"])
     }
 
     @Test
@@ -125,6 +126,34 @@ class HistoryHandlerTest {
         handler.refresh()
 
         assertNotNull(handler.state.first().dateFormatted)
+    }
+
+    @Test
+    fun `playerLabels shows deleted player suffix`() {
+        val playerRepo = FakePlayerRepository()
+        val gameTypeRepo = FakeGameTypeRepository()
+        val matchRepo = FakeMatchRepository()
+        val handler = buildHandler(playerRepo, gameTypeRepo, matchRepo)
+        playerRepo.save(Player("p1", "Alice", active = false))
+        gameTypeRepo.save(GameType("gt1", "Test", WinCondition.HIGHEST_SCORE))
+        matchRepo.save(Match("m1", 1000L, "gt1", listOf(PlayerScore("p1", 10))))
+
+        handler.refresh()
+
+        assertEquals("Alice (supprimé)", handler.state.first().playerLabels["p1"])
+    }
+
+    @Test
+    fun `playerLabels shows generic text when name is blank`() {
+        val playerRepo = FakePlayerRepository()
+        val matchRepo = FakeMatchRepository()
+        val handler = buildHandler(playerRepo = playerRepo, matchRepo = matchRepo)
+        playerRepo.save(Player("p1", "", active = false))
+        matchRepo.save(Match("m1", 1000L, "gt1", listOf(PlayerScore("p1", 10))))
+
+        handler.refresh()
+
+        assertEquals("Joueur supprimé", handler.state.first().playerLabels["p1"])
     }
 
     @Test

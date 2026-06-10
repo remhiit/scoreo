@@ -75,6 +75,8 @@ Data stored in `localStorage` must remain readable after an app update.
 
 **Rule**: any change to a serialized domain model must be backward compatible with at least the previous version.
 
+**Soft-delete**: `Player.active = false` (défaut `true`) masque le joueur des écrans actifs (Home, Setup, ScoreDetail) mais le conserve dans l'historique. `getAll()` exclut les inactifs par défaut. `getAll(includeInactive = true)` les inclut pour le rendu historique. Le nom peut être optionnellement blanchi (`anonymize = true` dans `delete()`).
+
 In practice:
 - **Adding a field**: always provide a default value (`= emptyList()`, `= null`, etc.) so old data deserializes cleanly. `Json { ignoreUnknownKeys = true }` is already configured.
 - **Renaming / removing a field**: requires a migration step — read old key, transform, write to new key. Document the migration in a `doc/technical/migrations.md` file.
@@ -85,8 +87,8 @@ This applies to: `Player`, `GameType`, `Match`, `PlayerScore`, `WinCondition`.
 **Current entity formats:**
 
 | Entity | Fields |
-|---|---|
-| `Player` | `id: String` (UUID v4), `name: String` |
+|---|---|---|
+| `Player` | `id: String` (UUID v4), `name: String`, `active: Boolean = true` |
 | `GameType` | `id: String` (UUID v4), `name: String`, `winCondition: WinCondition` |
 | `Match` | `id: String` (UUID v4), `date: Long` (epoch ms), `gameTypeId: String`, `playerScores: List<PlayerScore>`, `manualWinners: List<String>` |
 | `PlayerScore` | `playerId: String`, `score: Int` |

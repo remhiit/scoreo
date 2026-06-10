@@ -379,6 +379,33 @@ h2 { font-size: 18px; font-weight: 500; margin-bottom: 12px; }
 
 .btn-primary { background: var(--primary); color: #fff; }
 .btn-secondary { background: var(--surface-variant); color: var(--on-surface); }
+.btn-danger {
+    background: transparent;
+    border: none;
+    color: var(--on-surface-variant);
+    cursor: pointer;
+    font-size: 18px;
+    padding: 8px;
+    border-radius: 50%;
+    line-height: 1;
+    transition: background 0.15s, color 0.15s;
+}
+.btn-danger:hover {
+    background: #fce4ec;
+    color: var(--error);
+}
+.btn-danger-filled {
+    background: var(--error);
+    color: #fff;
+    border-radius: var(--radius);
+    padding: 12px 24px;
+    font-size: 15px;
+    font-weight: 500;
+    border: none;
+    cursor: pointer;
+    transition: opacity 0.15s;
+}
+.btn-danger-filled:hover { opacity: 0.85; }
 .btn-full { width: 100%; margin-top: 8px; }
 
 /* ── Select ── */
@@ -680,6 +707,12 @@ h2 { font-size: 18px; font-weight: 500; margin-bottom: 12px; }
     font-weight: 600;
     margin-bottom: 16px;
     color: var(--on-surface);
+}
+
+.modal-body {
+    font-size: 14px;
+    color: var(--on-surface-variant);
+    margin-bottom: 16px;
 }
 
 .modal-row {

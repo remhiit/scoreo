@@ -17,6 +17,7 @@ data class MatchDisplay(
     val match: Match,
     val gameType: GameType?,
     val players: Map<String, Player>,
+    val playerLabels: Map<String, String>,
     val winners: List<String>,
     val dateFormatted: String,
 )
@@ -30,7 +31,7 @@ class HistoryHandler(
         private set
 
     fun refresh() {
-        val playerMap = getPlayers().associateBy { it.id }
+        val playerMap = getPlayers(includeInactive = true).associateBy { it.id }
         val gameTypeMap = getGameTypes().associateBy { it.id }
         state = getMatches().sortedByDescending { it.date }.map { match ->
             val gameType = gameTypeMap[match.gameTypeId]
@@ -43,6 +44,9 @@ class HistoryHandler(
                 match = match,
                 gameType = gameType,
                 players = playerMap,
+                playerLabels = playerMap.mapValues { (_, p) ->
+                    if (p.active) p.name else if (p.name.isBlank()) "Joueur supprimé" else "${p.name} (supprimé)"
+                },
                 winners = gameType?.let { match.getWinners(it) } ?: emptyList(),
                 dateFormatted = dateFormatted,
             )

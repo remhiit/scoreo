@@ -95,4 +95,35 @@ class SerializationTest {
         assertEquals("p1", decoded.playerId)
         assertEquals(42, decoded.score)
     }
+
+    @Test
+    fun `Player with active field serialization round-trip`() {
+        val original = Player("p1", "Alice", active = true)
+        val json = testJson.encodeToString(original)
+        val decoded = testJson.decodeFromString<Player>(json)
+        assertEquals(original, decoded)
+    }
+
+    @Test
+    fun `Player with active false serialization round-trip`() {
+        val original = Player("p1", "Alice", active = false)
+        val json = testJson.encodeToString(original)
+        val decoded = testJson.decodeFromString<Player>(json)
+        assertEquals(original, decoded)
+    }
+
+    @Test
+    fun `Player with anonymized name serialization round-trip`() {
+        val original = Player("p1", "", active = false)
+        val json = testJson.encodeToString(original)
+        val decoded = testJson.decodeFromString<Player>(json)
+        assertEquals(original, decoded)
+    }
+
+    @Test
+    fun `Player without active field defaults to true (backward compat)`() {
+        val json = """{"id": "p1", "name": "Alice"}"""
+        val decoded = testJson.decodeFromString<Player>(json)
+        assertEquals(Player("p1", "Alice", active = true), decoded)
+    }
 }

@@ -28,7 +28,7 @@ fun HistoryScreen(handler: HistoryHandler) {
                         Span(attrs = { classes("card-sub") }) { Text(display.dateFormatted) }
                     }
                     display.match.playerScores.forEach { ps ->
-                        val player = display.players[ps.playerId]
+                        val label = display.playerLabels[ps.playerId] ?: ps.playerId
                         val isWinner = ps.playerId in display.winners
                         Div(attrs = {
                             style {
@@ -39,7 +39,7 @@ fun HistoryScreen(handler: HistoryHandler) {
                             }
                         }) {
                             Span {
-                                Text((player?.name ?: ps.playerId) + if (isWinner) " 🏆" else "")
+                                Text(label + if (isWinner) " 🏆" else "")
                             }
                             Span { Text("${ps.score}") }
                         }

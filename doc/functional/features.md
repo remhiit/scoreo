@@ -53,6 +53,17 @@
 
 5. **Setup**: manage players and game types — accessible via the burger menu (☰)
 
+### Player Deletion
+
+- Accessible depuis **Setup > Players** : bouton 🗑 sur chaque carte joueur
+- Soft-delete : le joueur est masqué (n'apparaît plus dans Home, ni Setup, ni ScoreDetail)
+- L'historique des matchs est conservé
+- Deux options dans la modale de confirmation :
+  - **Par défaut** (checkbox décochée) : nom conservé dans l'historique → "Alice (supprimé)"
+  - **Checkbox cochée** (Effacer le nom) : nom blanchi → "Joueur supprimé"
+- Les stats du joueur supprimé ne sont plus affichées dans Home
+- Les stats des autres joueurs restent inchangées
+
 ## Navigation
 
 Top header bar present on all screens:

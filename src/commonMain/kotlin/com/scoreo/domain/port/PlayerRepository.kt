@@ -3,6 +3,7 @@ package com.scoreo.domain.port
 import com.scoreo.domain.model.Player
 
 interface PlayerRepository {
-    fun getAll(): List<Player>
+    fun getAll(includeInactive: Boolean = false): List<Player>
     fun save(player: Player)
+    fun delete(id: String, anonymize: Boolean = false)
 }

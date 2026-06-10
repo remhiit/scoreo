@@ -9,6 +9,7 @@ import androidx.compose.runtime.setValue
 import com.scoreo.application.AddGameTypeUseCase
 import com.scoreo.application.AddPlayerUseCase
 import com.scoreo.application.CreateMatchUseCase
+import com.scoreo.application.DeletePlayerUseCase
 import com.scoreo.application.GetGameTypesUseCase
 import com.scoreo.application.GetMatchesUseCase
 import com.scoreo.application.GetPlayerStatsUseCase
@@ -51,6 +52,7 @@ fun App(
             addPlayer = AddPlayerUseCase(playerRepository),
             getPlayers = GetPlayersUseCase(playerRepository),
             getPlayerStats = GetPlayerStatsUseCase(matchRepository, gameTypeRepository),
+            deletePlayer = DeletePlayerUseCase(playerRepository),
         )
     }
     val gameTypeHandler = remember {

@@ -28,4 +28,29 @@ class GetPlayersUseCaseTest {
         assertEquals(2, result.size)
         assertEquals(listOf("Alice", "Bob"), result.map { it.name })
     }
+
+    @Test
+    fun `excludes inactive players by default`() {
+        val repo = FakePlayerRepository()
+        repo.save(Player(id = "1", name = "Alice", active = true))
+        repo.save(Player(id = "2", name = "Bob", active = false))
+        val useCase = GetPlayersUseCase(repo)
+
+        val result = useCase()
+
+        assertEquals(1, result.size)
+        assertEquals("Alice", result.first().name)
+    }
+
+    @Test
+    fun `includes inactive players when requested`() {
+        val repo = FakePlayerRepository()
+        repo.save(Player(id = "1", name = "Alice", active = true))
+        repo.save(Player(id = "2", name = "Bob", active = false))
+        val useCase = GetPlayersUseCase(repo)
+
+        val result = useCase(includeInactive = true)
+
+        assertEquals(2, result.size)
+    }
 }
