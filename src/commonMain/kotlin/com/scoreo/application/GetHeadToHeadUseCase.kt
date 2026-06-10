@@ -1,8 +1,12 @@
 package com.scoreo.application
 
+import com.scoreo.domain.model.GameType
+import com.scoreo.domain.model.Match
 import com.scoreo.domain.port.GameTypeRepository
 import com.scoreo.domain.port.MatchRepository
 import com.scoreo.domain.port.PlayerRepository
+
+private const val K = 32
 
 class GetHeadToHeadUseCase(
     private val matchRepository: MatchRepository,
@@ -12,12 +16,13 @@ class GetHeadToHeadUseCase(
     operator fun invoke(): List<PlayerDetail> {
         val gameTypes = gameTypeRepository.getAll().associateBy { it.id }
         val players = playerRepository.getAll(includeInactive = true).associateBy { it.id }
+        val allMatches = matchRepository.getAll()
 
         val totalWins = mutableMapOf<String, Int>()
         val totalLosses = mutableMapOf<String, Int>()
         val h2h = mutableMapOf<Pair<String, String>, MutableList<Int>>()
 
-        matchRepository.getAll().forEach { match ->
+        allMatches.forEach { match ->
             val gameType = gameTypes[match.gameTypeId] ?: return@forEach
             val winners = match.getWinners(gameType).toSet()
             val participants = match.playerScores.map { it.playerId }
@@ -46,6 +51,8 @@ class GetHeadToHeadUseCase(
             }
         }
 
+        val eloMap = computeElo(allMatches, gameTypes)
+
         return players.entries.mapNotNull { (pid, player) ->
             val wins = totalWins[pid] ?: 0
             val losses = totalLosses[pid] ?: 0
@@ -68,12 +75,35 @@ class GetHeadToHeadUseCase(
                 name = player.name,
                 wins = wins,
                 losses = losses,
+                elo = eloMap[pid] ?: 1200,
                 headToHead = headToHead,
             )
-        }.sortedWith(
-            compareByDescending<PlayerDetail> {
-                if (it.wins + it.losses == 0) 0f else it.wins.toFloat() / (it.wins + it.losses)
-            }.thenByDescending { it.wins }
-        )
+        }.sortedByDescending { it.elo }
+    }
+
+    private fun computeElo(matches: List<Match>, gameTypes: Map<String, GameType>): Map<String, Int> {
+        val elo = mutableMapOf<String, Int>()
+        val sorted = matches.sortedBy { it.date }
+
+        for (match in sorted) {
+            val gt = gameTypes[match.gameTypeId] ?: continue
+            val winners = match.getWinners(gt).toSet()
+            if (winners.isEmpty()) continue
+            val participants = match.playerScores.map { it.playerId }
+
+            for (winner in winners) {
+                for (loser in participants) {
+                    if (loser in winners) continue
+                    val rW = elo[winner] ?: 1200
+                    val rL = elo[loser] ?: 1200
+                    val eW = 1.0 / (1.0 + Math.pow(10.0, (rL - rW) / 400.0))
+                    val eL = 1.0 / (1.0 + Math.pow(10.0, (rW - rL) / 400.0))
+                    elo[winner] = (rW + K * (1.0 - eW)).toInt()
+                    elo[loser] = (rL + K * (0.0 - eL)).toInt()
+                }
+            }
+        }
+
+        return elo
     }
 }

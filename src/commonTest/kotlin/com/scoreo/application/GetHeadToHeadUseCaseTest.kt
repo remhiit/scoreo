@@ -49,7 +49,7 @@ class GetHeadToHeadUseCaseTest {
     }
 
     @Test
-    fun `leaderboard sorted by win percentage descending`() {
+    fun `leaderboard sorted by elo descending`() {
         val playerRepo = FakePlayerRepository().also {
             it.save(Player("p1", "Alice"))
             it.save(Player("p2", "Bob"))
@@ -156,5 +156,64 @@ class GetHeadToHeadUseCaseTest {
 
         assertEquals(2, result.size)
         assertTrue(result.any { it.playerId == "p1" })
+    }
+
+    @Test
+    fun `elo is 1200 for players with no matches`() {
+        val playerRepo = FakePlayerRepository().also {
+            it.save(Player("p1", "Alice"))
+        }
+        val useCase = buildUseCase(playerRepo = playerRepo)
+
+        assertTrue(useCase().isEmpty())
+    }
+
+    @Test
+    fun `elo changes after a match`() {
+        val playerRepo = FakePlayerRepository().also {
+            it.save(Player("p1", "Alice"))
+            it.save(Player("p2", "Bob"))
+        }
+        val gameTypeRepo = FakeGameTypeRepository().also {
+            it.save(GameType("gt1", "Test", WinCondition.HIGHEST_SCORE))
+        }
+        val matchRepo = FakeMatchRepository().also {
+            it.save(Match("m1", 1000L, "gt1", listOf(PlayerScore("p1", 10), PlayerScore("p2", 5))))
+        }
+        val useCase = buildUseCase(matchRepo, gameTypeRepo, playerRepo)
+
+        val result = useCase()
+        val alice = result.find { it.playerId == "p1" }!!
+        val bob = result.find { it.playerId == "p2" }!!
+
+        assertEquals(1216, alice.elo)
+        assertEquals(1184, bob.elo)
+    }
+
+    @Test
+    fun `elo with multiple matches`() {
+        val playerRepo = FakePlayerRepository().also {
+            it.save(Player("p1", "Alice"))
+            it.save(Player("p2", "Bob"))
+            it.save(Player("p3", "Charlie"))
+        }
+        val gameTypeRepo = FakeGameTypeRepository().also {
+            it.save(GameType("gt1", "Test", WinCondition.HIGHEST_SCORE))
+        }
+        val matchRepo = FakeMatchRepository().also {
+            it.save(Match("m1", 1000L, "gt1", listOf(PlayerScore("p1", 10), PlayerScore("p2", 5))))
+            it.save(Match("m2", 2000L, "gt1", listOf(PlayerScore("p1", 8), PlayerScore("p2", 12))))
+            it.save(Match("m3", 3000L, "gt1", listOf(PlayerScore("p3", 10), PlayerScore("p1", 3))))
+        }
+        val useCase = buildUseCase(matchRepo, gameTypeRepo, playerRepo)
+
+        val result = useCase()
+        val alice = result.find { it.playerId == "p1" }!!
+        val bob = result.find { it.playerId == "p2" }!!
+        val charlie = result.find { it.playerId == "p3" }!!
+
+        assertTrue(alice.elo < bob.elo)
+        assertTrue(bob.elo < charlie.elo)
+        assertEquals(listOf("p3", "p2", "p1"), result.map { it.playerId })
     }
 }

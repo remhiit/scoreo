@@ -37,6 +37,7 @@ private fun LeaderboardView(leaderboard: List<PlayerDetail>, onSelectPlayer: (St
                     Span(attrs = { classes("stats-row-name") }) { Text(detail.name) }
                     Span(attrs = { classes("stats-row-record") }) { Text("${detail.wins}W ${detail.losses}L") }
                 }
+                Span(attrs = { classes("stats-elo") }) { Text("${detail.elo}") }
                 Div(attrs = { classes("stats-row-bar-wrap") }) {
                     Div(attrs = {
                         classes("stats-row-bar")
@@ -60,6 +61,7 @@ private fun PlayerDetailView(detail: PlayerDetail, onBack: () -> Unit) {
             onClick { onBack() }
         }) { Text("←") }
         Div(attrs = { classes("stats-detail-title") }) { Text(detail.name) }
+        Span(attrs = { classes("stats-elo-badge") }) { Text("${detail.elo}") }
     }
 
     Div(attrs = { classes("stats-detail-overall") }) {

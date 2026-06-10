@@ -5,6 +5,7 @@ data class PlayerDetail(
     val name: String,
     val wins: Int,
     val losses: Int,
+    val elo: Int,
     val headToHead: List<HeadToHeadEntry>,
 )
 

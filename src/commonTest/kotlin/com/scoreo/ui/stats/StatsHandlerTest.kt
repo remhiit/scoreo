@@ -73,6 +73,27 @@ class StatsHandlerTest {
     }
 
     @Test
+    fun `leaderboard sorted by elo`() {
+        val playerRepo = FakePlayerRepository().also {
+            it.save(Player("p1", "Alice"))
+            it.save(Player("p2", "Bob"))
+        }
+        val gameTypeRepo = FakeGameTypeRepository().also {
+            it.save(GameType("gt1", "Test", WinCondition.HIGHEST_SCORE))
+        }
+        val matchRepo = FakeMatchRepository().also {
+            it.save(Match("m1", 1000L, "gt1", listOf(PlayerScore("p1", 10), PlayerScore("p2", 5))))
+            it.save(Match("m2", 2000L, "gt1", listOf(PlayerScore("p1", 8), PlayerScore("p2", 12))))
+        }
+        val handler = buildHandler(playerRepo, gameTypeRepo, matchRepo)
+        handler.refresh()
+
+        assertEquals(2, handler.state.leaderboard.size)
+        assertEquals("Bob", handler.state.leaderboard.first().name)
+        assertTrue(handler.state.leaderboard.first().elo > handler.state.leaderboard.last().elo)
+    }
+
+    @Test
     fun `BackToLeaderboard clears selectedPlayerId`() {
         val playerRepo = FakePlayerRepository().also {
             it.save(Player("p1", "Alice"))
