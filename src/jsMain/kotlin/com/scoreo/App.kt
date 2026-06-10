@@ -11,6 +11,7 @@ import com.scoreo.application.AddPlayerUseCase
 import com.scoreo.application.CreateMatchUseCase
 import com.scoreo.application.DeletePlayerUseCase
 import com.scoreo.application.GetGameTypesUseCase
+import com.scoreo.application.GetHeadToHeadUseCase
 import com.scoreo.application.GetMatchesUseCase
 import com.scoreo.application.GetPlayerStatsUseCase
 import com.scoreo.application.GetPlayersUseCase
@@ -32,6 +33,8 @@ import com.scoreo.ui.import.ImportScreen
 import com.scoreo.ui.scoredetail.ScoreDetailHandler
 import com.scoreo.ui.scoredetail.ScoreDetailScreen
 import com.scoreo.ui.setup.SetupScreen
+import com.scoreo.ui.stats.StatsHandler
+import com.scoreo.ui.stats.StatsScreen
 import org.jetbrains.compose.web.dom.Button
 import org.jetbrains.compose.web.dom.Div
 import org.jetbrains.compose.web.dom.Span
@@ -69,6 +72,7 @@ fun App(
         is Screen.Home -> "Scoreo"
         is Screen.History -> "History"
         is Screen.Import -> "Import"
+        is Screen.Stats -> "Stats"
         is Screen.Setup -> "Setup"
         is Screen.ScoreDetail -> "Score Detail"
     }
@@ -120,6 +124,18 @@ fun App(
                 }
                 LaunchedEffect(navigator.current) { historyHandler.refresh() }
                 HistoryScreen(historyHandler)
+            }
+            is Screen.Stats -> {
+                val statsHandler = remember {
+                    StatsHandler(
+                        getHeadToHead = GetHeadToHeadUseCase(
+                            matchRepository = matchRepository,
+                            gameTypeRepository = gameTypeRepository,
+                            playerRepository = playerRepository,
+                        ),
+                    )
+                }
+                StatsScreen(statsHandler)
             }
             is Screen.Import -> {
                 val importHandler = remember {
@@ -183,6 +199,10 @@ fun App(
                 classes("burger-close")
                 onClick { burgerOpen = false }
             }) { Text("✕") }
+            BurgerItem("📊", "Stats") {
+                burgerOpen = false
+                navigator.navigate(Screen.Stats)
+            }
             BurgerItem("📋", "History") {
                 burgerOpen = false
                 navigator.navigate(Screen.History)

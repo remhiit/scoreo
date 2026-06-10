@@ -10,6 +10,7 @@ sealed class Screen {
     data object Home : Screen()
     data object History : Screen()
     data object Import : Screen()
+    data object Stats : Screen()
     data class Setup(val focusSection: SetupSection) : Screen()
     data class ScoreDetail(val gameTypeId: String, val playerIds: List<String>) : Screen()
 }
