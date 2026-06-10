@@ -1,8 +1,8 @@
 package com.scoreo.application
 
-import com.scoreo.FakeGameTypeRepository
-import com.scoreo.FakeMatchRepository
-import com.scoreo.FakePlayerRepository
+import com.scoreo.infrastructure.InMemoryGameTypeRepository
+import com.scoreo.infrastructure.InMemoryMatchRepository
+import com.scoreo.infrastructure.InMemoryPlayerRepository
 import com.scoreo.TestImportData
 import com.scoreo.domain.model.Match
 import com.scoreo.domain.model.Player
@@ -16,9 +16,9 @@ import kotlin.test.assertTrue
 class ImportMatchesUseCaseTest {
 
     private fun useCase(
-        playerRepo: FakePlayerRepository = FakePlayerRepository(),
-        gameTypeRepo: FakeGameTypeRepository = FakeGameTypeRepository(),
-        matchRepo: FakeMatchRepository = FakeMatchRepository(),
+        playerRepo: InMemoryPlayerRepository = InMemoryPlayerRepository(),
+        gameTypeRepo: InMemoryGameTypeRepository = InMemoryGameTypeRepository(),
+        matchRepo: InMemoryMatchRepository = InMemoryMatchRepository(),
         currentDate: () -> Long = { 1767225600000L },
     ) = ImportMatchesUseCase(playerRepo, gameTypeRepo, matchRepo, currentDate)
 
@@ -75,7 +75,7 @@ class ImportMatchesUseCaseTest {
 
     @Test
     fun `execute saves matches to repository`() {
-        val matchRepo = FakeMatchRepository()
+        val matchRepo = InMemoryMatchRepository()
         val uc = useCase(matchRepo = matchRepo)
         uc.execute(TestImportData.validJson)
         assertEquals(1, matchRepo.getAll().size)
@@ -83,7 +83,7 @@ class ImportMatchesUseCaseTest {
 
     @Test
     fun `execute auto-creates game type`() {
-        val gameTypeRepo = FakeGameTypeRepository()
+        val gameTypeRepo = InMemoryGameTypeRepository()
         val uc = useCase(gameTypeRepo = gameTypeRepo)
         uc.execute(TestImportData.validJson)
         val gameTypes = gameTypeRepo.getAll()
@@ -93,7 +93,7 @@ class ImportMatchesUseCaseTest {
 
     @Test
     fun `execute reuses existing game type by name`() {
-        val gameTypeRepo = FakeGameTypeRepository()
+        val gameTypeRepo = InMemoryGameTypeRepository()
         gameTypeRepo.save(GameType("existing", "TestGame", WinCondition.MANUAL))
         val uc = useCase(gameTypeRepo = gameTypeRepo)
         uc.execute(TestImportData.validJson)
@@ -103,7 +103,7 @@ class ImportMatchesUseCaseTest {
 
     @Test
     fun `execute auto-creates unknown players`() {
-        val playerRepo = FakePlayerRepository()
+        val playerRepo = InMemoryPlayerRepository()
         val uc = useCase(playerRepo = playerRepo)
         uc.execute(TestImportData.validJson)
         val players = playerRepo.getAll()
@@ -114,7 +114,7 @@ class ImportMatchesUseCaseTest {
 
     @Test
     fun `execute reuses existing players by name`() {
-        val playerRepo = FakePlayerRepository()
+        val playerRepo = InMemoryPlayerRepository()
         playerRepo.save(Player("p1", "Alice"))
         val uc = useCase(playerRepo = playerRepo)
         uc.execute(TestImportData.validJson)
@@ -123,7 +123,7 @@ class ImportMatchesUseCaseTest {
 
     @Test
     fun `execute skips matches with duplicate IDs`() {
-        val matchRepo = FakeMatchRepository()
+        val matchRepo = InMemoryMatchRepository()
         matchRepo.save(Match("m1", 0L, "", listOf(), manualWinners = listOf()))
         val uc = useCase(matchRepo = matchRepo)
         val result = uc.execute(TestImportData.validJson)
@@ -142,7 +142,7 @@ class ImportMatchesUseCaseTest {
 
     @Test
     fun `execute with detail verification fails when sums mismatch`() {
-        val matchRepo = FakeMatchRepository()
+        val matchRepo = InMemoryMatchRepository()
         val uc = useCase(matchRepo = matchRepo)
         val result = uc.execute(TestImportData.withMismatchedDetailsJson)
         assertTrue(result.isSuccess)
@@ -152,7 +152,7 @@ class ImportMatchesUseCaseTest {
 
     @Test
     fun `execute without date uses currentDate fallback`() {
-        val matchRepo = FakeMatchRepository()
+        val matchRepo = InMemoryMatchRepository()
         val uc = useCase(matchRepo = matchRepo, currentDate = { 999999L })
         uc.execute(TestImportData.withoutDateJson)
         assertEquals(1, matchRepo.getAll().size)
@@ -161,7 +161,7 @@ class ImportMatchesUseCaseTest {
 
     @Test
     fun `execute imports multiple games`() {
-        val matchRepo = FakeMatchRepository()
+        val matchRepo = InMemoryMatchRepository()
         val uc = useCase(matchRepo = matchRepo)
         val result = uc.execute(TestImportData.multiGameJson)
         assertTrue(result.isSuccess)
@@ -171,7 +171,7 @@ class ImportMatchesUseCaseTest {
 
     @Test
     fun `execute with duplicate in first game still imports others`() {
-        val matchRepo = FakeMatchRepository()
+        val matchRepo = InMemoryMatchRepository()
         matchRepo.save(Match("m1", 0L, "", listOf(), manualWinners = listOf()))
         val uc = useCase(matchRepo = matchRepo)
         val result = uc.execute(TestImportData.multiGameJson)

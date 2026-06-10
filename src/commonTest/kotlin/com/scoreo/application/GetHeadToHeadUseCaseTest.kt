@@ -1,8 +1,8 @@
 package com.scoreo.application
 
-import com.scoreo.FakeGameTypeRepository
-import com.scoreo.FakeMatchRepository
-import com.scoreo.FakePlayerRepository
+import com.scoreo.infrastructure.InMemoryGameTypeRepository
+import com.scoreo.infrastructure.InMemoryMatchRepository
+import com.scoreo.infrastructure.InMemoryPlayerRepository
 import com.scoreo.domain.model.GameType
 import com.scoreo.domain.model.Match
 import com.scoreo.domain.model.Player
@@ -12,12 +12,17 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
+private const val ELO_INITIAL = 1200
+private const val ELO_K = 32
+private val ELO_AFTER_WIN = ELO_INITIAL + (ELO_K * 0.5).toInt()   // 1216
+private val ELO_AFTER_LOSS = ELO_INITIAL - (ELO_K * 0.5).toInt()  // 1184
+
 class GetHeadToHeadUseCaseTest {
 
     private fun buildUseCase(
-        matchRepo: FakeMatchRepository = FakeMatchRepository(),
-        gameTypeRepo: FakeGameTypeRepository = FakeGameTypeRepository(),
-        playerRepo: FakePlayerRepository = FakePlayerRepository(),
+        matchRepo: InMemoryMatchRepository = InMemoryMatchRepository(),
+        gameTypeRepo: InMemoryGameTypeRepository = InMemoryGameTypeRepository(),
+        playerRepo: InMemoryPlayerRepository = InMemoryPlayerRepository(),
     ) = GetHeadToHeadUseCase(matchRepo, gameTypeRepo, playerRepo)
 
     @Test
@@ -28,14 +33,14 @@ class GetHeadToHeadUseCaseTest {
 
     @Test
     fun `returns player detail with total wins and losses`() {
-        val playerRepo = FakePlayerRepository().also {
+        val playerRepo = InMemoryPlayerRepository().also {
             it.save(Player("p1", "Alice"))
             it.save(Player("p2", "Bob"))
         }
-        val gameTypeRepo = FakeGameTypeRepository().also {
+        val gameTypeRepo = InMemoryGameTypeRepository().also {
             it.save(GameType("gt1", "Test", WinCondition.HIGHEST_SCORE))
         }
-        val matchRepo = FakeMatchRepository().also {
+        val matchRepo = InMemoryMatchRepository().also {
             it.save(Match("m1", 1000L, "gt1", listOf(PlayerScore("p1", 10), PlayerScore("p2", 5))))
         }
         val useCase = buildUseCase(matchRepo, gameTypeRepo, playerRepo)
@@ -50,15 +55,15 @@ class GetHeadToHeadUseCaseTest {
 
     @Test
     fun `leaderboard sorted by elo descending`() {
-        val playerRepo = FakePlayerRepository().also {
+        val playerRepo = InMemoryPlayerRepository().also {
             it.save(Player("p1", "Alice"))
             it.save(Player("p2", "Bob"))
             it.save(Player("p3", "Charlie"))
         }
-        val gameTypeRepo = FakeGameTypeRepository().also {
+        val gameTypeRepo = InMemoryGameTypeRepository().also {
             it.save(GameType("gt1", "Test", WinCondition.HIGHEST_SCORE))
         }
-        val matchRepo = FakeMatchRepository().also {
+        val matchRepo = InMemoryMatchRepository().also {
             it.save(Match("m1", 1000L, "gt1", listOf(PlayerScore("p1", 10), PlayerScore("p2", 5))))
             it.save(Match("m2", 2000L, "gt1", listOf(PlayerScore("p1", 8), PlayerScore("p2", 12))))
             it.save(Match("m3", 3000L, "gt1", listOf(PlayerScore("p3", 10), PlayerScore("p1", 3))))
@@ -72,7 +77,7 @@ class GetHeadToHeadUseCaseTest {
 
     @Test
     fun `excludes players with zero matches`() {
-        val playerRepo = FakePlayerRepository().also {
+        val playerRepo = InMemoryPlayerRepository().also {
             it.save(Player("p1", "Alice"))
             it.save(Player("p2", "Bob"))
         }
@@ -83,14 +88,14 @@ class GetHeadToHeadUseCaseTest {
 
     @Test
     fun `head to head computed correctly`() {
-        val playerRepo = FakePlayerRepository().also {
+        val playerRepo = InMemoryPlayerRepository().also {
             it.save(Player("p1", "Alice"))
             it.save(Player("p2", "Bob"))
         }
-        val gameTypeRepo = FakeGameTypeRepository().also {
+        val gameTypeRepo = InMemoryGameTypeRepository().also {
             it.save(GameType("gt1", "Test", WinCondition.HIGHEST_SCORE))
         }
-        val matchRepo = FakeMatchRepository().also {
+        val matchRepo = InMemoryMatchRepository().also {
             it.save(Match("m1", 1000L, "gt1", listOf(PlayerScore("p1", 10), PlayerScore("p2", 5))))
             it.save(Match("m2", 2000L, "gt1", listOf(PlayerScore("p1", 8), PlayerScore("p2", 12))))
             it.save(Match("m3", 3000L, "gt1", listOf(PlayerScore("p1", 10), PlayerScore("p2", 6))))
@@ -111,15 +116,15 @@ class GetHeadToHeadUseCaseTest {
 
     @Test
     fun `head to head in multi player match`() {
-        val playerRepo = FakePlayerRepository().also {
+        val playerRepo = InMemoryPlayerRepository().also {
             it.save(Player("p1", "Alice"))
             it.save(Player("p2", "Bob"))
             it.save(Player("p3", "Charlie"))
         }
-        val gameTypeRepo = FakeGameTypeRepository().also {
+        val gameTypeRepo = InMemoryGameTypeRepository().also {
             it.save(GameType("gt1", "Test", WinCondition.HIGHEST_SCORE))
         }
-        val matchRepo = FakeMatchRepository().also {
+        val matchRepo = InMemoryMatchRepository().also {
             it.save(Match("m1", 1000L, "gt1", listOf(
                 PlayerScore("p1", 10), PlayerScore("p2", 5), PlayerScore("p3", 3)
             )))
@@ -140,14 +145,14 @@ class GetHeadToHeadUseCaseTest {
 
     @Test
     fun `includes inactive players in results`() {
-        val playerRepo = FakePlayerRepository().also {
+        val playerRepo = InMemoryPlayerRepository().also {
             it.save(Player("p1", "Alice", active = false))
             it.save(Player("p2", "Bob"))
         }
-        val gameTypeRepo = FakeGameTypeRepository().also {
+        val gameTypeRepo = InMemoryGameTypeRepository().also {
             it.save(GameType("gt1", "Test", WinCondition.HIGHEST_SCORE))
         }
-        val matchRepo = FakeMatchRepository().also {
+        val matchRepo = InMemoryMatchRepository().also {
             it.save(Match("m1", 1000L, "gt1", listOf(PlayerScore("p1", 10), PlayerScore("p2", 5))))
         }
         val useCase = buildUseCase(matchRepo, gameTypeRepo, playerRepo)
@@ -160,7 +165,7 @@ class GetHeadToHeadUseCaseTest {
 
     @Test
     fun `elo is 1200 for players with no matches`() {
-        val playerRepo = FakePlayerRepository().also {
+        val playerRepo = InMemoryPlayerRepository().also {
             it.save(Player("p1", "Alice"))
         }
         val useCase = buildUseCase(playerRepo = playerRepo)
@@ -170,14 +175,14 @@ class GetHeadToHeadUseCaseTest {
 
     @Test
     fun `elo changes after a match`() {
-        val playerRepo = FakePlayerRepository().also {
+        val playerRepo = InMemoryPlayerRepository().also {
             it.save(Player("p1", "Alice"))
             it.save(Player("p2", "Bob"))
         }
-        val gameTypeRepo = FakeGameTypeRepository().also {
+        val gameTypeRepo = InMemoryGameTypeRepository().also {
             it.save(GameType("gt1", "Test", WinCondition.HIGHEST_SCORE))
         }
-        val matchRepo = FakeMatchRepository().also {
+        val matchRepo = InMemoryMatchRepository().also {
             it.save(Match("m1", 1000L, "gt1", listOf(PlayerScore("p1", 10), PlayerScore("p2", 5))))
         }
         val useCase = buildUseCase(matchRepo, gameTypeRepo, playerRepo)
@@ -186,21 +191,21 @@ class GetHeadToHeadUseCaseTest {
         val alice = result.find { it.playerId == "p1" }!!
         val bob = result.find { it.playerId == "p2" }!!
 
-        assertEquals(1216, alice.elo)
-        assertEquals(1184, bob.elo)
+        assertEquals(ELO_AFTER_WIN, alice.elo)
+        assertEquals(ELO_AFTER_LOSS, bob.elo)
     }
 
     @Test
     fun `elo with multiple matches`() {
-        val playerRepo = FakePlayerRepository().also {
+        val playerRepo = InMemoryPlayerRepository().also {
             it.save(Player("p1", "Alice"))
             it.save(Player("p2", "Bob"))
             it.save(Player("p3", "Charlie"))
         }
-        val gameTypeRepo = FakeGameTypeRepository().also {
+        val gameTypeRepo = InMemoryGameTypeRepository().also {
             it.save(GameType("gt1", "Test", WinCondition.HIGHEST_SCORE))
         }
-        val matchRepo = FakeMatchRepository().also {
+        val matchRepo = InMemoryMatchRepository().also {
             it.save(Match("m1", 1000L, "gt1", listOf(PlayerScore("p1", 10), PlayerScore("p2", 5))))
             it.save(Match("m2", 2000L, "gt1", listOf(PlayerScore("p1", 8), PlayerScore("p2", 12))))
             it.save(Match("m3", 3000L, "gt1", listOf(PlayerScore("p3", 10), PlayerScore("p1", 3))))

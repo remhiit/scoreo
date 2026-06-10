@@ -1,8 +1,8 @@
 package com.scoreo.ui.import
 
-import com.scoreo.FakeGameTypeRepository
-import com.scoreo.FakeMatchRepository
-import com.scoreo.FakePlayerRepository
+import com.scoreo.infrastructure.InMemoryGameTypeRepository
+import com.scoreo.infrastructure.InMemoryMatchRepository
+import com.scoreo.infrastructure.InMemoryPlayerRepository
 import com.scoreo.TestImportData
 import com.scoreo.application.ImportMatchesUseCase
 import kotlin.test.Test
@@ -13,9 +13,9 @@ import kotlin.test.assertNull
 class ImportHandlerTest {
 
     private fun buildHandler(
-        playerRepo: FakePlayerRepository = FakePlayerRepository(),
-        gameTypeRepo: FakeGameTypeRepository = FakeGameTypeRepository(),
-        matchRepo: FakeMatchRepository = FakeMatchRepository(),
+        playerRepo: InMemoryPlayerRepository = InMemoryPlayerRepository(),
+        gameTypeRepo: InMemoryGameTypeRepository = InMemoryGameTypeRepository(),
+        matchRepo: InMemoryMatchRepository = InMemoryMatchRepository(),
         currentDate: () -> Long = { 1767225600000L },
     ) = ImportHandler(
         importUseCase = ImportMatchesUseCase(playerRepo, gameTypeRepo, matchRepo, currentDate),

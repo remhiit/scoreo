@@ -1,6 +1,6 @@
 package com.scoreo.application
 
-import com.scoreo.FakeGameTypeRepository
+import com.scoreo.infrastructure.InMemoryGameTypeRepository
 import com.scoreo.domain.model.GameType
 import com.scoreo.domain.model.WinCondition
 import kotlin.test.Test
@@ -11,14 +11,14 @@ class GetGameTypesUseCaseTest {
 
     @Test
     fun `returns empty list when no game types saved`() {
-        val repo = FakeGameTypeRepository()
+        val repo = InMemoryGameTypeRepository()
         val useCase = GetGameTypesUseCase(repo)
         assertTrue(useCase().isEmpty())
     }
 
     @Test
     fun `returns all saved game types`() {
-        val repo = FakeGameTypeRepository()
+        val repo = InMemoryGameTypeRepository()
         repo.save(GameType("1", "Belote", WinCondition.HIGHEST_SCORE))
         repo.save(GameType("2", "Golf", WinCondition.LOWEST_SCORE))
         val useCase = GetGameTypesUseCase(repo)

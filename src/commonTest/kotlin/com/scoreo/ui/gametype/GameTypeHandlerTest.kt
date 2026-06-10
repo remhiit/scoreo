@@ -1,6 +1,6 @@
 package com.scoreo.ui.gametype
 
-import com.scoreo.FakeGameTypeRepository
+import com.scoreo.infrastructure.InMemoryGameTypeRepository
 import com.scoreo.application.AddGameTypeUseCase
 import com.scoreo.application.GetGameTypesUseCase
 import com.scoreo.domain.model.WinCondition
@@ -11,7 +11,7 @@ import kotlin.test.assertTrue
 
 class GameTypeHandlerTest {
 
-    private fun buildHandler(repo: FakeGameTypeRepository = FakeGameTypeRepository()) =
+    private fun buildHandler(repo: InMemoryGameTypeRepository = InMemoryGameTypeRepository()) =
         GameTypeHandler(
             addGameType = AddGameTypeUseCase(repo),
             getGameTypes = GetGameTypesUseCase(repo),

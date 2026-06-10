@@ -1,8 +1,8 @@
 package com.scoreo.ui.history
 
-import com.scoreo.FakeGameTypeRepository
-import com.scoreo.FakeMatchRepository
-import com.scoreo.FakePlayerRepository
+import com.scoreo.infrastructure.InMemoryGameTypeRepository
+import com.scoreo.infrastructure.InMemoryMatchRepository
+import com.scoreo.infrastructure.InMemoryPlayerRepository
 import com.scoreo.application.GetGameTypesUseCase
 import com.scoreo.application.GetMatchesUseCase
 import com.scoreo.application.GetPlayersUseCase
@@ -19,9 +19,9 @@ import kotlin.test.assertTrue
 class HistoryHandlerTest {
 
     private fun buildHandler(
-        playerRepo: FakePlayerRepository = FakePlayerRepository(),
-        gameTypeRepo: FakeGameTypeRepository = FakeGameTypeRepository(),
-        matchRepo: FakeMatchRepository = FakeMatchRepository(),
+        playerRepo: InMemoryPlayerRepository = InMemoryPlayerRepository(),
+        gameTypeRepo: InMemoryGameTypeRepository = InMemoryGameTypeRepository(),
+        matchRepo: InMemoryMatchRepository = InMemoryMatchRepository(),
     ) = HistoryHandler(
         getMatches = GetMatchesUseCase(matchRepo),
         getPlayers = GetPlayersUseCase(playerRepo),
@@ -36,9 +36,9 @@ class HistoryHandlerTest {
 
     @Test
     fun `refresh populates state from repositories`() {
-        val playerRepo = FakePlayerRepository()
-        val gameTypeRepo = FakeGameTypeRepository()
-        val matchRepo = FakeMatchRepository()
+        val playerRepo = InMemoryPlayerRepository()
+        val gameTypeRepo = InMemoryGameTypeRepository()
+        val matchRepo = InMemoryMatchRepository()
         val handler = buildHandler(playerRepo, gameTypeRepo, matchRepo)
 
         playerRepo.save(Player("p1", "Alice"))
@@ -53,7 +53,7 @@ class HistoryHandlerTest {
 
     @Test
     fun `matches sorted by date descending`() {
-        val matchRepo = FakeMatchRepository()
+        val matchRepo = InMemoryMatchRepository()
         val handler = buildHandler(matchRepo = matchRepo)
 
         matchRepo.save(Match("m1", 3000L, "gt1", listOf(PlayerScore("p1", 10))))
@@ -67,15 +67,15 @@ class HistoryHandlerTest {
 
     @Test
     fun `player names are resolved from repository`() {
-        val playerRepo = FakePlayerRepository()
+        val playerRepo = InMemoryPlayerRepository()
         val handler = buildHandler(playerRepo = playerRepo)
         playerRepo.save(Player("p1", "Alice"))
         playerRepo.save(Player("p2", "Bob"))
 
-        val gameTypeRepo = FakeGameTypeRepository()
+        val gameTypeRepo = InMemoryGameTypeRepository()
         gameTypeRepo.save(GameType("gt1", "Test", WinCondition.HIGHEST_SCORE))
 
-        val matchRepo = FakeMatchRepository()
+        val matchRepo = InMemoryMatchRepository()
         matchRepo.save(Match("m1", 1000L, "gt1", listOf(PlayerScore("p1", 10), PlayerScore("p2", 5))))
 
         val handler2 = buildHandler(playerRepo, gameTypeRepo, matchRepo)
@@ -89,7 +89,7 @@ class HistoryHandlerTest {
 
     @Test
     fun `unknown gameType is null`() {
-        val matchRepo = FakeMatchRepository()
+        val matchRepo = InMemoryMatchRepository()
         matchRepo.save(Match("m1", 1000L, "unknown_gt", listOf(PlayerScore("p1", 10))))
 
         val handler = buildHandler(matchRepo = matchRepo)
@@ -100,14 +100,14 @@ class HistoryHandlerTest {
 
     @Test
     fun `winners computed for HIGHEST_SCORE`() {
-        val playerRepo = FakePlayerRepository().also {
+        val playerRepo = InMemoryPlayerRepository().also {
             it.save(Player("p1", "Alice"))
             it.save(Player("p2", "Bob"))
         }
-        val gameTypeRepo = FakeGameTypeRepository().also {
+        val gameTypeRepo = InMemoryGameTypeRepository().also {
             it.save(GameType("gt1", "Test", WinCondition.HIGHEST_SCORE))
         }
-        val matchRepo = FakeMatchRepository().also {
+        val matchRepo = InMemoryMatchRepository().also {
             it.save(Match("m1", 1000L, "gt1", listOf(PlayerScore("p1", 10), PlayerScore("p2", 5))))
         }
 
@@ -119,7 +119,7 @@ class HistoryHandlerTest {
 
     @Test
     fun `date is formatted correctly for valid timestamp`() {
-        val matchRepo = FakeMatchRepository()
+        val matchRepo = InMemoryMatchRepository()
         matchRepo.save(Match("m1", 1767225600000L, "gt1", listOf(PlayerScore("p1", 10))))
 
         val handler = buildHandler(matchRepo = matchRepo)
@@ -130,9 +130,9 @@ class HistoryHandlerTest {
 
     @Test
     fun `playerLabels shows deleted player suffix`() {
-        val playerRepo = FakePlayerRepository()
-        val gameTypeRepo = FakeGameTypeRepository()
-        val matchRepo = FakeMatchRepository()
+        val playerRepo = InMemoryPlayerRepository()
+        val gameTypeRepo = InMemoryGameTypeRepository()
+        val matchRepo = InMemoryMatchRepository()
         val handler = buildHandler(playerRepo, gameTypeRepo, matchRepo)
         playerRepo.save(Player("p1", "Alice", active = false))
         gameTypeRepo.save(GameType("gt1", "Test", WinCondition.HIGHEST_SCORE))
@@ -145,8 +145,8 @@ class HistoryHandlerTest {
 
     @Test
     fun `playerLabels shows generic text when name is blank`() {
-        val playerRepo = FakePlayerRepository()
-        val matchRepo = FakeMatchRepository()
+        val playerRepo = InMemoryPlayerRepository()
+        val matchRepo = InMemoryMatchRepository()
         val handler = buildHandler(playerRepo = playerRepo, matchRepo = matchRepo)
         playerRepo.save(Player("p1", "", active = false))
         matchRepo.save(Match("m1", 1000L, "gt1", listOf(PlayerScore("p1", 10))))
@@ -158,7 +158,7 @@ class HistoryHandlerTest {
 
     @Test
     fun `refresh updates state when data changes`() {
-        val matchRepo = FakeMatchRepository()
+        val matchRepo = InMemoryMatchRepository()
         val handler = buildHandler(matchRepo = matchRepo)
 
         matchRepo.save(Match("m1", 1000L, "gt1", listOf(PlayerScore("p1", 10))))

@@ -1,6 +1,6 @@
 package com.scoreo.application
 
-import com.scoreo.FakePlayerRepository
+import com.scoreo.infrastructure.InMemoryPlayerRepository
 import com.scoreo.domain.model.Player
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -10,7 +10,7 @@ class GetPlayersUseCaseTest {
 
     @Test
     fun `returns empty list when no players saved`() {
-        val repo = FakePlayerRepository()
+        val repo = InMemoryPlayerRepository()
         val useCase = GetPlayersUseCase(repo)
 
         assertTrue(useCase().isEmpty())
@@ -18,7 +18,7 @@ class GetPlayersUseCaseTest {
 
     @Test
     fun `returns all saved players`() {
-        val repo = FakePlayerRepository()
+        val repo = InMemoryPlayerRepository()
         repo.save(Player(id = "1", name = "Alice"))
         repo.save(Player(id = "2", name = "Bob"))
         val useCase = GetPlayersUseCase(repo)
@@ -31,7 +31,7 @@ class GetPlayersUseCaseTest {
 
     @Test
     fun `excludes inactive players by default`() {
-        val repo = FakePlayerRepository()
+        val repo = InMemoryPlayerRepository()
         repo.save(Player(id = "1", name = "Alice", active = true))
         repo.save(Player(id = "2", name = "Bob", active = false))
         val useCase = GetPlayersUseCase(repo)
@@ -44,7 +44,7 @@ class GetPlayersUseCaseTest {
 
     @Test
     fun `includes inactive players when requested`() {
-        val repo = FakePlayerRepository()
+        val repo = InMemoryPlayerRepository()
         repo.save(Player(id = "1", name = "Alice", active = true))
         repo.save(Player(id = "2", name = "Bob", active = false))
         val useCase = GetPlayersUseCase(repo)

@@ -1,7 +1,7 @@
 package com.scoreo.application
 
-import com.scoreo.FakeGameTypeRepository
-import com.scoreo.FakeMatchRepository
+import com.scoreo.infrastructure.InMemoryGameTypeRepository
+import com.scoreo.infrastructure.InMemoryMatchRepository
 import com.scoreo.domain.model.GameType
 import com.scoreo.domain.model.PlayerScore
 import com.scoreo.domain.model.WinCondition
@@ -11,9 +11,9 @@ import kotlin.test.assertTrue
 
 class CreateMatchUseCaseTest {
 
-    private fun setup(winCondition: WinCondition): Pair<CreateMatchUseCase, FakeMatchRepository> {
-        val gameTypeRepo = FakeGameTypeRepository()
-        val matchRepo = FakeMatchRepository()
+    private fun setup(winCondition: WinCondition): Pair<CreateMatchUseCase, InMemoryMatchRepository> {
+        val gameTypeRepo = InMemoryGameTypeRepository()
+        val matchRepo = InMemoryMatchRepository()
         gameTypeRepo.save(GameType("gt1", "TestGame", winCondition))
         val useCase = CreateMatchUseCase(matchRepo, gameTypeRepo)
         return Pair(useCase, matchRepo)

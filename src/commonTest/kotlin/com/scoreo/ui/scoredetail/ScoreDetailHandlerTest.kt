@@ -1,7 +1,7 @@
 package com.scoreo.ui.scoredetail
 
-import com.scoreo.FakeGameTypeRepository
-import com.scoreo.FakeMatchRepository
+import com.scoreo.infrastructure.InMemoryGameTypeRepository
+import com.scoreo.infrastructure.InMemoryMatchRepository
 import com.scoreo.application.CreateMatchUseCase
 import com.scoreo.domain.model.GameType
 import com.scoreo.domain.model.Player
@@ -18,10 +18,10 @@ class ScoreDetailHandlerTest {
     private fun buildHandler(
         winCondition: WinCondition = WinCondition.HIGHEST_SCORE,
         players: List<Player> = listOf(Player("alice", "Alice"), Player("bob", "Bob")),
-    ): Pair<ScoreDetailHandler, FakeMatchRepository> {
+    ): Pair<ScoreDetailHandler, InMemoryMatchRepository> {
         val gameType = GameType("gt1", "TestGame", winCondition)
-        val gameTypeRepo = FakeGameTypeRepository().also { it.save(gameType) }
-        val matchRepo = FakeMatchRepository()
+        val gameTypeRepo = InMemoryGameTypeRepository().also { it.save(gameType) }
+        val matchRepo = InMemoryMatchRepository()
         val createMatch = CreateMatchUseCase(matchRepo, gameTypeRepo)
         val handler = ScoreDetailHandler(gameType, players, createMatch, { 1767225600000L })
         return Pair(handler, matchRepo)

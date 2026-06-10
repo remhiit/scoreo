@@ -1,8 +1,8 @@
 package com.scoreo.ui.stats
 
-import com.scoreo.FakeGameTypeRepository
-import com.scoreo.FakeMatchRepository
-import com.scoreo.FakePlayerRepository
+import com.scoreo.infrastructure.InMemoryGameTypeRepository
+import com.scoreo.infrastructure.InMemoryMatchRepository
+import com.scoreo.infrastructure.InMemoryPlayerRepository
 import com.scoreo.application.GetHeadToHeadUseCase
 import com.scoreo.domain.model.GameType
 import com.scoreo.domain.model.Match
@@ -18,9 +18,9 @@ import kotlin.test.assertTrue
 class StatsHandlerTest {
 
     private fun buildHandler(
-        playerRepo: FakePlayerRepository = FakePlayerRepository(),
-        gameTypeRepo: FakeGameTypeRepository = FakeGameTypeRepository(),
-        matchRepo: FakeMatchRepository = FakeMatchRepository(),
+        playerRepo: InMemoryPlayerRepository = InMemoryPlayerRepository(),
+        gameTypeRepo: InMemoryGameTypeRepository = InMemoryGameTypeRepository(),
+        matchRepo: InMemoryMatchRepository = InMemoryMatchRepository(),
     ) = StatsHandler(
         getHeadToHead = GetHeadToHeadUseCase(matchRepo, gameTypeRepo, playerRepo),
     )
@@ -34,14 +34,14 @@ class StatsHandlerTest {
 
     @Test
     fun `refresh populates leaderboard`() {
-        val playerRepo = FakePlayerRepository().also {
+        val playerRepo = InMemoryPlayerRepository().also {
             it.save(Player("p1", "Alice"))
             it.save(Player("p2", "Bob"))
         }
-        val gameTypeRepo = FakeGameTypeRepository().also {
+        val gameTypeRepo = InMemoryGameTypeRepository().also {
             it.save(GameType("gt1", "Test", WinCondition.HIGHEST_SCORE))
         }
-        val matchRepo = FakeMatchRepository().also {
+        val matchRepo = InMemoryMatchRepository().also {
             it.save(Match("m1", 1000L, "gt1", listOf(PlayerScore("p1", 10), PlayerScore("p2", 5))))
         }
         val handler = buildHandler(playerRepo, gameTypeRepo, matchRepo)
@@ -53,14 +53,14 @@ class StatsHandlerTest {
 
     @Test
     fun `SelectPlayer sets selectedPlayerId`() {
-        val playerRepo = FakePlayerRepository().also {
+        val playerRepo = InMemoryPlayerRepository().also {
             it.save(Player("p1", "Alice"))
             it.save(Player("p2", "Bob"))
         }
-        val gameTypeRepo = FakeGameTypeRepository().also {
+        val gameTypeRepo = InMemoryGameTypeRepository().also {
             it.save(GameType("gt1", "Test", WinCondition.HIGHEST_SCORE))
         }
-        val matchRepo = FakeMatchRepository().also {
+        val matchRepo = InMemoryMatchRepository().also {
             it.save(Match("m1", 1000L, "gt1", listOf(PlayerScore("p1", 10), PlayerScore("p2", 5))))
         }
         val handler = buildHandler(playerRepo, gameTypeRepo, matchRepo)
@@ -74,14 +74,14 @@ class StatsHandlerTest {
 
     @Test
     fun `leaderboard sorted by elo`() {
-        val playerRepo = FakePlayerRepository().also {
+        val playerRepo = InMemoryPlayerRepository().also {
             it.save(Player("p1", "Alice"))
             it.save(Player("p2", "Bob"))
         }
-        val gameTypeRepo = FakeGameTypeRepository().also {
+        val gameTypeRepo = InMemoryGameTypeRepository().also {
             it.save(GameType("gt1", "Test", WinCondition.HIGHEST_SCORE))
         }
-        val matchRepo = FakeMatchRepository().also {
+        val matchRepo = InMemoryMatchRepository().also {
             it.save(Match("m1", 1000L, "gt1", listOf(PlayerScore("p1", 10), PlayerScore("p2", 5))))
             it.save(Match("m2", 2000L, "gt1", listOf(PlayerScore("p1", 8), PlayerScore("p2", 12))))
         }
@@ -95,14 +95,14 @@ class StatsHandlerTest {
 
     @Test
     fun `BackToLeaderboard clears selectedPlayerId`() {
-        val playerRepo = FakePlayerRepository().also {
+        val playerRepo = InMemoryPlayerRepository().also {
             it.save(Player("p1", "Alice"))
             it.save(Player("p2", "Bob"))
         }
-        val gameTypeRepo = FakeGameTypeRepository().also {
+        val gameTypeRepo = InMemoryGameTypeRepository().also {
             it.save(GameType("gt1", "Test", WinCondition.HIGHEST_SCORE))
         }
-        val matchRepo = FakeMatchRepository().also {
+        val matchRepo = InMemoryMatchRepository().also {
             it.save(Match("m1", 1000L, "gt1", listOf(PlayerScore("p1", 10), PlayerScore("p2", 5))))
         }
         val handler = buildHandler(playerRepo, gameTypeRepo, matchRepo)

@@ -37,6 +37,9 @@ jobs:
         with:
           gradle-version: wrapper
 
+      - name: Run tests
+        run: gradle jvmTest
+
       - name: Build production
         run: gradle jsBrowserProductionWebpack
 

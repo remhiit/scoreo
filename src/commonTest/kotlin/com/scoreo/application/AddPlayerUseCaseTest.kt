@@ -1,6 +1,6 @@
 package com.scoreo.application
 
-import com.scoreo.FakePlayerRepository
+import com.scoreo.infrastructure.InMemoryPlayerRepository
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotEquals
@@ -9,7 +9,7 @@ class AddPlayerUseCaseTest {
 
     @Test
     fun `adds player to repository`() {
-        val repo = FakePlayerRepository()
+        val repo = InMemoryPlayerRepository()
         val useCase = AddPlayerUseCase(repo)
 
         useCase("Alice")
@@ -20,7 +20,7 @@ class AddPlayerUseCaseTest {
 
     @Test
     fun `trims whitespace from name`() {
-        val repo = FakePlayerRepository()
+        val repo = InMemoryPlayerRepository()
         val useCase = AddPlayerUseCase(repo)
 
         useCase("  Bob  ")
@@ -30,7 +30,7 @@ class AddPlayerUseCaseTest {
 
     @Test
     fun `each player gets a unique id`() {
-        val repo = FakePlayerRepository()
+        val repo = InMemoryPlayerRepository()
         val useCase = AddPlayerUseCase(repo)
 
         useCase("Alice")
@@ -42,7 +42,7 @@ class AddPlayerUseCaseTest {
 
     @Test
     fun `multiple players are all saved`() {
-        val repo = FakePlayerRepository()
+        val repo = InMemoryPlayerRepository()
         val useCase = AddPlayerUseCase(repo)
 
         useCase("Alice")

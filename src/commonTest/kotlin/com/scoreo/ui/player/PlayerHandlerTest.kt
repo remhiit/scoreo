@@ -1,8 +1,8 @@
 package com.scoreo.ui.player
 
-import com.scoreo.FakeGameTypeRepository
-import com.scoreo.FakeMatchRepository
-import com.scoreo.FakePlayerRepository
+import com.scoreo.infrastructure.InMemoryGameTypeRepository
+import com.scoreo.infrastructure.InMemoryMatchRepository
+import com.scoreo.infrastructure.InMemoryPlayerRepository
 import com.scoreo.application.AddPlayerUseCase
 import com.scoreo.application.DeletePlayerUseCase
 import com.scoreo.application.GetPlayerStatsUseCase
@@ -20,9 +20,9 @@ import kotlin.test.assertTrue
 class PlayerHandlerTest {
 
     private fun buildHandler(
-        repo: FakePlayerRepository = FakePlayerRepository(),
-        matchRepo: FakeMatchRepository = FakeMatchRepository(),
-        gameTypeRepo: FakeGameTypeRepository = FakeGameTypeRepository(),
+        repo: InMemoryPlayerRepository = InMemoryPlayerRepository(),
+        matchRepo: InMemoryMatchRepository = InMemoryMatchRepository(),
+        gameTypeRepo: InMemoryGameTypeRepository = InMemoryGameTypeRepository(),
     ) = PlayerHandler(
         addPlayer = AddPlayerUseCase(repo),
         getPlayers = GetPlayersUseCase(repo),
@@ -98,7 +98,7 @@ class PlayerHandlerTest {
 
     @Test
     fun `ShowDeleteConfirm sets deleteConfirmPlayerId`() {
-        val repo = FakePlayerRepository()
+        val repo = InMemoryPlayerRepository()
         repo.save(Player("p1", "Alice"))
         val handler = buildHandler(repo)
 
@@ -109,7 +109,7 @@ class PlayerHandlerTest {
 
     @Test
     fun `DismissDeleteConfirm clears deleteConfirmPlayerId`() {
-        val repo = FakePlayerRepository()
+        val repo = InMemoryPlayerRepository()
         repo.save(Player("p1", "Alice"))
         val handler = buildHandler(repo)
 
@@ -121,7 +121,7 @@ class PlayerHandlerTest {
 
     @Test
     fun `DeletePlayer removes player from active list`() {
-        val repo = FakePlayerRepository()
+        val repo = InMemoryPlayerRepository()
         repo.save(Player("p1", "Alice"))
         repo.save(Player("p2", "Bob"))
         val handler = buildHandler(repo)
@@ -136,7 +136,7 @@ class PlayerHandlerTest {
 
     @Test
     fun `DeletePlayer with anonymize blanks the name`() {
-        val repo = FakePlayerRepository()
+        val repo = InMemoryPlayerRepository()
         repo.save(Player("p1", "Alice"))
         val handler = buildHandler(repo)
 
@@ -151,7 +151,7 @@ class PlayerHandlerTest {
 
     @Test
     fun `DeletePlayer without anonymize keeps the name`() {
-        val repo = FakePlayerRepository()
+        val repo = InMemoryPlayerRepository()
         repo.save(Player("p1", "Alice"))
         val handler = buildHandler(repo)
 
@@ -166,9 +166,9 @@ class PlayerHandlerTest {
 
     @Test
     fun `DeletePlayer keeps stats for remaining players`() {
-        val repo = FakePlayerRepository()
-        val matchRepo = FakeMatchRepository()
-        val gameTypeRepo = FakeGameTypeRepository()
+        val repo = InMemoryPlayerRepository()
+        val matchRepo = InMemoryMatchRepository()
+        val gameTypeRepo = InMemoryGameTypeRepository()
         repo.save(Player("p1", "Alice"))
         repo.save(Player("p2", "Bob"))
         gameTypeRepo.save(GameType("gt1", "Test", WinCondition.HIGHEST_SCORE))

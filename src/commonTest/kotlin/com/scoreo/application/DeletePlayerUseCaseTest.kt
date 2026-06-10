@@ -1,6 +1,6 @@
 package com.scoreo.application
 
-import com.scoreo.FakePlayerRepository
+import com.scoreo.infrastructure.InMemoryPlayerRepository
 import com.scoreo.domain.model.Player
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -11,7 +11,7 @@ class DeletePlayerUseCaseTest {
 
     @Test
     fun `delete marks player as inactive`() {
-        val repo = FakePlayerRepository()
+        val repo = InMemoryPlayerRepository()
         repo.save(Player("p1", "Alice"))
         val useCase = DeletePlayerUseCase(repo)
 
@@ -24,7 +24,7 @@ class DeletePlayerUseCaseTest {
 
     @Test
     fun `delete keeps name by default`() {
-        val repo = FakePlayerRepository()
+        val repo = InMemoryPlayerRepository()
         repo.save(Player("p1", "Alice"))
         val useCase = DeletePlayerUseCase(repo)
 
@@ -36,7 +36,7 @@ class DeletePlayerUseCaseTest {
 
     @Test
     fun `delete with anonymize blanks name`() {
-        val repo = FakePlayerRepository()
+        val repo = InMemoryPlayerRepository()
         repo.save(Player("p1", "Alice"))
         val useCase = DeletePlayerUseCase(repo)
 
@@ -48,7 +48,7 @@ class DeletePlayerUseCaseTest {
 
     @Test
     fun `active players excluded by default after delete`() {
-        val repo = FakePlayerRepository()
+        val repo = InMemoryPlayerRepository()
         repo.save(Player("p1", "Alice"))
         repo.save(Player("p2", "Bob"))
         val useCase = DeletePlayerUseCase(repo)
@@ -62,7 +62,7 @@ class DeletePlayerUseCaseTest {
 
     @Test
     fun `delete non-existent id does not throw`() {
-        val repo = FakePlayerRepository()
+        val repo = InMemoryPlayerRepository()
         val useCase = DeletePlayerUseCase(repo)
 
         useCase("non_existent")
@@ -71,7 +71,7 @@ class DeletePlayerUseCaseTest {
 
     @Test
     fun `delete is idempotent`() {
-        val repo = FakePlayerRepository()
+        val repo = InMemoryPlayerRepository()
         repo.save(Player("p1", "Alice"))
         val useCase = DeletePlayerUseCase(repo)
 
