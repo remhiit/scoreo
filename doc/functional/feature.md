@@ -1,0 +1,51 @@
+# Features
+
+| # | Feature | Description | File |
+|---|---------|-------------|------|
+| 1 | **Players** | Add, list, soft-delete with optional anonymization, per-player stats (wins/losses) | [`features/players.md`](features/players.md) |
+| 2 | **Games** | Game types with configurable win conditions (highest score, lowest score, manual) | [`features/games.md`](features/games.md) |
+| 3 | **Scoring** | Multi-round score table, auto-calculated totals, winner determination | [`features/scoring.md`](features/scoring.md) |
+| 4 | **History** | Past matches list, player name resolution with deleted-player markers | [`features/history.md`](features/history.md) |
+| 5 | **Import** | JSON import with preview, match-by-match execution, auto-creation of unknown entities | [`features/import.md`](features/import.md) |
+
+## User Flow
+
+1. **Home** → select ≥2 players → **New Match**
+2. **Game Selection** modal → pick or create a game type → **Lancer la partie**
+3. **Score Detail** → enter rounds → **Terminer la partie**
+4. Back to **Home** — stats and selection reset
+
+## Navigation
+
+Top header bar (all screens):
+
+| Element | Action |
+|---------|--------|
+| ← Back | Returns to Home (hidden on Home) |
+| Title | Current screen name |
+| ☰ Burger | Opens side menu |
+
+Burger menu items:
+
+| Icon | Label | Screen |
+|------|-------|--------|
+| 📋 | History | HistoryScreen |
+| 📥 | Import | ImportScreen |
+| 👤 | Players | SetupScreen (PLAYERS tab) |
+| 🎮 | Games | SetupScreen (GAME_TYPES tab) |
+
+Screens:
+
+| Screen | Route | Purpose |
+|--------|-------|---------|
+| `Screen.Home` | `/` | Player selection, FAB to start match |
+| `Screen.History` | `/history` | View past matches |
+| `Screen.Import` | `/import` | Import JSON match data |
+| `Screen.Setup` | `/setup?section=` | Manage players + game types |
+| `Screen.ScoreDetail` | `/score/:gameType/:players` | Multi-round score entry |
+
+## Technical notes
+
+- All data is local-first (localStorage). No backend required.
+- Domain models are serialized with `ignoreUnknownKeys = true` for forward/backward compatibility.
+- Architecture: MVI (Handler/Intent/State) + hexagonal (Ports & Adapters).
