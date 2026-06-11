@@ -8,9 +8,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import kotlinx.coroutines.delay
 import com.scoreo.domain.model.GameType
-import com.scoreo.domain.model.Player
 import com.scoreo.domain.model.WinCondition
 import com.scoreo.ui.player.PlayerHandler
+import com.scoreo.ui.player.PlayerIntent
 import com.scoreo.ui.util.requireNonBlank
 import org.jetbrains.compose.web.attributes.InputType
 import org.jetbrains.compose.web.dom.Button
@@ -26,17 +26,12 @@ fun HomeScreen(
     playerHandler: PlayerHandler,
     getGameTypes: () -> List<GameType>,
     onAddGameType: (name: String, winCondition: WinCondition) -> GameType,
-    onAddPlayer: (name: String) -> Player,
     onStartGame: (gameTypeId: String, playerIds: List<String>) -> Unit,
-    onConfigurePlayers: () -> Unit,
 ) {
     val state = playerHandler.state
 
     var selectedPlayers by remember { mutableStateOf(setOf<String>()) }
-
-    var showAddPlayer by remember { mutableStateOf(false) }
-    var addPlayerInput by remember { mutableStateOf("") }
-    var addPlayerError by remember { mutableStateOf<String?>(null) }
+    var anonymize by remember(state.deleteConfirmPlayerId) { mutableStateOf(false) }
 
     var showGameModal by remember { mutableStateOf(false) }
     var modalGameTypes by remember { mutableStateOf(getGameTypes()) }
@@ -50,19 +45,34 @@ fun HomeScreen(
 
     var fabError by remember { mutableStateOf<String?>(null) }
 
+    // ── Add player form (always visible) ──
+    Div(attrs = { classes("form-row") }) {
+        Input(type = InputType.Text, attrs = {
+            classes("input")
+            if (state.error != null) classes("error")
+            attr("placeholder", "Player name")
+            value(state.inputName)
+            onInput { playerHandler.handle(PlayerIntent.UpdateInput(it.value)) }
+            onKeyUp { if (it.key == "Enter") playerHandler.handle(PlayerIntent.AddPlayer) }
+        })
+        Button(attrs = {
+            classes("btn", "btn-primary")
+            onClick { playerHandler.handle(PlayerIntent.AddPlayer) }
+        }) { Text("Add") }
+    }
+
+    state.error?.let { msg ->
+        Div(attrs = { classes("error-msg") }) { Text(msg) }
+    }
+
+    // ── Player list ──
     if (state.players.isEmpty()) {
-        Div(attrs = { classes("home-empty") }) {
-            Span(attrs = { classes("home-empty-icon") }) { Text("🎮") }
-            Span(attrs = { classes("home-empty-text") }) { Text("No players yet.") }
-            Button(attrs = {
-                classes("btn", "btn-secondary")
-                onClick { onConfigurePlayers() }
-            }) { Text("⚙️ Configure players") }
-        }
+        Div(attrs = { classes("empty") }) { Text("No players yet. Add one above.") }
     } else {
         Div(attrs = { classes("home-player-list") }) {
             state.players.forEach { player ->
                 val isSelected = player.id in selectedPlayers
+                val stats = state.stats[player.id]
                 Div(attrs = {
                     classes("home-player-card")
                     if (isSelected) classes("selected")
@@ -73,71 +83,26 @@ fun HomeScreen(
                 }) {
                     Div {
                         Div(attrs = { classes("home-player-name") }) { Text(player.name) }
-                        val stats = state.stats[player.id]
-                        Div(attrs = { classes("stats") }) {
-                            if (stats != null) {
+                        if (stats != null) {
+                            Div(attrs = { classes("stats") }) {
                                 Span(attrs = { classes("stat-win") }) { Text("${stats.wins}W") }
                                 Span(attrs = { classes("stat-loss") }) { Text("${stats.losses}L") }
-                                val total = stats.wins + stats.losses
-                                if (total > 0) {
-                                    val ratio = (stats.wins * 100 / total)
-                                    Span(attrs = { classes("stat-ratio") }) { Text("$ratio%") }
-                                }
-                            } else {
-                                Span(attrs = { classes("stat-none") }) { Text("No matches") }
                             }
                         }
                     }
-                    if (isSelected) {
-                        Span(attrs = { classes("home-player-check") }) { Text("✓") }
-                    }
-                }
-            }
-
-            Div(attrs = { classes("home-add-player-toggle") }) {
-                Button(attrs = {
-                    classes("btn-add")
-                    onClick { showAddPlayer = !showAddPlayer }
-                }) { Text(if (showAddPlayer) "−" else "＋") }
-                Span { Text("Add player") }
-            }
-            if (showAddPlayer) {
-                Div(attrs = { classes("home-add-player-form") }) {
-                    Div(attrs = { classes("form-row") }) {
-                        Input(type = InputType.Text, attrs = {
-                            classes("input")
-                            if (addPlayerError != null) classes("error")
-                            attr("placeholder", "Player name")
-                            value(addPlayerInput)
-                            onInput { addPlayerInput = it.value; addPlayerError = null }
-                            onKeyUp { if (it.key == "Enter") addPlayerInput.let { name ->
-                                if (name.isNotBlank()) {
-                                    val player = onAddPlayer(name.trim())
-                                    selectedPlayers = selectedPlayers + player.id
-                                    addPlayerInput = ""
-                                    showAddPlayer = false
-                                    addPlayerError = null
-                                }
-                            } }
-                        })
+                    Div(attrs = { classes("home-player-actions") }) {
+                        if (isSelected) {
+                            Span(attrs = { classes("home-player-check") }) { Text("✓") }
+                        }
                         Button(attrs = {
-                            classes("btn", "btn-primary")
-                            onClick {
-                                val name = addPlayerInput.trim()
-                                val error = requireNonBlank(name)
-                                if (error != null) {
-                                    addPlayerError = error
-                                    return@onClick
-                                }
-                                val player = onAddPlayer(name)
-                                selectedPlayers = selectedPlayers + player.id
-                                addPlayerInput = ""
-                                showAddPlayer = false
-                                addPlayerError = null
+                            classes("btn-danger")
+                            onClick { e ->
+                                e.stopPropagation()
+                                playerHandler.handle(PlayerIntent.ShowDeleteConfirm(player.id))
+                                anonymize = false
                             }
-                        }) { Text("Add") }
+                        }) { Text("🗑") }
                     }
-                    addPlayerError?.let { Div(attrs = { classes("error-msg") }) { Text(it) } }
                 }
             }
         }
@@ -290,6 +255,36 @@ fun HomeScreen(
                         onStartGame(selectedGameType!!.id, selectedPlayers.toList())
                     }
                 }) { Text("Lancer la partie") }
+            }
+        }
+    }
+
+    // ── Delete confirmation modal ──
+    state.deleteConfirmPlayerId?.let { playerId ->
+        val player = state.players.find { it.id == playerId }
+        Div(attrs = {
+            classes("modal-overlay")
+            onClick { playerHandler.handle(PlayerIntent.DismissDeleteConfirm) }
+        }) {}
+        Div(attrs = { classes("modal-content") }) {
+            Div(attrs = { classes("modal-title") }) { Text("Supprimer ${player?.name ?: "?"} ?") }
+            Div(attrs = { classes("modal-body") }) { Text("Les matchs seront conservés.") }
+            Div(attrs = { classes("modal-row") }) {
+                Input(type = InputType.Checkbox, attrs = {
+                    checked(anonymize)
+                    onClick { anonymize = !anonymize }
+                })
+                Span { Text("Effacer aussi le nom de l'historique") }
+            }
+            Div(attrs = { classes("modal-actions") }) {
+                Button(attrs = {
+                    classes("btn", "btn-secondary")
+                    onClick { playerHandler.handle(PlayerIntent.DismissDeleteConfirm) }
+                }) { Text("Annuler") }
+                Button(attrs = {
+                    classes("btn", "btn-danger", "btn-danger-filled")
+                    onClick { playerHandler.handle(PlayerIntent.DeletePlayer(playerId, anonymize)) }
+                }) { Text("Supprimer") }
             }
         }
     }

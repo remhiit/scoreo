@@ -21,18 +21,17 @@ import com.scoreo.domain.port.MatchRepository
 import com.scoreo.domain.port.PlayerRepository
 
 import com.scoreo.ui.gametype.GameTypeHandler
+import com.scoreo.ui.gametype.GameTypeScreen
 import com.scoreo.ui.history.HistoryHandler
 import com.scoreo.ui.history.HistoryScreen
 import com.scoreo.ui.home.HomeScreen
 import com.scoreo.ui.navigation.AppNavigator
 import com.scoreo.ui.navigation.Screen
-import com.scoreo.ui.navigation.SetupSection
 import com.scoreo.ui.player.PlayerHandler
 import com.scoreo.ui.import.ImportHandler
 import com.scoreo.ui.import.ImportScreen
 import com.scoreo.ui.scoredetail.ScoreDetailHandler
 import com.scoreo.ui.scoredetail.ScoreDetailScreen
-import com.scoreo.ui.setup.SetupScreen
 import com.scoreo.ui.stats.StatsHandler
 import com.scoreo.ui.stats.StatsScreen
 import org.jetbrains.compose.web.dom.Button
@@ -66,14 +65,13 @@ fun App(
     }
     val getGameTypesUseCase = remember { GetGameTypesUseCase(gameTypeRepository) }
     val addGameTypeUseCase = remember { AddGameTypeUseCase(gameTypeRepository) }
-    val addPlayerUseCase = remember { AddPlayerUseCase(playerRepository) }
 
     val screenTitle = when (navigator.current) {
         is Screen.Home -> "Scoreo"
         is Screen.History -> "History"
         is Screen.Import -> "Import"
         is Screen.Stats -> "Stats"
-        is Screen.Setup -> "Setup"
+        is Screen.Games -> "Games"
         is Screen.ScoreDetail -> "Score Detail"
     }
     val canGoBack = navigator.current !is Screen.Home
@@ -102,16 +100,8 @@ fun App(
                 playerHandler = playerHandler,
                 getGameTypes = { getGameTypesUseCase() },
                 onAddGameType = { name, wc -> addGameTypeUseCase(name, wc) },
-                onAddPlayer = { name ->
-                    val player = addPlayerUseCase(name)
-                    playerHandler.refresh()
-                    player
-                },
                 onStartGame = { gameTypeId, playerIds ->
                     navigator.navigate(Screen.ScoreDetail(gameTypeId, playerIds))
-                },
-                onConfigurePlayers = {
-                    navigator.navigate(Screen.Setup(SetupSection.PLAYERS))
                 },
             )
             is Screen.History -> {
@@ -157,11 +147,7 @@ fun App(
                     },
                 )
             }
-            is Screen.Setup -> SetupScreen(
-                playerHandler = playerHandler,
-                gameTypeHandler = gameTypeHandler,
-                focusSection = screen.focusSection,
-            )
+            is Screen.Games -> GameTypeScreen(gameTypeHandler, showTitle = true)
             is Screen.ScoreDetail -> {
                 val scoreDetailHandler = remember(screen) {
                     val gameType = gameTypeRepository.findById(screen.gameTypeId)
@@ -211,13 +197,9 @@ fun App(
                 burgerOpen = false
                 navigator.navigate(Screen.Import)
             }
-            BurgerItem("👤", "Players") {
-                burgerOpen = false
-                navigator.navigate(Screen.Setup(SetupSection.PLAYERS))
-            }
             BurgerItem("🎮", "Games") {
                 burgerOpen = false
-                navigator.navigate(Screen.Setup(SetupSection.GAME_TYPES))
+                navigator.navigate(Screen.Games)
             }
         }
     }
