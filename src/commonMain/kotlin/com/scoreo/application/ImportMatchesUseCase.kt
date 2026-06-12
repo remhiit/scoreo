@@ -181,7 +181,7 @@ class ImportMatchesUseCase(
     }
 
     private fun resolveGameType(name: String, winCondition: String? = null): GameType {
-        val existing = gameTypeRepository.getAll().find { it.name == name }
+        val existing = gameTypeRepository.getAll().find { it.name.equals(name, ignoreCase = true) }
         if (existing != null) return existing
         val wc = winCondition?.let { wcStr ->
             WinCondition.entries.find { it.name.equals(wcStr, ignoreCase = true) }
@@ -193,7 +193,7 @@ class ImportMatchesUseCase(
     }
 
     private fun resolvePlayer(name: String, existingPlayers: MutableList<Player>): Player {
-        val existing = existingPlayers.find { it.name == name }
+        val existing = existingPlayers.find { it.name.equals(name, ignoreCase = true) }
         if (existing != null) return existing
         val player = Player(id = IdGenerator.newId(), name = name)
         existingPlayers.add(player)
