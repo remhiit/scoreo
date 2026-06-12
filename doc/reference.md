@@ -10,6 +10,7 @@ Tableaux exhaustifs. Lire en priorité avant d'explorer `src/`.
 | `GameTypeHandler` | `GameTypeIntent` | `UpdateName(name: String)`, `SelectWinCondition(winCondition: WinCondition)`, `AddGameType` | `GameTypeState` | `src/commonMain/.../ui/gametype/GameTypeHandler.kt` |
 | `ImportHandler` | `ImportIntent` | `FileLoaded(content: String)`, `Execute`, `Reset` | `ImportState(step: ImportStep, preview, jsonContent, result, error)` | `src/commonMain/.../ui/import/ImportHandler.kt` |
 | `ScoreDetailHandler` | `ScoreDetailIntent` | `UpdateScore(roundIndex, playerId, value)`, `AddRound`, `RemoveRound(index)`, `Terminate`, `ConfirmWinners`, `DismissModal`, `ToggleModalWinner(playerId)` | `ScoreDetailState` | `src/commonMain/.../ui/scoredetail/ScoreDetailHandler.kt` |
+| `StatsHandler` | `StatsIntent` | `SelectPlayer(playerId: String)`, `BackToLeaderboard` | `StatsState` | `src/commonMain/.../ui/stats/StatsHandler.kt` |
 | `HistoryHandler` | — (pas d'Intent, pas de `handle()`) | — | `List<MatchDisplay>` (computed getter) | `src/commonMain/.../ui/history/HistoryHandler.kt` |
 
 Tous dans `src/commonMain/kotlin/com/scoreo/`.
@@ -24,6 +25,7 @@ Tous dans `src/commonMain/kotlin/com/scoreo/`.
 | `DeletePlayerUseCase` | `invoke(id: String, anonymize: Boolean = false)` | `Unit` | `src/commonMain/.../application/DeletePlayerUseCase.kt` |
 | `GetPlayersUseCase` | `invoke(includeInactive: Boolean = false)` | `List<Player>` | `src/commonMain/.../application/GetPlayersUseCase.kt` |
 | `GetPlayerStatsUseCase` | `invoke()` | `Map<String, PlayerStats>` | `src/commonMain/.../application/GetPlayerStatsUseCase.kt` |
+| `GetHeadToHeadUseCase` | `invoke()` | `List<PlayerDetail>` | `src/commonMain/.../application/GetHeadToHeadUseCase.kt` |
 | `GetGameTypesUseCase` | `invoke()` | `List<GameType>` | `src/commonMain/.../application/GetGameTypesUseCase.kt` |
 | `GetMatchesUseCase` | `invoke()` | `List<Match>` | `src/commonMain/.../application/GetMatchesUseCase.kt` |
 | `ImportMatchesUseCase` | `preview(jsonString: String)`, `execute(jsonString: String)` | `Result<ImportPreview>`, `Result<ImportResult>` | `src/commonMain/.../application/ImportMatchesUseCase.kt` |
@@ -62,6 +64,7 @@ Tous dans `src/commonMain/kotlin/com/scoreo/`.
 | `InMemoryPlayerRepository` | `PlayerRepository` | mémoire (tests) | `src/jsMain/.../infrastructure/InMemoryPlayerRepository.kt` |
 | `InMemoryGameTypeRepository` | `GameTypeRepository` | mémoire (tests) | `src/jsMain/.../infrastructure/InMemoryGameTypeRepository.kt` |
 | `InMemoryMatchRepository` | `MatchRepository` | mémoire (tests) | `src/jsMain/.../infrastructure/InMemoryMatchRepository.kt` |
+| `MatchMigration` | — (utilitaire) | `migrateMatchesJson()` | `src/commonMain/.../infrastructure/MatchMigration.kt` |
 
 Tous dans `src/jsMain/kotlin/com/scoreo/`. Utilisés en production : `LocalStorage*`. En tests : `InMemory*`.
 
@@ -74,10 +77,9 @@ Le fichier `JsonConfig.kt` (`src/jsMain/.../infrastructure/`) fournit `scoreoJso
 | `Screen.Home` | — | HomeScreen (sélection joueurs, game modal, FAB) |
 | `Screen.History` | — | HistoryScreen (liste des matchs passés) |
 | `Screen.Import` | — | ImportScreen (import JSON) |
-| `Screen.Setup` | `focusSection: SetupSection` | SetupScreen (gestion joueurs + types de jeu) |
+| `Screen.Stats` | — | StatsScreen (classement ELO, head-to-head) |
+| `Screen.Games` | — | GameTypeScreen (gestion des types de jeu) |
 | `Screen.ScoreDetail` | `gameTypeId: String`, `playerIds: List<String>` | ScoreDetailScreen (saisie des rounds) |
-
-`SetupSection` enum : `PLAYERS`, `GAME_TYPES`.
 
 ## Tests
 

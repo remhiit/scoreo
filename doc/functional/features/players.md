@@ -25,7 +25,7 @@
   - Warning: "Matches are preserved"
   - Checkbox: "Erase name from history" (controls `anonymize` flag)
   - **Cancel** / **Delete** buttons
-- Called from `SetupScreen` (PLAYERS tab) and `HomeScreen` (inline add)
+- Called from `HomeScreen` (inline add)
 
 ## Functional Tests
 
@@ -41,16 +41,15 @@ And the input field is cleared
 ```
 Given "Alice" exists and has 2 matches
 When I click 🗑 then Delete (checkbox unchecked)
-Then "Alice" disappears from Home and Setup
-And "Alice (supprimé)" appears in history
-And other players' stats are unchanged
+Then "Alice" disappears from Home
+And "Alice (deleted)" appears in history
 ```
 
 ### Delete with anonymization
 ```
 Given "Alice" exists and has 2 matches
 When I click 🗑, check "Erase name", then Delete
-Then "Alice" disappears from Home and Setup
+Then "Alice" disappears from Home
 And "Deleted player" appears in history
 ```
 

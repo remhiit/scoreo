@@ -140,7 +140,7 @@ class HistoryHandlerTest {
 
         handler.refresh()
 
-        assertEquals("Alice (supprimé)", handler.state.first().playerLabels["p1"])
+        assertEquals("Alice (deleted)", handler.state.first().playerLabels["p1"])
     }
 
     @Test
@@ -153,7 +153,7 @@ class HistoryHandlerTest {
 
         handler.refresh()
 
-        assertEquals("Joueur supprimé", handler.state.first().playerLabels["p1"])
+        assertEquals("Deleted player", handler.state.first().playerLabels["p1"])
     }
 
     @Test

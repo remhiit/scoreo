@@ -28,3 +28,4 @@ Lire ces fichiers dans l'ordre. Tout le contexte nécessaire y est :
 - Tout modèle sérialisé (`Player`, `GameType`, `Match`, `PlayerScore`) doit être **backward-compatible**.
 - Ajouter un champ ? Toujours fournir une valeur par défaut.
 - Supprimer/renommer un champ ? Migration obligatoire dans `doc/technical/migrations.md`.
+- Toute évolution du code (nouveau use case, handler, modèle, screen, port) doit mettre à jour la documentation correspondante dans `doc/`.

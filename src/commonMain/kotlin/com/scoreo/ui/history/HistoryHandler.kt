@@ -45,7 +45,7 @@ class HistoryHandler(
                 gameType = gameType,
                 players = playerMap,
                 playerLabels = playerMap.mapValues { (_, p) ->
-                    if (p.active) p.name else if (p.name.isBlank()) "Joueur supprimé" else "${p.name} (supprimé)"
+                    if (p.active) p.name else if (p.name.isBlank()) "Deleted player" else "${p.name} (deleted)"
                 },
                 winners = gameType?.let { match.getWinners(it) } ?: emptyList(),
                 dateFormatted = dateFormatted,

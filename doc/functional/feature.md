@@ -29,10 +29,10 @@ Burger menu items:
 
 | Icon | Label | Screen |
 |------|-------|--------|
+| 📊 | Stats | StatsScreen |
 | 📋 | History | HistoryScreen |
 | 📥 | Import | ImportScreen |
-| 👤 | Players | SetupScreen (PLAYERS tab) |
-| 🎮 | Games | SetupScreen (GAME_TYPES tab) |
+| 🎮 | Games | GameTypeScreen |
 
 Screens:
 
@@ -41,7 +41,8 @@ Screens:
 | `Screen.Home` | `/` | Player selection, FAB to start match |
 | `Screen.History` | `/history` | View past matches |
 | `Screen.Import` | `/import` | Import JSON match data |
-| `Screen.Setup` | `/setup?section=` | Manage players + game types |
+| `Screen.Stats` | `/stats` | Leaderboard ELO, head-to-head |
+| `Screen.Games` | `/games` | Manage game types |
 | `Screen.ScoreDetail` | `/score/:gameType/:players` | Multi-round score entry |
 
 ## Technical notes

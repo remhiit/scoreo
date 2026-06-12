@@ -22,7 +22,7 @@
 | `match` | `Match` | Raw match data |
 | `gameType` | `GameType?` | Resolved game type (null if type was deleted) |
 | `players` | `Map<String, Player>` | All players including inactive |
-| `playerLabels` | `Map<String, String>` | Display names: active → name, inactive+name → "Alice (supprimé)", inactive+blank → "Deleted player" |
+| `playerLabels` | `Map<String, String>` | Display names: active → name, inactive+name → "Alice (deleted)", inactive+blank → "Deleted player" |
 | `winners` | `List<String>` | Winner player IDs |
 | `dateFormatted` | `String` | Formatted date string |
 
@@ -32,7 +32,7 @@
 - Each card shows: game type name, date, per-player scores
 - Winner is highlighted with bold + 🏆
 - Deleted player names show one of:
-  - `"Alice (supprimé)"` — if name was kept on delete
+  - `"Alice (deleted)"` — if name was kept on delete
   - `"Deleted player"` — if name was erased (anonymized)
 
 ## Functional Tests
@@ -49,7 +49,7 @@ Then matches are ordered: 3000, 2000, 1000
 Given a deleted player "Alice" with active=false and name="Alice"
 And a match referencing player "p1"
 When HistoryHandler.refresh() is called
-Then playerLabels["p1"] = "Alice (supprimé)"
+Then playerLabels["p1"] = "Alice (deleted)"
 ```
 
 ### Player name resolution for anonymized players
@@ -71,7 +71,7 @@ Then playerLabels[playerId] = "Deleted player"
 │  └───────────────────────┘  │
 │  ┌───────────────────────┐  │
 │  │ Custom    2026-06-09  │  │
-│  │ Alice (supprimé)   8  │  │
+ │  │ Alice (deleted)   8  │  │
 │  │ Deleted player     3  │  │
 │  └───────────────────────┘  │
 └─────────────────────────────┘
