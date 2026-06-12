@@ -104,6 +104,7 @@ class GetHeadToHeadUseCase(
             val participants = match.playerScores.map { it.playerId }
             val preElo = elo.toMap()
             val kNorm = K.toDouble() / (participants.size - 1)
+            val deltas = mutableMapOf<String, Int>()
 
             for (winner in winners) {
                 for (loser in participants) {
@@ -112,9 +113,12 @@ class GetHeadToHeadUseCase(
                     val rL = preElo[loser] ?: 1200
                     val eW = 1.0 / (1.0 + 10.0.pow((rL - rW) / 400.0))
                     val eL = 1.0 / (1.0 + 10.0.pow((rW - rL) / 400.0))
-                    elo[winner] = (rW + kNorm * (1.0 - eW)).roundToInt()
-                    elo[loser] = (rL + kNorm * (0.0 - eL)).roundToInt()
+                    deltas[winner] = (deltas[winner] ?: 0) + (kNorm * (1.0 - eW)).roundToInt()
+                    deltas[loser] = (deltas[loser] ?: 0) + (kNorm * (0.0 - eL)).roundToInt()
                 }
+            }
+            for ((pid, d) in deltas) {
+                elo[pid] = (preElo[pid] ?: 1200) + d
             }
         }
 
