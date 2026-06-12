@@ -126,4 +126,25 @@ class SerializationTest {
         val decoded = testJson.decodeFromString<Player>(json)
         assertEquals(Player("p1", "Alice", active = true), decoded)
     }
+
+    @Test
+    fun `Match without manualWinners defaults to emptyList (backward compat)`() {
+        val json = """{"id": "m1", "date": 1000000, "gameTypeId": "gt1", "playerScores": []}"""
+        val decoded = testJson.decodeFromString<Match>(json)
+        assertEquals(emptyList<String>(), decoded.manualWinners)
+    }
+
+    @Test
+    fun `PlayerScore backward compat deserialization`() {
+        val json = """{"playerId": "p1", "score": 10}"""
+        val decoded = testJson.decodeFromString<PlayerScore>(json)
+        assertEquals(PlayerScore("p1", 10), decoded)
+    }
+
+    @Test
+    fun `GameType backward compat deserialization`() {
+        val json = """{"id": "gt1", "name": "Test", "winCondition": "HIGHEST_SCORE"}"""
+        val decoded = testJson.decodeFromString<GameType>(json)
+        assertEquals(GameType("gt1", "Test", WinCondition.HIGHEST_SCORE), decoded)
+    }
 }
