@@ -15,7 +15,9 @@ class LocalStoragePlayerRepository : PlayerRepository {
             ?: emptyList()
 
     override fun save(player: Player) {
-        val updated = getAll(includeInactive = true).toMutableList().also { it.add(player) }
+        val updated = getAll(includeInactive = true).toMutableList()
+        val idx = updated.indexOfFirst { it.id == player.id }
+        if (idx >= 0) updated[idx] = player else updated.add(player)
         localStorage.setItem(KEY, scoreoJson.encodeToString(updated))
     }
 
