@@ -80,11 +80,12 @@ class ImportMatchesUseCase(
             }
 
             if (game.details != null) {
+                val playerNameMap = existingPlayers.associate { it.id to it.name }
                 var valid = true
                 for (playerId in playerIds) {
                     val expected = scores.find { it.playerId == playerId }?.score ?: 0
                     val actual = game.details.sumOf { round ->
-                        round.scores.find { it.name == playerName(playerId, existingPlayers) }?.score ?: 0
+                        round.scores.find { it.name == (playerNameMap[playerId] ?: playerId) }?.score ?: 0
                     }
                     if (expected != actual) {
                         failed.add(game.id)
@@ -200,9 +201,6 @@ class ImportMatchesUseCase(
         playerRepository.save(player)
         return player
     }
-
-    private fun playerName(playerId: String, players: List<Player>): String =
-        players.find { it.id == playerId }?.name ?: playerId
 }
 
 private data class ImportRoot(
