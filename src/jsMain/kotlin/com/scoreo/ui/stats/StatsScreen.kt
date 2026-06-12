@@ -35,12 +35,14 @@ private fun GameTypeTabs(
 ) {
     Div(attrs = { classes("tab-bar") }) {
         Button(attrs = {
-            classes("tab-btn", if (selectedGameTypeId == null) "active" else "")
+            classes("tab-btn")
+            if (selectedGameTypeId == null) { classes("active") }
             onClick { onSelect(null) }
         }) { Text("All") }
         gameTypes.forEach { gt ->
             Button(attrs = {
-                classes("tab-btn", if (selectedGameTypeId == gt.id) "active" else "")
+                classes("tab-btn")
+                if (selectedGameTypeId == gt.id) { classes("active") }
                 onClick { onSelect(gt.id) }
             }) { Text(gt.name) }
         }
