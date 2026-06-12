@@ -10,7 +10,7 @@ private const val KEY = "scoreo_players"
 class LocalStoragePlayerRepository : PlayerRepository {
     override fun getAll(includeInactive: Boolean): List<Player> =
         localStorage.getItem(KEY)
-            ?.let { scoreoJson.decodeFromString<List<Player>>(it) }
+            ?.let { runCatching { scoreoJson.decodeFromString<List<Player>>(it) }.getOrDefault(emptyList()) }
             ?.let { if (includeInactive) it else it.filter { p -> p.active } }
             ?: emptyList()
 

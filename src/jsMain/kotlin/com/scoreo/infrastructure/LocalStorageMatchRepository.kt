@@ -12,7 +12,7 @@ class LocalStorageMatchRepository : MatchRepository {
     override fun getAll(): List<Match> {
         migrateIfNeeded()
         return localStorage.getItem(KEY)
-            ?.let { scoreoJson.decodeFromString<List<Match>>(it) }
+            ?.let { runCatching { scoreoJson.decodeFromString<List<Match>>(it) }.getOrDefault(emptyList()) }
             ?: emptyList()
     }
 

@@ -10,7 +10,7 @@ private const val KEY = "scoreo_gametypes"
 class LocalStorageGameTypeRepository : GameTypeRepository {
     override fun getAll(): List<GameType> =
         localStorage.getItem(KEY)
-            ?.let { scoreoJson.decodeFromString<List<GameType>>(it) }
+            ?.let { runCatching { scoreoJson.decodeFromString<List<GameType>>(it) }.getOrDefault(emptyList()) }
             ?: emptyList()
 
     override fun save(gameType: GameType) {
