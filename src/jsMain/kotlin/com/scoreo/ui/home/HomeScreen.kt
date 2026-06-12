@@ -205,7 +205,8 @@ fun HomeScreen(
                     Select(attrs = {
                         classes("select")
                         onChange { event ->
-                            val wc = WinCondition.valueOf(event.value ?: WinCondition.HIGHEST_SCORE.name)
+                            val wc = WinCondition.entries.find { it.name == event.value }
+                                ?: WinCondition.HIGHEST_SCORE
                             inlineGameWinCondition = wc
                         }
                     }) {
