@@ -16,8 +16,13 @@ class GetPlayerStatsUseCase(
     operator fun invoke(): Map<String, PlayerStats> {
         val stats = mutableMapOf<String, PlayerStats>()
 
+        var orphanedMatches = 0
         matchRepository.getAll().forEach { match ->
-            val gameType = gameTypeRepository.findById(match.gameTypeId) ?: return@forEach
+            val gameType = gameTypeRepository.findById(match.gameTypeId)
+            if (gameType == null) {
+                orphanedMatches++
+                return@forEach
+            }
             val winners = match.getWinners(gameType).toSet()
 
             match.playerScores.forEach { ps ->
@@ -28,6 +33,9 @@ class GetPlayerStatsUseCase(
                     current.copy(losses = current.losses + 1)
                 }
             }
+        }
+        if (orphanedMatches > 0) {
+            println("[Scoreo] Warning: $orphanedMatches match(es) reference non-existent game types")
         }
         return stats
     }

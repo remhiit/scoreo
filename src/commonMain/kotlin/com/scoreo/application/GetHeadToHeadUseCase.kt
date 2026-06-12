@@ -25,8 +25,13 @@ class GetHeadToHeadUseCase(
         val totalLosses = mutableMapOf<String, Int>()
         val h2h = mutableMapOf<Pair<String, String>, MutableList<Int>>()
 
+        var orphanedMatches = 0
         allMatches.forEach { match ->
-            val gameType = gameTypes[match.gameTypeId] ?: return@forEach
+            val gameType = gameTypes[match.gameTypeId]
+            if (gameType == null) {
+                orphanedMatches++
+                return@forEach
+            }
             val winners = match.getWinners(gameType).toSet()
             val participants = match.playerScores.map { it.playerId }
 
@@ -52,6 +57,10 @@ class GetHeadToHeadUseCase(
                     }
                 }
             }
+        }
+
+        if (orphanedMatches > 0) {
+            println("[Scoreo] Warning: $orphanedMatches match(es) reference non-existent game types")
         }
 
         val eloMap = computeElo(allMatches, gameTypes)
