@@ -6,6 +6,7 @@ import com.scoreo.domain.port.GameTypeRepository
 import com.scoreo.domain.port.MatchRepository
 import com.scoreo.domain.port.PlayerRepository
 import kotlin.math.pow
+import kotlin.math.roundToInt
 
 private const val K = 32
 
@@ -92,16 +93,18 @@ class GetHeadToHeadUseCase(
             val winners = match.getWinners(gt).toSet()
             if (winners.isEmpty()) continue
             val participants = match.playerScores.map { it.playerId }
+            val preElo = elo.toMap()
+            val kNorm = K.toDouble() / (participants.size - 1)
 
             for (winner in winners) {
                 for (loser in participants) {
                     if (loser in winners) continue
-                    val rW = elo[winner] ?: 1200
-                    val rL = elo[loser] ?: 1200
+                    val rW = preElo[winner] ?: 1200
+                    val rL = preElo[loser] ?: 1200
                     val eW = 1.0 / (1.0 + 10.0.pow((rL - rW) / 400.0))
                     val eL = 1.0 / (1.0 + 10.0.pow((rW - rL) / 400.0))
-                    elo[winner] = (rW + K * (1.0 - eW)).toInt()
-                    elo[loser] = (rL + K * (0.0 - eL)).toInt()
+                    elo[winner] = (rW + kNorm * (1.0 - eW)).roundToInt()
+                    elo[loser] = (rL + kNorm * (0.0 - eL)).roundToInt()
                 }
             }
         }
