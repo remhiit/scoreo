@@ -183,7 +183,10 @@ class ImportMatchesUseCase(
     private fun resolveGameType(name: String, winCondition: String? = null): GameType {
         val existing = gameTypeRepository.getAll().find { it.name == name }
         if (existing != null) return existing
-        val wc = winCondition?.let { WinCondition.valueOf(it) } ?: WinCondition.MANUAL
+        val wc = winCondition?.let { wcStr ->
+            WinCondition.entries.find { it.name.equals(wcStr, ignoreCase = true) }
+                ?: error("Unknown winCondition '$wcStr'. Valid values: ${WinCondition.entries.joinToString { it.name }}")
+        } ?: WinCondition.MANUAL
         val gameType = GameType(id = IdGenerator.newId(), name = name, winCondition = wc)
         gameTypeRepository.save(gameType)
         return gameType
