@@ -9,8 +9,13 @@ import kotlinx.serialization.encodeToString
 private const val KEY = "scoreo_matches"
 
 class LocalStorageMatchRepository : MatchRepository {
+    private var migrated = false
+
     override fun getAll(): List<Match> {
-        migrateIfNeeded()
+        if (!migrated) {
+            migrateIfNeeded()
+            migrated = true
+        }
         return localStorage.getItem(KEY)
             ?.let { runCatching { scoreoJson.decodeFromString<List<Match>>(it) }.getOrDefault(emptyList()) }
             ?: emptyList()
