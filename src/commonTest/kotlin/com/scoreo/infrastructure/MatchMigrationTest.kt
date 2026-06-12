@@ -93,4 +93,75 @@ class MatchMigrationTest {
         val result = migrateMatchesJson("[]", json) { fixedId }
         assertNull(result)
     }
+
+    @Test
+    fun `uppercase uuid is recognized as valid`() {
+        assertTrue(isUuid("550E8400-E29B-41D4-A716-446655440000"))
+    }
+
+    @Test
+    fun `mixed case uuid is recognized as valid`() {
+        assertTrue(isUuid("550e8400-e29B-41D4-A716-446655440000"))
+    }
+
+    @Test
+    fun `invalid date string left unchanged`() {
+        val input = """[{"id": "$fixedId", "date": "not-a-date", "gameTypeId": "gt1", "playerScores": [], "manualWinners": []}]"""
+        val result = migrateMatchesJson(input, json) { fixedId }
+        assertNull(result)
+    }
+
+    @Test
+    fun `empty date string left unchanged`() {
+        val input = """[{"id": "$fixedId", "date": "", "gameTypeId": "gt1", "playerScores": [], "manualWinners": []}]"""
+        val result = migrateMatchesJson(input, json) { fixedId }
+        assertNull(result)
+    }
+
+    @Test
+    fun `migration is idempotent after date migration`() {
+        val input = """[{"id": "$fixedId", "date": "2024-01-15", "gameTypeId": "gt1", "playerScores": [], "manualWinners": []}]"""
+        val first = migrateMatchesJson(input, json) { "new-id" }
+        assertNotNull(first)
+        val second = migrateMatchesJson(first!!, json) { "another-id" }
+        assertNull(second)
+    }
+
+    @Test
+    fun `migration is idempotent after id migration`() {
+        val input = """[{"id": "old-id", "date": 1000000, "gameTypeId": "gt1", "playerScores": [], "manualWinners": []}]"""
+        val first = migrateMatchesJson(input, json) { fixedId }
+        assertNotNull(first)
+        val second = migrateMatchesJson(first!!, json) { "another-id" }
+        assertNull(second)
+    }
+
+    @Test
+    fun `extra fields in playerScores are preserved through migration`() {
+        val input = """[{"id": "old-id", "date": 1000000, "gameTypeId": "gt1", "playerScores": [{"playerId": "p1", "score": 10, "extra": "keep"}]}]"""
+        val result = migrateMatchesJson(input, json) { fixedId }
+        assertNotNull(result)
+        val parsed = json.parseToJsonElement(result).jsonArray[0].jsonObject
+        val scores = parsed["playerScores"]?.jsonArray
+        assertNotNull(scores)
+        assertEquals("keep", scores[0].jsonObject["extra"]?.jsonPrimitive?.content)
+    }
+
+    @Test
+    fun `migration preserves manualWinners`() {
+        val input = """[{"id": "old-id", "date": 1000000, "gameTypeId": "gt1", "playerScores": [{"playerId": "p1", "score": 10}], "manualWinners": ["p1"]}]"""
+        val result = migrateMatchesJson(input, json) { fixedId }
+        assertNotNull(result)
+        val parsed = json.parseToJsonElement(result).jsonArray[0].jsonObject
+        assertEquals("p1", parsed["manualWinners"]?.jsonArray?.get(0)?.jsonPrimitive?.content)
+    }
+
+    @Test
+    fun `records missing id field are still migrated for date`() {
+        val input = """[{"date": "2024-01-15", "gameTypeId": "gt1", "playerScores": []}]"""
+        val result = migrateMatchesJson(input, json) { fixedId }
+        assertNotNull(result)
+        val parsed = json.parseToJsonElement(result).jsonArray[0].jsonObject
+        assertEquals(1705276800000L, parsed["date"]?.jsonPrimitive?.content?.toLong())
+    }
 }
