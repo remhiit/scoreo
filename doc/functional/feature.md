@@ -6,7 +6,8 @@
 | 2 | **Games** | Game types with configurable win conditions (highest score, lowest score, manual) | [`features/games.md`](features/games.md) |
 | 3 | **Scoring** | Multi-round score table, auto-calculated totals, winner determination | [`features/scoring.md`](features/scoring.md) |
 | 4 | **History** | Past matches list, player name resolution with deleted-player markers | [`features/history.md`](features/history.md) |
-| 5 | **Import** | JSON import with preview, match-by-match execution, auto-creation of unknown entities | [`features/import.md`](features/import.md) |
+| 5 | **Stats** | Leaderboard ELO, head-to-head, per-game-type filter | [`features/stats.md`](features/stats.md) |
+| 6 | **Import** | JSON import with preview, match-by-match execution, auto-creation of unknown entities | [`features/import.md`](features/import.md) |
 
 ## User Flow
 
@@ -41,7 +42,7 @@ Screens:
 | `Screen.Home` | `/` | Player selection, FAB to start match |
 | `Screen.History` | `/history` | View past matches |
 | `Screen.Import` | `/import` | Import JSON match data |
-| `Screen.Stats` | `/stats` | Leaderboard ELO, head-to-head |
+| `Screen.Stats` | `/stats` | Leaderboard ELO, head-to-head, per-game filter |
 | `Screen.Games` | `/games` | Manage game types |
 | `Screen.ScoreDetail` | `/score/:gameType/:players` | Multi-round score entry |
 

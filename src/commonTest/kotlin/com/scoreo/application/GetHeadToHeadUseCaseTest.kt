@@ -196,6 +196,34 @@ class GetHeadToHeadUseCaseTest {
     }
 
     @Test
+    fun `filters by gameTypeId`() {
+        val playerRepo = InMemoryPlayerRepository().also {
+            it.save(Player("p1", "Alice"))
+            it.save(Player("p2", "Bob"))
+        }
+        val gameTypeRepo = InMemoryGameTypeRepository().also {
+            it.save(GameType("gt1", "Type A", WinCondition.HIGHEST_SCORE))
+            it.save(GameType("gt2", "Type B", WinCondition.HIGHEST_SCORE))
+        }
+        val matchRepo = InMemoryMatchRepository().also {
+            it.save(Match("m1", 1000L, "gt1", listOf(PlayerScore("p1", 10), PlayerScore("p2", 5))))
+            it.save(Match("m2", 2000L, "gt2", listOf(PlayerScore("p1", 3), PlayerScore("p2", 10))))
+        }
+        val useCase = buildUseCase(matchRepo, gameTypeRepo, playerRepo)
+
+        val gt1 = useCase(gameTypeId = "gt1")
+        assertEquals(ELO_AFTER_WIN, gt1.find { it.playerId == "p1" }?.elo)
+        assertEquals(ELO_AFTER_LOSS, gt1.find { it.playerId == "p2" }?.elo)
+
+        val gt2 = useCase(gameTypeId = "gt2")
+        assertEquals(ELO_AFTER_LOSS, gt2.find { it.playerId == "p1" }?.elo)
+        assertEquals(ELO_AFTER_WIN, gt2.find { it.playerId == "p2" }?.elo)
+
+        val empty = useCase(gameTypeId = "nonexistent")
+        assertTrue(empty.isEmpty())
+    }
+
+    @Test
     fun `elo with multiple matches`() {
         val playerRepo = InMemoryPlayerRepository().also {
             it.save(Player("p1", "Alice"))

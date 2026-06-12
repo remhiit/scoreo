@@ -14,10 +14,11 @@ class GetHeadToHeadUseCase(
     private val gameTypeRepository: GameTypeRepository,
     private val playerRepository: PlayerRepository,
 ) {
-    operator fun invoke(): List<PlayerDetail> {
+    operator fun invoke(gameTypeId: String? = null): List<PlayerDetail> {
         val gameTypes = gameTypeRepository.getAll().associateBy { it.id }
         val players = playerRepository.getAll(includeInactive = true).associateBy { it.id }
         val allMatches = matchRepository.getAll()
+            .let { matches -> if (gameTypeId != null) matches.filter { it.gameTypeId == gameTypeId } else matches }
 
         val totalWins = mutableMapOf<String, Int>()
         val totalLosses = mutableMapOf<String, Int>()

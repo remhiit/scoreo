@@ -123,8 +123,10 @@ fun App(
                             gameTypeRepository = gameTypeRepository,
                             playerRepository = playerRepository,
                         ),
+                        getGameTypes = GetGameTypesUseCase(gameTypeRepository),
                     )
                 }
+                LaunchedEffect(navigator.current) { statsHandler.refresh() }
                 StatsScreen(statsHandler)
             }
             is Screen.Import -> {

@@ -2,6 +2,7 @@ package com.scoreo.ui.stats
 
 import androidx.compose.runtime.Composable
 import com.scoreo.application.PlayerDetail
+import com.scoreo.domain.model.GameType
 import org.jetbrains.compose.web.dom.Button
 import org.jetbrains.compose.web.dom.Div
 import org.jetbrains.compose.web.dom.Span
@@ -14,10 +15,35 @@ fun StatsScreen(handler: StatsHandler) {
     if (state.selectedPlayer != null) {
         PlayerDetailView(state.selectedPlayer!!, onBack = { handler.handle(StatsIntent.BackToLeaderboard) })
     } else {
+        GameTypeTabs(
+            gameTypes = state.gameTypes,
+            selectedGameTypeId = state.selectedGameTypeId,
+            onSelect = { handler.handle(StatsIntent.SelectGameType(it)) },
+        )
         LeaderboardView(
             state.leaderboard,
             onSelectPlayer = { handler.handle(StatsIntent.SelectPlayer(it)) },
         )
+    }
+}
+
+@Composable
+private fun GameTypeTabs(
+    gameTypes: List<GameType>,
+    selectedGameTypeId: String?,
+    onSelect: (String?) -> Unit,
+) {
+    Div(attrs = { classes("tab-bar") }) {
+        Button(attrs = {
+            classes("tab-btn", if (selectedGameTypeId == null) "active" else "")
+            onClick { onSelect(null) }
+        }) { Text("All") }
+        gameTypes.forEach { gt ->
+            Button(attrs = {
+                classes("tab-btn", if (selectedGameTypeId == gt.id) "active" else "")
+                onClick { onSelect(gt.id) }
+            }) { Text(gt.name) }
+        }
     }
 }
 

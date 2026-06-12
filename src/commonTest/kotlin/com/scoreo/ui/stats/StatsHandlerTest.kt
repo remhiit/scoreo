@@ -3,6 +3,7 @@ package com.scoreo.ui.stats
 import com.scoreo.infrastructure.InMemoryGameTypeRepository
 import com.scoreo.infrastructure.InMemoryMatchRepository
 import com.scoreo.infrastructure.InMemoryPlayerRepository
+import com.scoreo.application.GetGameTypesUseCase
 import com.scoreo.application.GetHeadToHeadUseCase
 import com.scoreo.domain.model.GameType
 import com.scoreo.domain.model.Match
@@ -23,6 +24,7 @@ class StatsHandlerTest {
         matchRepo: InMemoryMatchRepository = InMemoryMatchRepository(),
     ) = StatsHandler(
         getHeadToHead = GetHeadToHeadUseCase(matchRepo, gameTypeRepo, playerRepo),
+        getGameTypes = GetGameTypesUseCase(gameTypeRepo),
     )
 
     @Test
@@ -113,5 +115,43 @@ class StatsHandlerTest {
 
         assertNull(handler.state.selectedPlayerId)
         assertNull(handler.state.selectedPlayer)
+    }
+
+    @Test
+    fun `SelectGameType filters leaderboard and loads gameTypes`() {
+        val playerRepo = InMemoryPlayerRepository().also {
+            it.save(Player("p1", "Alice"))
+            it.save(Player("p2", "Bob"))
+        }
+        val gameTypeRepo = InMemoryGameTypeRepository().also {
+            it.save(GameType("gt1", "Type A", WinCondition.HIGHEST_SCORE))
+            it.save(GameType("gt2", "Type B", WinCondition.HIGHEST_SCORE))
+        }
+        val matchRepo = InMemoryMatchRepository().also {
+            it.save(Match("m1", 1000L, "gt1", listOf(PlayerScore("p1", 10), PlayerScore("p2", 5))))
+            it.save(Match("m2", 2000L, "gt2", listOf(PlayerScore("p1", 3), PlayerScore("p2", 10))))
+        }
+        val handler = buildHandler(playerRepo, gameTypeRepo, matchRepo)
+        handler.refresh()
+
+        assertEquals(2, handler.state.gameTypes.size)
+        assertEquals(2, handler.state.leaderboard.size)
+
+        handler.handle(StatsIntent.SelectGameType("gt1"))
+
+        assertEquals("gt1", handler.state.selectedGameTypeId)
+        assertEquals(2, handler.state.leaderboard.size)
+        assertEquals(1216, handler.state.leaderboard.find { it.playerId == "p1" }?.elo)
+        assertEquals(1184, handler.state.leaderboard.find { it.playerId == "p2" }?.elo)
+
+        handler.handle(StatsIntent.SelectGameType("gt2"))
+
+        assertEquals("gt2", handler.state.selectedGameTypeId)
+        assertEquals(1184, handler.state.leaderboard.find { it.playerId == "p1" }?.elo)
+        assertEquals(1216, handler.state.leaderboard.find { it.playerId == "p2" }?.elo)
+
+        handler.handle(StatsIntent.SelectGameType(null))
+
+        assertNull(handler.state.selectedGameTypeId)
     }
 }
