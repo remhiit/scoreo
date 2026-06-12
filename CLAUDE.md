@@ -20,6 +20,13 @@ Lire ces fichiers dans l'ordre. Tout le contexte nécessaire y est :
 | `src/jsMain/` | Écrans Compose HTML, localStorage |
 | `src/commonTest/` | Tests unitaires JVM |
 
+## Workflow
+
+- `.task/` contient les tickets de correction organisés par priorité (P0/P1/P2/P3).
+- **Plan** : je décris une feature ou correctif → tu crées les tickets dans `.task/` avec priorisation.
+- **Développe** : je dis de développer → tu prends le premier ticket P0 non fait dans `.task/`, tu le réalises, tu commit, puis tu passes au suivant.
+- Un commit par ticket. Message de commit = titre du ticket.
+
 ## Règles
 
 - Handler dans `ui/*/`. Reçoit un `Intent` → produit un `State`.
