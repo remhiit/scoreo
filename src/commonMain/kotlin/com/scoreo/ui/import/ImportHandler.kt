@@ -55,6 +55,13 @@ class ImportHandler(
                 )
             }
 
+            is ImportIntent.FileError -> {
+                state = state.copy(
+                    step = ImportStep.IDLE,
+                    error = intent.message,
+                )
+            }
+
             is ImportIntent.Reset -> {
                 state = ImportState()
             }

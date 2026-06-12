@@ -26,14 +26,20 @@ fun ImportScreen(
                 Input(type = InputType.File, attrs = {
                     attr("accept", ".json,application/json")
                     onChange { event ->
-                        val file = (event.target as HTMLInputElement).files?.item(0)
-                        if (file != null) {
-                            val reader = FileReader()
-                            reader.onload = { _ ->
-                                (reader.result as? String)?.let { handler.handle(ImportIntent.FileLoaded(it)) }
-                            }
-                            reader.readAsText(file)
+                        val input = (event.target as? HTMLInputElement) ?: return@onChange
+                        val file = input.files?.item(0) ?: return@onChange
+                        val reader = FileReader()
+                        reader.onload = { _ ->
+                            (reader.result as? String)?.let { handler.handle(ImportIntent.FileLoaded(it)) }
                         }
+                        reader.onerror = { _ ->
+                            handler.handle(ImportIntent.FileError("Failed to read file"))
+                        }
+                        reader.onabort = { _ ->
+                            handler.handle(ImportIntent.FileError("File read was aborted"))
+                        }
+                        reader.readAsText(file)
+                        input.value = ""
                     }
                 })
             }
