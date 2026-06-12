@@ -105,7 +105,7 @@ fun App(
                 },
             )
             is Screen.History -> {
-                val historyHandler = remember(navigator.current) {
+                val historyHandler = remember {
                     HistoryHandler(
                         getMatches = GetMatchesUseCase(matchRepository),
                         getPlayers = GetPlayersUseCase(playerRepository),
