@@ -88,4 +88,34 @@ class GetPlayerStatsUseCaseTest {
         assertEquals(1, stats["bob"]?.wins)
         assertEquals(1, stats["alice"]?.losses)
     }
+
+    @Test
+    fun `counts wins for lowest score winner`() {
+        val gameTypeRepo = InMemoryGameTypeRepository()
+        val matchRepo = InMemoryMatchRepository()
+        gameTypeRepo.save(GameType("gt1", "Game", WinCondition.LOWEST_SCORE))
+        matchRepo.save(Match("m1", 1000L, "gt1", listOf(PlayerScore("alice", 3), PlayerScore("bob", 10))))
+
+        val stats = GetPlayerStatsUseCase(matchRepo, gameTypeRepo)()
+
+        assertEquals(1, stats["alice"]?.wins)
+        assertEquals(0, stats["alice"]?.losses)
+        assertEquals(0, stats["bob"]?.wins)
+        assertEquals(1, stats["bob"]?.losses)
+    }
+
+    @Test
+    fun `both winners on lowest score tie`() {
+        val gameTypeRepo = InMemoryGameTypeRepository()
+        val matchRepo = InMemoryMatchRepository()
+        gameTypeRepo.save(GameType("gt1", "Game", WinCondition.LOWEST_SCORE))
+        matchRepo.save(Match("m1", 1000L, "gt1", listOf(PlayerScore("alice", 5), PlayerScore("bob", 5), PlayerScore("charlie", 10))))
+
+        val stats = GetPlayerStatsUseCase(matchRepo, gameTypeRepo)()
+
+        assertEquals(1, stats["alice"]?.wins)
+        assertEquals(1, stats["bob"]?.wins)
+        assertEquals(0, stats["charlie"]?.wins)
+        assertEquals(1, stats["charlie"]?.losses)
+    }
 }
