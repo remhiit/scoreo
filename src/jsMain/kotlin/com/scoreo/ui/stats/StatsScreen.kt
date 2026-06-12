@@ -12,9 +12,9 @@ import org.jetbrains.compose.web.dom.Text
 fun StatsScreen(handler: StatsHandler) {
     val state = handler.state
 
-    if (state.selectedPlayer != null) {
-        PlayerDetailView(state.selectedPlayer!!, onBack = { handler.handle(StatsIntent.BackToLeaderboard) })
-    } else {
+    state.selectedPlayer?.let { detail ->
+        PlayerDetailView(detail, onBack = { handler.handle(StatsIntent.BackToLeaderboard) })
+    } ?: run {
         GameTypeTabs(
             gameTypes = state.gameTypes,
             selectedGameTypeId = state.selectedGameTypeId,
