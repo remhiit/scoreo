@@ -9,7 +9,8 @@ class InMemoryGameTypeRepository : GameTypeRepository {
     override fun getAll(): List<GameType> = gameTypes.toList()
 
     override fun save(gameType: GameType) {
-        gameTypes.add(gameType)
+        val idx = gameTypes.indexOfFirst { it.id == gameType.id }
+        if (idx >= 0) gameTypes[idx] = gameType else gameTypes.add(gameType)
     }
 
     override fun findById(id: String): GameType? = gameTypes.find { it.id == id }

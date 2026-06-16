@@ -9,7 +9,8 @@ class InMemoryMatchRepository : MatchRepository {
     override fun getAll(): List<Match> = matches.toList()
 
     override fun save(match: Match) {
-        matches.add(match)
+        val idx = matches.indexOfFirst { it.id == match.id }
+        if (idx >= 0) matches[idx] = match else matches.add(match)
     }
 
     override fun findById(id: String): Match? = matches.find { it.id == id }

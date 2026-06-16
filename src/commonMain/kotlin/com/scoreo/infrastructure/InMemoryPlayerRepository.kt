@@ -10,7 +10,8 @@ class InMemoryPlayerRepository : PlayerRepository {
         if (includeInactive) players.toList() else players.filter { it.active }
 
     override fun save(player: Player) {
-        players.add(player)
+        val idx = players.indexOfFirst { it.id == player.id }
+        if (idx >= 0) players[idx] = player else players.add(player)
     }
 
     override fun delete(id: String, anonymize: Boolean) {
