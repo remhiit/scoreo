@@ -1,0 +1,151 @@
+/* ── Layout ── */
+
+.app-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: calc(var(--header-height) + 16px) 16px 80px;
+    max-width: 600px;
+    width: 100%;
+    margin: 0 auto;
+}
+
+/* ── App header ── */
+
+.app-header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: var(--header-height);
+    background: var(--surface);
+    border-bottom: 1px solid var(--outline);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 8px;
+    z-index: 100;
+    max-width: 600px;
+    margin: 0 auto;
+    right: auto;
+    width: 100%;
+}
+
+@media (min-width: 600px) {
+    .app-header {
+        left: 50%;
+        transform: translateX(-50%);
+        border-left: 1px solid var(--outline);
+        border-right: 1px solid var(--outline);
+    }
+}
+
+.header-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--on-surface);
+    flex: 1;
+    text-align: center;
+}
+
+.header-spacer {
+    width: 44px;
+    height: 44px;
+}
+
+.back-btn {
+    width: 44px;
+    height: 44px;
+    border: none;
+    background: transparent;
+    font-size: 20px;
+    color: var(--primary);
+    cursor: pointer;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: background 0.15s;
+}
+
+.back-btn:hover { background: var(--primary-light); }
+
+.burger-btn {
+    width: 44px;
+    height: 44px;
+    border: none;
+    background: transparent;
+    font-size: 20px;
+    color: var(--on-surface);
+    cursor: pointer;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: background 0.15s;
+}
+
+.burger-btn:hover { background: var(--surface-variant); }
+
+/* ── Burger menu ── */
+
+.burger-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.4);
+    z-index: 200;
+}
+
+.burger-menu {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 260px;
+    background: var(--surface);
+    z-index: 201;
+    display: flex;
+    flex-direction: column;
+    padding: 16px 0;
+    box-shadow: -4px 0 24px rgba(0, 0, 0, 0.15);
+}
+
+.burger-close {
+    align-self: flex-end;
+    margin-right: 12px;
+    margin-bottom: 8px;
+    width: 44px;
+    height: 44px;
+    border: none;
+    background: transparent;
+    font-size: 20px;
+    color: var(--on-surface-variant);
+    cursor: pointer;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s;
+}
+
+.burger-close:hover { background: var(--surface-variant); }
+
+.burger-item {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 24px;
+    border: none;
+    background: transparent;
+    font-size: 16px;
+    color: var(--on-surface);
+    cursor: pointer;
+    text-align: left;
+    transition: background 0.15s;
+    width: 100%;
+}
+
+.burger-item:hover { background: var(--surface-variant); }
+
+.burger-item-icon { font-size: 20px; }

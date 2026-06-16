@@ -1,0 +1,169 @@
+/* ── Design tokens & reset ── */
+
+:root {
+    --primary: #6750a4;
+    --primary-light: #eaddff;
+    --surface: #fffbfe;
+    --surface-variant: #f4eff4;
+    --on-surface: #1c1b1f;
+    --on-surface-variant: #49454f;
+    --outline: #cac4d0;
+    --error: #b3261e;
+    --radius: 12px;
+    --header-height: 56px;
+}
+
+*, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+html, body {
+    width: 100%;
+    height: 100%;
+    background: var(--surface);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    color: var(--on-surface);
+    font-size: 16px;
+}
+
+#root {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+h1 { font-size: 22px; font-weight: 600; margin-bottom: 16px; color: var(--on-surface); }
+h2 { font-size: 18px; font-weight: 500; margin-bottom: 12px; }
+
+/* ── Shared components ── */
+
+.card {
+    background: var(--surface-variant);
+    border-radius: var(--radius);
+    padding: 12px 16px;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.card-title { font-weight: 500; font-size: 15px; }
+.card-sub { font-size: 13px; color: var(--on-surface-variant); margin-top: 2px; }
+.card-badge {
+    background: var(--primary-light);
+    color: var(--primary);
+    border-radius: 99px;
+    padding: 2px 10px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.form-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+    align-items: flex-start;
+}
+
+.input {
+    flex: 1;
+    border: 1.5px solid var(--outline);
+    border-radius: var(--radius);
+    padding: 10px 14px;
+    font-size: 15px;
+    outline: none;
+    background: var(--surface);
+    color: var(--on-surface);
+    transition: border-color 0.15s;
+}
+
+.input:focus { border-color: var(--primary); }
+.input.error { border-color: var(--error); }
+
+.error-msg {
+    color: var(--error);
+    font-size: 13px;
+    margin-bottom: 12px;
+}
+
+.select {
+    width: 100%;
+    border: 1.5px solid var(--outline);
+    border-radius: var(--radius);
+    padding: 10px 14px;
+    font-size: 15px;
+    background: var(--surface);
+    color: var(--on-surface);
+    outline: none;
+    margin-bottom: 16px;
+    cursor: pointer;
+}
+
+.select:focus { border-color: var(--primary); }
+
+.section-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--on-surface-variant);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 8px;
+    margin-top: 16px;
+}
+
+.empty {
+    text-align: center;
+    color: var(--on-surface-variant);
+    padding: 40px 0;
+    font-size: 15px;
+}
+
+/* ── Buttons ── */
+
+.btn {
+    border: none;
+    border-radius: var(--radius);
+    padding: 12px 24px;
+    font-size: 15px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: opacity 0.15s;
+    white-space: nowrap;
+}
+
+.btn:hover { opacity: 0.85; }
+.btn:disabled { opacity: 0.4; cursor: default; }
+
+.btn-primary { background: var(--primary); color: #fff; }
+.btn-secondary { background: var(--surface-variant); color: var(--on-surface); }
+.btn-danger {
+    background: transparent;
+    border: none;
+    color: var(--on-surface-variant);
+    cursor: pointer;
+    font-size: 18px;
+    padding: 8px;
+    border-radius: 50%;
+    line-height: 1;
+    transition: background 0.15s, color 0.15s;
+}
+.btn-danger:hover {
+    background: #fce4ec;
+    color: var(--error);
+}
+.btn-danger-filled {
+    background: var(--error);
+    color: #fff;
+    border-radius: var(--radius);
+    padding: 12px 24px;
+    font-size: 15px;
+    font-weight: 500;
+    border: none;
+    cursor: pointer;
+    transition: opacity 0.15s;
+}
+.btn-danger-filled:hover { opacity: 0.85; }
+.btn-full { width: 100%; margin-top: 8px; }
