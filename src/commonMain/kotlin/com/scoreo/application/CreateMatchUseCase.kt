@@ -3,6 +3,7 @@ package com.scoreo.application
 import com.scoreo.domain.DomainError
 import com.scoreo.domain.model.Match
 import com.scoreo.domain.model.PlayerScore
+import com.scoreo.domain.model.WinCondition
 import com.scoreo.domain.port.GameTypeRepository
 import com.scoreo.domain.port.MatchRepository
 
@@ -22,6 +23,7 @@ class CreateMatchUseCase(
         val playerIds = playerScores.map { it.playerId }
         if (playerIds.distinct().size != playerIds.size) throw DomainError.Validation("playerScores", "Duplicate player IDs in match")
         if (!manualWinners.all { it in playerIds }) throw DomainError.Validation("manualWinners", "manualWinners must be a subset of playerScores")
+        if (manualWinners.isNotEmpty() && gameType.winCondition != WinCondition.MANUAL) throw DomainError.Validation("manualWinners", "manualWinners is only allowed with MANUAL win condition")
         val match = Match(
             id = IdGenerator.newId(),
             date = date,

@@ -41,4 +41,19 @@ class CreateMatchUseCaseTest {
         assertTrue(result.isSuccess)
         assertEquals(listOf("p1"), matchRepo.getAll().first().manualWinners)
     }
+
+    @Test
+    fun `fails when manualWinners provided with non-MANUAL win condition`() {
+        val (useCase, _) = setup(WinCondition.HIGHEST_SCORE)
+        val result = useCase("gt1", listOf(PlayerScore("p1", 10), PlayerScore("p2", 5)), 1767225600000L, manualWinners = listOf("p1"))
+        assertTrue(result.isFailure)
+    }
+
+    @Test
+    fun `passes when manualWinners empty with non-MANUAL win condition`() {
+        val (useCase, matchRepo) = setup(WinCondition.HIGHEST_SCORE)
+        val result = useCase("gt1", listOf(PlayerScore("p1", 10), PlayerScore("p2", 5)), 1767225600000L)
+        assertTrue(result.isSuccess)
+        assertEquals(1, matchRepo.getAll().size)
+    }
 }
