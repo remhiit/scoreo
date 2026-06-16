@@ -1,0 +1,93 @@
+package com.scoreo.di
+
+import com.scoreo.application.AddGameTypeUseCase
+import com.scoreo.application.AddPlayerUseCase
+import com.scoreo.application.CreateMatchUseCase
+import com.scoreo.application.DeletePlayerUseCase
+import com.scoreo.application.GetGameTypesUseCase
+import com.scoreo.application.GetHeadToHeadUseCase
+import com.scoreo.application.GetMatchesUseCase
+import com.scoreo.application.GetPlayerStatsUseCase
+import com.scoreo.application.GetPlayersUseCase
+import com.scoreo.application.ImportMatchesUseCase
+import com.scoreo.domain.port.GameTypeRepository
+import com.scoreo.domain.port.MatchRepository
+import com.scoreo.domain.port.PlayerRepository
+import com.scoreo.ui.gametype.GameTypeHandler
+import com.scoreo.ui.history.HistoryHandler
+import com.scoreo.ui.import.ImportHandler
+import com.scoreo.ui.navigation.AppNavigator
+import com.scoreo.ui.player.PlayerHandler
+import com.scoreo.ui.stats.StatsHandler
+
+data class AppDependencies(
+    val playerHandler: PlayerHandler,
+    val gameTypeHandler: GameTypeHandler,
+    val historyHandler: HistoryHandler,
+    val statsHandler: StatsHandler,
+    val importHandler: ImportHandler,
+    val getGameTypesUseCase: GetGameTypesUseCase,
+    val addGameTypeUseCase: AddGameTypeUseCase,
+    val navigator: AppNavigator,
+)
+
+fun createAppDependencies(
+    playerRepository: PlayerRepository,
+    gameTypeRepository: GameTypeRepository,
+    matchRepository: MatchRepository,
+    currentDate: () -> Long,
+): AppDependencies {
+    val navigator = AppNavigator()
+
+    val playerHandler = PlayerHandler(
+        addPlayer = AddPlayerUseCase(playerRepository),
+        getPlayers = GetPlayersUseCase(playerRepository),
+        getPlayerStats = GetPlayerStatsUseCase(matchRepository, gameTypeRepository),
+        deletePlayer = DeletePlayerUseCase(playerRepository),
+    )
+
+    val gameTypeHandler = GameTypeHandler(
+        addGameType = AddGameTypeUseCase(gameTypeRepository),
+        getGameTypes = GetGameTypesUseCase(gameTypeRepository),
+    )
+
+    val getGameTypesUseCase = GetGameTypesUseCase(gameTypeRepository)
+    val addGameTypeUseCase = AddGameTypeUseCase(gameTypeRepository)
+
+    val getHeadToHeadUseCase = GetHeadToHeadUseCase(
+        matchRepository = matchRepository,
+        gameTypeRepository = gameTypeRepository,
+        playerRepository = playerRepository,
+    )
+
+    val historyHandler = HistoryHandler(
+        getMatches = GetMatchesUseCase(matchRepository),
+        getPlayers = GetPlayersUseCase(playerRepository),
+        getGameTypes = GetGameTypesUseCase(gameTypeRepository),
+    )
+
+    val statsHandler = StatsHandler(
+        getHeadToHead = getHeadToHeadUseCase,
+        getGameTypes = GetGameTypesUseCase(gameTypeRepository),
+    )
+
+    val importHandler = ImportHandler(
+        importUseCase = ImportMatchesUseCase(
+            playerRepository = playerRepository,
+            gameTypeRepository = gameTypeRepository,
+            matchRepository = matchRepository,
+            currentDate = currentDate,
+        ),
+    )
+
+    return AppDependencies(
+        playerHandler = playerHandler,
+        gameTypeHandler = gameTypeHandler,
+        historyHandler = historyHandler,
+        statsHandler = statsHandler,
+        importHandler = importHandler,
+        getGameTypesUseCase = getGameTypesUseCase,
+        addGameTypeUseCase = addGameTypeUseCase,
+        navigator = navigator,
+    )
+}

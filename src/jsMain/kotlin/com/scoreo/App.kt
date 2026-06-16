@@ -6,34 +6,20 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import com.scoreo.application.AddGameTypeUseCase
-import com.scoreo.application.AddPlayerUseCase
 import com.scoreo.application.CreateMatchUseCase
-import com.scoreo.application.DeletePlayerUseCase
-import com.scoreo.application.GetGameTypesUseCase
-import com.scoreo.application.GetHeadToHeadUseCase
-import com.scoreo.application.GetMatchesUseCase
-import com.scoreo.application.GetPlayerStatsUseCase
-import com.scoreo.application.GetPlayersUseCase
-import com.scoreo.application.ImportMatchesUseCase
+import com.scoreo.di.createAppDependencies
 import com.scoreo.domain.port.GameTypeRepository
 import com.scoreo.domain.port.MatchRepository
 import com.scoreo.domain.port.PlayerRepository
 
-import com.scoreo.ui.gametype.GameTypeHandler
 import com.scoreo.ui.gametype.GameTypeScreen
-import com.scoreo.ui.history.HistoryHandler
 import com.scoreo.ui.history.HistoryIntent
 import com.scoreo.ui.history.HistoryScreen
 import com.scoreo.ui.home.HomeScreen
-import com.scoreo.ui.navigation.AppNavigator
 import com.scoreo.ui.navigation.Screen
-import com.scoreo.ui.player.PlayerHandler
-import com.scoreo.ui.import.ImportHandler
 import com.scoreo.ui.import.ImportScreen
 import com.scoreo.ui.scoredetail.ScoreDetailHandler
 import com.scoreo.ui.scoredetail.ScoreDetailScreen
-import com.scoreo.ui.stats.StatsHandler
 import com.scoreo.ui.stats.StatsScreen
 import org.jetbrains.compose.web.dom.Button
 import org.jetbrains.compose.web.dom.Div
@@ -47,25 +33,9 @@ fun App(
     matchRepository: MatchRepository,
     currentDate: () -> Long,
 ) {
-    val navigator = remember { AppNavigator() }
+    val deps = remember { createAppDependencies(playerRepository, gameTypeRepository, matchRepository, currentDate) }
+    val navigator = deps.navigator
     var burgerOpen by remember { mutableStateOf(false) }
-
-    val playerHandler = remember {
-        PlayerHandler(
-            addPlayer = AddPlayerUseCase(playerRepository),
-            getPlayers = GetPlayersUseCase(playerRepository),
-            getPlayerStats = GetPlayerStatsUseCase(matchRepository, gameTypeRepository),
-            deletePlayer = DeletePlayerUseCase(playerRepository),
-        )
-    }
-    val gameTypeHandler = remember {
-        GameTypeHandler(
-            addGameType = AddGameTypeUseCase(gameTypeRepository),
-            getGameTypes = GetGameTypesUseCase(gameTypeRepository),
-        )
-    }
-    val getGameTypesUseCase = remember { GetGameTypesUseCase(gameTypeRepository) }
-    val addGameTypeUseCase = remember { AddGameTypeUseCase(gameTypeRepository) }
 
     val screenTitle = when (navigator.current) {
         is Screen.Home -> "Scoreo"
@@ -98,59 +68,32 @@ fun App(
     Div(attrs = { classes("app-content") }) {
         when (val screen = navigator.current) {
             is Screen.Home -> HomeScreen(
-                playerHandler = playerHandler,
-                getGameTypes = { getGameTypesUseCase() },
-                onAddGameType = { name, wc -> addGameTypeUseCase(name, wc) },
+                playerHandler = deps.playerHandler,
+                getGameTypes = { deps.getGameTypesUseCase() },
+                onAddGameType = { name, wc -> deps.addGameTypeUseCase(name, wc) },
                 onStartGame = { gameTypeId, playerIds ->
                     navigator.navigate(Screen.ScoreDetail(gameTypeId, playerIds))
                 },
             )
             is Screen.History -> {
-                val historyHandler = remember {
-                    HistoryHandler(
-                        getMatches = GetMatchesUseCase(matchRepository),
-                        getPlayers = GetPlayersUseCase(playerRepository),
-                        getGameTypes = GetGameTypesUseCase(gameTypeRepository),
-                    )
-                }
-                LaunchedEffect(navigator.current) { historyHandler.handle(HistoryIntent.Refresh) }
-                HistoryScreen(historyHandler)
+                LaunchedEffect(navigator.current) { deps.historyHandler.handle(HistoryIntent.Refresh) }
+                HistoryScreen(deps.historyHandler)
             }
             is Screen.Stats -> {
-                val statsHandler = remember {
-                    StatsHandler(
-                        getHeadToHead = GetHeadToHeadUseCase(
-                            matchRepository = matchRepository,
-                            gameTypeRepository = gameTypeRepository,
-                            playerRepository = playerRepository,
-                        ),
-                        getGameTypes = GetGameTypesUseCase(gameTypeRepository),
-                    )
-                }
-                LaunchedEffect(navigator.current) { statsHandler.refresh() }
-                StatsScreen(statsHandler)
+                LaunchedEffect(navigator.current) { deps.statsHandler.refresh() }
+                StatsScreen(deps.statsHandler)
             }
             is Screen.Import -> {
-                val importHandler = remember {
-                    ImportHandler(
-                        importUseCase = ImportMatchesUseCase(
-                            playerRepository = playerRepository,
-                            gameTypeRepository = gameTypeRepository,
-                            matchRepository = matchRepository,
-                            currentDate = currentDate,
-                        ),
-                    )
-                }
                 ImportScreen(
-                    handler = importHandler,
+                    handler = deps.importHandler,
                     onDone = {
-                        playerHandler.refresh()
-                        gameTypeHandler.refresh()
+                        deps.playerHandler.refresh()
+                        deps.gameTypeHandler.refresh()
                         navigator.navigate(Screen.Home)
                     },
                 )
             }
-            is Screen.Games -> GameTypeScreen(gameTypeHandler, showTitle = true)
+            is Screen.Games -> GameTypeScreen(deps.gameTypeHandler, showTitle = true)
             is Screen.ScoreDetail -> {
                 val scoreDetailHandler = remember(screen) {
                     val gameType = gameTypeRepository.findById(screen.gameTypeId)
@@ -166,7 +109,7 @@ fun App(
                 ScoreDetailScreen(
                     handler = scoreDetailHandler,
                     onSaved = {
-                        playerHandler.refresh()
+                        deps.playerHandler.refresh()
                         navigator.navigate(Screen.Home)
                     },
                     onCancel = {
@@ -218,4 +161,3 @@ private fun BurgerItem(icon: String, label: String, onClick: () -> Unit) {
         Span { Text(label) }
     }
 }
-
