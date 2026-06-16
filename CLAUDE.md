@@ -9,7 +9,7 @@ Lire ces fichiers dans l'ordre. Tout le contexte nécessaire y est :
 0. `doc/reference.md` — Tableaux de référence (handlers, use cases, models, navigation, tests)
 1. `doc/glossary.md` — Définitions (Handler, Intent, State, Port, Adapter, Use Case)
 2. `doc/technical/architecture.md` — Stack, patterns, persistence, backward compat
-3. `doc/functional/features.md` — User flow complet, navigation, import
+3. `doc/functional/feature.md` — User flow complet, navigation, import (6 fichiers)
 4. `doc/technical/migrations.md` — Migrations de données (si pertinent)
 
 ## Arborescence clé

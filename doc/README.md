@@ -2,7 +2,7 @@
 
 | Chemin | Contenu |
 |---|---|
-| [`functional/features.md`](functional/features.md) | Fonctionnalités et parcours utilisateur |
+| [`functional/feature.md`](functional/feature.md) | Fonctionnalités et parcours utilisateur |
 | [`technical/architecture.md`](technical/architecture.md) | Stack technique, patterns, structure |
 | [`technical/deployment.md`](technical/deployment.md) | CI/CD et déploiement |
 | [`technical/migrations.md`](technical/migrations.md) | Historique des migrations de données |
