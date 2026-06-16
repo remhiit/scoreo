@@ -71,7 +71,7 @@ class PlayerHandlerTest {
         handler.handle(PlayerIntent.AddPlayer)
 
         assertTrue(handler.state.players.isEmpty())
-        assertEquals("Name cannot be empty", handler.state.error)
+        assertEquals("name: Player name must not be blank", handler.state.error)
     }
 
     @Test
@@ -81,7 +81,7 @@ class PlayerHandlerTest {
         handler.handle(PlayerIntent.AddPlayer)
 
         assertTrue(handler.state.players.isEmpty())
-        assertEquals("Name cannot be empty", handler.state.error)
+        assertEquals("name: Player name must not be blank", handler.state.error)
     }
 
     @Test

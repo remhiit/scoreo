@@ -11,7 +11,7 @@ import com.scoreo.domain.model.GameType
 import com.scoreo.domain.model.WinCondition
 import com.scoreo.ui.player.PlayerHandler
 import com.scoreo.ui.player.PlayerIntent
-import com.scoreo.ui.util.requireNonBlank
+import com.scoreo.domain.DomainError
 import org.jetbrains.compose.web.attributes.InputType
 import org.jetbrains.compose.web.dom.Button
 import org.jetbrains.compose.web.dom.Div
@@ -221,18 +221,17 @@ fun HomeScreen(
                         classes("btn", "btn-primary", "btn-full")
                         onClick {
                             val name = inlineGameName.trim()
-                            val error = requireNonBlank(name)
-                            if (error != null) {
-                                inlineGameError = error
-                                return@onClick
+                            try {
+                                val created = onAddGameType(name, inlineGameWinCondition)
+                                modalGameTypes = getGameTypes()
+                                selectedGameType = modalGameTypes.find { it.id == created.id }
+                                showAddGameForm = false
+                                inlineGameName = ""
+                                inlineGameWinCondition = WinCondition.HIGHEST_SCORE
+                                inlineGameError = null
+                            } catch (e: DomainError) {
+                                inlineGameError = e.message
                             }
-                            val created = onAddGameType(name, inlineGameWinCondition)
-                            modalGameTypes = getGameTypes()
-                            selectedGameType = modalGameTypes.find { it.id == created.id }
-                            showAddGameForm = false
-                            inlineGameName = ""
-                            inlineGameWinCondition = WinCondition.HIGHEST_SCORE
-                            inlineGameError = null
                         }
                     }) { Text("Add game") }
                 }

@@ -1,5 +1,6 @@
 package com.scoreo.application
 
+import com.scoreo.domain.DomainError
 import com.scoreo.domain.model.Match
 import com.scoreo.domain.model.PlayerScore
 import com.scoreo.domain.port.GameTypeRepository
@@ -16,15 +17,11 @@ class CreateMatchUseCase(
         manualWinners: List<String> = emptyList(),
     ): Result<Match> = runCatching {
         val gameType = gameTypeRepository.findById(gameTypeId)
-            ?: error("GameType $gameTypeId not found")
-        require(playerScores.size >= 2) { "A match needs at least 2 players" }
+            ?: throw DomainError.NotFound("GameType", gameTypeId)
+        if (playerScores.size < 2) throw DomainError.Validation("playerScores", "A match needs at least 2 players")
         val playerIds = playerScores.map { it.playerId }
-        require(playerIds.distinct().size == playerIds.size) {
-            "Duplicate player IDs in match"
-        }
-        require(manualWinners.all { it in playerIds }) {
-            "manualWinners must be a subset of playerScores"
-        }
+        if (playerIds.distinct().size != playerIds.size) throw DomainError.Validation("playerScores", "Duplicate player IDs in match")
+        if (!manualWinners.all { it in playerIds }) throw DomainError.Validation("manualWinners", "manualWinners must be a subset of playerScores")
         val match = Match(
             id = IdGenerator.newId(),
             date = date,

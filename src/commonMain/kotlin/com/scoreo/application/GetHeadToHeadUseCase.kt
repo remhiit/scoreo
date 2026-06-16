@@ -56,9 +56,7 @@ class GetHeadToHeadUseCase(
             }
         }
 
-        if (orphanedMatches > 0) {
-            println("[Scoreo] Warning: $orphanedMatches match(es) reference non-existent game types")
-        }
+        // orphanedMatches > 0 : ignored silently — logged via DomainError in Phase 2
 
         val eloMap = eloCalculator.compute(allMatches, gameTypes)
 

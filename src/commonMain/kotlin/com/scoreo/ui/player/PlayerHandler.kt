@@ -7,7 +7,7 @@ import com.scoreo.application.AddPlayerUseCase
 import com.scoreo.application.DeletePlayerUseCase
 import com.scoreo.application.GetPlayerStatsUseCase
 import com.scoreo.application.GetPlayersUseCase
-import com.scoreo.ui.util.requireNonBlank
+import com.scoreo.domain.DomainError
 
 class PlayerHandler(
     private val addPlayer: AddPlayerUseCase,
@@ -25,18 +25,17 @@ class PlayerHandler(
             is PlayerIntent.UpdateInput -> state = state.copy(inputName = intent.name, error = null)
             is PlayerIntent.AddPlayer -> {
                 val name = state.inputName.trim()
-                val error = requireNonBlank(name)
-                if (error != null) {
-                    state = state.copy(error = error)
-                    return
+                try {
+                    addPlayer(name)
+                    state = state.copy(
+                        players = getPlayers(),
+                        stats = getPlayerStats(),
+                        inputName = "",
+                        error = null,
+                    )
+                } catch (e: DomainError) {
+                    state = state.copy(error = e.message)
                 }
-                addPlayer(name)
-                state = state.copy(
-                    players = getPlayers(),
-                    stats = getPlayerStats(),
-                    inputName = "",
-                    error = null,
-                )
             }
             is PlayerIntent.ShowDeleteConfirm -> state = state.copy(deleteConfirmPlayerId = intent.id)
             is PlayerIntent.DismissDeleteConfirm -> state = state.copy(deleteConfirmPlayerId = null)

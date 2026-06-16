@@ -5,7 +5,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import com.scoreo.application.AddGameTypeUseCase
 import com.scoreo.application.GetGameTypesUseCase
-import com.scoreo.ui.util.requireNonBlank
+import com.scoreo.domain.DomainError
 
 class GameTypeHandler(
     private val addGameType: AddGameTypeUseCase,
@@ -26,17 +26,16 @@ class GameTypeHandler(
                 state = state.copy(selectedWinCondition = intent.winCondition)
             is GameTypeIntent.AddGameType -> {
                 val name = state.inputName.trim()
-                val error = requireNonBlank(name)
-                if (error != null) {
-                    state = state.copy(error = error)
-                    return
+                try {
+                    addGameType(name, state.selectedWinCondition)
+                    state = state.copy(
+                        gameTypes = getGameTypes(),
+                        inputName = "",
+                        error = null,
+                    )
+                } catch (e: DomainError) {
+                    state = state.copy(error = e.message)
                 }
-                addGameType(name, state.selectedWinCondition)
-                state = state.copy(
-                    gameTypes = getGameTypes(),
-                    inputName = "",
-                    error = null,
-                )
             }
         }
     }

@@ -59,7 +59,7 @@ class GameTypeHandlerTest {
         handler.handle(GameTypeIntent.UpdateName("   "))
         handler.handle(GameTypeIntent.AddGameType)
         assertTrue(handler.state.gameTypes.isEmpty())
-        assertEquals("Name cannot be empty", handler.state.error)
+        assertEquals("name: Game type name must not be blank", handler.state.error)
     }
 
     @Test
@@ -67,7 +67,7 @@ class GameTypeHandlerTest {
         val handler = buildHandler()
         handler.handle(GameTypeIntent.AddGameType)
         assertTrue(handler.state.gameTypes.isEmpty())
-        assertEquals("Name cannot be empty", handler.state.error)
+        assertEquals("name: Game type name must not be blank", handler.state.error)
     }
 
     @Test
