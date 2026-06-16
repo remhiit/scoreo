@@ -6,9 +6,18 @@ import org.jetbrains.compose.web.dom.Div
 import org.jetbrains.compose.web.dom.Span
 import org.jetbrains.compose.web.dom.Text
 
+private fun isOnline(): Boolean =
+    js("navigator.onLine") as? Boolean ?: true
+
 @Composable
 fun SyncScreen(handler: SyncHandler) {
     val s = handler.state
+
+    if (!isOnline()) {
+        Div(attrs = { classes("error-msg") }) {
+            Span { Text("📡 Offline — changes will sync when reconnected") }
+        }
+    }
 
     when (s.phase) {
         SyncPhase.Disconnected -> disconnectedView(handler)

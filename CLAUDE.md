@@ -18,6 +18,7 @@ Lire ces fichiers dans l'ordre. Tout le contexte nécessaire y est :
 |---|---|
 | `src/commonMain/` | Domaine, application, handlers MVI |
 | `src/jsMain/` | Écrans Compose HTML, localStorage |
+| `src/jsMain/.../infrastructure/google/` | Sync Google Drive (OAuth, DriveClient, DriveSyncAdapter, SyncConfig) |
 | `src/commonTest/` | Tests unitaires JVM |
 
 ## Workflow
