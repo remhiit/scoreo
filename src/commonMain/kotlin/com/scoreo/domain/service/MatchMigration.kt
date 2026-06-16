@@ -1,4 +1,4 @@
-package com.scoreo.infrastructure
+package com.scoreo.domain.service
 
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone

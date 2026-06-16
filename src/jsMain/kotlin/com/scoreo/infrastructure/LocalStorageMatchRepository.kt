@@ -1,6 +1,7 @@
 package com.scoreo.infrastructure
 
 import com.scoreo.application.IdGenerator
+import com.scoreo.domain.service.migrateMatchesJson
 import com.scoreo.domain.model.Match
 import com.scoreo.domain.port.MatchRepository
 import kotlinx.browser.localStorage
