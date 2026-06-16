@@ -29,13 +29,13 @@ class HistoryHandlerTest {
     )
 
     @Test
-    fun `initial state is empty`() {
+    fun `initial state has empty displays`() {
         val handler = buildHandler()
-        assertTrue(handler.state.isEmpty())
+        assertTrue(handler.state.displays.isEmpty())
     }
 
     @Test
-    fun `refresh populates state from repositories`() {
+    fun `handle Refresh populates state from repositories`() {
         val playerRepo = InMemoryPlayerRepository()
         val gameTypeRepo = InMemoryGameTypeRepository()
         val matchRepo = InMemoryMatchRepository()
@@ -46,9 +46,9 @@ class HistoryHandlerTest {
         gameTypeRepo.save(GameType("gt1", "TestGame", WinCondition.HIGHEST_SCORE))
         matchRepo.save(Match("m1", 1000L, "gt1", listOf(PlayerScore("p1", 10), PlayerScore("p2", 5))))
 
-        handler.refresh()
+        handler.handle(HistoryIntent.Refresh)
 
-        assertEquals(1, handler.state.size)
+        assertEquals(1, handler.state.displays.size)
     }
 
     @Test
@@ -60,9 +60,9 @@ class HistoryHandlerTest {
         matchRepo.save(Match("m2", 1000L, "gt1", listOf(PlayerScore("p1", 10))))
         matchRepo.save(Match("m3", 2000L, "gt1", listOf(PlayerScore("p1", 10))))
 
-        handler.refresh()
+        handler.handle(HistoryIntent.Refresh)
 
-        assertEquals(listOf("m1", "m3", "m2"), handler.state.map { it.match.id })
+        assertEquals(listOf("m1", "m3", "m2"), handler.state.displays.map { it.match.id })
     }
 
     @Test
@@ -79,9 +79,9 @@ class HistoryHandlerTest {
         matchRepo.save(Match("m1", 1000L, "gt1", listOf(PlayerScore("p1", 10), PlayerScore("p2", 5))))
 
         val handler2 = buildHandler(playerRepo, gameTypeRepo, matchRepo)
-        handler2.refresh()
+        handler2.handle(HistoryIntent.Refresh)
 
-        val display = handler2.state.first()
+        val display = handler2.state.displays.first()
         assertNotNull(display.players["p1"])
         assertEquals("Alice", display.players["p1"]?.name)
         assertEquals("Alice", display.playerLabels["p1"])
@@ -93,9 +93,9 @@ class HistoryHandlerTest {
         matchRepo.save(Match("m1", 1000L, "unknown_gt", listOf(PlayerScore("p1", 10))))
 
         val handler = buildHandler(matchRepo = matchRepo)
-        handler.refresh()
+        handler.handle(HistoryIntent.Refresh)
 
-        assertEquals(null, handler.state.first().gameType)
+        assertEquals(null, handler.state.displays.first().gameType)
     }
 
     @Test
@@ -112,9 +112,9 @@ class HistoryHandlerTest {
         }
 
         val handler = buildHandler(playerRepo, gameTypeRepo, matchRepo)
-        handler.refresh()
+        handler.handle(HistoryIntent.Refresh)
 
-        assertEquals(listOf("p1"), handler.state.first().winners)
+        assertEquals(listOf("p1"), handler.state.displays.first().winners)
     }
 
     @Test
@@ -123,9 +123,9 @@ class HistoryHandlerTest {
         matchRepo.save(Match("m1", 1767225600000L, "gt1", listOf(PlayerScore("p1", 10))))
 
         val handler = buildHandler(matchRepo = matchRepo)
-        handler.refresh()
+        handler.handle(HistoryIntent.Refresh)
 
-        assertNotNull(handler.state.first().dateFormatted)
+        assertNotNull(handler.state.displays.first().dateFormatted)
     }
 
     @Test
@@ -138,9 +138,9 @@ class HistoryHandlerTest {
         gameTypeRepo.save(GameType("gt1", "Test", WinCondition.HIGHEST_SCORE))
         matchRepo.save(Match("m1", 1000L, "gt1", listOf(PlayerScore("p1", 10))))
 
-        handler.refresh()
+        handler.handle(HistoryIntent.Refresh)
 
-        assertEquals("Alice (deleted)", handler.state.first().playerLabels["p1"])
+        assertEquals("Alice (deleted)", handler.state.displays.first().playerLabels["p1"])
     }
 
     @Test
@@ -151,22 +151,22 @@ class HistoryHandlerTest {
         playerRepo.save(Player("p1", "", active = false))
         matchRepo.save(Match("m1", 1000L, "gt1", listOf(PlayerScore("p1", 10))))
 
-        handler.refresh()
+        handler.handle(HistoryIntent.Refresh)
 
-        assertEquals("Deleted player", handler.state.first().playerLabels["p1"])
+        assertEquals("Deleted player", handler.state.displays.first().playerLabels["p1"])
     }
 
     @Test
-    fun `refresh updates state when data changes`() {
+    fun `handle Refresh updates state when data changes`() {
         val matchRepo = InMemoryMatchRepository()
         val handler = buildHandler(matchRepo = matchRepo)
 
         matchRepo.save(Match("m1", 1000L, "gt1", listOf(PlayerScore("p1", 10))))
-        handler.refresh()
-        assertEquals(1, handler.state.size)
+        handler.handle(HistoryIntent.Refresh)
+        assertEquals(1, handler.state.displays.size)
 
         matchRepo.save(Match("m2", 2000L, "gt1", listOf(PlayerScore("p1", 10))))
-        handler.refresh()
-        assertEquals(2, handler.state.size)
+        handler.handle(HistoryIntent.Refresh)
+        assertEquals(2, handler.state.displays.size)
     }
 }

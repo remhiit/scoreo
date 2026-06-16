@@ -23,6 +23,7 @@ import com.scoreo.domain.port.PlayerRepository
 import com.scoreo.ui.gametype.GameTypeHandler
 import com.scoreo.ui.gametype.GameTypeScreen
 import com.scoreo.ui.history.HistoryHandler
+import com.scoreo.ui.history.HistoryIntent
 import com.scoreo.ui.history.HistoryScreen
 import com.scoreo.ui.home.HomeScreen
 import com.scoreo.ui.navigation.AppNavigator
@@ -112,7 +113,7 @@ fun App(
                         getGameTypes = GetGameTypesUseCase(gameTypeRepository),
                     )
                 }
-                LaunchedEffect(navigator.current) { historyHandler.refresh() }
+                LaunchedEffect(navigator.current) { historyHandler.handle(HistoryIntent.Refresh) }
                 HistoryScreen(historyHandler)
             }
             is Screen.Stats -> {

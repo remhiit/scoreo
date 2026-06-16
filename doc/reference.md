@@ -11,7 +11,7 @@ Tableaux exhaustifs. Lire en priorité avant d'explorer `src/`.
 | `ImportHandler` | `ImportIntent` | `FileLoaded(content: String)`, `Execute`, `Reset` | `ImportState(step: ImportStep, preview, jsonContent, result, error)` | `src/commonMain/.../ui/import/ImportHandler.kt` |
 | `ScoreDetailHandler` | `ScoreDetailIntent` | `UpdateScore(roundIndex, playerId, value)`, `AddRound`, `RemoveRound(index)`, `Terminate`, `ConfirmWinners`, `DismissModal`, `ToggleModalWinner(playerId)` | `ScoreDetailState` | `src/commonMain/.../ui/scoredetail/ScoreDetailHandler.kt` |
 | `StatsHandler` | `StatsIntent` | `SelectPlayer(playerId: String)`, `BackToLeaderboard`, `SelectGameType(gameTypeId: String?)` | `StatsState(leaderboard, selectedPlayerId, gameTypes, selectedGameTypeId)` | `src/commonMain/.../ui/stats/StatsHandler.kt` |
-| `HistoryHandler` | — (pas d'Intent, pas de `handle()`) | — | `List<MatchDisplay>` (computed getter) | `src/commonMain/.../ui/history/HistoryHandler.kt` |
+| `HistoryHandler` | `HistoryIntent` | `Refresh` | `HistoryState(displays: List<MatchDisplay>)` | `src/commonMain/.../ui/history/HistoryHandler.kt` |
 
 Tous dans `src/commonMain/kotlin/com/scoreo/`.
 

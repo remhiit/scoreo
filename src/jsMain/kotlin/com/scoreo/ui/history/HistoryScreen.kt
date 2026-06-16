@@ -7,7 +7,7 @@ import org.jetbrains.compose.web.dom.Text
 
 @Composable
 fun HistoryScreen(handler: HistoryHandler) {
-    val matches = handler.state
+    val matches = handler.state.displays
 
     if (matches.isEmpty()) {
         Div(attrs = { classes("empty") }) { Text("No matches yet.") }
