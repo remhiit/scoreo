@@ -1,0 +1,35 @@
+package com.scoreo.domain.port
+
+import com.scoreo.domain.model.GameType
+import com.scoreo.domain.model.Match
+import com.scoreo.domain.model.Player
+
+data class SyncData(
+    val players: List<Player>,
+    val gameTypes: List<GameType>,
+    val matches: List<Match>,
+    val lastModified: Long,
+)
+
+data class SyncStatus(
+    val connected: Boolean,
+    val lastSync: Long? = null,
+    val email: String? = null,
+    val isOnline: Boolean = true,
+)
+
+sealed class SyncException : Exception() {
+    object NotAuthenticated : SyncException()
+    object NetworkError : SyncException()
+    data class ApiError(val code: Int, override val message: String) : SyncException()
+    data object Conflict : SyncException()
+    object RateLimited : SyncException()
+}
+
+interface CloudSyncRepository {
+    fun push(data: SyncData)
+    fun pull(): SyncData
+    fun getStatus(): SyncStatus
+    fun login()
+    fun logout()
+}

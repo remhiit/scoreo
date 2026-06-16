@@ -10,15 +10,18 @@ import com.scoreo.application.GetMatchesUseCase
 import com.scoreo.application.GetPlayerStatsUseCase
 import com.scoreo.application.GetPlayersUseCase
 import com.scoreo.application.ImportMatchesUseCase
+import com.scoreo.application.SyncUseCase
 import com.scoreo.domain.port.GameTypeRepository
 import com.scoreo.domain.port.MatchRepository
 import com.scoreo.domain.port.PlayerRepository
+import com.scoreo.domain.port.CloudSyncRepository
 import com.scoreo.ui.gametype.GameTypeHandler
 import com.scoreo.ui.history.HistoryHandler
 import com.scoreo.ui.import.ImportHandler
 import com.scoreo.ui.navigation.AppNavigator
 import com.scoreo.ui.player.PlayerHandler
 import com.scoreo.ui.stats.StatsHandler
+import com.scoreo.ui.sync.SyncHandler
 
 data class AppDependencies(
     val playerHandler: PlayerHandler,
@@ -26,6 +29,7 @@ data class AppDependencies(
     val historyHandler: HistoryHandler,
     val statsHandler: StatsHandler,
     val importHandler: ImportHandler,
+    val syncHandler: SyncHandler,
     val getGameTypesUseCase: GetGameTypesUseCase,
     val addGameTypeUseCase: AddGameTypeUseCase,
     val navigator: AppNavigator,
@@ -36,6 +40,7 @@ fun createAppDependencies(
     gameTypeRepository: GameTypeRepository,
     matchRepository: MatchRepository,
     currentDate: () -> Long,
+    cloudSyncRepository: CloudSyncRepository? = null,
 ): AppDependencies {
     val navigator = AppNavigator()
 
@@ -80,12 +85,22 @@ fun createAppDependencies(
         ),
     )
 
+    val syncUseCase = SyncUseCase(
+        cloudRepo = cloudSyncRepository ?: error("CloudSyncRepository required for sync"),
+        playerRepo = playerRepository,
+        gameTypeRepo = gameTypeRepository,
+        matchRepo = matchRepository,
+    )
+
+    val syncHandler = SyncHandler(syncUseCase = syncUseCase)
+
     return AppDependencies(
         playerHandler = playerHandler,
         gameTypeHandler = gameTypeHandler,
         historyHandler = historyHandler,
         statsHandler = statsHandler,
         importHandler = importHandler,
+        syncHandler = syncHandler,
         getGameTypesUseCase = getGameTypesUseCase,
         addGameTypeUseCase = addGameTypeUseCase,
         navigator = navigator,

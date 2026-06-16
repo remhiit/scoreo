@@ -5,20 +5,21 @@ Tableaux exhaustifs. Lire en priorité avant d'explorer `src/`.
 ## Handlers (MVI)
 
 | Handler | Intent | Intent subclasses | State | Fichier handler |
-|---|---|---|---|---|---|
+|---|---|---|---|---|
 | `PlayerHandler` | `PlayerIntent` | `UpdateInput(name: String)`, `AddPlayer`, `DeletePlayer(id, anonymize)`, `ShowDeleteConfirm(id)`, `DismissDeleteConfirm` | `PlayerState` | `src/commonMain/.../ui/player/PlayerHandler.kt` |
 | `GameTypeHandler` | `GameTypeIntent` | `UpdateName(name: String)`, `SelectWinCondition(winCondition: WinCondition)`, `AddGameType` | `GameTypeState` | `src/commonMain/.../ui/gametype/GameTypeHandler.kt` |
 | `ImportHandler` | `ImportIntent` | `FileLoaded(content: String)`, `Execute`, `Reset` | `ImportState(step: ImportStep, preview, jsonContent, result, error)` | `src/commonMain/.../ui/import/ImportHandler.kt` |
 | `ScoreDetailHandler` | `ScoreDetailIntent` | `UpdateScore(roundIndex, playerId, value)`, `AddRound`, `RemoveRound(index)`, `Terminate`, `ConfirmWinners`, `DismissModal`, `ToggleModalWinner(playerId)` | `ScoreDetailState` | `src/commonMain/.../ui/scoredetail/ScoreDetailHandler.kt` |
 | `StatsHandler` | `StatsIntent` | `SelectPlayer(playerId: String)`, `BackToLeaderboard`, `SelectGameType(gameTypeId: String?)` | `StatsState(leaderboard, selectedPlayerId, gameTypes, selectedGameTypeId)` | `src/commonMain/.../ui/stats/StatsHandler.kt` |
 | `HistoryHandler` | `HistoryIntent` | `Refresh` | `HistoryState(displays: List<MatchDisplay>)` | `src/commonMain/.../ui/history/HistoryHandler.kt` |
+| `SyncHandler` | `SyncIntent` | `Login(clientId, scope)`, `Logout`, `Push`, `Pull`, `AutoSync`, `ResolveConflict(keepLocal: Boolean)` | `SyncState(phase, syncData, conflict, result)` | `src/commonMain/.../ui/sync/SyncHandler.kt` |
 
 Tous dans `src/commonMain/kotlin/com/scoreo/`.
 
 ## Use Cases
 
 | Use Case | Méthode | Retour | Fichier |
-|---|---|---|---|---|
+|---|---|---|---|
 | `AddPlayerUseCase` | `invoke(name: String)` | `Player` | `src/commonMain/.../application/AddPlayerUseCase.kt` |
 | `AddGameTypeUseCase` | `invoke(name: String, winCondition: WinCondition)` | `GameType` | `src/commonMain/.../application/AddGameTypeUseCase.kt` |
 | `CreateMatchUseCase` | `invoke(gameTypeId: String, playerScores: List<PlayerScore>, date: Long, manualWinners: List<String>)` | `Match` | `src/commonMain/.../application/CreateMatchUseCase.kt` |
@@ -30,13 +31,14 @@ Tous dans `src/commonMain/kotlin/com/scoreo/`.
 | `GetGameTypesUseCase` | `invoke()` | `List<GameType>` | `src/commonMain/.../application/GetGameTypesUseCase.kt` |
 | `GetMatchesUseCase` | `invoke()` | `List<Match>` | `src/commonMain/.../application/GetMatchesUseCase.kt` |
 | `ImportMatchesUseCase` | `preview(jsonString: String)`, `execute(jsonString: String)` | `Result<ImportPreview>`, `Result<ImportResult>` | `src/commonMain/.../application/ImportMatchesUseCase.kt` |
+| `SyncUseCase` | `autoSync()`, `resolveConflict(keepLocal: Boolean)` | `SyncResult`, `SyncResult` | `src/commonMain/.../application/SyncUseCase.kt` |
 
 Tous dans `src/commonMain/kotlin/com/scoreo/`.
 
 ## Domain Models
 
 | Model | Champs | Fichier |
-|---|---|---|---|
+|---|---|---|
 | `Player` | `id: String`, `name: String`, `active: Boolean = true` | `src/commonMain/.../domain/model/Player.kt` |
 | `GameType` | `id: String`, `name: String`, `winCondition: WinCondition` | `src/commonMain/.../domain/model/GameType.kt` |
 | `Match` | `id: String`, `date: Long`, `gameTypeId: String`, `playerScores: List<PlayerScore>`, `manualWinners: List<String>` | `src/commonMain/.../domain/model/Match.kt` |
@@ -48,10 +50,11 @@ Tous dans `src/commonMain/kotlin/com/scoreo/`.
 ## Ports (Repository Interfaces)
 
 | Interface | Méthodes | Fichier |
-|---|---|---|---|
+|---|---|---|
 | `PlayerRepository` | `getAll(includeInactive: Boolean = false): List<Player>`, `save(player: Player)`, `delete(id: String, anonymize: Boolean = false)` | `src/commonMain/.../domain/port/PlayerRepository.kt` |
 | `GameTypeRepository` | `getAll(): List<GameType>`, `save(gameType: GameType)`, `findById(id: String): GameType?` | `src/commonMain/.../domain/port/GameTypeRepository.kt` |
 | `MatchRepository` | `getAll(): List<Match>`, `save(match: Match)`, `findById(id: String): Match?` | `src/commonMain/.../domain/port/MatchRepository.kt` |
+| `CloudSyncRepository` | `push(data: SyncData)`, `pull(): SyncData`, `getStatus(): SyncStatus`, `login()`, `logout()` | `src/commonMain/.../domain/port/CloudSyncRepository.kt` |
 
 Tous dans `src/commonMain/kotlin/com/scoreo/`.
 
@@ -62,12 +65,14 @@ Tous dans `src/commonMain/kotlin/com/scoreo/`.
 | `LocalStoragePlayerRepository` | `PlayerRepository` | localStorage | `src/jsMain/.../infrastructure/LocalStoragePlayerRepository.kt` |
 | `LocalStorageGameTypeRepository` | `GameTypeRepository` | localStorage | `src/jsMain/.../infrastructure/LocalStorageGameTypeRepository.kt` |
 | `LocalStorageMatchRepository` | `MatchRepository` | localStorage | `src/jsMain/.../infrastructure/LocalStorageMatchRepository.kt` |
+| `GoogleDriveSyncAdapter` | `CloudSyncRepository` | Google Drive App Data Folder | `src/jsMain/.../infrastructure/google/GoogleDriveSyncAdapter.kt` |
+| `InMemoryCloudSyncRepository` | `CloudSyncRepository` | mémoire (tests) | `src/commonTest/.../infrastructure/InMemoryCloudSyncRepository.kt` |
 | `InMemoryPlayerRepository` | `PlayerRepository` | mémoire (tests) | `src/jsMain/.../infrastructure/InMemoryPlayerRepository.kt` |
 | `InMemoryGameTypeRepository` | `GameTypeRepository` | mémoire (tests) | `src/jsMain/.../infrastructure/InMemoryGameTypeRepository.kt` |
 | `InMemoryMatchRepository` | `MatchRepository` | mémoire (tests) | `src/jsMain/.../infrastructure/InMemoryMatchRepository.kt` |
 | `MatchMigration` | — (utilitaire) | `migrateMatchesJson()` | `src/commonMain/.../infrastructure/MatchMigration.kt` |
 
-Tous dans `src/jsMain/kotlin/com/scoreo/`. Utilisés en production : `LocalStorage*`. En tests : `InMemory*`.
+Tous dans `src/jsMain/kotlin/com/scoreo/`. Utilisés en production : `LocalStorage*`, `GoogleDriveSyncAdapter`. En tests : `InMemory*`.
 
 Le fichier `JsonConfig.kt` (`src/jsMain/.../infrastructure/`) fournit `scoreoJson: Json` avec `ignoreUnknownKeys = true`.
 
@@ -80,12 +85,13 @@ Le fichier `JsonConfig.kt` (`src/jsMain/.../infrastructure/`) fournit `scoreoJso
 | `Screen.Import` | — | ImportScreen (import JSON) |
 | `Screen.Stats` | — | StatsScreen (classement ELO, head-to-head) |
 | `Screen.Games` | — | GameTypeScreen (gestion des types de jeu) |
+| `Screen.Sync` | — | SyncScreen (sauvegarde cloud Google Drive) |
 | `Screen.ScoreDetail` | `gameTypeId: String`, `playerIds: List<String>` | ScoreDetailScreen (saisie des rounds) |
 
 ## Tests
 
 | Fichier | Classe | Tests |
-|---|---|---|---|
+|---|---|---|
 | `src/commonTest/.../ui/player/PlayerHandlerTest.kt` | `PlayerHandlerTest` | Handler Player (12 tests) |
 | `src/commonTest/.../ui/gametype/GameTypeHandlerTest.kt` | `GameTypeHandlerTest` | Handler GameType |
 | `src/commonTest/.../ui/scoredetail/ScoreDetailHandlerTest.kt` | `ScoreDetailHandlerTest` | Handler ScoreDetail (17 tests) |
@@ -115,3 +121,4 @@ Classes clés : `.home-player-card`, `.home-player-card.selected`, `.home-player
 | `scoreo_players` | JSON `List<Player>` |
 | `scoreo_gametypes` | JSON `List<GameType>` |
 | `scoreo_matches` | JSON `List<Match>` |
+| `scoreo_sync_config` | JSON `SyncConfig` (email, lastSyncTimestamp, lastSyncFileId) |

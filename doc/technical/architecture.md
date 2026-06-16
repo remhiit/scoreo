@@ -41,6 +41,7 @@
 - **Domain layer**: pure Kotlin, no framework dependency — entities (`Player`, `GameType`, `Match`) and use cases
 - **UI adapter**: Compose HTML screens in `jsMain`, wiring Intents to use cases
 - **Storage adapter**: localStorage via `LocalStorage*Repository` classes (scoreo_players, scoreo_gametypes, scoreo_matches keys)
+- **Cloud sync**: `CloudSyncRepository` port (commonMain), `GoogleDriveSyncAdapter` implementation (jsMain) via synchronous XMLHttpRequest, OAuth Token Model via Google Identity Services
 
 ## Web Target
 
@@ -65,7 +66,8 @@ Single `styles.css` file with CSS custom properties (design tokens), a fixed top
 
 - **Current**: localStorage via `LocalStorage*Repository` (`scoreo_players`, `scoreo_gametypes`, `scoreo_matches` keys)
 - **Import**: `ImportMatchesUseCase` reads the same repositories and writes through `MatchRepository.save()`, `GameTypeRepository.save()`, and `PlayerRepository.save()`
-- **Future**: optional sync to a remote backend (additional infrastructure adapter)
+- **Cloud Sync**: Google Drive via `GoogleDriveSyncAdapter`. Stores a single `scoreo-data.json` in the invisible App Data Folder. Syncs players, game types, and matches. Drive API v3, synchronous XMLHttpRequest, OAuth Token Model (GIS). See `SyncUseCase`, `SyncHandler`.
+- **Import**: `ImportMatchesUseCase` reads the same repositories and writes through `MatchRepository.save()`, `GameTypeRepository.save()`, and `PlayerRepository.save()`
 
 See [`deployment.md`](deployment.md) for CI/CD and deployment details.
 

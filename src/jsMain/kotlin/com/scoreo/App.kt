@@ -8,6 +8,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import com.scoreo.application.CreateMatchUseCase
 import com.scoreo.di.createAppDependencies
+import com.scoreo.domain.port.CloudSyncRepository
 import com.scoreo.domain.port.GameTypeRepository
 import com.scoreo.domain.port.MatchRepository
 import com.scoreo.domain.port.PlayerRepository
@@ -18,6 +19,8 @@ import com.scoreo.ui.history.HistoryScreen
 import com.scoreo.ui.home.HomeScreen
 import com.scoreo.ui.navigation.Screen
 import com.scoreo.ui.import.ImportScreen
+import com.scoreo.ui.sync.SyncHandler
+import com.scoreo.ui.sync.SyncScreen
 import com.scoreo.ui.scoredetail.ScoreDetailHandler
 import com.scoreo.ui.scoredetail.ScoreDetailScreen
 import com.scoreo.ui.stats.StatsScreen
@@ -32,8 +35,9 @@ fun App(
     gameTypeRepository: GameTypeRepository,
     matchRepository: MatchRepository,
     currentDate: () -> Long,
+    cloudSyncRepository: CloudSyncRepository? = null,
 ) {
-    val deps = remember { createAppDependencies(playerRepository, gameTypeRepository, matchRepository, currentDate) }
+    val deps = remember { createAppDependencies(playerRepository, gameTypeRepository, matchRepository, currentDate, cloudSyncRepository) }
     val navigator = deps.navigator
     var burgerOpen by remember { mutableStateOf(false) }
 
@@ -43,6 +47,7 @@ fun App(
         is Screen.Import -> "Import"
         is Screen.Stats -> "Stats"
         is Screen.Games -> "Games"
+        is Screen.Sync -> "Sync"
         is Screen.ScoreDetail -> "Score Detail"
     }
     val canGoBack = navigator.current !is Screen.Home
@@ -94,6 +99,7 @@ fun App(
                 )
             }
             is Screen.Games -> GameTypeScreen(deps.gameTypeHandler, showTitle = true)
+            is Screen.Sync -> SyncScreen(deps.syncHandler)
             is Screen.ScoreDetail -> {
                 val scoreDetailHandler = remember(screen) {
                     val gameType = gameTypeRepository.findById(screen.gameTypeId)
@@ -146,6 +152,10 @@ fun App(
             BurgerItem("🎮", "Games") {
                 burgerOpen = false
                 navigator.navigate(Screen.Games)
+            }
+            BurgerItem("☁", "Sync") {
+                burgerOpen = false
+                navigator.navigate(Screen.Sync)
             }
         }
     }

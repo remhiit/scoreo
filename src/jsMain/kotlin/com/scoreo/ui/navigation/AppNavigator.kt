@@ -11,6 +11,7 @@ sealed class Screen {
     data object Import : Screen()
     data object Stats : Screen()
     data object Games : Screen()
+    data object Sync : Screen()
     data class ScoreDetail(val gameTypeId: String, val playerIds: List<String>) : Screen()
 }
 
@@ -33,6 +34,7 @@ class AppNavigator {
         is Screen.Stats -> "#/stats"
         is Screen.Import -> "#/import"
         is Screen.Games -> "#/games"
+        is Screen.Sync -> "#/sync"
         is Screen.ScoreDetail -> "#/score/${screen.gameTypeId}/${screen.playerIds.joinToString(",")}"
     }
 
@@ -44,6 +46,7 @@ class AppNavigator {
             "stats" -> Screen.Stats
             "import" -> Screen.Import
             "games" -> Screen.Games
+            "sync" -> Screen.Sync
             "score" -> if (parts.size >= 3) {
                 Screen.ScoreDetail(parts[1], parts[2].split(","))
             } else Screen.Home
