@@ -34,7 +34,7 @@
                 │ ports
 ┌───────────────▼─────────────────────┐
 │         Infrastructure Layer        │  ← Storage adapter (local/remote)
-│    (Local storage, future backend)  │
+│    (Local storage, Google Drive)    │
 └─────────────────────────────────────┘
 ```
 
@@ -67,7 +67,6 @@ Single `styles.css` file with CSS custom properties (design tokens), a fixed top
 - **Current**: localStorage via `LocalStorage*Repository` (`scoreo_players`, `scoreo_gametypes`, `scoreo_matches` keys)
 - **Import**: `ImportMatchesUseCase` reads the same repositories and writes through `MatchRepository.save()`, `GameTypeRepository.save()`, and `PlayerRepository.save()`
 - **Cloud Sync**: Google Drive via `GoogleDriveSyncAdapter`. Stores a single `scoreo-data.json` in the invisible App Data Folder. Syncs players, game types, and matches. Drive API v3, synchronous XMLHttpRequest, OAuth Token Model (GIS). See `SyncUseCase`, `SyncHandler`.
-- **Import**: `ImportMatchesUseCase` reads the same repositories and writes through `MatchRepository.save()`, `GameTypeRepository.save()`, and `PlayerRepository.save()`
 
 See [`deployment.md`](deployment.md) for CI/CD and deployment details.
 

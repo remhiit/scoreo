@@ -12,7 +12,7 @@ Tableaux exhaustifs. Lire en priorité avant d'explorer `src/`.
 | `ScoreDetailHandler` | `ScoreDetailIntent` | `UpdateScore(roundIndex, playerId, value)`, `AddRound`, `RemoveRound(index)`, `Terminate`, `ConfirmWinners`, `DismissModal`, `ToggleModalWinner(playerId)` | `ScoreDetailState` | `src/commonMain/.../ui/scoredetail/ScoreDetailHandler.kt` |
 | `StatsHandler` | `StatsIntent` | `SelectPlayer(playerId: String)`, `BackToLeaderboard`, `SelectGameType(gameTypeId: String?)` | `StatsState(leaderboard, selectedPlayerId, gameTypes, selectedGameTypeId)` | `src/commonMain/.../ui/stats/StatsHandler.kt` |
 | `HistoryHandler` | `HistoryIntent` | `Refresh` | `HistoryState(displays: List<MatchDisplay>)` | `src/commonMain/.../ui/history/HistoryHandler.kt` |
-| `SyncHandler` | `SyncIntent` | `Login(clientId, scope)`, `Logout`, `Push`, `Pull`, `AutoSync`, `ResolveConflict(keepLocal: Boolean)` | `SyncState(phase, syncData, conflict, result)` | `src/commonMain/.../ui/sync/SyncHandler.kt` |
+| `SyncHandler` | `SyncIntent` | `Login`, `Logout`, `ResolveConflict(keepLocal: Boolean)`, `DismissError` | `SyncState(phase, email, conflict, result, error)` | `src/commonMain/.../ui/sync/SyncHandler.kt` |
 
 Tous dans `src/commonMain/kotlin/com/scoreo/`.
 
@@ -31,7 +31,8 @@ Tous dans `src/commonMain/kotlin/com/scoreo/`.
 | `GetGameTypesUseCase` | `invoke()` | `List<GameType>` | `src/commonMain/.../application/GetGameTypesUseCase.kt` |
 | `GetMatchesUseCase` | `invoke()` | `List<Match>` | `src/commonMain/.../application/GetMatchesUseCase.kt` |
 | `ImportMatchesUseCase` | `preview(jsonString: String)`, `execute(jsonString: String)` | `Result<ImportPreview>`, `Result<ImportResult>` | `src/commonMain/.../application/ImportMatchesUseCase.kt` |
-| `SyncUseCase` | `autoSync()`, `resolveConflict(keepLocal: Boolean)` | `SyncResult`, `SyncResult` | `src/commonMain/.../application/SyncUseCase.kt` |
+| `SyncUseCase` | `autoSync()` | `SyncOutcome` | `src/commonMain/.../application/SyncUseCase.kt` |
+| `SyncUseCase` | `resolveConflict(keepLocal: Boolean)` | `SyncResult` | `src/commonMain/.../application/SyncUseCase.kt` |
 
 Tous dans `src/commonMain/kotlin/com/scoreo/`.
 
@@ -105,6 +106,7 @@ Le fichier `JsonConfig.kt` (`src/jsMain/.../infrastructure/`) fournit `scoreoJso
 | `src/commonTest/.../application/ImportMatchesUseCaseTest.kt` | `ImportMatchesUseCaseTest` | Use Case Import |
 | `src/commonTest/.../ui/stats/StatsHandlerTest.kt` | `StatsHandlerTest` | Handler Stats (6 tests) |
 | `src/commonTest/.../infrastructure/InMemoryRepositoryTest.kt` | `InMemoryRepositoryTest` | Idempotence InMemory (9 tests) |
+| `src/commonTest/.../infrastructure/InMemoryCloudSyncRepository.kt` | `InMemoryCloudSyncRepository` | Double de test CloudSyncRepository |
 
 Tous dans `src/commonTest/kotlin/com/scoreo/`.
 
