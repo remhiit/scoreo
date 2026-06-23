@@ -54,6 +54,10 @@ The site is automatically deployed on every push to `main`:
 ./gradlew jvmTest
 ```
 
+### Git Hooks
+
+The repository includes a pre-push hook that validates the Gradle build configuration. This is automatically configured on your first `./gradlew` invocation, preventing build configuration errors from being pushed to the repository.
+
 ## Documentation
 
 See [`doc/`](doc/) for detailed documentation — features, architecture, deployment, glossary.

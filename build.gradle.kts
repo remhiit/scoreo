@@ -58,3 +58,9 @@ kotlin {
 tasks.named<Copy>("jsBrowserDistribution") {
     duplicatesStrategy = DuplicatesStrategy.INCLUDE
 }
+
+if (System.getenv("CI") == null) {
+    exec {
+        commandLine("git", "config", "core.hooksPath", ".githooks")
+    }
+}
