@@ -16,14 +16,14 @@ class InMemoryCloudSyncRepository : CloudSyncRepository {
     fun setOnline(online: Boolean) { _isOnline = online }
     fun setLastSync(ts: Long) { _lastSync = ts }
 
-    override fun push(data: SyncData) {
+    override suspend fun push(data: SyncData) {
         failNext?.invoke()?.let { throw it }
         if (!connected) throw SyncException.NotAuthenticated
         storedData = data
         _lastSync = data.lastModified
     }
 
-    override fun pull(): SyncData {
+    override suspend fun pull(): SyncData {
         failNext?.invoke()?.let { throw it }
         if (!connected) throw SyncException.NotAuthenticated
         return storedData ?: SyncData(
@@ -34,19 +34,19 @@ class InMemoryCloudSyncRepository : CloudSyncRepository {
         )
     }
 
-    override fun getStatus(): SyncStatus = SyncStatus(
+    override suspend fun getStatus(): SyncStatus = SyncStatus(
         connected = connected,
         lastSync = _lastSync,
         email = email,
         isOnline = _isOnline,
     )
 
-    override fun login() {
+    override suspend fun login() {
         connected = true
         email = "test@example.com"
     }
 
-    override fun logout() {
+    override suspend fun logout() {
         connected = false
         email = null
     }

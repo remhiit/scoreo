@@ -6,6 +6,8 @@ import com.scoreo.domain.port.GameTypeRepository
 import com.scoreo.domain.port.MatchRepository
 import com.scoreo.domain.port.PlayerRepository
 import com.scoreo.ui.sync.SyncHandler
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 
 fun createSyncHandlerIfAvailable(
     cloudSyncRepository: CloudSyncRepository?,
@@ -15,7 +17,8 @@ fun createSyncHandlerIfAvailable(
 ): SyncHandler? {
     return cloudSyncRepository?.let { repo ->
         SyncHandler(
-            SyncUseCase(repo, playerRepository, gameTypeRepository, matchRepository)
+            SyncUseCase(repo, playerRepository, gameTypeRepository, matchRepository),
+            CoroutineScope(Dispatchers.Default),
         )
     }
 }

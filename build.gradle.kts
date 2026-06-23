@@ -26,6 +26,7 @@ kotlin {
             implementation(compose.runtime)
             implementation(libs.kotlinx.datetime)
             implementation(libs.kotlinx.serialization.json)
+            implementation(libs.kotlinx.coroutines.core)
         }
         val jsMain by getting {
             dependencies {

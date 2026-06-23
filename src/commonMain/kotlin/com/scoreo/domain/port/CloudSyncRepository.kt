@@ -27,9 +27,9 @@ sealed class SyncException : Exception() {
 }
 
 interface CloudSyncRepository {
-    fun push(data: SyncData)
-    fun pull(): SyncData
-    fun getStatus(): SyncStatus
-    fun login()
-    fun logout()
+    suspend fun push(data: SyncData)
+    suspend fun pull(): SyncData
+    suspend fun getStatus(): SyncStatus
+    suspend fun login()
+    suspend fun logout()
 }

@@ -32,7 +32,7 @@ class GoogleDriveSyncAdapter(
 
     private val driveClient by lazy { GoogleDriveClient { authService.accessToken } }
 
-    override fun push(data: SyncData) {
+    override suspend fun push(data: SyncData) {
         ensureAuthenticated()
         ensureTokenFresh()
         val json = serializeSyncData(data)
@@ -44,7 +44,7 @@ class GoogleDriveSyncAdapter(
         saveSyncConfig(config)
     }
 
-    override fun pull(): SyncData {
+    override suspend fun pull(): SyncData {
         ensureAuthenticated()
         ensureTokenFresh()
         val fileIdResult = driveClient.findFile(FILE_NAME)
@@ -60,7 +60,7 @@ class GoogleDriveSyncAdapter(
         return deserializeSyncData(content)
     }
 
-    override fun getStatus(): SyncStatus {
+    override suspend fun getStatus(): SyncStatus {
         val config = loadSyncConfig()
         return SyncStatus(
             connected = authService.accessToken != null,
@@ -70,11 +70,11 @@ class GoogleDriveSyncAdapter(
         )
     }
 
-    override fun login() {
+    override suspend fun login() {
         throw SyncException.NotAuthenticated
     }
 
-    override fun logout() {
+    override suspend fun logout() {
         authService.logout()
         clearSyncConfig()
     }

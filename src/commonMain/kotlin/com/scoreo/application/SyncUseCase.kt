@@ -39,7 +39,7 @@ class SyncUseCase(
     private val gameTypeRepo: GameTypeRepository,
     private val matchRepo: MatchRepository,
 ) {
-    fun autoSync(): SyncOutcome {
+    suspend fun autoSync(): SyncOutcome {
         val localData = buildLocalSyncData()
         val remoteData = cloudRepo.pull()
 
@@ -80,7 +80,7 @@ class SyncUseCase(
         }
     }
 
-    fun resolveConflict(keepLocal: Boolean): SyncResult {
+    suspend fun resolveConflict(keepLocal: Boolean): SyncResult {
         if (keepLocal) {
             val localData = buildLocalSyncData()
             cloudRepo.push(localData)
@@ -98,15 +98,15 @@ class SyncUseCase(
         }
     }
 
-    fun login() {
+    suspend fun login() {
         cloudRepo.login()
     }
 
-    fun logout() {
+    suspend fun logout() {
         cloudRepo.logout()
     }
 
-    fun status(): SyncStatus = cloudRepo.getStatus()
+    suspend fun status(): SyncStatus = cloudRepo.getStatus()
 
     // ── Private ──
 

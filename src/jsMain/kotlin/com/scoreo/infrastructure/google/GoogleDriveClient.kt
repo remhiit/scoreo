@@ -1,19 +1,20 @@
 package com.scoreo.infrastructure.google
 
 import com.scoreo.domain.port.SyncException
+import kotlinx.browser.window
+import kotlinx.coroutines.await
 
 private const val DRIVE_API_BASE = "https://www.googleapis.com/drive/v3/files"
 
 class GoogleDriveClient(
-    private val getToken: () -> String?,
+    private val getToken: suspend () -> String?,
 ) {
-    fun findFile(fileName: String): Result<String?> {
+    suspend fun findFile(fileName: String): Result<String?> {
         val token = getToken() ?: return Result.failure(SyncException.NotAuthenticated)
         val escapedName = fileName.replace("\\", "\\\\").replace("'", "\\'")
         val url = "$DRIVE_API_BASE?spaces=appDataFolder&q=name='$escapedName'&fields=files(id,name)"
         return try {
-            val response = syncRequest("GET", url, token)
-            val body = handleResponse(response)
+            val body = asyncGet(url, token)
             val json = JSON.parse(body) as FilesResponse
             Result.success(json.files?.firstOrNull()?.id)
         } catch (e: SyncException) {
@@ -23,15 +24,14 @@ class GoogleDriveClient(
         }
     }
 
-    fun createFile(fileName: String, content: String, mimeType: String = "application/json"): Result<String> {
+    suspend fun createFile(fileName: String, content: String, mimeType: String = "application/json"): Result<String> {
         val token = getToken() ?: return Result.failure(SyncException.NotAuthenticated)
         val metadata = """{ "name": "$fileName", "parents": ["appDataFolder"], "mimeType": "$mimeType" }"""
         val boundary = "scoreo_boundary"
         val body = buildMultipartBody(boundary, metadata, content, mimeType)
         val url = "$DRIVE_API_BASE?spaces=appDataFolder&uploadType=multipart"
         return try {
-            val response = syncUploadRequest("POST", url, token, body, boundary)
-            val responseBody = handleResponse(response)
+            val responseBody = asyncPost(url, token, body, "multipart/related; boundary=$boundary")
             val json = JSON.parse(responseBody) as FileResponse
             Result.success(json.id ?: error("No id in response"))
         } catch (e: SyncException) {
@@ -41,12 +41,11 @@ class GoogleDriveClient(
         }
     }
 
-    fun updateFile(fileId: String, content: String, mimeType: String = "application/json"): Result<String> {
+    suspend fun updateFile(fileId: String, content: String, mimeType: String = "application/json"): Result<String> {
         val token = getToken() ?: return Result.failure(SyncException.NotAuthenticated)
         val url = "$DRIVE_API_BASE/$fileId?spaces=appDataFolder&uploadType=media"
         return try {
-            val response = syncUploadRequest("PATCH", url, token, content, mimeType)
-            handleResponse(response)
+            asyncPatch(url, token, content, mimeType)
             Result.success(fileId)
         } catch (e: SyncException) {
             Result.failure(e)
@@ -55,12 +54,11 @@ class GoogleDriveClient(
         }
     }
 
-    fun readFile(fileId: String): Result<String> {
+    suspend fun readFile(fileId: String): Result<String> {
         val token = getToken() ?: return Result.failure(SyncException.NotAuthenticated)
         val url = "$DRIVE_API_BASE/$fileId?alt=media"
         return try {
-            val response = syncRequest("GET", url, token)
-            val body = handleResponse(response)
+            val body = asyncGet(url, token)
             Result.success(body)
         } catch (e: SyncException) {
             Result.failure(e)
@@ -69,7 +67,7 @@ class GoogleDriveClient(
         }
     }
 
-    fun upsertFile(fileName: String, content: String, mimeType: String = "application/json"): Result<String> {
+    suspend fun upsertFile(fileName: String, content: String, mimeType: String = "application/json"): Result<String> {
         val findResult = findFile(fileName)
         return findResult.fold(
             onSuccess = { fileId ->
@@ -82,26 +80,44 @@ class GoogleDriveClient(
 
     // ── Private helpers ──
 
-    private fun syncRequest(method: String, url: String, token: String): XMLHttpRequestResponse {
-        val req = XMLHttpRequest()
-        req.open(method, url, false)
-        req.setRequestHeader("Authorization", "Bearer $token")
-        req.send()
-        return XMLHttpRequestResponse(req.status, req.responseText)
+    private suspend fun asyncGet(url: String, token: String): String {
+        val headers: dynamic = js("({})")
+        headers["Authorization"] = "Bearer $token"
+        val options: dynamic = js("({})")
+        options.method = "GET"
+        options.headers = headers
+        val response = window.fetch(url, options).await()
+        val body = response.text().await()
+        return checkResponse(response.status.toInt(), body)
     }
 
-    private fun syncUploadRequest(method: String, url: String, token: String, body: String, contentType: String): XMLHttpRequestResponse {
-        val req = XMLHttpRequest()
-        req.open(method, url, false)
-        req.setRequestHeader("Authorization", "Bearer $token")
-        req.setRequestHeader("Content-Type", contentType)
-        req.send(body)
-        return XMLHttpRequestResponse(req.status, req.responseText)
+    private suspend fun asyncPost(url: String, token: String, body: String, contentType: String): String {
+        val headers: dynamic = js("({})")
+        headers["Authorization"] = "Bearer $token"
+        headers["Content-Type"] = contentType
+        val options: dynamic = js("({})")
+        options.method = "POST"
+        options.headers = headers
+        options.body = body
+        val response = window.fetch(url, options).await()
+        val responseBody = response.text().await()
+        return checkResponse(response.status.toInt(), responseBody)
     }
 
-    private fun handleResponse(response: XMLHttpRequestResponse): String {
-        val status = response.status
-        val body = response.body
+    private suspend fun asyncPatch(url: String, token: String, body: String, contentType: String): String {
+        val headers: dynamic = js("({})")
+        headers["Authorization"] = "Bearer $token"
+        headers["Content-Type"] = contentType
+        val options: dynamic = js("({})")
+        options.method = "PATCH"
+        options.headers = headers
+        options.body = body
+        val response = window.fetch(url, options).await()
+        val responseBody = response.text().await()
+        return checkResponse(response.status.toInt(), responseBody)
+    }
+
+    private fun checkResponse(status: Int, body: String): String {
         return when {
             status in 200..299 -> body
             status == 401 -> throw SyncException.NotAuthenticated
@@ -125,22 +141,6 @@ $content
 }
 
 // ── External JS types ──
-
-private external interface XMLHttpRequest {
-    fun open(method: String, url: String, async: Boolean)
-    fun setRequestHeader(name: String, value: String)
-    fun send(body: String? = definedExternally)
-    val status: Int
-    val responseText: String
-}
-
-private fun XMLHttpRequest(): XMLHttpRequest =
-    js("new XMLHttpRequest()") as XMLHttpRequest
-
-private data class XMLHttpRequestResponse(
-    val status: Int,
-    val body: String,
-)
 
 private external interface FilesResponse {
     val files: Array<FileInfo>?
