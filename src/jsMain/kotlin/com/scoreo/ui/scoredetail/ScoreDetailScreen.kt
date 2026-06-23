@@ -132,9 +132,10 @@ fun ScoreDetailScreen(
         }
     }
 
+    val tiedPlayers = state.players.filter { it.id in state.tiedPlayerIds }
+
     // ── Tie-break: Secondary Score Dialog ──
     if (state.showSecondaryScoreDialog) {
-        val tiedPlayers = state.players.filter { it.id in state.tiedPlayerIds }
         SecondaryScoreDialog(
             gameType = state.gameType,
             tiedPlayers = tiedPlayers,
@@ -150,7 +151,6 @@ fun ScoreDetailScreen(
 
     // ── Tie-break: Manual Selection Dialog ──
     if (state.showManualSelectionDialog) {
-        val tiedPlayers = state.players.filter { it.id in state.tiedPlayerIds }
         ManualSelectionDialog(
             tiedPlayers = tiedPlayers,
             selectedWinners = state.manualSelectionWinners,

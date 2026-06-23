@@ -13,6 +13,7 @@
     --win: #2e7d32;
     --loss: #c62828;
     --warn: #e65100;
+    --warn-rgb: 230, 81, 0;
     --danger-hover: #fce4ec;
     --white: #fff;
     --overlay: rgba(0, 0, 0, 0.4);
@@ -35,6 +36,7 @@
     --win: #66bb6a;
     --loss: #ef5350;
     --warn: #ffa726;
+    --warn-rgb: 255, 167, 38;
     --danger-hover: #4a1c1c;
 }
 

@@ -49,15 +49,7 @@ class GameTypeHandler(
                         state.selectedTieBreakCondition,
                         state.selectedTieBreakLabel,
                     )
-                    state = state.copy(
-                        gameTypes = getGameTypes(),
-                        inputName = "",
-                        selectedTieBreakRule = TieBreakRule.NONE,
-                        selectedTieBreakCondition = state.selectedWinCondition,
-                        selectedTieBreakLabel = null,
-                        editingGameId = null,
-                        error = null,
-                    )
+                    resetForm(refresh = true)
                 } catch (e: DomainError) {
                     state = state.copy(error = e.message)
                 }
@@ -77,31 +69,28 @@ class GameTypeHandler(
                 }
             }
             is GameTypeIntent.CancelEdit -> {
-                state = state.copy(
-                    inputName = "",
-                    selectedTieBreakRule = TieBreakRule.NONE,
-                    selectedTieBreakCondition = state.selectedWinCondition,
-                    selectedTieBreakLabel = null,
-                    editingGameId = null,
-                    error = null,
-                )
+                resetForm(refresh = false)
             }
             is GameTypeIntent.UpdateGameType -> {
                 try {
                     updateGameType(intent.gameType)
-                    state = state.copy(
-                        gameTypes = getGameTypes(),
-                        inputName = "",
-                        selectedTieBreakRule = TieBreakRule.NONE,
-                        selectedTieBreakCondition = state.selectedWinCondition,
-                        selectedTieBreakLabel = null,
-                        editingGameId = null,
-                        error = null,
-                    )
+                    resetForm(refresh = true)
                 } catch (e: DomainError) {
                     state = state.copy(error = e.message)
                 }
             }
         }
+    }
+
+    private fun resetForm(refresh: Boolean) {
+        state = state.copy(
+            gameTypes = if (refresh) getGameTypes() else state.gameTypes,
+            inputName = "",
+            selectedTieBreakRule = TieBreakRule.NONE,
+            selectedTieBreakCondition = state.selectedWinCondition,
+            selectedTieBreakLabel = null,
+            editingGameId = null,
+            error = null,
+        )
     }
 }
