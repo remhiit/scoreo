@@ -5,6 +5,7 @@ import com.scoreo.infrastructure.InMemoryMatchRepository
 import com.scoreo.application.CreateMatchUseCase
 import com.scoreo.domain.model.GameType
 import com.scoreo.domain.model.Player
+import com.scoreo.domain.model.TieBreakRule
 import com.scoreo.domain.model.WinCondition
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -27,9 +28,27 @@ class ScoreDetailHandlerTest {
         return Pair(handler, matchRepo)
     }
 
+    private fun buildHandlerWithGameType(
+        gameType: GameType,
+        players: List<Player> = listOf(Player("alice", "Alice"), Player("bob", "Bob")),
+    ): Pair<ScoreDetailHandler, InMemoryMatchRepository> {
+        val gameTypeRepo = InMemoryGameTypeRepository().also { it.save(gameType) }
+        val matchRepo = InMemoryMatchRepository()
+        val createMatch = CreateMatchUseCase(matchRepo, gameTypeRepo)
+        val handler = ScoreDetailHandler(gameType, players, createMatch, { 1767225600000L })
+        return Pair(handler, matchRepo)
+    }
+
     private fun ScoreDetailHandler.givenManualGameWithScores(): ScoreDetailHandler {
         handle(ScoreDetailIntent.UpdateScore(0, "alice", "10"))
         handle(ScoreDetailIntent.UpdateScore(0, "bob", "5"))
+        handle(ScoreDetailIntent.Terminate)
+        return this
+    }
+
+    private fun ScoreDetailHandler.givenTiedScores(): ScoreDetailHandler {
+        handle(ScoreDetailIntent.UpdateScore(0, "alice", "10"))
+        handle(ScoreDetailIntent.UpdateScore(0, "bob", "10"))
         handle(ScoreDetailIntent.Terminate)
         return this
     }
@@ -196,6 +215,200 @@ class ScoreDetailHandlerTest {
         assertNotNull(bobScore)
         assertEquals(13, aliceScore.score)
         assertEquals(12, bobScore.score)
+    }
+
+    // ── P0-05: Tie-Break Resolution Tests ──
+
+    @Test
+    fun `Terminate with tie and NONE rule saves match with all tied winners`() {
+        val gameType = GameType("gt1", "TestGame", WinCondition.HIGHEST_SCORE, tieBreakRule = TieBreakRule.NONE)
+        val (handler, matchRepo) = buildHandlerWithGameType(gameType)
+        handler.givenTiedScores()
+        assertTrue(handler.state.saved)
+        assertEquals(1, matchRepo.getAll().size)
+        // Both players are tied → both are manualWinners
+        assertEquals(listOf("alice", "bob"), matchRepo.getAll().first().manualWinners)
+    }
+
+    @Test
+    fun `Terminate with tie and MANUAL_SELECTION shows manual dialog`() {
+        val gameType = GameType("gt1", "TestGame", WinCondition.HIGHEST_SCORE, tieBreakRule = TieBreakRule.MANUAL_SELECTION)
+        val (handler, matchRepo) = buildHandlerWithGameType(gameType)
+        handler.givenTiedScores()
+        assertTrue(handler.state.showManualSelectionDialog)
+        assertEquals(listOf("alice", "bob"), handler.state.tiedPlayerIds)
+        assertFalse(handler.state.saved)
+        assertEquals(0, matchRepo.getAll().size)
+    }
+
+    @Test
+    fun `Terminate with tie and SECONDARY_SCORE shows secondary score dialog`() {
+        val gameType = GameType("gt1", "TestGame", WinCondition.HIGHEST_SCORE, tieBreakRule = TieBreakRule.SECONDARY_SCORE, tieBreakLabel = "Handicap")
+        val (handler, matchRepo) = buildHandlerWithGameType(gameType)
+        handler.givenTiedScores()
+        assertTrue(handler.state.showSecondaryScoreDialog)
+        assertEquals(listOf("alice", "bob"), handler.state.tiedPlayerIds)
+        assertEquals("", handler.state.secondaryScoreInputs["alice"])
+        assertEquals("", handler.state.secondaryScoreInputs["bob"])
+        assertFalse(handler.state.saved)
+        assertEquals(0, matchRepo.getAll().size)
+    }
+
+    @Test
+    fun `SECONDARY_SCORE submit breaks tie and saves match`() {
+        val gameType = GameType("gt1", "TestGame", WinCondition.HIGHEST_SCORE, tieBreakRule = TieBreakRule.SECONDARY_SCORE)
+        val (handler, matchRepo) = buildHandlerWithGameType(gameType)
+        handler.givenTiedScores()
+        assertTrue(handler.state.showSecondaryScoreDialog)
+
+        // Alice gets higher secondary score → she wins
+        handler.handle(ScoreDetailIntent.UpdateSecondaryScoreInput("alice", "100"))
+        handler.handle(ScoreDetailIntent.UpdateSecondaryScoreInput("bob", "50"))
+        handler.handle(ScoreDetailIntent.SubmitSecondaryScores)
+
+        assertTrue(handler.state.saved)
+        assertEquals(1, matchRepo.getAll().size)
+        val saved = matchRepo.getAll().first()
+        assertEquals(listOf("alice"), saved.manualWinners)
+        assertEquals(2, saved.secondaryPlayerScores.size)
+    }
+
+    @Test
+    fun `SECONDARY_SCORE submit with tie persists shows manual selection`() {
+        val gameType = GameType("gt1", "TestGame", WinCondition.HIGHEST_SCORE, tieBreakRule = TieBreakRule.SECONDARY_SCORE)
+        val (handler, matchRepo) = buildHandlerWithGameType(gameType)
+        handler.givenTiedScores()
+        assertTrue(handler.state.showSecondaryScoreDialog)
+
+        // Both get the same secondary score → tie persists
+        handler.handle(ScoreDetailIntent.UpdateSecondaryScoreInput("alice", "50"))
+        handler.handle(ScoreDetailIntent.UpdateSecondaryScoreInput("bob", "50"))
+        handler.handle(ScoreDetailIntent.SubmitSecondaryScores)
+
+        assertFalse(handler.state.showSecondaryScoreDialog)
+        assertTrue(handler.state.showManualSelectionDialog)
+        assertEquals(listOf("alice", "bob"), handler.state.tiedPlayerIds)
+        assertEquals(2, handler.state.collectedSecondaryScores.size)
+        assertFalse(handler.state.saved)
+        assertEquals(0, matchRepo.getAll().size)
+    }
+
+    @Test
+    fun `SECONDARY_SCORE with invalid input shows error`() {
+        val gameType = GameType("gt1", "TestGame", WinCondition.HIGHEST_SCORE, tieBreakRule = TieBreakRule.SECONDARY_SCORE)
+        val (handler, _) = buildHandlerWithGameType(gameType)
+        handler.givenTiedScores()
+        assertTrue(handler.state.showSecondaryScoreDialog)
+
+        handler.handle(ScoreDetailIntent.UpdateSecondaryScoreInput("alice", "abc"))
+        handler.handle(ScoreDetailIntent.SubmitSecondaryScores)
+
+        assertEquals("Invalid secondary score for one of the tied players", handler.state.error)
+        assertTrue(handler.state.showSecondaryScoreDialog)
+    }
+
+    @Test
+    fun `MANUAL_SELECTION with selection saves match with chosen winner`() {
+        val gameType = GameType("gt1", "TestGame", WinCondition.HIGHEST_SCORE, tieBreakRule = TieBreakRule.MANUAL_SELECTION)
+        val (handler, matchRepo) = buildHandlerWithGameType(gameType)
+        handler.givenTiedScores()
+        assertTrue(handler.state.showManualSelectionDialog)
+
+        handler.handle(ScoreDetailIntent.ToggleManualSelectionWinner("alice"))
+        handler.handle(ScoreDetailIntent.ConfirmManualWinners)
+
+        assertTrue(handler.state.saved)
+        assertEquals(1, matchRepo.getAll().size)
+        assertEquals(listOf("alice"), matchRepo.getAll().first().manualWinners)
+    }
+
+    @Test
+    fun `MANUAL_SELECTION with keep tie saves all tied players as winners`() {
+        val gameType = GameType("gt1", "TestGame", WinCondition.HIGHEST_SCORE, tieBreakRule = TieBreakRule.MANUAL_SELECTION)
+        val (handler, matchRepo) = buildHandlerWithGameType(gameType)
+        handler.givenTiedScores()
+        assertTrue(handler.state.showManualSelectionDialog)
+
+        handler.handle(ScoreDetailIntent.KeepTie)
+
+        assertTrue(handler.state.saved)
+        assertEquals(1, matchRepo.getAll().size)
+        assertEquals(listOf("alice", "bob"), matchRepo.getAll().first().manualWinners)
+    }
+
+    @Test
+    fun `MANUAL_SELECTION with empty selection shows error`() {
+        val gameType = GameType("gt1", "TestGame", WinCondition.HIGHEST_SCORE, tieBreakRule = TieBreakRule.MANUAL_SELECTION)
+        val (handler, _) = buildHandlerWithGameType(gameType)
+        handler.givenTiedScores()
+        assertTrue(handler.state.showManualSelectionDialog)
+
+        handler.handle(ScoreDetailIntent.ConfirmManualWinners)
+
+        assertEquals("Select at least one winner", handler.state.error)
+        assertTrue(handler.state.showManualSelectionDialog)
+    }
+
+    @Test
+    fun `ToggleManualSelectionWinner adds and removes selection`() {
+        val gameType = GameType("gt1", "TestGame", WinCondition.HIGHEST_SCORE, tieBreakRule = TieBreakRule.MANUAL_SELECTION)
+        val (handler, _) = buildHandlerWithGameType(gameType)
+        handler.givenTiedScores()
+
+        handler.handle(ScoreDetailIntent.ToggleManualSelectionWinner("alice"))
+        assertTrue("alice" in handler.state.manualSelectionWinners)
+
+        handler.handle(ScoreDetailIntent.ToggleManualSelectionWinner("alice"))
+        assertFalse("alice" in handler.state.manualSelectionWinners)
+    }
+
+    @Test
+    fun `DismissTieBreak closes all tie-break dialogs`() {
+        val gameType = GameType("gt1", "TestGame", WinCondition.HIGHEST_SCORE, tieBreakRule = TieBreakRule.MANUAL_SELECTION)
+        val (handler, _) = buildHandlerWithGameType(gameType)
+        handler.givenTiedScores()
+        assertTrue(handler.state.showManualSelectionDialog)
+
+        handler.handle(ScoreDetailIntent.DismissTieBreak)
+
+        assertFalse(handler.state.showManualSelectionDialog)
+        assertFalse(handler.state.showSecondaryScoreDialog)
+        assertNull(handler.state.error)
+    }
+
+    @Test
+    fun `SECONDARY_SCORE then secondary tie broken via manual selection saves correctly`() {
+        val gameType = GameType("gt1", "TestGame", WinCondition.HIGHEST_SCORE, tieBreakRule = TieBreakRule.SECONDARY_SCORE)
+        val (handler, matchRepo) = buildHandlerWithGameType(gameType)
+        handler.givenTiedScores()
+        assertTrue(handler.state.showSecondaryScoreDialog)
+
+        // Both tie on secondary → escalates to manual
+        handler.handle(ScoreDetailIntent.UpdateSecondaryScoreInput("alice", "50"))
+        handler.handle(ScoreDetailIntent.UpdateSecondaryScoreInput("bob", "50"))
+        handler.handle(ScoreDetailIntent.SubmitSecondaryScores)
+        assertTrue(handler.state.showManualSelectionDialog)
+
+        // Select Alice manually
+        handler.handle(ScoreDetailIntent.ToggleManualSelectionWinner("alice"))
+        handler.handle(ScoreDetailIntent.ConfirmManualWinners)
+
+        assertTrue(handler.state.saved)
+        assertEquals(1, matchRepo.getAll().size)
+        val saved = matchRepo.getAll().first()
+        assertEquals(listOf("alice"), saved.manualWinners)
+        assertEquals(2, saved.secondaryPlayerScores.size)
+    }
+
+    @Test
+    fun `UpdateSecondaryScoreInput updates input map`() {
+        val gameType = GameType("gt1", "TestGame", WinCondition.HIGHEST_SCORE, tieBreakRule = TieBreakRule.SECONDARY_SCORE)
+        val (handler, _) = buildHandlerWithGameType(gameType)
+        handler.givenTiedScores()
+
+        handler.handle(ScoreDetailIntent.UpdateSecondaryScoreInput("alice", "75"))
+        assertEquals("75", handler.state.secondaryScoreInputs["alice"])
+        assertNull(handler.state.error)
     }
 
     @Test

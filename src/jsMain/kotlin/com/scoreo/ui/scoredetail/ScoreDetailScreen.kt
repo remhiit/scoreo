@@ -2,6 +2,8 @@ package com.scoreo.ui.scoredetail
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import com.scoreo.ui.match.ManualSelectionDialog
+import com.scoreo.ui.match.SecondaryScoreDialog
 import org.jetbrains.compose.web.attributes.InputType
 import org.jetbrains.compose.web.dom.Button
 import org.jetbrains.compose.web.dom.Div
@@ -128,5 +130,37 @@ fun ScoreDetailScreen(
                 }) { Text("Confirmer") }
             }
         }
+    }
+
+    // ── Tie-break: Secondary Score Dialog ──
+    if (state.showSecondaryScoreDialog) {
+        val tiedPlayers = state.players.filter { it.id in state.tiedPlayerIds }
+        SecondaryScoreDialog(
+            gameType = state.gameType,
+            tiedPlayers = tiedPlayers,
+            secondaryScoreInputs = state.secondaryScoreInputs,
+            error = state.error,
+            onUpdateInput = { playerId, value ->
+                handler.handle(ScoreDetailIntent.UpdateSecondaryScoreInput(playerId, value))
+            },
+            onSubmit = { handler.handle(ScoreDetailIntent.SubmitSecondaryScores) },
+            onDismiss = { handler.handle(ScoreDetailIntent.DismissTieBreak) },
+        )
+    }
+
+    // ── Tie-break: Manual Selection Dialog ──
+    if (state.showManualSelectionDialog) {
+        val tiedPlayers = state.players.filter { it.id in state.tiedPlayerIds }
+        ManualSelectionDialog(
+            tiedPlayers = tiedPlayers,
+            selectedWinners = state.manualSelectionWinners,
+            error = state.error,
+            onToggleWinner = { playerId ->
+                handler.handle(ScoreDetailIntent.ToggleManualSelectionWinner(playerId))
+            },
+            onConfirm = { handler.handle(ScoreDetailIntent.ConfirmManualWinners) },
+            onKeepTie = { handler.handle(ScoreDetailIntent.KeepTie) },
+            onDismiss = { handler.handle(ScoreDetailIntent.DismissTieBreak) },
+        )
     }
 }

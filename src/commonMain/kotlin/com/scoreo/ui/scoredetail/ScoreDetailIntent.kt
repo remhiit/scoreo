@@ -8,4 +8,12 @@ sealed class ScoreDetailIntent {
     data object ConfirmWinners : ScoreDetailIntent()
     data object DismissModal : ScoreDetailIntent()
     data class ToggleModalWinner(val playerId: String) : ScoreDetailIntent()
+
+    // Tie-break resolution intents
+    data class UpdateSecondaryScoreInput(val playerId: String, val value: String) : ScoreDetailIntent()
+    data object SubmitSecondaryScores : ScoreDetailIntent()
+    data class ToggleManualSelectionWinner(val playerId: String) : ScoreDetailIntent()
+    data object ConfirmManualWinners : ScoreDetailIntent()
+    data object KeepTie : ScoreDetailIntent()
+    data object DismissTieBreak : ScoreDetailIntent()
 }

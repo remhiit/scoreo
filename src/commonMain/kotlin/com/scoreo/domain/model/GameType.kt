@@ -11,9 +11,12 @@ data class GameType(
     val tieBreakCondition: WinCondition = WinCondition.HIGHEST_SCORE,
     val tieBreakLabel: String? = null,
 ) {
-    fun computeWinners(playerScores: List<PlayerScore>): List<String> {
+    fun computeWinners(playerScores: List<PlayerScore>): List<String> =
+        computeWinners(playerScores, winCondition)
+
+    fun computeWinners(playerScores: List<PlayerScore>, condition: WinCondition): List<String> {
         if (playerScores.isEmpty()) return emptyList()
-        return when (winCondition) {
+        return when (condition) {
             WinCondition.HIGHEST_SCORE -> {
                 val max = playerScores.maxOf { it.score }
                 playerScores.filter { it.score == max }.map { it.playerId }

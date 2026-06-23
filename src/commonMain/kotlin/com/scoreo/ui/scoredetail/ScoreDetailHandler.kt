@@ -7,6 +7,7 @@ import com.scoreo.application.CreateMatchUseCase
 import com.scoreo.domain.model.GameType
 import com.scoreo.domain.model.Player
 import com.scoreo.domain.model.PlayerScore
+import com.scoreo.domain.model.TieBreakRule
 import com.scoreo.domain.model.WinCondition
 
 class ScoreDetailHandler(
@@ -42,8 +43,40 @@ class ScoreDetailHandler(
                 if (!validateRounds()) return
                 if (gameType.winCondition == WinCondition.MANUAL) {
                     state = state.copy(showWinnerModal = true, modalWinners = emptySet(), error = null)
-                } else {
-                    saveMatch(manualWinners = emptyList())
+                    return
+                }
+                val playerScores = players.map { player ->
+                    PlayerScore(player.id, state.totals[player.id] ?: 0)
+                }
+                val primaryWinners = gameType.computeWinners(playerScores)
+
+                when {
+                    // No tie → save directly
+                    primaryWinners.size <= 1 -> {
+                        saveMatch(playerScores, manualWinners = emptyList())
+                    }
+                    // Tie + NONE → save all tied as winners
+                    gameType.tieBreakRule == TieBreakRule.NONE -> {
+                        saveMatch(playerScores, manualWinners = primaryWinners)
+                    }
+                    // Tie + MANUAL_SELECTION → show manual arbitration
+                    gameType.tieBreakRule == TieBreakRule.MANUAL_SELECTION -> {
+                        state = state.copy(
+                            showManualSelectionDialog = true,
+                            tiedPlayerIds = primaryWinners,
+                            manualSelectionWinners = emptySet(),
+                            error = null,
+                        )
+                    }
+                    // Tie + SECONDARY_SCORE → show secondary score dialog
+                    gameType.tieBreakRule == TieBreakRule.SECONDARY_SCORE -> {
+                        state = state.copy(
+                            showSecondaryScoreDialog = true,
+                            tiedPlayerIds = primaryWinners,
+                            secondaryScoreInputs = primaryWinners.associateWith { "" },
+                            error = null,
+                        )
+                    }
                 }
             }
 
@@ -63,7 +96,99 @@ class ScoreDetailHandler(
                     state = state.copy(error = "Select at least one winner")
                     return
                 }
-                saveMatch(manualWinners = state.modalWinners.toList())
+                val playerScores = players.map { player ->
+                    PlayerScore(player.id, state.totals[player.id] ?: 0)
+                }
+                saveMatch(playerScores, manualWinners = state.modalWinners.toList())
+            }
+
+            // ── Tie-break: Secondary Score input ──
+            is ScoreDetailIntent.UpdateSecondaryScoreInput -> {
+                state = state.copy(
+                    secondaryScoreInputs = state.secondaryScoreInputs + (intent.playerId to intent.value),
+                    error = null,
+                )
+            }
+
+            is ScoreDetailIntent.SubmitSecondaryScores -> {
+                val tiedIds = state.tiedPlayerIds
+                val secondaryScores = mutableListOf<PlayerScore>()
+                for (playerId in tiedIds) {
+                    val input = state.secondaryScoreInputs[playerId]?.trim() ?: ""
+                    val score = input.toIntOrNull()
+                    if (score == null) {
+                        state = state.copy(error = "Invalid secondary score for one of the tied players")
+                        return@handle
+                    }
+                    secondaryScores.add(PlayerScore(playerId, score))
+                }
+                // Compute winners using tieBreakCondition on secondary scores
+                val secondaryWinners = gameType.computeWinners(secondaryScores, gameType.tieBreakCondition)
+                val resolvedWinners = secondaryWinners.filter { it in tiedIds }
+
+                if (resolvedWinners.size < tiedIds.size) {
+                    // Tie partially or fully broken → save match
+                    val playerScores = players.map { player ->
+                        PlayerScore(player.id, state.totals[player.id] ?: 0)
+                    }
+                    saveMatch(
+                        playerScores,
+                        manualWinners = resolvedWinners,
+                        secondaryPlayerScores = secondaryScores,
+                    )
+                } else {
+                    // Same tie persists → escalate to manual arbitration
+                    state = state.copy(
+                        showSecondaryScoreDialog = false,
+                        showManualSelectionDialog = true,
+                        manualSelectionWinners = emptySet(),
+                        collectedSecondaryScores = secondaryScores,
+                        error = null,
+                    )
+                }
+            }
+
+            // ── Tie-break: Manual Selection ──
+            is ScoreDetailIntent.ToggleManualSelectionWinner -> {
+                val winners = state.manualSelectionWinners.toMutableSet()
+                if (intent.playerId in winners) winners.remove(intent.playerId)
+                else winners.add(intent.playerId)
+                state = state.copy(manualSelectionWinners = winners, error = null)
+            }
+
+            is ScoreDetailIntent.ConfirmManualWinners -> {
+                if (state.manualSelectionWinners.isEmpty()) {
+                    state = state.copy(error = "Select at least one winner")
+                    return
+                }
+                val playerScores = players.map { player ->
+                    PlayerScore(player.id, state.totals[player.id] ?: 0)
+                }
+                saveMatch(
+                    playerScores,
+                    manualWinners = state.manualSelectionWinners.toList(),
+                    secondaryPlayerScores = state.collectedSecondaryScores,
+                )
+            }
+
+            is ScoreDetailIntent.KeepTie -> {
+                val playerScores = players.map { player ->
+                    PlayerScore(player.id, state.totals[player.id] ?: 0)
+                }
+                // Keep all tied players as winners
+                saveMatch(
+                    playerScores,
+                    manualWinners = state.tiedPlayerIds,
+                    secondaryPlayerScores = state.collectedSecondaryScores,
+                )
+            }
+
+            is ScoreDetailIntent.DismissTieBreak -> {
+                state = state.copy(
+                    showSecondaryScoreDialog = false,
+                    showManualSelectionDialog = false,
+                    error = null,
+                )
             }
         }
     }
@@ -81,15 +206,17 @@ class ScoreDetailHandler(
         return true
     }
 
-    private fun saveMatch(manualWinners: List<String>) {
-        val playerScores = players.map { player ->
-            PlayerScore(playerId = player.id, score = state.totals[player.id] ?: 0)
-        }
+    private fun saveMatch(
+        playerScores: List<PlayerScore>,
+        manualWinners: List<String> = emptyList(),
+        secondaryPlayerScores: List<PlayerScore> = emptyList(),
+    ) {
         val result = createMatch(
             gameTypeId = gameType.id,
             playerScores = playerScores,
             date = currentDate(),
             manualWinners = manualWinners,
+            secondaryPlayerScores = secondaryPlayerScores,
         )
         result.fold(
             onSuccess = { state = state.copy(saved = true) },
