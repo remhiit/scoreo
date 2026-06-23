@@ -11,7 +11,7 @@ class AddGameTypeUseCase(private val repository: GameTypeRepository) {
     operator fun invoke(name: String, winCondition: WinCondition): GameType {
         val trimmed = name.trim()
         if (trimmed.isEmpty()) throw DomainError.Validation("name", "Game type name must not be blank")
-        require(trimmed.length <= MAX_NAME_LENGTH) { "Game type name must be $MAX_NAME_LENGTH characters or less" }
+        if (trimmed.length > MAX_NAME_LENGTH) throw DomainError.Validation("name", "Game type name must be $MAX_NAME_LENGTH characters or less")
         val gameType = GameType(id = IdGenerator.newId(), name = trimmed, winCondition = winCondition)
         repository.save(gameType)
         return gameType

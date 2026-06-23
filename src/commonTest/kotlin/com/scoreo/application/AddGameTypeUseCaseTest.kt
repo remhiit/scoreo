@@ -1,5 +1,6 @@
 package com.scoreo.application
 
+import com.scoreo.domain.DomainError
 import com.scoreo.infrastructure.InMemoryGameTypeRepository
 import com.scoreo.domain.model.WinCondition
 import kotlin.test.Test
@@ -71,7 +72,7 @@ class AddGameTypeUseCaseTest {
         val repo = InMemoryGameTypeRepository()
         val useCase = AddGameTypeUseCase(repo)
         val longName = "A".repeat(51)
-        val exception = assertFailsWith<IllegalArgumentException> {
+        val exception = assertFailsWith<DomainError.Validation> {
             useCase(longName, WinCondition.HIGHEST_SCORE)
         }
         assertTrue(exception.message!!.contains("50"))

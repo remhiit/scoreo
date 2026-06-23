@@ -1,5 +1,6 @@
 package com.scoreo.application
 
+import com.scoreo.domain.DomainError
 import com.scoreo.infrastructure.InMemoryPlayerRepository
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -59,7 +60,7 @@ class AddPlayerUseCaseTest {
         val repo = InMemoryPlayerRepository()
         val useCase = AddPlayerUseCase(repo)
         val longName = "A".repeat(51)
-        val exception = assertFailsWith<IllegalArgumentException> {
+        val exception = assertFailsWith<DomainError.Validation> {
             useCase(longName)
         }
         assertTrue(exception.message!!.contains("50"))
