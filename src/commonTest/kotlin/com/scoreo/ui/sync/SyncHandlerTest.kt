@@ -7,12 +7,18 @@ import com.scoreo.infrastructure.InMemoryCloudSyncRepository
 import com.scoreo.infrastructure.InMemoryGameTypeRepository
 import com.scoreo.infrastructure.InMemoryMatchRepository
 import com.scoreo.infrastructure.InMemoryPlayerRepository
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class SyncHandlerTest {
 
     private fun buildHandler(
@@ -20,13 +26,10 @@ class SyncHandlerTest {
         playerRepo: InMemoryPlayerRepository = InMemoryPlayerRepository(),
         gameTypeRepo: InMemoryGameTypeRepository = InMemoryGameTypeRepository(),
         matchRepo: InMemoryMatchRepository = InMemoryMatchRepository(),
+        scope: CoroutineScope = CoroutineScope(Dispatchers.Default),
     ) = SyncHandler(
-        SyncUseCase(
-            cloudRepo = cloudRepo,
-            playerRepo = playerRepo,
-            gameTypeRepo = gameTypeRepo,
-            matchRepo = matchRepo,
-        ),
+        SyncUseCase(cloudRepo, playerRepo, gameTypeRepo, matchRepo),
+        scope,
     )
 
     @Test
@@ -41,10 +44,11 @@ class SyncHandlerTest {
     }
 
     @Test
-    fun `Login with empty data results in Resolved`() {
-        val handler = buildHandler()
+    fun `Login with empty data results in Resolved`() = runTest {
+        val handler = buildHandler(scope = this)
 
         handler.handle(SyncIntent.Login)
+        advanceUntilIdle()
 
         assertEquals(SyncPhase.Resolved, handler.state.phase)
         assertEquals("test@example.com", handler.state.email)
@@ -54,7 +58,7 @@ class SyncHandlerTest {
     }
 
     @Test
-    fun `Login with conflict shows Conflict phase`() {
+    fun `Login with conflict shows Conflict phase`() = runTest {
         val cloudRepo = InMemoryCloudSyncRepository()
         val playerRepo = InMemoryPlayerRepository()
 
@@ -69,9 +73,10 @@ class SyncHandlerTest {
             lastModified = 1000L,
         )
 
-        val handler = buildHandler(cloudRepo = cloudRepo, playerRepo = playerRepo)
+        val handler = buildHandler(cloudRepo = cloudRepo, playerRepo = playerRepo, scope = this)
 
         handler.handle(SyncIntent.Login)
+        advanceUntilIdle()
 
         assertEquals(SyncPhase.Conflict, handler.state.phase)
         assertEquals("test@example.com", handler.state.email)
@@ -90,15 +95,17 @@ class SyncHandlerTest {
     }
 
     @Test
-    fun `Logout resets state to Disconnected with null fields`() {
-        val handler = buildHandler()
+    fun `Logout resets state to Disconnected with null fields`() = runTest {
+        val handler = buildHandler(scope = this)
 
         // Login first to get into a non-disconnected state
         handler.handle(SyncIntent.Login)
+        advanceUntilIdle()
         assertEquals(SyncPhase.Resolved, handler.state.phase)
 
         // Now logout
         handler.handle(SyncIntent.Logout)
+        advanceUntilIdle()
 
         assertEquals(SyncPhase.Disconnected, handler.state.phase)
         assertNull(handler.state.email)
@@ -108,7 +115,7 @@ class SyncHandlerTest {
     }
 
     @Test
-    fun `ResolveConflict keepLocal transitions to Resolved with no conflict`() {
+    fun `ResolveConflict keepLocal transitions to Resolved with no conflict`() = runTest {
         val cloudRepo = InMemoryCloudSyncRepository()
         val playerRepo = InMemoryPlayerRepository()
 
@@ -123,14 +130,16 @@ class SyncHandlerTest {
             lastModified = 1000L,
         )
 
-        val handler = buildHandler(cloudRepo = cloudRepo, playerRepo = playerRepo)
+        val handler = buildHandler(cloudRepo = cloudRepo, playerRepo = playerRepo, scope = this)
 
         // Login triggers autoSync which detects conflict
         handler.handle(SyncIntent.Login)
+        advanceUntilIdle()
         assertEquals(SyncPhase.Conflict, handler.state.phase)
 
         // Resolve keeping local data
         handler.handle(SyncIntent.ResolveConflict(keepLocal = true))
+        advanceUntilIdle()
 
         assertEquals(SyncPhase.Resolved, handler.state.phase)
         assertNull(handler.state.conflict)
@@ -140,7 +149,7 @@ class SyncHandlerTest {
     }
 
     @Test
-    fun `ResolveConflict keepRemote transitions to Resolved with no conflict`() {
+    fun `ResolveConflict keepRemote transitions to Resolved with no conflict`() = runTest {
         val cloudRepo = InMemoryCloudSyncRepository()
         val playerRepo = InMemoryPlayerRepository()
 
@@ -155,14 +164,16 @@ class SyncHandlerTest {
             lastModified = 1000L,
         )
 
-        val handler = buildHandler(cloudRepo = cloudRepo, playerRepo = playerRepo)
+        val handler = buildHandler(cloudRepo = cloudRepo, playerRepo = playerRepo, scope = this)
 
         // Login triggers autoSync which detects conflict
         handler.handle(SyncIntent.Login)
+        advanceUntilIdle()
         assertEquals(SyncPhase.Conflict, handler.state.phase)
 
         // Resolve keeping remote data
         handler.handle(SyncIntent.ResolveConflict(keepLocal = false))
+        advanceUntilIdle()
 
         assertEquals(SyncPhase.Resolved, handler.state.phase)
         assertNull(handler.state.conflict)
@@ -172,15 +183,16 @@ class SyncHandlerTest {
     }
 
     @Test
-    fun `DismissError clears error field from state`() {
+    fun `DismissError clears error field from state`() = runTest {
         val cloudRepo = InMemoryCloudSyncRepository()
 
         // Make autoSync fail (pull throws) so error gets set
         cloudRepo.failNext = { Exception("Network timeout") }
 
-        val handler = buildHandler(cloudRepo = cloudRepo)
+        val handler = buildHandler(cloudRepo = cloudRepo, scope = this)
 
         handler.handle(SyncIntent.Login)
+        advanceUntilIdle()
 
         // Login succeeded, but autoSync failed -> error set
         assertEquals(SyncPhase.Disconnected, handler.state.phase)
@@ -196,7 +208,7 @@ class SyncHandlerTest {
     }
 
     @Test
-    fun `Logout after login returns to Disconnected phase`() {
+    fun `Logout after login returns to Disconnected phase`() = runTest {
         val cloudRepo = InMemoryCloudSyncRepository()
         val playerRepo = InMemoryPlayerRepository()
 
@@ -209,13 +221,15 @@ class SyncHandlerTest {
             lastModified = 1000L,
         )
 
-        val handler = buildHandler(cloudRepo = cloudRepo, playerRepo = playerRepo)
+        val handler = buildHandler(cloudRepo = cloudRepo, playerRepo = playerRepo, scope = this)
 
         handler.handle(SyncIntent.Login)
+        advanceUntilIdle()
         assertEquals(SyncPhase.Conflict, handler.state.phase)
 
         // Logout resets completely
         handler.handle(SyncIntent.Logout)
+        advanceUntilIdle()
 
         assertEquals(SyncPhase.Disconnected, handler.state.phase)
         assertNull(handler.state.email)
