@@ -3,7 +3,9 @@ package com.scoreo.application
 import com.scoreo.infrastructure.InMemoryPlayerRepository
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertNotEquals
+import kotlin.test.assertTrue
 
 class AddPlayerUseCaseTest {
 
@@ -50,5 +52,25 @@ class AddPlayerUseCaseTest {
         useCase("Charlie")
 
         assertEquals(3, repo.getAll().size)
+    }
+
+    @Test
+    fun `rejects name exceeding 50 characters`() {
+        val repo = InMemoryPlayerRepository()
+        val useCase = AddPlayerUseCase(repo)
+        val longName = "A".repeat(51)
+        val exception = assertFailsWith<IllegalArgumentException> {
+            useCase(longName)
+        }
+        assertTrue(exception.message!!.contains("50"))
+    }
+
+    @Test
+    fun `accepts name of exactly 50 characters`() {
+        val repo = InMemoryPlayerRepository()
+        val useCase = AddPlayerUseCase(repo)
+        val name = "A".repeat(50)
+        val player = useCase(name)
+        assertEquals(50, player.name.length)
     }
 }

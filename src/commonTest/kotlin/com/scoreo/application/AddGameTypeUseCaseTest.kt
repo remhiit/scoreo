@@ -4,8 +4,10 @@ import com.scoreo.infrastructure.InMemoryGameTypeRepository
 import com.scoreo.domain.model.WinCondition
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertNotEquals
 import kotlin.test.assertNotNull
+import kotlin.test.assertTrue
 
 class AddGameTypeUseCaseTest {
 
@@ -62,5 +64,25 @@ class AddGameTypeUseCaseTest {
         useCase("B", WinCondition.LOWEST_SCORE)
         useCase("C", WinCondition.MANUAL)
         assertEquals(3, repo.getAll().size)
+    }
+
+    @Test
+    fun `rejects name exceeding 50 characters`() {
+        val repo = InMemoryGameTypeRepository()
+        val useCase = AddGameTypeUseCase(repo)
+        val longName = "A".repeat(51)
+        val exception = assertFailsWith<IllegalArgumentException> {
+            useCase(longName, WinCondition.HIGHEST_SCORE)
+        }
+        assertTrue(exception.message!!.contains("50"))
+    }
+
+    @Test
+    fun `accepts name of exactly 50 characters`() {
+        val repo = InMemoryGameTypeRepository()
+        val useCase = AddGameTypeUseCase(repo)
+        val name = "A".repeat(50)
+        val gameType = useCase(name, WinCondition.HIGHEST_SCORE)
+        assertEquals(50, gameType.name.length)
     }
 }
