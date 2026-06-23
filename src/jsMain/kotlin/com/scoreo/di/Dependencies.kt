@@ -10,6 +10,7 @@ import com.scoreo.application.GetMatchesUseCase
 import com.scoreo.application.GetPlayerStatsUseCase
 import com.scoreo.application.GetPlayersUseCase
 import com.scoreo.application.ImportMatchesUseCase
+import com.scoreo.application.UpdateGameTypeUseCase
 import com.scoreo.domain.port.GameTypeRepository
 import com.scoreo.domain.port.MatchRepository
 import com.scoreo.domain.port.PlayerRepository
@@ -53,7 +54,9 @@ fun createAppDependencies(
 
     val gameTypeHandler = GameTypeHandler(
         addGameType = AddGameTypeUseCase(gameTypeRepository),
+        updateGameType = UpdateGameTypeUseCase(gameTypeRepository),
         getGameTypes = GetGameTypesUseCase(gameTypeRepository),
+        gameTypeRepository = gameTypeRepository,
     )
 
     val getGameTypesUseCase = GetGameTypesUseCase(gameTypeRepository)
