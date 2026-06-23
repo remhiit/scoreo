@@ -53,16 +53,39 @@ URL: `https://<username>.codeberg.page/Scoreo/`
 
 File: `.github/workflows/deploy.yml`
 
-Steps:
+### Pre-deployment verification
+
+Steps 1-6 build and verify the artifact:
 1. Set up JDK 21 (`actions/setup-java` temurin)
 2. Set up Gradle via [`gradle/actions/setup-gradle@v4`](https://github.com/gradle/actions) with `gradle-version: wrapper`
 3. Run tests: `./gradlew jvmTest`
 4. Build: `./gradlew jsBrowserProductionWebpack`
 5. Verify `styles.css` exists in the output directory
 6. Copy `index.html` and all `.css` files into `build/kotlin-webpack/js/productionExecutable/`
-7. Publish via `actions/upload-pages-artifact` + `actions/deploy-pages`
+7. **Verify all resources are in artifact** — cross-check that every file from `src/jsMain/resources/` is present in the output directory. Fails if any file is missing.
 
 > Note: CSS files are copied as static assets. The browser resolves `@import` directives natively.
+
+### Deployment
+
+8. Configure Pages
+9. Upload artifact
+10. Deploy to GitHub Pages
+
+**Output exposure**: The `deploy` job exposes `${{ steps.deploy.outputs.page_url }}` so dependent jobs can verify the deployed site.
+
+### Post-deployment verification (Smoke Test)
+
+**Job**: `smoke-test` (runs after successful deployment)
+
+Verifies the deployed site is fully functional by making HTTP requests to key URLs:
+- Root path (`/Scoreo/`) — confirms `index.html` is served
+- `styles.css` — confirms CSS assets are accessible
+- `scoreo.js` — confirms JavaScript bundle is accessible
+
+Includes automatic retry logic (up to 5 retries with 15-second delays) to account for GitHub Pages propagation latency.
+
+**Catches**: Missing assets in the deployed artifact, broken asset paths, CDN propagation issues.
 
 URL: `https://<username>.github.io/Scoreo/`
 

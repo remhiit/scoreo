@@ -17,6 +17,8 @@ concurrency:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    outputs:
+      page_url: ${{ steps.deploy.outputs.page_url }}
     environment:
       name: github-pages
       url: ${{ steps.deploy.outputs.page_url }}
@@ -51,6 +53,14 @@ jobs:
           cp src/jsMain/resources/index.html build/kotlin-webpack/js/productionExecutable/
           cp src/jsMain/resources/*.css build/kotlin-webpack/js/productionExecutable/
 
+      - name: Verify all resources are in artifact
+        run: |
+          for f in src/jsMain/resources/*; do
+            name=$(basename "$f")
+            test -f "build/kotlin-webpack/js/productionExecutable/$name" \
+              || (echo "Missing from artifact: $name" && exit 1)
+          done
+
       - name: Configure Pages
         uses: actions/configure-pages@v5
 
@@ -62,3 +72,22 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deploy
         uses: actions/deploy-pages@v4
+
+  smoke-test:
+    needs: deploy
+    runs-on: ubuntu-latest
+    steps:
+      - name: Smoke test deployed site
+        env:
+          BASE: ${{ needs.deploy.outputs.page_url }}
+        run: |
+          for path in "" styles.css scoreo.js; do
+            url="${BASE}${path}"
+            echo "Checking $url..."
+            for i in 1 2 3 4 5; do
+              curl --fail --silent --head "$url" && break
+              [ $i -eq 5 ] && echo "FAILED: $url" && exit 1
+              echo "Retry $i/5 in 15s..."
+              sleep 15
+            done
+          done
