@@ -11,6 +11,7 @@ data class GameTypeState(
     val selectedTieBreakRule: TieBreakRule = TieBreakRule.NONE,
     val selectedTieBreakCondition: WinCondition = WinCondition.HIGHEST_SCORE,
     val selectedTieBreakLabel: String? = null,
+    val selectedGameId: String? = null,
     val editingGameId: String? = null,
     val error: String? = null,
 )

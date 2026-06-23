@@ -35,6 +35,10 @@ class GameTypeHandler(
                 state = state.copy(selectedTieBreakCondition = intent.condition)
             is GameTypeIntent.UpdateTieBreakLabel ->
                 state = state.copy(selectedTieBreakLabel = if (intent.label.isBlank()) null else intent.label)
+            is GameTypeIntent.SelectGame ->
+                state = state.copy(selectedGameId = intent.id)
+            is GameTypeIntent.DeselectGame ->
+                state = state.copy(selectedGameId = null)
             is GameTypeIntent.AddGameType -> {
                 val name = state.inputName.trim()
                 try {

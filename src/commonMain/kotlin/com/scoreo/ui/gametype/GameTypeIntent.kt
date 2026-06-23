@@ -10,6 +10,8 @@ sealed class GameTypeIntent {
     data class UpdateTieBreakRule(val rule: TieBreakRule) : GameTypeIntent()
     data class UpdateTieBreakCondition(val condition: WinCondition) : GameTypeIntent()
     data class UpdateTieBreakLabel(val label: String) : GameTypeIntent()
+    data class SelectGame(val id: String) : GameTypeIntent()
+    data object DeselectGame : GameTypeIntent()
     data object AddGameType : GameTypeIntent()
     data class EditGameType(val id: String) : GameTypeIntent()
     data object CancelEdit : GameTypeIntent()
