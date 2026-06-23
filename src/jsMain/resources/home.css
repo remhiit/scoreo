@@ -209,3 +209,30 @@
     font-size: 13px;
     padding: 8px 0 12px;
 }
+
+/* ── Game type cards ── */
+
+.card-selected {
+    background: var(--primary-light);
+    box-shadow: inset 0 0 0 2px var(--primary);
+}
+
+/* ── Game detail view ── */
+
+.detail-row {
+    display: flex;
+    gap: 8px;
+    padding: 8px 0;
+    align-items: center;
+}
+
+.detail-label {
+    color: var(--on-surface-variant);
+    font-size: 14px;
+    min-width: 140px;
+}
+
+.detail-value {
+    font-size: 14px;
+    font-weight: 500;
+}
