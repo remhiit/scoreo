@@ -110,6 +110,7 @@ Le fichier `JsonConfig.kt` (`src/jsMain/.../infrastructure/`) fournit `scoreoJso
 | `src/commonTest/.../infrastructure/InMemoryCloudSyncRepository.kt` | `InMemoryCloudSyncRepository` | Double de test CloudSyncRepository |
 | `src/commonTest/.../infrastructure/MatchMigrationTest.kt` | `MatchMigrationTest` | Migration donnees matchs (17 tests) |
 | `src/commonTest/.../application/GetHeadToHeadUseCaseEloTest.kt` | `GetHeadToHeadUseCaseEloTest` | Calcul ELO (10 tests) |
+| `src/commonTest/.../application/IdGeneratorTest.kt` | `IdGeneratorTest` | IdGenerator UUID v4 (7 tests) |
 
 Tous dans `src/commonTest/kotlin/com/scoreo/`.
 
