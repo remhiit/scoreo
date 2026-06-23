@@ -60,8 +60,8 @@ Steps 1-6 build and verify the artifact:
 2. Set up Gradle via [`gradle/actions/setup-gradle@v4`](https://github.com/gradle/actions) with `gradle-version: wrapper`
 3. Run tests: `./gradlew jvmTest`
 4. Build: `./gradlew jsBrowserProductionWebpack`
-5. Verify `styles.css` exists in the output directory
-6. Copy `index.html` and all `.css` files into `build/kotlin-webpack/js/productionExecutable/`
+5. Copy `index.html` and all `.css` files into `build/kotlin-webpack/js/productionExecutable/`
+6. Verify `styles.css` exists in the output directory
 7. **Verify all resources are in artifact** — cross-check that every file from `src/jsMain/resources/` is present in the output directory. Fails if any file is missing.
 
 > Note: CSS files are copied as static assets. The browser resolves `@import` directives natively.
