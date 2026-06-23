@@ -48,4 +48,34 @@ class GameTypeTest {
         val gt = GameType("1", "Game", WinCondition.HIGHEST_SCORE)
         assertEquals(emptyList(), gt.computeWinners(emptyList()))
     }
+
+    @Test
+    fun `computeWinners with custom condition uses that condition`() {
+        val gt = GameType("1", "Game", WinCondition.HIGHEST_SCORE)
+        val winners = gt.computeWinners(
+            scores("alice" to 10, "bob" to 5, "charlie" to 3),
+            WinCondition.LOWEST_SCORE,
+        )
+        assertEquals(listOf("charlie"), winners)
+    }
+
+    @Test
+    fun `computeWinners with HIGHEST_SCORE condition returns max`() {
+        val gt = GameType("1", "Belote", WinCondition.LOWEST_SCORE)
+        val winners = gt.computeWinners(
+            scores("alice" to 5, "bob" to 10, "charlie" to 3),
+            WinCondition.HIGHEST_SCORE,
+        )
+        assertEquals(listOf("bob"), winners)
+    }
+
+    @Test
+    fun `computeWinners with custom condition returns all tied`() {
+        val gt = GameType("1", "Game", WinCondition.HIGHEST_SCORE)
+        val winners = gt.computeWinners(
+            scores("alice" to 1, "bob" to 1, "charlie" to 3),
+            WinCondition.LOWEST_SCORE,
+        )
+        assertEquals(setOf("alice", "bob"), winners.toSet())
+    }
 }

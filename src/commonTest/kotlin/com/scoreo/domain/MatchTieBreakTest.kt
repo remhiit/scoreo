@@ -107,4 +107,34 @@ class MatchTieBreakTest {
         )
         assertEquals(listOf("bob"), match.getWinners(gt))
     }
+
+    @Test
+    fun `getWinners uses SECONDARY_SCORE when tie and rule set`() {
+        val gt = GameType("1", "Game", WinCondition.HIGHEST_SCORE, TieBreakRule.SECONDARY_SCORE, WinCondition.LOWEST_SCORE)
+        val match = Match("m1", 0L, "1",
+            playerScores = scores("alice" to 10, "bob" to 10, "charlie" to 3),
+            secondaryPlayerScores = scores("alice" to 5, "bob" to 3),
+        )
+        assertEquals(listOf("bob"), match.getWinners(gt))
+    }
+
+    @Test
+    fun `getWinners with SECONDARY_SCORE falls back to primary when secondary empty`() {
+        val gt = GameType("1", "Game", WinCondition.HIGHEST_SCORE, TieBreakRule.SECONDARY_SCORE)
+        val match = Match("m1", 0L, "1",
+            playerScores = scores("alice" to 10, "bob" to 10, "charlie" to 3),
+            secondaryPlayerScores = emptyList(),
+        )
+        assertEquals(setOf("alice", "bob"), match.getWinners(gt).toSet())
+    }
+
+    @Test
+    fun `getWinners with SECONDARY_SCORE falls back to all tied when secondary still tied`() {
+        val gt = GameType("1", "Game", WinCondition.HIGHEST_SCORE, TieBreakRule.SECONDARY_SCORE, WinCondition.HIGHEST_SCORE)
+        val match = Match("m1", 0L, "1",
+            playerScores = scores("alice" to 10, "bob" to 10, "charlie" to 3),
+            secondaryPlayerScores = scores("alice" to 5, "bob" to 5),
+        )
+        assertEquals(setOf("alice", "bob"), match.getWinners(gt).toSet())
+    }
 }

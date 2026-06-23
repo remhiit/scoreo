@@ -9,8 +9,8 @@ enum class TieBreakRule {
     SECONDARY_SCORE;   // On utilise un score additionnel pour départager
 
     fun label() = when (this) {
-        NONE -> "Aucun"
-        MANUAL_SELECTION -> "Sélection manuelle"
-        SECONDARY_SCORE -> "Score secondaire"
+        NONE -> "No tie-break"
+        MANUAL_SELECTION -> "Manual selection"
+        SECONDARY_SCORE -> "Secondary score"
     }
 }

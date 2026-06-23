@@ -10,9 +10,11 @@ import com.scoreo.domain.model.GameType
 import com.scoreo.domain.model.Match
 import com.scoreo.domain.model.Player
 import com.scoreo.domain.model.PlayerScore
+import com.scoreo.domain.model.TieBreakRule
 import com.scoreo.domain.model.WinCondition
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
@@ -168,5 +170,47 @@ class HistoryHandlerTest {
         matchRepo.save(Match("m2", 2000L, "gt1", listOf(PlayerScore("p1", 10))))
         handler.handle(HistoryIntent.Refresh)
         assertEquals(2, handler.state.displays.size)
+    }
+
+    @Test
+    fun `isTieBreakIndeterminate true when MANUAL_SELECTION and empty manualWinners`() {
+        val matchRepo = InMemoryMatchRepository()
+        val gameTypeRepo = InMemoryGameTypeRepository()
+        gameTypeRepo.save(GameType("gt1", "Test", WinCondition.HIGHEST_SCORE, TieBreakRule.MANUAL_SELECTION))
+        matchRepo.save(Match("m1", 1000L, "gt1",
+            playerScores = listOf(PlayerScore("p1", 10), PlayerScore("p2", 10)),
+            manualWinners = emptyList(),
+        ))
+        val handler = buildHandler(matchRepo = matchRepo, gameTypeRepo = gameTypeRepo)
+        handler.handle(HistoryIntent.Refresh)
+        assertTrue(handler.state.displays.first().isTieBreakIndeterminate)
+    }
+
+    @Test
+    fun `isTieBreakIndeterminate false when tie resolved`() {
+        val matchRepo = InMemoryMatchRepository()
+        val gameTypeRepo = InMemoryGameTypeRepository()
+        gameTypeRepo.save(GameType("gt1", "Test", WinCondition.HIGHEST_SCORE, TieBreakRule.MANUAL_SELECTION))
+        matchRepo.save(Match("m1", 1000L, "gt1",
+            playerScores = listOf(PlayerScore("p1", 10), PlayerScore("p2", 10)),
+            manualWinners = listOf("p1"),
+        ))
+        val handler = buildHandler(matchRepo = matchRepo, gameTypeRepo = gameTypeRepo)
+        handler.handle(HistoryIntent.Refresh)
+        assertFalse(handler.state.displays.first().isTieBreakIndeterminate)
+    }
+
+    @Test
+    fun `isTieBreakIndeterminate false when no tie`() {
+        val matchRepo = InMemoryMatchRepository()
+        val gameTypeRepo = InMemoryGameTypeRepository()
+        gameTypeRepo.save(GameType("gt1", "Test", WinCondition.HIGHEST_SCORE, TieBreakRule.MANUAL_SELECTION))
+        matchRepo.save(Match("m1", 1000L, "gt1",
+            playerScores = listOf(PlayerScore("p1", 10), PlayerScore("p2", 5)),
+            manualWinners = emptyList(),
+        ))
+        val handler = buildHandler(matchRepo = matchRepo, gameTypeRepo = gameTypeRepo)
+        handler.handle(HistoryIntent.Refresh)
+        assertFalse(handler.state.displays.first().isTieBreakIndeterminate)
     }
 }

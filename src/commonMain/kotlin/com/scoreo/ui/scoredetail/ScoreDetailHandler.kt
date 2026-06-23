@@ -93,7 +93,7 @@ class ScoreDetailHandler(
 
             is ScoreDetailIntent.ConfirmWinners -> {
                 if (state.modalWinners.isEmpty()) {
-                    state = state.copy(error = "Sélectionnez au moins un gagnant")
+                    state = state.copy(error = "Select at least one winner")
                     return
                 }
                 val playerScores = players.map { player ->
@@ -158,7 +158,7 @@ class ScoreDetailHandler(
 
             is ScoreDetailIntent.ConfirmManualWinners -> {
                 if (state.manualSelectionWinners.isEmpty()) {
-                    state = state.copy(error = "Sélectionnez au moins un gagnant")
+                    state = state.copy(error = "Select at least one winner")
                     return
                 }
                 val playerScores = players.map { player ->
