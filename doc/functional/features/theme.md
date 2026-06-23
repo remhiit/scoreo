@@ -22,5 +22,18 @@ Classes header : `theme-toggle-btn` dans `layout.css` (44×44, icône centrée).
 |---------|------|
 | `src/jsMain/.../ui/theme/ThemeManager.kt` | Composable `rememberThemeState()` — état, localStorage, `data-theme` sur `<html>` |
 | `src/jsMain/kotlin/.../App.kt` | Appel de `rememberThemeState()` + bouton toggle |
+| `src/jsTest/.../ui/theme/ThemeManagerTest.kt` | Tests unitaires : localStorage, system preference, DOM attributes |
 
 Pas de Handler MVI (concern global, pas d'écran dédié).
+
+## Tests
+
+| Test | Vérification |
+|------|---|
+| `readSavedTheme returns null when localStorage is empty` | localStorage vide retourne null |
+| `readSavedTheme returns true for dark theme` | localStorage "dark" retourne true |
+| `readSavedTheme returns false for light theme` | localStorage "light" retourne false |
+| `applyTheme sets data-theme attribute to dark` | data-theme="dark" est appliqué sur <html> |
+| `applyTheme removes data-theme attribute for light theme` | data-theme est supprimé pour light |
+| `theme persists in localStorage across toggles` | Les toggles sont persistés en localStorage |
+| `system prefers-color-scheme is detectable` | window.matchMedia() retourne une MediaQueryList valide |

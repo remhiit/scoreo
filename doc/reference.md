@@ -116,8 +116,9 @@ Le fichier `JsonConfig.kt` (`src/jsMain/.../infrastructure/`) fournit `scoreoJso
 | `src/commonTest/.../application/SyncUseCaseTest.kt` | `SyncUseCaseTest` | Use Case Sync (7 tests) |
 | `src/commonTest/.../ui/sync/SyncHandlerTest.kt` | `SyncHandlerTest` | Handler Sync (8 tests) |
 | `src/commonTest/.../application/EloCalculatorTest.kt` | `EloCalculatorTest` | Calcul ELO isole (3 tests) |
+| `src/jsTest/.../ui/theme/ThemeManagerTest.kt` | `ThemeManagerTest` | Composable Theme (7 tests : localStorage, system pref, DOM) |
 
-Tous dans `src/commonTest/kotlin/com/scoreo/`.
+Tous dans `src/commonTest/` (commonTest) ou `src/jsTest/` (jsTest).
 
 ## CSS
 
