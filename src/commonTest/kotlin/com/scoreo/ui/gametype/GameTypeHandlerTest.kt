@@ -3,6 +3,8 @@ package com.scoreo.ui.gametype
 import com.scoreo.infrastructure.InMemoryGameTypeRepository
 import com.scoreo.application.AddGameTypeUseCase
 import com.scoreo.application.GetGameTypesUseCase
+import com.scoreo.application.UpdateGameTypeUseCase
+import com.scoreo.domain.model.TieBreakRule
 import com.scoreo.domain.model.WinCondition
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -14,7 +16,9 @@ class GameTypeHandlerTest {
     private fun buildHandler(repo: InMemoryGameTypeRepository = InMemoryGameTypeRepository()) =
         GameTypeHandler(
             addGameType = AddGameTypeUseCase(repo),
+            updateGameType = UpdateGameTypeUseCase(repo),
             getGameTypes = GetGameTypesUseCase(repo),
+            gameTypeRepository = repo,
         )
 
     @Test
@@ -23,6 +27,10 @@ class GameTypeHandlerTest {
         assertTrue(handler.state.gameTypes.isEmpty())
         assertEquals("", handler.state.inputName)
         assertEquals(WinCondition.HIGHEST_SCORE, handler.state.selectedWinCondition)
+        assertEquals(TieBreakRule.NONE, handler.state.selectedTieBreakRule)
+        assertEquals(WinCondition.HIGHEST_SCORE, handler.state.selectedTieBreakCondition)
+        assertNull(handler.state.selectedTieBreakLabel)
+        assertNull(handler.state.editingGameId)
         assertNull(handler.state.error)
     }
 
@@ -79,4 +87,133 @@ class GameTypeHandlerTest {
         handler.handle(GameTypeIntent.AddGameType)
         assertEquals(2, handler.state.gameTypes.size)
     }
+
+    // P0-04: Tie Break Configuration UI Tests
+    @Test
+    fun `UpdateTieBreakRule updates selectedTieBreakRule`() {
+        val handler = buildHandler()
+        handler.handle(GameTypeIntent.UpdateTieBreakRule(TieBreakRule.SECONDARY_SCORE))
+        assertEquals(TieBreakRule.SECONDARY_SCORE, handler.state.selectedTieBreakRule)
+    }
+
+    @Test
+    fun `UpdateTieBreakCondition updates selectedTieBreakCondition`() {
+        val handler = buildHandler()
+        handler.handle(GameTypeIntent.UpdateTieBreakCondition(WinCondition.LOWEST_SCORE))
+        assertEquals(WinCondition.LOWEST_SCORE, handler.state.selectedTieBreakCondition)
+    }
+
+    @Test
+    fun `UpdateTieBreakLabel updates selectedTieBreakLabel`() {
+        val handler = buildHandler()
+        handler.handle(GameTypeIntent.UpdateTieBreakLabel("Points"))
+        assertEquals("Points", handler.state.selectedTieBreakLabel)
+    }
+
+    @Test
+    fun `UpdateTieBreakLabel with blank string sets to null`() {
+        val handler = buildHandler()
+        handler.handle(GameTypeIntent.UpdateTieBreakLabel("Points"))
+        handler.handle(GameTypeIntent.UpdateTieBreakLabel("   "))
+        assertNull(handler.state.selectedTieBreakLabel)
+    }
+
+    @Test
+    fun `AddGameType includes tie break configuration`() {
+        val handler = buildHandler()
+        handler.handle(GameTypeIntent.UpdateName("Golf"))
+        handler.handle(GameTypeIntent.UpdateTieBreakRule(TieBreakRule.SECONDARY_SCORE))
+        handler.handle(GameTypeIntent.UpdateTieBreakCondition(WinCondition.LOWEST_SCORE))
+        handler.handle(GameTypeIntent.UpdateTieBreakLabel("Handicap"))
+        handler.handle(GameTypeIntent.AddGameType)
+        
+        assertEquals(1, handler.state.gameTypes.size)
+        val gameType = handler.state.gameTypes.first()
+        assertEquals("Golf", gameType.name)
+        assertEquals(TieBreakRule.SECONDARY_SCORE, gameType.tieBreakRule)
+        assertEquals(WinCondition.LOWEST_SCORE, gameType.tieBreakCondition)
+        assertEquals("Handicap", gameType.tieBreakLabel)
+    }
+
+    // P0-06: Game Type Edit Logic Tests
+    @Test
+    fun `EditGameType pre-fills state with game type values`() {
+        val handler = buildHandler()
+        handler.handle(GameTypeIntent.UpdateName("Belote"))
+        handler.handle(GameTypeIntent.AddGameType)
+        
+        val gameTypeId = handler.state.gameTypes.first().id
+        handler.handle(GameTypeIntent.EditGameType(gameTypeId))
+        
+        assertEquals("Belote", handler.state.inputName)
+        assertEquals(gameTypeId, handler.state.editingGameId)
+    }
+
+    @Test
+    fun `EditGameType pre-fills tie break configuration`() {
+        val handler = buildHandler()
+        handler.handle(GameTypeIntent.UpdateName("Golf"))
+        handler.handle(GameTypeIntent.UpdateTieBreakRule(TieBreakRule.SECONDARY_SCORE))
+        handler.handle(GameTypeIntent.UpdateTieBreakCondition(WinCondition.LOWEST_SCORE))
+        handler.handle(GameTypeIntent.UpdateTieBreakLabel("Handicap"))
+        handler.handle(GameTypeIntent.AddGameType)
+        
+        val gameTypeId = handler.state.gameTypes.first().id
+        handler.handle(GameTypeIntent.EditGameType(gameTypeId))
+        
+        assertEquals(TieBreakRule.SECONDARY_SCORE, handler.state.selectedTieBreakRule)
+        assertEquals(WinCondition.LOWEST_SCORE, handler.state.selectedTieBreakCondition)
+        assertEquals("Handicap", handler.state.selectedTieBreakLabel)
+    }
+
+    @Test
+    fun `CancelEdit clears all input fields and resets editingGameId`() {
+        val handler = buildHandler()
+        handler.handle(GameTypeIntent.UpdateName("Belote"))
+        handler.handle(GameTypeIntent.AddGameType)
+        
+        val gameTypeId = handler.state.gameTypes.first().id
+        handler.handle(GameTypeIntent.EditGameType(gameTypeId))
+        assertEquals(gameTypeId, handler.state.editingGameId)
+        
+        handler.handle(GameTypeIntent.CancelEdit)
+        assertEquals("", handler.state.inputName)
+        assertNull(handler.state.editingGameId)
+        assertEquals(TieBreakRule.NONE, handler.state.selectedTieBreakRule)
+        assertNull(handler.state.selectedTieBreakLabel)
+    }
+
+    @Test
+    fun `UpdateGameType modifies existing game type`() {
+        val handler = buildHandler()
+        handler.handle(GameTypeIntent.UpdateName("Belote"))
+        handler.handle(GameTypeIntent.AddGameType)
+        
+        val originalGameType = handler.state.gameTypes.first()
+        val updatedGameType = originalGameType.copy(
+            name = "Belote Updated",
+            tieBreakRule = TieBreakRule.MANUAL_SELECTION,
+        )
+        handler.handle(GameTypeIntent.EditGameType(originalGameType.id))
+        handler.handle(GameTypeIntent.UpdateGameType(updatedGameType))
+        
+        assertEquals(1, handler.state.gameTypes.size)
+        assertEquals("Belote Updated", handler.state.gameTypes.first().name)
+        assertEquals(TieBreakRule.MANUAL_SELECTION, handler.state.gameTypes.first().tieBreakRule)
+    }
+
+    @Test
+    fun `UpdateGameType resets edit mode`() {
+        val handler = buildHandler()
+        handler.handle(GameTypeIntent.UpdateName("Belote"))
+        handler.handle(GameTypeIntent.AddGameType)
+        
+        val gameType = handler.state.gameTypes.first()
+        handler.handle(GameTypeIntent.EditGameType(gameType.id))
+        handler.handle(GameTypeIntent.UpdateGameType(gameType))
+        
+        assertNull(handler.state.editingGameId)
+        assertEquals("", handler.state.inputName)
+    }
 }
+

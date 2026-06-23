@@ -2,12 +2,14 @@ package com.scoreo.application
 
 import com.scoreo.domain.DomainError
 import com.scoreo.infrastructure.InMemoryGameTypeRepository
+import com.scoreo.domain.model.TieBreakRule
 import com.scoreo.domain.model.WinCondition
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertNotEquals
 import kotlin.test.assertNotNull
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class AddGameTypeUseCaseTest {
@@ -85,5 +87,64 @@ class AddGameTypeUseCaseTest {
         val name = "A".repeat(50)
         val gameType = useCase(name, WinCondition.HIGHEST_SCORE)
         assertEquals(50, gameType.name.length)
+    }
+
+    // P0-04: Tie Break Configuration Tests
+    @Test
+    fun `stores tie break rule correctly`() {
+        val repo = InMemoryGameTypeRepository()
+        val useCase = AddGameTypeUseCase(repo)
+        useCase(
+            "Golf",
+            WinCondition.HIGHEST_SCORE,
+            tieBreakRule = TieBreakRule.SECONDARY_SCORE,
+        )
+        val gameType = repo.getAll().first()
+        assertEquals(TieBreakRule.SECONDARY_SCORE, gameType.tieBreakRule)
+    }
+
+    @Test
+    fun `stores tie break condition correctly`() {
+        val repo = InMemoryGameTypeRepository()
+        val useCase = AddGameTypeUseCase(repo)
+        useCase(
+            "Golf",
+            WinCondition.HIGHEST_SCORE,
+            tieBreakRule = TieBreakRule.SECONDARY_SCORE,
+            tieBreakCondition = WinCondition.LOWEST_SCORE,
+        )
+        val gameType = repo.getAll().first()
+        assertEquals(WinCondition.LOWEST_SCORE, gameType.tieBreakCondition)
+    }
+
+    @Test
+    fun `stores tie break label correctly`() {
+        val repo = InMemoryGameTypeRepository()
+        val useCase = AddGameTypeUseCase(repo)
+        useCase(
+            "Golf",
+            WinCondition.HIGHEST_SCORE,
+            tieBreakRule = TieBreakRule.SECONDARY_SCORE,
+            tieBreakCondition = WinCondition.LOWEST_SCORE,
+            tieBreakLabel = "Handicap",
+        )
+        val gameType = repo.getAll().first()
+        assertEquals("Handicap", gameType.tieBreakLabel)
+    }
+
+    @Test
+    fun `defaults tie break rule to NONE`() {
+        val repo = InMemoryGameTypeRepository()
+        val useCase = AddGameTypeUseCase(repo)
+        useCase("Belote", WinCondition.HIGHEST_SCORE)
+        assertEquals(TieBreakRule.NONE, repo.getAll().first().tieBreakRule)
+    }
+
+    @Test
+    fun `defaults tie break label to null`() {
+        val repo = InMemoryGameTypeRepository()
+        val useCase = AddGameTypeUseCase(repo)
+        useCase("Belote", WinCondition.HIGHEST_SCORE)
+        assertNull(repo.getAll().first().tieBreakLabel)
     }
 }
