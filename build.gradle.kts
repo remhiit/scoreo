@@ -60,7 +60,8 @@ tasks.named<Copy>("jsBrowserDistribution") {
 }
 
 if (System.getenv("CI") == null) {
-    exec {
-        commandLine("git", "config", "core.hooksPath", ".githooks")
-    }
+    ProcessBuilder("git", "config", "core.hooksPath", ".githooks")
+        .directory(rootDir)
+        .start()
+        .waitFor()
 }
