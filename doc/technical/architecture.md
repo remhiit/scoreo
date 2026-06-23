@@ -102,3 +102,32 @@ This applies to: `Player`, `GameType`, `Match`, `PlayerScore`, `WinCondition`.
 It detects old-format data (String dates, non-UUID ids) and converts them in-place.
 See `doc/technical/migrations.md` for details.
 
+## Choix technique : XHR synchrone pour Google Drive
+
+### Pourquoi
+
+Le `GoogleDriveClient` utilise `XMLHttpRequest` en mode **synchrone** (`open(method, url, false)`).
+
+Ce choix simplifie le code :
+- Pas de coroutines Kotlin/JS (qui necessitent `kotlinx-coroutines-core-js`)
+- Pas de callbacks / Promise chains
+- Le flux de controle est lineaire et lisible
+- Les handlers MVI restent synchrones (pas de `suspend`)
+
+### Limites
+
+- **Deprecated** : les navigateurs affichent un warning en console
+- **Bloque le thread principal** : pendant un appel reseau, l'UI est figee
+- **Non compatible Web Workers** : ne peut pas etre deporte
+- En pratique, les appels Drive sont rapides (<500ms), donc l'impact est minimal pour l'usage actuel
+
+### Migration future
+
+Quand le nombre d'appels ou la latence reseau devient un probleme :
+1. Ajouter `kotlinx-coroutines-core` au projet
+2. Remplacer `XMLHttpRequest` synchrone par `window.fetch()` + `await`
+3. Rendre les methodes de `CloudSyncRepository` `suspend`
+4. Adapter `SyncHandler` pour utiliser des coroutines (LaunchedEffect ou scope)
+
+Voir ticket `.task/P3/003-migrate-to-async-xhr.md` pour les details.
+
