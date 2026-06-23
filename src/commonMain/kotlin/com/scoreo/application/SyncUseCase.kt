@@ -123,9 +123,9 @@ class SyncUseCase(
     }
 
     private fun writeRemoteToLocal(data: SyncData) {
-        data.players.forEach { playerRepo.save(it) }
-        data.gameTypes.forEach { gameTypeRepo.save(it) }
-        data.matches.forEach { matchRepo.save(it) }
+        playerRepo.saveAll(data.players)
+        gameTypeRepo.saveAll(data.gameTypes)
+        matchRepo.saveAll(data.matches)
     }
 
     private fun isSameState(a: SyncData, b: SyncData): Boolean {

@@ -106,4 +106,23 @@ class InMemoryRepositoryTest {
         assertNotNull(found)
         assertEquals(1000L, found.date)
     }
+
+    @Test
+    fun `saveAll players adds all in one operation`() {
+        val repo = InMemoryPlayerRepository()
+        val players = listOf(
+            Player(id = "p1", name = "Alice"),
+            Player(id = "p2", name = "Bob"),
+        )
+        repo.saveAll(players)
+        assertEquals(2, repo.getAll(includeInactive = true).size)
+    }
+
+    @Test
+    fun `saveAll players upserts existing`() {
+        val repo = InMemoryPlayerRepository()
+        repo.save(Player(id = "p1", name = "Alice"))
+        repo.saveAll(listOf(Player(id = "p1", name = "Updated Alice")))
+        assertEquals("Updated Alice", repo.getAll(includeInactive = true).first().name)
+    }
 }

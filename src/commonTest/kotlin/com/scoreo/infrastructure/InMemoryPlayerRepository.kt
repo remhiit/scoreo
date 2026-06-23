@@ -14,6 +14,10 @@ class InMemoryPlayerRepository : PlayerRepository {
         if (idx >= 0) players[idx] = player else players.add(player)
     }
 
+    override fun saveAll(players: List<Player>) {
+        players.forEach { save(it) }
+    }
+
     override fun delete(id: String, anonymize: Boolean) {
         val idx = players.indexOfFirst { it.id == id }
         if (idx == -1) return

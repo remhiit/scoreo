@@ -21,6 +21,15 @@ class LocalStoragePlayerRepository : PlayerRepository {
         localStorage.setItem(KEY, scoreoJson.encodeToString(updated))
     }
 
+    override fun saveAll(players: List<Player>) {
+        val existing = getAll(includeInactive = true).toMutableList()
+        for (player in players) {
+            val idx = existing.indexOfFirst { it.id == player.id }
+            if (idx >= 0) existing[idx] = player else existing.add(player)
+        }
+        localStorage.setItem(KEY, scoreoJson.encodeToString(existing))
+    }
+
     override fun delete(id: String, anonymize: Boolean) {
         val updated = getAll(includeInactive = true).map { player ->
             if (player.id == id) player.copy(

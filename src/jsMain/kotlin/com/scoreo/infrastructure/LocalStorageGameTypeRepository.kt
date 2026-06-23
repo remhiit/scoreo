@@ -20,5 +20,14 @@ class LocalStorageGameTypeRepository : GameTypeRepository {
         localStorage.setItem(KEY, scoreoJson.encodeToString(updated))
     }
 
+    override fun saveAll(gameTypes: List<GameType>) {
+        val existing = getAll().toMutableList()
+        for (gameType in gameTypes) {
+            val idx = existing.indexOfFirst { it.id == gameType.id }
+            if (idx >= 0) existing[idx] = gameType else existing.add(gameType)
+        }
+        localStorage.setItem(KEY, scoreoJson.encodeToString(existing))
+    }
+
     override fun findById(id: String): GameType? = getAll().find { it.id == id }
 }

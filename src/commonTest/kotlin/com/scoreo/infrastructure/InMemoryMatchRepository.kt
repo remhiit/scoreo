@@ -13,5 +13,9 @@ class InMemoryMatchRepository : MatchRepository {
         if (idx >= 0) matches[idx] = match else matches.add(match)
     }
 
+    override fun saveAll(matches: List<Match>) {
+        matches.forEach { save(it) }
+    }
+
     override fun findById(id: String): Match? = matches.find { it.id == id }
 }

@@ -13,5 +13,9 @@ class InMemoryGameTypeRepository : GameTypeRepository {
         if (idx >= 0) gameTypes[idx] = gameType else gameTypes.add(gameType)
     }
 
+    override fun saveAll(gameTypes: List<GameType>) {
+        gameTypes.forEach { save(it) }
+    }
+
     override fun findById(id: String): GameType? = gameTypes.find { it.id == id }
 }

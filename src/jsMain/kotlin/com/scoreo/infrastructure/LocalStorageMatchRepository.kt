@@ -29,6 +29,15 @@ class LocalStorageMatchRepository : MatchRepository {
         localStorage.setItem(KEY, scoreoJson.encodeToString(updated))
     }
 
+    override fun saveAll(matches: List<Match>) {
+        val existing = getAll().toMutableList()
+        for (match in matches) {
+            val idx = existing.indexOfFirst { it.id == match.id }
+            if (idx >= 0) existing[idx] = match else existing.add(match)
+        }
+        localStorage.setItem(KEY, scoreoJson.encodeToString(existing))
+    }
+
     override fun findById(id: String): Match? = getAll().find { it.id == id }
 
     private fun migrateIfNeeded() {
