@@ -42,10 +42,11 @@ Tous dans `src/commonMain/kotlin/com/scoreo/`.
 | Model | Champs | Fichier |
 |---|---|---|
 | `Player` | `id: String`, `name: String`, `active: Boolean = true` | `src/commonMain/.../domain/model/Player.kt` |
-| `GameType` | `id: String`, `name: String`, `winCondition: WinCondition` | `src/commonMain/.../domain/model/GameType.kt` |
-| `Match` | `id: String`, `date: Long`, `gameTypeId: String`, `playerScores: List<PlayerScore>`, `manualWinners: List<String>` | `src/commonMain/.../domain/model/Match.kt` |
+| `GameType` | `id: String`, `name: String`, `winCondition: WinCondition`, `tieBreakRule: TieBreakRule = TieBreakRule.NONE`, `tieBreakCondition: WinCondition = WinCondition.HIGHEST_SCORE`, `tieBreakLabel: String? = null` | `src/commonMain/.../domain/model/GameType.kt` |
+| `Match` | `id: String`, `date: Long`, `gameTypeId: String`, `playerScores: List<PlayerScore>`, `manualWinners: List<String> = emptyList()`, `secondaryPlayerScores: List<PlayerScore> = emptyList()` | `src/commonMain/.../domain/model/Match.kt` |
 | `PlayerScore` | `playerId: String`, `score: Int` | `src/commonMain/.../domain/model/PlayerScore.kt` |
 | `WinCondition` | enum: `HIGHEST_SCORE`, `LOWEST_SCORE`, `MANUAL` | `src/commonMain/.../domain/model/WinCondition.kt` |
+| `TieBreakRule` | enum: `NONE`, `MANUAL_SELECTION`, `SECONDARY_SCORE` | `src/commonMain/.../domain/model/TieBreakRule.kt` |
 
 Tous dans `src/commonMain/kotlin/com/scoreo/`.
 
@@ -103,7 +104,7 @@ Le fichier `JsonConfig.kt` (`src/jsMain/.../infrastructure/`) fournit `scoreoJso
 | `src/commonTest/.../application/GetGameTypesUseCaseTest.kt` | `GetGameTypesUseCaseTest` | Use Case GetGameTypes (2 tests) |
 | `src/commonTest/.../application/GetPlayersUseCaseTest.kt` | `GetPlayersUseCaseTest` | Use Case GetPlayers (4 tests) |
 | `src/commonTest/.../di/SyncDependenciesTest.kt` | `SyncDependenciesTest` | Câblage syncHandler nullable (2 tests) |
-| `src/commonTest/.../domain/SerializationTest.kt` | `SerializationTest` | Sérialisation (11 tests) |
+| `src/commonTest/.../domain/SerializationTest.kt` | `SerializationTest` | Sérialisation (19 tests) |
 | `src/commonTest/.../ui/history/HistoryHandlerTest.kt` | `HistoryHandlerTest` | Handler History (10 tests) |
 | `src/commonTest/.../application/ImportMatchesUseCaseTest.kt` | `ImportMatchesUseCaseTest` | Use Case Import |
 | `src/commonTest/.../ui/stats/StatsHandlerTest.kt` | `StatsHandlerTest` | Handler Stats (6 tests) |

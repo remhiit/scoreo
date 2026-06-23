@@ -9,6 +9,7 @@ data class Match(
     val gameTypeId: String,
     val playerScores: List<PlayerScore>,
     val manualWinners: List<String> = emptyList(),
+    val secondaryPlayerScores: List<PlayerScore> = emptyList(),
 ) {
     fun getWinners(gameType: GameType): List<String> =
         if (gameType.winCondition == WinCondition.MANUAL) manualWinners

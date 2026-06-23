@@ -7,6 +7,9 @@ data class GameType(
     val id: String,
     val name: String,
     val winCondition: WinCondition,
+    val tieBreakRule: TieBreakRule = TieBreakRule.NONE,
+    val tieBreakCondition: WinCondition = WinCondition.HIGHEST_SCORE,
+    val tieBreakLabel: String? = null,
 ) {
     fun computeWinners(playerScores: List<PlayerScore>): List<String> {
         if (playerScores.isEmpty()) return emptyList()
