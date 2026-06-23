@@ -68,10 +68,10 @@ Tous dans `src/commonMain/kotlin/com/scoreo/`.
 | `LocalStorageMatchRepository` | `MatchRepository` | localStorage | `src/jsMain/.../infrastructure/LocalStorageMatchRepository.kt` |
 | `GoogleDriveSyncAdapter` | `CloudSyncRepository` | Google Drive App Data Folder | `src/jsMain/.../infrastructure/google/GoogleDriveSyncAdapter.kt` |
 | `InMemoryCloudSyncRepository` | `CloudSyncRepository` | mémoire (tests) | `src/commonTest/.../infrastructure/InMemoryCloudSyncRepository.kt` |
-| `InMemoryPlayerRepository` | `PlayerRepository` | mémoire (tests) | `src/jsMain/.../infrastructure/InMemoryPlayerRepository.kt` |
-| `InMemoryGameTypeRepository` | `GameTypeRepository` | mémoire (tests) | `src/jsMain/.../infrastructure/InMemoryGameTypeRepository.kt` |
-| `InMemoryMatchRepository` | `MatchRepository` | mémoire (tests) | `src/jsMain/.../infrastructure/InMemoryMatchRepository.kt` |
-| `MatchMigration` | — (utilitaire) | `migrateMatchesJson()` | `src/commonMain/.../infrastructure/MatchMigration.kt` |
+| `InMemoryPlayerRepository` | `PlayerRepository` | mémoire (tests) | `src/commonTest/.../infrastructure/InMemoryPlayerRepository.kt` |
+| `InMemoryGameTypeRepository` | `GameTypeRepository` | mémoire (tests) | `src/commonTest/.../infrastructure/InMemoryGameTypeRepository.kt` |
+| `InMemoryMatchRepository` | `MatchRepository` | mémoire (tests) | `src/commonTest/.../infrastructure/InMemoryMatchRepository.kt` |
+| `MatchMigration` | — (utilitaire) | `migrateMatchesJson()` | `src/commonMain/.../application/MatchMigration.kt` |
 
 Tous dans `src/jsMain/kotlin/com/scoreo/`. Utilisés en production : `LocalStorage*`, `GoogleDriveSyncAdapter`. En tests : `InMemory*`.
 
@@ -108,6 +108,8 @@ Le fichier `JsonConfig.kt` (`src/jsMain/.../infrastructure/`) fournit `scoreoJso
 | `src/commonTest/.../ui/stats/StatsHandlerTest.kt` | `StatsHandlerTest` | Handler Stats (6 tests) |
 | `src/commonTest/.../infrastructure/InMemoryRepositoryTest.kt` | `InMemoryRepositoryTest` | Idempotence InMemory (9 tests) |
 | `src/commonTest/.../infrastructure/InMemoryCloudSyncRepository.kt` | `InMemoryCloudSyncRepository` | Double de test CloudSyncRepository |
+| `src/commonTest/.../infrastructure/MatchMigrationTest.kt` | `MatchMigrationTest` | Migration donnees matchs (17 tests) |
+| `src/commonTest/.../application/GetHeadToHeadUseCaseEloTest.kt` | `GetHeadToHeadUseCaseEloTest` | Calcul ELO (10 tests) |
 
 Tous dans `src/commonTest/kotlin/com/scoreo/`.
 
