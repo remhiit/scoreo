@@ -9,7 +9,8 @@ class GoogleDriveClient(
 ) {
     fun findFile(fileName: String): Result<String?> {
         val token = getToken() ?: return Result.failure(SyncException.NotAuthenticated)
-        val url = "$DRIVE_API_BASE?spaces=appDataFolder&q=name='$fileName'&fields=files(id,name)"
+        val escapedName = fileName.replace("\\", "\\\\").replace("'", "\\'")
+        val url = "$DRIVE_API_BASE?spaces=appDataFolder&q=name='$escapedName'&fields=files(id,name)"
         return try {
             val response = syncRequest("GET", url, token)
             val body = handleResponse(response)
