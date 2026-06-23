@@ -31,8 +31,9 @@ Tous dans `src/commonMain/kotlin/com/scoreo/`.
 | `GetGameTypesUseCase` | `invoke()` | `List<GameType>` | `src/commonMain/.../application/GetGameTypesUseCase.kt` |
 | `GetMatchesUseCase` | `invoke()` | `List<Match>` | `src/commonMain/.../application/GetMatchesUseCase.kt` |
 | `ImportMatchesUseCase` | `preview(jsonString: String)`, `execute(jsonString: String)` | `Result<ImportPreview>`, `Result<ImportResult>` | `src/commonMain/.../application/ImportMatchesUseCase.kt` |
-| `SyncUseCase` | `autoSync()` | `SyncOutcome` | `src/commonMain/.../application/SyncUseCase.kt` |
-| `SyncUseCase` | `resolveConflict(keepLocal: Boolean)` | `SyncResult` | `src/commonMain/.../application/SyncUseCase.kt` |
+| `SyncUseCase` | `suspend autoSync()` | `SyncOutcome` | `src/commonMain/.../application/SyncUseCase.kt` |
+| `SyncUseCase` | `suspend resolveConflict(keepLocal: Boolean)` | `SyncResult` | `src/commonMain/.../application/SyncUseCase.kt` |
+| `SyncUseCase` | `suspend login()` / `suspend logout()` / `suspend status()` | `Unit` / `SyncStatus` | `src/commonMain/.../application/SyncUseCase.kt` |
 
 Tous dans `src/commonMain/kotlin/com/scoreo/`.
 
@@ -52,10 +53,10 @@ Tous dans `src/commonMain/kotlin/com/scoreo/`.
 
 | Interface | Méthodes | Fichier |
 |---|---|---|
-| `PlayerRepository` | `getAll(includeInactive: Boolean = false): List<Player>`, `save(player: Player)`, `delete(id: String, anonymize: Boolean = false)` | `src/commonMain/.../domain/port/PlayerRepository.kt` |
-| `GameTypeRepository` | `getAll(): List<GameType>`, `save(gameType: GameType)`, `findById(id: String): GameType?` | `src/commonMain/.../domain/port/GameTypeRepository.kt` |
-| `MatchRepository` | `getAll(): List<Match>`, `save(match: Match)`, `findById(id: String): Match?` | `src/commonMain/.../domain/port/MatchRepository.kt` |
-| `CloudSyncRepository` | `push(data: SyncData)`, `pull(): SyncData`, `getStatus(): SyncStatus`, `login()`, `logout()` | `src/commonMain/.../domain/port/CloudSyncRepository.kt` |
+| `PlayerRepository` | `getAll(includeInactive)`, `save(player)`, `saveAll(players)`, `delete(id, anonymize)` | `src/commonMain/.../domain/port/PlayerRepository.kt` |
+| `GameTypeRepository` | `getAll()`, `save(gameType)`, `saveAll(gameTypes)`, `findById(id)` | `src/commonMain/.../domain/port/GameTypeRepository.kt` |
+| `MatchRepository` | `getAll()`, `save(match)`, `saveAll(matches)`, `findById(id)` | `src/commonMain/.../domain/port/MatchRepository.kt` |
+| `CloudSyncRepository` | `suspend push(data)`, `suspend pull()`, `suspend getStatus()`, `suspend login()`, `suspend logout()` | `src/commonMain/.../domain/port/CloudSyncRepository.kt` |
 
 Tous dans `src/commonMain/kotlin/com/scoreo/`.
 
@@ -66,7 +67,7 @@ Tous dans `src/commonMain/kotlin/com/scoreo/`.
 | `LocalStoragePlayerRepository` | `PlayerRepository` | localStorage | `src/jsMain/.../infrastructure/LocalStoragePlayerRepository.kt` |
 | `LocalStorageGameTypeRepository` | `GameTypeRepository` | localStorage | `src/jsMain/.../infrastructure/LocalStorageGameTypeRepository.kt` |
 | `LocalStorageMatchRepository` | `MatchRepository` | localStorage | `src/jsMain/.../infrastructure/LocalStorageMatchRepository.kt` |
-| `GoogleDriveSyncAdapter` | `CloudSyncRepository` | Google Drive App Data Folder | `src/jsMain/.../infrastructure/google/GoogleDriveSyncAdapter.kt` |
+| `GoogleDriveSyncAdapter` | `CloudSyncRepository` | Google Drive App Data Folder (async fetch + coroutines) | `src/jsMain/.../infrastructure/google/GoogleDriveSyncAdapter.kt` |
 | `InMemoryCloudSyncRepository` | `CloudSyncRepository` | mémoire (tests) | `src/commonTest/.../infrastructure/InMemoryCloudSyncRepository.kt` |
 | `InMemoryPlayerRepository` | `PlayerRepository` | mémoire (tests) | `src/commonTest/.../infrastructure/InMemoryPlayerRepository.kt` |
 | `InMemoryGameTypeRepository` | `GameTypeRepository` | mémoire (tests) | `src/commonTest/.../infrastructure/InMemoryGameTypeRepository.kt` |
@@ -111,6 +112,9 @@ Le fichier `JsonConfig.kt` (`src/jsMain/.../infrastructure/`) fournit `scoreoJso
 | `src/commonTest/.../infrastructure/MatchMigrationTest.kt` | `MatchMigrationTest` | Migration donnees matchs (17 tests) |
 | `src/commonTest/.../application/GetHeadToHeadUseCaseEloTest.kt` | `GetHeadToHeadUseCaseEloTest` | Calcul ELO (10 tests) |
 | `src/commonTest/.../application/IdGeneratorTest.kt` | `IdGeneratorTest` | IdGenerator UUID v4 (7 tests) |
+| `src/commonTest/.../application/SyncUseCaseTest.kt` | `SyncUseCaseTest` | Use Case Sync (7 tests) |
+| `src/commonTest/.../ui/sync/SyncHandlerTest.kt` | `SyncHandlerTest` | Handler Sync (8 tests) |
+| `src/commonTest/.../application/EloCalculatorTest.kt` | `EloCalculatorTest` | Calcul ELO isole (3 tests) |
 
 Tous dans `src/commonTest/kotlin/com/scoreo/`.
 

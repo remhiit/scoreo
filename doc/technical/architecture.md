@@ -41,7 +41,7 @@
 - **Domain layer**: pure Kotlin, no framework dependency — entities (`Player`, `GameType`, `Match`) and use cases
 - **UI adapter**: Compose HTML screens in `jsMain`, wiring Intents to use cases
 - **Storage adapter**: localStorage via `LocalStorage*Repository` classes (scoreo_players, scoreo_gametypes, scoreo_matches keys)
-- **Cloud sync**: `CloudSyncRepository` port (commonMain), `GoogleDriveSyncAdapter` implementation (jsMain) via synchronous XMLHttpRequest, OAuth Token Model via Google Identity Services
+- **Cloud sync**: `CloudSyncRepository` port (commonMain), `GoogleDriveSyncAdapter` implementation (jsMain) via async `fetch()` + coroutines, OAuth Token Model via Google Identity Services
 - **DI helpers**: `createSyncHandlerIfAvailable` dans `commonMain/di/` — construit `SyncHandler` uniquement si un `CloudSyncRepository` est fourni. Permet à l'app de fonctionner sans synchronisation cloud (ex: GitHub Pages sans OAuth configuré). Testé unitairement dans `commonTest/di/`.
 
 ## Web Target
@@ -69,7 +69,7 @@ Uses CSS custom properties (design tokens), a fixed top header bar, and minimal 
 
 - **Current**: localStorage via `LocalStorage*Repository` (`scoreo_players`, `scoreo_gametypes`, `scoreo_matches` keys)
 - **Import**: `ImportMatchesUseCase` reads the same repositories and writes through `MatchRepository.save()`, `GameTypeRepository.save()`, and `PlayerRepository.save()`
-- **Cloud Sync**: Google Drive via `GoogleDriveSyncAdapter`. Stores a single `scoreo-data.json` in the invisible App Data Folder. Syncs players, game types, and matches. Drive API v3, synchronous XMLHttpRequest, OAuth Token Model (GIS). See `SyncUseCase`, `SyncHandler`.
+- **Cloud Sync**: Google Drive via `GoogleDriveSyncAdapter`. Stores a single `scoreo-data.json` in the invisible App Data Folder. Syncs players, game types, and matches. Drive API v3, async `fetch()` + coroutines, OAuth Token Model (GIS). See `SyncUseCase`, `SyncHandler`.
 
 See [`deployment.md`](deployment.md) for CI/CD and deployment details.
 
@@ -102,32 +102,22 @@ This applies to: `Player`, `GameType`, `Match`, `PlayerScore`, `WinCondition`.
 It detects old-format data (String dates, non-UUID ids) and converts them in-place.
 See `doc/technical/migrations.md` for details.
 
-## Choix technique : XHR synchrone pour Google Drive
+## Choix technique : async fetch + coroutines pour Google Drive
 
-### Pourquoi
+Le `GoogleDriveClient` utilise `window.fetch()` (API REST standard du navigateur) avec des coroutines Kotlin (`kotlinx-coroutines-core`).
 
-Le `GoogleDriveClient` utilise `XMLHttpRequest` en mode **synchrone** (`open(method, url, false)`).
+### Architecture
 
-Ce choix simplifie le code :
-- Pas de coroutines Kotlin/JS (qui necessitent `kotlinx-coroutines-core-js`)
-- Pas de callbacks / Promise chains
-- Le flux de controle est lineaire et lisible
-- Les handlers MVI restent synchrones (pas de `suspend`)
+- `CloudSyncRepository` (port) : toutes les methodes sont `suspend`
+- `GoogleDriveClient` : enveloppe les appels REST Drive via `window.fetch()` + `await()` (extinction sur `Promise`)
+- `SyncUseCase` : methode `suspend` pour chaque operation (autoSync, resolveConflict, login, logout)
+- `SyncHandler` : recoit un `CoroutineScope` et lance les appels sync dans `scope.launch { ... }`
+- `SyncScreen` : reste synchrone (pas de changement) — les coroutines sont lancees par le handler
 
-### Limites
+### Pourquoi ce choix
 
-- **Deprecated** : les navigateurs affichent un warning en console
-- **Bloque le thread principal** : pendant un appel reseau, l'UI est figee
-- **Non compatible Web Workers** : ne peut pas etre deporte
-- En pratique, les appels Drive sont rapides (<500ms), donc l'impact est minimal pour l'usage actuel
-
-### Migration future
-
-Quand le nombre d'appels ou la latence reseau devient un probleme :
-1. Ajouter `kotlinx-coroutines-core` au projet
-2. Remplacer `XMLHttpRequest` synchrone par `window.fetch()` + `await`
-3. Rendre les methodes de `CloudSyncRepository` `suspend`
-4. Adapter `SyncHandler` pour utiliser des coroutines (LaunchedEffect ou scope)
-
-Voir ticket `.task/P3/003-migrate-to-async-xhr.md` pour les details.
+- Pas de blocage du thread principal (les appels reseau sont async)
+- Utilise les API standard du navigateur (`fetch`), pas de librairie tierce
+- `kotlinx-coroutines-core` disponible en multiplateforme (commonMain + jsMain)
+- `SuspendCancellableCoroutine` permet un controle fin de l'annulation
 
