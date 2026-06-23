@@ -52,6 +52,24 @@
     height: 44px;
 }
 
+.theme-toggle-btn {
+    width: 44px;
+    height: 44px;
+    border: none;
+    background: transparent;
+    font-size: 18px;
+    color: var(--on-surface-variant);
+    cursor: pointer;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: background 0.15s;
+}
+
+.theme-toggle-btn:hover { background: var(--surface-variant); }
+
 .back-btn {
     width: 44px;
     height: 44px;

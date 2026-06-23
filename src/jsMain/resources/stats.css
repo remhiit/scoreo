@@ -5,8 +5,8 @@
     gap: 6px;
 }
 
-.stat-win { color: #2e7d32; font-weight: 600; font-size: 13px; }
-.stat-loss { color: #c62828; font-weight: 600; font-size: 13px; }
+.stat-win { color: var(--win); font-weight: 600; font-size: 13px; }
+.stat-loss { color: var(--loss); font-weight: 600; font-size: 13px; }
 .stat-ratio { color: var(--on-surface-variant); font-size: 13px; }
 .stat-none { color: var(--on-surface-variant); font-size: 13px; font-style: italic; }
 

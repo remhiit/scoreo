@@ -124,6 +124,8 @@ Fichier : `src/jsMain/resources/styles.css`.
 
 Classes clés : `.home-player-card`, `.home-player-card.selected`, `.home-player-check`, `.home-add-player-toggle`, `.home-add-player-form`, `.fab-disabled`, `.fab-error`, `.btn-danger`, `.btn-danger-filled`, `.modal-body`.
 
+Thème : variables CSS dans `:root` (light) et `[data-theme="dark"]` (dark) dans `theme.css`. Attribut `data-theme="dark"` sur `<html>` géré par `ThemeManager`.
+
 ## localStorage Keys
 
 | Key | Contenu |
@@ -132,3 +134,4 @@ Classes clés : `.home-player-card`, `.home-player-card.selected`, `.home-player
 | `scoreo_gametypes` | JSON `List<GameType>` |
 | `scoreo_matches` | JSON `List<Match>` |
 | `scoreo_sync_config` | JSON `SyncConfig` (email, lastSyncTimestamp, lastSyncFileId) |
+| `scoreo_theme` | `"dark"` ou `"light"` (mode sombre, optionnel) |

@@ -65,9 +65,9 @@
     padding: 4px 0;
 }
 
-.import-success { color: #2e7d32; font-weight: 600; }
-.import-warn { color: #e65100; font-weight: 600; }
-.import-error { color: #c62828; font-weight: 600; }
+.import-success { color: var(--win); font-weight: 600; }
+.import-warn { color: var(--warn); font-weight: 600; }
+.import-error { color: var(--loss); font-weight: 600; }
 
 .import-failed-id {
     font-size: 12px;

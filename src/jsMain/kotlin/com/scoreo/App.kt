@@ -24,6 +24,7 @@ import com.scoreo.ui.sync.SyncScreen
 import com.scoreo.ui.scoredetail.ScoreDetailHandler
 import com.scoreo.ui.scoredetail.ScoreDetailScreen
 import com.scoreo.ui.stats.StatsScreen
+import com.scoreo.ui.theme.rememberThemeState
 import org.jetbrains.compose.web.dom.Button
 import org.jetbrains.compose.web.dom.Div
 import org.jetbrains.compose.web.dom.Span
@@ -40,6 +41,7 @@ fun App(
     val deps = remember { createAppDependencies(playerRepository, gameTypeRepository, matchRepository, currentDate, cloudSyncRepository) }
     val navigator = deps.navigator
     var burgerOpen by remember { mutableStateOf(false) }
+    val themeState = rememberThemeState()
 
     val screenTitle = when (navigator.current) {
         is Screen.Home -> "Scoreo"
@@ -59,9 +61,11 @@ fun App(
                 classes("back-btn")
                 onClick { navigator.navigate(Screen.Home) }
             }) { Text("←") }
-        } else {
-            Div(attrs = { classes("header-spacer") }) {}
         }
+        Button(attrs = {
+            classes("theme-toggle-btn")
+            onClick { themeState.toggle() }
+        }) { Text(if (themeState.isDark) "☀️" else "🌙") }
         Span(attrs = { classes("header-title") }) { Text(screenTitle) }
         Button(attrs = {
             classes("burger-btn")

@@ -9,8 +9,27 @@
     --on-surface-variant: #49454f;
     --outline: #cac4d0;
     --error: #b3261e;
+    --win: #2e7d32;
+    --loss: #c62828;
+    --warn: #e65100;
+    --danger-hover: #fce4ec;
     --radius: 12px;
     --header-height: 56px;
+}
+
+[data-theme="dark"] {
+    --primary: #d0bcff;
+    --primary-light: #4a4458;
+    --surface: #1c1b1f;
+    --surface-variant: #2b2930;
+    --on-surface: #e6e1e5;
+    --on-surface-variant: #cac4d0;
+    --outline: #938f99;
+    --error: #f2b8b5;
+    --win: #66bb6a;
+    --loss: #ef5350;
+    --warn: #ffa726;
+    --danger-hover: #4a1c1c;
 }
 
 *, *::before, *::after {
@@ -151,7 +170,7 @@ h2 { font-size: 18px; font-weight: 500; margin-bottom: 12px; }
     transition: background 0.15s, color 0.15s;
 }
 .btn-danger:hover {
-    background: #fce4ec;
+    background: var(--danger-hover);
     color: var(--error);
 }
 .btn-danger-filled {
