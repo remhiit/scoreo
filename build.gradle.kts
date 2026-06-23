@@ -36,12 +36,20 @@ kotlin {
         commonTest.dependencies {
             implementation(kotlin("test"))
             implementation(libs.kotlinx.serialization.json)
+            implementation(libs.kotlinx.coroutines.core)
+            implementation(libs.kotlinx.coroutines.test)
         }
         val jsTest by getting {
             dependencies {
                 implementation(kotlin("test"))
                 implementation(libs.kotlinx.serialization.json)
                 implementation(compose.html.core)
+            }
+        }
+        val jvmTest by getting {
+            dependencies {
+                implementation(kotlin("test"))
+                implementation(libs.kotlinx.coroutines.test)
             }
         }
     }
