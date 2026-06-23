@@ -19,11 +19,25 @@ fun HistoryScreen(handler: HistoryHandler) {
                         style {
                             property("display", "flex")
                             property("justify-content", "space-between")
+                            property("align-items", "center")
                             property("margin-bottom", "8px")
                         }
                     }) {
-                        Span(attrs = { classes("card-title") }) {
-                            Text(display.gameType?.name ?: "Unknown game")
+                        Div(attrs = {
+                            style {
+                                property("display", "flex")
+                                property("align-items", "center")
+                                property("gap", "8px")
+                            }
+                        }) {
+                            Span(attrs = { classes("card-title") }) {
+                                Text(display.gameType?.name ?: "Unknown game")
+                            }
+                            if (display.isTieBreakIndeterminate) {
+                                Span(attrs = { classes("badge-warn") }) {
+                                    Text("\u26A0\uFE0F Info manquante")
+                                }
+                            }
                         }
                         Span(attrs = { classes("card-sub") }) { Text(display.dateFormatted) }
                     }
@@ -39,9 +53,19 @@ fun HistoryScreen(handler: HistoryHandler) {
                             }
                         }) {
                             Span {
-                                Text(label + if (isWinner) " 🏆" else "")
+                                Text(label + if (isWinner) " \uD83C\uDFC6" else "")
                             }
                             Span { Text("${ps.score}") }
+                        }
+                    }
+                    if (display.isTieBreakIndeterminate) {
+                        Div(attrs = {
+                            classes("tie-break-info")
+                        }) {
+                            Text(
+                                "Ce match a \u00E9t\u00E9 enregistr\u00E9 avant la mise en place " +
+                                    "des r\u00E8gles de d\u00E9partage. Le r\u00E9sultat est bas\u00E9 sur l\u2019\u00E9galit\u00E9."
+                            )
                         }
                     }
                 }

@@ -46,6 +46,7 @@ class HistoryHandler(
                     },
                     winners = gameType?.let { match.getWinners(it) } ?: emptyList(),
                     dateFormatted = dateFormatted,
+                    isTieBreakIndeterminate = gameType?.let { match.isTieBreakIndeterminate(it) } ?: false,
                 )
             }
         )

@@ -11,6 +11,7 @@ data class MatchDisplay(
     val playerLabels: Map<String, String>,
     val winners: List<String>,
     val dateFormatted: String,
+    val isTieBreakIndeterminate: Boolean = false,
 )
 
 data class HistoryState(
