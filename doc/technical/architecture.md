@@ -42,6 +42,7 @@
 - **UI adapter**: Compose HTML screens in `jsMain`, wiring Intents to use cases
 - **Storage adapter**: localStorage via `LocalStorage*Repository` classes (scoreo_players, scoreo_gametypes, scoreo_matches keys)
 - **Cloud sync**: `CloudSyncRepository` port (commonMain), `GoogleDriveSyncAdapter` implementation (jsMain) via synchronous XMLHttpRequest, OAuth Token Model via Google Identity Services
+- **DI helpers**: `createSyncHandlerIfAvailable` dans `commonMain/di/` — construit `SyncHandler` uniquement si un `CloudSyncRepository` est fourni. Permet à l'app de fonctionner sans synchronisation cloud (ex: GitHub Pages sans OAuth configuré). Testé unitairement dans `commonTest/di/`.
 
 ## Web Target
 
@@ -52,15 +53,17 @@ Entry point: `src/jsMain/kotlin/com/scoreo/Main.kt` → `renderComposable(rootEl
 
 Sources suivent la convention Compose Multiplatform :
 
-- **`commonMain/`** — code partagé (domaine, application, handlers/intents/states MVI)
-- **`jsMain/`** — code spécifique au navigateur (écrans Compose HTML, infrastructure localStorage)
-- **`commonTest/`** — tests unitaires JVM (use cases, handlers)
+- **`commonMain/`** — code partagé (domaine, application, handlers/intents/states MVI, helpers DI)
+- **`jsMain/`** — code spécifique au navigateur (écrans Compose HTML, infrastructure localStorage, câblage DI)
+- **`commonTest/`** — tests unitaires JVM (use cases, handlers, câblage DI)
 
 Voir `find src -type d` pour la liste exhaustive des packages.
 
 ## Styling
 
-Single `styles.css` file with CSS custom properties (design tokens), a fixed top header bar, and minimal component styles (cards, inputs, buttons, modals, score table).
+Several `.css` files in `src/jsMain/resources/` (`theme.css`, `layout.css`, `home.css`, etc.) are imported by `styles.css` via `@import`. During production build, webpack resolves all imports and bundles them into a single `styles.css`.  
+A CI step (`deploy.yml`) verifies the bundled file contains no `@import` directives — preventing the source file from leaking into the deployment.  
+Uses CSS custom properties (design tokens), a fixed top header bar, and minimal component styles (cards, inputs, buttons, modals, score table).
 
 ## Persistence
 

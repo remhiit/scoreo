@@ -101,6 +101,7 @@ Le fichier `JsonConfig.kt` (`src/jsMain/.../infrastructure/`) fournit `scoreoJso
 | `src/commonTest/.../application/DeletePlayerUseCaseTest.kt` | `DeletePlayerUseCaseTest` | Use Case DeletePlayer (5 tests) |
 | `src/commonTest/.../application/GetGameTypesUseCaseTest.kt` | `GetGameTypesUseCaseTest` | Use Case GetGameTypes (2 tests) |
 | `src/commonTest/.../application/GetPlayersUseCaseTest.kt` | `GetPlayersUseCaseTest` | Use Case GetPlayers (4 tests) |
+| `src/commonTest/.../di/SyncDependenciesTest.kt` | `SyncDependenciesTest` | Câblage syncHandler nullable (2 tests) |
 | `src/commonTest/.../domain/SerializationTest.kt` | `SerializationTest` | Sérialisation (11 tests) |
 | `src/commonTest/.../ui/history/HistoryHandlerTest.kt` | `HistoryHandlerTest` | Handler History (10 tests) |
 | `src/commonTest/.../application/ImportMatchesUseCaseTest.kt` | `ImportMatchesUseCaseTest` | Use Case Import |

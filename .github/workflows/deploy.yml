@@ -43,8 +43,11 @@ jobs:
       - name: Build production
         run: gradle jsBrowserProductionWebpack
 
+      - name: Verify CSS is bundled correctly
+        run: '! grep -q "@import" build/kotlin-webpack/js/productionExecutable/styles.css'
+
       - name: Copy static assets
-        run: cp src/jsMain/resources/index.html src/jsMain/resources/styles.css build/kotlin-webpack/js/productionExecutable/
+        run: cp src/jsMain/resources/index.html build/kotlin-webpack/js/productionExecutable/
 
       - name: Configure Pages
         uses: actions/configure-pages@v5

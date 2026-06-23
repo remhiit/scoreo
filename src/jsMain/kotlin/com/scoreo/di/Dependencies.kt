@@ -10,7 +10,6 @@ import com.scoreo.application.GetMatchesUseCase
 import com.scoreo.application.GetPlayerStatsUseCase
 import com.scoreo.application.GetPlayersUseCase
 import com.scoreo.application.ImportMatchesUseCase
-import com.scoreo.application.SyncUseCase
 import com.scoreo.domain.port.GameTypeRepository
 import com.scoreo.domain.port.MatchRepository
 import com.scoreo.domain.port.PlayerRepository
@@ -23,13 +22,14 @@ import com.scoreo.ui.player.PlayerHandler
 import com.scoreo.ui.stats.StatsHandler
 import com.scoreo.ui.sync.SyncHandler
 
+
 data class AppDependencies(
     val playerHandler: PlayerHandler,
     val gameTypeHandler: GameTypeHandler,
     val historyHandler: HistoryHandler,
     val statsHandler: StatsHandler,
     val importHandler: ImportHandler,
-    val syncHandler: SyncHandler,
+    val syncHandler: SyncHandler?,
     val getGameTypesUseCase: GetGameTypesUseCase,
     val addGameTypeUseCase: AddGameTypeUseCase,
     val navigator: AppNavigator,
@@ -85,14 +85,7 @@ fun createAppDependencies(
         ),
     )
 
-    val syncUseCase = SyncUseCase(
-        cloudRepo = cloudSyncRepository ?: error("CloudSyncRepository required for sync"),
-        playerRepo = playerRepository,
-        gameTypeRepo = gameTypeRepository,
-        matchRepo = matchRepository,
-    )
-
-    val syncHandler = SyncHandler(syncUseCase = syncUseCase)
+    val syncHandler = createSyncHandlerIfAvailable(cloudSyncRepository, playerRepository, gameTypeRepository, matchRepository)
 
     return AppDependencies(
         playerHandler = playerHandler,

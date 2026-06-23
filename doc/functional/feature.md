@@ -35,7 +35,7 @@ Burger menu items:
 | 📋 | History | HistoryScreen |
 | 📥 | Import | ImportScreen |
 | 🎮 | Games | GameTypeScreen |
-| ☁ | Sync | SyncScreen |
+| ☁ | Sync | SyncScreen (visible uniquement si `CloudSyncRepository` configuré) |
 
 Screens:
 

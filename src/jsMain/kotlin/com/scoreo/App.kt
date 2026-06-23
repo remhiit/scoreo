@@ -99,7 +99,8 @@ fun App(
                 )
             }
             is Screen.Games -> GameTypeScreen(deps.gameTypeHandler, showTitle = true)
-            is Screen.Sync -> SyncScreen(deps.syncHandler)
+            is Screen.Sync -> deps.syncHandler?.let { SyncScreen(it) }
+                ?: Div(attrs = { classes("empty") }) { Text("☁ Sync not available") }
             is Screen.ScoreDetail -> {
                 val scoreDetailHandler = remember(screen) {
                     val gameType = gameTypeRepository.findById(screen.gameTypeId)
@@ -153,9 +154,11 @@ fun App(
                 burgerOpen = false
                 navigator.navigate(Screen.Games)
             }
-            BurgerItem("☁", "Sync") {
-                burgerOpen = false
-                navigator.navigate(Screen.Sync)
+            if (deps.syncHandler != null) {
+                BurgerItem("☁", "Sync") {
+                    burgerOpen = false
+                    navigator.navigate(Screen.Sync)
+                }
             }
         }
     }
