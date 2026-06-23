@@ -2,6 +2,7 @@
 
 :root {
     --primary: #6750a4;
+    --primary-rgb: 103, 80, 164;
     --primary-light: #eaddff;
     --surface: #fffbfe;
     --surface-variant: #f4eff4;
@@ -13,12 +14,17 @@
     --loss: #c62828;
     --warn: #e65100;
     --danger-hover: #fce4ec;
+    --white: #fff;
+    --overlay: rgba(0, 0, 0, 0.4);
+    --overlay-light: rgba(0, 0, 0, 0.15);
+    --overlay-medium: rgba(0, 0, 0, 0.2);
     --radius: 12px;
     --header-height: 56px;
 }
 
 [data-theme="dark"] {
     --primary: #d0bcff;
+    --primary-rgb: 208, 188, 255;
     --primary-light: #4a4458;
     --surface: #1c1b1f;
     --surface-variant: #2b2930;
@@ -156,7 +162,7 @@ h2 { font-size: 18px; font-weight: 500; margin-bottom: 12px; }
 .btn:hover { opacity: 0.85; }
 .btn:disabled { opacity: 0.4; cursor: default; }
 
-.btn-primary { background: var(--primary); color: #fff; }
+.btn-primary { background: var(--primary); color: var(--white); }
 .btn-secondary { background: var(--surface-variant); color: var(--on-surface); }
 .btn-danger {
     background: transparent;
@@ -175,7 +181,7 @@ h2 { font-size: 18px; font-weight: 500; margin-bottom: 12px; }
 }
 .btn-danger-filled {
     background: var(--error);
-    color: #fff;
+    color: var(--white);
     border-radius: var(--radius);
     padding: 12px 24px;
     font-size: 15px;

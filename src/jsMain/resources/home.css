@@ -50,7 +50,7 @@
     left: 50%;
     transform: translateX(-50%);
     background: var(--error);
-    color: #fff;
+    color: var(--white);
     padding: 8px 16px;
     border-radius: var(--radius);
     font-size: 13px;
@@ -66,14 +66,14 @@
     left: 50%;
     transform: translateX(-50%);
     background: var(--primary);
-    color: #fff;
+    color: var(--white);
     border: none;
     border-radius: 100px;
     padding: 14px 32px;
     font-size: 16px;
     font-weight: 600;
     cursor: pointer;
-    box-shadow: 0 4px 16px rgba(103, 80, 164, 0.4);
+    box-shadow: 0 4px 16px rgba(var(--primary-rgb), 0.4);
     transition: opacity 0.15s, box-shadow 0.15s;
     z-index: 50;
     white-space: nowrap;
@@ -81,18 +81,18 @@
 
 .fab:hover {
     opacity: 0.9;
-    box-shadow: 0 6px 20px rgba(103, 80, 164, 0.5);
+    box-shadow: 0 6px 20px rgba(var(--primary-rgb), 0.5);
 }
 
 .fab-disabled {
     opacity: 0.5;
     cursor: default;
-    box-shadow: 0 2px 8px rgba(103, 80, 164, 0.2);
+    box-shadow: 0 2px 8px rgba(var(--primary-rgb), 0.2);
 }
 
 .fab-disabled:hover {
     opacity: 0.5;
-    box-shadow: 0 2px 8px rgba(103, 80, 164, 0.2);
+    box-shadow: 0 2px 8px rgba(var(--primary-rgb), 0.2);
 }
 
 /* ── Player picker ── */

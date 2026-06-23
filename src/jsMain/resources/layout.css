@@ -111,7 +111,7 @@
 .burger-overlay {
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.4);
+    background: var(--overlay);
     z-index: 200;
 }
 
@@ -126,7 +126,7 @@
     display: flex;
     flex-direction: column;
     padding: 16px 0;
-    box-shadow: -4px 0 24px rgba(0, 0, 0, 0.15);
+    box-shadow: -4px 0 24px var(--overlay-light);
 }
 
 .burger-close {
