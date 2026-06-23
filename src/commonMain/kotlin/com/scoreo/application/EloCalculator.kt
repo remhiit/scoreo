@@ -17,6 +17,7 @@ class EloCalculator {
             val winners = match.getWinners(gt).toSet()
             if (winners.isEmpty()) continue
             val participants = match.playerScores.map { it.playerId }
+            if (participants.size < 2) continue
             val preElo = elo.toMap()
             val kNorm = K.toDouble() / (participants.size - 1)
             val deltas = mutableMapOf<String, Int>()

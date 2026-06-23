@@ -129,10 +129,9 @@ class SyncUseCase(
     }
 
     private fun isSameState(a: SyncData, b: SyncData): Boolean {
-        return a.players.size == b.players.size
-            && a.gameTypes.size == b.gameTypes.size
-            && a.matches.size == b.matches.size
-            && a.lastModified == b.lastModified
+        return a.players.sortedBy { it.id } == b.players.sortedBy { it.id }
+            && a.gameTypes.sortedBy { it.id } == b.gameTypes.sortedBy { it.id }
+            && a.matches.sortedBy { it.id } == b.matches.sortedBy { it.id }
     }
 
     private fun toSnapshot(data: SyncData): SyncSnapshot = SyncSnapshot(
