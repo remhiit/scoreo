@@ -61,8 +61,7 @@ Voir `find src -type d` pour la liste exhaustive des packages.
 
 ## Styling
 
-Several `.css` files in `src/jsMain/resources/` (`theme.css`, `layout.css`, `home.css`, etc.) are imported by `styles.css` via `@import`. During production build, webpack resolves all imports and bundles them into a single `styles.css`.  
-A CI step (`deploy.yml`) verifies the bundled file contains no `@import` directives — preventing the source file from leaking into the deployment.  
+Several `.css` files in `src/jsMain/resources/` (`theme.css`, `layout.css`, `home.css`, etc.) are imported by `styles.css` via `@import`. During the production build, all CSS files are copied to the output directory, and the browser resolves `@import` directives natively.
 Uses CSS custom properties (design tokens), a fixed top header bar, and minimal component styles (cards, inputs, buttons, modals, score table).
 
 ## Persistence
