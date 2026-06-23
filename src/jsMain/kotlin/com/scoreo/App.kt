@@ -102,27 +102,31 @@ fun App(
             is Screen.Sync -> deps.syncHandler?.let { SyncScreen(it) }
                 ?: Div(attrs = { classes("empty") }) { Text("☁ Sync not available") }
             is Screen.ScoreDetail -> {
-                val scoreDetailHandler = remember(screen) {
-                    val gameType = gameTypeRepository.findById(screen.gameTypeId)
-                        ?: error("GameType not found")
-                    val players = playerRepository.getAll().filter { it.id in screen.playerIds }
-                    ScoreDetailHandler(
-                        gameType = gameType,
-                        players = players,
-                        createMatch = CreateMatchUseCase(matchRepository, gameTypeRepository),
-                        currentDate = currentDate,
+                val gameType = remember(screen) { gameTypeRepository.findById(screen.gameTypeId) }
+                if (gameType == null) {
+                    // GameType deleted — redirect to Home gracefully
+                    LaunchedEffect(Unit) { navigator.navigate(Screen.Home) }
+                } else {
+                    val scoreDetailHandler = remember(screen) {
+                        val players = playerRepository.getAll().filter { it.id in screen.playerIds }
+                        ScoreDetailHandler(
+                            gameType = gameType,
+                            players = players,
+                            createMatch = CreateMatchUseCase(matchRepository, gameTypeRepository),
+                            currentDate = currentDate,
+                        )
+                    }
+                    ScoreDetailScreen(
+                        handler = scoreDetailHandler,
+                        onSaved = {
+                            deps.playerHandler.refresh()
+                            navigator.navigate(Screen.Home)
+                        },
+                        onCancel = {
+                            navigator.navigate(Screen.Home)
+                        },
                     )
                 }
-                ScoreDetailScreen(
-                    handler = scoreDetailHandler,
-                    onSaved = {
-                        deps.playerHandler.refresh()
-                        navigator.navigate(Screen.Home)
-                    },
-                    onCancel = {
-                        navigator.navigate(Screen.Home)
-                    },
-                )
             }
         }
     }
