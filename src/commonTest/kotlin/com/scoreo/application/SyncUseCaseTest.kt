@@ -10,6 +10,7 @@ import com.scoreo.infrastructure.InMemoryCloudSyncRepository
 import com.scoreo.infrastructure.InMemoryGameTypeRepository
 import com.scoreo.infrastructure.InMemoryMatchRepository
 import com.scoreo.infrastructure.InMemoryPlayerRepository
+import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -24,7 +25,7 @@ class SyncUseCaseTest {
     ) = SyncUseCase(cloudRepo, playerRepo, gameTypeRepo, matchRepo)
 
     @Test
-    fun `autoSync both empty returns Synced with zero counts`() {
+    fun `autoSync both empty returns Synced with zero counts`() = runTest {
         val cloudRepo = InMemoryCloudSyncRepository().also { it.login() }
         val useCase = buildUseCase(cloudRepo = cloudRepo)
 
@@ -38,7 +39,7 @@ class SyncUseCaseTest {
     }
 
     @Test
-    fun `autoSync local has data remote empty pushes to remote`() {
+    fun `autoSync local has data remote empty pushes to remote`() = runTest {
         val playerRepo = InMemoryPlayerRepository().also {
             it.save(Player("p1", "Alice"))
         }
@@ -67,7 +68,7 @@ class SyncUseCaseTest {
     }
 
     @Test
-    fun `autoSync remote has data local empty pulls to local`() {
+    fun `autoSync remote has data local empty pulls to local`() = runTest {
         val cloudRepo = InMemoryCloudSyncRepository().also {
             it.login()
             it.storedData = SyncData(
@@ -97,7 +98,7 @@ class SyncUseCaseTest {
     }
 
     @Test
-    fun `autoSync both have same data returns Synced`() {
+    fun `autoSync both have same data returns Synced`() = runTest {
         val cloudRepo = InMemoryCloudSyncRepository().also {
             it.login()
             it.storedData = SyncData(
@@ -128,7 +129,7 @@ class SyncUseCaseTest {
     }
 
     @Test
-    fun `autoSync both have different data returns Conflict`() {
+    fun `autoSync both have different data returns Conflict`() = runTest {
         val cloudRepo = InMemoryCloudSyncRepository().also {
             it.login()
             it.storedData = SyncData(
@@ -162,7 +163,7 @@ class SyncUseCaseTest {
     }
 
     @Test
-    fun `resolveConflict keepLocal pushes local data to remote`() {
+    fun `resolveConflict keepLocal pushes local data to remote`() = runTest {
         val cloudRepo = InMemoryCloudSyncRepository().also { it.login() }
         val playerRepo = InMemoryPlayerRepository().also {
             it.save(Player("p1", "Alice"))
@@ -190,7 +191,7 @@ class SyncUseCaseTest {
     }
 
     @Test
-    fun `resolveConflict keepRemote pulls remote data to local`() {
+    fun `resolveConflict keepRemote pulls remote data to local`() = runTest {
         val cloudRepo = InMemoryCloudSyncRepository().also {
             it.login()
             it.storedData = SyncData(
