@@ -12,7 +12,7 @@
 
 | Component | Details |
 |-----------|---------|
-| **Handler** | `HistoryHandler` — no `handle()`, only `refresh()` |
+| **Handler** | `HistoryHandler` — `handle(HistoryIntent.Refresh)` |
 | **State** | `List<MatchDisplay>` computed from repositories |
 
 ### MatchDisplay
@@ -25,6 +25,7 @@
 | `playerLabels` | `Map<String, String>` | Display names: active → name, inactive+name → "Alice (deleted)", inactive+blank → "Deleted player" |
 | `winners` | `List<String>` | Winner player IDs |
 | `dateFormatted` | `String` | Formatted date string |
+| `isTieBreakIndeterminate` | `Boolean` | True if historic match lacks tie-break data |
 
 ## Screen: HistoryScreen
 
@@ -34,6 +35,9 @@
 - Deleted player names show one of:
   - `"Alice (deleted)"` — if name was kept on delete
   - `"Deleted player"` — if name was erased (anonymized)
+- Matches with `isTieBreakIndeterminate = true` show:
+  - **⚠️ Info manquante** badge next to the game type name
+  - Explanatory message below scores: *"Ce match a été enregistré avant la mise en place des règles de départage. Le résultat est basé sur l'égalité."*
 
 ## Functional Tests
 

@@ -12,7 +12,7 @@
 
 Fichier : `src/jsMain/resources/theme.css`.
 
-Variables dark dans `[data-theme="dark"]` — 8 tokens, + 4 utilitaires (`--win`, `--loss`, `--warn`, `--danger-hover`).
+Variables dark dans `[data-theme="dark"]` — tous les tokens light redéfinis en dark (--primary, --surface, --on-surface, etc.), + 4 utilitaires (`--win`, `--loss`, `--warn`, `--danger-hover`), + 4 techniques (`--primary-rgb`, `--white`, `--overlay`, `--overlay-light`, `--overlay-medium`, `--warn-rgb`).
 
 Classes header : `theme-toggle-btn` dans `layout.css` (44×44, icône centrée).
 

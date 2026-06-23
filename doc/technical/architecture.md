@@ -92,8 +92,8 @@ This applies to: `Player`, `GameType`, `Match`, `PlayerScore`, `WinCondition`.
 | Entity | Fields |
 |---|---|---|
 | `Player` | `id: String` (UUID v4), `name: String`, `active: Boolean = true` |
-| `GameType` | `id: String` (UUID v4), `name: String`, `winCondition: WinCondition` |
-| `Match` | `id: String` (UUID v4), `date: Long` (epoch ms), `gameTypeId: String`, `playerScores: List<PlayerScore>`, `manualWinners: List<String>` |
+| `GameType` | `id: String` (UUID v4), `name: String`, `winCondition: WinCondition`, `tieBreakRule: TieBreakRule = NONE`, `tieBreakCondition: WinCondition = HIGHEST_SCORE`, `tieBreakLabel: String? = null` |
+| `Match` | `id: String` (UUID v4), `date: Long` (epoch ms), `gameTypeId: String`, `playerScores: List<PlayerScore>`, `manualWinners: List<String>`, `secondaryPlayerScores: List<PlayerScore> = emptyList()` |
 | `PlayerScore` | `playerId: String`, `score: Int` |
 | `WinCondition` | Enum: `HIGHEST_SCORE`, `LOWEST_SCORE`, `MANUAL` |
 
