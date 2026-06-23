@@ -1,7 +1,7 @@
 package com.scoreo.infrastructure
 
-import com.scoreo.domain.service.isUuid
-import com.scoreo.domain.service.migrateMatchesJson
+import com.scoreo.application.isUuid
+import com.scoreo.application.migrateMatchesJson
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.jsonArray
