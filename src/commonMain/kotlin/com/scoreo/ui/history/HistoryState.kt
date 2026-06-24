@@ -17,5 +17,6 @@ data class MatchDisplay(
 data class HistoryState(
     val displays: List<MatchDisplay> = emptyList(),
     val deleteConfirmMatchId: String? = null,
+    val selectedGameTypeFilter: String? = null,  // null = all games
     val error: String? = null,
 )

@@ -40,6 +40,9 @@ class HistoryHandler(
             is HistoryIntent.DismissDeleteConfirm -> {
                 state = state.copy(deleteConfirmMatchId = null)
             }
+            is HistoryIntent.SelectGameTypeFilter -> {
+                state = state.copy(selectedGameTypeFilter = intent.gameTypeId)
+            }
         }
     }
 
@@ -50,9 +53,14 @@ class HistoryHandler(
             displays = getMatches().sortedByDescending { it.date }.map { match ->
                 val gameType = gameTypeMap[match.gameTypeId]
                 val dateFormatted = try {
-                    Instant.fromEpochMilliseconds(match.date)
-                        .toLocalDateTime(TimeZone.currentSystemDefault())
-                        .date.toString()
+                    val instant = Instant.fromEpochMilliseconds(match.date)
+                    val localDateTime = instant.toLocalDateTime(TimeZone.currentSystemDefault())
+                    
+                    "${localDateTime.year}" +
+                        "-${localDateTime.monthNumber.toString().padStart(2, '0')}" +
+                        "-${localDateTime.dayOfMonth.toString().padStart(2, '0')}" +
+                        " ${localDateTime.hour.toString().padStart(2, '0')}" +
+                        ":${localDateTime.minute.toString().padStart(2, '0')}"
                 } catch (_: Exception) { "??" }
                 MatchDisplay(
                     match = match,
@@ -67,6 +75,7 @@ class HistoryHandler(
                 )
             },
             deleteConfirmMatchId = null,
+            selectedGameTypeFilter = state.selectedGameTypeFilter,  // preserve filter on refresh
             error = null,
         )
     }

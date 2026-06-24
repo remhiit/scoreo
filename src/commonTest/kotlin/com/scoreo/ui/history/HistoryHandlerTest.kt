@@ -292,4 +292,83 @@ class HistoryHandlerTest {
 
         assertEquals(null, handler.state.deleteConfirmMatchId)
     }
+
+    @Test
+    fun `test_DateFormatting_includesTime`() {
+        val matchRepo = InMemoryMatchRepository()
+        // 2023-01-01 11:45:00 UTC -> milliseconds
+        // Use a known timestamp: 1672566300000L ≈ 2023-01-01T11:45:00Z
+        matchRepo.save(Match("m1", 1672566300000L, "gt1", listOf(PlayerScore("p1", 10))))
+
+        val handler = buildHandler(matchRepo = matchRepo)
+        handler.handle(HistoryIntent.Refresh)
+
+        val dateFormatted = handler.state.displays.first().dateFormatted
+        // Should be formatted as "YYYY-MM-DD HH:mm"
+        assertTrue(dateFormatted.contains(":"), "Date should include time with colon")
+        assertTrue(dateFormatted.matches(Regex("""\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}""")), 
+            "Date format should be YYYY-MM-DD HH:mm, got: $dateFormatted")
+    }
+
+    @Test
+    fun `test_SelectGameTypeFilter_filtersDisplays`() {
+        val playerRepo = InMemoryPlayerRepository()
+        val gameTypeRepo = InMemoryGameTypeRepository()
+        val matchRepo = InMemoryMatchRepository()
+        val handler = buildHandler(playerRepo, gameTypeRepo, matchRepo)
+
+        // Create game types
+        gameTypeRepo.save(GameType("gt1", "Belote", WinCondition.HIGHEST_SCORE))
+        gameTypeRepo.save(GameType("gt2", "Poker", WinCondition.HIGHEST_SCORE))
+
+        // Create players
+        playerRepo.save(Player("p1", "Alice"))
+
+        // Create matches
+        matchRepo.save(Match("m1", 1000L, "gt1", listOf(PlayerScore("p1", 10))))
+        matchRepo.save(Match("m2", 2000L, "gt2", listOf(PlayerScore("p1", 20))))
+        matchRepo.save(Match("m3", 3000L, "gt1", listOf(PlayerScore("p1", 30))))
+
+        handler.handle(HistoryIntent.Refresh)
+        assertEquals(3, handler.state.displays.size)
+
+        // Filter to Belote (gt1)
+        handler.handle(HistoryIntent.SelectGameTypeFilter("gt1"))
+        assertEquals("gt1", handler.state.selectedGameTypeFilter)
+        // Note: Handler does NOT filter displays automatically;
+        // filtering is done in the UI layer (HistoryScreen)
+        assertEquals(3, handler.state.displays.size)  // All displays still present in state
+    }
+
+    @Test
+    fun `test_SelectGameTypeFilter_null_resetsFilter`() {
+        val handler = buildHandler()
+        handler.handle(HistoryIntent.SelectGameTypeFilter("gt1"))
+        assertEquals("gt1", handler.state.selectedGameTypeFilter)
+
+        // Reset filter to null (All games)
+        handler.handle(HistoryIntent.SelectGameTypeFilter(null))
+        assertEquals(null, handler.state.selectedGameTypeFilter)
+    }
+
+    @Test
+    fun `test_FilterPersistsAcrossRefresh`() {
+        val playerRepo = InMemoryPlayerRepository()
+        val gameTypeRepo = InMemoryGameTypeRepository()
+        val matchRepo = InMemoryMatchRepository()
+        val handler = buildHandler(playerRepo, gameTypeRepo, matchRepo)
+
+        gameTypeRepo.save(GameType("gt1", "Belote", WinCondition.HIGHEST_SCORE))
+        playerRepo.save(Player("p1", "Alice"))
+        matchRepo.save(Match("m1", 1000L, "gt1", listOf(PlayerScore("p1", 10))))
+
+        handler.handle(HistoryIntent.Refresh)
+        handler.handle(HistoryIntent.SelectGameTypeFilter("gt1"))
+
+        // Refresh again
+        handler.handle(HistoryIntent.Refresh)
+
+        // Filter should persist
+        assertEquals("gt1", handler.state.selectedGameTypeFilter)
+    }
 }

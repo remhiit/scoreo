@@ -6,11 +6,15 @@ import com.scoreo.ui.navigation.Screen
 import org.jetbrains.compose.web.dom.Button
 import org.jetbrains.compose.web.dom.Div
 import org.jetbrains.compose.web.dom.H3
+import org.jetbrains.compose.web.dom.Label
 import org.jetbrains.compose.web.dom.Li
+import org.jetbrains.compose.web.dom.Option
 import org.jetbrains.compose.web.dom.P
+import org.jetbrains.compose.web.dom.Select
 import org.jetbrains.compose.web.dom.Span
 import org.jetbrains.compose.web.dom.Text
 import org.jetbrains.compose.web.dom.Ul
+import org.w3c.dom.HTMLSelectElement
 
 @Composable
 fun HistoryScreen(handler: HistoryHandler, navigator: AppNavigator? = null) {
@@ -23,10 +27,50 @@ fun HistoryScreen(handler: HistoryHandler, navigator: AppNavigator? = null) {
         }
     }
 
-    if (matches.isEmpty()) {
-        Div(attrs = { classes("empty") }) { Text("No matches yet.") }
+    // Game type filter dropdown
+    Div(attrs = { classes("history-filter") }) {
+        Label { Text("Filter by game:") }
+        Select(attrs = {
+            classes("filter-select")
+            onChange { event ->
+                val selected = (event.target as? HTMLSelectElement)?.value
+                handler.handle(HistoryIntent.SelectGameTypeFilter(selected?.takeIf { it.isNotEmpty() }))
+            }
+        }) {
+            Option(value = "", attrs = { 
+                if (handler.state.selectedGameTypeFilter == null) attr("selected", "")
+            }) {
+                Text("All games")
+            }
+            matches.mapNotNull { it.gameType }.distinctBy { it.id }.forEach { gameType ->
+                Option(value = gameType.id, attrs = { 
+                    if (handler.state.selectedGameTypeFilter == gameType.id) attr("selected", "")
+                }) {
+                    Text(gameType.name)
+                }
+            }
+        }
+    }
+
+    // Apply filter to displays
+    val filteredDisplays = if (handler.state.selectedGameTypeFilter != null) {
+        matches.filter { it.match.gameTypeId == handler.state.selectedGameTypeFilter }
     } else {
-        matches.forEach { display ->
+        matches
+    }
+
+    // Empty state with filter context
+    if (filteredDisplays.isEmpty()) {
+        val emptyText = if (handler.state.selectedGameTypeFilter != null) {
+            val gameName = matches.find { it.match.gameTypeId == handler.state.selectedGameTypeFilter }?.gameType?.name
+            if (gameName != null) "No matches for $gameName" else "No matches yet."
+        } else {
+            "No matches yet."
+        }
+        Div(attrs = { classes("empty") }) { Text(emptyText) }
+    } else {
+        // Render filtered displays
+        filteredDisplays.forEach { display ->
             Div(attrs = {
                 classes("card", "match-card")
                 if (navigator != null) {
