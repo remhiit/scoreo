@@ -53,7 +53,7 @@ private fun GameTypeTabs(
 @Composable
 private fun LeaderboardView(leaderboard: List<PlayerDetail>, onSelectPlayer: (String) -> Unit) {
      if (leaderboard.isEmpty()) {
-         Div(attrs = { classes("empty") }) { Text(Strings.MSG_NO_STATS) }
+         Div(attrs = { classes("empty") }) { Text(Strings.EMPTY_STATS) }
     } else {
         leaderboard.forEach { detail ->
             val total = detail.wins + detail.losses
@@ -99,7 +99,7 @@ private fun PlayerDetailView(detail: PlayerDetail, onBack: () -> Unit) {
     }
 
      if (detail.headToHead.isEmpty()) {
-         Div(attrs = { classes("empty") }) { Text(Strings.MSG_NO_HEAD_TO_HEAD) }
+         Div(attrs = { classes("empty") }) { Text(Strings.EMPTY_HEAD_TO_HEAD) }
     } else {
          Div(attrs = { classes("section-label") }) { Text(Strings.LABEL_HEAD_TO_HEAD) }
         detail.headToHead.forEach { h2h ->

@@ -109,8 +109,6 @@ object Strings {
     const val MSG_GAME_NOT_FOUND = "Game not found."
     
     // History & Stats
-    const val MSG_NO_STATS = "No stats yet — play some matches first."
-    const val MSG_NO_HEAD_TO_HEAD = "No head-to-head data yet."
     const val LABEL_HEAD_TO_HEAD = "Head-to-head"
     const val LABEL_ALL = "All"
     const val BTN_BACK_ARROW = "←"
@@ -118,21 +116,21 @@ object Strings {
     const val LABEL_ALL_GAMES = "All games"
     const val LABEL_NO_MATCHES_FOR = "No matches for"
     const val BADGE_INFO_MISSING = "⚠️ Info missing"
-     const val MSG_DELETE_MATCH = "Delete match?"
-     const val TITLE_DELETE_MATCH = "Delete match"
-     
-     // Import & Sync
-     const val MSG_SELECT_JSON = "Select a JSON file to import"
-     const val LABEL_GAME_IMPORT = "Game:"
-     const val LABEL_MATCHES_TO_IMPORT = "Matches to import:"
-     const val BTN_IMPORT = "Import"
-     const val BTN_DONE = "Done"
-     const val BTN_DISMISS = "Dismiss"
-     const val MSG_IMPORTED = "✅ {count} imported"
-     const val MSG_SKIPPED = "⚠️ {count} skipped (duplicate IDs)"
-     const val MSG_FAILED = "❌ {count} failed"
-     const val LABEL_CLOUD_SYNC = "Cloud Sync"
-     const val MSG_SYNC_DATA_GOOGLE = "Sync your data with Google Drive"
-     const val BTN_CONNECT_GOOGLE = "Connect with Google"
-     const val MSG_OFFLINE = "📡 Offline — changes will sync when reconnected"
- }
+    const val MSG_DELETE_MATCH = "Delete match?"
+    const val TITLE_DELETE_MATCH = "Delete match"
+    
+    // Import & Sync
+    const val MSG_SELECT_JSON = "Select a JSON file to import"
+    const val LABEL_GAME_IMPORT = "Game:"
+    const val LABEL_MATCHES_TO_IMPORT = "Matches to import:"
+    const val BTN_IMPORT = "Import"
+    const val BTN_DONE = "Done"
+    const val BTN_DISMISS = "Dismiss"
+    const val MSG_IMPORTED = "✅ {count} imported"
+    const val MSG_SKIPPED = "⚠️ {count} skipped (duplicate IDs)"
+    const val MSG_FAILED = "❌ {count} failed"
+    const val LABEL_CLOUD_SYNC = "Cloud Sync"
+    const val MSG_SYNC_DATA_GOOGLE = "Sync your data with Google Drive"
+    const val BTN_CONNECT_GOOGLE = "Connect with Google"
+    const val MSG_OFFLINE = "📡 Offline — changes will sync when reconnected"
+}

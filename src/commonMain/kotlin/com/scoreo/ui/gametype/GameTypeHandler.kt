@@ -9,6 +9,7 @@ import com.scoreo.application.GetGameTypesUseCase
 import com.scoreo.application.UpdateGameTypeUseCase
 import com.scoreo.domain.DomainError
 import com.scoreo.domain.model.TieBreakRule
+import com.scoreo.domain.model.WinCondition
 import com.scoreo.domain.port.GameTypeRepository
 
 class GameTypeHandler(
@@ -102,11 +103,13 @@ class GameTypeHandler(
     }
 
     private fun resetForm(refresh: Boolean) {
+        val defaultWinCondition = WinCondition.HIGHEST_SCORE
         state = state.copy(
             gameTypes = if (refresh) getGameTypes() else state.gameTypes,
             inputName = "",
+            selectedWinCondition = defaultWinCondition,
             selectedTieBreakRule = TieBreakRule.NONE,
-            selectedTieBreakCondition = state.selectedWinCondition,
+            selectedTieBreakCondition = defaultWinCondition,
             selectedTieBreakLabel = null,
             editingGameId = null,
             error = null,
