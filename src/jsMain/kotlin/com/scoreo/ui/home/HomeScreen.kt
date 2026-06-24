@@ -1,12 +1,10 @@
 package com.scoreo.ui.home
 
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import kotlinx.coroutines.delay
 import com.scoreo.domain.model.GameType
 import com.scoreo.domain.model.WinCondition
 import com.scoreo.ui.player.PlayerHandler
@@ -42,8 +40,6 @@ fun HomeScreen(
     var inlineGameName by remember { mutableStateOf("") }
     var inlineGameWinCondition by remember { mutableStateOf(WinCondition.HIGHEST_SCORE) }
     var inlineGameError by remember { mutableStateOf<String?>(null) }
-
-    var fabError by remember { mutableStateOf<String?>(null) }
 
     // ── Add player form (always visible) ──
     Div(attrs = { classes("form-row") }) {
@@ -108,15 +104,10 @@ fun HomeScreen(
         }
     }
 
-    // ── FAB error toast ──
-    fabError?.let {
-        Div(attrs = { classes("fab-error") }) { Text(it) }
-    }
-
-    LaunchedEffect(fabError) {
-        if (fabError != null) {
-            delay(2000)
-            fabError = null
+    // ── Selection counter ──
+    if (state.players.isNotEmpty() && selectedPlayers.size < 2) {
+        Div(attrs = { classes("selection-hint") }) {
+            Text("${selectedPlayers.size}/2 players selected")
         }
     }
 
@@ -125,12 +116,12 @@ fun HomeScreen(
         val hasEnoughPlayers = selectedPlayers.size >= 2
         Button(attrs = {
             classes("fab")
-            if (!hasEnoughPlayers) classes("fab-disabled")
+            if (!hasEnoughPlayers) {
+                classes("fab-disabled")
+                style { property("pointer-events", "none") }
+            }
             onClick {
-                if (selectedPlayers.size < 2) {
-                    fabError = "Select at least 2 players"
-                } else {
-                    fabError = null
+                if (selectedPlayers.size >= 2) {
                     modalGameTypes = getGameTypes()
                     selectedGameType = null
                     gameModalError = null

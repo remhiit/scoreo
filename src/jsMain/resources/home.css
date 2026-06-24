@@ -44,20 +44,6 @@
     gap: 4px;
 }
 
-.fab-error {
-    position: fixed;
-    bottom: 80px;
-    left: 50%;
-    transform: translateX(-50%);
-    background: var(--error);
-    color: var(--white);
-    padding: 8px 16px;
-    border-radius: var(--radius);
-    font-size: 13px;
-    z-index: 50;
-    white-space: nowrap;
-}
-
 /* ── FAB ── */
 
 .fab {
@@ -86,7 +72,8 @@
 
 .fab-disabled {
     opacity: 0.5;
-    cursor: default;
+    cursor: not-allowed;
+    pointer-events: none;
     box-shadow: 0 2px 8px rgba(var(--primary-rgb), 0.2);
 }
 
@@ -95,7 +82,26 @@
     box-shadow: 0 2px 8px rgba(var(--primary-rgb), 0.2);
 }
 
-/* ── Player picker ── */
+/* ── Selection hint ── */
+
+.selection-hint {
+    font-size: 0.9rem;
+    color: #666;
+    margin-top: 16px;
+    text-align: center;
+    animation: fadeIn 0.3s;
+}
+
+@media (prefers-color-scheme: dark) {
+    .selection-hint {
+        color: #aaa;
+    }
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
 
 .player-list-pick {
     display: flex;
