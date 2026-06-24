@@ -4,6 +4,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import com.scoreo.application.AddGameTypeUseCase
+import com.scoreo.application.ArchiveGameTypeUseCase
 import com.scoreo.application.GetGameTypesUseCase
 import com.scoreo.application.UpdateGameTypeUseCase
 import com.scoreo.domain.DomainError
@@ -15,6 +16,7 @@ class GameTypeHandler(
     private val updateGameType: UpdateGameTypeUseCase,
     private val getGameTypes: GetGameTypesUseCase,
     private val gameTypeRepository: GameTypeRepository,
+    private val archiveGameType: ArchiveGameTypeUseCase,
 ) {
     var state by mutableStateOf(GameTypeState(gameTypes = getGameTypes()))
         private set
@@ -78,6 +80,23 @@ class GameTypeHandler(
                 } catch (e: DomainError) {
                     state = state.copy(error = e.message)
                 }
+            }
+            is GameTypeIntent.ShowArchiveConfirm -> {
+                state = state.copy(archiveConfirmGameTypeId = intent.gameTypeId)
+            }
+            is GameTypeIntent.ArchiveGameType -> {
+                try {
+                    archiveGameType(intent.gameTypeId)
+                    state = state.copy(archiveConfirmGameTypeId = null)
+                    // Refresh
+                    val gameTypes = getGameTypes()
+                    state = state.copy(gameTypes = gameTypes, selectedGameId = null)
+                } catch (e: Exception) {
+                    state = state.copy(error = "Failed to archive game type: ${e.message}")
+                }
+            }
+            is GameTypeIntent.DismissArchiveConfirm -> {
+                state = state.copy(archiveConfirmGameTypeId = null)
             }
         }
     }

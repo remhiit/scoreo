@@ -10,6 +10,7 @@ data class GameType(
     val tieBreakRule: TieBreakRule = TieBreakRule.NONE,
     val tieBreakCondition: WinCondition = WinCondition.HIGHEST_SCORE,
     val tieBreakLabel: String? = null,
+    val active: Boolean = true,
 ) {
     fun computeWinners(playerScores: List<PlayerScore>): List<String> =
         computeWinners(playerScores, winCondition)

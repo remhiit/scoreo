@@ -60,7 +60,7 @@ fun ScoreDetailScreen(
                             value(round[player.id] ?: "")
                             attr("inputmode", "numeric")
                             onInput {
-                                handler.handle(ScoreDetailIntent.UpdateScore(roundIndex, player.id, it.value))
+                                handler.handle(ScoreDetailIntent.UpdateScore(roundIndex, player.id, it.value.toString()))
                             }
                         })
                     }

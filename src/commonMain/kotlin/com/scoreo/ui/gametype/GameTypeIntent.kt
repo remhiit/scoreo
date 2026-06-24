@@ -16,4 +16,7 @@ sealed class GameTypeIntent {
     data class EditGameType(val id: String) : GameTypeIntent()
     data object CancelEdit : GameTypeIntent()
     data class UpdateGameType(val gameType: GameType) : GameTypeIntent()
+    data class ShowArchiveConfirm(val gameTypeId: String) : GameTypeIntent()
+    data class ArchiveGameType(val gameTypeId: String) : GameTypeIntent()
+    data object DismissArchiveConfirm : GameTypeIntent()
 }

@@ -2,6 +2,7 @@ package com.scoreo.di
 
 import com.scoreo.application.AddGameTypeUseCase
 import com.scoreo.application.AddPlayerUseCase
+import com.scoreo.application.ArchiveGameTypeUseCase
 import com.scoreo.application.CreateMatchUseCase
 import com.scoreo.application.DeleteMatchUseCase
 import com.scoreo.application.DeletePlayerUseCase
@@ -60,6 +61,7 @@ fun createAppDependencies(
         updateGameType = UpdateGameTypeUseCase(gameTypeRepository),
         getGameTypes = GetGameTypesUseCase(gameTypeRepository),
         gameTypeRepository = gameTypeRepository,
+        archiveGameType = ArchiveGameTypeUseCase(gameTypeRepository),
     )
 
     val getGameTypesUseCase = GetGameTypesUseCase(gameTypeRepository)

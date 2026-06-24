@@ -20,3 +20,49 @@
 **Trigger:** runs on every call to `getAll()`. Idempotent — once all data is migrated, subsequent reads skip migration.
 
 **Format of `IdGenerator.newId()` output:** `xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx` (standard UUID v4).
+
+---
+
+## v1.x → v1.2 (Game Type Archive)
+
+**Background:** Game types can now be archived (soft-deleted) instead of permanently deleted. Users can archive old/test games to keep the selection dropdown clean.
+
+**Schema Change**
+
+`GameType` model adds field `active: Boolean = true`.
+
+**Old format** (v1.1):
+```json
+{
+  "id": "...",
+  "name": "Belote",
+  "winCondition": "HIGHEST_SCORE",
+  "tieBreakRule": "NONE",
+  "tieBreakCondition": "HIGHEST_SCORE"
+}
+```
+
+**New format** (v1.2):
+```json
+{
+  "id": "...",
+  "name": "Belote",
+  "winCondition": "HIGHEST_SCORE",
+  "tieBreakRule": "NONE",
+  "tieBreakCondition": "HIGHEST_SCORE",
+  "active": true
+}
+```
+
+**Backward Compatibility**
+
+- Old JSON without `active` field deserializes with `active = true` (Kotlinx serialization's `ignoreUnknownKeys` enabled, plus field has default value).
+- No explicit migration needed.
+- New code reads `active` correctly on deserialization.
+
+**Behavior Changes**
+
+- `GetGameTypesUseCase` excludes `active = false` (archived) games from selection dropdown.
+- `HistoryScreen` still resolves archived games via `GameTypeRepository.findById()` (includes inactive).
+- Users can archive games via "Archive" button in GameTypeScreen detail view.
+

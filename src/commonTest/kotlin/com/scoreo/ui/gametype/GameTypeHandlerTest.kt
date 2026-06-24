@@ -2,6 +2,7 @@ package com.scoreo.ui.gametype
 
 import com.scoreo.infrastructure.InMemoryGameTypeRepository
 import com.scoreo.application.AddGameTypeUseCase
+import com.scoreo.application.ArchiveGameTypeUseCase
 import com.scoreo.application.GetGameTypesUseCase
 import com.scoreo.application.UpdateGameTypeUseCase
 import com.scoreo.domain.model.TieBreakRule
@@ -19,6 +20,7 @@ class GameTypeHandlerTest {
             updateGameType = UpdateGameTypeUseCase(repo),
             getGameTypes = GetGameTypesUseCase(repo),
             gameTypeRepository = repo,
+            archiveGameType = ArchiveGameTypeUseCase(repo),
         )
 
     @Test
@@ -214,6 +216,78 @@ class GameTypeHandlerTest {
         
         assertNull(handler.state.editingGameId)
         assertEquals("", handler.state.inputName)
+    }
+
+    // P2-03: Archive Game Type Tests
+    @Test
+    fun `ShowArchiveConfirm sets archiveConfirmGameTypeId`() {
+        val handler = buildHandler()
+        handler.handle(GameTypeIntent.UpdateName("Belote"))
+        handler.handle(GameTypeIntent.AddGameType)
+        
+        val gameTypeId = handler.state.gameTypes.first().id
+        handler.handle(GameTypeIntent.ShowArchiveConfirm(gameTypeId))
+        
+        assertEquals(gameTypeId, handler.state.archiveConfirmGameTypeId)
+    }
+
+    @Test
+    fun `DismissArchiveConfirm clears archiveConfirmGameTypeId`() {
+        val handler = buildHandler()
+        handler.handle(GameTypeIntent.UpdateName("Belote"))
+        handler.handle(GameTypeIntent.AddGameType)
+        
+        val gameTypeId = handler.state.gameTypes.first().id
+        handler.handle(GameTypeIntent.ShowArchiveConfirm(gameTypeId))
+        assertEquals(gameTypeId, handler.state.archiveConfirmGameTypeId)
+        
+        handler.handle(GameTypeIntent.DismissArchiveConfirm)
+        assertNull(handler.state.archiveConfirmGameTypeId)
+    }
+
+    @Test
+    fun `ArchiveGameType archives the game and refreshes list`() {
+        val handler = buildHandler()
+        handler.handle(GameTypeIntent.UpdateName("Belote"))
+        handler.handle(GameTypeIntent.AddGameType)
+        handler.handle(GameTypeIntent.UpdateName("Golf"))
+        handler.handle(GameTypeIntent.AddGameType)
+        
+        assertEquals(2, handler.state.gameTypes.size)
+        val gameTypeIdToArchive = handler.state.gameTypes.first().id
+        
+        handler.handle(GameTypeIntent.ArchiveGameType(gameTypeIdToArchive))
+        
+        // After archiving, only active games should appear
+        assertEquals(1, handler.state.gameTypes.size)
+        assertEquals("Golf", handler.state.gameTypes.first().name)
+    }
+
+    @Test
+    fun `ArchiveGameType clears archiveConfirmGameTypeId`() {
+        val handler = buildHandler()
+        handler.handle(GameTypeIntent.UpdateName("Belote"))
+        handler.handle(GameTypeIntent.AddGameType)
+        
+        val gameTypeId = handler.state.gameTypes.first().id
+        handler.handle(GameTypeIntent.ShowArchiveConfirm(gameTypeId))
+        handler.handle(GameTypeIntent.ArchiveGameType(gameTypeId))
+        
+        assertNull(handler.state.archiveConfirmGameTypeId)
+    }
+
+    @Test
+    fun `ArchiveGameType clears selectedGameId`() {
+        val handler = buildHandler()
+        handler.handle(GameTypeIntent.UpdateName("Belote"))
+        handler.handle(GameTypeIntent.AddGameType)
+        
+        val gameTypeId = handler.state.gameTypes.first().id
+        handler.handle(GameTypeIntent.SelectGame(gameTypeId))
+        assertEquals(gameTypeId, handler.state.selectedGameId)
+        
+        handler.handle(GameTypeIntent.ArchiveGameType(gameTypeId))
+        assertNull(handler.state.selectedGameId)
     }
 }
 

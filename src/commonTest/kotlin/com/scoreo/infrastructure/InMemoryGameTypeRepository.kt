@@ -6,7 +6,8 @@ import com.scoreo.domain.port.GameTypeRepository
 class InMemoryGameTypeRepository : GameTypeRepository {
     private val gameTypes = mutableListOf<GameType>()
 
-    override fun getAll(): List<GameType> = gameTypes.toList()
+    override fun getAll(includeInactive: Boolean): List<GameType> =
+        if (includeInactive) gameTypes.toList() else gameTypes.toList().filter { it.active }
 
     override fun save(gameType: GameType) {
         val idx = gameTypes.indexOfFirst { it.id == gameType.id }
@@ -17,5 +18,5 @@ class InMemoryGameTypeRepository : GameTypeRepository {
         gameTypes.forEach { save(it) }
     }
 
-    override fun findById(id: String): GameType? = gameTypes.find { it.id == id }
+    override fun findById(id: String): GameType? = getAll(includeInactive = true).find { it.id == id }
 }

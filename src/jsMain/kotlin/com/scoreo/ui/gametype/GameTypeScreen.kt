@@ -10,8 +10,10 @@ import org.jetbrains.compose.web.dom.Button
 import org.jetbrains.compose.web.dom.Div
 import org.jetbrains.compose.web.dom.H1
 import org.jetbrains.compose.web.dom.H2
+import org.jetbrains.compose.web.dom.H3
 import org.jetbrains.compose.web.dom.Input
 import org.jetbrains.compose.web.dom.Option
+import org.jetbrains.compose.web.dom.P
 import org.jetbrains.compose.web.dom.Select
 import org.jetbrains.compose.web.dom.Span
 import org.jetbrains.compose.web.dom.Text
@@ -236,6 +238,34 @@ private fun GameDetailView(handler: GameTypeHandler) {
             classes("btn", "btn-primary")
             onClick { handler.handle(GameTypeIntent.EditGameType(gameType.id)) }
         }) { Text("Edit") }
+
+        Button(attrs = {
+            classes("btn", "btn-danger")
+            onClick { handler.handle(GameTypeIntent.ShowArchiveConfirm(gameType.id)) }
+        }) { Text("Archive") }
+    }
+
+    // Archive confirmation modal
+    if (handler.state.archiveConfirmGameTypeId != null) {
+        val confirmGameType = handler.state.gameTypes.find { it.id == handler.state.archiveConfirmGameTypeId }
+        if (confirmGameType != null) {
+            Div(attrs = { classes("modal-overlay") }) {
+                Div(attrs = { classes("modal") }) {
+                    H3 { Text("Archive ${confirmGameType.name}?") }
+                    P { Text("It will no longer appear in game selection.") }
+                    Div(attrs = { classes("modal-actions") }) {
+                        Button(attrs = {
+                            classes("btn", "btn-secondary")
+                            onClick { handler.handle(GameTypeIntent.DismissArchiveConfirm) }
+                        }) { Text("Cancel") }
+                        Button(attrs = {
+                            classes("btn", "btn-danger")
+                            onClick { handler.handle(GameTypeIntent.ArchiveGameType(handler.state.archiveConfirmGameTypeId!!)) }
+                        }) { Text("Archive") }
+                    }
+                }
+            }
+        }
     }
 }
 

@@ -8,10 +8,12 @@ import kotlinx.serialization.encodeToString
 private const val KEY = "scoreo_gametypes"
 
 class LocalStorageGameTypeRepository : GameTypeRepository {
-    override fun getAll(): List<GameType> =
-        localStorage.getItem(KEY)
+    override fun getAll(includeInactive: Boolean): List<GameType> {
+        val all = localStorage.getItem(KEY)
             ?.let { runCatching { scoreoJson.decodeFromString<List<GameType>>(it) }.getOrDefault(emptyList()) }
             ?: emptyList()
+        return if (includeInactive) all else all.filter { it.active }
+    }
 
     override fun save(gameType: GameType) {
         val updated = getAll().toMutableList()
@@ -29,5 +31,5 @@ class LocalStorageGameTypeRepository : GameTypeRepository {
         localStorage.setItem(KEY, scoreoJson.encodeToString(existing))
     }
 
-    override fun findById(id: String): GameType? = getAll().find { it.id == id }
+    override fun findById(id: String): GameType? = getAll(includeInactive = true).find { it.id == id }
 }

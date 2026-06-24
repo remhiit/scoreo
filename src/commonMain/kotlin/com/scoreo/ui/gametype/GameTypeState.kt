@@ -14,4 +14,5 @@ data class GameTypeState(
     val selectedGameId: String? = null,
     val editingGameId: String? = null,
     val error: String? = null,
+    val archiveConfirmGameTypeId: String? = null,
 )
