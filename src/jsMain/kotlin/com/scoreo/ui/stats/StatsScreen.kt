@@ -3,6 +3,7 @@ package com.scoreo.ui.stats
 import androidx.compose.runtime.Composable
 import com.scoreo.application.PlayerDetail
 import com.scoreo.domain.model.GameType
+import com.scoreo.ui.Strings
 import org.jetbrains.compose.web.dom.Button
 import org.jetbrains.compose.web.dom.Div
 import org.jetbrains.compose.web.dom.Span
@@ -38,7 +39,7 @@ private fun GameTypeTabs(
             classes("tab-btn")
             if (selectedGameTypeId == null) { classes("active") }
             onClick { onSelect(null) }
-        }) { Text("All") }
+        }) { Text(Strings.LABEL_ALL) }
         gameTypes.forEach { gt ->
             Button(attrs = {
                 classes("tab-btn")
@@ -51,8 +52,8 @@ private fun GameTypeTabs(
 
 @Composable
 private fun LeaderboardView(leaderboard: List<PlayerDetail>, onSelectPlayer: (String) -> Unit) {
-    if (leaderboard.isEmpty()) {
-        Div(attrs = { classes("empty") }) { Text("No stats yet — play some matches first.") }
+     if (leaderboard.isEmpty()) {
+         Div(attrs = { classes("empty") }) { Text(Strings.MSG_NO_STATS) }
     } else {
         leaderboard.forEach { detail ->
             val total = detail.wins + detail.losses
@@ -87,7 +88,7 @@ private fun PlayerDetailView(detail: PlayerDetail, onBack: () -> Unit) {
         Button(attrs = {
             classes("back-btn")
             onClick { onBack() }
-        }) { Text("←") }
+         }) { Text(Strings.BTN_BACK_ARROW) }
         Div(attrs = { classes("stats-detail-title") }) { Text(detail.name) }
         Span(attrs = { classes("stats-elo-badge") }) { Text("${detail.elo}") }
     }
@@ -97,10 +98,10 @@ private fun PlayerDetailView(detail: PlayerDetail, onBack: () -> Unit) {
         Span(attrs = { classes("stats-detail-pct") }) { Text("(${pct.toInt()}%)") }
     }
 
-    if (detail.headToHead.isEmpty()) {
-        Div(attrs = { classes("empty") }) { Text("No head-to-head data yet.") }
+     if (detail.headToHead.isEmpty()) {
+         Div(attrs = { classes("empty") }) { Text(Strings.MSG_NO_HEAD_TO_HEAD) }
     } else {
-        Div(attrs = { classes("section-label") }) { Text("Head-to-head") }
+         Div(attrs = { classes("section-label") }) { Text(Strings.LABEL_HEAD_TO_HEAD) }
         detail.headToHead.forEach { h2h ->
             val hTotal = h2h.wins + h2h.losses
             val hPct = if (hTotal == 0) 0f else h2h.wins.toFloat() / hTotal * 100

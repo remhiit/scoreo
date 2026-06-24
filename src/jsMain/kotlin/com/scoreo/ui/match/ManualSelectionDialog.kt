@@ -2,6 +2,7 @@ package com.scoreo.ui.match
 
 import androidx.compose.runtime.Composable
 import com.scoreo.domain.model.Player
+import com.scoreo.ui.Strings
 import org.jetbrains.compose.web.attributes.InputType
 import org.jetbrains.compose.web.dom.Button
 import org.jetbrains.compose.web.dom.Div
@@ -32,7 +33,7 @@ fun ManualSelectionDialog(
         onClick { onDismiss() }
     }) {}
     Div(attrs = { classes("modal-content") }) {
-        Div(attrs = { classes("modal-title") }) { Text("Arbitrage final") }
+        Div(attrs = { classes("modal-title") }) { Text(Strings.BTN_FINAL_DECISION) }
         Div(attrs = { classes("modal-body") }) {
             tiedPlayers.forEach { player ->
                 Div(attrs = { classes("modal-row") }) {
@@ -51,15 +52,15 @@ fun ManualSelectionDialog(
             Button(attrs = {
                 classes("btn", "btn-secondary")
                 onClick { onDismiss() }
-            }) { Text("Annuler") }
+            }) { Text(Strings.BTN_CANCEL) }
             Button(attrs = {
                 classes("btn", "btn-secondary")
                 onClick { onKeepTie() }
-            }) { Text("Garder l'égalité") }
+            }) { Text(Strings.BTN_KEEP_TIE) }
             Button(attrs = {
                 classes("btn", "btn-primary")
                 onClick { onConfirm() }
-            }) { Text("Valider") }
+            }) { Text(Strings.BTN_CONFIRM) }
         }
     }
 }

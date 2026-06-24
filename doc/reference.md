@@ -128,7 +128,7 @@ Tous dans `src/commonTest/` (commonTest) ou `src/jsTest/` (jsTest).
 
 Fichiers : `theme.css`, `layout.css`, `home.css`, `scoring.css`, `history.css`, `stats.css`, `import.css`.
 
-Classes clés : `.home-player-card`, `.home-player-card.selected`, `.home-player-check`, `.home-add-player-toggle`, `.home-add-player-form`, `.fab-disabled`, `.fab-error`, `.btn-danger`, `.btn-danger-filled`, `.modal-body`, `.card-selected`, `.detail-row`, `.detail-label`, `.detail-value`, `.badge-warn`, `.tie-break-info`, `.theme-toggle-btn`.
+Classes clés : `.home-player-card`, `.home-player-card.selected`, `.home-player-check`, `.home-add-player-toggle`, `.home-add-player-form`, `.fab-disabled`, `.fab-error`, `.btn-danger`, `.btn-danger-filled`, `.modal-body`, `.card-selected`, `.detail-row`, `.detail-label`, `.detail-value`, `.badge-warn`, `.tie-break-info`, `.theme-toggle-btn`, `.splash`, `.splash-content`, `.spinner`, `.onboarding-guide`.
 
 Thème : variables CSS dans `:root` (light) et `[data-theme="dark"]` (dark) dans `theme.css`. Attribut `data-theme="dark"` sur `<html>` géré par `ThemeManager`.
 

@@ -3,6 +3,7 @@ package com.scoreo.ui.match
 import androidx.compose.runtime.Composable
 import com.scoreo.domain.model.GameType
 import com.scoreo.domain.model.Player
+import com.scoreo.ui.Strings
 import org.jetbrains.compose.web.attributes.InputType
 import org.jetbrains.compose.web.dom.Button
 import org.jetbrains.compose.web.dom.Div
@@ -52,11 +53,11 @@ fun SecondaryScoreDialog(
             Button(attrs = {
                 classes("btn", "btn-secondary")
                 onClick { onDismiss() }
-            }) { Text("Annuler") }
-            Button(attrs = {
-                classes("btn", "btn-primary")
-                onClick { onSubmit() }
-            }) { Text("Valider") }
+             }) { Text(Strings.BTN_CANCEL) }
+             Button(attrs = {
+                 classes("btn", "btn-primary")
+                 onClick { onSubmit() }
+             }) { Text(Strings.BTN_CONFIRM) }
         }
     }
 }

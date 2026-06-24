@@ -1,6 +1,7 @@
 package com.scoreo.ui.sync
 
 import androidx.compose.runtime.Composable
+import com.scoreo.ui.Strings
 import org.jetbrains.compose.web.dom.Button
 import org.jetbrains.compose.web.dom.Div
 import org.jetbrains.compose.web.dom.Span
@@ -13,11 +14,11 @@ private fun isOnline(): Boolean =
 fun SyncScreen(handler: SyncHandler) {
     val s = handler.state
 
-    if (!isOnline()) {
-        Div(attrs = { classes("error-msg") }) {
-            Span { Text("📡 Offline — changes will sync when reconnected") }
-        }
-    }
+     if (!isOnline()) {
+         Div(attrs = { classes("error-msg") }) {
+             Span { Text(Strings.MSG_OFFLINE) }
+         }
+     }
 
     when (s.phase) {
         SyncPhase.Disconnected -> disconnectedView(handler)
@@ -33,7 +34,7 @@ fun SyncScreen(handler: SyncHandler) {
         Button(attrs = {
             classes("btn", "btn-secondary")
             onClick { handler.handle(SyncIntent.DismissError) }
-        }) { Text("Dismiss") }
+         }) { Text(Strings.BTN_DISMISS) }
     }
 }
 
@@ -41,12 +42,12 @@ fun SyncScreen(handler: SyncHandler) {
 private fun disconnectedView(handler: SyncHandler) {
     Div(attrs = { classes("empty") }) {
         Span(attrs = { classes("import-zone-icon") }) { Text("☁") }
-        Div(attrs = { classes("section-label") }) { Text("Cloud Sync") }
-        Div(attrs = { classes("empty") }) { Text("Sync your data with Google Drive") }
-        Button(attrs = {
-            classes("btn", "btn-primary")
-            onClick { handler.handle(SyncIntent.Login) }
-        }) { Text("Connect with Google") }
+         Div(attrs = { classes("section-label") }) { Text(Strings.LABEL_CLOUD_SYNC) }
+         Div(attrs = { classes("empty") }) { Text(Strings.MSG_SYNC_DATA_GOOGLE) }
+         Button(attrs = {
+             classes("btn", "btn-primary")
+             onClick { handler.handle(SyncIntent.Login) }
+         }) { Text(Strings.BTN_CONNECT_GOOGLE) }
     }
 }
 
@@ -62,7 +63,7 @@ private fun loadingView(message: String) {
 private fun resolvedView(handler: SyncHandler, s: SyncState) {
     Div(attrs = { classes("empty") }) {
         Span(attrs = { classes("import-zone-icon") }) { Text("✅") }
-        Div(attrs = { classes("section-label") }) { Text("Sync complete") }
+         Div(attrs = { classes("section-label") }) { Text(Strings.LABEL_SYNC_COMPLETE) }
         s.result?.let { r ->
             Div { Text("${r.pushed} pushed, ${r.pulled} pulled") }
         }

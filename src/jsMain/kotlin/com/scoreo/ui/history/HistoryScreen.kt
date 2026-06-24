@@ -3,6 +3,7 @@ package com.scoreo.ui.history
 import androidx.compose.runtime.Composable
 import com.scoreo.ui.navigation.AppNavigator
 import com.scoreo.ui.navigation.Screen
+import com.scoreo.ui.Strings
 import org.jetbrains.compose.web.dom.Button
 import org.jetbrains.compose.web.dom.Div
 import org.jetbrains.compose.web.dom.H3
@@ -28,20 +29,20 @@ fun HistoryScreen(handler: HistoryHandler, navigator: AppNavigator? = null) {
     }
 
     // Game type filter dropdown
-    Div(attrs = { classes("history-filter") }) {
-        Label { Text("Filter by game:") }
-        Select(attrs = {
-            classes("filter-select")
-            onChange { event ->
-                val selected = (event.target as? HTMLSelectElement)?.value
-                handler.handle(HistoryIntent.SelectGameTypeFilter(selected?.takeIf { it.isNotEmpty() }))
-            }
-        }) {
-            Option(value = "", attrs = { 
-                if (handler.state.selectedGameTypeFilter == null) attr("selected", "")
-            }) {
-                Text("All games")
-            }
+     Div(attrs = { classes("history-filter") }) {
+         Label { Text(Strings.LABEL_FILTER_BY_GAME) }
+         Select(attrs = {
+             classes("filter-select")
+             onChange { event ->
+                 val selected = (event.target as? HTMLSelectElement)?.value
+                 handler.handle(HistoryIntent.SelectGameTypeFilter(selected?.takeIf { it.isNotEmpty() }))
+             }
+         }) {
+             Option(value = "", attrs = { 
+                 if (handler.state.selectedGameTypeFilter == null) attr("selected", "")
+             }) {
+                 Text(Strings.LABEL_ALL_GAMES)
+             }
             matches.mapNotNull { it.gameType }.distinctBy { it.id }.forEach { gameType ->
                 Option(value = gameType.id, attrs = { 
                     if (handler.state.selectedGameTypeFilter == gameType.id) attr("selected", "")
@@ -59,15 +60,15 @@ fun HistoryScreen(handler: HistoryHandler, navigator: AppNavigator? = null) {
         matches
     }
 
-    // Empty state with filter context
-    if (filteredDisplays.isEmpty()) {
-        val emptyText = if (handler.state.selectedGameTypeFilter != null) {
-            val gameName = matches.find { it.match.gameTypeId == handler.state.selectedGameTypeFilter }?.gameType?.name
-            if (gameName != null) "No matches for $gameName" else "No matches yet."
-        } else {
-            "No matches yet."
-        }
-        Div(attrs = { classes("empty") }) { Text(emptyText) }
+     // Empty state with filter context
+     if (filteredDisplays.isEmpty()) {
+         val emptyText = if (handler.state.selectedGameTypeFilter != null) {
+             val gameName = matches.find { it.match.gameTypeId == handler.state.selectedGameTypeFilter }?.gameType?.name
+             if (gameName != null) "${Strings.LABEL_NO_MATCHES_FOR} $gameName" else Strings.EMPTY_MATCHES
+         } else {
+             Strings.EMPTY_MATCHES
+         }
+         Div(attrs = { classes("empty") }) { Text(emptyText) }
     } else {
         // Render filtered displays
         filteredDisplays.forEach { display ->
@@ -103,11 +104,11 @@ fun HistoryScreen(handler: HistoryHandler, navigator: AppNavigator? = null) {
                             Span(attrs = { classes("card-title") }) {
                                 Text(display.gameType?.name ?: "Unknown game")
                             }
-                            if (display.isTieBreakIndeterminate) {
-                                Span(attrs = { classes("badge-warn") }) {
-                                    Text("\u26A0\uFE0F Info manquante")
-                                }
-                            }
+                             if (display.isTieBreakIndeterminate) {
+                                 Span(attrs = { classes("badge-warn") }) {
+                                     Text(Strings.BADGE_INFO_MISSING)
+                                 }
+                             }
                         }
                         Div(attrs = {
                             style {
@@ -118,10 +119,10 @@ fun HistoryScreen(handler: HistoryHandler, navigator: AppNavigator? = null) {
                         }) {
                             Span(attrs = { classes("card-sub") }) { Text(display.dateFormatted) }
                             Button(attrs = {
-                                classes("btn", "btn-icon")
-                                onClick { handler.handle(HistoryIntent.ShowDeleteConfirm(display.match.id)) }
-                                title("Delete match")
-                            }) { Text("🗑") }
+                                 classes("btn", "btn-icon")
+                                 onClick { handler.handle(HistoryIntent.ShowDeleteConfirm(display.match.id)) }
+                                 title(Strings.TITLE_DELETE_MATCH)
+                             }) { Text("🗑") }
                         }
                     }
                     display.match.playerScores.forEach { ps ->
@@ -142,15 +143,12 @@ fun HistoryScreen(handler: HistoryHandler, navigator: AppNavigator? = null) {
                         }
                     }
                     if (display.isTieBreakIndeterminate) {
-                        Div(attrs = {
-                            classes("tie-break-info")
-                        }) {
-                            Text(
-                                "Ce match a \u00E9t\u00E9 enregistr\u00E9 avant la mise en place " +
-                                    "des r\u00E8gles de d\u00E9partage. Le r\u00E9sultat est bas\u00E9 sur l\u2019\u00E9galit\u00E9."
-                            )
-                        }
-                    }
+                         Div(attrs = {
+                             classes("tie-break-info")
+                         }) {
+                             Text(Strings.MSG_TIEBREAK_HISTORY)
+                         }
+                     }
                 }
             }
         }
@@ -164,25 +162,25 @@ fun HistoryScreen(handler: HistoryHandler, navigator: AppNavigator? = null) {
                 classes("modal-overlay")
                 onClick { handler.handle(HistoryIntent.DismissDeleteConfirm) }
             }) {}
-            Div(attrs = { classes("modal") }) {
-                H3 { Text("Delete match?") }
-                P { Text("${matchToDelete.gameType?.name ?: "Unknown"} · ${matchToDelete.dateFormatted}") }
-                Ul {
-                    matchToDelete.match.playerScores.forEach { ps ->
-                        val label = matchToDelete.playerLabels[ps.playerId] ?: "?"
-                        Li { Text("$label: ${ps.score}") }
-                    }
-                }
-                P(attrs = { classes("warning") }) { Text("Match data will be lost.") }
-                Div(attrs = { classes("modal-actions") }) {
-                    Button(attrs = {
-                        classes("btn", "btn-secondary")
-                        onClick { handler.handle(HistoryIntent.DismissDeleteConfirm) }
-                    }) { Text("Cancel") }
-                    Button(attrs = {
-                        classes("btn", "btn-danger", "btn-danger-filled")
-                        onClick { handler.handle(HistoryIntent.DeleteMatch(handler.state.deleteConfirmMatchId!!)) }
-                    }) { Text("Delete") }
+             Div(attrs = { classes("modal") }) {
+                 H3 { Text(Strings.MSG_DELETE_MATCH) }
+                 P { Text("${matchToDelete.gameType?.name ?: "Unknown"} · ${matchToDelete.dateFormatted}") }
+                 Ul {
+                     matchToDelete.match.playerScores.forEach { ps ->
+                         val label = matchToDelete.playerLabels[ps.playerId] ?: "?"
+                         Li { Text("$label: ${ps.score}") }
+                     }
+                 }
+                 P(attrs = { classes("warning") }) { Text(Strings.MSG_DATA_LOST) }
+                 Div(attrs = { classes("modal-actions") }) {
+                     Button(attrs = {
+                         classes("btn", "btn-secondary")
+                         onClick { handler.handle(HistoryIntent.DismissDeleteConfirm) }
+                     }) { Text(Strings.BTN_CANCEL) }
+                     Button(attrs = {
+                         classes("btn", "btn-danger", "btn-danger-filled")
+                         onClick { handler.handle(HistoryIntent.DeleteMatch(handler.state.deleteConfirmMatchId!!)) }
+                     }) { Text(Strings.BTN_DELETE) }
                 }
             }
         }

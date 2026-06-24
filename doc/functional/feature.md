@@ -13,6 +13,16 @@
 
 ## User Flow
 
+### First Launch (new user)
+1. **Splash screen** visible while app loads (3-step getting started guide)
+2. **Home screen** shows "Getting started" guide banner:
+   - Add players
+   - Create a game type
+   - Select ≥2 players and click "Start match"
+3. Guide banner disappears after first player is added
+4. Normal flow: select ≥2 players → **New Match**
+
+### Subsequent Visits
 1. **Home** → select ≥2 players → **New Match**
 2. **Game Selection** modal → pick or create a game type → **Lancer la partie**
 3. **Score Detail** → enter rounds → **Terminer la partie**

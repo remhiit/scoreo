@@ -4,6 +4,7 @@ object Strings {
     // Buttons & Actions
     const val BTN_ADD = "Add"
     const val BTN_ADD_GAME_TYPE = "Add game type"
+    const val BTN_ADD_GAME = "Add game"
     const val BTN_START_MATCH = "Start match"
     const val BTN_FINISH_MATCH = "Finish match"
     const val BTN_CANCEL = "Cancel"
@@ -17,10 +18,15 @@ object Strings {
     const val BTN_FINAL_DECISION = "Final decision"
     const val BTN_KEEP_LOCAL = "Keep local"
     const val BTN_KEEP_REMOTE = "Keep remote"
+    const val BTN_ERASE_NAME = "Erase name from history"
+    const val BTN_NEW_MATCH = "▶ New Match"
     
     // Labels & Fields
     const val LABEL_PLAYER_NAME = "Player name"
     const val LABEL_GAME_TYPE = "Game type"
+    const val LABEL_GAME_NAME = "Game name"
+    const val LABEL_SELECT_GAME = "Select a game"
+    const val LABEL_ADD_NEW_GAME = "Add new game"
     const val LABEL_SCORE = "Score"
     const val LABEL_STATS = "Stats"
     const val LABEL_LEADERBOARD = "Leaderboard"
@@ -28,13 +34,18 @@ object Strings {
     const val LABEL_WINNERS = "Winner(s)"
     const val LABEL_TIEBREAK_RULE = "Tie-break rule"
     const val LABEL_SECONDARY_SCORE = "Secondary score"
-    const val LABEL_ERASE_NAME = "Erase name from history"
     const val LABEL_WIN_CONDITION = "Win condition"
     const val LABEL_INFO_MISSING = "Info missing"
     const val LABEL_SYNCING = "Syncing..."
     const val LABEL_SYNC_COMPLETE = "Sync complete"
     const val LABEL_SYNC_CONFLICT = "Sync conflict"
     const val LABEL_OFFLINE = "Offline"
+    
+    // Onboarding
+    const val GUIDE_TITLE = "Getting started"
+    const val GUIDE_STEP_1 = "Add players above"
+    const val GUIDE_STEP_2 = "Create a game type (from the menu)"
+    const val GUIDE_STEP_3 = "Select ≥2 players and click \"Start match\""
     
     // Empty States
     const val EMPTY_PLAYERS = "No players yet. Add one above."
@@ -54,6 +65,7 @@ object Strings {
     const val MSG_DATA_LOST = "Match data will be lost."
     const val MSG_TIEBREAK_HISTORY = "This match was recorded before tie-break rules were implemented. The result is based on equality."
     const val MSG_SELECT_PLAYERS = "{n}/2 players selected"
+    const val MSG_ERROR_SELECT_GAME = "Please select a game"
     
     // Win Conditions
     const val CONDITION_HIGHEST = "Highest score"
@@ -69,7 +81,7 @@ object Strings {
     const val SCREEN_HOME = "Scoreo"
     const val SCREEN_HISTORY = "History"
     const val SCREEN_STATS = "Stats"
-    const val SCREEN_GAMES = "Games"
+    const val SCREEN_GAMES = "Game Types"
     const val SCREEN_IMPORT = "Import"
     const val SCREEN_SYNC = "Sync"
     const val SCREEN_SCORE_DETAIL = "Score Detail"
@@ -82,4 +94,42 @@ object Strings {
     const val DIALOG_GAME_RULES = "Game rules"
     const val DIALOG_RESULTS = "Results"
     const val DIALOG_FINAL_DECISION = "Final decision"
-}
+    const val DIALOG_ARCHIVE = "Archive {name}?"
+    const val DIALOG_ARCHIVE_MESSAGE = "It will no longer appear in game selection."
+    
+    // Game Type Details
+    const val LABEL_WIN_CONDITION_DETAIL = "Win condition:"
+    const val LABEL_TIE_BREAK_DETAIL = "Tie break:"
+    const val LABEL_TIE_BREAK_CONDITION = "Tie break condition:"
+    const val LABEL_TIE_BREAK_LABEL = "Tie break question:"
+    const val LABEL_FORM_GAME_NAME = "Game name"
+    const val MSG_GAME_NOT_FOUND = "Game not found."
+    
+    // History & Stats
+    const val MSG_NO_STATS = "No stats yet — play some matches first."
+    const val MSG_NO_HEAD_TO_HEAD = "No head-to-head data yet."
+    const val LABEL_HEAD_TO_HEAD = "Head-to-head"
+    const val LABEL_ALL = "All"
+    const val BTN_BACK_ARROW = "←"
+    const val LABEL_FILTER_BY_GAME = "Filter by game:"
+    const val LABEL_ALL_GAMES = "All games"
+    const val LABEL_NO_MATCHES_FOR = "No matches for"
+    const val BADGE_INFO_MISSING = "⚠️ Info missing"
+     const val MSG_DELETE_MATCH = "Delete match?"
+     const val TITLE_DELETE_MATCH = "Delete match"
+     
+     // Import & Sync
+     const val MSG_SELECT_JSON = "Select a JSON file to import"
+     const val LABEL_GAME_IMPORT = "Game:"
+     const val LABEL_MATCHES_TO_IMPORT = "Matches to import:"
+     const val BTN_IMPORT = "Import"
+     const val BTN_DONE = "Done"
+     const val BTN_DISMISS = "Dismiss"
+     const val MSG_IMPORTED = "✅ {count} imported"
+     const val MSG_SKIPPED = "⚠️ {count} skipped (duplicate IDs)"
+     const val MSG_FAILED = "❌ {count} failed"
+     const val LABEL_CLOUD_SYNC = "Cloud Sync"
+     const val MSG_SYNC_DATA_GOOGLE = "Sync your data with Google Drive"
+     const val BTN_CONNECT_GOOGLE = "Connect with Google"
+     const val MSG_OFFLINE = "📡 Offline — changes will sync when reconnected"
+ }

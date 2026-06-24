@@ -4,6 +4,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import com.scoreo.ui.match.ManualSelectionDialog
 import com.scoreo.ui.match.SecondaryScoreDialog
+import com.scoreo.ui.Strings
 import org.jetbrains.compose.web.attributes.InputType
 import org.jetbrains.compose.web.dom.Button
 import org.jetbrains.compose.web.dom.Div
@@ -91,11 +92,11 @@ fun ScoreDetailScreen(
         Button(attrs = {
             classes("btn", "btn-primary")
             onClick { handler.handle(ScoreDetailIntent.Terminate) }
-        }) { Text("Terminer la partie") }
+        }) { Text(Strings.BTN_FINISH_MATCH) }
         Button(attrs = {
             classes("btn", "btn-secondary")
             onClick { onCancel() }
-        }) { Text("Annuler") }
+        }) { Text(Strings.BTN_CANCEL) }
     }
 
     if (state.showWinnerModal) {
@@ -104,7 +105,7 @@ fun ScoreDetailScreen(
             onClick { handler.handle(ScoreDetailIntent.DismissModal) }
         }) {}
         Div(attrs = { classes("modal-content") }) {
-            Div(attrs = { classes("modal-title") }) { Text("Sélectionner le(s) gagnant(s)") }
+            Div(attrs = { classes("modal-title") }) { Text(Strings.DIALOG_SELECT_WINNER) }
             state.players.forEach { player ->
                 val total = state.totals[player.id] ?: 0
                 Div(attrs = { classes("modal-row") }) {
@@ -124,11 +125,11 @@ fun ScoreDetailScreen(
                 Button(attrs = {
                     classes("btn", "btn-secondary")
                     onClick { handler.handle(ScoreDetailIntent.DismissModal) }
-                }) { Text("Annuler") }
+                }) { Text(Strings.BTN_CANCEL) }
                 Button(attrs = {
                     classes("btn", "btn-primary")
                     onClick { handler.handle(ScoreDetailIntent.ConfirmWinners) }
-                }) { Text("Confirmer") }
+                }) { Text(Strings.BTN_CONFIRM) }
             }
         }
     }

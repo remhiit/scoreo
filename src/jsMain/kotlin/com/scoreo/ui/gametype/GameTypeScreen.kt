@@ -4,6 +4,7 @@ import androidx.compose.runtime.Composable
 import com.scoreo.domain.model.GameType
 import com.scoreo.domain.model.TieBreakRule
 import com.scoreo.domain.model.WinCondition
+import com.scoreo.ui.Strings
 import org.jetbrains.compose.web.attributes.InputType
 import org.jetbrains.compose.web.attributes.placeholder
 import org.jetbrains.compose.web.dom.Button
@@ -22,7 +23,7 @@ import org.jetbrains.compose.web.dom.Text
 fun GameTypeScreen(handler: GameTypeHandler, showTitle: Boolean = true) {
     val state = handler.state
 
-    if (showTitle) H1 { Text("Game Types") }
+    if (showTitle) H1 { Text(Strings.SCREEN_GAMES) }
 
     if (state.selectedGameId != null && state.editingGameId == null) {
         GameDetailView(handler)
@@ -36,7 +37,7 @@ fun GameTypeScreen(handler: GameTypeHandler, showTitle: Boolean = true) {
     }
 
     if (state.gameTypes.isEmpty()) {
-        Div(attrs = { classes("empty") }) { Text("No game types yet.") }
+         Div(attrs = { classes("empty") }) { Text(Strings.EMPTY_GAMES) }
     } else {
         Div(attrs = { style { property("margin-top", "16px") } }) {
             state.gameTypes.forEach { gameType ->
@@ -62,10 +63,10 @@ private fun GameTypeForm(handler: GameTypeHandler) {
     val isEditing = state.editingGameId != null
 
     Div(attrs = { classes("form-row") }) {
-        Input(type = InputType.Text, attrs = {
-            classes("input")
-            placeholder("Game name")
-            value(state.inputName)
+         Input(type = InputType.Text, attrs = {
+             classes("input")
+             placeholder(Strings.LABEL_FORM_GAME_NAME)
+             value(state.inputName)
             onInput { handler.handle(GameTypeIntent.UpdateName(it.value)) }
             onKeyUp {
                 if (it.key == "Enter") {
@@ -90,7 +91,7 @@ private fun GameTypeForm(handler: GameTypeHandler) {
         })
     }
 
-    Div(attrs = { classes("section-label") }) { Text("Win condition") }
+     Div(attrs = { classes("section-label") }) { Text(Strings.LABEL_WIN_CONDITION) }
     Select(attrs = {
         classes("select")
         onChange { event ->
@@ -106,7 +107,7 @@ private fun GameTypeForm(handler: GameTypeHandler) {
         }
     }
 
-    Div(attrs = { classes("section-label") }) { Text("Tie break rule") }
+     Div(attrs = { classes("section-label") }) { Text(Strings.LABEL_TIEBREAK_RULE) }
     Select(attrs = {
         classes("select")
         onChange { event ->
@@ -123,7 +124,7 @@ private fun GameTypeForm(handler: GameTypeHandler) {
     }
 
     if (state.selectedTieBreakRule == TieBreakRule.SECONDARY_SCORE) {
-        Div(attrs = { classes("section-label") }) { Text("Tie break condition") }
+        Div(attrs = { classes("section-label") }) { Text(Strings.LABEL_TIE_BREAK_CONDITION) }
         Select(attrs = {
             classes("select")
             onChange { event ->
@@ -139,7 +140,7 @@ private fun GameTypeForm(handler: GameTypeHandler) {
             }
         }
 
-        Div(attrs = { classes("section-label") }) { Text("Tie break label") }
+        Div(attrs = { classes("section-label") }) { Text(Strings.LABEL_TIE_BREAK_LABEL) }
         Div(attrs = { classes("form-row") }) {
             Input(type = InputType.Text, attrs = {
                 classes("input")
@@ -193,30 +194,30 @@ private fun GameDetailView(handler: GameTypeHandler) {
     val gameType = state.gameTypes.find { it.id == state.selectedGameId }
 
     if (gameType == null) {
-        Div(attrs = { classes("empty") }) { Text("Game not found.") }
+        Div(attrs = { classes("empty") }) { Text(Strings.MSG_GAME_NOT_FOUND) }
         return
     }
 
     H2 { Text(gameType.name) }
 
     Div(attrs = { classes("detail-row") }) {
-        Span(attrs = { classes("detail-label") }) { Text("Win condition:") }
+        Span(attrs = { classes("detail-label") }) { Text(Strings.LABEL_WIN_CONDITION_DETAIL) }
         Span(attrs = { classes("detail-value") }) { Text(gameType.winCondition.label()) }
     }
 
     Div(attrs = { classes("detail-row") }) {
-        Span(attrs = { classes("detail-label") }) { Text("Tie break:") }
+        Span(attrs = { classes("detail-label") }) { Text(Strings.LABEL_TIE_BREAK_DETAIL) }
         Span(attrs = { classes("detail-value") }) { Text(gameType.tieBreakRule.label()) }
     }
 
     if (gameType.tieBreakRule == TieBreakRule.SECONDARY_SCORE) {
         Div(attrs = { classes("detail-row") }) {
-            Span(attrs = { classes("detail-label") }) { Text("Tie break condition:") }
+            Span(attrs = { classes("detail-label") }) { Text(Strings.LABEL_TIE_BREAK_CONDITION) }
             Span(attrs = { classes("detail-value") }) { Text(gameType.tieBreakCondition.label()) }
         }
         gameType.tieBreakLabel?.let { label ->
             Div(attrs = { classes("detail-row") }) {
-                Span(attrs = { classes("detail-label") }) { Text("Tie break question:") }
+                Span(attrs = { classes("detail-label") }) { Text(Strings.LABEL_TIE_BREAK_LABEL) }
                 Span(attrs = { classes("detail-value") }) { Text(label) }
             }
         }
@@ -251,13 +252,13 @@ private fun GameDetailView(handler: GameTypeHandler) {
         if (confirmGameType != null) {
             Div(attrs = { classes("modal-overlay") }) {
                 Div(attrs = { classes("modal") }) {
-                    H3 { Text("Archive ${confirmGameType.name}?") }
-                    P { Text("It will no longer appear in game selection.") }
+                    H3 { Text(Strings.DIALOG_ARCHIVE.replace("{name}", confirmGameType.name)) }
+                    P { Text(Strings.DIALOG_ARCHIVE_MESSAGE) }
                     Div(attrs = { classes("modal-actions") }) {
                         Button(attrs = {
                             classes("btn", "btn-secondary")
                             onClick { handler.handle(GameTypeIntent.DismissArchiveConfirm) }
-                        }) { Text("Cancel") }
+            }) { Text(Strings.BTN_CANCEL) }
                         Button(attrs = {
                             classes("btn", "btn-danger")
                             onClick { handler.handle(GameTypeIntent.ArchiveGameType(handler.state.archiveConfirmGameTypeId!!)) }

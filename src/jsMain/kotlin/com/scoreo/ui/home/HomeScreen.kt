@@ -10,6 +10,7 @@ import com.scoreo.domain.model.WinCondition
 import com.scoreo.ui.player.PlayerHandler
 import com.scoreo.ui.player.PlayerIntent
 import com.scoreo.domain.DomainError
+import com.scoreo.ui.Strings
 import org.jetbrains.compose.web.attributes.InputType
 import org.jetbrains.compose.web.dom.Button
 import org.jetbrains.compose.web.dom.Div
@@ -82,17 +83,17 @@ fun HomeScreen(
         Div(attrs = { classes("error-msg") }) { Text(msg) }
     }
 
-    // ── Onboarding guide (first launch) ──
-    if (state.players.isEmpty()) {
-        Div(attrs = { classes("onboarding-guide") }) {
-            H3 { Text("Getting started") }
-            Ol {
-                Li { Text("Add players above") }
-                Li { Text("Create a game type (from the menu)") }
-                Li { Text("Select ≥2 players and click \"Start match\"") }
-            }
-        }
-    }
+     // ── Onboarding guide (first launch) ──
+     if (state.players.isEmpty()) {
+         Div(attrs = { classes("onboarding-guide") }) {
+             H3 { Text(Strings.GUIDE_TITLE) }
+             Ol {
+                 Li { Text(Strings.GUIDE_STEP_1) }
+                 Li { Text(Strings.GUIDE_STEP_2) }
+                 Li { Text(Strings.GUIDE_STEP_3) }
+             }
+         }
+     }
 
     // ── Player list ──
     if (state.players.isEmpty()) {
@@ -137,32 +138,32 @@ fun HomeScreen(
         }
     }
 
-    // ── Selection counter ──
-    if (state.players.isNotEmpty() && selectedPlayers.size < 2) {
-        Div(attrs = { classes("selection-hint") }) {
-            Text("${selectedPlayers.size}/2 players selected")
-        }
-    }
+     // ── Selection counter ──
+     if (state.players.isNotEmpty() && selectedPlayers.size < 2) {
+         Div(attrs = { classes("selection-hint") }) {
+             Text(Strings.MSG_SELECT_PLAYERS.replace("{n}", selectedPlayers.size.toString()))
+         }
+     }
 
-    // ── FAB ──
-    if (state.players.isNotEmpty()) {
-        val hasEnoughPlayers = selectedPlayers.size >= 2
-        Button(attrs = {
-            classes("fab")
-            if (!hasEnoughPlayers) {
-                classes("fab-disabled")
-                style { property("pointer-events", "none") }
-            }
-            onClick {
-                if (selectedPlayers.size >= 2) {
-                    modalGameTypes = getGameTypes()
-                    selectedGameType = null
-                    gameModalError = null
-                    showAddGameForm = false
-                    showGameModal = true
-                }
-            }
-        }) { Text("▶ New Match") }
+     // ── FAB ──
+     if (state.players.isNotEmpty()) {
+         val hasEnoughPlayers = selectedPlayers.size >= 2
+         Button(attrs = {
+             classes("fab")
+             if (!hasEnoughPlayers) {
+                 classes("fab-disabled")
+                 style { property("pointer-events", "none") }
+             }
+             onClick {
+                 if (selectedPlayers.size >= 2) {
+                     modalGameTypes = getGameTypes()
+                     selectedGameType = null
+                     gameModalError = null
+                     showAddGameForm = false
+                     showGameModal = true
+                 }
+             }
+         }) { Text(Strings.BTN_NEW_MATCH) }
     }
 
     // ── Game selection modal ──

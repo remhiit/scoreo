@@ -1,6 +1,7 @@
 package com.scoreo.ui.import
 
 import androidx.compose.runtime.Composable
+import com.scoreo.ui.Strings
 import org.jetbrains.compose.web.attributes.InputType
 import org.jetbrains.compose.web.dom.Button
 import org.jetbrains.compose.web.dom.Div
@@ -22,7 +23,7 @@ fun ImportScreen(
         ImportStep.IDLE -> {
             Label(attrs = { classes("import-zone") }) {
                 Span(attrs = { classes("import-zone-icon") }) { Text("📥") }
-                Span(attrs = { classes("import-zone-text") }) { Text("Select a JSON file to import") }
+                Span(attrs = { classes("import-zone-text") }) { Text(Strings.MSG_SELECT_JSON) }
                 Input(type = InputType.File, attrs = {
                     attr("accept", ".json,application/json")
                     onChange { event ->
@@ -52,34 +53,34 @@ fun ImportScreen(
             val preview = state.preview ?: return
             Div(attrs = { classes("import-preview") }) {
                 Div(attrs = { classes("import-preview-row") }) {
-                    Span(attrs = { classes("import-preview-label") }) { Text("Game:") }
+                    Span(attrs = { classes("import-preview-label") }) { Text(Strings.LABEL_GAME_IMPORT) }
                     Span(attrs = { classes("import-preview-value") }) { Text(preview.gameName) }
-                }
-                Div(attrs = { classes("import-preview-row") }) {
-                    Span(attrs = { classes("import-preview-label") }) { Text("Matches to import:") }
+                 }
+                 Div(attrs = { classes("import-preview-row") }) {
+                     Span(attrs = { classes("import-preview-label") }) { Text(Strings.LABEL_MATCHES_TO_IMPORT) }
                     Span(attrs = { classes("import-preview-value") }) { Text("${preview.count}") }
                 }
             }
             Button(attrs = {
                 classes("btn", "btn-primary", "btn-full")
                 onClick { handler.handle(ImportIntent.Execute) }
-            }) { Text("Import") }
+             }) { Text(Strings.BTN_IMPORT) }
         }
 
         ImportStep.DONE -> {
             val result = state.result ?: return
             Div(attrs = { classes("import-result") }) {
                 Div(attrs = { classes("import-result-line", "import-success") }) {
-                    Text("✅ ${result.imported} imported")
-                }
-                if (result.skipped.isNotEmpty()) {
-                    Div(attrs = { classes("import-result-line", "import-warn") }) {
-                        Text("⚠️ ${result.skipped.size} skipped (duplicate IDs)")
-                    }
-                }
-                if (result.failed.isNotEmpty()) {
-                    Div(attrs = { classes("import-result-line", "import-error") }) {
-                        Text("❌ ${result.failed.size} failed")
+                     Text(Strings.MSG_IMPORTED.replace("{count}", result.imported.toString()))
+                 }
+                 if (result.skipped.isNotEmpty()) {
+                     Div(attrs = { classes("import-result-line", "import-warn") }) {
+                         Text(Strings.MSG_SKIPPED.replace("{count}", result.skipped.size.toString()))
+                     }
+                 }
+                 if (result.failed.isNotEmpty()) {
+                     Div(attrs = { classes("import-result-line", "import-error") }) {
+                         Text(Strings.MSG_FAILED.replace("{count}", result.failed.size.toString()))
                         result.failed.forEach { id ->
                             Div(attrs = { classes("import-failed-id") }) { Text(id) }
                         }
@@ -92,7 +93,7 @@ fun ImportScreen(
                     handler.handle(ImportIntent.Reset)
                     onDone()
                 }
-            }) { Text("Done") }
+             }) { Text(Strings.BTN_DONE) }
         }
     }
 }

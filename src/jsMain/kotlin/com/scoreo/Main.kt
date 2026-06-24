@@ -7,6 +7,8 @@ import kotlinx.datetime.Clock
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import org.jetbrains.compose.web.renderComposable
+import org.w3c.dom.get
+import kotlinx.browser.document
 
 fun main() {
     val playerRepository = LocalStoragePlayerRepository()
@@ -20,5 +22,11 @@ fun main() {
             matchRepository = matchRepository,
             currentDate = { Clock.System.now().toEpochMilliseconds() },
         )
+    }
+
+    // Hide splash after rendering
+    val splash = document.getElementById("splash")
+    if (splash != null) {
+        splash.classList.add("hidden")
     }
 }
