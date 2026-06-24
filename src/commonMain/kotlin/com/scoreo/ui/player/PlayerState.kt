@@ -9,4 +9,6 @@ data class PlayerState(
     val inputName: String = "",
     val error: String? = null,
     val deleteConfirmPlayerId: String? = null,
+    val renamingPlayerId: String? = null,
+    val renameInput: String = "",
 )

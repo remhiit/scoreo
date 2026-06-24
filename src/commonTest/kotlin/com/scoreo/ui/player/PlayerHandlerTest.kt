@@ -28,6 +28,7 @@ class PlayerHandlerTest {
         getPlayers = GetPlayersUseCase(repo),
         getPlayerStats = GetPlayerStatsUseCase(matchRepo, gameTypeRepo),
         deletePlayer = DeletePlayerUseCase(repo),
+        renamePlayerUseCase = com.scoreo.application.RenamePlayerUseCase(repo),
     )
 
     @Test
@@ -181,5 +182,123 @@ class PlayerHandlerTest {
         assertEquals("Bob", handler.state.players.first().name)
         val bobStats = handler.state.stats["p2"]
         assertTrue(bobStats != null && bobStats.losses == 1)
+    }
+
+    @Test
+    fun `StartRename populates renamingPlayerId and renameInput with current name`() {
+        val repo = InMemoryPlayerRepository()
+        repo.save(Player("p1", "Alice"))
+        val handler = buildHandler(repo)
+
+        handler.handle(PlayerIntent.StartRename("p1"))
+
+        assertEquals("p1", handler.state.renamingPlayerId)
+        assertEquals("Alice", handler.state.renameInput)
+    }
+
+    @Test
+    fun `StartRename with nonexistent player does not update state`() {
+        val handler = buildHandler()
+
+        handler.handle(PlayerIntent.StartRename("nonexistent"))
+
+        assertNull(handler.state.renamingPlayerId)
+        assertEquals("", handler.state.renameInput)
+    }
+
+    @Test
+    fun `UpdateRenameInput updates renameInput field`() {
+        val repo = InMemoryPlayerRepository()
+        repo.save(Player("p1", "Alice"))
+        val handler = buildHandler(repo)
+
+        handler.handle(PlayerIntent.StartRename("p1"))
+        handler.handle(PlayerIntent.UpdateRenameInput("Alicia"))
+
+        assertEquals("Alicia", handler.state.renameInput)
+    }
+
+    @Test
+    fun `ConfirmRename calls use case and updates players list`() {
+        val repo = InMemoryPlayerRepository()
+        repo.save(Player("p1", "Alice"))
+        val handler = buildHandler(repo)
+
+        handler.handle(PlayerIntent.StartRename("p1"))
+        handler.handle(PlayerIntent.UpdateRenameInput("Alicia"))
+        handler.handle(PlayerIntent.ConfirmRename)
+
+        assertEquals("Alicia", handler.state.players.first().name)
+    }
+
+    @Test
+    fun `ConfirmRename clears rename state after success`() {
+        val repo = InMemoryPlayerRepository()
+        repo.save(Player("p1", "Alice"))
+        val handler = buildHandler(repo)
+
+        handler.handle(PlayerIntent.StartRename("p1"))
+        handler.handle(PlayerIntent.UpdateRenameInput("Alicia"))
+        handler.handle(PlayerIntent.ConfirmRename)
+
+        assertNull(handler.state.renamingPlayerId)
+        assertEquals("", handler.state.renameInput)
+        assertNull(handler.state.error)
+    }
+
+    @Test
+    fun `ConfirmRename with empty name sets error and does not save`() {
+        val repo = InMemoryPlayerRepository()
+        repo.save(Player("p1", "Alice"))
+        val handler = buildHandler(repo)
+
+        handler.handle(PlayerIntent.StartRename("p1"))
+        handler.handle(PlayerIntent.UpdateRenameInput("   "))
+        handler.handle(PlayerIntent.ConfirmRename)
+
+        assertEquals("name: Player name must not be blank", handler.state.error)
+        assertEquals("Alice", handler.state.players.first().name)
+        assertEquals("p1", handler.state.renamingPlayerId)
+    }
+
+    @Test
+    fun `CancelRename discards changes and clears state`() {
+        val repo = InMemoryPlayerRepository()
+        repo.save(Player("p1", "Alice"))
+        val handler = buildHandler(repo)
+
+        handler.handle(PlayerIntent.StartRename("p1"))
+        handler.handle(PlayerIntent.UpdateRenameInput("Bob"))
+        handler.handle(PlayerIntent.CancelRename)
+
+        assertNull(handler.state.renamingPlayerId)
+        assertEquals("", handler.state.renameInput)
+        assertEquals("Alice", handler.state.players.first().name)
+    }
+
+    @Test
+    fun `Rename preserves player ID (tied to stats)`() {
+        val repo = InMemoryPlayerRepository()
+        repo.save(Player("p1", "Alice"))
+        val handler = buildHandler(repo)
+        val originalId = handler.state.players.first().id
+
+        handler.handle(PlayerIntent.StartRename("p1"))
+        handler.handle(PlayerIntent.UpdateRenameInput("Alicia"))
+        handler.handle(PlayerIntent.ConfirmRename)
+
+        assertEquals(originalId, handler.state.players.first().id)
+    }
+
+    @Test
+    fun `ConfirmRename without prior StartRename is no-op`() {
+        val repo = InMemoryPlayerRepository()
+        repo.save(Player("p1", "Alice"))
+        val handler = buildHandler(repo)
+
+        handler.handle(PlayerIntent.ConfirmRename)
+
+        assertEquals("Alice", handler.state.players.first().name)
+        assertNull(handler.state.renamingPlayerId)
     }
 }

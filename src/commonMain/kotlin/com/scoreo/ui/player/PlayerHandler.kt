@@ -7,6 +7,7 @@ import com.scoreo.application.AddPlayerUseCase
 import com.scoreo.application.DeletePlayerUseCase
 import com.scoreo.application.GetPlayerStatsUseCase
 import com.scoreo.application.GetPlayersUseCase
+import com.scoreo.application.RenamePlayerUseCase
 import com.scoreo.domain.DomainError
 
 class PlayerHandler(
@@ -14,6 +15,7 @@ class PlayerHandler(
     private val getPlayers: GetPlayersUseCase,
     private val getPlayerStats: GetPlayerStatsUseCase,
     private val deletePlayer: DeletePlayerUseCase,
+    private val renamePlayerUseCase: RenamePlayerUseCase,
 ) {
     var state by mutableStateOf(
         PlayerState(players = getPlayers(), stats = getPlayerStats())
@@ -45,6 +47,41 @@ class PlayerHandler(
                     players = getPlayers(),
                     stats = getPlayerStats(),
                     deleteConfirmPlayerId = null,
+                )
+            }
+            is PlayerIntent.StartRename -> {
+                val player = state.players.find { it.id == intent.playerId }
+                if (player != null) {
+                    state = state.copy(
+                        renamingPlayerId = intent.playerId,
+                        renameInput = player.name
+                    )
+                }
+            }
+            is PlayerIntent.UpdateRenameInput -> {
+                state = state.copy(renameInput = intent.name)
+            }
+            is PlayerIntent.ConfirmRename -> {
+                val playerId = state.renamingPlayerId ?: return
+                val newName = state.renameInput.trim()
+
+                try {
+                    renamePlayerUseCase(playerId, newName)
+                    state = state.copy(
+                        renamingPlayerId = null,
+                        renameInput = "",
+                        error = null,
+                        players = getPlayers(),
+                        stats = getPlayerStats()
+                    )
+                } catch (e: DomainError) {
+                    state = state.copy(error = e.message)
+                }
+            }
+            is PlayerIntent.CancelRename -> {
+                state = state.copy(
+                    renamingPlayerId = null,
+                    renameInput = ""
                 )
             }
         }
