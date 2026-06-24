@@ -40,6 +40,11 @@ class LocalStorageMatchRepository : MatchRepository {
 
     override fun findById(id: String): Match? = getAll().find { it.id == id }
 
+    override fun delete(id: String) {
+        val matches = getAll().filter { it.id != id }
+        saveAll(matches)
+    }
+
     private fun migrateIfNeeded() {
         val raw = localStorage.getItem(KEY) ?: return
         val migrated = migrateMatchesJson(raw, scoreoJson) { IdGenerator.newId() } ?: return

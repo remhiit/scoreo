@@ -16,4 +16,6 @@ data class MatchDisplay(
 
 data class HistoryState(
     val displays: List<MatchDisplay> = emptyList(),
+    val deleteConfirmMatchId: String? = null,
+    val error: String? = null,
 )

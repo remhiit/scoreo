@@ -18,4 +18,8 @@ class InMemoryMatchRepository : MatchRepository {
     }
 
     override fun findById(id: String): Match? = matches.find { it.id == id }
+
+    override fun delete(id: String) {
+        matches.removeAll { it.id == id }
+    }
 }

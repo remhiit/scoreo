@@ -3,6 +3,7 @@ package com.scoreo.di
 import com.scoreo.application.AddGameTypeUseCase
 import com.scoreo.application.AddPlayerUseCase
 import com.scoreo.application.CreateMatchUseCase
+import com.scoreo.application.DeleteMatchUseCase
 import com.scoreo.application.DeletePlayerUseCase
 import com.scoreo.application.GetGameTypesUseCase
 import com.scoreo.application.GetHeadToHeadUseCase
@@ -10,6 +11,7 @@ import com.scoreo.application.GetMatchesUseCase
 import com.scoreo.application.GetPlayerStatsUseCase
 import com.scoreo.application.GetPlayersUseCase
 import com.scoreo.application.ImportMatchesUseCase
+import com.scoreo.application.RenamePlayerUseCase
 import com.scoreo.application.UpdateGameTypeUseCase
 import com.scoreo.domain.port.GameTypeRepository
 import com.scoreo.domain.port.MatchRepository
@@ -50,6 +52,7 @@ fun createAppDependencies(
         getPlayers = GetPlayersUseCase(playerRepository),
         getPlayerStats = GetPlayerStatsUseCase(matchRepository, gameTypeRepository),
         deletePlayer = DeletePlayerUseCase(playerRepository),
+        renamePlayerUseCase = RenamePlayerUseCase(playerRepository),
     )
 
     val gameTypeHandler = GameTypeHandler(
@@ -72,6 +75,7 @@ fun createAppDependencies(
         getMatches = GetMatchesUseCase(matchRepository),
         getPlayers = GetPlayersUseCase(playerRepository),
         getGameTypes = GetGameTypesUseCase(gameTypeRepository),
+        deleteMatchUseCase = DeleteMatchUseCase(matchRepository),
     )
 
     val statsHandler = StatsHandler(

@@ -3,6 +3,7 @@ package com.scoreo.ui.history
 import com.scoreo.infrastructure.InMemoryGameTypeRepository
 import com.scoreo.infrastructure.InMemoryMatchRepository
 import com.scoreo.infrastructure.InMemoryPlayerRepository
+import com.scoreo.application.DeleteMatchUseCase
 import com.scoreo.application.GetGameTypesUseCase
 import com.scoreo.application.GetMatchesUseCase
 import com.scoreo.application.GetPlayersUseCase
@@ -28,6 +29,7 @@ class HistoryHandlerTest {
         getMatches = GetMatchesUseCase(matchRepo),
         getPlayers = GetPlayersUseCase(playerRepo),
         getGameTypes = GetGameTypesUseCase(gameTypeRepo),
+        deleteMatchUseCase = DeleteMatchUseCase(matchRepo),
     )
 
     @Test
@@ -212,5 +214,82 @@ class HistoryHandlerTest {
         val handler = buildHandler(matchRepo = matchRepo, gameTypeRepo = gameTypeRepo)
         handler.handle(HistoryIntent.Refresh)
         assertFalse(handler.state.displays.first().isTieBreakIndeterminate)
+    }
+
+    @Test
+    fun `test_ShowDeleteConfirm_setsMatchId`() {
+        val handler = buildHandler()
+        handler.handle(HistoryIntent.ShowDeleteConfirm("match123"))
+        assertEquals("match123", handler.state.deleteConfirmMatchId)
+    }
+
+    @Test
+    fun `test_DeleteMatch_callsUseCase`() {
+        val matchRepo = InMemoryMatchRepository()
+        val handler = buildHandler(matchRepo = matchRepo)
+        val match = Match("m1", 1000L, "gt1", listOf(PlayerScore("p1", 10)))
+        matchRepo.save(match)
+
+        handler.handle(HistoryIntent.DeleteMatch("m1"))
+
+        assertEquals(0, matchRepo.getAll().size)
+    }
+
+    @Test
+    fun `test_DeleteMatch_refreshesAfterDelete`() {
+        val matchRepo = InMemoryMatchRepository()
+        val playerRepo = InMemoryPlayerRepository()
+        val gameTypeRepo = InMemoryGameTypeRepository()
+        val handler = buildHandler(playerRepo, gameTypeRepo, matchRepo)
+
+        playerRepo.save(Player("p1", "Alice"))
+        gameTypeRepo.save(GameType("gt1", "Test", WinCondition.HIGHEST_SCORE))
+        matchRepo.save(Match("m1", 1000L, "gt1", listOf(PlayerScore("p1", 10))))
+        matchRepo.save(Match("m2", 2000L, "gt1", listOf(PlayerScore("p1", 20))))
+
+        handler.handle(HistoryIntent.Refresh)
+        assertEquals(2, handler.state.displays.size)
+
+        handler.handle(HistoryIntent.DeleteMatch("m1"))
+
+        assertEquals(1, handler.state.displays.size)
+        assertEquals("m2", handler.state.displays[0].match.id)
+    }
+
+    @Test
+    fun `test_DeleteMatch_clearsConfirm`() {
+        val matchRepo = InMemoryMatchRepository()
+        val handler = buildHandler(matchRepo = matchRepo)
+        val match = Match("m1", 1000L, "gt1", listOf(PlayerScore("p1", 10)))
+        matchRepo.save(match)
+
+        handler.handle(HistoryIntent.ShowDeleteConfirm("m1"))
+        assertEquals("m1", handler.state.deleteConfirmMatchId)
+
+        handler.handle(HistoryIntent.DeleteMatch("m1"))
+
+        assertNotNull(handler.state)
+        assertEquals(null, handler.state.deleteConfirmMatchId)
+    }
+
+    @Test
+    fun `test_DeleteMatch_error`() {
+        val matchRepo = InMemoryMatchRepository()
+        val handler = buildHandler(matchRepo = matchRepo)
+        // Try to delete a non-existent match - should not throw but also should succeed
+        handler.handle(HistoryIntent.DeleteMatch("nonexistent"))
+        // The state should not have an error (delete is idempotent)
+        assertEquals(null, handler.state.error)
+    }
+
+    @Test
+    fun `test_DismissDeleteConfirm_clearsId`() {
+        val handler = buildHandler()
+        handler.handle(HistoryIntent.ShowDeleteConfirm("match123"))
+        assertEquals("match123", handler.state.deleteConfirmMatchId)
+
+        handler.handle(HistoryIntent.DismissDeleteConfirm)
+
+        assertEquals(null, handler.state.deleteConfirmMatchId)
     }
 }

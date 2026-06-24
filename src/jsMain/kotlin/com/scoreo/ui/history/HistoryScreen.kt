@@ -1,13 +1,25 @@
 package com.scoreo.ui.history
 
 import androidx.compose.runtime.Composable
+import org.jetbrains.compose.web.dom.Button
 import org.jetbrains.compose.web.dom.Div
+import org.jetbrains.compose.web.dom.H3
+import org.jetbrains.compose.web.dom.Li
+import org.jetbrains.compose.web.dom.P
 import org.jetbrains.compose.web.dom.Span
 import org.jetbrains.compose.web.dom.Text
+import org.jetbrains.compose.web.dom.Ul
 
 @Composable
 fun HistoryScreen(handler: HistoryHandler) {
     val matches = handler.state.displays
+
+    // Show error if present
+    if (handler.state.error != null) {
+        Div(attrs = { classes("error-message") }) { 
+            Text(handler.state.error!!)
+        }
+    }
 
     if (matches.isEmpty()) {
         Div(attrs = { classes("empty") }) { Text("No matches yet.") }
@@ -39,7 +51,20 @@ fun HistoryScreen(handler: HistoryHandler) {
                                 }
                             }
                         }
-                        Span(attrs = { classes("card-sub") }) { Text(display.dateFormatted) }
+                        Div(attrs = {
+                            style {
+                                property("display", "flex")
+                                property("align-items", "center")
+                                property("gap", "8px")
+                            }
+                        }) {
+                            Span(attrs = { classes("card-sub") }) { Text(display.dateFormatted) }
+                            Button(attrs = {
+                                classes("btn", "btn-icon")
+                                onClick { handler.handle(HistoryIntent.ShowDeleteConfirm(display.match.id)) }
+                                title("Delete match")
+                            }) { Text("🗑") }
+                        }
                     }
                     display.match.playerScores.forEach { ps ->
                         val label = display.playerLabels[ps.playerId] ?: ps.playerId
@@ -68,6 +93,38 @@ fun HistoryScreen(handler: HistoryHandler) {
                             )
                         }
                     }
+                }
+            }
+        }
+    }
+
+    // Delete confirmation modal
+    if (handler.state.deleteConfirmMatchId != null) {
+        val matchToDelete = handler.state.displays.find { it.match.id == handler.state.deleteConfirmMatchId }
+        if (matchToDelete != null) {
+            Div(attrs = {
+                classes("modal-overlay")
+                onClick { handler.handle(HistoryIntent.DismissDeleteConfirm) }
+            }) {}
+            Div(attrs = { classes("modal") }) {
+                H3 { Text("Delete match?") }
+                P { Text("${matchToDelete.gameType?.name ?: "Unknown"} · ${matchToDelete.dateFormatted}") }
+                Ul {
+                    matchToDelete.match.playerScores.forEach { ps ->
+                        val label = matchToDelete.playerLabels[ps.playerId] ?: "?"
+                        Li { Text("$label: ${ps.score}") }
+                    }
+                }
+                P(attrs = { classes("warning") }) { Text("Match data will be lost.") }
+                Div(attrs = { classes("modal-actions") }) {
+                    Button(attrs = {
+                        classes("btn", "btn-secondary")
+                        onClick { handler.handle(HistoryIntent.DismissDeleteConfirm) }
+                    }) { Text("Cancel") }
+                    Button(attrs = {
+                        classes("btn", "btn-danger", "btn-danger-filled")
+                        onClick { handler.handle(HistoryIntent.DeleteMatch(handler.state.deleteConfirmMatchId!!)) }
+                    }) { Text("Delete") }
                 }
             }
         }

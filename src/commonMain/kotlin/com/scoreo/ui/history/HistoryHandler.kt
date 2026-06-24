@@ -3,6 +3,7 @@ package com.scoreo.ui.history
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import com.scoreo.application.DeleteMatchUseCase
 import com.scoreo.application.GetGameTypesUseCase
 import com.scoreo.application.GetMatchesUseCase
 import com.scoreo.application.GetPlayersUseCase
@@ -16,6 +17,7 @@ class HistoryHandler(
     private val getMatches: GetMatchesUseCase,
     private val getPlayers: GetPlayersUseCase,
     private val getGameTypes: GetGameTypesUseCase,
+    private val deleteMatchUseCase: DeleteMatchUseCase,
 ) {
     var state by mutableStateOf(HistoryState())
         private set
@@ -23,6 +25,21 @@ class HistoryHandler(
     fun handle(intent: HistoryIntent) {
         when (intent) {
             is HistoryIntent.Refresh -> refresh()
+            is HistoryIntent.ShowDeleteConfirm -> {
+                state = state.copy(deleteConfirmMatchId = intent.matchId)
+            }
+            is HistoryIntent.DeleteMatch -> {
+                try {
+                    deleteMatchUseCase(intent.matchId)
+                    state = state.copy(deleteConfirmMatchId = null, error = null)
+                    refresh()
+                } catch (e: Exception) {
+                    state = state.copy(error = "Failed to delete match: ${e.message}")
+                }
+            }
+            is HistoryIntent.DismissDeleteConfirm -> {
+                state = state.copy(deleteConfirmMatchId = null)
+            }
         }
     }
 
@@ -48,7 +65,9 @@ class HistoryHandler(
                     dateFormatted = dateFormatted,
                     isTieBreakIndeterminate = gameType?.let { match.isTieBreakIndeterminate(it) } ?: false,
                 )
-            }
+            },
+            deleteConfirmMatchId = null,
+            error = null,
         )
     }
 }
