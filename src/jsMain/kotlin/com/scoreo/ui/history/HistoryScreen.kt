@@ -1,6 +1,8 @@
 package com.scoreo.ui.history
 
 import androidx.compose.runtime.Composable
+import com.scoreo.ui.navigation.AppNavigator
+import com.scoreo.ui.navigation.Screen
 import org.jetbrains.compose.web.dom.Button
 import org.jetbrains.compose.web.dom.Div
 import org.jetbrains.compose.web.dom.H3
@@ -11,7 +13,7 @@ import org.jetbrains.compose.web.dom.Text
 import org.jetbrains.compose.web.dom.Ul
 
 @Composable
-fun HistoryScreen(handler: HistoryHandler) {
+fun HistoryScreen(handler: HistoryHandler, navigator: AppNavigator? = null) {
     val matches = handler.state.displays
 
     // Show error if present
@@ -25,7 +27,19 @@ fun HistoryScreen(handler: HistoryHandler) {
         Div(attrs = { classes("empty") }) { Text("No matches yet.") }
     } else {
         matches.forEach { display ->
-            Div(attrs = { classes("card", "match-card") }) {
+            Div(attrs = {
+                classes("card", "match-card")
+                if (navigator != null) {
+                    style { property("cursor", "pointer") }
+                    onClick {
+                        navigator.navigate(Screen.ScoreDetail(
+                            gameTypeId = display.gameType?.id ?: return@onClick,
+                            playerIds = display.match.playerScores.map { it.playerId },
+                            matchId = display.match.id
+                        ))
+                    }
+                }
+            }) {
                 Div(attrs = { style { property("width", "100%") } }) {
                     Div(attrs = {
                         style {

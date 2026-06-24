@@ -55,9 +55,10 @@ fun ScoreDetailScreen(
             Tr(attrs = { classes("score-table-round") }) {
                 state.players.forEach { player ->
                     Td(attrs = { classes("score-table-cell") }) {
-                        Input(type = InputType.Text, attrs = {
+                        Input(type = InputType.Number, attrs = {
                             classes("score-table-input")
                             value(round[player.id] ?: "")
+                            attr("inputmode", "numeric")
                             onInput {
                                 handler.handle(ScoreDetailIntent.UpdateScore(roundIndex, player.id, it.value))
                             }

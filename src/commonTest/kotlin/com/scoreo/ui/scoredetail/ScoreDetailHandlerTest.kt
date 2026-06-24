@@ -2,9 +2,13 @@ package com.scoreo.ui.scoredetail
 
 import com.scoreo.infrastructure.InMemoryGameTypeRepository
 import com.scoreo.infrastructure.InMemoryMatchRepository
+import com.scoreo.infrastructure.InMemoryPlayerRepository
 import com.scoreo.application.CreateMatchUseCase
+import com.scoreo.application.UpdateMatchUseCase
 import com.scoreo.domain.model.GameType
+import com.scoreo.domain.model.Match
 import com.scoreo.domain.model.Player
+import com.scoreo.domain.model.PlayerScore
 import com.scoreo.domain.model.TieBreakRule
 import com.scoreo.domain.model.WinCondition
 import kotlin.test.Test
@@ -141,21 +145,105 @@ class ScoreDetailHandlerTest {
     }
 
     @Test
+    fun `Terminate with empty score treats as zero and saves`() {
+        val (handler, matchRepo) = buildHandler()
+        // All cells empty - should now be treated as valid (0 points each)
+        handler.handle(ScoreDetailIntent.Terminate)
+        assertTrue(handler.state.saved)
+        assertEquals(1, matchRepo.getAll().size)
+        val match = matchRepo.getAll().first()
+        assertEquals(0, match.playerScores.find { it.playerId == "alice" }?.score)
+        assertEquals(0, match.playerScores.find { it.playerId == "bob" }?.score)
+    }
+
+    // ── P1-01: Numeric Input Tests ──
+
+    @Test
+    fun `test_ValidateRounds_emptyStringIsZero`() {
+        val (handler, matchRepo) = buildHandler()
+        handler.handle(ScoreDetailIntent.UpdateScore(0, "alice", ""))
+        handler.handle(ScoreDetailIntent.UpdateScore(0, "bob", "5"))
+        handler.handle(ScoreDetailIntent.Terminate)
+        assertTrue(handler.state.saved)
+        assertEquals(1, matchRepo.getAll().size)
+        val match = matchRepo.getAll().first()
+        assertEquals(0, match.playerScores.find { it.playerId == "alice" }?.score)
+        assertEquals(5, match.playerScores.find { it.playerId == "bob" }?.score)
+    }
+
+    @Test
+    fun `test_ValidateRounds_allEmptyRound`() {
+        val (handler, matchRepo) = buildHandler()
+        handler.handle(ScoreDetailIntent.UpdateScore(0, "alice", ""))
+        handler.handle(ScoreDetailIntent.UpdateScore(0, "bob", ""))
+        handler.handle(ScoreDetailIntent.Terminate)
+        assertTrue(handler.state.saved)
+        assertEquals(1, matchRepo.getAll().size)
+        val match = matchRepo.getAll().first()
+        assertEquals(0, match.playerScores.find { it.playerId == "alice" }?.score)
+        assertEquals(0, match.playerScores.find { it.playerId == "bob" }?.score)
+    }
+
+    @Test
     fun `Terminate with invalid score sets error and does not save`() {
         val (handler, matchRepo) = buildHandler()
         handler.handle(ScoreDetailIntent.UpdateScore(0, "alice", "abc"))
+        handler.handle(ScoreDetailIntent.UpdateScore(0, "bob", "5"))
         handler.handle(ScoreDetailIntent.Terminate)
-        assertEquals("Invalid score for Alice in round 1", handler.state.error)
+        assertEquals("Invalid score for Alice in round 1: expected a number", handler.state.error)
         assertFalse(handler.state.saved)
         assertEquals(0, matchRepo.getAll().size)
     }
 
     @Test
-    fun `Terminate with empty score sets error`() {
+    fun `test_ValidateRounds_partiallyFilledOk`() {
         val (handler, matchRepo) = buildHandler()
+        handler.handle(ScoreDetailIntent.UpdateScore(0, "alice", "10"))
+        handler.handle(ScoreDetailIntent.UpdateScore(0, "bob", ""))
         handler.handle(ScoreDetailIntent.Terminate)
-        assertEquals("Invalid score for Alice in round 1", handler.state.error)
-        assertFalse(handler.state.saved)
+        assertTrue(handler.state.saved)
+        assertEquals(1, matchRepo.getAll().size)
+        val match = matchRepo.getAll().first()
+        assertEquals(10, match.playerScores.find { it.playerId == "alice" }?.score)
+        assertEquals(0, match.playerScores.find { it.playerId == "bob" }?.score)
+    }
+
+    @Test
+    fun `test_TotalsComputation_treatsEmptyAsZero`() {
+        val (handler, _) = buildHandler()
+        handler.handle(ScoreDetailIntent.UpdateScore(0, "alice", ""))
+        handler.handle(ScoreDetailIntent.UpdateScore(0, "bob", "5"))
+        assertEquals(0, handler.state.totals["alice"])
+        assertEquals(5, handler.state.totals["bob"])
+    }
+
+    @Test
+    fun `test_Terminate_acceptsAllEmptyRound`() {
+        val (handler, matchRepo) = buildHandler()
+        // All cells empty in the single round - should be treated as 0 (valid)
+        handler.handle(ScoreDetailIntent.Terminate)
+        assertTrue(handler.state.saved)
+        assertEquals(1, matchRepo.getAll().size)
+        val match = matchRepo.getAll().first()
+        assertEquals(0, match.playerScores.find { it.playerId == "alice" }?.score)
+        assertEquals(0, match.playerScores.find { it.playerId == "bob" }?.score)
+    }
+
+    @Test
+    fun `test_ManualWinnerSelection_totalsNeverNull`() {
+        val gameType = GameType("gt1", "TestGame", WinCondition.MANUAL)
+        val (handler, matchRepo) = buildHandlerWithGameType(gameType)
+        handler.handle(ScoreDetailIntent.UpdateScore(0, "alice", ""))
+        handler.handle(ScoreDetailIntent.UpdateScore(0, "bob", ""))
+        handler.handle(ScoreDetailIntent.Terminate)
+        assertTrue(handler.state.showWinnerModal)
+        // Verify that totals are computed and never null
+        val aliceTotal = handler.state.totals["alice"]
+        val bobTotal = handler.state.totals["bob"]
+        assertNotNull(aliceTotal)
+        assertNotNull(bobTotal)
+        assertEquals(0, aliceTotal)
+        assertEquals(0, bobTotal)
     }
 
     @Test
@@ -423,5 +511,229 @@ class ScoreDetailHandlerTest {
         assertFalse(handler.state.showWinnerModal)
         assertNull(handler.state.error)
         assertFalse(handler.state.saved)
+    }
+
+    @Test
+    fun `LoadMatchForEditing_populatesState`() {
+        val gameType = GameType("gt1", "TestGame", WinCondition.HIGHEST_SCORE)
+        val gameTypeRepo = InMemoryGameTypeRepository().also { it.save(gameType) }
+        val matchRepo = InMemoryMatchRepository()
+        val playerRepo = InMemoryPlayerRepository()
+        
+        val players = listOf(Player("alice", "Alice"), Player("bob", "Bob"))
+        players.forEach { playerRepo.save(it) }
+        
+        val match = Match(
+            id = "m1",
+            gameTypeId = gameType.id,
+            date = 1000L,
+            playerScores = listOf(
+                PlayerScore("alice", 10),
+                PlayerScore("bob", 5)
+            )
+        )
+        matchRepo.save(match)
+        
+        val createMatchUseCase = CreateMatchUseCase(matchRepo, gameTypeRepo)
+        val updateMatchUseCase = UpdateMatchUseCase(matchRepo)
+        
+        val handler = ScoreDetailHandler(
+            gameType = gameType,
+            players = players,
+            createMatch = createMatchUseCase,
+            currentDate = { 1767225600000L },
+            updateMatchUseCase = updateMatchUseCase,
+            matchRepository = matchRepo,
+            playerRepository = playerRepo,
+            gameTypeRepository = gameTypeRepo,
+            matchId = "m1"
+        )
+        
+        assertEquals("m1", handler.state.editingMatchId)
+        assertEquals(1, handler.state.rounds.size)
+        assertEquals("10", handler.state.rounds[0]["alice"])
+        assertEquals("5", handler.state.rounds[0]["bob"])
+    }
+
+    @Test
+    fun `ReconstructRounds_alwaysOnlyOneRound`() {
+        val gameType = GameType("gt1", "TestGame", WinCondition.HIGHEST_SCORE)
+        val gameTypeRepo = InMemoryGameTypeRepository().also { it.save(gameType) }
+        val matchRepo = InMemoryMatchRepository()
+        val playerRepo = InMemoryPlayerRepository()
+        
+        val players = listOf(Player("alice", "Alice"), Player("bob", "Bob"))
+        players.forEach { playerRepo.save(it) }
+        
+        // Create a match with multiple rounds stored (if that were possible)
+        val match = Match(
+            id = "m1",
+            gameTypeId = gameType.id,
+            date = 1000L,
+            playerScores = listOf(
+                PlayerScore("alice", 30),  // total across all rounds
+                PlayerScore("bob", 20)
+            )
+        )
+        matchRepo.save(match)
+        
+        val createMatchUseCase = CreateMatchUseCase(matchRepo, gameTypeRepo)
+        val updateMatchUseCase = UpdateMatchUseCase(matchRepo)
+        
+        val handler = ScoreDetailHandler(
+            gameType = gameType,
+            players = players,
+            createMatch = createMatchUseCase,
+            currentDate = { 1767225600000L },
+            updateMatchUseCase = updateMatchUseCase,
+            matchRepository = matchRepo,
+            playerRepository = playerRepo,
+            gameTypeRepository = gameTypeRepo,
+            matchId = "m1"
+        )
+        
+        // Should always reconstruct as 1 round with totals
+        assertEquals(1, handler.state.rounds.size)
+        assertEquals("30", handler.state.rounds[0]["alice"])
+        assertEquals("20", handler.state.rounds[0]["bob"])
+    }
+
+    @Test
+    fun `Terminate_callsUpdateUseCase`() {
+        val gameType = GameType("gt1", "TestGame", WinCondition.HIGHEST_SCORE)
+        val gameTypeRepo = InMemoryGameTypeRepository().also { it.save(gameType) }
+        val matchRepo = InMemoryMatchRepository()
+        val playerRepo = InMemoryPlayerRepository()
+        
+        val players = listOf(Player("alice", "Alice"), Player("bob", "Bob"))
+        players.forEach { playerRepo.save(it) }
+        
+        val match = Match(
+            id = "m1",
+            gameTypeId = gameType.id,
+            date = 1000L,
+            playerScores = listOf(
+                PlayerScore("alice", 10),
+                PlayerScore("bob", 5)
+            )
+        )
+        matchRepo.save(match)
+        
+        val createMatchUseCase = CreateMatchUseCase(matchRepo, gameTypeRepo)
+        val updateMatchUseCase = UpdateMatchUseCase(matchRepo)
+        
+        val handler = ScoreDetailHandler(
+            gameType = gameType,
+            players = players,
+            createMatch = createMatchUseCase,
+            currentDate = { 1767225600000L },
+            updateMatchUseCase = updateMatchUseCase,
+            matchRepository = matchRepo,
+            playerRepository = playerRepo,
+            gameTypeRepository = gameTypeRepo,
+            matchId = "m1"
+        )
+        
+        // Update scores and terminate
+        handler.handle(ScoreDetailIntent.UpdateScore(0, "alice", "15"))
+        handler.handle(ScoreDetailIntent.UpdateScore(0, "bob", "10"))
+        handler.handle(ScoreDetailIntent.Terminate)
+        
+        assertTrue(handler.state.saved)
+        
+        // Verify updated match was saved with new scores
+        val updatedMatch = matchRepo.findById("m1")
+        assertEquals(15, updatedMatch?.playerScores?.find { it.playerId == "alice" }?.score)
+        assertEquals(10, updatedMatch?.playerScores?.find { it.playerId == "bob" }?.score)
+    }
+
+    @Test
+    fun `EditMode_preservesMatchId`() {
+        val gameType = GameType("gt1", "TestGame", WinCondition.HIGHEST_SCORE)
+        val gameTypeRepo = InMemoryGameTypeRepository().also { it.save(gameType) }
+        val matchRepo = InMemoryMatchRepository()
+        val playerRepo = InMemoryPlayerRepository()
+        
+        val players = listOf(Player("alice", "Alice"), Player("bob", "Bob"))
+        players.forEach { playerRepo.save(it) }
+        
+        val match = Match(
+            id = "m1",
+            gameTypeId = gameType.id,
+            date = 1000L,
+            playerScores = listOf(
+                PlayerScore("alice", 10),
+                PlayerScore("bob", 5)
+            )
+        )
+        matchRepo.save(match)
+        
+        val createMatchUseCase = CreateMatchUseCase(matchRepo, gameTypeRepo)
+        val updateMatchUseCase = UpdateMatchUseCase(matchRepo)
+        
+        val handler = ScoreDetailHandler(
+            gameType = gameType,
+            players = players,
+            createMatch = createMatchUseCase,
+            currentDate = { 1767225600000L },
+            updateMatchUseCase = updateMatchUseCase,
+            matchRepository = matchRepo,
+            playerRepository = playerRepo,
+            gameTypeRepository = gameTypeRepo,
+            matchId = "m1"
+        )
+        
+        handler.handle(ScoreDetailIntent.UpdateScore(0, "alice", "20"))
+        handler.handle(ScoreDetailIntent.Terminate)
+        
+        // Verify the saved match still has the same ID
+        val savedMatch = matchRepo.findById("m1")
+        assertEquals("m1", savedMatch?.id)
+    }
+
+    @Test
+    fun `EditMatch_preservesOriginalDate`() {
+        val gameType = GameType("gt1", "TestGame", WinCondition.HIGHEST_SCORE)
+        val gameTypeRepo = InMemoryGameTypeRepository().also { it.save(gameType) }
+        val matchRepo = InMemoryMatchRepository()
+        val playerRepo = InMemoryPlayerRepository()
+        
+        val players = listOf(Player("alice", "Alice"), Player("bob", "Bob"))
+        players.forEach { playerRepo.save(it) }
+        
+        val originalDate = 1000L
+        val match = Match(
+            id = "m1",
+            gameTypeId = gameType.id,
+            date = originalDate,
+            playerScores = listOf(
+                PlayerScore("alice", 10),
+                PlayerScore("bob", 5)
+            )
+        )
+        matchRepo.save(match)
+        
+        val createMatchUseCase = CreateMatchUseCase(matchRepo, gameTypeRepo)
+        val updateMatchUseCase = UpdateMatchUseCase(matchRepo)
+        
+        // Handler is created with a different current date
+        val handler = ScoreDetailHandler(
+            gameType = gameType,
+            players = players,
+            createMatch = createMatchUseCase,
+            currentDate = { 9999999L },  // Different date
+            updateMatchUseCase = updateMatchUseCase,
+            matchRepository = matchRepo,
+            playerRepository = playerRepo,
+            gameTypeRepository = gameTypeRepo,
+            matchId = "m1"
+        )
+        
+        handler.handle(ScoreDetailIntent.UpdateScore(0, "alice", "20"))
+        handler.handle(ScoreDetailIntent.Terminate)
+        
+        // Verify the saved match still has the original date
+        val savedMatch = matchRepo.findById("m1")
+        assertEquals(originalDate, savedMatch?.date)
     }
 }

@@ -4,20 +4,63 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import com.scoreo.application.CreateMatchUseCase
+import com.scoreo.application.UpdateMatchUseCase
 import com.scoreo.domain.model.GameType
 import com.scoreo.domain.model.Player
 import com.scoreo.domain.model.PlayerScore
 import com.scoreo.domain.model.TieBreakRule
 import com.scoreo.domain.model.WinCondition
+import com.scoreo.domain.port.GameTypeRepository
+import com.scoreo.domain.port.MatchRepository
+import com.scoreo.domain.port.PlayerRepository
 
 class ScoreDetailHandler(
     private val gameType: GameType,
     private val players: List<Player>,
     private val createMatch: CreateMatchUseCase,
     private val currentDate: () -> Long,
+    private val updateMatchUseCase: UpdateMatchUseCase? = null,
+    private val matchRepository: MatchRepository? = null,
+    private val playerRepository: PlayerRepository? = null,
+    private val gameTypeRepository: GameTypeRepository? = null,
+    private val matchId: String? = null,
 ) {
     var state by mutableStateOf(ScoreDetailState(gameType = gameType, players = players))
         private set
+
+    init {
+        if (matchId != null) {
+            loadMatchForEditing(matchId)
+        }
+    }
+
+    private fun loadMatchForEditing(matchId: String) {
+        if (matchRepository == null || gameTypeRepository == null) return
+        val match = matchRepository.findById(matchId) ?: return
+        val gameType = gameTypeRepository.findById(match.gameTypeId) ?: return
+        val players = playerRepository?.getAll(includeInactive = true)?.filter { 
+            it.id in match.playerScores.map { ps -> ps.playerId } 
+        } ?: return
+
+        val rounds = reconstructRounds(match)
+
+        state = state.copy(
+            gameType = gameType,
+            players = players,
+            rounds = rounds,
+            editingMatchId = matchId
+        )
+    }
+
+    private fun reconstructRounds(match: com.scoreo.domain.model.Match): List<Map<String, String>> {
+        // All matches are stored with playerScores (total per player)
+        // Reconstruct as 1 round with these totals.
+        return listOf(
+            match.playerScores.associate { ps ->
+                ps.playerId to ps.score.toString()
+            }
+        )
+    }
 
     fun handle(intent: ScoreDetailIntent) {
         when (intent) {
@@ -40,44 +83,51 @@ class ScoreDetailHandler(
             }
 
             is ScoreDetailIntent.Terminate -> {
-                if (!validateRounds()) return
-                if (gameType.winCondition == WinCondition.MANUAL) {
-                    state = state.copy(showWinnerModal = true, modalWinners = emptySet(), error = null)
-                    return
-                }
-                val playerScores = players.map { player ->
-                    PlayerScore(player.id, state.totals[player.id] ?: 0)
-                }
-                val primaryWinners = gameType.computeWinners(playerScores)
+                validateRounds().fold(
+                    onFailure = { e ->
+                        state = state.copy(error = e.message)
+                        return@handle
+                    },
+                    onSuccess = {
+                        if (gameType.winCondition == WinCondition.MANUAL) {
+                            state = state.copy(showWinnerModal = true, modalWinners = emptySet(), error = null)
+                            return@handle
+                        }
+                        val playerScores = players.map { player ->
+                            PlayerScore(player.id, state.totals[player.id] ?: 0)
+                        }
+                        val primaryWinners = gameType.computeWinners(playerScores)
 
-                when {
-                    // No tie → save directly
-                    primaryWinners.size <= 1 -> {
-                        saveMatch(playerScores, manualWinners = emptyList())
+                        when {
+                            // No tie → save directly
+                            primaryWinners.size <= 1 -> {
+                                saveMatch(playerScores, manualWinners = emptyList())
+                            }
+                            // Tie + NONE → save all tied as winners
+                            gameType.tieBreakRule == TieBreakRule.NONE -> {
+                                saveMatch(playerScores, manualWinners = primaryWinners)
+                            }
+                            // Tie + MANUAL_SELECTION → show manual arbitration
+                            gameType.tieBreakRule == TieBreakRule.MANUAL_SELECTION -> {
+                                state = state.copy(
+                                    showManualSelectionDialog = true,
+                                    tiedPlayerIds = primaryWinners,
+                                    manualSelectionWinners = emptySet(),
+                                    error = null,
+                                )
+                            }
+                            // Tie + SECONDARY_SCORE → show secondary score dialog
+                            gameType.tieBreakRule == TieBreakRule.SECONDARY_SCORE -> {
+                                state = state.copy(
+                                    showSecondaryScoreDialog = true,
+                                    tiedPlayerIds = primaryWinners,
+                                    secondaryScoreInputs = primaryWinners.associateWith { "" },
+                                    error = null,
+                                )
+                            }
+                        }
                     }
-                    // Tie + NONE → save all tied as winners
-                    gameType.tieBreakRule == TieBreakRule.NONE -> {
-                        saveMatch(playerScores, manualWinners = primaryWinners)
-                    }
-                    // Tie + MANUAL_SELECTION → show manual arbitration
-                    gameType.tieBreakRule == TieBreakRule.MANUAL_SELECTION -> {
-                        state = state.copy(
-                            showManualSelectionDialog = true,
-                            tiedPlayerIds = primaryWinners,
-                            manualSelectionWinners = emptySet(),
-                            error = null,
-                        )
-                    }
-                    // Tie + SECONDARY_SCORE → show secondary score dialog
-                    gameType.tieBreakRule == TieBreakRule.SECONDARY_SCORE -> {
-                        state = state.copy(
-                            showSecondaryScoreDialog = true,
-                            tiedPlayerIds = primaryWinners,
-                            secondaryScoreInputs = primaryWinners.associateWith { "" },
-                            error = null,
-                        )
-                    }
-                }
+                )
             }
 
             is ScoreDetailIntent.DismissModal -> {
@@ -193,17 +243,25 @@ class ScoreDetailHandler(
         }
     }
 
-    private fun validateRounds(): Boolean {
-        for (player in players) {
-            for ((roundIndex, round) in state.rounds.withIndex()) {
-                val raw = round[player.id]?.trim() ?: ""
-                if (raw.toIntOrNull() == null) {
-                    state = state.copy(error = "Invalid score for ${player.name} in round ${roundIndex + 1}")
-                    return false
+    private fun validateRounds(): Result<List<Map<String, String>>> {
+        // Check at least 1 round
+        if (state.rounds.isEmpty()) {
+            return Result.failure(Exception("At least one round is required"))
+        }
+        
+        // Validate each cell: empty ("") is OK, non-empty must be integer
+        state.rounds.forEachIndexed { roundIndex, round ->
+            round.forEach { (playerId, scoreStr) ->
+                if (scoreStr.isNotEmpty() && scoreStr.toIntOrNull() == null) {
+                    val playerName = players.find { it.id == playerId }?.name ?: playerId
+                    return Result.failure(
+                        Exception("Invalid score for $playerName in round ${roundIndex + 1}: expected a number")
+                    )
                 }
             }
         }
-        return true
+        
+        return Result.success(state.rounds)
     }
 
     private fun saveMatch(
@@ -211,17 +269,38 @@ class ScoreDetailHandler(
         manualWinners: List<String> = emptyList(),
         secondaryPlayerScores: List<PlayerScore> = emptyList(),
     ) {
-        val result = createMatch(
-            gameTypeId = gameType.id,
-            playerScores = playerScores,
-            date = currentDate(),
-            manualWinners = manualWinners,
-            secondaryPlayerScores = secondaryPlayerScores,
-        )
-        result.fold(
-            onSuccess = { state = state.copy(saved = true) },
-            onFailure = { e -> state = state.copy(error = e.message) },
-        )
+        try {
+            val editingId = state.editingMatchId
+            if (editingId != null && updateMatchUseCase != null && matchRepository != null) {
+                // Update existing match
+                val originalMatch = matchRepository.findById(editingId) ?: run {
+                    state = state.copy(error = "Could not find original match to update")
+                    return
+                }
+                val updatedMatch = originalMatch.copy(
+                    playerScores = playerScores,
+                    manualWinners = manualWinners,
+                    secondaryPlayerScores = secondaryPlayerScores,
+                )
+                updateMatchUseCase(updatedMatch)
+                state = state.copy(saved = true)
+            } else {
+                // Create new match
+                val result = createMatch(
+                    gameTypeId = gameType.id,
+                    playerScores = playerScores,
+                    date = currentDate(),
+                    manualWinners = manualWinners,
+                    secondaryPlayerScores = secondaryPlayerScores,
+                )
+                result.fold(
+                    onSuccess = { state = state.copy(saved = true) },
+                    onFailure = { e -> state = state.copy(error = e.message) },
+                )
+            }
+        } catch (e: Exception) {
+            state = state.copy(error = "Failed to save match: ${e.message}")
+        }
     }
 
     fun reset() {

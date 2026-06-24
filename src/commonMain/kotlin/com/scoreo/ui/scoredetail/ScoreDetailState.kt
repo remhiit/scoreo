@@ -19,6 +19,8 @@ data class ScoreDetailState(
     val showManualSelectionDialog: Boolean = false,
     val manualSelectionWinners: Set<String> = emptySet(),
     val collectedSecondaryScores: List<PlayerScore> = emptyList(),
+    // Edit mode
+    val editingMatchId: String? = null,
 ) {
     val totals: Map<String, Int>
         get() = players.associate { player ->

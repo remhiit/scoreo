@@ -7,6 +7,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import com.scoreo.application.CreateMatchUseCase
+import com.scoreo.application.UpdateMatchUseCase
 import com.scoreo.di.createAppDependencies
 import com.scoreo.domain.port.CloudSyncRepository
 import com.scoreo.domain.port.GameTypeRepository
@@ -43,14 +44,14 @@ fun App(
     var burgerOpen by remember { mutableStateOf(false) }
     val themeState = rememberThemeState()
 
-    val screenTitle = when (navigator.current) {
+    val screenTitle = when (val screen = navigator.current) {
         is Screen.Home -> "Scoreo"
         is Screen.History -> "History"
         is Screen.Import -> "Import"
         is Screen.Stats -> "Stats"
         is Screen.Games -> "Games"
         is Screen.Sync -> "Sync"
-        is Screen.ScoreDetail -> "Score Detail"
+        is Screen.ScoreDetail -> if (screen.matchId != null) "Edit match" else "Score Detail"
     }
     val canGoBack = navigator.current !is Screen.Home
 
@@ -86,7 +87,7 @@ fun App(
             )
             is Screen.History -> {
                 LaunchedEffect(navigator.current) { deps.historyHandler.handle(HistoryIntent.Refresh) }
-                HistoryScreen(deps.historyHandler)
+                HistoryScreen(deps.historyHandler, navigator)
             }
             is Screen.Stats -> {
                 LaunchedEffect(navigator.current) { deps.statsHandler.refresh() }
@@ -118,6 +119,11 @@ fun App(
                             players = players,
                             createMatch = CreateMatchUseCase(matchRepository, gameTypeRepository),
                             currentDate = currentDate,
+                            updateMatchUseCase = UpdateMatchUseCase(matchRepository),
+                            matchRepository = matchRepository,
+                            playerRepository = playerRepository,
+                            gameTypeRepository = gameTypeRepository,
+                            matchId = screen.matchId,
                         )
                     }
                     ScoreDetailScreen(

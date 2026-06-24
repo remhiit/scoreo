@@ -12,7 +12,11 @@ sealed class Screen {
     data object Stats : Screen()
     data object Games : Screen()
     data object Sync : Screen()
-    data class ScoreDetail(val gameTypeId: String, val playerIds: List<String>) : Screen()
+    data class ScoreDetail(
+        val gameTypeId: String,
+        val playerIds: List<String>,
+        val matchId: String? = null  // null = new match, non-null = edit existing
+    ) : Screen()
 }
 
 class AppNavigator {
@@ -35,7 +39,14 @@ class AppNavigator {
         is Screen.Import -> "#/import"
         is Screen.Games -> "#/games"
         is Screen.Sync -> "#/sync"
-        is Screen.ScoreDetail -> "#/score/${screen.gameTypeId}/${screen.playerIds.joinToString(",")}"
+        is Screen.ScoreDetail -> {
+            val route = "#/score/${screen.gameTypeId}/${screen.playerIds.joinToString(",")}"
+            if (screen.matchId != null) {
+                "$route/${screen.matchId}"
+            } else {
+                route
+            }
+        }
     }
 
     private fun restoreFromHash(): Screen {
@@ -48,7 +59,11 @@ class AppNavigator {
             "games" -> Screen.Games
             "sync" -> Screen.Sync
             "score" -> if (parts.size >= 3) {
-                Screen.ScoreDetail(parts[1], parts[2].split(","))
+                val gameTypeId = parts[1]
+                val playersCsv = parts[2]
+                val matchId = parts.getOrNull(3)  // optional fourth part (index 3)
+                val playerIds = playersCsv.split(",").filter { it.isNotEmpty() }
+                Screen.ScoreDetail(gameTypeId, playerIds, matchId)
             } else Screen.Home
             else -> Screen.Home
         }
