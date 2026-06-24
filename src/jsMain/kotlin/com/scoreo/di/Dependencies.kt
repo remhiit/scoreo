@@ -6,6 +6,7 @@ import com.scoreo.application.ArchiveGameTypeUseCase
 import com.scoreo.application.CreateMatchUseCase
 import com.scoreo.application.DeleteMatchUseCase
 import com.scoreo.application.DeletePlayerUseCase
+import com.scoreo.application.FindGameTypeByIdUseCase
 import com.scoreo.application.GetGameTypesUseCase
 import com.scoreo.application.GetHeadToHeadUseCase
 import com.scoreo.application.GetMatchesUseCase
@@ -60,7 +61,7 @@ fun createAppDependencies(
         addGameType = AddGameTypeUseCase(gameTypeRepository),
         updateGameType = UpdateGameTypeUseCase(gameTypeRepository),
         getGameTypes = GetGameTypesUseCase(gameTypeRepository),
-        gameTypeRepository = gameTypeRepository,
+        findGameTypeById = FindGameTypeByIdUseCase(gameTypeRepository),
         archiveGameType = ArchiveGameTypeUseCase(gameTypeRepository),
     )
 

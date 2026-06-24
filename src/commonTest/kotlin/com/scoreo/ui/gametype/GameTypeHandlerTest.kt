@@ -3,6 +3,7 @@ package com.scoreo.ui.gametype
 import com.scoreo.infrastructure.InMemoryGameTypeRepository
 import com.scoreo.application.AddGameTypeUseCase
 import com.scoreo.application.ArchiveGameTypeUseCase
+import com.scoreo.application.FindGameTypeByIdUseCase
 import com.scoreo.application.GetGameTypesUseCase
 import com.scoreo.application.UpdateGameTypeUseCase
 import com.scoreo.domain.model.TieBreakRule
@@ -19,7 +20,7 @@ class GameTypeHandlerTest {
             addGameType = AddGameTypeUseCase(repo),
             updateGameType = UpdateGameTypeUseCase(repo),
             getGameTypes = GetGameTypesUseCase(repo),
-            gameTypeRepository = repo,
+            findGameTypeById = FindGameTypeByIdUseCase(repo),
             archiveGameType = ArchiveGameTypeUseCase(repo),
         )
 

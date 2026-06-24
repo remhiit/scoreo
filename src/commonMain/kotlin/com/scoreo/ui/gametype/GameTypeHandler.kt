@@ -5,18 +5,18 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import com.scoreo.application.AddGameTypeUseCase
 import com.scoreo.application.ArchiveGameTypeUseCase
+import com.scoreo.application.FindGameTypeByIdUseCase
 import com.scoreo.application.GetGameTypesUseCase
 import com.scoreo.application.UpdateGameTypeUseCase
 import com.scoreo.domain.DomainError
 import com.scoreo.domain.model.TieBreakRule
 import com.scoreo.domain.model.WinCondition
-import com.scoreo.domain.port.GameTypeRepository
 
 class GameTypeHandler(
     private val addGameType: AddGameTypeUseCase,
     private val updateGameType: UpdateGameTypeUseCase,
     private val getGameTypes: GetGameTypesUseCase,
-    private val gameTypeRepository: GameTypeRepository,
+    private val findGameTypeById: FindGameTypeByIdUseCase,
     private val archiveGameType: ArchiveGameTypeUseCase,
 ) {
     var state by mutableStateOf(GameTypeState(gameTypes = getGameTypes()))
@@ -57,8 +57,8 @@ class GameTypeHandler(
                     state = state.copy(error = e.message)
                 }
             }
-            is GameTypeIntent.EditGameType -> {
-                val gameType = gameTypeRepository.findById(intent.id)
+             is GameTypeIntent.EditGameType -> {
+                 val gameType = findGameTypeById(intent.id)
                 if (gameType != null) {
                     state = state.copy(
                         inputName = gameType.name,
