@@ -13,7 +13,10 @@ import com.scoreo.domain.DomainError
 import org.jetbrains.compose.web.attributes.InputType
 import org.jetbrains.compose.web.dom.Button
 import org.jetbrains.compose.web.dom.Div
+import org.jetbrains.compose.web.dom.H3
 import org.jetbrains.compose.web.dom.Input
+import org.jetbrains.compose.web.dom.Li
+import org.jetbrains.compose.web.dom.Ol
 import org.jetbrains.compose.web.dom.Option
 import org.jetbrains.compose.web.dom.Select
 import org.jetbrains.compose.web.dom.Span
@@ -41,12 +44,30 @@ fun HomeScreen(
     var inlineGameWinCondition by remember { mutableStateOf(WinCondition.HIGHEST_SCORE) }
     var inlineGameError by remember { mutableStateOf<String?>(null) }
 
+     // ── Helper to add inline game (used by both Enter and button) ──
+    val addInlineGameType = {
+        val name = inlineGameName.trim()
+        try {
+            val created = onAddGameType(name, inlineGameWinCondition)
+            modalGameTypes = getGameTypes()
+            selectedGameType = modalGameTypes.find { it.id == created.id }
+            showAddGameForm = false
+            inlineGameName = ""
+            inlineGameWinCondition = WinCondition.HIGHEST_SCORE
+            inlineGameError = null
+        } catch (e: DomainError) {
+            inlineGameError = e.message
+        } catch (e: Exception) {
+            inlineGameError = "Failed to create game type: ${e.message}"
+        }
+    }
+
     // ── Add player form (always visible) ──
     Div(attrs = { classes("form-row") }) {
         Input(type = InputType.Text, attrs = {
             classes("input")
             if (state.error != null) classes("error")
-            attr("placeholder", "Player name")
+            attr("placeholder", Strings.LABEL_PLAYER_NAME)
             value(state.inputName)
             onInput { playerHandler.handle(PlayerIntent.UpdateInput(it.value)) }
             onKeyUp { if (it.key == "Enter") playerHandler.handle(PlayerIntent.AddPlayer) }
@@ -54,16 +75,28 @@ fun HomeScreen(
         Button(attrs = {
             classes("btn", "btn-primary")
             onClick { playerHandler.handle(PlayerIntent.AddPlayer) }
-        }) { Text("Add") }
+        }) { Text(Strings.BTN_ADD) }
     }
 
     state.error?.let { msg ->
         Div(attrs = { classes("error-msg") }) { Text(msg) }
     }
 
+    // ── Onboarding guide (first launch) ──
+    if (state.players.isEmpty()) {
+        Div(attrs = { classes("onboarding-guide") }) {
+            H3 { Text("Getting started") }
+            Ol {
+                Li { Text("Add players above") }
+                Li { Text("Create a game type (from the menu)") }
+                Li { Text("Select ≥2 players and click \"Start match\"") }
+            }
+        }
+    }
+
     // ── Player list ──
     if (state.players.isEmpty()) {
-        Div(attrs = { classes("empty") }) { Text("No players yet. Add one above.") }
+        Div(attrs = { classes("empty") }) { Text(Strings.EMPTY_PLAYERS) }
     } else {
         Div(attrs = { classes("home-player-list") }) {
             state.players.forEach { player ->
@@ -139,10 +172,10 @@ fun HomeScreen(
             onClick { showGameModal = false }
         }) {}
         Div(attrs = { classes("modal-content") }) {
-            Div(attrs = { classes("modal-title") }) { Text("Select a game") }
+            Div(attrs = { classes("modal-title") }) { Text(Strings.DIALOG_SELECT_GAME) }
 
             if (modalGameTypes.isEmpty()) {
-                Div(attrs = { classes("empty-inline") }) { Text("No games yet — tap ＋ to add one.") }
+                Div(attrs = { classes("empty-inline") }) { Text(Strings.EMPTY_GAMES) }
             } else {
                 Select(attrs = {
                     classes("select")
@@ -155,7 +188,7 @@ fun HomeScreen(
                     }
                 }) {
                     Option(value = "", attrs = { if (selectedGameType == null) attr("selected", "") }) {
-                        Text("— Select a game —")
+                        Text("— ${Strings.LABEL_SELECT_GAME} —")
                     }
                     modalGameTypes.forEach { gt ->
                         Option(value = gt.id, attrs = {
@@ -170,7 +203,7 @@ fun HomeScreen(
                     classes("btn-add")
                     onClick { showAddGameForm = !showAddGameForm }
                 }) { Text(if (showAddGameForm) "−" else "＋") }
-                Span { Text("Add new game") }
+                Span { Text(Strings.LABEL_ADD_NEW_GAME) }
             }
 
             if (showAddGameForm) {
@@ -178,19 +211,11 @@ fun HomeScreen(
                     Input(type = InputType.Text, attrs = {
                         classes("input")
                         if (inlineGameError != null) classes("error")
-                        attr("placeholder", "Game name")
+                        attr("placeholder", Strings.LABEL_GAME_NAME)
                         value(inlineGameName)
                         onInput { inlineGameName = it.value; inlineGameError = null }
-                        onKeyUp { if (it.key == "Enter") inlineGameName.let { name ->
-                            if (name.isNotBlank()) {
-                                val created = onAddGameType(name.trim(), inlineGameWinCondition)
-                                modalGameTypes = getGameTypes()
-                                selectedGameType = modalGameTypes.find { it.id == created.id }
-                                showAddGameForm = false
-                                inlineGameName = ""
-                                inlineGameWinCondition = WinCondition.HIGHEST_SCORE
-                                inlineGameError = null
-                            }
+                        onKeyUp { if (it.key == "Enter" && inlineGameName.isNotBlank()) {
+                            addInlineGameType()
                         } }
                     })
                     Select(attrs = {
@@ -211,20 +236,11 @@ fun HomeScreen(
                     Button(attrs = {
                         classes("btn", "btn-primary", "btn-full")
                         onClick {
-                            val name = inlineGameName.trim()
-                            try {
-                                val created = onAddGameType(name, inlineGameWinCondition)
-                                modalGameTypes = getGameTypes()
-                                selectedGameType = modalGameTypes.find { it.id == created.id }
-                                showAddGameForm = false
-                                inlineGameName = ""
-                                inlineGameWinCondition = WinCondition.HIGHEST_SCORE
-                                inlineGameError = null
-                            } catch (e: DomainError) {
-                                inlineGameError = e.message
+                            if (inlineGameName.isNotBlank()) {
+                                addInlineGameType()
                             }
                         }
-                    }) { Text("Add game") }
+                    }) { Text(Strings.BTN_ADD_GAME) }
                 }
             }
 
@@ -234,18 +250,18 @@ fun HomeScreen(
                 Button(attrs = {
                     classes("btn", "btn-secondary")
                     onClick { showGameModal = false }
-                }) { Text("Cancel") }
+                }) { Text(Strings.BTN_CANCEL) }
                 Button(attrs = {
                     classes("btn", "btn-primary")
                     onClick {
                         if (selectedGameType == null) {
-                            gameModalError = "Select a game type"
+                            gameModalError = Strings.MSG_ERROR_SELECT_GAME
                             return@onClick
                         }
                         showGameModal = false
                         onStartGame(selectedGameType!!.id, selectedPlayers.toList())
                     }
-                }) { Text("Lancer la partie") }
+                }) { Text(Strings.BTN_START_MATCH) }
             }
         }
     }
@@ -258,24 +274,24 @@ fun HomeScreen(
             onClick { playerHandler.handle(PlayerIntent.DismissDeleteConfirm) }
         }) {}
         Div(attrs = { classes("modal-content") }) {
-            Div(attrs = { classes("modal-title") }) { Text("Supprimer ${player?.name ?: "?"} ?") }
-            Div(attrs = { classes("modal-body") }) { Text("Les matchs seront conservés.") }
+            Div(attrs = { classes("modal-title") }) { Text(Strings.CONFIRM_DELETE_PLAYER.replace("{name}", player?.name ?: "?")) }
+            Div(attrs = { classes("modal-body") }) { Text(Strings.MSG_MATCHES_PRESERVED) }
             Div(attrs = { classes("modal-row") }) {
                 Input(type = InputType.Checkbox, attrs = {
                     checked(anonymize)
                     onClick { anonymize = !anonymize }
                 })
-                Span { Text("Effacer aussi le nom de l'historique") }
+                Span { Text(Strings.BTN_ERASE_NAME) }
             }
             Div(attrs = { classes("modal-actions") }) {
                 Button(attrs = {
                     classes("btn", "btn-secondary")
                     onClick { playerHandler.handle(PlayerIntent.DismissDeleteConfirm) }
-                }) { Text("Annuler") }
+                }) { Text(Strings.BTN_CANCEL) }
                 Button(attrs = {
                     classes("btn", "btn-danger", "btn-danger-filled")
                     onClick { playerHandler.handle(PlayerIntent.DeletePlayer(playerId, anonymize)) }
-                }) { Text("Supprimer") }
+                }) { Text(Strings.BTN_DELETE) }
             }
         }
     }
