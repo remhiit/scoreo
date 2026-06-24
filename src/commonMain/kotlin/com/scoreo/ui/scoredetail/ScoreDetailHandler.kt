@@ -4,35 +4,27 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import com.scoreo.application.CreateMatchUseCase
-import com.scoreo.application.UpdateMatchUseCase
 import com.scoreo.domain.model.GameType
 import com.scoreo.domain.model.Player
 import com.scoreo.domain.model.PlayerScore
 import com.scoreo.domain.model.TieBreakRule
 import com.scoreo.domain.model.WinCondition
-import com.scoreo.domain.port.GameTypeRepository
 import com.scoreo.domain.port.MatchDraftRepository
-import com.scoreo.domain.port.MatchRepository
-import com.scoreo.domain.port.PlayerRepository
 
 class ScoreDetailHandler(
     private val gameType: GameType,
     private val players: List<Player>,
     private val createMatch: CreateMatchUseCase,
     private val currentDate: () -> Long,
-    private val updateMatchUseCase: UpdateMatchUseCase? = null,
-    private val matchRepository: MatchRepository? = null,
-    private val playerRepository: PlayerRepository? = null,
-    private val gameTypeRepository: GameTypeRepository? = null,
-    private val matchId: String? = null,
+    private val mode: ScoreDetailMode = ScoreDetailMode.Create,
     private val matchDraftRepository: MatchDraftRepository? = null,
 ) {
     var state by mutableStateOf(ScoreDetailState(gameType = gameType, players = players))
         private set
 
     init {
-        if (matchId != null) {
-            loadMatchForEditing(matchId)
+        if (mode is ScoreDetailMode.Edit) {
+            loadMatchForEditing(mode)
         } else {
             // Try to load a saved draft if creating new match
             loadDraftIfMatches()
@@ -48,11 +40,10 @@ class ScoreDetailHandler(
         state = state.copy(rounds = draft.rounds)
     }
 
-    private fun loadMatchForEditing(matchId: String) {
-        if (matchRepository == null || gameTypeRepository == null) return
-        val match = matchRepository.findById(matchId) ?: return
-        val gameType = gameTypeRepository.findById(match.gameTypeId) ?: return
-        val players = playerRepository?.getAll(includeInactive = true)?.filter { 
+    private fun loadMatchForEditing(editMode: ScoreDetailMode.Edit) {
+        val match = editMode.matchRepository.findById(editMode.matchId) ?: return
+        val gameType = editMode.gameTypeRepository.findById(match.gameTypeId) ?: return
+        val players = editMode.playerRepository.getAll(includeInactive = true)?.filter { 
             it.id in match.playerScores.map { ps -> ps.playerId } 
         } ?: return
 
@@ -62,7 +53,7 @@ class ScoreDetailHandler(
             gameType = gameType,
             players = players,
             rounds = rounds,
-            editingMatchId = matchId
+            editingMatchId = editMode.matchId
         )
     }
 
@@ -308,9 +299,9 @@ class ScoreDetailHandler(
     ) {
         try {
             val editingId = state.editingMatchId
-            if (editingId != null && updateMatchUseCase != null && matchRepository != null) {
+            if (editingId != null && mode is ScoreDetailMode.Edit) {
                 // Update existing match
-                val originalMatch = matchRepository.findById(editingId) ?: run {
+                val originalMatch = mode.matchRepository.findById(editingId) ?: run {
                     state = state.copy(error = "Could not find original match to update")
                     return
                 }
@@ -319,7 +310,7 @@ class ScoreDetailHandler(
                     manualWinners = manualWinners,
                     secondaryPlayerScores = secondaryPlayerScores,
                 )
-                updateMatchUseCase(updatedMatch)
+                mode.updateMatchUseCase(updatedMatch)
                 clearDraft()
                 state = state.copy(saved = true)
             } else {

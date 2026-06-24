@@ -542,11 +542,13 @@ class ScoreDetailHandlerTest {
             players = players,
             createMatch = createMatchUseCase,
             currentDate = { 1767225600000L },
-            updateMatchUseCase = updateMatchUseCase,
-            matchRepository = matchRepo,
-            playerRepository = playerRepo,
-            gameTypeRepository = gameTypeRepo,
-            matchId = "m1"
+            mode = ScoreDetailMode.Edit(
+                matchId = "m1",
+                updateMatchUseCase = updateMatchUseCase,
+                matchRepository = matchRepo,
+                playerRepository = playerRepo,
+                gameTypeRepository = gameTypeRepo,
+            )
         )
         
         assertEquals("m1", handler.state.editingMatchId)
@@ -585,11 +587,13 @@ class ScoreDetailHandlerTest {
             players = players,
             createMatch = createMatchUseCase,
             currentDate = { 1767225600000L },
-            updateMatchUseCase = updateMatchUseCase,
-            matchRepository = matchRepo,
-            playerRepository = playerRepo,
-            gameTypeRepository = gameTypeRepo,
-            matchId = "m1"
+            mode = ScoreDetailMode.Edit(
+                matchId = "m1",
+                updateMatchUseCase = updateMatchUseCase,
+                matchRepository = matchRepo,
+                playerRepository = playerRepo,
+                gameTypeRepository = gameTypeRepo,
+            )
         )
         
         // Should always reconstruct as 1 round with totals
@@ -627,11 +631,13 @@ class ScoreDetailHandlerTest {
             players = players,
             createMatch = createMatchUseCase,
             currentDate = { 1767225600000L },
-            updateMatchUseCase = updateMatchUseCase,
-            matchRepository = matchRepo,
-            playerRepository = playerRepo,
-            gameTypeRepository = gameTypeRepo,
-            matchId = "m1"
+            mode = ScoreDetailMode.Edit(
+                matchId = "m1",
+                updateMatchUseCase = updateMatchUseCase,
+                matchRepository = matchRepo,
+                playerRepository = playerRepo,
+                gameTypeRepository = gameTypeRepo,
+            )
         )
         
         // Update scores and terminate
@@ -676,11 +682,13 @@ class ScoreDetailHandlerTest {
             players = players,
             createMatch = createMatchUseCase,
             currentDate = { 1767225600000L },
-            updateMatchUseCase = updateMatchUseCase,
-            matchRepository = matchRepo,
-            playerRepository = playerRepo,
-            gameTypeRepository = gameTypeRepo,
-            matchId = "m1"
+            mode = ScoreDetailMode.Edit(
+                matchId = "m1",
+                updateMatchUseCase = updateMatchUseCase,
+                matchRepository = matchRepo,
+                playerRepository = playerRepo,
+                gameTypeRepository = gameTypeRepo,
+            )
         )
         
         handler.handle(ScoreDetailIntent.UpdateScore(0, "alice", "20"))
@@ -721,12 +729,14 @@ class ScoreDetailHandlerTest {
             gameType = gameType,
             players = players,
             createMatch = createMatchUseCase,
-            currentDate = { 9999999L },  // Different date
-            updateMatchUseCase = updateMatchUseCase,
-            matchRepository = matchRepo,
-            playerRepository = playerRepo,
-            gameTypeRepository = gameTypeRepo,
-            matchId = "m1"
+            currentDate = { 1767225600000L },
+            mode = ScoreDetailMode.Edit(
+                matchId = "m1",
+                updateMatchUseCase = updateMatchUseCase,
+                matchRepository = matchRepo,
+                playerRepository = playerRepo,
+                gameTypeRepository = gameTypeRepo,
+            )
         )
         
         handler.handle(ScoreDetailIntent.UpdateScore(0, "alice", "20"))

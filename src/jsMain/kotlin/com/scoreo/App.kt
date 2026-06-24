@@ -26,6 +26,7 @@ import com.scoreo.ui.import.ImportScreen
 import com.scoreo.ui.sync.SyncHandler
 import com.scoreo.ui.sync.SyncScreen
 import com.scoreo.ui.scoredetail.ScoreDetailHandler
+import com.scoreo.ui.scoredetail.ScoreDetailMode
 import com.scoreo.ui.scoredetail.ScoreDetailScreen
 import com.scoreo.ui.stats.StatsScreen
 import com.scoreo.ui.theme.rememberThemeState
@@ -125,16 +126,23 @@ fun App(
                     val scoreDetailHandler = remember(screen) {
                         val players = playerRepository.getAll().filter { it.id in screen.playerIds }
                         val matchDraftRepository = LocalStorageMatchDraftRepository()
+                        val mode = if (screen.matchId != null) {
+                            ScoreDetailMode.Edit(
+                                matchId = screen.matchId,
+                                updateMatchUseCase = UpdateMatchUseCase(matchRepository),
+                                matchRepository = matchRepository,
+                                playerRepository = playerRepository,
+                                gameTypeRepository = gameTypeRepository,
+                            )
+                        } else {
+                            ScoreDetailMode.Create
+                        }
                         ScoreDetailHandler(
                             gameType = gameType,
                             players = players,
                             createMatch = CreateMatchUseCase(matchRepository, gameTypeRepository),
                             currentDate = currentDate,
-                            updateMatchUseCase = UpdateMatchUseCase(matchRepository),
-                            matchRepository = matchRepository,
-                            playerRepository = playerRepository,
-                            gameTypeRepository = gameTypeRepository,
-                            matchId = screen.matchId,
+                            mode = mode,
                             matchDraftRepository = matchDraftRepository,
                         )
                     }
