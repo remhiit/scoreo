@@ -67,7 +67,14 @@ fun App(
             classes("theme-toggle-btn")
             onClick { themeState.toggle() }
         }) { Text(if (themeState.isDark) "☀️" else "🌙") }
-        Span(attrs = { classes("header-title") }) { Text(screenTitle) }
+        Span(attrs = {
+            classes("app-title", "clickable")
+            onClick {
+                if (navigator.current !is Screen.Home) {
+                    navigator.navigate(Screen.Home)
+                }
+            }
+        }) { Text(screenTitle) }
         Button(attrs = {
             classes("burger-btn")
             onClick { burgerOpen = true }
@@ -152,6 +159,10 @@ fun App(
                 classes("burger-close")
                 onClick { burgerOpen = false }
             }) { Text("✕") }
+            BurgerItem("🏠", "Home") {
+                burgerOpen = false
+                navigator.navigate(Screen.Home)
+            }
             BurgerItem("📊", "Stats") {
                 burgerOpen = false
                 navigator.navigate(Screen.Stats)

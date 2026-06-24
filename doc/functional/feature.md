@@ -26,13 +26,14 @@ Top header bar (all screens):
 |---------|--------|
 | 🌙/☀️ | Toggle dark/light mode (toujours visible) |
 | ← Back | Returns to Home (hidden on Home) |
-| Title | Current screen name |
+| Title | Current screen name (clickable → Home, except when already on Home) |
 | ☰ Burger | Opens side menu |
 
 Burger menu items:
 
 | Icon | Label | Screen |
 |------|-------|--------|
+| 🏠 | Home | HomeScreen |
 | 📊 | Stats | StatsScreen |
 | 📋 | History | HistoryScreen |
 | 📥 | Import | ImportScreen |

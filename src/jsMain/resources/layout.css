@@ -47,6 +47,21 @@
     text-align: center;
 }
 
+.app-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--on-surface);
+    flex: 1;
+    text-align: center;
+    cursor: pointer;
+    user-select: none;
+    transition: opacity 0.2s;
+}
+
+.app-title.clickable:hover {
+    opacity: 0.7;
+}
+
 .header-spacer {
     width: 44px;
     height: 44px;
@@ -166,4 +181,12 @@
 
 .burger-item:hover { background: var(--surface-variant); }
 
-.burger-item-icon { font-size: 20px; }
+.burger-item-icon { 
+    font-size: 20px;
+    flex-shrink: 0;
+}
+
+/* Dark mode adjustments */
+[data-theme="dark"] .burger-item:hover {
+    background: rgba(255, 255, 255, 0.08);
+}
