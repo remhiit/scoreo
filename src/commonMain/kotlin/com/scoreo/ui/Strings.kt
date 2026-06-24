@@ -13,6 +13,7 @@ object Strings {
     const val BTN_CONFIRM = "Confirm"
     const val BTN_SAVE = "Save changes"
     const val BTN_EDIT = "Edit"
+    const val BTN_ARCHIVE = "Archive"
     const val BTN_KEEP_TIE = "Keep tie"
     const val BTN_BACK = "Back"
     const val BTN_RESUME_MATCH = "Resume match in progress"

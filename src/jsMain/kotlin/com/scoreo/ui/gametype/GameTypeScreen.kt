@@ -177,7 +177,7 @@ private fun GameTypeForm(handler: GameTypeHandler) {
                     handler.handle(GameTypeIntent.AddGameType)
                 }
             }
-        }) { Text(if (isEditing) "Save changes" else "Add game type") }
+        }) { Text(if (isEditing) Strings.BTN_SAVE else Strings.BTN_ADD_GAME_TYPE) }
 
         if (isEditing) {
             Button(attrs = {
@@ -232,18 +232,18 @@ private fun GameDetailView(handler: GameTypeHandler) {
     }) {
         Button(attrs = {
             classes("btn", "btn-secondary")
-            onClick { handler.handle(GameTypeIntent.DeselectGame) }
-        }) { Text("Back") }
+             onClick { handler.handle(GameTypeIntent.DeselectGame) }
+         }) { Text(Strings.BTN_BACK) }
 
-        Button(attrs = {
-            classes("btn", "btn-primary")
-            onClick { handler.handle(GameTypeIntent.EditGameType(gameType.id)) }
-        }) { Text("Edit") }
+         Button(attrs = {
+             classes("btn", "btn-primary")
+             onClick { handler.handle(GameTypeIntent.EditGameType(gameType.id)) }
+         }) { Text(Strings.BTN_EDIT) }
 
-        Button(attrs = {
-            classes("btn", "btn-danger")
-            onClick { handler.handle(GameTypeIntent.ShowArchiveConfirm(gameType.id)) }
-        }) { Text("Archive") }
+         Button(attrs = {
+             classes("btn", "btn-danger")
+             onClick { handler.handle(GameTypeIntent.ShowArchiveConfirm(gameType.id)) }
+         }) { Text(Strings.BTN_ARCHIVE) }
     }
 
     // Archive confirmation modal
@@ -262,10 +262,10 @@ private fun GameDetailView(handler: GameTypeHandler) {
                             classes("btn", "btn-secondary")
                             onClick { handler.handle(GameTypeIntent.DismissArchiveConfirm) }
             }) { Text(Strings.BTN_CANCEL) }
-                        Button(attrs = {
-                            classes("btn", "btn-danger")
-                            onClick { handler.handle(GameTypeIntent.ArchiveGameType(handler.state.archiveConfirmGameTypeId!!)) }
-                        }) { Text("Archive") }
+                         Button(attrs = {
+                             classes("btn", "btn-danger")
+                             onClick { handler.handle(GameTypeIntent.ArchiveGameType(handler.state.archiveConfirmGameTypeId!!)) }
+                         }) { Text(Strings.BTN_ARCHIVE) }
                     }
                 }
             }
