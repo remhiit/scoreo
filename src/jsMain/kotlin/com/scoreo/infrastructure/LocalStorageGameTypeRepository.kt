@@ -16,14 +16,14 @@ class LocalStorageGameTypeRepository : GameTypeRepository {
     }
 
     override fun save(gameType: GameType) {
-        val updated = getAll().toMutableList()
+        val updated = getAll(includeInactive = true).toMutableList()
         val idx = updated.indexOfFirst { it.id == gameType.id }
         if (idx >= 0) updated[idx] = gameType else updated.add(gameType)
         localStorage.setItem(KEY, scoreoJson.encodeToString(updated))
     }
 
     override fun saveAll(gameTypes: List<GameType>) {
-        val existing = getAll().toMutableList()
+        val existing = getAll(includeInactive = true).toMutableList()
         for (gameType in gameTypes) {
             val idx = existing.indexOfFirst { it.id == gameType.id }
             if (idx >= 0) existing[idx] = gameType else existing.add(gameType)

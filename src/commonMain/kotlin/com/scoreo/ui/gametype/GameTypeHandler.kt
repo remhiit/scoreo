@@ -84,16 +84,16 @@ class GameTypeHandler(
             is GameTypeIntent.ShowArchiveConfirm -> {
                 state = state.copy(archiveConfirmGameTypeId = intent.gameTypeId)
             }
-            is GameTypeIntent.ArchiveGameType -> {
-                try {
-                    archiveGameType(intent.gameTypeId)
-                    state = state.copy(archiveConfirmGameTypeId = null)
-                    // Refresh
-                    val gameTypes = getGameTypes()
-                    state = state.copy(gameTypes = gameTypes, selectedGameId = null)
-                } catch (e: Exception) {
-                    state = state.copy(error = "Failed to archive game type: ${e.message}")
-                }
+             is GameTypeIntent.ArchiveGameType -> {
+                 try {
+                     archiveGameType(intent.gameTypeId)
+                     state = state.copy(archiveConfirmGameTypeId = null)
+                     // Refresh
+                     val gameTypes = getGameTypes()
+                     state = state.copy(gameTypes = gameTypes, selectedGameId = null)
+                 } catch (e: DomainError) {
+                     state = state.copy(error = e.message)
+                 }
             }
             is GameTypeIntent.DismissArchiveConfirm -> {
                 state = state.copy(archiveConfirmGameTypeId = null)

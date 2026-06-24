@@ -1,6 +1,7 @@
 package com.scoreo.application
 
 import com.scoreo.infrastructure.InMemoryGameTypeRepository
+import com.scoreo.domain.DomainError
 import com.scoreo.domain.model.GameType
 import com.scoreo.domain.model.WinCondition
 import kotlin.test.Test
@@ -46,7 +47,7 @@ class ArchiveGameTypeUseCaseTest {
         gameTypeRepository = InMemoryGameTypeRepository()
         useCase = ArchiveGameTypeUseCase(gameTypeRepository)
         
-        assertFailsWith<IllegalArgumentException> {
+        assertFailsWith<DomainError.NotFound> {
             useCase.invoke("nonexistent")
         }
     }

@@ -247,10 +247,13 @@ private fun GameDetailView(handler: GameTypeHandler) {
     }
 
     // Archive confirmation modal
-    if (handler.state.archiveConfirmGameTypeId != null) {
-        val confirmGameType = handler.state.gameTypes.find { it.id == handler.state.archiveConfirmGameTypeId }
-        if (confirmGameType != null) {
-            Div(attrs = { classes("modal-overlay") }) {
+     if (handler.state.archiveConfirmGameTypeId != null) {
+         val confirmGameType = handler.state.gameTypes.find { it.id == handler.state.archiveConfirmGameTypeId }
+         if (confirmGameType != null) {
+             Div(attrs = { 
+                 classes("modal-overlay")
+                 onClick { handler.handle(GameTypeIntent.DismissArchiveConfirm) }
+             }) {
                 Div(attrs = { classes("modal") }) {
                     H3 { Text(Strings.DIALOG_ARCHIVE.replace("{name}", confirmGameType.name)) }
                     P { Text(Strings.DIALOG_ARCHIVE_MESSAGE) }

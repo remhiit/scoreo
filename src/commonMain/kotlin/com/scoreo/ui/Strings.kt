@@ -8,6 +8,7 @@ object Strings {
     const val BTN_START_MATCH = "Start match"
     const val BTN_FINISH_MATCH = "Finish match"
     const val BTN_CANCEL = "Cancel"
+    const val BTN_DISCARD = "Discard"
     const val BTN_DELETE = "Delete"
     const val BTN_CONFIRM = "Confirm"
     const val BTN_SAVE = "Save changes"
@@ -96,6 +97,8 @@ object Strings {
     const val DIALOG_FINAL_DECISION = "Final decision"
     const val DIALOG_ARCHIVE = "Archive {name}?"
     const val DIALOG_ARCHIVE_MESSAGE = "It will no longer appear in game selection."
+    const val DIALOG_DISCARD_SCORES = "Discard scores?"
+    const val DIALOG_DISCARD_MESSAGE = "All entered scores will be lost."
     
     // Game Type Details
     const val LABEL_WIN_CONDITION_DETAIL = "Win condition:"

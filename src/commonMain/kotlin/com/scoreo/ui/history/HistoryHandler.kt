@@ -48,7 +48,7 @@ class HistoryHandler(
 
     private fun refresh() {
         val playerMap = getPlayers(includeInactive = true).associateBy { it.id }
-        val gameTypeMap = getGameTypes().associateBy { it.id }
+        val gameTypeMap = getGameTypes(includeInactive = true).associateBy { it.id }
         state = HistoryState(
             displays = getMatches().sortedByDescending { it.date }.map { match ->
                 val gameType = gameTypeMap[match.gameTypeId]

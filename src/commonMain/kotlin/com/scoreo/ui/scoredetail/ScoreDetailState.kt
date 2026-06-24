@@ -12,6 +12,7 @@ data class ScoreDetailState(
     val modalWinners: Set<String> = emptySet(),
     val error: String? = null,
     val saved: Boolean = false,
+    val cancelled: Boolean = false,
     // Tie-break resolution fields
     val showSecondaryScoreDialog: Boolean = false,
     val tiedPlayerIds: List<String> = emptyList(),
@@ -21,6 +22,8 @@ data class ScoreDetailState(
     val collectedSecondaryScores: List<PlayerScore> = emptyList(),
     // Edit mode
     val editingMatchId: String? = null,
+    // Cancel confirm
+    val showCancelConfirm: Boolean = false,
 ) {
     val totals: Map<String, Int>
         get() = players.associate { player ->

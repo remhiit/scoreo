@@ -11,6 +11,7 @@ import com.scoreo.domain.model.PlayerScore
 import com.scoreo.domain.model.TieBreakRule
 import com.scoreo.domain.model.WinCondition
 import com.scoreo.domain.port.GameTypeRepository
+import com.scoreo.domain.port.MatchDraftRepository
 import com.scoreo.domain.port.MatchRepository
 import com.scoreo.domain.port.PlayerRepository
 
@@ -24,6 +25,7 @@ class ScoreDetailHandler(
     private val playerRepository: PlayerRepository? = null,
     private val gameTypeRepository: GameTypeRepository? = null,
     private val matchId: String? = null,
+    private val matchDraftRepository: MatchDraftRepository? = null,
 ) {
     var state by mutableStateOf(ScoreDetailState(gameType = gameType, players = players))
         private set
@@ -31,7 +33,19 @@ class ScoreDetailHandler(
     init {
         if (matchId != null) {
             loadMatchForEditing(matchId)
+        } else {
+            // Try to load a saved draft if creating new match
+            loadDraftIfMatches()
         }
+    }
+
+    private fun loadDraftIfMatches() {
+        val draft = matchDraftRepository?.load() ?: return
+        // Only restore draft if it matches the current game type and players
+        if (draft.gameTypeId != gameType.id) return
+        if (draft.playerIds.toSet() != players.map { it.id }.toSet()) return
+        
+        state = state.copy(rounds = draft.rounds)
     }
 
     private fun loadMatchForEditing(matchId: String) {
@@ -68,10 +82,13 @@ class ScoreDetailHandler(
                 val rounds = state.rounds.toMutableList()
                 rounds[intent.roundIndex] = rounds[intent.roundIndex] + (intent.playerId to intent.value)
                 state = state.copy(rounds = rounds, error = null)
+                // Save draft auto-save on every score update
+                saveDraft()
             }
 
             is ScoreDetailIntent.AddRound -> {
                 state = state.copy(rounds = state.rounds + emptyMap(), error = null)
+                saveDraft()
             }
 
             is ScoreDetailIntent.RemoveRound -> {
@@ -80,6 +97,26 @@ class ScoreDetailHandler(
                     rounds.removeAt(intent.index)
                     state = state.copy(rounds = rounds)
                 }
+            }
+
+            is ScoreDetailIntent.CancelMatch -> {
+                // Show confirm dialog only if there's data entered
+                if (hasUnsavedScores()) {
+                    state = state.copy(showCancelConfirm = true)
+                } else {
+                    // No data, cancel immediately
+                    clearDraft()
+                    state = state.copy(cancelled = true)
+                }
+            }
+
+            is ScoreDetailIntent.ConfirmCancel -> {
+                clearDraft()
+                state = state.copy(cancelled = true)
+            }
+
+            is ScoreDetailIntent.DismissCancelConfirm -> {
+                state = state.copy(showCancelConfirm = false)
             }
 
             is ScoreDetailIntent.Terminate -> {
@@ -283,6 +320,7 @@ class ScoreDetailHandler(
                     secondaryPlayerScores = secondaryPlayerScores,
                 )
                 updateMatchUseCase(updatedMatch)
+                clearDraft()
                 state = state.copy(saved = true)
             } else {
                 // Create new match
@@ -294,7 +332,10 @@ class ScoreDetailHandler(
                     secondaryPlayerScores = secondaryPlayerScores,
                 )
                 result.fold(
-                    onSuccess = { state = state.copy(saved = true) },
+                    onSuccess = { 
+                        clearDraft()
+                        state = state.copy(saved = true) 
+                    },
                     onFailure = { e -> state = state.copy(error = e.message) },
                 )
             }
@@ -305,5 +346,30 @@ class ScoreDetailHandler(
 
     fun reset() {
         state = ScoreDetailState(gameType = gameType, players = players)
+        clearDraft()
+    }
+
+    private fun saveDraft() {
+        if (matchDraftRepository == null) return
+        val draft = com.scoreo.domain.model.MatchDraft(
+            gameTypeId = gameType.id,
+            playerIds = players.map { it.id },
+            rounds = state.rounds,
+        )
+        matchDraftRepository.save(draft)
+    }
+
+    private fun clearDraft() {
+        matchDraftRepository?.clear()
+    }
+
+    private fun hasUnsavedScores(): Boolean {
+        // Check if any cell has data (non-empty, non-whitespace)
+        state.rounds.forEach { round ->
+            round.forEach { (_, value) ->
+                if (value.trim().isNotEmpty()) return true
+            }
+        }
+        return false
     }
 }

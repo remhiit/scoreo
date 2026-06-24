@@ -11,8 +11,11 @@ import com.scoreo.application.UpdateMatchUseCase
 import com.scoreo.di.createAppDependencies
 import com.scoreo.domain.port.CloudSyncRepository
 import com.scoreo.domain.port.GameTypeRepository
+import com.scoreo.domain.port.MatchDraftRepository
 import com.scoreo.domain.port.MatchRepository
 import com.scoreo.domain.port.PlayerRepository
+
+import com.scoreo.infrastructure.LocalStorageMatchDraftRepository
 
 import com.scoreo.ui.gametype.GameTypeScreen
 import com.scoreo.ui.history.HistoryIntent
@@ -121,6 +124,7 @@ fun App(
                 } else {
                     val scoreDetailHandler = remember(screen) {
                         val players = playerRepository.getAll().filter { it.id in screen.playerIds }
+                        val matchDraftRepository = LocalStorageMatchDraftRepository()
                         ScoreDetailHandler(
                             gameType = gameType,
                             players = players,
@@ -131,6 +135,7 @@ fun App(
                             playerRepository = playerRepository,
                             gameTypeRepository = gameTypeRepository,
                             matchId = screen.matchId,
+                            matchDraftRepository = matchDraftRepository,
                         )
                     }
                     ScoreDetailScreen(

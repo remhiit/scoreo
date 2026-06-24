@@ -42,7 +42,7 @@ class LocalStorageMatchRepository : MatchRepository {
 
     override fun delete(id: String) {
         val matches = getAll().filter { it.id != id }
-        saveAll(matches)
+        localStorage.setItem(KEY, scoreoJson.encodeToString(matches))
     }
 
     private fun migrateIfNeeded() {

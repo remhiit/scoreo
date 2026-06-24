@@ -9,6 +9,11 @@ sealed class ScoreDetailIntent {
     data object DismissModal : ScoreDetailIntent()
     data class ToggleModalWinner(val playerId: String) : ScoreDetailIntent()
 
+    // Cancel confirm intents
+    data object CancelMatch : ScoreDetailIntent()
+    data object ConfirmCancel : ScoreDetailIntent()
+    data object DismissCancelConfirm : ScoreDetailIntent()
+
     // Tie-break resolution intents
     data class UpdateSecondaryScoreInput(val playerId: String, val value: String) : ScoreDetailIntent()
     data object SubmitSecondaryScores : ScoreDetailIntent()

@@ -31,6 +31,13 @@ fun ScoreDetailScreen(
         }
     }
 
+    LaunchedEffect(state.cancelled) {
+        if (state.cancelled) {
+            handler.reset()
+            onCancel()
+        }
+    }
+
     Table(attrs = { classes("score-table") }) {
         Tr {
             state.players.forEach { player ->
@@ -95,7 +102,7 @@ fun ScoreDetailScreen(
         }) { Text(Strings.BTN_FINISH_MATCH) }
         Button(attrs = {
             classes("btn", "btn-secondary")
-            onClick { onCancel() }
+            onClick { handler.handle(ScoreDetailIntent.CancelMatch) }
         }) { Text(Strings.BTN_CANCEL) }
     }
 
@@ -164,5 +171,27 @@ fun ScoreDetailScreen(
             onKeepTie = { handler.handle(ScoreDetailIntent.KeepTie) },
             onDismiss = { handler.handle(ScoreDetailIntent.DismissTieBreak) },
         )
+    }
+
+    // ── Cancel Confirm Dialog ──
+    if (state.showCancelConfirm) {
+        Div(attrs = {
+            classes("modal-overlay")
+            onClick { handler.handle(ScoreDetailIntent.DismissCancelConfirm) }
+        }) {}
+        Div(attrs = { classes("modal-content") }) {
+            Div(attrs = { classes("modal-title") }) { Text(Strings.DIALOG_DISCARD_SCORES) }
+            Div(attrs = { classes("modal-message") }) { Text(Strings.DIALOG_DISCARD_MESSAGE) }
+            Div(attrs = { classes("modal-actions") }) {
+                Button(attrs = {
+                    classes("btn", "btn-secondary")
+                    onClick { handler.handle(ScoreDetailIntent.DismissCancelConfirm) }
+                }) { Text(Strings.BTN_CANCEL) }
+                Button(attrs = {
+                    classes("btn", "btn-danger")
+                    onClick { handler.handle(ScoreDetailIntent.ConfirmCancel) }
+                }) { Text(Strings.BTN_DISCARD) }
+            }
+        }
     }
 }
