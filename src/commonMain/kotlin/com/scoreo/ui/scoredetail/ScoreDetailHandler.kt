@@ -130,7 +130,7 @@ class ScoreDetailHandler(
                             state = state.copy(showWinnerModal = true, modalWinners = emptySet(), error = null)
                             return@handle
                         }
-                        val playerScores = players.map { player ->
+                        val playerScores = state.players.map { player ->
                             PlayerScore(player.id, state.totals[player.id] ?: 0)
                         }
                         val primaryWinners = gameType.computeWinners(playerScores)
@@ -183,7 +183,7 @@ class ScoreDetailHandler(
                     state = state.copy(error = "Select at least one winner")
                     return
                 }
-                val playerScores = players.map { player ->
+                val playerScores = state.players.map { player ->
                     PlayerScore(player.id, state.totals[player.id] ?: 0)
                 }
                 saveMatch(playerScores, manualWinners = state.modalWinners.toList())
@@ -215,14 +215,14 @@ class ScoreDetailHandler(
 
                 if (resolvedWinners.size < tiedIds.size) {
                     // Tie partially or fully broken → save match
-                    val playerScores = players.map { player ->
-                        PlayerScore(player.id, state.totals[player.id] ?: 0)
-                    }
-                    saveMatch(
-                        playerScores,
-                        manualWinners = resolvedWinners,
-                        secondaryPlayerScores = secondaryScores,
-                    )
+                val playerScores = state.players.map { player ->
+                    PlayerScore(player.id, state.totals[player.id] ?: 0)
+                }
+                saveMatch(
+                    playerScores,
+                    manualWinners = resolvedWinners,
+                    secondaryPlayerScores = secondaryScores,
+                )
                 } else {
                     // Same tie persists → escalate to manual arbitration
                     state = state.copy(
@@ -248,7 +248,7 @@ class ScoreDetailHandler(
                     state = state.copy(error = "Select at least one winner")
                     return
                 }
-                val playerScores = players.map { player ->
+                val playerScores = state.players.map { player ->
                     PlayerScore(player.id, state.totals[player.id] ?: 0)
                 }
                 saveMatch(
@@ -258,15 +258,15 @@ class ScoreDetailHandler(
                 )
             }
 
-            is ScoreDetailIntent.KeepTie -> {
-                val playerScores = players.map { player ->
-                    PlayerScore(player.id, state.totals[player.id] ?: 0)
-                }
-                // Keep all tied players as winners
-                saveMatch(
-                    playerScores,
-                    manualWinners = state.tiedPlayerIds,
-                    secondaryPlayerScores = state.collectedSecondaryScores,
+             is ScoreDetailIntent.KeepTie -> {
+                 val playerScores = state.players.map { player ->
+                     PlayerScore(player.id, state.totals[player.id] ?: 0)
+                 }
+                 // Keep all tied players as winners
+                 saveMatch(
+                     playerScores,
+                     manualWinners = state.tiedPlayerIds,
+                     secondaryPlayerScores = state.collectedSecondaryScores,
                 )
             }
 
@@ -290,7 +290,7 @@ class ScoreDetailHandler(
         state.rounds.forEachIndexed { roundIndex, round ->
             round.forEach { (playerId, scoreStr) ->
                 if (scoreStr.isNotEmpty() && scoreStr.toIntOrNull() == null) {
-                    val playerName = players.find { it.id == playerId }?.name ?: playerId
+                    val playerName = state.players.find { it.id == playerId }?.name ?: playerId
                     return Result.failure(
                         Exception("Invalid score for $playerName in round ${roundIndex + 1}: expected a number")
                     )
@@ -350,14 +350,14 @@ class ScoreDetailHandler(
     }
 
     private fun saveDraft() {
-        if (matchDraftRepository == null) return
-        val draft = com.scoreo.domain.model.MatchDraft(
-            gameTypeId = gameType.id,
-            playerIds = players.map { it.id },
-            rounds = state.rounds,
-        )
-        matchDraftRepository.save(draft)
-    }
+         if (matchDraftRepository == null) return
+         val draft = com.scoreo.domain.model.MatchDraft(
+             gameTypeId = gameType.id,
+             playerIds = state.players.map { it.id },
+             rounds = state.rounds,
+         )
+         matchDraftRepository.save(draft)
+     }
 
     private fun clearDraft() {
         matchDraftRepository?.clear()
