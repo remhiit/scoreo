@@ -37,11 +37,11 @@ fun SecondaryScoreDialog(
             tiedPlayers.forEach { player ->
                 Div(attrs = { classes("modal-row") }) {
                     Span { Text(player.name) }
-                    Input(type = InputType.Number, attrs = {
-                        classes("score-table-input")
-                        value(secondaryScoreInputs[player.id] ?: "")
-                        onInput { onUpdateInput(player.id, it.value) }
-                    })
+                     Input(type = InputType.Number, attrs = {
+                         classes("score-table-input")
+                         value(secondaryScoreInputs[player.id] ?: "")
+                         onInput { onUpdateInput(player.id, it.value?.toString() ?: "") }
+                     })
                 }
             }
         }
