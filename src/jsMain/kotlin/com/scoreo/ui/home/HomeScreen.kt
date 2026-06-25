@@ -371,4 +371,44 @@ fun HomeScreen(
             }
         }
     }
+
+    // ── Rename modal ──
+    state.renamingPlayerId?.let { playerId ->
+        val player = state.players.find { it.id == playerId }
+        if (player != null) {
+            Div(attrs = {
+                classes("modal-overlay")
+                onClick { playerHandler.handle(PlayerIntent.CancelRename) }
+            }) {}
+            Div(attrs = { classes("modal-content") }) {
+                Div(attrs = { classes("modal-title") }) {
+                    Text(Strings.TITLE_RENAME_PLAYER.replace("{name}", player.name))
+                }
+                Div(attrs = { classes("modal-body") }) {
+                    Input(type = InputType.Text, attrs = {
+                        classes("input")
+                        value(state.renameInput)
+                        autoFocus()
+                        onInput { playerHandler.handle(PlayerIntent.UpdateRenameInput(it.value)) }
+                        onKeyUp { e ->
+                            if (e.key == "Enter") playerHandler.handle(PlayerIntent.ConfirmRename)
+                        }
+                    })
+                    state.error?.let { errorMsg ->
+                        Div(attrs = { classes("error-msg") }) { Text(errorMsg) }
+                    }
+                }
+                Div(attrs = { classes("modal-actions") }) {
+                    Button(attrs = {
+                        classes("btn", "btn-secondary")
+                        onClick { playerHandler.handle(PlayerIntent.CancelRename) }
+                    }) { Text(Strings.BTN_CANCEL) }
+                    Button(attrs = {
+                        classes("btn", "btn-primary")
+                        onClick { playerHandler.handle(PlayerIntent.ConfirmRename) }
+                    }) { Text(Strings.BTN_CONFIRM) }
+                }
+            }
+        }
+    }
 }

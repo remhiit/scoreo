@@ -60,6 +60,7 @@ object Strings {
     // Confirmations & Messages
     const val CONFIRM_DELETE_PLAYER = "Delete {name}?"
     const val CONFIRM_DELETE_MATCH = "Delete match?"
+    const val TITLE_RENAME_PLAYER = "Rename {name}"
     const val CONFIRM_DISCARD_MATCH = "Discard match? Scores will be lost."
     const val CONFIRM_ARCHIVE_GAME = "Archive {name}? It will no longer appear in game selection."
     const val MSG_MATCHES_PRESERVED = "Matches will be preserved."
