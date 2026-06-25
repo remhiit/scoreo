@@ -1,6 +1,7 @@
 package com.scoreo.ui.shared
 
 import androidx.compose.runtime.Composable
+import com.scoreo.ui.Strings
 import org.jetbrains.compose.web.dom.Button
 import org.jetbrains.compose.web.dom.Div
 import org.jetbrains.compose.web.dom.Span
@@ -39,29 +40,29 @@ fun ListItemRow(
             }
         }
 
-        // ── Boutons d'action ──
-        Div(attrs = { classes("list-item-actions") }) {
-            if (onView != null) {
-                Button(attrs = {
-                    classes("btn-icon")
-                    title("Voir le détail")
-                    onClick { e -> e.stopPropagation(); onView() }
-                }) { Text("👁") }
-            }
-            if (onEdit != null) {
-                Button(attrs = {
-                    classes("btn-icon")
-                    title("Modifier")
-                    onClick { e -> e.stopPropagation(); onEdit() }
-                }) { Text("✏") }
-            }
-            if (onDelete != null) {
-                Button(attrs = {
-                    classes("btn-icon", "btn-icon--danger")
-                    title("Supprimer")
-                    onClick { e -> e.stopPropagation(); onDelete() }
-                }) { Text("🗑") }
-            }
-        }
+         // ── Boutons d'action ──
+         Div(attrs = { classes("list-item-actions") }) {
+             if (onView != null) {
+                 Button(attrs = {
+                     classes("btn-icon")
+                     title(Strings.TITLE_VIEW_DETAIL)
+                     onClick { e -> e.stopPropagation(); onView() }
+                 }) { Text("👁") }
+             }
+             if (onEdit != null) {
+                 Button(attrs = {
+                     classes("btn-icon")
+                     title(Strings.TITLE_EDIT)
+                     onClick { e -> e.stopPropagation(); onEdit() }
+                 }) { Text("✏") }
+             }
+             if (onDelete != null) {
+                 Button(attrs = {
+                     classes("btn-icon", "btn-icon--danger")
+                     title(Strings.TITLE_DELETE)
+                     onClick { e -> e.stopPropagation(); onDelete() }
+                 }) { Text("🗑") }
+             }
+         }
     }
 }

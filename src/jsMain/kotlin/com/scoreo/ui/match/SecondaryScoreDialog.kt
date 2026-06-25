@@ -27,7 +27,7 @@ fun SecondaryScoreDialog(
     onSubmit: () -> Unit,
     onDismiss: () -> Unit,
 ) {
-    val title = gameType.tieBreakLabel ?: "Score secondaire"
+    val title = gameType.tieBreakLabel ?: Strings.LABEL_SECONDARY_SCORE
     Div(attrs = {
         classes("modal-overlay")
         onClick { onDismiss() }

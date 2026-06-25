@@ -60,7 +60,7 @@ fun HomeScreen(
                 }
             }) {
                 Span { Text("▶ ") }
-                Span { Text("Resume match in progress") }
+                Span { Text(Strings.BTN_RESUME_MATCH) }
             }
         }
     }
@@ -79,7 +79,7 @@ fun HomeScreen(
         } catch (e: DomainError) {
             inlineGameError = e.message
         } catch (e: Exception) {
-            inlineGameError = "Failed to create game type: ${e.message}"
+            inlineGameError = Strings.MSG_ERROR_CREATE_GAME.replace("{error}", e.message.orEmpty())
         }
     }
 

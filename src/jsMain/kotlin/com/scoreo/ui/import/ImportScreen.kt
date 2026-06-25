@@ -34,10 +34,10 @@ fun ImportScreen(
                             (reader.result as? String)?.let { handler.handle(ImportIntent.FileLoaded(it)) }
                         }
                         reader.onerror = { _ ->
-                            handler.handle(ImportIntent.FileError("Failed to read file"))
+                            handler.handle(ImportIntent.FileError(Strings.MSG_ERROR_READ_FILE))
                         }
                         reader.onabort = { _ ->
-                            handler.handle(ImportIntent.FileError("File read was aborted"))
+                            handler.handle(ImportIntent.FileError(Strings.MSG_ERROR_READ_ABORTED))
                         }
                         reader.readAsText(file)
                         input.value = ""

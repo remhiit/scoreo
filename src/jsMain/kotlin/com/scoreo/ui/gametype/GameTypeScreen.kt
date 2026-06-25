@@ -109,11 +109,11 @@ fun GameTypeScreen(handler: GameTypeHandler, showTitle: Boolean = true) {
                 classes("modal-overlay")
                 onClick { handler.handle(GameTypeIntent.CancelEdit) }
             })
-            // Contenu de la modale
-            Div(attrs = { classes("modal-content") }) {
-                Div(attrs = { classes("modal-title") }) {
-                    Text("Modifier ${gameType.name}")
-                }
+             // Contenu de la modale
+             Div(attrs = { classes("modal-content") }) {
+                 Div(attrs = { classes("modal-title") }) {
+                     Text(Strings.LABEL_EDIT_GAME.replace("{name}", gameType.name))
+                 }
                 Div(attrs = { classes("modal-body") }) {
                     GameTypeFields(handler)
                 }

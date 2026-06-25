@@ -21,13 +21,13 @@ fun SyncScreen(handler: SyncHandler) {
      }
 
     when (s.phase) {
-        SyncPhase.Disconnected -> disconnectedView(handler)
-        SyncPhase.Connecting -> loadingView("Connecting to Google...")
-        SyncPhase.Detecting -> loadingView("Checking sync status...")
-        SyncPhase.Syncing -> loadingView("Synchronising data...")
-        SyncPhase.Resolved -> resolvedView(handler, s)
-        SyncPhase.Conflict -> conflictView(handler, s)
-    }
+         SyncPhase.Disconnected -> disconnectedView(handler)
+         SyncPhase.Connecting -> loadingView(Strings.LABEL_CONNECTING_GOOGLE)
+         SyncPhase.Detecting -> loadingView(Strings.LABEL_CHECKING_SYNC)
+         SyncPhase.Syncing -> loadingView(Strings.LABEL_SYNCING_DATA)
+         SyncPhase.Resolved -> resolvedView(handler, s)
+         SyncPhase.Conflict -> conflictView(handler, s)
+     }
 
     s.error?.let { error ->
         Div(attrs = { classes("error-msg") }) { Text(error) }
@@ -70,59 +70,59 @@ private fun resolvedView(handler: SyncHandler, s: SyncState) {
         s.email?.let { email ->
             Div(attrs = { classes("card-sub") }) { Text("Connected as $email") }
         }
-        Button(attrs = {
-            classes("btn", "btn-secondary")
-            onClick { handler.handle(SyncIntent.Logout) }
-        }) { Text("Disconnect") }
+         Button(attrs = {
+             classes("btn", "btn-secondary")
+             onClick { handler.handle(SyncIntent.Logout) }
+         }) { Text(Strings.BTN_DISCONNECT) }
     }
 }
 
 @Composable
 private fun conflictView(handler: SyncHandler, s: SyncState) {
-    val conflict = s.conflict
-    if (conflict == null) {
-        Div(attrs = { classes("empty") }) { Text("No conflict data available") }
-        return
-    }
+     val conflict = s.conflict
+     if (conflict == null) {
+         Div(attrs = { classes("empty") }) { Text(Strings.MSG_NO_CONFLICT_DATA) }
+         return
+     }
 
-    Div(attrs = { style { property("padding", "16px 0") } }) {
-        Div(attrs = { classes("modal-title") }) { Text("Sync conflict") }
-        Div(attrs = { classes("modal-body") }) {
-            Text("Two versions of your data differ. Choose which one to keep.")
-        }
+     Div(attrs = { style { property("padding", "16px 0") } }) {
+         Div(attrs = { classes("modal-title") }) { Text(Strings.LABEL_SYNC_CONFLICT) }
+         Div(attrs = { classes("modal-body") }) {
+             Text(Strings.MSG_CONFLICT_CHOICE)
+         }
 
-        Div(attrs = { classes("modal-body") }) {
-            Div(attrs = { classes("card") }) {
-                Div(attrs = { style { property("display", "flex"); property("flex-direction", "column") } }) {
-                    Span(attrs = { style { property("font-weight", "600") } }) {
-                        Text("Local version${conflict.localSnapshot.dateLabel?.let { " (${it})" } ?: ""}")
-                    }
-                    Span { Text("• ${conflict.localSnapshot.playerCount} players") }
-                    Span { Text("• ${conflict.localSnapshot.gameTypeCount} game types") }
-                    Span { Text("• ${conflict.localSnapshot.matchCount} matches") }
-                }
-            }
-            Div(attrs = { classes("card") }) {
-                Div(attrs = { style { property("display", "flex"); property("flex-direction", "column") } }) {
-                    Span(attrs = { style { property("font-weight", "600") } }) {
-                        Text("Remote version${conflict.remoteSnapshot.dateLabel?.let { " (${it})" } ?: ""}")
-                    }
-                    Span { Text("• ${conflict.remoteSnapshot.playerCount} players") }
-                    Span { Text("• ${conflict.remoteSnapshot.gameTypeCount} game types") }
-                    Span { Text("• ${conflict.remoteSnapshot.matchCount} matches") }
-                }
-            }
-        }
+         Div(attrs = { classes("modal-body") }) {
+             Div(attrs = { classes("card") }) {
+                 Div(attrs = { style { property("display", "flex"); property("flex-direction", "column") } }) {
+                     Span(attrs = { style { property("font-weight", "600") } }) {
+                         Text("${Strings.LABEL_LOCAL_VERSION}${conflict.localSnapshot.dateLabel?.let { " (${it})" } ?: ""}")
+                     }
+                     Span { Text("• ${conflict.localSnapshot.playerCount} players") }
+                     Span { Text("• ${conflict.localSnapshot.gameTypeCount} game types") }
+                     Span { Text("• ${conflict.localSnapshot.matchCount} matches") }
+                 }
+             }
+             Div(attrs = { classes("card") }) {
+                 Div(attrs = { style { property("display", "flex"); property("flex-direction", "column") } }) {
+                     Span(attrs = { style { property("font-weight", "600") } }) {
+                         Text("${Strings.LABEL_REMOTE_VERSION}${conflict.remoteSnapshot.dateLabel?.let { " (${it})" } ?: ""}")
+                     }
+                     Span { Text("• ${conflict.remoteSnapshot.playerCount} players") }
+                     Span { Text("• ${conflict.remoteSnapshot.gameTypeCount} game types") }
+                     Span { Text("• ${conflict.remoteSnapshot.matchCount} matches") }
+                 }
+             }
+         }
 
-        Div(attrs = { style { property("display", "flex"); property("gap", "8px") } }) {
-            Button(attrs = {
-                classes("btn", "btn-primary")
-                onClick { handler.handle(SyncIntent.ResolveConflict(true)) }
-            }) { Text("Keep local") }
-            Button(attrs = {
-                classes("btn", "btn-secondary")
-                onClick { handler.handle(SyncIntent.ResolveConflict(false)) }
-            }) { Text("Keep remote") }
-        }
+         Div(attrs = { style { property("display", "flex"); property("gap", "8px") } }) {
+             Button(attrs = {
+                 classes("btn", "btn-primary")
+                 onClick { handler.handle(SyncIntent.ResolveConflict(true)) }
+             }) { Text(Strings.BTN_KEEP_LOCAL) }
+             Button(attrs = {
+                 classes("btn", "btn-secondary")
+                 onClick { handler.handle(SyncIntent.ResolveConflict(false)) }
+             }) { Text(Strings.BTN_KEEP_REMOTE) }
+         }
     }
 }
