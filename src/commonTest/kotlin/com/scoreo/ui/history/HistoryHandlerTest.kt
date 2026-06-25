@@ -270,7 +270,7 @@ class HistoryHandlerTest {
 
         assertNotNull(handler.state)
         assertEquals(null, handler.state.deleteConfirmMatchId)
-    }
+     }
 
     @Test
     fun `test_DeleteMatch_error`() {
@@ -281,6 +281,35 @@ class HistoryHandlerTest {
         // The state should not have an error (delete is idempotent)
         assertEquals(null, handler.state.error)
     }
+
+    @Test
+    fun `test_DeleteMatch_exception_setsError`() {
+        // Create a custom repository that throws an exception when delete is called
+        val failingMatchRepo = object : com.scoreo.domain.port.MatchRepository {
+            override fun getAll(): List<Match> = emptyList()
+            override fun save(match: Match) {}
+            override fun saveAll(matches: List<Match>) {}
+            override fun findById(id: String): Match? = null
+            override fun delete(id: String) {
+                throw IllegalStateException("Storage error: failed to delete match")
+            }
+        }
+        
+        val handler = HistoryHandler(
+            getMatches = com.scoreo.application.GetMatchesUseCase(failingMatchRepo),
+            getPlayers = com.scoreo.application.GetPlayersUseCase(InMemoryPlayerRepository()),
+            getGameTypes = com.scoreo.application.GetGameTypesUseCase(InMemoryGameTypeRepository()),
+            deleteMatchUseCase = com.scoreo.application.DeleteMatchUseCase(failingMatchRepo),
+        )
+        
+        // Try to delete - should catch exception and set error
+        handler.handle(HistoryIntent.DeleteMatch("m1"))
+        
+        // Verify error is set (handler wraps the exception message)
+        assertNotNull(handler.state.error)
+        assertEquals("Failed to delete match: Storage error: failed to delete match", handler.state.error)
+    }
+
 
     @Test
     fun `test_DismissDeleteConfirm_clearsId`() {

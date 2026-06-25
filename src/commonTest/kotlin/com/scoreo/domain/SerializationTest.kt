@@ -2,6 +2,7 @@ package com.scoreo.domain
 
 import com.scoreo.domain.model.GameType
 import com.scoreo.domain.model.Match
+import com.scoreo.domain.model.MatchDraft
 import com.scoreo.domain.model.Player
 import com.scoreo.domain.model.PlayerScore
 import com.scoreo.domain.model.TieBreakRule
@@ -235,5 +236,80 @@ class SerializationTest {
         assertEquals("No tie-break", TieBreakRule.NONE.label())
         assertEquals("Manual selection", TieBreakRule.MANUAL_SELECTION.label())
         assertEquals("Secondary score", TieBreakRule.SECONDARY_SCORE.label())
+    }
+
+    @Test
+    fun `MatchDraft serialization round-trip`() {
+        val original = MatchDraft(
+            gameTypeId = "gt1",
+            playerIds = listOf("alice", "bob"),
+            rounds = listOf(
+                mapOf("alice" to "10", "bob" to "5"),
+                mapOf("alice" to "3", "bob" to "7")
+            ),
+            updatedAt = 1767225600000L
+        )
+        val json = testJson.encodeToString(original)
+        val decoded = testJson.decodeFromString<MatchDraft>(json)
+        assertEquals(original, decoded)
+    }
+
+    @Test
+    fun `MatchDraft without updatedAt defaults to current time (backward compat)`() {
+        val json = """{
+            "gameTypeId": "gt1",
+            "playerIds": ["alice", "bob"],
+            "rounds": [{"alice": "10", "bob": "5"}]
+        }"""
+        val decoded = testJson.decodeFromString<MatchDraft>(json)
+        assertEquals("gt1", decoded.gameTypeId)
+        assertEquals(listOf("alice", "bob"), decoded.playerIds)
+        assertEquals(1, decoded.rounds.size)
+        assertEquals("10", decoded.rounds[0]["alice"])
+        // updatedAt has a default value, so it won't be null
+        assertEquals(true, decoded.updatedAt > 0L)
+    }
+
+    @Test
+    fun `MatchDraft with empty rounds round-trip`() {
+        val original = MatchDraft(
+            gameTypeId = "gt1",
+            playerIds = listOf("alice", "bob"),
+            rounds = emptyList(),
+            updatedAt = 1000L
+        )
+        val json = testJson.encodeToString(original)
+        val decoded = testJson.decodeFromString<MatchDraft>(json)
+        assertEquals(original, decoded)
+    }
+
+    @Test
+    fun `MatchDraft with single empty round round-trip`() {
+        val original = MatchDraft(
+            gameTypeId = "gt1",
+            playerIds = listOf("alice", "bob"),
+            rounds = listOf(emptyMap()),
+            updatedAt = 2000L
+        )
+        val json = testJson.encodeToString(original)
+        val decoded = testJson.decodeFromString<MatchDraft>(json)
+        assertEquals(original, decoded)
+    }
+
+    @Test
+    fun `MatchDraft with partial round data (missing players) round-trip`() {
+        val original = MatchDraft(
+            gameTypeId = "gt1",
+            playerIds = listOf("alice", "bob", "charlie"),
+            rounds = listOf(
+                mapOf("alice" to "10")  // bob and charlie missing
+            ),
+            updatedAt = 3000L
+        )
+        val json = testJson.encodeToString(original)
+        val decoded = testJson.decodeFromString<MatchDraft>(json)
+        assertEquals(original, decoded)
+        assertEquals("10", decoded.rounds[0]["alice"])
+        assertEquals(null, decoded.rounds[0]["bob"])  // missing entries remain null
     }
 }

@@ -946,4 +946,34 @@ class ScoreDetailHandlerTest {
         val draft = draftRepo.load()
         assertNull(draft, "Draft should be cleared after cancel")
     }
+
+    @Test
+    fun `TerminateFailed_doesNotClearDraft`() {
+        val gameType = GameType("gt1", "TestGame", WinCondition.HIGHEST_SCORE)
+        val gameTypeRepo = InMemoryGameTypeRepository().also { it.save(gameType) }
+        val matchRepo = InMemoryMatchRepository()
+        val draftRepo = InMemoryMatchDraftRepository()
+        val createMatch = CreateMatchUseCase(matchRepo, gameTypeRepo)
+        val players = listOf(Player("alice", "Alice"), Player("bob", "Bob"))
+        
+        val handler = ScoreDetailHandler(gameType, players, createMatch, { 1767225600000L }, ScoreDetailMode.Create, draftRepo)
+        
+        // First, save a draft
+        handler.handle(ScoreDetailIntent.UpdateScore(0, "alice", "10"))
+        var draft = draftRepo.load()
+        assertNotNull(draft, "Draft should be saved after UpdateScore")
+        
+        // Try to terminate with an invalid score to trigger error
+        handler.handle(ScoreDetailIntent.UpdateScore(0, "bob", "abc"))  // invalid
+        handler.handle(ScoreDetailIntent.Terminate)
+        
+        // Verify error was set
+        assertNotNull(handler.state.error, "Error should be set for invalid score")
+        assertFalse(handler.state.saved, "Match should not be saved")
+        
+        // Verify draft is NOT cleared on failure
+        draft = draftRepo.load()
+        assertNotNull(draft, "Draft should NOT be cleared when Terminate fails")
+        assertEquals("10", draft.rounds[0]["alice"], "Draft should contain alice's valid score")
+    }
 }
