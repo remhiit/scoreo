@@ -77,7 +77,7 @@ class ScoreDetailHandler(
                 saveDraft()
             }
 
-            is ScoreDetailIntent.AddRound -> {
+             is ScoreDetailIntent.AddRound -> {
                 state = state.copy(rounds = state.rounds + emptyMap(), error = null)
                 saveDraft()
             }
@@ -87,6 +87,7 @@ class ScoreDetailHandler(
                     val rounds = state.rounds.toMutableList()
                     rounds.removeAt(intent.index)
                     state = state.copy(rounds = rounds)
+                    saveDraft()
                 }
             }
 

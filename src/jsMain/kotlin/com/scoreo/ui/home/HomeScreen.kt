@@ -7,6 +7,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import com.scoreo.domain.model.GameType
 import com.scoreo.domain.model.WinCondition
+import com.scoreo.domain.port.MatchDraftRepository
 import com.scoreo.ui.player.PlayerHandler
 import com.scoreo.ui.player.PlayerIntent
 import com.scoreo.domain.DomainError
@@ -29,8 +30,11 @@ fun HomeScreen(
     getGameTypes: () -> List<GameType>,
     onAddGameType: (name: String, winCondition: WinCondition) -> GameType,
     onStartGame: (gameTypeId: String, playerIds: List<String>) -> Unit,
+    matchDraftRepository: MatchDraftRepository? = null,
+    onResumeDraft: (gameTypeId: String, playerIds: List<String>) -> Unit = { _, _ -> },
 ) {
     val state = playerHandler.state
+    val draft = matchDraftRepository?.load()
 
     var selectedPlayers by remember { mutableStateOf(setOf<String>()) }
     var anonymize by remember(state.deleteConfirmPlayerId) { mutableStateOf(false) }
@@ -45,7 +49,22 @@ fun HomeScreen(
     var inlineGameWinCondition by remember { mutableStateOf(WinCondition.HIGHEST_SCORE) }
     var inlineGameError by remember { mutableStateOf<String?>(null) }
 
-     // ── Helper to add inline game (used by both Enter and button) ──
+    // ── Resume draft banner ──
+    if (draft != null) {
+        Div(attrs = { classes("draft-resume-banner") }) {
+            Button(attrs = {
+                classes("draft-resume-button")
+                onClick {
+                    onResumeDraft(draft.gameTypeId, draft.playerIds)
+                }
+            }) {
+                Span { Text("▶ ") }
+                Span { Text("Resume match in progress") }
+            }
+        }
+    }
+
+    // ── Helper to add inline game (used by both Enter and button) ──
     val addInlineGameType = {
         val name = inlineGameName.trim()
         try {
@@ -95,48 +114,104 @@ fun HomeScreen(
          }
      }
 
-    // ── Player list ──
-    if (state.players.isEmpty()) {
-        Div(attrs = { classes("empty") }) { Text(Strings.EMPTY_PLAYERS) }
-    } else {
-        Div(attrs = { classes("home-player-list") }) {
-            state.players.forEach { player ->
-                val isSelected = player.id in selectedPlayers
-                val stats = state.stats[player.id]
-                Div(attrs = {
-                    classes("home-player-card")
-                    if (isSelected) classes("selected")
-                    onClick {
-                        if (isSelected) selectedPlayers = selectedPlayers - player.id
-                        else selectedPlayers = selectedPlayers + player.id
-                    }
-                }) {
-                    Div {
-                        Div(attrs = { classes("home-player-name") }) { Text(player.name) }
-                        if (stats != null) {
-                            Div(attrs = { classes("stats") }) {
-                                Span(attrs = { classes("stat-win") }) { Text("${stats.wins}W") }
-                                Span(attrs = { classes("stat-loss") }) { Text("${stats.losses}L") }
-                            }
-                        }
-                    }
-                    Div(attrs = { classes("home-player-actions") }) {
-                        if (isSelected) {
-                            Span(attrs = { classes("home-player-check") }) { Text("✓") }
-                        }
-                        Button(attrs = {
-                            classes("btn-danger")
-                            onClick { e ->
-                                e.stopPropagation()
-                                playerHandler.handle(PlayerIntent.ShowDeleteConfirm(player.id))
-                                anonymize = false
-                            }
-                        }) { Text("🗑") }
-                    }
-                }
-            }
-        }
-    }
+     // ── Player list ──
+     if (state.players.isEmpty()) {
+         Div(attrs = { classes("empty") }) { Text(Strings.EMPTY_PLAYERS) }
+     } else {
+         Div(attrs = { classes("home-player-list") }) {
+             state.players.forEach { player ->
+                 val isSelected = player.id in selectedPlayers
+                 val stats = state.stats[player.id]
+                 val isRenaming = state.renamingPlayerId == player.id
+                 Div(attrs = {
+                     classes("home-player-card")
+                     if (isSelected) classes("selected")
+                     if (!isRenaming) {
+                         onClick {
+                             if (isSelected) selectedPlayers = selectedPlayers - player.id
+                             else selectedPlayers = selectedPlayers + player.id
+                         }
+                     }
+                 }) {
+                     Div {
+                         // Rename editing mode
+                         if (isRenaming) {
+                             Div(attrs = { classes("player-rename-container") }) {
+                                 Input(
+                                     type = InputType.Text,
+                                     attrs = {
+                                         value(state.renameInput)
+                                         classes("player-rename-input")
+                                         onInput { event ->
+                                             playerHandler.handle(
+                                                 PlayerIntent.UpdateRenameInput(
+                                                     (event.target as? org.w3c.dom.HTMLInputElement)?.value ?: ""
+                                                 )
+                                             )
+                                         }
+                                         onKeyDown { event ->
+                                             when {
+                                                 event.key == "Enter" -> playerHandler.handle(PlayerIntent.ConfirmRename)
+                                                 event.key == "Escape" -> playerHandler.handle(PlayerIntent.CancelRename)
+                                             }
+                                         }
+                                     }
+                                 )
+                                 Button(attrs = {
+                                     classes("btn", "btn-sm", "btn-primary")
+                                     onClick { e ->
+                                         e.stopPropagation()
+                                         playerHandler.handle(PlayerIntent.ConfirmRename)
+                                     }
+                                 }) { Text("✓") }
+                                 Button(attrs = {
+                                     classes("btn", "btn-sm", "btn-secondary")
+                                     onClick { e ->
+                                         e.stopPropagation()
+                                         playerHandler.handle(PlayerIntent.CancelRename)
+                                     }
+                                 }) { Text("✕") }
+                             }
+                         } else {
+                             // Static display mode
+                             Div(attrs = { classes("player-info") }) {
+                                 Div(attrs = { classes("home-player-name") }) { Text(player.name) }
+                                 if (stats != null) {
+                                     Div(attrs = { classes("stats") }) {
+                                         Span(attrs = { classes("stat-win") }) { Text("${stats.wins}W") }
+                                         Span(attrs = { classes("stat-loss") }) { Text("${stats.losses}L") }
+                                     }
+                                 }
+                             }
+                         }
+                     }
+                     Div(attrs = { classes("home-player-actions") }) {
+                         if (!isRenaming) {
+                             Button(attrs = {
+                                 classes("btn-icon", "btn-edit")
+                                 onClick { e ->
+                                     e.stopPropagation()
+                                     playerHandler.handle(PlayerIntent.StartRename(player.id))
+                                 }
+                             }) { Text("✏️") }
+                         }
+                         if (isSelected && !isRenaming) {
+                             Span(attrs = { classes("home-player-check") }) { Text("✓") }
+                         }
+                         Button(attrs = {
+                             classes("btn-danger")
+                             if (isRenaming) style { property("display", "none") }
+                             onClick { e ->
+                                 e.stopPropagation()
+                                 playerHandler.handle(PlayerIntent.ShowDeleteConfirm(player.id))
+                                 anonymize = false
+                             }
+                         }) { Text("🗑") }
+                     }
+                 }
+             }
+         }
+     }
 
      // ── Selection counter ──
      if (state.players.isNotEmpty() && selectedPlayers.size < 2) {
