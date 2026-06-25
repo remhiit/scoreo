@@ -10,11 +10,8 @@ import org.jetbrains.compose.web.attributes.placeholder
 import org.jetbrains.compose.web.dom.Button
 import org.jetbrains.compose.web.dom.Div
 import org.jetbrains.compose.web.dom.H1
-import org.jetbrains.compose.web.dom.H2
-import org.jetbrains.compose.web.dom.H3
 import org.jetbrains.compose.web.dom.Input
 import org.jetbrains.compose.web.dom.Option
-import org.jetbrains.compose.web.dom.P
 import org.jetbrains.compose.web.dom.Select
 import org.jetbrains.compose.web.dom.Span
 import org.jetbrains.compose.web.dom.Text
@@ -24,11 +21,6 @@ fun GameTypeScreen(handler: GameTypeHandler, showTitle: Boolean = true) {
     val state = handler.state
 
     if (showTitle) H1 { Text(Strings.SCREEN_GAMES) }
-
-    if (state.selectedGameId != null && state.editingGameId == null) {
-        GameDetailView(handler)
-        return
-    }
 
     GameTypeForm(handler)
 
@@ -41,16 +33,96 @@ fun GameTypeScreen(handler: GameTypeHandler, showTitle: Boolean = true) {
     } else {
         Div(attrs = { style { property("margin-top", "16px") } }) {
             state.gameTypes.forEach { gameType ->
-                val isSelected = gameType.id == state.selectedGameId
                 Div(
                     attrs = {
                         classes("card")
-                        if (isSelected) classes("card-selected")
-                        onClick { handler.handle(GameTypeIntent.SelectGame(gameType.id)) }
                     }
                 ) {
                     Div(attrs = { classes("card-title") }) { Text(gameType.name) }
                     Span(attrs = { classes("card-badge") }) { Text(gameType.winCondition.label()) }
+                }
+            }
+        }
+    }
+
+    // Modal de détail (ouverte si state.selectedGameId != null)
+    if (state.selectedGameId != null && state.editingGameId == null) {
+        val gameType = state.gameTypes.find { it.id == state.selectedGameId }
+        if (gameType != null) {
+            // Overlay pour fermer la modale
+            Div(attrs = {
+                classes("modal-overlay")
+                onClick { handler.handle(GameTypeIntent.DeselectGame) }
+            })
+            // Contenu de la modale (sibling de l'overlay, PAS imbriqué dedans)
+            Div(attrs = { classes("modal-content") }) {
+                Div(attrs = { classes("modal-title") }) { Text(gameType.name) }
+                Div(attrs = { classes("modal-body") }) {
+                    Div(attrs = { classes("detail-row") }) {
+                        Span(attrs = { classes("detail-label") }) { Text(Strings.LABEL_WIN_CONDITION_DETAIL) }
+                        Span(attrs = { classes("detail-value") }) { Text(gameType.winCondition.label()) }
+                    }
+
+                    Div(attrs = { classes("detail-row") }) {
+                        Span(attrs = { classes("detail-label") }) { Text(Strings.LABEL_TIE_BREAK_DETAIL) }
+                        Span(attrs = { classes("detail-value") }) { Text(gameType.tieBreakRule.label()) }
+                    }
+
+                    if (gameType.tieBreakRule == TieBreakRule.SECONDARY_SCORE) {
+                        Div(attrs = { classes("detail-row") }) {
+                            Span(attrs = { classes("detail-label") }) { Text(Strings.LABEL_TIE_BREAK_CONDITION) }
+                            Span(attrs = { classes("detail-value") }) { Text(gameType.tieBreakCondition.label()) }
+                        }
+                        gameType.tieBreakLabel?.let { label ->
+                            Div(attrs = { classes("detail-row") }) {
+                                Span(attrs = { classes("detail-label") }) { Text(Strings.LABEL_TIE_BREAK_LABEL) }
+                                Span(attrs = { classes("detail-value") }) { Text(label) }
+                            }
+                        }
+                    }
+                }
+                Div(attrs = { classes("modal-actions") }) {
+                    Button(attrs = {
+                        classes("btn", "btn-secondary")
+                        onClick { handler.handle(GameTypeIntent.DeselectGame) }
+                    }) { Text(Strings.BTN_BACK) }
+                    Button(attrs = {
+                        classes("btn", "btn-primary")
+                        onClick { handler.handle(GameTypeIntent.EditGameType(gameType.id)) }
+                    }) { Text(Strings.BTN_EDIT) }
+                    Button(attrs = {
+                        classes("btn", "btn-danger")
+                        onClick { handler.handle(GameTypeIntent.ShowArchiveConfirm(gameType.id)) }
+                    }) { Text(Strings.BTN_ARCHIVE) }
+                }
+            }
+        }
+    }
+
+    // Archive confirmation modal
+    if (state.archiveConfirmGameTypeId != null) {
+        val confirmGameType = state.gameTypes.find { it.id == state.archiveConfirmGameTypeId }
+        if (confirmGameType != null) {
+            Div(attrs = {
+                classes("modal-overlay")
+                onClick { handler.handle(GameTypeIntent.DismissArchiveConfirm) }
+            })
+            Div(attrs = { classes("modal-content") }) {
+                Div(attrs = { classes("modal-title") }) {
+                    Text(Strings.DIALOG_ARCHIVE.replace("{name}", confirmGameType.name))
+                }
+                Div(attrs = { classes("modal-body") }) {
+                    Text(Strings.DIALOG_ARCHIVE_MESSAGE)
+                }
+                Div(attrs = { classes("modal-actions") }) {
+                    Button(attrs = {
+                        classes("btn", "btn-secondary")
+                        onClick { handler.handle(GameTypeIntent.DismissArchiveConfirm) }
+                    }) { Text(Strings.BTN_CANCEL) }
+                    Button(attrs = {
+                        classes("btn", "btn-danger")
+                        onClick { handler.handle(GameTypeIntent.ArchiveGameType(state.archiveConfirmGameTypeId!!)) }
+                    }) { Text(Strings.BTN_ARCHIVE) }
                 }
             }
         }
@@ -188,88 +260,5 @@ private fun GameTypeForm(handler: GameTypeHandler) {
     }
 }
 
-@Composable
-private fun GameDetailView(handler: GameTypeHandler) {
-    val state = handler.state
-    val gameType = state.gameTypes.find { it.id == state.selectedGameId }
 
-    if (gameType == null) {
-        Div(attrs = { classes("empty") }) { Text(Strings.MSG_GAME_NOT_FOUND) }
-        return
-    }
-
-    H2 { Text(gameType.name) }
-
-    Div(attrs = { classes("detail-row") }) {
-        Span(attrs = { classes("detail-label") }) { Text(Strings.LABEL_WIN_CONDITION_DETAIL) }
-        Span(attrs = { classes("detail-value") }) { Text(gameType.winCondition.label()) }
-    }
-
-    Div(attrs = { classes("detail-row") }) {
-        Span(attrs = { classes("detail-label") }) { Text(Strings.LABEL_TIE_BREAK_DETAIL) }
-        Span(attrs = { classes("detail-value") }) { Text(gameType.tieBreakRule.label()) }
-    }
-
-    if (gameType.tieBreakRule == TieBreakRule.SECONDARY_SCORE) {
-        Div(attrs = { classes("detail-row") }) {
-            Span(attrs = { classes("detail-label") }) { Text(Strings.LABEL_TIE_BREAK_CONDITION) }
-            Span(attrs = { classes("detail-value") }) { Text(gameType.tieBreakCondition.label()) }
-        }
-        gameType.tieBreakLabel?.let { label ->
-            Div(attrs = { classes("detail-row") }) {
-                Span(attrs = { classes("detail-label") }) { Text(Strings.LABEL_TIE_BREAK_LABEL) }
-                Span(attrs = { classes("detail-value") }) { Text(label) }
-            }
-        }
-    }
-
-    Div(attrs = {
-        style {
-            property("display", "flex")
-            property("gap", "8px")
-            property("margin-top", "16px")
-        }
-    }) {
-        Button(attrs = {
-            classes("btn", "btn-secondary")
-             onClick { handler.handle(GameTypeIntent.DeselectGame) }
-         }) { Text(Strings.BTN_BACK) }
-
-         Button(attrs = {
-             classes("btn", "btn-primary")
-             onClick { handler.handle(GameTypeIntent.EditGameType(gameType.id)) }
-         }) { Text(Strings.BTN_EDIT) }
-
-         Button(attrs = {
-             classes("btn", "btn-danger")
-             onClick { handler.handle(GameTypeIntent.ShowArchiveConfirm(gameType.id)) }
-         }) { Text(Strings.BTN_ARCHIVE) }
-    }
-
-    // Archive confirmation modal
-     if (handler.state.archiveConfirmGameTypeId != null) {
-         val confirmGameType = handler.state.gameTypes.find { it.id == handler.state.archiveConfirmGameTypeId }
-         if (confirmGameType != null) {
-             Div(attrs = { 
-                 classes("modal-overlay")
-                 onClick { handler.handle(GameTypeIntent.DismissArchiveConfirm) }
-             }) {
-                Div(attrs = { classes("modal") }) {
-                    H3 { Text(Strings.DIALOG_ARCHIVE.replace("{name}", confirmGameType.name)) }
-                    P { Text(Strings.DIALOG_ARCHIVE_MESSAGE) }
-                    Div(attrs = { classes("modal-actions") }) {
-                        Button(attrs = {
-                            classes("btn", "btn-secondary")
-                            onClick { handler.handle(GameTypeIntent.DismissArchiveConfirm) }
-            }) { Text(Strings.BTN_CANCEL) }
-                         Button(attrs = {
-                             classes("btn", "btn-danger")
-                             onClick { handler.handle(GameTypeIntent.ArchiveGameType(handler.state.archiveConfirmGameTypeId!!)) }
-                         }) { Text(Strings.BTN_ARCHIVE) }
-                    }
-                }
-            }
-        }
-    }
-}
 
