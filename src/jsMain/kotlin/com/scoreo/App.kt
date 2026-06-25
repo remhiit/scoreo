@@ -95,6 +95,7 @@ fun App(
                 onStartGame = { gameTypeId, playerIds ->
                     navigator.navigate(Screen.ScoreDetail(gameTypeId, playerIds))
                 },
+                getMatchCount = { matchRepository.getAll().size },
             )
             is Screen.History -> {
                 LaunchedEffect(navigator.current) { deps.historyHandler.handle(HistoryIntent.Refresh) }

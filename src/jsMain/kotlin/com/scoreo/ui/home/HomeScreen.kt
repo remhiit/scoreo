@@ -33,9 +33,11 @@ fun HomeScreen(
     onStartGame: (gameTypeId: String, playerIds: List<String>) -> Unit,
     matchDraftRepository: MatchDraftRepository? = null,
     onResumeDraft: (gameTypeId: String, playerIds: List<String>) -> Unit = { _, _ -> },
+    getMatchCount: () -> Int = { 0 },
 ) {
     val state = playerHandler.state
     val draft = matchDraftRepository?.load()
+    val matchCount = getMatchCount()
 
     var selectedPlayers by remember { mutableStateOf(setOf<String>()) }
     var anonymize by remember(state.deleteConfirmPlayerId) { mutableStateOf(false) }
@@ -104,7 +106,8 @@ fun HomeScreen(
     }
 
      // ── Onboarding guide (first launch) ──
-     if (state.players.isEmpty()) {
+     val isFirstLaunch = state.players.isEmpty() && matchCount == 0
+     if (isFirstLaunch) {
          Div(attrs = { classes("onboarding-guide") }) {
              H3 { Text(Strings.GUIDE_TITLE) }
              Ol {
@@ -321,7 +324,7 @@ fun HomeScreen(
                     Input(type = InputType.Text, attrs = {
                         classes("input")
                         value(state.renameInput)
-                        autoFocus()
+                        attr("autofocus", "")
                         onInput { playerHandler.handle(PlayerIntent.UpdateRenameInput(it.value)) }
                         onKeyUp { e ->
                             if (e.key == "Enter") playerHandler.handle(PlayerIntent.ConfirmRename)
