@@ -173,38 +173,51 @@ fun GameTypeScreen(handler: GameTypeHandler, showTitle: Boolean = true) {
 @Composable
 private fun GameTypeForm(handler: GameTypeHandler) {
     val state = handler.state
-    val isEditing = state.editingGameId != null
+
+    // Only show the add form when not in edit mode
+    if (state.editingGameId != null) return
 
     Div(attrs = { classes("form-row") }) {
          Input(type = InputType.Text, attrs = {
-             classes("input")
-             placeholder(Strings.LABEL_FORM_GAME_NAME)
-             value(state.inputName)
-            onInput { handler.handle(GameTypeIntent.UpdateName(it.value)) }
-            onKeyUp {
-                if (it.key == "Enter") {
-                    if (isEditing) {
-                        val gameType = state.gameTypes.find { it.id == state.editingGameId }
-                        if (gameType != null) {
-                            handler.handle(GameTypeIntent.UpdateGameType(
-                                gameType.copy(
-                                    name = state.inputName.trim(),
-                                    winCondition = state.selectedWinCondition,
-                                    tieBreakRule = state.selectedTieBreakRule,
-                                    tieBreakCondition = state.selectedTieBreakCondition,
-                                    tieBreakLabel = state.selectedTieBreakLabel,
-                                )
-                            ))
-                        }
-                    } else {
-                        handler.handle(GameTypeIntent.AddGameType)
-                    }
-                }
+              classes("input")
+              placeholder(Strings.LABEL_FORM_GAME_NAME)
+              value(state.inputName)
+             onInput { handler.handle(GameTypeIntent.UpdateName(it.value)) }
+             onKeyUp {
+                 if (it.key == "Enter") {
+                     handler.handle(GameTypeIntent.AddGameType)
+                 }
+             }
+         })
+     }
+
+    GameTypeFields(handler)
+
+    Div(attrs = {
+        style {
+            property("display", "flex")
+            property("gap", "8px")
+        }
+    }) {
+        Button(attrs = {
+            classes("btn", "btn-primary", "btn-full")
+            onClick {
+                handler.handle(GameTypeIntent.AddGameType)
             }
-        })
+        }) { Text(Strings.BTN_ADD_GAME_TYPE) }
+    }
+}
+
+@Composable
+private fun GameTypeFields(handler: GameTypeHandler) {
+    val state = handler.state
+
+    if (state.editingGameId == null) {
+        // For add mode, show the game name input
+        // (already shown in GameTypeForm for add mode)
     }
 
-     Div(attrs = { classes("section-label") }) { Text(Strings.LABEL_WIN_CONDITION) }
+    Div(attrs = { classes("section-label") }) { Text(Strings.LABEL_WIN_CONDITION) }
     Select(attrs = {
         classes("select")
         onChange { event ->
@@ -220,7 +233,7 @@ private fun GameTypeForm(handler: GameTypeHandler) {
         }
     }
 
-     Div(attrs = { classes("section-label") }) { Text(Strings.LABEL_TIEBREAK_RULE) }
+    Div(attrs = { classes("section-label") }) { Text(Strings.LABEL_TIEBREAK_RULE) }
     Select(attrs = {
         classes("select")
         onChange { event ->
@@ -263,43 +276,8 @@ private fun GameTypeForm(handler: GameTypeHandler) {
             })
         }
     }
-
-    Div(attrs = {
-        style {
-            property("display", "flex")
-            property("gap", "8px")
-        }
-    }) {
-        Button(attrs = {
-            classes("btn", "btn-primary", "btn-full")
-            onClick {
-                if (isEditing) {
-                    val gameType = state.gameTypes.find { it.id == state.editingGameId }
-                    if (gameType != null) {
-                        handler.handle(GameTypeIntent.UpdateGameType(
-                            gameType.copy(
-                                name = state.inputName.trim(),
-                                winCondition = state.selectedWinCondition,
-                                tieBreakRule = state.selectedTieBreakRule,
-                                tieBreakCondition = state.selectedTieBreakCondition,
-                                tieBreakLabel = state.selectedTieBreakLabel,
-                            )
-                        ))
-                    }
-                } else {
-                    handler.handle(GameTypeIntent.AddGameType)
-                }
-            }
-        }) { Text(if (isEditing) Strings.BTN_SAVE else Strings.BTN_ADD_GAME_TYPE) }
-
-        if (isEditing) {
-            Button(attrs = {
-                classes("btn", "btn-secondary")
-                onClick { handler.handle(GameTypeIntent.CancelEdit) }
-            }) { Text("Cancel") }
-        }
-    }
 }
+ 
 
 
 
