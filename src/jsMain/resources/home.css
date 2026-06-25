@@ -6,44 +6,6 @@
     gap: 8px;
 }
 
-.home-player-card {
-    background: var(--surface-variant);
-    border-radius: var(--radius);
-    padding: 14px 16px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    cursor: pointer;
-    transition: background 0.1s, box-shadow 0.1s;
-}
-
-.home-player-card:hover {
-    background: var(--primary-light);
-}
-
-.home-player-card.selected {
-    background: var(--primary-light);
-    box-shadow: inset 0 0 0 2px var(--primary);
-}
-
-.home-player-name {
-    font-weight: 500;
-    font-size: 15px;
-}
-
-.home-player-check {
-    font-size: 18px;
-    color: var(--primary);
-    font-weight: 700;
-    margin-left: 12px;
-}
-
-.home-player-actions {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-}
-
 /* ── FAB ── */
 
 .fab {
