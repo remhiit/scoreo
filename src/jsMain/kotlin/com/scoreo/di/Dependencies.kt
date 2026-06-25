@@ -14,6 +14,7 @@ import com.scoreo.application.GetPlayerStatsUseCase
 import com.scoreo.application.GetPlayersUseCase
 import com.scoreo.application.ImportMatchesUseCase
 import com.scoreo.application.RenamePlayerUseCase
+import com.scoreo.application.SyncUseCase
 import com.scoreo.application.UpdateGameTypeUseCase
 import com.scoreo.domain.port.GameTypeRepository
 import com.scoreo.domain.port.MatchRepository
@@ -26,6 +27,7 @@ import com.scoreo.ui.navigation.AppNavigator
 import com.scoreo.ui.player.PlayerHandler
 import com.scoreo.ui.stats.StatsHandler
 import com.scoreo.ui.sync.SyncHandler
+import kotlinx.coroutines.MainScope
 
 
 data class AppDependencies(
@@ -107,5 +109,26 @@ fun createAppDependencies(
         getGameTypesUseCase = getGameTypesUseCase,
         addGameTypeUseCase = addGameTypeUseCase,
         navigator = navigator,
+    )
+}
+
+private fun createSyncHandlerIfAvailable(
+    cloudSyncRepository: CloudSyncRepository?,
+    playerRepository: PlayerRepository,
+    gameTypeRepository: GameTypeRepository,
+    matchRepository: MatchRepository,
+): SyncHandler? {
+    if (cloudSyncRepository == null) return null
+    
+    val syncUseCase = SyncUseCase(
+        cloudRepo = cloudSyncRepository,
+        playerRepo = playerRepository,
+        gameTypeRepo = gameTypeRepository,
+        matchRepo = matchRepository,
+    )
+    
+    return SyncHandler(
+        syncUseCase = syncUseCase,
+        scope = MainScope(),
     )
 }
