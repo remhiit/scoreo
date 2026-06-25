@@ -12,6 +12,7 @@ import com.scoreo.ui.player.PlayerHandler
 import com.scoreo.ui.player.PlayerIntent
 import com.scoreo.domain.DomainError
 import com.scoreo.ui.Strings
+import com.scoreo.ui.shared.ListItemRow
 import org.jetbrains.compose.web.attributes.InputType
 import org.jetbrains.compose.web.dom.Button
 import org.jetbrains.compose.web.dom.Div
@@ -122,93 +123,25 @@ fun HomeScreen(
              state.players.forEach { player ->
                  val isSelected = player.id in selectedPlayers
                  val stats = state.stats[player.id]
-                 val isRenaming = state.renamingPlayerId == player.id
-                 Div(attrs = {
-                     classes("home-player-card")
-                     if (isSelected) classes("selected")
-                     if (!isRenaming) {
-                         onClick {
-                             if (isSelected) selectedPlayers = selectedPlayers - player.id
-                             else selectedPlayers = selectedPlayers + player.id
-                         }
-                     }
-                 }) {
-                     Div {
-                         // Rename editing mode
-                         if (isRenaming) {
-                             Div(attrs = { classes("player-rename-container") }) {
-                                 Input(
-                                     type = InputType.Text,
-                                     attrs = {
-                                         value(state.renameInput)
-                                         classes("player-rename-input")
-                                         onInput { event ->
-                                             playerHandler.handle(
-                                                 PlayerIntent.UpdateRenameInput(
-                                                     (event.target as? org.w3c.dom.HTMLInputElement)?.value ?: ""
-                                                 )
-                                             )
-                                         }
-                                         onKeyDown { event ->
-                                             when {
-                                                 event.key == "Enter" -> playerHandler.handle(PlayerIntent.ConfirmRename)
-                                                 event.key == "Escape" -> playerHandler.handle(PlayerIntent.CancelRename)
-                                             }
-                                         }
-                                     }
-                                 )
-                                 Button(attrs = {
-                                     classes("btn", "btn-sm", "btn-primary")
-                                     onClick { e ->
-                                         e.stopPropagation()
-                                         playerHandler.handle(PlayerIntent.ConfirmRename)
-                                     }
-                                 }) { Text("✓") }
-                                 Button(attrs = {
-                                     classes("btn", "btn-sm", "btn-secondary")
-                                     onClick { e ->
-                                         e.stopPropagation()
-                                         playerHandler.handle(PlayerIntent.CancelRename)
-                                     }
-                                 }) { Text("✕") }
-                             }
-                         } else {
-                             // Static display mode
-                             Div(attrs = { classes("player-info") }) {
-                                 Div(attrs = { classes("home-player-name") }) { Text(player.name) }
-                                 if (stats != null) {
-                                     Div(attrs = { classes("stats") }) {
-                                         Span(attrs = { classes("stat-win") }) { Text("${stats.wins}W") }
-                                         Span(attrs = { classes("stat-loss") }) { Text("${stats.losses}L") }
-                                     }
-                                 }
-                             }
-                         }
-                     }
-                     Div(attrs = { classes("home-player-actions") }) {
-                         if (!isRenaming) {
-                             Button(attrs = {
-                                 classes("btn-icon", "btn-edit")
-                                 onClick { e ->
-                                     e.stopPropagation()
-                                     playerHandler.handle(PlayerIntent.StartRename(player.id))
-                                 }
-                             }) { Text("✏️") }
-                         }
-                         if (isSelected && !isRenaming) {
-                             Span(attrs = { classes("home-player-check") }) { Text("✓") }
-                         }
-                         Button(attrs = {
-                             classes("btn-danger")
-                             if (isRenaming) style { property("display", "none") }
-                             onClick { e ->
-                                 e.stopPropagation()
-                                 playerHandler.handle(PlayerIntent.ShowDeleteConfirm(player.id))
-                                 anonymize = false
-                             }
-                         }) { Text("🗑") }
-                     }
-                 }
+                 val subtitle = stats?.let { "${it.wins}W ${it.losses}L" }
+
+                 ListItemRow(
+                     label = player.name,
+                     subtitle = subtitle,
+                     isSelectable = true,
+                     isSelected = isSelected,
+                     onSelect = {
+                         selectedPlayers = if (isSelected)
+                             selectedPlayers - player.id
+                         else
+                             selectedPlayers + player.id
+                     },
+                     onEdit = { playerHandler.handle(PlayerIntent.StartRename(player.id)) },
+                     onDelete = {
+                         playerHandler.handle(PlayerIntent.ShowDeleteConfirm(player.id))
+                         anonymize = false
+                     },
+                 )
              }
          }
      }
