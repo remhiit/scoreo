@@ -3,6 +3,7 @@ package com.scoreo.ui.scoredetail
 import com.scoreo.infrastructure.InMemoryGameTypeRepository
 import com.scoreo.infrastructure.InMemoryMatchRepository
 import com.scoreo.infrastructure.InMemoryPlayerRepository
+import com.scoreo.infrastructure.InMemoryMatchDraftRepository
 import com.scoreo.application.CreateMatchUseCase
 import com.scoreo.application.UpdateMatchUseCase
 import com.scoreo.domain.model.GameType
@@ -745,5 +746,204 @@ class ScoreDetailHandlerTest {
         // Verify the saved match still has the original date
         val savedMatch = matchRepo.findById("m1")
         assertEquals(originalDate, savedMatch?.date)
+    }
+
+    // ── Draft persistence tests ──
+
+    @Test
+    fun `UpdateScore_savesDraftToRepository`() {
+        val gameType = GameType("gt1", "TestGame", WinCondition.HIGHEST_SCORE)
+        val gameTypeRepo = InMemoryGameTypeRepository().also { it.save(gameType) }
+        val matchRepo = InMemoryMatchRepository()
+        val draftRepo = InMemoryMatchDraftRepository()
+        val createMatch = CreateMatchUseCase(matchRepo, gameTypeRepo)
+        val players = listOf(Player("alice", "Alice"), Player("bob", "Bob"))
+        
+        val handler = ScoreDetailHandler(gameType, players, createMatch, { 1767225600000L }, ScoreDetailMode.Create, draftRepo)
+        
+        handler.handle(ScoreDetailIntent.UpdateScore(0, "alice", "10"))
+        
+        val draft = draftRepo.load()
+        assertNotNull(draft)
+        assertEquals("gt1", draft.gameTypeId)
+        assertEquals(listOf("alice", "bob"), draft.playerIds)
+        assertEquals(1, draft.rounds.size)
+        assertEquals("10", draft.rounds[0]["alice"])
+    }
+
+    @Test
+    fun `AddRound_savesDraftToRepository`() {
+        val gameType = GameType("gt1", "TestGame", WinCondition.HIGHEST_SCORE)
+        val gameTypeRepo = InMemoryGameTypeRepository().also { it.save(gameType) }
+        val matchRepo = InMemoryMatchRepository()
+        val draftRepo = InMemoryMatchDraftRepository()
+        val createMatch = CreateMatchUseCase(matchRepo, gameTypeRepo)
+        val players = listOf(Player("alice", "Alice"), Player("bob", "Bob"))
+        
+        val handler = ScoreDetailHandler(gameType, players, createMatch, { 1767225600000L }, ScoreDetailMode.Create, draftRepo)
+        
+        handler.handle(ScoreDetailIntent.UpdateScore(0, "alice", "10"))
+        handler.handle(ScoreDetailIntent.AddRound)
+        
+        val draft = draftRepo.load()
+        assertNotNull(draft)
+        assertEquals(2, draft.rounds.size)
+        assertEquals("10", draft.rounds[0]["alice"])
+        assertTrue(draft.rounds[1].isEmpty())
+    }
+
+    @Test
+    fun `RemoveRound_savesDraftToRepository`() {
+        val gameType = GameType("gt1", "TestGame", WinCondition.HIGHEST_SCORE)
+        val gameTypeRepo = InMemoryGameTypeRepository().also { it.save(gameType) }
+        val matchRepo = InMemoryMatchRepository()
+        val draftRepo = InMemoryMatchDraftRepository()
+        val createMatch = CreateMatchUseCase(matchRepo, gameTypeRepo)
+        val players = listOf(Player("alice", "Alice"), Player("bob", "Bob"))
+        
+        val handler = ScoreDetailHandler(gameType, players, createMatch, { 1767225600000L }, ScoreDetailMode.Create, draftRepo)
+        
+        handler.handle(ScoreDetailIntent.UpdateScore(0, "alice", "10"))
+        handler.handle(ScoreDetailIntent.AddRound)
+        handler.handle(ScoreDetailIntent.UpdateScore(1, "bob", "5"))
+        handler.handle(ScoreDetailIntent.RemoveRound(1))
+        
+        val draft = draftRepo.load()
+        assertNotNull(draft)
+        assertEquals(1, draft.rounds.size)
+        assertEquals("10", draft.rounds[0]["alice"])
+    }
+
+    @Test
+    fun `Terminate_clearsDraft`() {
+        val gameType = GameType("gt1", "TestGame", WinCondition.HIGHEST_SCORE)
+        val gameTypeRepo = InMemoryGameTypeRepository().also { it.save(gameType) }
+        val matchRepo = InMemoryMatchRepository()
+        val draftRepo = InMemoryMatchDraftRepository()
+        val createMatch = CreateMatchUseCase(matchRepo, gameTypeRepo)
+        val players = listOf(Player("alice", "Alice"), Player("bob", "Bob"))
+        
+        val handler = ScoreDetailHandler(gameType, players, createMatch, { 1767225600000L }, ScoreDetailMode.Create, draftRepo)
+        
+        handler.handle(ScoreDetailIntent.UpdateScore(0, "alice", "10"))
+        handler.handle(ScoreDetailIntent.UpdateScore(0, "bob", "5"))
+        handler.handle(ScoreDetailIntent.Terminate)
+        
+        val draft = draftRepo.load()
+        assertNull(draft, "Draft should be cleared after successful terminate")
+    }
+
+    @Test
+    fun `DraftPersistenceRoundTrip`() {
+        val gameType = GameType("gt1", "TestGame", WinCondition.HIGHEST_SCORE)
+        val gameTypeRepo = InMemoryGameTypeRepository().also { it.save(gameType) }
+        val matchRepo = InMemoryMatchRepository()
+        val draftRepo = InMemoryMatchDraftRepository()
+        val createMatch = CreateMatchUseCase(matchRepo, gameTypeRepo)
+        val players = listOf(Player("alice", "Alice"), Player("bob", "Bob"))
+        
+        val handler1 = ScoreDetailHandler(gameType, players, createMatch, { 1767225600000L }, ScoreDetailMode.Create, draftRepo)
+        
+        // Build complex state
+        handler1.handle(ScoreDetailIntent.UpdateScore(0, "alice", "10"))
+        handler1.handle(ScoreDetailIntent.UpdateScore(0, "bob", "5"))
+        handler1.handle(ScoreDetailIntent.AddRound)
+        handler1.handle(ScoreDetailIntent.UpdateScore(1, "alice", "3"))
+        handler1.handle(ScoreDetailIntent.UpdateScore(1, "bob", "7"))
+        
+        // Simulate reload by creating new handler with same draft repo
+        val handler2 = ScoreDetailHandler(gameType, players, createMatch, { 1767225600000L }, ScoreDetailMode.Create, draftRepo)
+        
+        assertEquals(2, handler2.state.rounds.size)
+        assertEquals("10", handler2.state.rounds[0]["alice"])
+        assertEquals("5", handler2.state.rounds[0]["bob"])
+        assertEquals("3", handler2.state.rounds[1]["alice"])
+        assertEquals("7", handler2.state.rounds[1]["bob"])
+    }
+
+    @Test
+    fun `EmptyCellsPreservedInDraft`() {
+        val gameType = GameType("gt1", "TestGame", WinCondition.HIGHEST_SCORE)
+        val gameTypeRepo = InMemoryGameTypeRepository().also { it.save(gameType) }
+        val matchRepo = InMemoryMatchRepository()
+        val draftRepo = InMemoryMatchDraftRepository()
+        val createMatch = CreateMatchUseCase(matchRepo, gameTypeRepo)
+        val players = listOf(Player("alice", "Alice"), Player("bob", "Bob"))
+        
+        val handler = ScoreDetailHandler(gameType, players, createMatch, { 1767225600000L }, ScoreDetailMode.Create, draftRepo)
+        
+        handler.handle(ScoreDetailIntent.UpdateScore(0, "alice", "10"))
+        // bob's cell remains empty (not in the map, which is ok)
+        
+        val draft = draftRepo.load()
+        assertNotNull(draft)
+        assertEquals("10", draft.rounds[0]["alice"])
+        // bob might not be in the map, or be empty string, both are valid
+        assertTrue(draft.rounds[0]["bob"] == null || draft.rounds[0]["bob"] == "")
+    }
+
+    @Test
+    fun `RestoreIgnoresDraftIfGameTypeMismatch`() {
+        val gameType1 = GameType("gt1", "Game1", WinCondition.HIGHEST_SCORE)
+        val gameType2 = GameType("gt2", "Game2", WinCondition.HIGHEST_SCORE)
+        val gameTypeRepo = InMemoryGameTypeRepository()
+        gameTypeRepo.save(gameType1)
+        gameTypeRepo.save(gameType2)
+        val matchRepo = InMemoryMatchRepository()
+        val draftRepo = InMemoryMatchDraftRepository()
+        val createMatch = CreateMatchUseCase(matchRepo, gameTypeRepo)
+        val players = listOf(Player("alice", "Alice"), Player("bob", "Bob"))
+        
+        // Create draft for gameType1
+        val handler1 = ScoreDetailHandler(gameType1, players, createMatch, { 1767225600000L }, ScoreDetailMode.Create, draftRepo)
+        handler1.handle(ScoreDetailIntent.UpdateScore(0, "alice", "10"))
+        
+        // Try to restore with gameType2 — should not restore draft
+        val handler2 = ScoreDetailHandler(gameType2, players, createMatch, { 1767225600000L }, ScoreDetailMode.Create, draftRepo)
+        
+        // Should still have 1 empty round, not the saved draft
+        assertEquals(1, handler2.state.rounds.size)
+        assertTrue(handler2.state.rounds[0].isEmpty())
+    }
+
+    @Test
+    fun `RestoreIgnoresDraftIfPlayerIdsMismatch`() {
+        val gameType = GameType("gt1", "TestGame", WinCondition.HIGHEST_SCORE)
+        val gameTypeRepo = InMemoryGameTypeRepository().also { it.save(gameType) }
+        val matchRepo = InMemoryMatchRepository()
+        val draftRepo = InMemoryMatchDraftRepository()
+        val createMatch = CreateMatchUseCase(matchRepo, gameTypeRepo)
+        val players1 = listOf(Player("alice", "Alice"), Player("bob", "Bob"))
+        val players2 = listOf(Player("charlie", "Charlie"), Player("dave", "Dave"))
+        
+        // Create draft for players1
+        val handler1 = ScoreDetailHandler(gameType, players1, createMatch, { 1767225600000L }, ScoreDetailMode.Create, draftRepo)
+        handler1.handle(ScoreDetailIntent.UpdateScore(0, "alice", "10"))
+        
+        // Try to restore with players2 — should not restore draft
+        val handler2 = ScoreDetailHandler(gameType, players2, createMatch, { 1767225600000L }, ScoreDetailMode.Create, draftRepo)
+        
+        // Should still have 1 empty round, not the saved draft
+        assertEquals(1, handler2.state.rounds.size)
+        assertTrue(handler2.state.rounds[0].isEmpty())
+    }
+
+    @Test
+    fun `CancelMatch_clearsDraft`() {
+        val gameType = GameType("gt1", "TestGame", WinCondition.HIGHEST_SCORE)
+        val gameTypeRepo = InMemoryGameTypeRepository().also { it.save(gameType) }
+        val matchRepo = InMemoryMatchRepository()
+        val draftRepo = InMemoryMatchDraftRepository()
+        val createMatch = CreateMatchUseCase(matchRepo, gameTypeRepo)
+        val players = listOf(Player("alice", "Alice"), Player("bob", "Bob"))
+        
+        val handler = ScoreDetailHandler(gameType, players, createMatch, { 1767225600000L }, ScoreDetailMode.Create, draftRepo)
+        
+        handler.handle(ScoreDetailIntent.UpdateScore(0, "alice", "10"))
+        handler.handle(ScoreDetailIntent.CancelMatch)
+        handler.handle(ScoreDetailIntent.ConfirmCancel)
+        
+        val draft = draftRepo.load()
+        assertNull(draft, "Draft should be cleared after cancel")
     }
 }

@@ -7,6 +7,7 @@
 | `GetMatchesUseCase` | — | `List<Match>` | Returns all stored matches |
 | `GetGameTypesUseCase` | — | `List<GameType>` | Returns all game types |
 | `GetPlayersUseCase` | `includeInactive = true` | `List<Player>` | Includes deleted players for name resolution |
+| `DeleteMatchUseCase` | `matchId: String` | `Unit` | Deletes a match by ID; idempotent (no error if match not found) |
 
 ## MVI
 
@@ -32,16 +33,22 @@
 - **Filter dropdown** at top: "Filter by game type" — shows all game types from loaded matches, or "All games" for no filter
 - List of match cards sorted by date descending (most recent first)
 - Each card shows: game type name, date **with time-of-day** (HH:mm in local timezone), per-player scores
+- **Delete button (🗑)** on each card (top right)
 - Winner is highlighted with bold + 🏆
 - Deleted player names show one of:
-  - `"Alice (deleted)"` — if name was kept on delete
-  - `"Deleted player"` — if name was erased (anonymized)
+   - `"Alice (deleted)"` — if name was kept on delete
+   - `"Deleted player"` — if name was erased (anonymized)
 - Empty state is context-aware:
-  - If no matches at all: "No matches yet."
-  - If filtered to a game type with no matches: "No matches for {gameName}"
+   - If no matches at all: "No matches yet."
+   - If filtered to a game type with no matches: "No matches for {gameName}"
 - Matches with `isTieBreakIndeterminate = true` show:
-  - **⚠️ Info manquante** badge next to the game type name
-  - Explanatory message below scores: *"Ce match a été enregistré avant la mise en place des règles de départage. Le résultat est basé sur l'égalité."*
+   - **⚠️ Info manquante** badge next to the game type name
+   - Explanatory message below scores: *"Ce match a été enregistré avant la mise en place des règles de départage. Le résultat est basé sur l'égalité."*
+- **Delete confirmation modal** (when 🗑 clicked):
+   - Title: "Delete match?"
+   - Shows: game type name, date, player scores
+   - Warning: "Match data will be lost."
+   - Buttons: "Cancel" | "Delete" (danger style)
 
 ## Functional Tests
 
@@ -88,6 +95,38 @@ Then filtered display shows only m1 and m3
 Given a filter is active (selectedGameTypeFilter = "gt1")
 When user selects "All games" from dropdown
 Then selectedGameTypeFilter = null and all matches display
+```
+
+### Delete match confirmation
+```
+Given 2 matches m1 and m2 exist
+When user clicks 🗑 on m1
+Then confirmation modal appears showing:
+  - "Delete match?" title
+  - Game type name and date
+  - Player scores list
+  - "Match data will be lost" warning
+  - Cancel and Delete buttons
+```
+
+### Delete match execution
+```
+Given confirmation modal is shown for match m1
+When user clicks "Delete" button
+Then m1 is deleted from repository
+  And modal closes
+  And match list refreshes (m1 is gone)
+  And deleteConfirmMatchId is cleared
+```
+
+### Delete match cancel
+```
+Given confirmation modal is shown for match m1
+When user clicks "Cancel" button
+Then m1 is NOT deleted
+  And modal closes
+  And match list unchanged
+```
 
 ## Mockup
 
