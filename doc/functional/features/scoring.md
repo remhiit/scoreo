@@ -48,6 +48,25 @@ The **ManualSelectionDialog** offers:
 - "Keep tie" button to preserve equality (all tied win)
 - Confirm button to finalize
 
+## Edit Mode
+
+When navigating to `ScoreDetailScreen` with a `matchId` parameter (from History), the screen loads the existing match and enters edit mode.
+
+### Data Reconstruction
+
+All matches are stored with `playerScores` (total score per player). When editing, rounds are reconstructed as 1 round containing these totals. User can then split into multiple rounds or edit the single-round total as desired.
+
+### Workflow
+
+1. User clicks match card in History
+2. `ScoreDetailScreen` loads match + reconstructs as 1 round with totals
+3. Title changes to "Edit match"
+4. User edits rounds/scores
+5. Clicks "Finish match" (button text unchanged, intent same)
+6. Calls `UpdateMatchUseCase` instead of `CreateMatchUseCase`
+7. Match overwritten (id preserved, date preserved)
+8. Returns to Home after successful save
+
 ## Functional Tests
 
 ### Score entry
@@ -96,6 +115,27 @@ When I click "Terminer la partie"
 Then a ManualSelectionDialog appears
 When I select Alice and click Valider
 Then the match is saved with manualWinners=["Alice"]
+```
+
+### Edit match from history
+```
+Given a completed match exists with Alice=20, Bob=15
+When I click the match card in History
+Then ScoreDetailScreen loads in edit mode:
+   - Title shows "Edit match"
+   - Rounds reconstructed as 1 round: Alice=20, Bob=15
+   - Players and game type preserved
+When I update Alice to 25 and click "Finish match"
+Then the match is updated with new scores (same ID, same date)
+   And History displays updated scores
+```
+
+### Edit match preserves original date
+```
+Given a match created on 2026-01-01
+When I edit the match and change scores
+And click "Finish match"
+Then the match date remains 2026-01-01 (not updated to current date)
 ```
 
 ## Mockup

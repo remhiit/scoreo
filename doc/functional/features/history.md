@@ -33,7 +33,8 @@
 - **Filter dropdown** at top: "Filter by game type" — shows all game types from loaded matches, or "All games" for no filter
 - List of match cards sorted by date descending (most recent first)
 - Each card shows: game type name, date **with time-of-day** (HH:mm in local timezone), per-player scores
-- **Delete button (🗑)** on each card (top right)
+- **Match card is clickable** → navigates to `ScoreDetailScreen` in edit mode to re-enter scores
+  - **Delete button (🗑)** on each card (top right) — independent of card click, allows deleting without editing
 - Winner is highlighted with bold + 🏆
 - Deleted player names show one of:
    - `"Alice (deleted)"` — if name was kept on delete
@@ -124,8 +125,25 @@ Then m1 is deleted from repository
 Given confirmation modal is shown for match m1
 When user clicks "Cancel" button
 Then m1 is NOT deleted
-  And modal closes
-  And match list unchanged
+   And modal closes
+   And match list unchanged
+```
+
+### Edit match from history
+```
+Given HistoryScreen displays a match m1
+When user clicks on the match card
+Then navigation to ScoreDetailScreen in edit mode
+   And match data is pre-loaded:
+     - Game type: preserved
+     - Players: preserved
+     - Scores: reconstructed as 1 round with totals
+     - Title changes to "Edit match"
+   And user can modify scores and rounds
+When user clicks "Finish match"
+Then match is updated (overwrites original with same ID and date)
+   And navigation returns to Home
+   And History reflects updated scores
 ```
 
 ## Mockup
