@@ -5,6 +5,7 @@ import com.scoreo.domain.model.GameType
 import com.scoreo.domain.model.TieBreakRule
 import com.scoreo.domain.model.WinCondition
 import com.scoreo.ui.Strings
+import com.scoreo.ui.shared.ListItemRow
 import org.jetbrains.compose.web.attributes.InputType
 import org.jetbrains.compose.web.attributes.placeholder
 import org.jetbrains.compose.web.dom.Button
@@ -33,14 +34,14 @@ fun GameTypeScreen(handler: GameTypeHandler, showTitle: Boolean = true) {
     } else {
         Div(attrs = { style { property("margin-top", "16px") } }) {
             state.gameTypes.forEach { gameType ->
-                Div(
-                    attrs = {
-                        classes("card")
-                    }
-                ) {
-                    Div(attrs = { classes("card-title") }) { Text(gameType.name) }
-                    Span(attrs = { classes("card-badge") }) { Text(gameType.winCondition.label()) }
-                }
+                ListItemRow(
+                    label = gameType.name,
+                    subtitle = gameType.winCondition.label(),
+                    isSelectable = false,
+                    onView = { handler.handle(GameTypeIntent.SelectGame(gameType.id)) },
+                    onEdit = { handler.handle(GameTypeIntent.EditGameType(gameType.id)) },
+                    onDelete = { handler.handle(GameTypeIntent.ShowArchiveConfirm(gameType.id)) },
+                )
             }
         }
     }
