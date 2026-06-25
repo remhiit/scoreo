@@ -976,4 +976,127 @@ class ScoreDetailHandlerTest {
         assertNotNull(draft, "Draft should NOT be cleared when Terminate fails")
         assertEquals("10", draft.rounds[0]["alice"], "Draft should contain alice's valid score")
     }
+
+    // ── P1-03: Cancel Confirm Tests ──
+
+    @Test
+    fun `test_CancelWithEmptyRounds_discardImmediate`() {
+        val gameType = GameType("gt1", "TestGame", WinCondition.HIGHEST_SCORE)
+        val gameTypeRepo = InMemoryGameTypeRepository().also { it.save(gameType) }
+        val matchRepo = InMemoryMatchRepository()
+        val createMatch = CreateMatchUseCase(matchRepo, gameTypeRepo)
+        val players = listOf(Player("alice", "Alice"), Player("bob", "Bob"))
+        
+        val handler = ScoreDetailHandler(gameType, players, createMatch, { 1767225600000L }, ScoreDetailMode.Create)
+        
+        // All cells empty → CancelMatch intent
+        handler.handle(ScoreDetailIntent.CancelMatch)
+        
+        // Should NOT show confirm modal (no friction for empty grid)
+        assertFalse(handler.state.showCancelConfirm, "Modal should not show for empty grid")
+        // Should signal cancel immediately
+        assertTrue(handler.state.cancelled, "State should be marked as cancelled")
+    }
+
+    @Test
+    fun `test_CancelWithScores_showConfirm`() {
+        val gameType = GameType("gt1", "TestGame", WinCondition.HIGHEST_SCORE)
+        val gameTypeRepo = InMemoryGameTypeRepository().also { it.save(gameType) }
+        val matchRepo = InMemoryMatchRepository()
+        val createMatch = CreateMatchUseCase(matchRepo, gameTypeRepo)
+        val players = listOf(Player("alice", "Alice"), Player("bob", "Bob"))
+        
+        val handler = ScoreDetailHandler(gameType, players, createMatch, { 1767225600000L }, ScoreDetailMode.Create)
+        
+        // Add some scores
+        handler.handle(ScoreDetailIntent.UpdateScore(0, "alice", "10"))
+        handler.handle(ScoreDetailIntent.UpdateScore(0, "bob", ""))
+        
+        // Cancel while scores exist
+        handler.handle(ScoreDetailIntent.CancelMatch)
+        
+        // Should show confirm modal (user has entered scores)
+        assertTrue(handler.state.showCancelConfirm, "Modal should show when scores entered")
+        assertFalse(handler.state.cancelled, "Should not be cancelled yet, awaiting confirmation")
+    }
+
+    @Test
+    fun `test_CancelWithOnlyAddRoundCalled_treatedAsEmpty`() {
+        val gameType = GameType("gt1", "TestGame", WinCondition.HIGHEST_SCORE)
+        val gameTypeRepo = InMemoryGameTypeRepository().also { it.save(gameType) }
+        val matchRepo = InMemoryMatchRepository()
+        val createMatch = CreateMatchUseCase(matchRepo, gameTypeRepo)
+        val players = listOf(Player("alice", "Alice"), Player("bob", "Bob"))
+        
+        val handler = ScoreDetailHandler(gameType, players, createMatch, { 1767225600000L }, ScoreDetailMode.Create)
+        
+        // Add round but don't enter any scores
+        handler.handle(ScoreDetailIntent.AddRound)
+        
+        // Cancel with empty scores (even though multiple rounds exist)
+        handler.handle(ScoreDetailIntent.CancelMatch)
+        
+        // Should NOT show modal (no scores entered, only empty rounds)
+        assertFalse(handler.state.showCancelConfirm, "Modal should not show for only empty rounds")
+        assertTrue(handler.state.cancelled, "Should cancel immediately")
+    }
+
+    @Test
+    fun `test_DismissCancelConfirm_keepEditing`() {
+        val gameType = GameType("gt1", "TestGame", WinCondition.HIGHEST_SCORE)
+        val gameTypeRepo = InMemoryGameTypeRepository().also { it.save(gameType) }
+        val matchRepo = InMemoryMatchRepository()
+        val createMatch = CreateMatchUseCase(matchRepo, gameTypeRepo)
+        val players = listOf(Player("alice", "Alice"), Player("bob", "Bob"))
+        
+        val handler = ScoreDetailHandler(gameType, players, createMatch, { 1767225600000L }, ScoreDetailMode.Create)
+        
+        // Enter scores and click cancel (triggering modal)
+        handler.handle(ScoreDetailIntent.UpdateScore(0, "alice", "10"))
+        handler.handle(ScoreDetailIntent.CancelMatch)
+        assertTrue(handler.state.showCancelConfirm, "Modal should be showing")
+        
+        // User clicks Cancel button in modal (dismisses modal, keeps editing)
+        handler.handle(ScoreDetailIntent.DismissCancelConfirm)
+        
+        // Modal should close
+        assertFalse(handler.state.showCancelConfirm, "Modal should be dismissed")
+        // Scores should still be there
+        assertEquals("10", handler.state.rounds[0]["alice"], "Scores should be preserved")
+        // Should NOT be cancelled
+        assertFalse(handler.state.cancelled, "Should not be cancelled")
+    }
+
+    @Test
+    fun `test_ConfirmCancel_discardScores`() {
+        val gameType = GameType("gt1", "TestGame", WinCondition.HIGHEST_SCORE)
+        val gameTypeRepo = InMemoryGameTypeRepository().also { it.save(gameType) }
+        val matchRepo = InMemoryMatchRepository()
+        val draftRepo = InMemoryMatchDraftRepository()
+        val createMatch = CreateMatchUseCase(matchRepo, gameTypeRepo)
+        val players = listOf(Player("alice", "Alice"), Player("bob", "Bob"))
+        
+        val handler = ScoreDetailHandler(gameType, players, createMatch, { 1767225600000L }, ScoreDetailMode.Create, draftRepo)
+        
+        // Enter scores and click cancel (triggering modal)
+        handler.handle(ScoreDetailIntent.UpdateScore(0, "alice", "10"))
+        handler.handle(ScoreDetailIntent.UpdateScore(0, "bob", "5"))
+        handler.handle(ScoreDetailIntent.CancelMatch)
+        assertTrue(handler.state.showCancelConfirm, "Modal should be showing")
+        
+        // Verify draft was saved
+        var draft = draftRepo.load()
+        assertNotNull(draft, "Draft should be saved during editing")
+        
+        // User clicks Discard button in modal
+        handler.handle(ScoreDetailIntent.ConfirmCancel)
+        
+        // Modal should close
+        assertFalse(handler.state.showCancelConfirm, "Modal should be closed after confirm")
+        // Should be marked as cancelled
+        assertTrue(handler.state.cancelled, "Should be cancelled")
+        // Draft should be cleared
+        draft = draftRepo.load()
+        assertNull(draft, "Draft should be cleared after discard")
+    }
 }

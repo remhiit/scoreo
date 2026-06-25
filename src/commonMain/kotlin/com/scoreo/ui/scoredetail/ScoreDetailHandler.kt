@@ -104,7 +104,7 @@ class ScoreDetailHandler(
 
             is ScoreDetailIntent.ConfirmCancel -> {
                 clearDraft()
-                state = state.copy(cancelled = true)
+                state = state.copy(cancelled = true, showCancelConfirm = false)
             }
 
             is ScoreDetailIntent.DismissCancelConfirm -> {
