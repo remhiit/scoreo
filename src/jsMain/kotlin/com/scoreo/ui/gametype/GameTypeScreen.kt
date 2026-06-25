@@ -99,6 +99,47 @@ fun GameTypeScreen(handler: GameTypeHandler, showTitle: Boolean = true) {
         }
     }
 
+    // Modal d'édition (ouverte si state.editingGameId != null)
+    if (state.editingGameId != null) {
+        val gameType = state.gameTypes.find { it.id == state.editingGameId }
+        if (gameType != null) {
+            // Overlay pour fermer (annuler)
+            Div(attrs = {
+                classes("modal-overlay")
+                onClick { handler.handle(GameTypeIntent.CancelEdit) }
+            })
+            // Contenu de la modale
+            Div(attrs = { classes("modal-content") }) {
+                Div(attrs = { classes("modal-title") }) {
+                    Text("Modifier ${gameType.name}")
+                }
+                Div(attrs = { classes("modal-body") }) {
+                    GameTypeFields(handler)
+                }
+                Div(attrs = { classes("modal-actions") }) {
+                    Button(attrs = {
+                        classes("btn", "btn-secondary")
+                        onClick { handler.handle(GameTypeIntent.CancelEdit) }
+                    }) { Text(Strings.BTN_CANCEL) }
+                    Button(attrs = {
+                        classes("btn", "btn-primary")
+                        onClick {
+                            handler.handle(GameTypeIntent.UpdateGameType(
+                                gameType.copy(
+                                    name = state.inputName.trim(),
+                                    winCondition = state.selectedWinCondition,
+                                    tieBreakRule = state.selectedTieBreakRule,
+                                    tieBreakCondition = state.selectedTieBreakCondition,
+                                    tieBreakLabel = state.selectedTieBreakLabel,
+                                )
+                            ))
+                        }
+                    }) { Text(Strings.BTN_SAVE) }
+                }
+            }
+        }
+    }
+
     // Archive confirmation modal
     if (state.archiveConfirmGameTypeId != null) {
         val confirmGameType = state.gameTypes.find { it.id == state.archiveConfirmGameTypeId }

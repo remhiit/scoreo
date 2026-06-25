@@ -3,6 +3,7 @@ package com.scoreo.ui.history
 import androidx.compose.runtime.Composable
 import com.scoreo.ui.navigation.AppNavigator
 import com.scoreo.ui.navigation.Screen
+import com.scoreo.ui.shared.ListItemRow
 import com.scoreo.ui.Strings
 import org.jetbrains.compose.web.dom.Button
 import org.jetbrains.compose.web.dom.Div
@@ -69,90 +70,34 @@ fun HistoryScreen(handler: HistoryHandler, navigator: AppNavigator? = null) {
              Strings.EMPTY_MATCHES
          }
          Div(attrs = { classes("empty") }) { Text(emptyText) }
-    } else {
-        // Render filtered displays
-        filteredDisplays.forEach { display ->
-            Div(attrs = {
-                classes("card", "match-card")
-                if (navigator != null) {
-                    style { property("cursor", "pointer") }
-                    onClick {
-                        navigator.navigate(Screen.ScoreDetail(
-                            gameTypeId = display.gameType?.id ?: return@onClick,
-                            playerIds = display.match.playerScores.map { it.playerId },
-                            matchId = display.match.id
-                        ))
-                    }
-                }
-            }) {
-                Div(attrs = { style { property("width", "100%") } }) {
-                    Div(attrs = {
-                        style {
-                            property("display", "flex")
-                            property("justify-content", "space-between")
-                            property("align-items", "center")
-                            property("margin-bottom", "8px")
-                        }
-                    }) {
-                        Div(attrs = {
-                            style {
-                                property("display", "flex")
-                                property("align-items", "center")
-                                property("gap", "8px")
-                            }
-                        }) {
-                            Span(attrs = { classes("card-title") }) {
-                                Text(display.gameType?.name ?: "Unknown game")
-                            }
-                             if (display.isTieBreakIndeterminate) {
-                                 Span(attrs = { classes("badge-warn") }) {
-                                     Text(Strings.BADGE_INFO_MISSING)
-                                 }
-                             }
-                        }
-                        Div(attrs = {
-                            style {
-                                property("display", "flex")
-                                property("align-items", "center")
-                                property("gap", "8px")
-                            }
-                        }) {
-                            Span(attrs = { classes("card-sub") }) { Text(display.dateFormatted) }
-                            Button(attrs = {
-                                 classes("btn", "btn-icon")
-                                 onClick { handler.handle(HistoryIntent.ShowDeleteConfirm(display.match.id)) }
-                                 title(Strings.TITLE_DELETE_MATCH)
-                             }) { Text("🗑") }
-                        }
-                    }
-                    display.match.playerScores.forEach { ps ->
-                        val label = display.playerLabels[ps.playerId] ?: ps.playerId
-                        val isWinner = ps.playerId in display.winners
-                        Div(attrs = {
-                            style {
-                                property("display", "flex")
-                                property("justify-content", "space-between")
-                                property("padding", "2px 0")
-                                if (isWinner) property("font-weight", "600")
-                            }
-                        }) {
-                            Span {
-                                Text(label + if (isWinner) " \uD83C\uDFC6" else "")
-                            }
-                            Span { Text("${ps.score}") }
-                        }
-                    }
-                    if (display.isTieBreakIndeterminate) {
-                         Div(attrs = {
-                             classes("tie-break-info")
-                         }) {
-                             Text(Strings.MSG_TIEBREAK_HISTORY)
-                         }
+     } else {
+         // Render filtered displays
+         filteredDisplays.forEach { display ->
+             val gameLabel = display.gameType?.name ?: "Unknown game"
+             val scoresSubtitle = display.match.playerScores
+                 .joinToString(" / ") { ps ->
+                     val label = display.playerLabels[ps.playerId] ?: ps.playerId
+                     "$label ${ps.score}"
+                 }
+             val subtitle = "$scoresSubtitle  •  ${display.dateFormatted}"
+
+             ListItemRow(
+                 label = gameLabel,
+                 subtitle = subtitle,
+                 isSelectable = false,
+                 onEdit = {
+                     if (navigator != null && display.gameType != null) {
+                         navigator.navigate(Screen.ScoreDetail(
+                             gameTypeId = display.gameType.id,
+                             playerIds = display.match.playerScores.map { it.playerId },
+                             matchId = display.match.id
+                         ))
                      }
-                }
-            }
-        }
-    }
+                 },
+                 onDelete = { handler.handle(HistoryIntent.ShowDeleteConfirm(display.match.id)) }
+             )
+         }
+     }
 
     // Delete confirmation modal
     if (handler.state.deleteConfirmMatchId != null) {
