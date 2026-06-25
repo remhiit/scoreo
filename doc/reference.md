@@ -98,6 +98,14 @@ Le fichier `JsonConfig.kt` (`src/jsMain/.../infrastructure/`) fournit `scoreoJso
 | `Screen.Sync` | — | SyncScreen (sauvegarde cloud Google Drive) |
 | `Screen.ScoreDetail` | `gameTypeId: String`, `playerIds: List<String>`, `matchId: String? = null` | ScoreDetailScreen (saisie des rounds, mode création ou édition via sealed ScoreDetailMode) |
 
+## Composants partagés
+
+| Composant | Paramètres | Utilisation |
+|---|---|---|
+| `ListItemRow` | `label: String`, `subtitle: String? = null`, `isSelectable: Boolean = false`, `isSelected: Boolean = false`, `onSelect: (() -> Unit)? = null`, `onView: (() -> Unit)? = null`, `onEdit: (() -> Unit)? = null`, `onDelete: (() -> Unit)? = null` | Affichage uniformisé des listes : joueurs (HomeScreen), types de jeux (GameTypeScreen), matchs historique (HistoryScreen). Support sélection, visualisation, édition, suppression. |
+
+Fichier : `src/jsMain/kotlin/com/scoreo/ui/shared/ListItemRow.kt`
+
 ## Tests
 
 | Fichier | Classe | Tests |
@@ -136,7 +144,7 @@ Tous dans `src/commonTest/` (commonTest) ou `src/jsTest/` (jsTest).
 
 Fichiers : `theme.css`, `layout.css`, `home.css`, `scoring.css`, `history.css`, `stats.css`, `import.css`.
 
-Classes clés : `.home-player-card`, `.home-player-card.selected`, `.home-player-check`, `.player-info`, `.player-rename-input`, `.player-rename-container`, `.btn-edit`, `.btn-icon`, `.btn-sm`, `.btn-primary`, `.btn-secondary`, `.home-add-player-toggle`, `.home-add-player-form`, `.fab-disabled`, `.fab-error`, `.btn-danger`, `.btn-danger-filled`, `.modal-body`, `.card-selected`, `.detail-row`, `.detail-label`, `.detail-value`, `.badge-warn`, `.tie-break-info`, `.theme-toggle-btn`, `.splash`, `.splash-content`, `.spinner`, `.onboarding-guide`.
+Classes clés : `.home-player-card`, `.home-player-card.selected`, `.home-player-check`, `.player-info`, `.player-rename-input`, `.player-rename-container`, `.btn-edit`, `.btn-icon`, `.btn-icon--danger`, `.btn-sm`, `.btn-primary`, `.btn-secondary`, `.home-add-player-toggle`, `.home-add-player-form`, `.fab-disabled`, `.fab-error`, `.btn-danger`, `.btn-danger-filled`, `.modal-body`, `.card-selected`, `.detail-row`, `.detail-label`, `.detail-value`, `.badge-warn`, `.tie-break-info`, `.theme-toggle-btn`, `.splash`, `.splash-content`, `.spinner`, `.onboarding-guide`, `.list-item-row`, `.list-item-label`, `.list-item-label--selectable`, `.list-item-label--selected`, `.list-item-name`, `.list-item-subtitle`, `.list-item-actions`, `.list-item-select-picto`.
 
 Thème : variables CSS dans `:root` (light) et `[data-theme="dark"]` (dark) dans `theme.css`. Attribut `data-theme="dark"` sur `<html>` géré par `ThemeManager`.
 
