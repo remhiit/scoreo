@@ -43,8 +43,8 @@
    - If no matches at all: "No matches yet."
    - If filtered to a game type with no matches: "No matches for {gameName}"
 - Matches with `isTieBreakIndeterminate = true` show:
-   - **⚠️ Info manquante** badge next to the game type name
-   - Explanatory message below scores: *"Ce match a été enregistré avant la mise en place des règles de départage. Le résultat est basé sur l'égalité."*
+    - **⚠️ Missing info** badge next to the game type name
+    - Explanatory message below scores: *"This match was recorded before tie-break rules were introduced. The result is based on equality."*
 - **Delete confirmation modal** (when 🗑 clicked):
    - Title: "Delete match?"
    - Shows: game type name, date, player scores

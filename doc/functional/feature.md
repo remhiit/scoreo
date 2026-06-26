@@ -9,7 +9,7 @@
 | 5 | **Stats** | Leaderboard ELO, head-to-head, per-game-type filter | [`features/stats.md`](features/stats.md) |
 | 6 | **Import** | JSON import with preview, match-by-match execution, auto-creation of unknown entities | [`features/import.md`](features/import.md) |
 | 7 | **Google Sync** | Cloud backup/restore via Google Drive App Data Folder, OAuth Token Model, conflict detection | [`features/sync.md`](features/sync.md) |
-| 8 | **Theme** | Dark/light mode, toggle dans le header, détection auto navigateur, persistence localStorage | [`features/theme.md`](features/theme.md) |
+| 8 | **Theme** | Dark/light mode, toggle in header, auto browser detection, localStorage persistence | [`features/theme.md`](features/theme.md) |
 
 ## User Flow
 
@@ -24,8 +24,8 @@
 
 ### Subsequent Visits
 1. **Home** → select ≥2 players → **New Match**
-2. **Game Selection** modal → pick or create a game type → **Lancer la partie**
-3. **Score Detail** → enter rounds → **Terminer la partie**
+2. **Game Selection** modal → pick or create a game type → **Start match**
+3. **Score Detail** → enter rounds → **End match**
 4. Back to **Home** — stats and selection reset
 
 ## Navigation
@@ -34,7 +34,7 @@ Top header bar (all screens):
 
 | Element | Action |
 |---------|--------|
-| 🌙/☀️ | Toggle dark/light mode (toujours visible) |
+| 🌙/☀️ | Toggle dark/light mode (always visible) |
 | ← Back | Returns to Home (hidden on Home) |
 | Title | Current screen name (clickable → Home, except when already on Home) |
 | ☰ Burger | Opens side menu |
@@ -48,7 +48,7 @@ Burger menu items:
 | 📋 | History | HistoryScreen |
 | 📥 | Import | ImportScreen |
 | 🎮 | Games | GameTypeScreen |
-| ☁ | Sync | SyncScreen (visible uniquement si `CloudSyncRepository` configuré) |
+| ☁ | Sync | SyncScreen (visible only if `CloudSyncRepository` is configured) |
 
 Screens:
 

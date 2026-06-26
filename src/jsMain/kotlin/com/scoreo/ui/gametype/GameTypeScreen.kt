@@ -5,6 +5,7 @@ import com.scoreo.domain.model.GameType
 import com.scoreo.domain.model.TieBreakRule
 import com.scoreo.domain.model.WinCondition
 import com.scoreo.ui.Strings
+import com.scoreo.ui.shared.ListContainer
 import com.scoreo.ui.shared.ListItemRow
 import org.jetbrains.compose.web.attributes.InputType
 import org.jetbrains.compose.web.attributes.placeholder
@@ -32,7 +33,7 @@ fun GameTypeScreen(handler: GameTypeHandler, showTitle: Boolean = true) {
     if (state.gameTypes.isEmpty()) {
          Div(attrs = { classes("empty") }) { Text(Strings.EMPTY_GAMES) }
     } else {
-        Div(attrs = { style { property("margin-top", "16px") } }) {
+        ListContainer(className = "list-container--spaced") {
             state.gameTypes.forEach { gameType ->
                 ListItemRow(
                     label = gameType.name,

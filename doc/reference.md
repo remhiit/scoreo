@@ -1,10 +1,10 @@
-# Reference — pour le LLM
+# Reference — for the LLM
 
-Tableaux exhaustifs. Lire en priorité avant d'explorer `src/`.
+Exhaustive tables. Read before exploring `src/`.
 
 ## Handlers (MVI)
 
-| Handler | Intent | Intent subclasses | State | Fichier handler |
+| Handler | Intent | Intent subclasses | State | Handler file |
 |---|---|---|---|---|
 | `PlayerHandler` | `PlayerIntent` | `UpdateInput(name: String)`, `AddPlayer`, `DeletePlayer(id, anonymize)`, `ShowDeleteConfirm(id)`, `DismissDeleteConfirm`, `StartRename(playerId)`, `UpdateRenameInput(name)`, `ConfirmRename`, `CancelRename` | `PlayerState` | `src/commonMain/.../ui/player/PlayerHandler.kt` |
 | `GameTypeHandler` | `GameTypeIntent` | `UpdateName(name: String)`, `SelectWinCondition(winCondition: WinCondition)`, `UpdateTieBreakRule(rule: TieBreakRule)`, `UpdateTieBreakCondition(condition: WinCondition)`, `UpdateTieBreakLabel(label: String)`, `SelectGame(id: String)`, `DeselectGame`, `AddGameType`, `EditGameType(id: String)`, `CancelEdit`, `UpdateGameType(gameType: GameType)`, `ShowArchiveConfirm(gameTypeId: String)`, `ArchiveGameType(gameTypeId: String)`, `DismissArchiveConfirm` | `GameTypeState` | `src/commonMain/.../ui/gametype/GameTypeHandler.kt` |
@@ -14,11 +14,11 @@ Tableaux exhaustifs. Lire en priorité avant d'explorer `src/`.
 | `HistoryHandler` | `HistoryIntent` | `Refresh`, `ShowDeleteConfirm(matchId: String)`, `DeleteMatch(matchId: String)`, `DismissDeleteConfirm`, `SelectGameTypeFilter(gameTypeId: String?)` | `HistoryState` | `src/commonMain/.../ui/history/HistoryHandler.kt` |
 | `SyncHandler` | `SyncIntent` | `Login`, `Logout`, `ResolveConflict(keepLocal: Boolean)`, `DismissError` | `SyncState(phase, email, conflict, result, error)` | `src/commonMain/.../ui/sync/SyncHandler.kt` |
 
-Tous dans `src/commonMain/kotlin/com/scoreo/`.
+All in `src/commonMain/kotlin/com/scoreo/`.
 
 ## Use Cases
 
-| Use Case | Méthode | Retour | Fichier |
+| Use Case | Method | Return | File |
 |---|---|---|---|
 | `AddPlayerUseCase` | `invoke(name: String)` | `Player` | `src/commonMain/.../application/AddPlayerUseCase.kt` |
 | `AddGameTypeUseCase` | `invoke(name: String, winCondition: WinCondition, tieBreakRule: TieBreakRule = NONE, tieBreakCondition: WinCondition = HIGHEST_SCORE, tieBreakLabel: String? = null)` | `GameType` | `src/commonMain/.../application/AddGameTypeUseCase.kt` |
@@ -40,11 +40,11 @@ Tous dans `src/commonMain/kotlin/com/scoreo/`.
 | `SyncUseCase` | `suspend resolveConflict(keepLocal: Boolean)` | `SyncResult` | `src/commonMain/.../application/SyncUseCase.kt` |
 | `SyncUseCase` | `suspend login()` / `suspend logout()` / `suspend status()` | `Unit` / `SyncStatus` | `src/commonMain/.../application/SyncUseCase.kt` |
 
-Tous dans `src/commonMain/kotlin/com/scoreo/`.
+All in `src/commonMain/kotlin/com/scoreo/`.
 
 ## Domain Models
 
-| Model | Champs | Fichier |
+| Model | Fields | File |
 |---|---|---|
 | `Player` | `id: String`, `name: String`, `active: Boolean = true` | `src/commonMain/.../domain/model/Player.kt` |
 | `GameType` | `id: String`, `name: String`, `winCondition: WinCondition`, `tieBreakRule: TieBreakRule = TieBreakRule.NONE`, `tieBreakCondition: WinCondition = WinCondition.HIGHEST_SCORE`, `tieBreakLabel: String? = null`, `active: Boolean = true` | `src/commonMain/.../domain/model/GameType.kt` |
@@ -53,11 +53,11 @@ Tous dans `src/commonMain/kotlin/com/scoreo/`.
 | `WinCondition` | enum: `HIGHEST_SCORE`, `LOWEST_SCORE`, `MANUAL` | `src/commonMain/.../domain/model/WinCondition.kt` |
 | `TieBreakRule` | enum: `NONE`, `MANUAL_SELECTION`, `SECONDARY_SCORE` | `src/commonMain/.../domain/model/TieBreakRule.kt` |
 
-Tous dans `src/commonMain/kotlin/com/scoreo/`.
+All in `src/commonMain/kotlin/com/scoreo/`.
 
 ## Ports (Repository Interfaces)
 
-| Interface | Méthodes | Fichier |
+| Interface | Methods | File |
 |---|---|---|
 | `PlayerRepository` | `getAll(includeInactive)`, `save(player)`, `saveAll(players)`, `delete(id, anonymize)` | `src/commonMain/.../domain/port/PlayerRepository.kt` |
 | `GameTypeRepository` | `getAll(includeInactive: Boolean = false)`, `save(gameType)`, `saveAll(gameTypes)`, `findById(id)` | `src/commonMain/.../domain/port/GameTypeRepository.kt` |
@@ -65,50 +65,51 @@ Tous dans `src/commonMain/kotlin/com/scoreo/`.
 | `MatchDraftRepository` | `save(draft: MatchDraft)`, `load(): MatchDraft?`, `clear()` | `src/commonMain/.../domain/port/MatchDraftRepository.kt` |
 | `CloudSyncRepository` | `suspend push(data)`, `suspend pull()`, `suspend getStatus()`, `suspend login()`, `suspend logout()` | `src/commonMain/.../domain/port/CloudSyncRepository.kt` |
 
-Tous dans `src/commonMain/kotlin/com/scoreo/`.
+All in `src/commonMain/kotlin/com/scoreo/`.
 
-## Adapters (Implémentations)
+## Adapters (Implementations)
 
-| Classe | Implémente | Stockage | Fichier |
+| Class | Implements | Storage | File |
 |---|---|---|---|
 | `LocalStoragePlayerRepository` | `PlayerRepository` | localStorage | `src/jsMain/.../infrastructure/LocalStoragePlayerRepository.kt` |
 | `LocalStorageGameTypeRepository` | `GameTypeRepository` | localStorage | `src/jsMain/.../infrastructure/LocalStorageGameTypeRepository.kt` |
 | `LocalStorageMatchRepository` | `MatchRepository` | localStorage | `src/jsMain/.../infrastructure/LocalStorageMatchRepository.kt` |
 | `LocalStorageMatchDraftRepository` | `MatchDraftRepository` | localStorage | `src/jsMain/.../infrastructure/LocalStorageMatchDraftRepository.kt` |
 | `GoogleDriveSyncAdapter` | `CloudSyncRepository` | Google Drive App Data Folder (async fetch + coroutines) | `src/jsMain/.../infrastructure/google/GoogleDriveSyncAdapter.kt` |
-| `InMemoryCloudSyncRepository` | `CloudSyncRepository` | mémoire (tests) | `src/commonTest/.../infrastructure/InMemoryCloudSyncRepository.kt` |
-| `InMemoryPlayerRepository` | `PlayerRepository` | mémoire (tests) | `src/commonTest/.../infrastructure/InMemoryPlayerRepository.kt` |
-| `InMemoryGameTypeRepository` | `GameTypeRepository` | mémoire (tests) | `src/commonTest/.../infrastructure/InMemoryGameTypeRepository.kt` |
-| `InMemoryMatchRepository` | `MatchRepository` | mémoire (tests) | `src/commonTest/.../infrastructure/InMemoryMatchRepository.kt` |
-| `MatchMigration` | — (utilitaire) | `migrateMatchesJson()` | `src/commonMain/.../application/MatchMigration.kt` |
+| `InMemoryCloudSyncRepository` | `CloudSyncRepository` | in-memory (tests) | `src/commonTest/.../infrastructure/InMemoryCloudSyncRepository.kt` |
+| `InMemoryPlayerRepository` | `PlayerRepository` | in-memory (tests) | `src/commonTest/.../infrastructure/InMemoryPlayerRepository.kt` |
+| `InMemoryGameTypeRepository` | `GameTypeRepository` | in-memory (tests) | `src/commonTest/.../infrastructure/InMemoryGameTypeRepository.kt` |
+| `InMemoryMatchRepository` | `MatchRepository` | in-memory (tests) | `src/commonTest/.../infrastructure/InMemoryMatchRepository.kt` |
+| `MatchMigration` | — (utility) | `migrateMatchesJson()` | `src/commonMain/.../application/MatchMigration.kt` |
 
-Tous dans `src/jsMain/kotlin/com/scoreo/`. Utilisés en production : `LocalStorage*`, `GoogleDriveSyncAdapter`. En tests : `InMemory*`.
+All in `src/jsMain/kotlin/com/scoreo/`. Production: `LocalStorage*`, `GoogleDriveSyncAdapter`. Tests: `InMemory*`.
 
-Le fichier `JsonConfig.kt` (`src/jsMain/.../infrastructure/`) fournit `scoreoJson: Json` avec `ignoreUnknownKeys = true`.
+`JsonConfig.kt` (`src/jsMain/.../infrastructure/`) provides `scoreoJson: Json` with `ignoreUnknownKeys = true`.
 
 ## Navigation
 
-| Screen | Paramètres | Destination |
+| Screen | Parameters | Destination |
 |---|---|---|
-| `Screen.Home` | — | HomeScreen (sélection joueurs, game modal, FAB) |
-| `Screen.History` | — | HistoryScreen (liste des matchs passés) |
-| `Screen.Import` | — | ImportScreen (import JSON) |
-| `Screen.Stats` | — | StatsScreen (classement ELO, head-to-head) |
-| `Screen.Games` | — | GameTypeScreen (gestion des types de jeu) |
-| `Screen.Sync` | — | SyncScreen (sauvegarde cloud Google Drive) |
-| `Screen.ScoreDetail` | `gameTypeId: String`, `playerIds: List<String>`, `matchId: String? = null` | ScoreDetailScreen (saisie des rounds, mode création ou édition via sealed ScoreDetailMode) |
+| `Screen.Home` | — | HomeScreen (player selection, game modal, FAB) |
+| `Screen.History` | — | HistoryScreen (past matches list) |
+| `Screen.Import` | — | ImportScreen (JSON import) |
+| `Screen.Stats` | — | StatsScreen (ELO leaderboard, head-to-head) |
+| `Screen.Games` | — | GameTypeScreen (game type management) |
+| `Screen.Sync` | — | SyncScreen (Google Drive cloud backup) |
+| `Screen.ScoreDetail` | `gameTypeId: String`, `playerIds: List<String>`, `matchId: String? = null` | ScoreDetailScreen (round entry, create or edit mode via sealed ScoreDetailMode) |
 
-## Composants partagés
+## Shared Components
 
-| Composant | Paramètres | Utilisation |
+| Component | Parameters | Usage |
 |---|---|---|
-| `ListItemRow` | `label: String`, `subtitle: String? = null`, `isSelectable: Boolean = false`, `isSelected: Boolean = false`, `onSelect: (() -> Unit)? = null`, `onView: (() -> Unit)? = null`, `onEdit: (() -> Unit)? = null`, `onDelete: (() -> Unit)? = null` | Affichage uniformisé des listes : joueurs (HomeScreen), types de jeux (GameTypeScreen), matchs historique (HistoryScreen). Support sélection, visualisation, édition, suppression. |
+| `ListContainer` | `className: String? = null`, `content: @Composable () -> Unit` | Generic wrapper for `ListItemRow` lists: `display:flex; flex-direction:column; gap:8px`. Pass `className="list-container--spaced"` to add `margin-top:16px` (e.g. GameTypeScreen). |
+| `ListItemRow` | `label: String`, `subtitle: String? = null`, `isSelectable: Boolean = false`, `isSelected: Boolean = false`, `onSelect: (() -> Unit)? = null`, `onView: (() -> Unit)? = null`, `onEdit: (() -> Unit)? = null`, `onDelete: (() -> Unit)? = null` | Uniform list display: players (HomeScreen), game types (GameTypeScreen), match history (HistoryScreen). Supports selection, view, edit, delete. |
 
-Fichier : `src/jsMain/kotlin/com/scoreo/ui/shared/ListItemRow.kt`
+Files: `src/jsMain/kotlin/com/scoreo/ui/shared/ListContainer.kt`, `src/jsMain/kotlin/com/scoreo/ui/shared/ListItemRow.kt`
 
 ## Tests
 
-| Fichier | Classe | Tests |
+| File | Class | Tests |
 |---|---|---|
 | `src/commonTest/.../ui/player/PlayerHandlerTest.kt` | `PlayerHandlerTest` | Handler Player (23 tests including rename flow) |
 | `src/commonTest/.../domain/GameTypeTest.kt` | `GameTypeTest` | Domain GameType (10 tests) |
@@ -123,38 +124,38 @@ Fichier : `src/jsMain/kotlin/com/scoreo/ui/shared/ListItemRow.kt`
 | `src/commonTest/.../application/DeleteMatchUseCaseTest.kt` | `DeleteMatchUseCaseTest` | Use Case DeleteMatch (3 tests) |
 | `src/commonTest/.../application/GetGameTypesUseCaseTest.kt` | `GetGameTypesUseCaseTest` | Use Case GetGameTypes (2 tests) |
 | `src/commonTest/.../application/GetPlayersUseCaseTest.kt` | `GetPlayersUseCaseTest` | Use Case GetPlayers (4 tests) |
-| `src/commonTest/.../di/SyncDependenciesTest.kt` | `SyncDependenciesTest` | Câblage syncHandler nullable (2 tests) |
-| `src/commonTest/.../domain/SerializationTest.kt` | `SerializationTest` | Sérialisation (19 tests) |
+| `src/commonTest/.../di/SyncDependenciesTest.kt` | `SyncDependenciesTest` | SyncHandler nullable wiring (2 tests) |
+| `src/commonTest/.../domain/SerializationTest.kt` | `SerializationTest` | Serialization (19 tests) |
 | `src/commonTest/.../ui/history/HistoryHandlerTest.kt` | `HistoryHandlerTest` | Handler History (23 tests) |
 | `src/commonTest/.../application/ImportMatchesUseCaseTest.kt` | `ImportMatchesUseCaseTest` | Use Case Import |
 | `src/commonTest/.../ui/stats/StatsHandlerTest.kt` | `StatsHandlerTest` | Handler Stats (6 tests) |
-| `src/commonTest/.../infrastructure/InMemoryRepositoryTest.kt` | `InMemoryRepositoryTest` | Idempotence InMemory (9 tests) |
-| `src/commonTest/.../infrastructure/InMemoryCloudSyncRepository.kt` | `InMemoryCloudSyncRepository` | Double de test CloudSyncRepository |
-| `src/commonTest/.../infrastructure/MatchMigrationTest.kt` | `MatchMigrationTest` | Migration donnees matchs (17 tests) |
-| `src/commonTest/.../application/GetHeadToHeadUseCaseEloTest.kt` | `GetHeadToHeadUseCaseEloTest` | Calcul ELO (10 tests) |
+| `src/commonTest/.../infrastructure/InMemoryRepositoryTest.kt` | `InMemoryRepositoryTest` | InMemory idempotency (9 tests) |
+| `src/commonTest/.../infrastructure/InMemoryCloudSyncRepository.kt` | `InMemoryCloudSyncRepository` | Test double for CloudSyncRepository |
+| `src/commonTest/.../infrastructure/MatchMigrationTest.kt` | `MatchMigrationTest` | Match data migration (17 tests) |
+| `src/commonTest/.../application/GetHeadToHeadUseCaseEloTest.kt` | `GetHeadToHeadUseCaseEloTest` | ELO calculation (10 tests) |
 | `src/commonTest/.../application/IdGeneratorTest.kt` | `IdGeneratorTest` | IdGenerator UUID v4 (7 tests) |
 | `src/commonTest/.../application/SyncUseCaseTest.kt` | `SyncUseCaseTest` | Use Case Sync (7 tests) |
 | `src/commonTest/.../ui/sync/SyncHandlerTest.kt` | `SyncHandlerTest` | Handler Sync (8 tests) |
-| `src/commonTest/.../application/EloCalculatorTest.kt` | `EloCalculatorTest` | Calcul ELO isole (3 tests) |
-| `src/jsTest/.../ui/theme/ThemeManagerTest.kt` | `ThemeManagerTest` | Composable Theme (7 tests : localStorage, system pref, DOM) |
+| `src/commonTest/.../application/EloCalculatorTest.kt` | `EloCalculatorTest` | Isolated ELO calculation (3 tests) |
+| `src/jsTest/.../ui/theme/ThemeManagerTest.kt` | `ThemeManagerTest` | Theme composable (7 tests: localStorage, system pref, DOM) |
 
-Tous dans `src/commonTest/` (commonTest) ou `src/jsTest/` (jsTest).
+All in `src/commonTest/` (commonTest) or `src/jsTest/` (jsTest).
 
 ## CSS
 
-Fichiers : `theme.css`, `layout.css`, `home.css`, `scoring.css`, `history.css`, `stats.css`, `import.css`.
+Files: `theme.css`, `layout.css`, `home.css`, `scoring.css`, `history.css`, `stats.css`, `import.css`.
 
-Classes clés : `.home-player-card`, `.home-player-card.selected`, `.home-player-check`, `.player-info`, `.player-rename-input`, `.player-rename-container`, `.btn-edit`, `.btn-icon`, `.btn-icon--danger`, `.btn-sm`, `.btn-primary`, `.btn-secondary`, `.home-add-player-toggle`, `.home-add-player-form`, `.fab-disabled`, `.fab-error`, `.btn-danger`, `.btn-danger-filled`, `.modal-body`, `.card-selected`, `.detail-row`, `.detail-label`, `.detail-value`, `.badge-warn`, `.tie-break-info`, `.theme-toggle-btn`, `.splash`, `.splash-content`, `.spinner`, `.onboarding-guide`, `.list-item-row`, `.list-item-label`, `.list-item-label--selectable`, `.list-item-label--selected`, `.list-item-name`, `.list-item-subtitle`, `.list-item-actions`, `.list-item-select-picto`.
+Key classes: `.home-player-card`, `.home-player-card.selected`, `.home-player-check`, `.player-info`, `.player-rename-input`, `.player-rename-container`, `.btn-edit`, `.btn-icon`, `.btn-icon--danger`, `.btn-sm`, `.btn-primary`, `.btn-secondary`, `.home-add-player-toggle`, `.home-add-player-form`, `.fab-disabled`, `.fab-error`, `.btn-danger`, `.btn-danger-filled`, `.modal-body`, `.card-selected`, `.detail-row`, `.detail-label`, `.detail-value`, `.badge-warn`, `.tie-break-info`, `.theme-toggle-btn`, `.splash`, `.splash-content`, `.spinner`, `.onboarding-guide`, `.list-container`, `.list-container--spaced`, `.list-item-row`, `.list-item-label`, `.list-item-label--selectable`, `.list-item-label--selected`, `.list-item-name`, `.list-item-subtitle`, `.list-item-actions`, `.list-item-select-picto`.
 
-Thème : variables CSS dans `:root` (light) et `[data-theme="dark"]` (dark) dans `theme.css`. Attribut `data-theme="dark"` sur `<html>` géré par `ThemeManager`.
+Theme: CSS variables in `:root` (light) and `[data-theme="dark"]` (dark) in `theme.css`. The `data-theme="dark"` attribute on `<html>` is managed by `ThemeManager`.
 
 ## localStorage Keys
 
-| Key | Contenu |
+| Key | Content |
 |---|---|
 | `scoreo_players` | JSON `List<Player>` |
 | `scoreo_gametypes` | JSON `List<GameType>` |
 | `scoreo_matches` | JSON `List<Match>` |
 | `scoreo_match_draft` | JSON `MatchDraft` (gameTypeId, playerIds, rounds) |
 | `scoreo_sync_config` | JSON `SyncConfig` (email, lastSyncTimestamp, lastSyncFileId) |
-| `scoreo_theme` | `"dark"` ou `"light"` (mode sombre, optionnel) |
+| `scoreo_theme` | `"dark"` or `"light"` (dark mode, optional) |

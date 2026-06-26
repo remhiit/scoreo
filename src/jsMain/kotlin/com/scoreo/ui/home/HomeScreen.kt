@@ -12,6 +12,7 @@ import com.scoreo.ui.player.PlayerHandler
 import com.scoreo.ui.player.PlayerIntent
 import com.scoreo.domain.DomainError
 import com.scoreo.ui.Strings
+import com.scoreo.ui.shared.ListContainer
 import com.scoreo.ui.shared.ListItemRow
 import org.jetbrains.compose.web.attributes.InputType
 import org.jetbrains.compose.web.dom.Button
@@ -122,7 +123,7 @@ fun HomeScreen(
      if (state.players.isEmpty()) {
          Div(attrs = { classes("empty") }) { Text(Strings.EMPTY_PLAYERS) }
      } else {
-         Div(attrs = { classes("home-player-list") }) {
+         ListContainer {
              state.players.forEach { player ->
                  val isSelected = player.id in selectedPlayers
                  val stats = state.stats[player.id]

@@ -42,7 +42,7 @@
 - **UI adapter**: Compose HTML screens in `jsMain`, wiring Intents to use cases
 - **Storage adapter**: localStorage via `LocalStorage*Repository` classes (scoreo_players, scoreo_gametypes, scoreo_matches keys)
 - **Cloud sync**: `CloudSyncRepository` port (commonMain), `GoogleDriveSyncAdapter` implementation (jsMain) via async `fetch()` + coroutines, OAuth Token Model via Google Identity Services
-- **DI helpers**: `createSyncHandlerIfAvailable` dans `commonMain/di/` — construit `SyncHandler` uniquement si un `CloudSyncRepository` est fourni. Permet à l'app de fonctionner sans synchronisation cloud (ex: GitHub Pages sans OAuth configuré). Testé unitairement dans `commonTest/di/`.
+- **DI helpers**: `createSyncHandlerIfAvailable` in `commonMain/di/` — builds `SyncHandler` only if a `CloudSyncRepository` is provided. Allows the app to run without cloud sync (e.g. GitHub Pages without OAuth configured). Unit-tested in `commonTest/di/`.
 
 ## Web Target
 
@@ -51,18 +51,22 @@ Entry point: `src/jsMain/kotlin/com/scoreo/Main.kt` → `renderComposable(rootEl
 
 ## Source package structure
 
-Sources suivent la convention Compose Multiplatform :
+Sources follow the Compose Multiplatform convention:
 
-- **`commonMain/`** — code partagé (domaine, application, handlers/intents/states MVI, helpers DI)
-- **`jsMain/`** — code spécifique au navigateur (écrans Compose HTML, infrastructure localStorage, câblage DI)
-- **`commonTest/`** — tests unitaires JVM (use cases, handlers, câblage DI)
+- **`commonMain/`** — shared code (domain, application, MVI handlers/intents/states, DI helpers)
+- **`jsMain/`** — browser-specific code (Compose HTML screens, localStorage infrastructure, DI wiring)
+- **`commonTest/`** — JVM unit tests (use cases, handlers, DI wiring)
 
-Voir `find src -type d` pour la liste exhaustive des packages.
+Run `find src -type d` for the exhaustive package list.
 
 ## Styling
 
 Several `.css` files in `src/jsMain/resources/` (`theme.css`, `layout.css`, `home.css`, etc.) are imported by `styles.css` via `@import`. During the production build, all CSS files are copied to the output directory, and the browser resolves `@import` directives natively.
 Uses CSS custom properties (design tokens), a fixed top header bar, and minimal component styles (cards, inputs, buttons, modals, score table).
+
+**Shared UI composables** (`src/jsMain/kotlin/com/scoreo/ui/shared/`):
+- `ListContainer` — wraps any list of `ListItemRow` items; applies `display:flex; flex-direction:column; gap:8px`. Accepts an optional `className` parameter (e.g. `"list-container--spaced"` for `margin-top:16px`). Used by HomeScreen, GameTypeScreen, HistoryScreen.
+- `ListItemRow` — single row with label, optional subtitle, and optional action buttons (view/edit/delete). Supports selectable mode (○/●).
 
 ## Persistence
 
@@ -78,7 +82,7 @@ Data stored in `localStorage` must remain readable after an app update.
 
 **Rule**: any change to a serialized domain model must be backward compatible with at least the previous version.
 
-**Soft-delete**: `Player.active = false` (défaut `true`) masque le joueur des écrans actifs (Home, Setup, ScoreDetail) mais le conserve dans l'historique. `getAll()` exclut les inactifs par défaut. `getAll(includeInactive = true)` les inclut pour le rendu historique. Le nom peut être optionnellement blanchi (`anonymize = true` dans `delete()`).
+**Soft-delete**: `Player.active = false` (default `true`) hides the player from active screens (Home, Setup, ScoreDetail) but keeps them in match history. `getAll()` excludes inactive players by default. `getAll(includeInactive = true)` includes them for history rendering. The name can optionally be blanked (`anonymize = true` in `delete()`).
 
 In practice:
 - **Adding a field**: always provide a default value (`= emptyList()`, `= null`, etc.) so old data deserializes cleanly. `Json { ignoreUnknownKeys = true }` is already configured.
@@ -101,22 +105,22 @@ This applies to: `Player`, `GameType`, `Match`, `PlayerScore`, `WinCondition`.
 It detects old-format data (String dates, non-UUID ids) and converts them in-place.
 See `doc/technical/migrations.md` for details.
 
-## Choix technique : async fetch + coroutines pour Google Drive
+## Technical choice: async fetch + coroutines for Google Drive
 
-Le `GoogleDriveClient` utilise `window.fetch()` (API REST standard du navigateur) avec des coroutines Kotlin (`kotlinx-coroutines-core`).
+`GoogleDriveClient` uses `window.fetch()` (standard browser REST API) with Kotlin coroutines (`kotlinx-coroutines-core`).
 
 ### Architecture
 
-- `CloudSyncRepository` (port) : toutes les methodes sont `suspend`
-- `GoogleDriveClient` : enveloppe les appels REST Drive via `window.fetch()` + `await()` (extinction sur `Promise`)
-- `SyncUseCase` : methode `suspend` pour chaque operation (autoSync, resolveConflict, login, logout)
-- `SyncHandler` : recoit un `CoroutineScope` et lance les appels sync dans `scope.launch { ... }`
-- `SyncScreen` : reste synchrone (pas de changement) — les coroutines sont lancees par le handler
+- `CloudSyncRepository` (port): all methods are `suspend`
+- `GoogleDriveClient`: wraps Drive REST calls via `window.fetch()` + `await()` (bridging `Promise`)
+- `SyncUseCase`: `suspend` method for each operation (autoSync, resolveConflict, login, logout)
+- `SyncHandler`: receives a `CoroutineScope` and launches sync calls in `scope.launch { ... }`
+- `SyncScreen`: remains synchronous (no change) — coroutines are launched by the handler
 
-### Pourquoi ce choix
+### Why this approach
 
-- Pas de blocage du thread principal (les appels reseau sont async)
-- Utilise les API standard du navigateur (`fetch`), pas de librairie tierce
-- `kotlinx-coroutines-core` disponible en multiplateforme (commonMain + jsMain)
-- `SuspendCancellableCoroutine` permet un controle fin de l'annulation
+- No blocking of the main thread (network calls are async)
+- Uses standard browser APIs (`fetch`), no third-party library
+- `kotlinx-coroutines-core` available in multiplatform (commonMain + jsMain)
+- `SuspendCancellableCoroutine` enables fine-grained cancellation control
 

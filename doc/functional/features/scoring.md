@@ -28,7 +28,7 @@ Grid: columns = players, rows = rounds + totals row.
 - Editable score cells with numeric input
 - **✕** button on each round row to remove it
 - **＋ Add round** button at the bottom
-- **Terminer la partie** to save
+- **Finish match** to save
 - For `MANUAL` win condition: modal appears listing each player's total with checkboxes to select winner(s)
 
 ### Tie-break resolution flow
@@ -73,7 +73,7 @@ All matches are stored with `playerScores` (total score per player). When editin
 ```
 Given a game with players Alice and Bob
 When I enter "10" for Alice and "5" for Bob in round 1
-And I click "Terminer la partie"
+And I click "Finish match"
 Then a Match is saved with Alice=10, Bob=5
 ```
 
@@ -90,7 +90,7 @@ Then I'm back to 1 round
 ```
 Given a game with MANUAL win condition
 And Alice has 10, Bob has 5
-When I click "Terminer la partie"
+When I click "Finish match"
 Then a modal appears showing both players' totals
 And I can check Alice as winner
 When I confirm
@@ -101,9 +101,9 @@ Then the match is saved with manualWinners=["Alice"]
 ```
 Given a game with SECONDARY_SCORE tie-break rule
 And Alice and Bob both have 10 points
-When I click "Terminer la partie"
+When I click "Finish match"
 Then a SecondaryScoreDialog appears with label "Number of cards ?"
-When I enter "5" for Alice and "3" for Bob and click Valider
+When I enter "5" for Alice and "3" for Bob and click Confirm
 Then Bob wins (LOWEST_SCORE tie-break condition)
 ```
 
@@ -111,9 +111,9 @@ Then Bob wins (LOWEST_SCORE tie-break condition)
 ```
 Given a game with MANUAL_SELECTION tie-break rule
 And Alice and Bob both have 10 points
-When I click "Terminer la partie"
+When I click "Finish match"
 Then a ManualSelectionDialog appears
-When I select Alice and click Valider
+When I select Alice and click Confirm
 Then the match is saved with manualWinners=["Alice"]
 ```
 
@@ -153,6 +153,6 @@ Then the match date remains 2026-01-01 (not updated to current date)
 │  │  18  │  17  │  35  │     │
 │  └──────┴──────┴──────┘     │
 │  [ ＋ Add round ]            │
-│  [Terminer]    [Annuler]    │
+│  [Finish match]  [Cancel]   │
 └─────────────────────────────┘
 ```

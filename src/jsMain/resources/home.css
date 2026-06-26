@@ -1,11 +1,5 @@
 /* ── Home screen ── */
 
-.home-player-list {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-}
-
 /* ── FAB ── */
 
 .fab {

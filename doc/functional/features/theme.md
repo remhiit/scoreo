@@ -1,39 +1,39 @@
 # Theme
 
-## Comportement
+## Behavior
 
-| État | Déclencheur | Action |
-|------|-------------|--------|
-| Initial (première visite) | `localStorage` vide | Détection automatique via `prefers-color-scheme: dark` |
-| Basculé manuellement | Clic sur 🌙/☀️ dans le header | Sauvegarde dans `localStorage` + application immédiate |
-| Retour | Visite suivante | `localStorage` lu, préféré manuelle utilisée |
+| State | Trigger | Action |
+|-------|---------|--------|
+| Initial (first visit) | Empty `localStorage` | Auto-detection via `prefers-color-scheme: dark` |
+| Manually toggled | Click on 🌙/☀️ in the header | Saved to `localStorage` + applied immediately |
+| On return | Subsequent visit | `localStorage` read, manual preference used |
 
 ## CSS
 
-Fichier : `src/jsMain/resources/theme.css`.
+File: `src/jsMain/resources/theme.css`.
 
-Variables dark dans `[data-theme="dark"]` — tous les tokens light redéfinis en dark (--primary, --surface, --on-surface, etc.), + 4 utilitaires (`--win`, `--loss`, `--warn`, `--danger-hover`), + 4 techniques (`--primary-rgb`, `--white`, `--overlay`, `--overlay-light`, `--overlay-medium`, `--warn-rgb`).
+Dark variables in `[data-theme="dark"]` — all light tokens redefined as dark (`--primary`, `--surface`, `--on-surface`, etc.), + 4 utility tokens (`--win`, `--loss`, `--warn`, `--danger-hover`), + 4 technical tokens (`--primary-rgb`, `--white`, `--overlay`, `--overlay-light`, `--overlay-medium`, `--warn-rgb`).
 
-Classes header : `theme-toggle-btn` dans `layout.css` (44×44, icône centrée).
+Header class: `theme-toggle-btn` in `layout.css` (44×44, centred icon).
 
 ## Code
 
-| Fichier | Rôle |
-|---------|------|
-| `src/jsMain/.../ui/theme/ThemeManager.kt` | Composable `rememberThemeState()` — état, localStorage, `data-theme` sur `<html>` |
-| `src/jsMain/kotlin/.../App.kt` | Appel de `rememberThemeState()` + bouton toggle |
-| `src/jsTest/.../ui/theme/ThemeManagerTest.kt` | Tests unitaires : localStorage, system preference, DOM attributes |
+| File | Role |
+|------|------|
+| `src/jsMain/.../ui/theme/ThemeManager.kt` | Composable `rememberThemeState()` — state, localStorage, `data-theme` on `<html>` |
+| `src/jsMain/kotlin/.../App.kt` | Calls `rememberThemeState()` + toggle button |
+| `src/jsTest/.../ui/theme/ThemeManagerTest.kt` | Unit tests: localStorage, system preference, DOM attributes |
 
-Pas de Handler MVI (concern global, pas d'écran dédié).
+No MVI Handler (global concern, no dedicated screen).
 
 ## Tests
 
-| Test | Vérification |
-|------|---|
-| `readSavedTheme returns null when localStorage is empty` | localStorage vide retourne null |
-| `readSavedTheme returns true for dark theme` | localStorage "dark" retourne true |
-| `readSavedTheme returns false for light theme` | localStorage "light" retourne false |
-| `applyTheme sets data-theme attribute to dark` | data-theme="dark" est appliqué sur <html> |
-| `applyTheme removes data-theme attribute for light theme` | data-theme est supprimé pour light |
-| `theme persists in localStorage across toggles` | Les toggles sont persistés en localStorage |
-| `system prefers-color-scheme is detectable` | window.matchMedia() retourne une MediaQueryList valide |
+| Test | Assertion |
+|------|-----------|
+| `readSavedTheme returns null when localStorage is empty` | Returns null when localStorage is empty |
+| `readSavedTheme returns true for dark theme` | Returns true when localStorage is "dark" |
+| `readSavedTheme returns false for light theme` | Returns false when localStorage is "light" |
+| `applyTheme sets data-theme attribute to dark` | `data-theme="dark"` is applied on `<html>` |
+| `applyTheme removes data-theme attribute for light theme` | `data-theme` is removed for light theme |
+| `theme persists in localStorage across toggles` | Toggles are persisted in localStorage |
+| `system prefers-color-scheme is detectable` | `window.matchMedia()` returns a valid `MediaQueryList` |

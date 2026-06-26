@@ -191,6 +191,18 @@
     background: rgba(255, 255, 255, 0.08);
 }
 
+/* ── ListContainer — conteneur de liste générique ── */
+
+.list-container {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.list-container--spaced {
+    margin-top: 16px;
+}
+
 /* ── ListItemRow — composant liste générique ── */
 
 .list-item-row {

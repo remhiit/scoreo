@@ -1,10 +1,10 @@
 # Documentation
 
-| Chemin | Contenu |
+| Path | Content |
 |---|---|
-| [`functional/feature.md`](functional/feature.md) | Fonctionnalités et parcours utilisateur |
-| [`technical/architecture.md`](technical/architecture.md) | Stack technique, patterns, structure |
-| [`technical/deployment.md`](technical/deployment.md) | CI/CD et déploiement |
-| [`technical/migrations.md`](technical/migrations.md) | Historique des migrations de données |
-| [`glossary.md`](glossary.md) | Définitions des termes du projet |
-| `src/ressource/schemas/import/` | Schémas JSON du format d'import (v1.0, v1.1) |
+| [`functional/feature.md`](functional/feature.md) | Features and user flows |
+| [`technical/architecture.md`](technical/architecture.md) | Tech stack, patterns, structure |
+| [`technical/deployment.md`](technical/deployment.md) | CI/CD and deployment |
+| [`technical/migrations.md`](technical/migrations.md) | Data migration history |
+| [`glossary.md`](glossary.md) | Project term definitions |
+| `src/ressource/schemas/import/` | JSON schemas for import format (v1.0, v1.1) |

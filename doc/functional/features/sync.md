@@ -1,41 +1,41 @@
-# Sync — Sauvegarde cloud Google Drive
+# Sync — Google Drive Cloud Backup
 
-## Connexion
+## Connection
 
-1. Aller dans l'écran Sync (menu burger ☁)
-2. Cliquer « Connect with Google »
-3. Popup OAuth Google — autoriser l'accès à l'App Data Folder
-4. Le sync se déclenche automatiquement après connexion
+1. Go to the Sync screen (burger menu ☁)
+2. Click "Connect with Google"
+3. Google OAuth popup — grant access to the App Data Folder
+4. Sync triggers automatically after connection
 
-## Fonctionnement
+## How it works
 
-- Stockage : **App Data Folder** Google Drive (invisible pour l'utilisateur, ne compte pas dans le quota)
-- Fichier unique : `scoreo-data.json`
-- Scope : `drive.appdata` uniquement
-- Token Model OAuth (GIS) — refresh silencieux géré par Google
+- Storage: **App Data Folder** on Google Drive (invisible to the user, does not count against quota)
+- Single file: `scoreo-data.json`
+- Scope: `drive.appdata` only
+- OAuth Token Model (GIS) — silent refresh handled by Google
 
-## Sync automatique
+## Auto-sync
 
-Déclenché après chaque connexion :
+Triggered after each connection:
 
-1. Lit les données locales (players, gameTypes, matches)
-2. Lit les données distantes via Drive
-3. Compare :
-   - Local vide + Drive vide → rien
-   - Local vide + Drive a des données → pull auto
-   - Local a des données + Drive vide → push auto (création du fichier)
-   - Identiques → déjà synchronisé
-   - Différents → **conflit** → demande à l'utilisateur
+1. Reads local data (players, gameTypes, matches)
+2. Reads remote data via Drive
+3. Compares:
+   - Local empty + Drive empty → nothing to do
+   - Local empty + Drive has data → auto pull
+   - Local has data + Drive empty → auto push (creates the file)
+   - Identical → already in sync
+   - Different → **conflict** → prompts the user
 
-## Résolution de conflit
+## Conflict resolution
 
-L'utilisateur voit les deux versions (locale et distante) avec compteurs et dates. Choix :
-- **Keep local** → les données locales écrasent Drive
-- **Keep remote** → les données distantes écrasent le local
+The user sees both versions (local and remote) with counts and dates. Choice:
+- **Keep local** → local data overwrites Drive
+- **Keep remote** → remote data overwrites local
 
-## Mode offline
+## Offline mode
 
-- `window.navigator.onLine` détecte la connectivité
-- Si hors-ligne : l'écran Sync affiche un message
-- Au retour online, l'utilisateur peut relancer la sync manuellement
-- Pas de file d'attente offline — re-sync complet au retour
+- `window.navigator.onLine` detects connectivity
+- If offline: the Sync screen shows a message
+- When back online, the user can trigger sync manually
+- No offline queue — full re-sync on reconnection

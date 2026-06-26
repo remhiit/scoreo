@@ -3,6 +3,7 @@ package com.scoreo.ui.history
 import androidx.compose.runtime.Composable
 import com.scoreo.ui.navigation.AppNavigator
 import com.scoreo.ui.navigation.Screen
+import com.scoreo.ui.shared.ListContainer
 import com.scoreo.ui.shared.ListItemRow
 import com.scoreo.ui.Strings
 import org.jetbrains.compose.web.dom.Button
@@ -72,7 +73,8 @@ fun HistoryScreen(handler: HistoryHandler, navigator: AppNavigator? = null) {
          Div(attrs = { classes("empty") }) { Text(emptyText) }
      } else {
          // Render filtered displays
-         filteredDisplays.forEach { display ->
+         ListContainer {
+             filteredDisplays.forEach { display ->
              val gameLabel = display.gameType?.name ?: "Unknown game"
              val scoresSubtitle = display.match.playerScores
                  .joinToString(" / ") { ps ->
@@ -95,7 +97,8 @@ fun HistoryScreen(handler: HistoryHandler, navigator: AppNavigator? = null) {
                      }
                  },
                  onDelete = { handler.handle(HistoryIntent.ShowDeleteConfirm(display.match.id)) }
-             )
+              )
+          }
          }
      }
 
