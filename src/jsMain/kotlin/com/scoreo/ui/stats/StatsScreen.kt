@@ -14,7 +14,7 @@ fun StatsScreen(handler: StatsHandler) {
     val state = handler.state
 
     state.selectedPlayer?.let { detail ->
-        PlayerDetailView(detail, onBack = { handler.handle(StatsIntent.BackToLeaderboard) })
+        PlayerDetailView(detail)
     } ?: run {
         GameTypeTabs(
             gameTypes = state.gameTypes,
@@ -80,15 +80,11 @@ private fun LeaderboardView(leaderboard: List<PlayerDetail>, onSelectPlayer: (St
 }
 
 @Composable
-private fun PlayerDetailView(detail: PlayerDetail, onBack: () -> Unit) {
+private fun PlayerDetailView(detail: PlayerDetail) {
     val total = detail.wins + detail.losses
     val pct = if (total == 0) 0f else detail.wins.toFloat() / total * 100
 
     Div(attrs = { classes("stats-detail-header") }) {
-        Button(attrs = {
-            classes("back-btn")
-            onClick { onBack() }
-         }) { Text(Strings.BTN_BACK_ARROW) }
         Div(attrs = { classes("stats-detail-title") }) { Text(detail.name) }
         Span(attrs = { classes("stats-elo-badge") }) { Text("${detail.elo}") }
     }

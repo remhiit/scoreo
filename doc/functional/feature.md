@@ -35,9 +35,22 @@ Top header bar (all screens):
 | Element | Action |
 |---------|--------|
 | 🌙/☀️ | Toggle dark/light mode (always visible) |
-| ← Back | Returns to Home (hidden on Home) |
+| ← Back | Returns to previous screen (hidden on Home). Contextual — see table below |
 | Title | Current screen name (clickable → Home, except when already on Home) |
 | ☰ Burger | Opens side menu |
+
+Back button destinations:
+
+| Screen | Condition | Destination |
+|--------|-----------|-------------|
+| `Home` | — | hidden |
+| `History`, `Import`, `Games`, `Sync` | — | Home |
+| `Stats` | leaderboard visible | Home |
+| `Stats` | player detail visible | leaderboard (clears selected player, no navigation) |
+| `ScoreDetail` | new match (`matchId == null`) | Home |
+| `ScoreDetail` | edit match (`matchId != null`) | History |
+
+Note: Save and Cancel buttons in `ScoreDetail` follow the same rule as `←` (History if editing, Home if new match).
 
 Burger menu items:
 

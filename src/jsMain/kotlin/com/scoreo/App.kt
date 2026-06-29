@@ -28,6 +28,7 @@ import com.scoreo.ui.sync.SyncScreen
 import com.scoreo.ui.scoredetail.ScoreDetailHandler
 import com.scoreo.ui.scoredetail.ScoreDetailMode
 import com.scoreo.ui.scoredetail.ScoreDetailScreen
+import com.scoreo.ui.stats.StatsIntent
 import com.scoreo.ui.stats.StatsScreen
 import com.scoreo.ui.theme.rememberThemeState
 import org.jetbrains.compose.web.dom.Button
@@ -57,14 +58,30 @@ fun App(
         is Screen.Sync -> "Sync"
         is Screen.ScoreDetail -> if (screen.matchId != null) "Edit match" else "Score Detail"
     }
-    val canGoBack = navigator.current !is Screen.Home
+    // Chaque écran "sait" où mène son bouton retour. null = pas de retour (Home).
+    val onBack: (() -> Unit)? = when (val screen = navigator.current) {
+        is Screen.Home -> null
+        is Screen.Stats ->
+            if (deps.statsHandler.state.selectedPlayerId != null) {
+                { deps.statsHandler.handle(StatsIntent.BackToLeaderboard) }
+            } else {
+                { navigator.navigate(Screen.Home) }
+            }
+        is Screen.ScoreDetail ->
+            if (screen.matchId != null) {
+                { navigator.navigate(Screen.History) }
+            } else {
+                { navigator.navigate(Screen.Home) }
+            }
+        else -> { { navigator.navigate(Screen.Home) } }
+    }
 
     // ── App header ────────────────────────────────────────────
     Div(attrs = { classes("app-header") }) {
-        if (canGoBack) {
+        onBack?.let { back ->
             Button(attrs = {
                 classes("back-btn")
-                onClick { navigator.navigate(Screen.Home) }
+                onClick { back() }
             }) { Text("←") }
         }
         Button(attrs = {
@@ -147,14 +164,15 @@ fun App(
                             matchDraftRepository = matchDraftRepository,
                         )
                     }
+                    val afterMatch = if (screen.matchId != null) Screen.History else Screen.Home
                     ScoreDetailScreen(
                         handler = scoreDetailHandler,
                         onSaved = {
                             deps.playerHandler.refresh()
-                            navigator.navigate(Screen.Home)
+                            navigator.navigate(afterMatch)
                         },
                         onCancel = {
-                            navigator.navigate(Screen.Home)
+                            navigator.navigate(afterMatch)
                         },
                     )
                 }
