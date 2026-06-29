@@ -24,7 +24,7 @@ git push  # pre-push hook validates build config
 
 **File**: `.github/workflows/check.yml`
 
-Runs on every `push` (all branches) and `pull_request`. Executes `./gradlew help --quiet` to validate the build configuration independently of the deployment workflow.
+Runs on every `push` (all branches) and `pull_request`. Executes `gradle help --quiet` to validate the build configuration independently of the deployment workflow.
 
 - **Trigger**: `push` to any branch, `pull_request`
 - **Status**: Must pass before deployment jobs can run
@@ -58,8 +58,8 @@ File: `.github/workflows/deploy.yml`
 Steps 1-6 build and verify the artifact:
 1. Set up JDK 21 (`actions/setup-java` temurin)
 2. Set up Gradle via [`gradle/actions/setup-gradle@v4`](https://github.com/gradle/actions) with `gradle-version: wrapper`
-3. Run tests: `./gradlew jvmTest`
-4. Build: `./gradlew jsBrowserProductionWebpack`
+3. Run tests: `gradle jvmTest`
+4. Build: `gradle jsBrowserProductionWebpack`
 5. Copy `index.html` and all `.css` files into `build/kotlin-webpack/js/productionExecutable/`
 6. Verify `styles.css` exists in the output directory
 7. **Verify all resources are in artifact** — cross-check that every file from `src/jsMain/resources/` is present in the output directory. Fails if any file is missing.
@@ -91,4 +91,4 @@ URL: `https://<username>.github.io/Scoreo/`
 
 > Enable in *Settings → Pages → Source: GitHub Actions*.
 
-> Note: `gradle-wrapper.jar` is **not** committed to the repository. CI tools bootstrap Gradle directly from `gradle-wrapper.properties`.
+> Note: `gradle-wrapper.jar` is **not** committed to the repository (excluded by `*.jar` in `.gitignore`). GitHub Actions workflows use the `gradle` command installed in PATH by `gradle/actions/setup-gradle@v4`, reading the version from `gradle-wrapper.properties`.
