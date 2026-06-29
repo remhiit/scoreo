@@ -22,4 +22,4 @@ jobs:
           gradle-version: wrapper
 
       - name: Validate build configuration
-        run: ./gradlew help --quiet
+        run: gradle help --quiet
