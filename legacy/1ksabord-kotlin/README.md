@@ -33,6 +33,7 @@ Chaque tour commence par le tirage d'une carte qui modifie les règles :
 - 📜 **Historique des parties** — les parties terminées sont archivées (20 dernières) et consultables depuis l'écran d'accueil
 - 🌙☀️ **Thème sombre / lumineux** — avec mémorisation du choix
 - 📱 **Responsive** — fonctionne sur mobile et desktop
+- 📲 **Installable (PWA)** — s'installe comme une appli native sur Android et iOS via le navigateur
 
 ## Architecture
 

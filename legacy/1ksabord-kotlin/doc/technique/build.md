@@ -49,6 +49,9 @@ avec ce projet).
 Génère dans `build/dist/js/productionExecutable/` :
 - `index.html` — page HTML avec CSS inline
 - `app.js` — bundle JS optimisé (~70 Ko, minifié)
+- `manifest.json` — manifeste PWA (nom, icônes, standalone)
+- `sw.js` — service worker (installation sur l'écran d'accueil)
+- `icon-192.png` / `icon-512.png` — icônes d'application
 
 Le déploiement GitHub Actions exécute cette commande automatiquement.
 
