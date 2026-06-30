@@ -31,9 +31,10 @@ private data class SyncFile(
 class GoogleDriveSyncAdapter(
     private val authService: GoogleAuthService,
     private val clientId: String,
+    driveClient: GoogleDriveClient? = null,
 ) : CloudSyncRepository {
 
-    private val driveClient by lazy { GoogleDriveClient { authService.accessToken } }
+    private val driveClient: GoogleDriveClient = driveClient ?: GoogleDriveClient { authService.accessToken }
 
     init {
         val config = loadSyncConfig()
