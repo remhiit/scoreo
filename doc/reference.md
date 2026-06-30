@@ -136,7 +136,8 @@ Files: `src/jsMain/kotlin/com/scoreo/ui/shared/ListContainer.kt`, `src/jsMain/ko
 | `src/commonTest/.../application/GetHeadToHeadUseCaseEloTest.kt` | `GetHeadToHeadUseCaseEloTest` | ELO calculation (10 tests) |
 | `src/commonTest/.../application/IdGeneratorTest.kt` | `IdGeneratorTest` | IdGenerator UUID v4 (7 tests) |
 | `src/commonTest/.../application/SyncUseCaseTest.kt` | `SyncUseCaseTest` | Use Case Sync (7 tests) |
-| `src/commonTest/.../ui/sync/SyncHandlerTest.kt` | `SyncHandlerTest` | Handler Sync (8 tests) |
+| `src/commonTest/.../ui/sync/SyncHandlerTest.kt` | `SyncHandlerTest` | Handler Sync (9 tests including RestoreSession) |
+| `src/jsTest/.../infrastructure/google/GoogleDriveSyncAdapterTest.kt` | `GoogleDriveSyncAdapterTest` | Adapter GoogleDrive (10 tests: getStatus, init, logout, SyncConfig) |
 | `src/commonTest/.../application/EloCalculatorTest.kt` | `EloCalculatorTest` | Isolated ELO calculation (3 tests) |
 | `src/jsTest/.../ui/theme/ThemeManagerTest.kt` | `ThemeManagerTest` | Theme composable (7 tests: localStorage, system pref, DOM) |
 
