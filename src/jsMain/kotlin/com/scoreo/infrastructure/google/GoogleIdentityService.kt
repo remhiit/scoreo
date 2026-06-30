@@ -21,6 +21,7 @@ private external interface TokenResponse {
     val access_token: String
     val expires_in: Int
     val token_type: String
+    val id_token: String?
 }
 
 private external interface TokenError {
@@ -52,6 +53,7 @@ private external val google: GoogleAccounts?
 class GoogleAuthService {
     var accessToken: String? = null
     var expiresAt: Long? = null
+    var idToken: String? = null
 
     fun login(clientId: String, scope: String, onResult: (Result<String>) -> Unit) {
         val g = google?.oauth2 ?: run {
@@ -64,6 +66,7 @@ class GoogleAuthService {
             override var callback: (TokenResponse) -> Unit = { response ->
                 accessToken = response.access_token
                 expiresAt = currentTimeMillis() + (response.expires_in * 1000L)
+                idToken = response.id_token
                 onResult(Result.success(response.access_token))
             }
             override var error_callback: (TokenError) -> Unit = {
@@ -84,6 +87,7 @@ class GoogleAuthService {
             override var callback: (TokenResponse) -> Unit = { response ->
                 accessToken = response.access_token
                 expiresAt = currentTimeMillis() + (response.expires_in * 1000L)
+                idToken = response.id_token
                 onResult(Result.success(response.access_token))
             }
             override var error_callback: (TokenError) -> Unit = {

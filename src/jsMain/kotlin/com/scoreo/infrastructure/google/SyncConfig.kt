@@ -13,6 +13,7 @@ data class SyncConfig(
     val email: String = "",
     val lastSyncTimestamp: Long = 0L,
     val lastSyncFileId: String = "",
+    val expiresAt: Long = 0L,
 )
 
 fun loadSyncConfig(): SyncConfig {

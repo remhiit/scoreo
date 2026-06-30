@@ -8,12 +8,16 @@ import com.scoreo.domain.port.SyncData
 import com.scoreo.domain.port.SyncException
 import com.scoreo.domain.port.SyncStatus
 import com.scoreo.infrastructure.scoreoJson
+import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.decodeFromString
+import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
 
 private const val FILE_NAME = "scoreo-data.json"
 private const val FILE_VERSION = 1
+private const val SCOPE = "openid email https://www.googleapis.com/auth/drive.appdata"
 
 @Serializable
 private data class SyncFile(
@@ -27,26 +31,30 @@ private data class SyncFile(
 class GoogleDriveSyncAdapter(
     private val authService: GoogleAuthService,
     private val clientId: String,
-    private val scope: String = "https://www.googleapis.com/auth/drive.appdata",
 ) : CloudSyncRepository {
 
     private val driveClient by lazy { GoogleDriveClient { authService.accessToken } }
 
+    init {
+        val config = loadSyncConfig()
+        if (config.accessToken.isNotBlank()) {
+            authService.accessToken = config.accessToken
+            authService.expiresAt = config.expiresAt.takeIf { it > 0L }
+        }
+    }
+
     override suspend fun push(data: SyncData) {
         ensureAuthenticated()
-        ensureTokenFresh()
+        refreshTokenIfNeeded()
         val json = serializeSyncData(data)
         val result = driveClient.upsertFile(FILE_NAME, json)
         result.getOrThrow()
-        val config = loadSyncConfig().copy(
-            lastSyncTimestamp = data.lastModified,
-        )
-        saveSyncConfig(config)
+        saveSyncConfig(loadSyncConfig().copy(lastSyncTimestamp = data.lastModified))
     }
 
     override suspend fun pull(): SyncData {
         ensureAuthenticated()
-        ensureTokenFresh()
+        refreshTokenIfNeeded()
         val fileIdResult = driveClient.findFile(FILE_NAME)
         val fileId = fileIdResult.getOrThrow() ?: return SyncData(
             players = emptyList(),
@@ -55,8 +63,7 @@ class GoogleDriveSyncAdapter(
             lastModified = 0L,
         )
         val content = driveClient.readFile(fileId).getOrThrow()
-        val config = loadSyncConfig().copy(lastSyncFileId = fileId)
-        saveSyncConfig(config)
+        saveSyncConfig(loadSyncConfig().copy(lastSyncFileId = fileId))
         return deserializeSyncData(content)
     }
 
@@ -71,7 +78,24 @@ class GoogleDriveSyncAdapter(
     }
 
     override suspend fun login() {
-        throw SyncException.NotAuthenticated
+        return suspendCancellableCoroutine { cont ->
+            authService.login(clientId, SCOPE) { result ->
+                result.fold(
+                    onSuccess = { token ->
+                        val email = authService.idToken?.let { decodeJwtEmail(it) } ?: ""
+                        saveSyncConfig(
+                            loadSyncConfig().copy(
+                                accessToken = token,
+                                email = email,
+                                expiresAt = authService.expiresAt ?: 0L,
+                            )
+                        )
+                        cont.resume(Unit)
+                    },
+                    onFailure = { cont.resumeWithException(it) },
+                )
+            }
+        }
     }
 
     override suspend fun logout() {
@@ -85,11 +109,35 @@ class GoogleDriveSyncAdapter(
         if (authService.accessToken == null) throw SyncException.NotAuthenticated
     }
 
-    private fun ensureTokenFresh() {
+    private suspend fun refreshTokenIfNeeded() {
         val expiresAt = authService.expiresAt ?: return
-        if (currentTimeMillis() >= expiresAt - 60000) {
+        if (currentTimeMillis() < expiresAt - 60_000L) return
+        try {
+            refreshTokenSilently()
+        } catch (e: Exception) {
             authService.accessToken = null
+            authService.expiresAt = null
+            clearSyncConfig()
             throw SyncException.NotAuthenticated
+        }
+    }
+
+    private suspend fun refreshTokenSilently() {
+        return suspendCancellableCoroutine { cont ->
+            authService.refreshToken(clientId, SCOPE) { result ->
+                result.fold(
+                    onSuccess = { token ->
+                        saveSyncConfig(
+                            loadSyncConfig().copy(
+                                accessToken = token,
+                                expiresAt = authService.expiresAt ?: 0L,
+                            )
+                        )
+                        cont.resume(Unit)
+                    },
+                    onFailure = { cont.resumeWithException(it) },
+                )
+            }
         }
     }
 
@@ -116,3 +164,16 @@ class GoogleDriveSyncAdapter(
 
 private fun currentTimeMillis(): Long =
     (js("Date.now()") as Double).toLong()
+
+private fun decodeJwtEmail(idToken: String): String? = try {
+    @Suppress("UNCHECKED_CAST")
+    val email = js("""(function(t) {
+        try {
+            var b = t.split('.')[1].replace(/-/g,'+').replace(/_/g,'/');
+            return JSON.parse(atob(b)).email || null;
+        } catch(e) { return null; }
+    })""")(idToken) as? String
+    email
+} catch (e: Exception) {
+    null
+}
