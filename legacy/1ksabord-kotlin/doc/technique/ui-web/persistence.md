@@ -127,12 +127,28 @@ Champs d'une partie (`games[]`) :
 | `id` | String | UUID unique de la partie |
 | `date` | Long | Date de fin de partie (ms, optionnel) |
 | `ranking` | Array | Classement final (trié par score décroissant) |
-| `details` | Array | Rounds joués — chaque round contient `scores: [{name, score}]` (optionnel) |
+| `details` | Array ou absent | Rounds joués — chaque round contient `scores: [{name, score}]` (optionnel) |
 
-Le format `details` respecte le [contrat Scoreo](/doc/scoreo-import-schema.json) :
-chaque round aggrège les scores de tous les joueurs (somme des contributions
-via `EvenementCoup.contributionPour()`). La somme des scores par joueur dans
-les rounds correspond au `score` du `ranking`.
+### Calcul des scores dans `details`
+
+`details` est absent (non exporté) pour les parties legacy sans historique de coups.
+
+Pour les parties avec coups, les scores par round sont des **deltas clampés** :
+
+```
+scoreRound(joueur, round) = totalClampé_fin_round - totalClampé_début_round
+```
+
+Ce calcul est un miroir exact de `Partie.totalJoueurParNom()` (clamp à 0 à chaque coup),
+ce qui garantit l'invariant requis par Scoreo :
+
+```
+sum(details[round].scores[joueur]) == ranking[joueur].score
+```
+
+Cet invariant tient même en cas de pénalités île-crânes qui feraient descendre le score
+brut en dessous de zéro, car le delta reflète le changement réel du total clampé (et non
+la contribution brute du coup).
 
 ## Import `.sabords`
 
