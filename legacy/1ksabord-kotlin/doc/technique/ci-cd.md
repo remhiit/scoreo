@@ -52,7 +52,7 @@ jobs:
 3. **Setup Gradle** — via `gradle/actions/setup-gradle@v4`
    (résout le wrapper jar manquant dans le CI)
 4. **Build** — `./gradlew jsBrowserDistribution`
-5. **Upload artifact** — le dossier de production est uploadé
+5. **Upload artifact** — le dossier de production est uploadé (contient `index.html`, `app.js`, `manifest.json`, `sw.js`, icônes PWA)
 
 ### Deploy
 
