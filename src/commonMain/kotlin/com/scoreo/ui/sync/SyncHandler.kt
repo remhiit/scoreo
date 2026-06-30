@@ -16,6 +16,19 @@ class SyncHandler(
 
     fun handle(intent: SyncIntent) {
         when (intent) {
+            is SyncIntent.RestoreSession -> {
+                scope.launch {
+                    try {
+                        val status = syncUseCase.status()
+                        if (status.connected) {
+                            state = state.copy(phase = SyncPhase.Detecting, email = status.email)
+                            runAutoSync()
+                        }
+                    } catch (_: Exception) {
+                        // Token invalide ou absent — rester déconnecté
+                    }
+                }
+            }
             is SyncIntent.Login -> {
                 state = state.copy(phase = SyncPhase.Connecting, error = null)
                 scope.launch {

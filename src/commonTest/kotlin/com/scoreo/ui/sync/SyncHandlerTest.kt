@@ -208,6 +208,35 @@ class SyncHandlerTest {
     }
 
     @Test
+    fun `RestoreSession does nothing when not connected`() = runTest {
+        val handler = buildHandler(scope = this)
+
+        handler.handle(SyncIntent.RestoreSession)
+        advanceUntilIdle()
+
+        assertEquals(SyncPhase.Disconnected, handler.state.phase)
+        assertNull(handler.state.email)
+        assertNull(handler.state.error)
+    }
+
+    @Test
+    fun `RestoreSession runs autoSync when already connected`() = runTest {
+        val cloudRepo = InMemoryCloudSyncRepository().apply {
+            connected = true
+            email = "restored@example.com"
+        }
+        val handler = buildHandler(cloudRepo = cloudRepo, scope = this)
+
+        handler.handle(SyncIntent.RestoreSession)
+        advanceUntilIdle()
+
+        assertEquals(SyncPhase.Resolved, handler.state.phase)
+        assertEquals("restored@example.com", handler.state.email)
+        assertNotNull(handler.state.result)
+        assertNull(handler.state.error)
+    }
+
+    @Test
     fun `Logout after login returns to Disconnected phase`() = runTest {
         val cloudRepo = InMemoryCloudSyncRepository()
         val playerRepo = InMemoryPlayerRepository()

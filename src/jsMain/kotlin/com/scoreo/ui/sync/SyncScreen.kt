@@ -1,6 +1,7 @@
 package com.scoreo.ui.sync
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import com.scoreo.ui.Strings
 import org.jetbrains.compose.web.dom.Button
 import org.jetbrains.compose.web.dom.Div
@@ -12,6 +13,10 @@ private fun isOnline(): Boolean =
 
 @Composable
 fun SyncScreen(handler: SyncHandler) {
+    LaunchedEffect(Unit) {
+        handler.handle(SyncIntent.RestoreSession)
+    }
+
     val s = handler.state
 
      if (!isOnline()) {
@@ -41,13 +46,13 @@ fun SyncScreen(handler: SyncHandler) {
 @Composable
 private fun disconnectedView(handler: SyncHandler) {
     Div(attrs = { classes("empty") }) {
-        Span(attrs = { classes("import-zone-icon") }) { Text("☁") }
-         Div(attrs = { classes("section-label") }) { Text(Strings.LABEL_CLOUD_SYNC) }
-         Div(attrs = { classes("empty") }) { Text(Strings.MSG_SYNC_DATA_GOOGLE) }
-         Button(attrs = {
-             classes("btn", "btn-primary")
-             onClick { handler.handle(SyncIntent.Login) }
-         }) { Text(Strings.BTN_CONNECT_GOOGLE) }
+        Span(attrs = { classes("sync-icon") }) { Text("☁") }
+        Div(attrs = { classes("section-label") }) { Text(Strings.LABEL_CLOUD_SYNC) }
+        Div { Text(Strings.MSG_SYNC_DATA_GOOGLE) }
+        Button(attrs = {
+            classes("btn", "btn-primary")
+            onClick { handler.handle(SyncIntent.Login) }
+        }) { Text(Strings.BTN_CONNECT_GOOGLE) }
     }
 }
 
@@ -62,18 +67,18 @@ private fun loadingView(message: String) {
 @Composable
 private fun resolvedView(handler: SyncHandler, s: SyncState) {
     Div(attrs = { classes("empty") }) {
-        Span(attrs = { classes("import-zone-icon") }) { Text("✅") }
-         Div(attrs = { classes("section-label") }) { Text(Strings.LABEL_SYNC_COMPLETE) }
+        Span(attrs = { classes("sync-icon") }) { Text("✅") }
+        Div(attrs = { classes("section-label") }) { Text(Strings.LABEL_SYNC_COMPLETE) }
         s.result?.let { r ->
             Div { Text("${r.pushed} pushed, ${r.pulled} pulled") }
         }
         s.email?.let { email ->
-            Div(attrs = { classes("card-sub") }) { Text("Connected as $email") }
+            Div(attrs = { classes("sync-status") }) { Text("Connected as $email") }
         }
-         Button(attrs = {
-             classes("btn", "btn-secondary")
-             onClick { handler.handle(SyncIntent.Logout) }
-         }) { Text(Strings.BTN_DISCONNECT) }
+        Button(attrs = {
+            classes("btn", "btn-secondary")
+            onClick { handler.handle(SyncIntent.Logout) }
+        }) { Text(Strings.BTN_DISCONNECT) }
     }
 }
 
@@ -85,44 +90,38 @@ private fun conflictView(handler: SyncHandler, s: SyncState) {
          return
      }
 
-     Div(attrs = { style { property("padding", "16px 0") } }) {
-         Div(attrs = { classes("modal-title") }) { Text(Strings.LABEL_SYNC_CONFLICT) }
-         Div(attrs = { classes("modal-body") }) {
-             Text(Strings.MSG_CONFLICT_CHOICE)
-         }
+    Div(attrs = { style { property("padding", "16px 0") } }) {
+        Div(attrs = { classes("modal-title") }) { Text(Strings.LABEL_SYNC_CONFLICT) }
+        Div(attrs = { classes("modal-body") }) { Text(Strings.MSG_CONFLICT_CHOICE) }
 
-         Div(attrs = { classes("modal-body") }) {
-             Div(attrs = { classes("card") }) {
-                 Div(attrs = { style { property("display", "flex"); property("flex-direction", "column") } }) {
-                     Span(attrs = { style { property("font-weight", "600") } }) {
-                         Text("${Strings.LABEL_LOCAL_VERSION}${conflict.localSnapshot.dateLabel?.let { " (${it})" } ?: ""}")
-                     }
-                     Span { Text("• ${conflict.localSnapshot.playerCount} players") }
-                     Span { Text("• ${conflict.localSnapshot.gameTypeCount} game types") }
-                     Span { Text("• ${conflict.localSnapshot.matchCount} matches") }
-                 }
-             }
-             Div(attrs = { classes("card") }) {
-                 Div(attrs = { style { property("display", "flex"); property("flex-direction", "column") } }) {
-                     Span(attrs = { style { property("font-weight", "600") } }) {
-                         Text("${Strings.LABEL_REMOTE_VERSION}${conflict.remoteSnapshot.dateLabel?.let { " (${it})" } ?: ""}")
-                     }
-                     Span { Text("• ${conflict.remoteSnapshot.playerCount} players") }
-                     Span { Text("• ${conflict.remoteSnapshot.gameTypeCount} game types") }
-                     Span { Text("• ${conflict.remoteSnapshot.matchCount} matches") }
-                 }
-             }
-         }
+        Div(attrs = { classes("sync-conflict-container") }) {
+            Div(attrs = { classes("sync-card") }) {
+                Div(attrs = { classes("sync-card-title") }) {
+                    Text("${Strings.LABEL_LOCAL_VERSION}${conflict.localSnapshot.dateLabel?.let { " ($it)" } ?: ""}")
+                }
+                Div(attrs = { classes("sync-card-stat") }) { Text("• ${conflict.localSnapshot.playerCount} players") }
+                Div(attrs = { classes("sync-card-stat") }) { Text("• ${conflict.localSnapshot.gameTypeCount} game types") }
+                Div(attrs = { classes("sync-card-stat") }) { Text("• ${conflict.localSnapshot.matchCount} matches") }
+            }
+            Div(attrs = { classes("sync-card") }) {
+                Div(attrs = { classes("sync-card-title") }) {
+                    Text("${Strings.LABEL_REMOTE_VERSION}${conflict.remoteSnapshot.dateLabel?.let { " ($it)" } ?: ""}")
+                }
+                Div(attrs = { classes("sync-card-stat") }) { Text("• ${conflict.remoteSnapshot.playerCount} players") }
+                Div(attrs = { classes("sync-card-stat") }) { Text("• ${conflict.remoteSnapshot.gameTypeCount} game types") }
+                Div(attrs = { classes("sync-card-stat") }) { Text("• ${conflict.remoteSnapshot.matchCount} matches") }
+            }
+        }
 
-         Div(attrs = { style { property("display", "flex"); property("gap", "8px") } }) {
-             Button(attrs = {
-                 classes("btn", "btn-primary")
-                 onClick { handler.handle(SyncIntent.ResolveConflict(true)) }
-             }) { Text(Strings.BTN_KEEP_LOCAL) }
-             Button(attrs = {
-                 classes("btn", "btn-secondary")
-                 onClick { handler.handle(SyncIntent.ResolveConflict(false)) }
-             }) { Text(Strings.BTN_KEEP_REMOTE) }
-         }
+        Div(attrs = { classes("sync-actions") }) {
+            Button(attrs = {
+                classes("btn", "btn-primary")
+                onClick { handler.handle(SyncIntent.ResolveConflict(true)) }
+            }) { Text(Strings.BTN_KEEP_LOCAL) }
+            Button(attrs = {
+                classes("btn", "btn-secondary")
+                onClick { handler.handle(SyncIntent.ResolveConflict(false)) }
+            }) { Text(Strings.BTN_KEEP_REMOTE) }
+        }
     }
 }
