@@ -161,11 +161,40 @@ class PersistenceTest {
         stockerPartie(creerPartieTerminee().copy(coups = coups))
 
         val details = construireExportJson().games[0].details
+        assertNotNull(details)
         assertEquals(1, details.size)
         val aliceScore = details[0].scores.first { it.name == "Alice" }
         assertEquals(500, aliceScore.score)
         val bobScore = details[0].scores.first { it.name == "Bob" }
         assertEquals(0, bobScore.score)
+    }
+
+    @Test fun exportPartie_detailsNullSiPasDeCoups() {
+        stockerPartie(creerPartieTerminee(joueurs = listOf("Alice" to 1200, "Bob" to 800)))
+        assertNull(construireExportJson().games[0].details)
+    }
+
+    @Test fun exportPartie_sommeDeltasEgaleRankingScore_avecClamp() {
+        // Bob : +400 round 1, pénalité île Alice -600 => clamp 0, +300 => total 300
+        // Alice : 0 partout => total 0
+        // Vérifie que le delta clampé satisfait sum(rounds) == ranking.score même quand clamp joue
+        val coups = listOf(
+            CoupManuel("Alice", 0, 1, 0),
+            CoupManuel("Bob", 400, 1, 400),
+            CoupCalculateur("Alice", "none", LancerDes(), 0, "", bust = false, ileCranes = true, penaliteIle = -600, magiquePirate = false),
+            CoupManuel("Bob", 300, 1, 300),
+        )
+        val joueurs = listOf("Bob" to 300, "Alice" to 0)
+        stockerPartie(creerPartieTerminee(joueurs = joueurs).copy(coups = coups))
+
+        val export = construireExportJson().games[0]
+        val details = assertNotNull(export.details)
+
+        // Invariant Scoreo : sum(round deltas) == ranking.score pour chaque joueur
+        for (entry in export.ranking) {
+            val somme = details.sumOf { round -> round.scores.first { it.name == entry.name }.score }
+            assertEquals(entry.score, somme, "Invariant rompu pour ${entry.name}")
+        }
     }
 
     @Test fun exportContientPlusieursParties() {
@@ -206,12 +235,20 @@ internal fun construireExportJson(): ExportSabords {
         }
         val joueurs = p.classement.map { it.nom }
         val tailleManche = joueurs.size
-        val details = if (p.coups.isEmpty()) emptyList()
-        else p.coups.chunked(tailleManche).map { roundCoups ->
-            val scores = joueurs.map { nom ->
-                ScoreExport(name = nom, score = roundCoups.sumOf { coup -> coup.contributionPour(nom) })
+        val details = if (p.coups.isEmpty()) null
+        else {
+            val totaux = joueurs.associateWith { 0 }.toMutableMap()
+            p.coups.chunked(tailleManche).map { roundCoups ->
+                val avant = totaux.toMap()
+                for (coup in roundCoups) {
+                    for (nom in joueurs) {
+                        totaux[nom] = maxOf(0, totaux.getValue(nom) + coup.contributionPour(nom))
+                    }
+                }
+                RoundExport(scores = joueurs.map { nom ->
+                    ScoreExport(name = nom, score = totaux.getValue(nom) - avant.getValue(nom))
+                })
             }
-            RoundExport(scores = scores)
         }
         ExportPartie(
             id      = p.uuid,

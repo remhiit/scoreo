@@ -19,7 +19,7 @@ internal const val CLÉ_JOUEURS   = "joueurs_connus"
 internal const val CLÉ_HISTORIQUE = "historique_parties"
 
 internal val formatJson       = Json { ignoreUnknownKeys = true }
-internal val formatJsonPretty = Json { prettyPrint = true; ignoreUnknownKeys = true }
+internal val formatJsonPretty = Json { prettyPrint = true; ignoreUnknownKeys = true; explicitNulls = false }
 
 // ==================== Instantané de Partie ====================
 
@@ -192,7 +192,7 @@ data class ExportPartie(
     val id: String,
     val date: Long,
     val ranking: List<ExportClassement>,
-    val details: List<RoundExport> = emptyList(),
+    val details: List<RoundExport>? = null,
 )
 
 @Serializable
@@ -257,12 +257,24 @@ fun exporterHistoriqueJson() {
         }
         val joueurs = p.classement.map { it.nom }
         val tailleManche = joueurs.size
-        val details = if (p.coups.isEmpty()) emptyList()
-        else p.coups.chunked(tailleManche).map { roundCoups ->
-            val scores = joueurs.map { nom ->
-                ScoreExport(name = nom, score = roundCoups.sumOf { coup -> coup.contributionPour(nom) })
+        // Miroir exact de Partie.totalJoueurParNom() : clamp à 0 à chaque coup.
+        // On exporte le delta clampé par round (= changement réel du score),
+        // ce qui garantit sum(round_scores) == ranking.score quelles que soient
+        // les pénalités île-crânes. Null si pas de coups (parties legacy).
+        val details = if (p.coups.isEmpty()) null
+        else {
+            val totaux = joueurs.associateWith { 0 }.toMutableMap()
+            p.coups.chunked(tailleManche).map { roundCoups ->
+                val avant = totaux.toMap()
+                for (coup in roundCoups) {
+                    for (nom in joueurs) {
+                        totaux[nom] = maxOf(0, totaux.getValue(nom) + coup.contributionPour(nom))
+                    }
+                }
+                RoundExport(scores = joueurs.map { nom ->
+                    ScoreExport(name = nom, score = totaux.getValue(nom) - avant.getValue(nom))
+                })
             }
-            RoundExport(scores = scores)
         }
         ExportPartie(
             id      = p.uuid,
