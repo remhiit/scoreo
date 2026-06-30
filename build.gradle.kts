@@ -6,6 +6,25 @@ plugins {
     alias(libs.plugins.kover)
 }
 
+val generateOAuthConfig by tasks.registering {
+    val clientId = System.getenv("GOOGLE_CLIENT_ID") ?: ""
+    inputs.property("googleClientId", clientId)
+    val outputDir = layout.buildDirectory.dir("generated/oauthconfig")
+    outputs.dir(outputDir)
+    doLast {
+        val dir = outputDir.get().asFile.resolve("com/scoreo/infrastructure/google")
+        dir.mkdirs()
+        dir.resolve("OAuthConfig.kt").writeText(
+            """package com.scoreo.infrastructure.google
+
+internal object OAuthConfig {
+    const val CLIENT_ID = "$clientId"
+}
+"""
+        )
+    }
+}
+
 kotlin {
     jvm()
 
@@ -29,6 +48,7 @@ kotlin {
             implementation(libs.kotlinx.coroutines.core)
         }
         val jsMain by getting {
+            kotlin.srcDir(generateOAuthConfig)
             dependencies {
                 implementation(compose.html.core)
             }
