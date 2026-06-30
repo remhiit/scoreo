@@ -36,6 +36,49 @@ This ensures configuration errors are caught immediately, even if the local hook
 
 Two workflows run on every push to `main`, both build the same production artifact.
 
+## Google Drive Sync Setup
+
+To enable cloud backup, you need an OAuth 2.0 Client ID from Google Cloud.
+
+### 1. Create an OAuth Client ID
+
+1. Go to [Google Cloud Console — Credentials](https://console.cloud.google.com/apis/credentials)
+2. Create or select a project "Scoreo"
+3. Enable the **Google Drive API**
+4. Create an **OAuth 2.0 Client ID** — type **Web application**
+   - Authorized JavaScript origins:
+     - `http://localhost:9191` (local dev)
+     - `https://<username>.github.io` (GitHub Pages)
+     - `https://<username>.codeberg.page` (Codeberg Pages)
+   - Authorized redirect URIs: leave empty (Token Model does not use redirects)
+5. Copy the generated **Client ID**
+
+### 2. Inject the Client ID via CI secret
+
+Add a repository secret `GOOGLE_CLIENT_ID` with the value from step 5.
+
+The `build.gradle.kts` `generateOAuthConfig` task reads `System.getenv("GOOGLE_CLIENT_ID")` and generates `OAuthConfig.kt` at build time. If the variable is absent, the sync feature is silently disabled (the Sync menu entry does not appear).
+
+**GitHub Actions** — add to `.github/workflows/deploy.yml` build step:
+
+```yaml
+env:
+  GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+```
+
+**Forgejo Actions** — add to `.forgejo/workflows/deploy.yml` build step:
+
+```yaml
+env:
+  GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+```
+
+### 3. Verify
+
+After deployment, open the app → burger menu → ☁ Sync should appear. If `GOOGLE_CLIENT_ID` is empty, the entry is hidden (backward compatible).
+
+---
+
 ## Codeberg Pages — Forgejo Actions
 
 File: `.forgejo/workflows/deploy.yml`
