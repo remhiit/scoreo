@@ -32,7 +32,7 @@ Opens a dev server with hot reload at `http://localhost:9191`.
 Output lands in `build/kotlin-webpack/js/productionExecutable/`. Copy assets and serve:
 
 ```bash
-cp src/jsMain/resources/{index.html,styles.css} build/kotlin-webpack/js/productionExecutable/
+cp -r src/jsMain/resources/. build/kotlin-webpack/js/productionExecutable/
 cd build/kotlin-webpack/js/productionExecutable
 python3 -m http.server 9191
 ```

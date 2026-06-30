@@ -19,7 +19,7 @@ jobs:
         run: gradle jsBrowserProductionWebpack
 
       - name: Copy static assets
-        run: cp src/jsMain/resources/index.html src/jsMain/resources/styles.css build/kotlin-webpack/js/productionExecutable/
+        run: cp -r src/jsMain/resources/. build/kotlin-webpack/js/productionExecutable/
 
       - name: Deploy to Codeberg Pages
         uses: https://codeberg.org/git-pages/action@v2

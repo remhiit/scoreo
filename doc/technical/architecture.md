@@ -64,6 +64,23 @@ Run `find src -type d` for the exhaustive package list.
 Several `.css` files in `src/jsMain/resources/` (`theme.css`, `layout.css`, `home.css`, etc.) are imported by `styles.css` via `@import`. During the production build, all CSS files are copied to the output directory, and the browser resolves `@import` directives natively.
 Uses CSS custom properties (design tokens), a fixed top header bar, and minimal component styles (cards, inputs, buttons, modals, score table).
 
+## PWA (Progressive Web App)
+
+Scoreo is installable as a native app on mobile and desktop.
+
+Static assets in `src/jsMain/resources/`:
+
+| Fichier | Rôle |
+|---|---|
+| `manifest.json` | App name, icons, `display: standalone`, theme `#6750a4` |
+| `sw.js` | Service worker — cache-first for offline shell |
+| `icon-192.png` | Home screen icon (Android, iOS) |
+| `icon-512.png` | Splash screen icon |
+
+`index.html` registers the service worker via `navigator.serviceWorker.register('./sw.js')`.
+
+All PWA assets are copied to the production output alongside CSS files (see [`deployment.md`](deployment.md)).
+
 **Shared UI composables** (`src/jsMain/kotlin/com/scoreo/ui/shared/`):
 - `ListContainer` — wraps any list of `ListItemRow` items; applies `display:flex; flex-direction:column; gap:8px`. Accepts an optional `className` parameter (e.g. `"list-container--spaced"` for `margin-top:16px`). Used by HomeScreen, GameTypeScreen, HistoryScreen.
 - `ListItemRow` — single row with label, optional subtitle, and optional action buttons (view/edit/delete). Supports selectable mode (○/●).

@@ -42,7 +42,7 @@ File: `.forgejo/workflows/deploy.yml`
 
 Steps:
 1. Build: `./gradlew jsBrowserProductionWebpack` (container `gradle:8.12-jdk21`)
-2. Copy `index.html` and all `.css` files into `build/kotlin-webpack/js/productionExecutable/`
+2. Copy all resources (`cp -r src/jsMain/resources/.`) into `build/kotlin-webpack/js/productionExecutable/` — includes HTML, CSS, `manifest.json`, `sw.js`, and icon PNGs
 3. Publish via [`git-pages/action@v2`](https://codeberg.org/git-pages/action)
 
 > Note: CSS files are copied as static assets. The browser resolves `@import` directives natively.
@@ -60,7 +60,7 @@ Steps 1-6 build and verify the artifact:
 2. Set up Gradle via [`gradle/actions/setup-gradle@v4`](https://github.com/gradle/actions) with `gradle-version: wrapper`
 3. Run tests: `gradle jvmTest`
 4. Build: `gradle jsBrowserProductionWebpack`
-5. Copy `index.html` and all `.css` files into `build/kotlin-webpack/js/productionExecutable/`
+5. Copy all resources (`cp -r src/jsMain/resources/.`) into `build/kotlin-webpack/js/productionExecutable/` — includes HTML, CSS, `manifest.json`, `sw.js`, and icon PNGs
 6. Verify `styles.css` exists in the output directory
 7. **Verify all resources are in artifact** — cross-check that every file from `src/jsMain/resources/` is present in the output directory. Fails if any file is missing.
 
