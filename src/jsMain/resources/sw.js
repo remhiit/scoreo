@@ -1,4 +1,4 @@
-const CACHE_NAME = 'scoreo-v1';
+const CACHE_NAME = 'scoreo-v2';
 const ASSETS = ['./', './index.html', './scoreo.js', './styles.css'];
 
 self.addEventListener('install', event => {
@@ -18,6 +18,12 @@ self.addEventListener('activate', event => {
 });
 
 self.addEventListener('fetch', event => {
+  if (event.request.mode === 'navigate') {
+    event.respondWith(
+      fetch(event.request).catch(() => caches.match(event.request))
+    );
+    return;
+  }
   event.respondWith(
     caches.match(event.request).then(cached => cached || fetch(event.request))
   );

@@ -55,48 +55,63 @@ class GoogleAuthService {
     var expiresAt: Long? = null
     var idToken: String? = null
 
-    fun login(clientId: String, scope: String, onResult: (Result<String>) -> Unit) {
-        val g = google?.oauth2 ?: run {
-            onResult(Result.failure(SyncException.NotAuthenticated))
-            return
+    private fun withGis(
+        retries: Int = 10,
+        delayMs: Int = 200,
+        onResult: (Result<String>) -> Unit,
+        block: (GoogleOAuth2) -> Unit,
+    ) {
+        val g = google?.oauth2
+        if (g != null) {
+            block(g)
+        } else if (retries > 0) {
+            val setTimeout: (dynamic, Int) -> Int = js("setTimeout")
+            setTimeout({ withGis(retries - 1, delayMs, onResult, block) }, delayMs)
+        } else {
+            onResult(Result.failure(SyncException.NotAuthenticated("Google Identity Services not loaded")))
         }
-        val client = g.initTokenClient(object : TokenClientConfig {
-            override var clientId = clientId
-            override var scope = scope
-            override var callback: (TokenResponse) -> Unit = { response ->
-                accessToken = response.access_token
-                expiresAt = currentTimeMillis() + (response.expires_in * 1000L)
-                idToken = response.id_token
-                onResult(Result.success(response.access_token))
-            }
-            override var error_callback: (TokenError) -> Unit = {
-                onResult(Result.failure(SyncException.NotAuthenticated))
-            }
-        })
-        client.requestAccessToken()
+    }
+
+    fun login(clientId: String, scope: String, onResult: (Result<String>) -> Unit) {
+        withGis(onResult = onResult) { g ->
+            val client = g.initTokenClient(object : TokenClientConfig {
+                override var clientId = clientId
+                override var scope = scope
+                override var callback: (TokenResponse) -> Unit = { response ->
+                    accessToken = response.access_token
+                    expiresAt = currentTimeMillis() + (response.expires_in * 1000L)
+                    idToken = response.id_token
+                    onResult(Result.success(response.access_token))
+                }
+                override var error_callback: (TokenError) -> Unit = { error ->
+                    val msg = error.message ?: "Authentication failed (${error.type})"
+                    onResult(Result.failure(SyncException.NotAuthenticated(msg)))
+                }
+            })
+            client.requestAccessToken()
+        }
     }
 
     fun refreshToken(clientId: String, scope: String, onResult: (Result<String>) -> Unit) {
-        val g = google?.oauth2 ?: run {
-            onResult(Result.failure(SyncException.NotAuthenticated))
-            return
+        withGis(onResult = onResult) { g ->
+            val client = g.initTokenClient(object : TokenClientConfig {
+                override var clientId = clientId
+                override var scope = scope
+                override var callback: (TokenResponse) -> Unit = { response ->
+                    accessToken = response.access_token
+                    expiresAt = currentTimeMillis() + (response.expires_in * 1000L)
+                    idToken = response.id_token
+                    onResult(Result.success(response.access_token))
+                }
+                override var error_callback: (TokenError) -> Unit = { error ->
+                    val msg = error.message ?: "Authentication failed (${error.type})"
+                    onResult(Result.failure(SyncException.NotAuthenticated(msg)))
+                }
+            })
+            client.requestAccessToken(object {
+                val prompt: String = ""
+            })
         }
-        val client = g.initTokenClient(object : TokenClientConfig {
-            override var clientId = clientId
-            override var scope = scope
-            override var callback: (TokenResponse) -> Unit = { response ->
-                accessToken = response.access_token
-                expiresAt = currentTimeMillis() + (response.expires_in * 1000L)
-                idToken = response.id_token
-                onResult(Result.success(response.access_token))
-            }
-            override var error_callback: (TokenError) -> Unit = {
-                onResult(Result.failure(SyncException.NotAuthenticated))
-            }
-        })
-        client.requestAccessToken(object {
-            val prompt: String = ""
-        })
     }
 
     fun logout() {
