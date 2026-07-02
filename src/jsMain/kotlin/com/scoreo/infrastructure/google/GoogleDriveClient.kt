@@ -83,7 +83,7 @@ class GoogleDriveClient(
                 if (fileId != null) updateFile(fileId, content, mimeType)
                 else createFile(fileName, content, mimeType)
             },
-            onFailure = { Result.failure(it) },
+            onFailure = { throwable -> Result.failure(throwable) },
         )
     }
 
