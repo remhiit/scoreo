@@ -18,14 +18,14 @@ class InMemoryCloudSyncRepository : CloudSyncRepository {
 
     override suspend fun push(data: SyncData) {
         failNext?.invoke()?.let { throw it }
-        if (!connected) throw SyncException.NotAuthenticated
+        if (!connected) throw SyncException.NotAuthenticated()
         storedData = data
         _lastSync = data.lastModified
     }
 
     override suspend fun pull(): SyncData {
         failNext?.invoke()?.let { throw it }
-        if (!connected) throw SyncException.NotAuthenticated
+        if (!connected) throw SyncException.NotAuthenticated()
         return storedData ?: SyncData(
             players = emptyList(),
             gameTypes = emptyList(),

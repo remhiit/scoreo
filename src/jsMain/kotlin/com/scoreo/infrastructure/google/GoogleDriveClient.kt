@@ -11,7 +11,7 @@ class GoogleDriveClient(
     private val getToken: suspend () -> String?,
 ) {
     suspend fun findFile(fileName: String): Result<String?> {
-        val token = getToken() ?: return Result.failure(SyncException.NotAuthenticated)
+        val token = getToken() ?: return Result.failure(SyncException.NotAuthenticated())
         val escapedName = fileName.replace("\\", "\\\\").replace("'", "\\'")
         val url = "$DRIVE_API_BASE?spaces=appDataFolder&q=name='$escapedName'&fields=files(id,name)"
         return retryWithBackoff {
@@ -28,7 +28,7 @@ class GoogleDriveClient(
     }
 
     suspend fun createFile(fileName: String, content: String, mimeType: String = "application/json"): Result<String> {
-        val token = getToken() ?: return Result.failure(SyncException.NotAuthenticated)
+        val token = getToken() ?: return Result.failure(SyncException.NotAuthenticated())
         val metadata = """{ "name": "$fileName", "parents": ["appDataFolder"], "mimeType": "$mimeType" }"""
         val boundary = "scoreo_boundary"
         val body = buildMultipartBody(boundary, metadata, content, mimeType)
@@ -47,7 +47,7 @@ class GoogleDriveClient(
     }
 
     suspend fun updateFile(fileId: String, content: String, mimeType: String = "application/json"): Result<String> {
-        val token = getToken() ?: return Result.failure(SyncException.NotAuthenticated)
+        val token = getToken() ?: return Result.failure(SyncException.NotAuthenticated())
         val url = "$DRIVE_API_BASE/$fileId?spaces=appDataFolder&uploadType=media"
         return retryWithBackoff {
             try {
@@ -62,7 +62,7 @@ class GoogleDriveClient(
     }
 
     suspend fun readFile(fileId: String): Result<String> {
-        val token = getToken() ?: return Result.failure(SyncException.NotAuthenticated)
+        val token = getToken() ?: return Result.failure(SyncException.NotAuthenticated())
         val url = "$DRIVE_API_BASE/$fileId?alt=media"
         return retryWithBackoff {
             try {
@@ -154,7 +154,7 @@ class GoogleDriveClient(
     private fun checkResponse(status: Int, body: String): String {
         return when {
             status in 200..299 -> body
-            status == 401 -> throw SyncException.NotAuthenticated
+            status == 401 -> throw SyncException.NotAuthenticated()
             status == 429 -> throw SyncException.RateLimited
             status in 500..599 -> throw SyncException.NetworkError
             else -> throw SyncException.ApiError(status, body)

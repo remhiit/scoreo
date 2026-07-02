@@ -107,7 +107,7 @@ class GoogleDriveSyncAdapter(
     // ── Private ──
 
     private fun ensureAuthenticated() {
-        if (authService.accessToken == null) throw SyncException.NotAuthenticated
+        if (authService.accessToken == null) throw SyncException.NotAuthenticated()
     }
 
     private suspend fun refreshTokenIfNeeded() {
@@ -119,7 +119,7 @@ class GoogleDriveSyncAdapter(
             authService.accessToken = null
             authService.expiresAt = null
             clearSyncConfig()
-            throw SyncException.NotAuthenticated
+            throw SyncException.NotAuthenticated()
         }
     }
 

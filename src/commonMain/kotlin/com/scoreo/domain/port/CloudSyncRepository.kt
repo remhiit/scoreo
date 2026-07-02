@@ -19,7 +19,7 @@ data class SyncStatus(
 )
 
 sealed class SyncException : Exception() {
-    object NotAuthenticated : SyncException()
+    data class NotAuthenticated(override val message: String = "Not authenticated") : SyncException()
     object NetworkError : SyncException()
     data class ApiError(val code: Int, override val message: String) : SyncException()
     data object Conflict : SyncException()
