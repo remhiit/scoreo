@@ -92,4 +92,117 @@ class ImportHandlerTest {
         assertEquals(ImportStep.IDLE, handler.state.step)
         assertNotNull(handler.state.error)
     }
+
+    // ============ FileError Tests ============
+
+    @Test
+    fun `FileError sets error message in state`() {
+        val handler = buildHandler()
+        val errorMessage = "Access denied: cannot read file"
+        handler.handle(ImportIntent.FileError(errorMessage))
+        assertEquals(ImportStep.IDLE, handler.state.step)
+        assertEquals(errorMessage, handler.state.error)
+        assertNull(handler.state.preview)
+    }
+
+    @Test
+    fun `FileError with access denied message`() {
+        val handler = buildHandler()
+        val errorMessage = "Permission denied: insufficient privileges to read file"
+        handler.handle(ImportIntent.FileError(errorMessage))
+        assertEquals(errorMessage, handler.state.error)
+    }
+
+    @Test
+    fun `FileError with file too large message`() {
+        val handler = buildHandler()
+        val errorMessage = "File too large: exceeds maximum size of 10MB"
+        handler.handle(ImportIntent.FileError(errorMessage))
+        assertEquals(errorMessage, handler.state.error)
+    }
+
+    @Test
+    fun `FileError with invalid format message`() {
+        val handler = buildHandler()
+        val errorMessage = "Invalid file format: expected JSON but got binary data"
+        handler.handle(ImportIntent.FileError(errorMessage))
+        assertEquals(errorMessage, handler.state.error)
+    }
+
+    @Test
+    fun `FileError with read error message`() {
+        val handler = buildHandler()
+        val errorMessage = "Read error: I/O exception while reading file"
+        handler.handle(ImportIntent.FileError(errorMessage))
+        assertEquals(errorMessage, handler.state.error)
+    }
+
+    @Test
+    fun `FileError with file not found message`() {
+        val handler = buildHandler()
+        val errorMessage = "File not found or was deleted"
+        handler.handle(ImportIntent.FileError(errorMessage))
+        assertEquals(errorMessage, handler.state.error)
+    }
+
+    @Test
+    fun `FileError dismissal via Reset returns to IDLE`() {
+        val handler = buildHandler()
+        val errorMessage = "Read error: cannot access file"
+        handler.handle(ImportIntent.FileError(errorMessage))
+        assertEquals(ImportStep.IDLE, handler.state.step)
+        assertEquals(errorMessage, handler.state.error)
+
+        // Dismiss error with Reset
+        handler.handle(ImportIntent.Reset)
+        assertEquals(ImportStep.IDLE, handler.state.step)
+        assertNull(handler.state.error)
+        assertNull(handler.state.preview)
+    }
+
+    @Test
+    fun `FileError prevents partial import - no data saved`() {
+        val playerRepo = InMemoryPlayerRepository()
+        val gameTypeRepo = InMemoryGameTypeRepository()
+        val matchRepo = InMemoryMatchRepository()
+        val handler = buildHandler(playerRepo, gameTypeRepo, matchRepo)
+
+        // Trigger file error
+        val errorMessage = "File corrupted"
+        handler.handle(ImportIntent.FileError(errorMessage))
+
+        // Verify no data was imported
+        assertEquals(0, playerRepo.getAll(includeInactive = true).size)
+        assertEquals(0, gameTypeRepo.getAll().size)
+        assertEquals(0, matchRepo.getAll().size)
+        assertEquals(errorMessage, handler.state.error)
+    }
+
+    @Test
+    fun `FileError from READY state resets to IDLE`() {
+        val handler = buildHandler()
+        // Load valid file first
+        handler.handle(ImportIntent.FileLoaded(TestImportData.validJson))
+        assertEquals(ImportStep.READY, handler.state.step)
+        assertNotNull(handler.state.preview)
+
+        // Then error occurs
+        val errorMessage = "Connection lost during processing"
+        handler.handle(ImportIntent.FileError(errorMessage))
+
+        // Should revert to IDLE with error
+        assertEquals(ImportStep.IDLE, handler.state.step)
+        assertEquals(errorMessage, handler.state.error)
+        assertNull(handler.state.preview) // Preview should be cleared
+    }
+
+    @Test
+    fun `Multiple FileErrors update message correctly`() {
+        val handler = buildHandler()
+        handler.handle(ImportIntent.FileError("First error"))
+        assertEquals("First error", handler.state.error)
+
+        handler.handle(ImportIntent.FileError("Second error"))
+        assertEquals("Second error", handler.state.error)
+    }
 }

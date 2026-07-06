@@ -140,6 +140,7 @@ Files: `src/jsMain/kotlin/com/scoreo/ui/shared/ListContainer.kt`, `src/jsMain/ko
 | `src/commonTest/.../ui/gametype/GameTypeHandlerTest.kt` | `GameTypeHandlerTest` | 22 |
 | `src/commonTest/.../ui/history/HistoryHandlerTest.kt` | `HistoryHandlerTest` | 24 |
 | `src/commonTest/.../ui/import/ImportHandlerTest.kt` | `ImportHandlerTest` | 8 |
+| `src/commonTest/.../ui/navigation/AppNavigatorTest.kt` | `AppNavigatorTest` | 41 |
 | `src/commonTest/.../ui/player/PlayerHandlerTest.kt` | `PlayerHandlerTest` | 21 |
 | `src/commonTest/.../ui/scoredetail/ScoreDetailHandlerTest.kt` | `ScoreDetailHandlerTest` | 57 |
 | `src/commonTest/.../ui/stats/StatsHandlerTest.kt` | `StatsHandlerTest` | 6 |
@@ -147,7 +148,7 @@ Files: `src/jsMain/kotlin/com/scoreo/ui/shared/ListContainer.kt`, `src/jsMain/ko
 | `src/jsTest/.../infrastructure/google/GoogleDriveSyncAdapterTest.kt` | `GoogleDriveSyncAdapterTest` | 11 |
 | `src/jsTest/.../ui/theme/ThemeManagerTest.kt` | `ThemeManagerTest` | 7 |
 
-**Summary:** 30 commonTest files + 2 jsTest files = 32 test files. **Total: 388 tests** (commonTest: 370, jsTest: 18). All in `src/commonTest/` or `src/jsTest/`.
+**Summary:** 31 commonTest files + 2 jsTest files = 33 test files. **Total: 429 tests** (commonTest: 411, jsTest: 18). All in `src/commonTest/` or `src/jsTest/`.
 
 ## CSS
 

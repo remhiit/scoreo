@@ -5,20 +5,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import kotlinx.browser.window
 
-sealed class Screen {
-    data object Home : Screen()
-    data object History : Screen()
-    data object Import : Screen()
-    data object Stats : Screen()
-    data object Games : Screen()
-    data object Sync : Screen()
-    data class ScoreDetail(
-        val gameTypeId: String,
-        val playerIds: List<String>,
-        val matchId: String? = null  // null = new match, non-null = edit existing
-    ) : Screen()
-}
-
 class AppNavigator {
     var current by mutableStateOf(restoreFromHash())
         private set

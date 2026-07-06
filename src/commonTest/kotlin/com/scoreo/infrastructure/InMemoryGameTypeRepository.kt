@@ -6,6 +6,10 @@ import com.scoreo.domain.port.GameTypeRepository
 class InMemoryGameTypeRepository : GameTypeRepository {
     private val gameTypes = mutableListOf<GameType>()
 
+    // Test utility accessors
+    fun getGameTypeCount(): Int = gameTypes.size
+    fun getAllGameTypes(): List<GameType> = gameTypes.toList()
+
     override fun getAll(includeInactive: Boolean): List<GameType> =
         if (includeInactive) gameTypes.toList() else gameTypes.toList().filter { it.active }
 

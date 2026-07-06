@@ -6,6 +6,10 @@ import com.scoreo.domain.port.MatchRepository
 class InMemoryMatchRepository : MatchRepository {
     private val matches = mutableListOf<Match>()
 
+    // Test utility accessors
+    fun getMatchCount(): Int = matches.size
+    fun getAllMatches(): List<Match> = matches.toList()
+
     override fun getAll(): List<Match> = matches.toList()
 
     override fun save(match: Match) {

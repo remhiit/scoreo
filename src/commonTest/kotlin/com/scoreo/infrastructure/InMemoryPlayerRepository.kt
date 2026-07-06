@@ -6,6 +6,10 @@ import com.scoreo.domain.port.PlayerRepository
 class InMemoryPlayerRepository : PlayerRepository {
     private val players = mutableListOf<Player>()
 
+    // Test utility accessors
+    fun getPlayerCount(): Int = players.size
+    fun getAllPlayers(): List<Player> = players.toList()
+
     override fun getAll(includeInactive: Boolean): List<Player> =
         if (includeInactive) players.toList() else players.filter { it.active }
 
