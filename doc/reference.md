@@ -8,7 +8,7 @@ Exhaustive tables. Read before exploring `src/`.
 |---|---|---|---|---|
 | `PlayerHandler` | `PlayerIntent` | `UpdateInput(name: String)`, `AddPlayer`, `DeletePlayer(id, anonymize)`, `ShowDeleteConfirm(id)`, `DismissDeleteConfirm`, `StartRename(playerId)`, `UpdateRenameInput(name)`, `ConfirmRename`, `CancelRename` | `PlayerState` | `src/commonMain/.../ui/player/PlayerHandler.kt` |
 | `GameTypeHandler` | `GameTypeIntent` | `UpdateName(name: String)`, `SelectWinCondition(winCondition: WinCondition)`, `UpdateTieBreakRule(rule: TieBreakRule)`, `UpdateTieBreakCondition(condition: WinCondition)`, `UpdateTieBreakLabel(label: String)`, `SelectGame(id: String)`, `DeselectGame`, `AddGameType`, `EditGameType(id: String)`, `CancelEdit`, `UpdateGameType(gameType: GameType)`, `ShowArchiveConfirm(gameTypeId: String)`, `ArchiveGameType(gameTypeId: String)`, `DismissArchiveConfirm` | `GameTypeState` | `src/commonMain/.../ui/gametype/GameTypeHandler.kt` |
-| `ImportHandler` | `ImportIntent` | `FileLoaded(content: String)`, `Execute`, `Reset` | `ImportState(step: ImportStep, preview, jsonContent, result, error)` | `src/commonMain/.../ui/import/ImportHandler.kt` |
+| `ImportHandler` | `ImportIntent` | `FileLoaded(content: String)`, `FileError(message: String)`, `Execute`, `Reset` | `ImportState(step: ImportStep, preview, jsonContent, result, error)` | `src/commonMain/.../ui/import/ImportHandler.kt` |
 | `ScoreDetailHandler` | `ScoreDetailIntent` | `UpdateScore(roundIndex, playerId, value)`, `AddRound`, `RemoveRound(index)`, `Terminate`, `ConfirmWinners`, `DismissModal`, `ToggleModalWinner(playerId)`, `UpdateSecondaryScoreInput(playerId, value)`, `SubmitSecondaryScores`, `ToggleManualSelectionWinner(playerId)`, `ConfirmManualWinners`, `KeepTie`, `DismissTieBreak`, `CancelMatch`, `ConfirmCancel`, `DismissCancelConfirm` | `ScoreDetailState` | `src/commonMain/.../ui/scoredetail/ScoreDetailHandler.kt` |
 | `StatsHandler` | `StatsIntent` | `SelectPlayer(playerId: String)`, `BackToLeaderboard`, `SelectGameType(gameTypeId: String?)` | `StatsState(leaderboard, selectedPlayerId, gameTypes, selectedGameTypeId)` | `src/commonMain/.../ui/stats/StatsHandler.kt` |
 | `HistoryHandler` | `HistoryIntent` | `Refresh`, `ShowDeleteConfirm(matchId: String)`, `DeleteMatch(matchId: String)`, `DismissDeleteConfirm`, `SelectGameTypeFilter(gameTypeId: String?)` | `HistoryState` | `src/commonMain/.../ui/history/HistoryHandler.kt` |
@@ -49,6 +49,7 @@ All in `src/commonMain/kotlin/com/scoreo/`.
 | `Player` | `id: String`, `name: String`, `active: Boolean = true` | `src/commonMain/.../domain/model/Player.kt` |
 | `GameType` | `id: String`, `name: String`, `winCondition: WinCondition`, `tieBreakRule: TieBreakRule = TieBreakRule.NONE`, `tieBreakCondition: WinCondition = WinCondition.HIGHEST_SCORE`, `tieBreakLabel: String? = null`, `active: Boolean = true` | `src/commonMain/.../domain/model/GameType.kt` |
 | `Match` | `id: String`, `date: Long`, `gameTypeId: String`, `playerScores: List<PlayerScore>`, `manualWinners: List<String> = emptyList()`, `secondaryPlayerScores: List<PlayerScore> = emptyList()` | `src/commonMain/.../domain/model/Match.kt` |
+| `MatchDraft` | `gameTypeId: String`, `playerIds: List<String>`, `rounds: List<Map<String, String>>`, `timestamp: Long` | `src/commonMain/.../domain/model/MatchDraft.kt` |
 | `PlayerScore` | `playerId: String`, `score: Int` | `src/commonMain/.../domain/model/PlayerScore.kt` |
 | `WinCondition` | enum: `HIGHEST_SCORE`, `LOWEST_SCORE`, `MANUAL` | `src/commonMain/.../domain/model/WinCondition.kt` |
 | `TieBreakRule` | enum: `NONE`, `MANUAL_SELECTION`, `SECONDARY_SCORE` | `src/commonMain/.../domain/model/TieBreakRule.kt` |
@@ -112,36 +113,41 @@ Files: `src/jsMain/kotlin/com/scoreo/ui/shared/ListContainer.kt`, `src/jsMain/ko
 
 | File | Class | Tests |
 |---|---|---|
-| `src/commonTest/.../ui/player/PlayerHandlerTest.kt` | `PlayerHandlerTest` | Handler Player (23 tests including rename flow) |
-| `src/commonTest/.../domain/GameTypeTest.kt` | `GameTypeTest` | Domain GameType (10 tests) |
-| `src/commonTest/.../domain/MatchTieBreakTest.kt` | `MatchTieBreakTest` | Domain Match tie-break (13 tests) |
-| `src/commonTest/.../ui/gametype/GameTypeHandlerTest.kt` | `GameTypeHandlerTest` | Handler GameType (17 tests) |
-| `src/commonTest/.../ui/scoredetail/ScoreDetailHandlerTest.kt` | `ScoreDetailHandlerTest` | Handler ScoreDetail (31 tests) |
-| `src/commonTest/.../application/AddGameTypeUseCaseTest.kt` | `AddGameTypeUseCaseTest` | Use Case AddGameType (11 tests) |
-| `src/commonTest/.../application/UpdateGameTypeUseCaseTest.kt` | `UpdateGameTypeUseCaseTest` | Use Case UpdateGameType (3 tests) |
-| `src/commonTest/.../application/CreateMatchUseCaseTest.kt` | `CreateMatchUseCaseTest` | Use Case CreateMatch (secondaryPlayerScores) |
-| `src/commonTest/.../application/DeletePlayerUseCaseTest.kt` | `DeletePlayerUseCaseTest` | Use Case DeletePlayer (5 tests) |
-| `src/commonTest/.../application/RenamePlayerUseCaseTest.kt` | `RenamePlayerUseCaseTest` | Use Case RenamePlayer (8 tests) |
-| `src/commonTest/.../application/DeleteMatchUseCaseTest.kt` | `DeleteMatchUseCaseTest` | Use Case DeleteMatch (3 tests) |
-| `src/commonTest/.../application/GetGameTypesUseCaseTest.kt` | `GetGameTypesUseCaseTest` | Use Case GetGameTypes (2 tests) |
-| `src/commonTest/.../application/GetPlayersUseCaseTest.kt` | `GetPlayersUseCaseTest` | Use Case GetPlayers (4 tests) |
-| `src/commonTest/.../di/SyncDependenciesTest.kt` | `SyncDependenciesTest` | SyncHandler nullable wiring (2 tests) |
-| `src/commonTest/.../domain/SerializationTest.kt` | `SerializationTest` | Serialization (19 tests) |
-| `src/commonTest/.../ui/history/HistoryHandlerTest.kt` | `HistoryHandlerTest` | Handler History (23 tests) |
-| `src/commonTest/.../application/ImportMatchesUseCaseTest.kt` | `ImportMatchesUseCaseTest` | Use Case Import |
-| `src/commonTest/.../ui/stats/StatsHandlerTest.kt` | `StatsHandlerTest` | Handler Stats (6 tests) |
-| `src/commonTest/.../infrastructure/InMemoryRepositoryTest.kt` | `InMemoryRepositoryTest` | InMemory idempotency (9 tests) |
-| `src/commonTest/.../infrastructure/InMemoryCloudSyncRepository.kt` | `InMemoryCloudSyncRepository` | Test double for CloudSyncRepository |
-| `src/commonTest/.../infrastructure/MatchMigrationTest.kt` | `MatchMigrationTest` | Match data migration (17 tests) |
-| `src/commonTest/.../application/GetHeadToHeadUseCaseEloTest.kt` | `GetHeadToHeadUseCaseEloTest` | ELO calculation (10 tests) |
-| `src/commonTest/.../application/IdGeneratorTest.kt` | `IdGeneratorTest` | IdGenerator UUID v4 (7 tests) |
-| `src/commonTest/.../application/SyncUseCaseTest.kt` | `SyncUseCaseTest` | Use Case Sync (7 tests) |
-| `src/commonTest/.../ui/sync/SyncHandlerTest.kt` | `SyncHandlerTest` | Handler Sync (9 tests including RestoreSession) |
-| `src/jsTest/.../infrastructure/google/GoogleDriveSyncAdapterTest.kt` | `GoogleDriveSyncAdapterTest` | Adapter GoogleDrive (10 tests: getStatus, init, logout, SyncConfig) |
-| `src/commonTest/.../application/EloCalculatorTest.kt` | `EloCalculatorTest` | Isolated ELO calculation (3 tests) |
-| `src/jsTest/.../ui/theme/ThemeManagerTest.kt` | `ThemeManagerTest` | Theme composable (7 tests: localStorage, system pref, DOM) |
+| `src/commonTest/.../application/AddGameTypeUseCaseTest.kt` | `AddGameTypeUseCaseTest` | 13 |
+| `src/commonTest/.../application/AddPlayerUseCaseTest.kt` | `AddPlayerUseCaseTest` | 6 |
+| `src/commonTest/.../application/ArchiveGameTypeUseCaseTest.kt` | `ArchiveGameTypeUseCaseTest` | 3 |
+| `src/commonTest/.../application/CreateMatchUseCaseTest.kt` | `CreateMatchUseCaseTest` | 8 |
+| `src/commonTest/.../application/DeleteMatchUseCaseTest.kt` | `DeleteMatchUseCaseTest` | 3 |
+| `src/commonTest/.../application/DeletePlayerUseCaseTest.kt` | `DeletePlayerUseCaseTest` | 6 |
+| `src/commonTest/.../application/EloCalculatorTest.kt` | `EloCalculatorTest` | 3 |
+| `src/commonTest/.../application/GetGameTypesUseCaseTest.kt` | `GetGameTypesUseCaseTest` | 5 |
+| `src/commonTest/.../application/GetHeadToHeadUseCaseEloTest.kt` | `GetHeadToHeadUseCaseEloTest` | 10 |
+| `src/commonTest/.../application/GetHeadToHeadUseCaseTest.kt` | `GetHeadToHeadUseCaseTest` | 11 |
+| `src/commonTest/.../application/GetPlayerStatsUseCaseTest.kt` | `GetPlayerStatsUseCaseTest` | 8 |
+| `src/commonTest/.../application/GetPlayersUseCaseTest.kt` | `GetPlayersUseCaseTest` | 4 |
+| `src/commonTest/.../application/IdGeneratorTest.kt` | `IdGeneratorTest` | 6 |
+| `src/commonTest/.../application/ImportMatchesUseCaseTest.kt` | `ImportMatchesUseCaseTest` | 17 |
+| `src/commonTest/.../application/MatchMigrationTest.kt` | `MatchMigrationTest` | 18 |
+| `src/commonTest/.../application/RenamePlayerUseCaseTest.kt` | `RenamePlayerUseCaseTest` | 9 |
+| `src/commonTest/.../application/SyncUseCaseTest.kt` | `SyncUseCaseTest` | 7 |
+| `src/commonTest/.../application/UpdateGameTypeUseCaseTest.kt` | `UpdateGameTypeUseCaseTest` | 3 |
+| `src/commonTest/.../application/UpdateMatchUseCaseTest.kt` | `UpdateMatchUseCaseTest` | 3 |
+| `src/commonTest/.../di/SyncDependenciesTest.kt` | `SyncDependenciesTest` | 2 |
+| `src/commonTest/.../domain/GameTypeTest.kt` | `GameTypeTest` | 9 |
+| `src/commonTest/.../domain/MatchTieBreakTest.kt` | `MatchTieBreakTest` | 12 |
+| `src/commonTest/.../domain/SerializationTest.kt` | `SerializationTest` | 27 |
+| `src/commonTest/.../infrastructure/InMemoryRepositoryTest.kt` | `InMemoryRepositoryTest` | 11 |
+| `src/commonTest/.../ui/gametype/GameTypeHandlerTest.kt` | `GameTypeHandlerTest` | 22 |
+| `src/commonTest/.../ui/history/HistoryHandlerTest.kt` | `HistoryHandlerTest` | 24 |
+| `src/commonTest/.../ui/import/ImportHandlerTest.kt` | `ImportHandlerTest` | 8 |
+| `src/commonTest/.../ui/player/PlayerHandlerTest.kt` | `PlayerHandlerTest` | 21 |
+| `src/commonTest/.../ui/scoredetail/ScoreDetailHandlerTest.kt` | `ScoreDetailHandlerTest` | 57 |
+| `src/commonTest/.../ui/stats/StatsHandlerTest.kt` | `StatsHandlerTest` | 6 |
+| `src/commonTest/.../ui/sync/SyncHandlerTest.kt` | `SyncHandlerTest` | 10 |
+| `src/jsTest/.../infrastructure/google/GoogleDriveSyncAdapterTest.kt` | `GoogleDriveSyncAdapterTest` | 11 |
+| `src/jsTest/.../ui/theme/ThemeManagerTest.kt` | `ThemeManagerTest` | 7 |
 
-All in `src/commonTest/` (commonTest) or `src/jsTest/` (jsTest).
+**Summary:** 30 commonTest files + 2 jsTest files = 32 test files. **Total: 388 tests** (commonTest: 370, jsTest: 18). All in `src/commonTest/` or `src/jsTest/`.
 
 ## CSS
 
