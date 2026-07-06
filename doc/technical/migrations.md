@@ -66,3 +66,72 @@
 - `HistoryScreen` still resolves archived games via `GameTypeRepository.findById()` (includes inactive).
 - Users can archive games via "Archive" button in GameTypeScreen detail view.
 
+---
+
+## v1.x → v1.2+ (Player Archive)
+
+**Background:** Players can now be archived (soft-deleted) instead of permanently deleted.
+
+**Schema Change**
+
+`Player` model adds field `active: Boolean = true`.
+
+**Backward Compatibility**
+
+- Old JSON without `active` field deserializes with `active = true`.
+- No explicit migration needed.
+
+**Behavior Changes**
+
+- `GetPlayersUseCase` excludes `active = false` (archived) players by default.
+- Players can be archived via "Delete" action in HomeScreen players list.
+
+---
+
+## v1.x → v1.2+ (Tie-Break Rule Enhancements)
+
+**Background:** Game types now support configurable tie-break rules to handle equality in scoring.
+
+**Schema Changes**
+
+`GameType` model adds fields:
+- `tieBreakRule: TieBreakRule = TieBreakRule.NONE`
+- `tieBreakCondition: WinCondition = WinCondition.HIGHEST_SCORE`
+- `tieBreakLabel: String? = null`
+
+**Backward Compatibility**
+
+- Old JSON without these fields deserializes with default values.
+- No explicit migration needed.
+
+**Behavior Changes**
+
+- Game types can specify how ties are handled: NONE (all tied win), MANUAL_SELECTION (user picks), SECONDARY_SCORE (secondary metric).
+- `ScoreDetailScreen` shows tie-break dialogs when needed.
+
+---
+
+## v1.x → v1.3+ (Match Draft Auto-Save)
+
+**Background:** Incomplete matches are auto-saved to allow resuming later.
+
+**Schema Changes**
+
+New model `MatchDraft` with fields:
+- `gameTypeId: String`
+- `playerIds: List<String>`
+- `rounds: List<Map<String, String>>`
+- `timestamp: Long`
+
+Stored in localStorage under key `scoreo_match_draft`.
+
+**Backward Compatibility**
+
+- New localStorage key; old users have no draft initially.
+- No explicit migration needed.
+
+**Behavior Changes**
+
+- `ScoreDetailScreen` auto-saves to MatchDraft after each score update.
+- `HomeScreen` displays "Resume match in progress" banner if a draft exists.
+

@@ -33,8 +33,9 @@
 - **Filter dropdown** at top: "Filter by game type" — shows all game types from loaded matches, or "All games" for no filter
 - List of match cards sorted by date descending (most recent first)
 - Each card shows: game type name, date **with time-of-day** (HH:mm in local timezone), per-player scores
-- **Match card is clickable** → navigates to `ScoreDetailScreen` in edit mode to re-enter scores
-  - **Delete button (🗑)** on each card (top right) — independent of card click, allows deleting without editing
+- Each card has action icons:
+  - ✏️ (Edit) — navigates to `ScoreDetailScreen` in edit mode to re-enter scores
+  - 🗑 (Delete) — opens delete confirmation modal
 - Winner is highlighted with bold + 🏆
 - Deleted player names show one of:
    - `"Alice (deleted)"` — if name was kept on delete
