@@ -19,14 +19,19 @@ data class ImportResult(val imported: Int, val skipped: List<String>, val failed
 | Component | Details |
 |-----------|---------|
 | **Handler** | `ImportHandler` — `src/commonMain/.../ui/import/ImportHandler.kt` |
-| **Intent** | `ImportIntent`: `FileLoaded`, `Execute`, `Reset` |
+| **Intent** | `ImportIntent`: `FileLoaded`, `FileError`, `Execute`, `Reset` |
 | **State** | `ImportState`: `step` (IDLE → READY → DONE), `preview`, `jsonContent`, `result`, `error` |
 
 ## Screen: ImportScreen
 
-1. **IDLE** — file upload zone (drag-and-drop or click to select .json)
+1. **IDLE** — file upload zone (click to select .json file)
+   - A file input accepting `.json` files only
+   - Label: "Click to select a JSON file"
 2. **READY** — preview: game name + match count + **Execute** / **Reset** buttons
 3. **DONE** — result summary with per-match status (Imported ✅ / Skipped ⚠️ / Failed ❌)
+4. **ERROR** — if file cannot be read (e.g. permission denied, abort):
+   - Error message displayed in IDLE state
+   - **Retry** button to select another file
 
 ## Import JSON Format
 
@@ -98,4 +103,12 @@ Then that match is Skipped ⚠️
 Given a JSON with ranking score 25 but details sum to 20
 When I execute the import
 Then that match is Failed ❌
+```
+
+### File read error
+```
+Given the ImportScreen is in IDLE state
+When I click to select a file but the read operation fails (e.g. permission denied)
+Then an error message appears: "Could not read file: {error reason}"
+And I can click Retry to select another file
 ```
