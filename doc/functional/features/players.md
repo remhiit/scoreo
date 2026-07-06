@@ -22,12 +22,14 @@
 
 - Text input + **Add** button to create a player
 - List of active players with name + W/L stats + ✏️ edit button + 🗑 delete button
-- Edit mode: clicking ✏️ toggles inline editable text input
-  - Input field becomes editable with primary-colored border
-  - Confirm button ✓ and Cancel button ✕ appear inline
-  - Press Enter key to confirm rename, Escape key to cancel
-  - After confirm, card reverts to static display with updated name
+- Edit mode (rename modal): clicking ✏️ opens a modal
+  - Modal title: "Rename player: {oldName}"
+  - Text input field with autofocus and primary-colored border
+  - **Cancel** button (gray) → closes modal, no rename
+  - **Confirm** button (primary) → saves rename, closes modal
+  - Press Enter key in input field to confirm rename
   - Stats (W/L) remain unchanged and tied to player ID
+  - Overlay click also closes modal (same as Cancel)
 - Delete confirmation modal with:
   - Warning: "Matches are preserved"
   - Checkbox: "Erase name from history" (controls `anonymize` flag)
@@ -70,19 +72,21 @@ Then no exception is thrown
 ### Rename a player (fix typo)
 ```
 Given "Aice" exists with 2W 1L record
-When I click ✏️ to enter edit mode
-And type "Alice" in the inline input
+When I click ✏️ to open the rename modal
+And I see input field with "Aice" text selected/focused
+And type "Alice"
 And press Enter
-Then the card shows "Alice" with same stats (2W 1L)
+Then the modal closes and the card shows "Alice" with same stats (2W 1L)
 And player ID remains unchanged (preserved in stats)
 ```
 
 ### Cancel rename (discard changes)
 ```
-Given "Alice" is in edit mode with input "Alycia"
-When I press Escape or click ✕
-Then edit mode closes, card reverts to "Alice"
-And no change is saved
+Given the rename modal is open with input "Alycia"
+When I click Cancel button
+Then the modal closes, no rename is saved, card remains "Alice"
+Or when the modal overlay is clicked (outside modal)
+Then the modal closes (overlay click = implicit Cancel)
 ```
 
 ## Mockup
