@@ -59,6 +59,8 @@ class ImportHandler(
                 state = state.copy(
                     step = ImportStep.IDLE,
                     error = intent.message,
+                    preview = null,
+                    jsonContent = "",
                 )
             }
 
