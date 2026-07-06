@@ -105,15 +105,22 @@ fun App(
     // ── Screen content ────────────────────────────────────────
     Div(attrs = { classes("app-content") }) {
         when (val screen = navigator.current) {
-            is Screen.Home -> HomeScreen(
-                playerHandler = deps.playerHandler,
-                getGameTypes = { deps.getGameTypesUseCase() },
-                onAddGameType = { name, wc -> deps.addGameTypeUseCase(name, wc) },
-                onStartGame = { gameTypeId, playerIds ->
-                    navigator.navigate(Screen.ScoreDetail(gameTypeId, playerIds))
-                },
-                getMatchCount = { matchRepository.getAll().size },
-            )
+            is Screen.Home -> {
+                val matchDraftRepository = LocalStorageMatchDraftRepository()
+                HomeScreen(
+                    playerHandler = deps.playerHandler,
+                    getGameTypes = { deps.getGameTypesUseCase() },
+                    onAddGameType = { name, wc -> deps.addGameTypeUseCase(name, wc) },
+                    onStartGame = { gameTypeId, playerIds ->
+                        navigator.navigate(Screen.ScoreDetail(gameTypeId, playerIds))
+                    },
+                    matchDraftRepository = matchDraftRepository,
+                    onResumeDraft = { gameTypeId, playerIds ->
+                        navigator.navigate(Screen.ScoreDetail(gameTypeId, playerIds))
+                    },
+                    getMatchCount = { matchRepository.getAll().size },
+                )
+            }
             is Screen.History -> {
                 LaunchedEffect(navigator.current) { deps.historyHandler.handle(HistoryIntent.Refresh) }
                 HistoryScreen(deps.historyHandler, navigator)
