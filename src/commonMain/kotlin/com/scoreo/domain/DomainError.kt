@@ -6,7 +6,4 @@ sealed class DomainError(override val message: String) : Throwable(message) {
 
     class NotFound(entity: String, id: String) :
         DomainError("$entity $id not found")
-
-    class Duplicate(entity: String, name: String) :
-        DomainError("$entity $name already exists")
 }
