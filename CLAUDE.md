@@ -37,3 +37,28 @@ Lire ces fichiers dans l'ordre. Tout le contexte nécessaire y est :
 - Ajouter un champ ? Toujours fournir une valeur par défaut.
 - Supprimer/renommer un champ ? Migration obligatoire dans `doc/technical/migrations.md`.
 - Toute évolution du code (nouveau use case, handler, modèle, screen, port) doit mettre à jour la documentation correspondante dans `doc/`.
+
+## Pre-commit Checklist
+
+Avant de committer une évolution Handler/Intent/State/UseCase/Model/Port :
+
+- [ ] Fichier `.md` correspondant a été mis à jour (`doc/reference.md`, `doc/functional/feature.md`, `doc/functional/features/*.md`, ou `doc/technical/*.md`)
+- [ ] Si nouveau champ optionnel sérialisé : entrée ajoutée à `doc/technical/migrations.md` (changelog de schéma)
+- [ ] Tests modifiés/ajoutés si changement de comportement public
+- [ ] Message de commit décrit clairement l'évolution (pas "Fix", "Update" vague)
+
+**Exemple bon commit:**
+```
+Add archive confirmation for game types
+
+- Add ShowArchiveConfirm, ArchiveGameType, DismissArchiveConfirm intents
+- Add archiveConfirmGameTypeId to GameTypeState
+- Archive button (🗑) with modal confirmation in detail view
+- Updated doc/functional/features/games.md with archive flow
+- ArchiveGameTypeUseCase tested
+```
+
+**Exemple mauvais commit:**
+```
+Update games screen
+```
