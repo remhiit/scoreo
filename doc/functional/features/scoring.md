@@ -11,12 +11,19 @@
 | Component | Details |
 |-----------|---------|
 | **Handler** | `ScoreDetailHandler` — `src/commonMain/.../ui/scoredetail/ScoreDetailHandler.kt` |
-| **Intent** | `ScoreDetailIntent`: `UpdateScore`, `AddRound`, `RemoveRound`, `Terminate`, `ConfirmWinners`, `DismissModal`, `ToggleModalWinner`, `UpdateSecondaryScoreInput`, `SubmitSecondaryScores`, `ToggleManualSelectionWinner`, `ConfirmManualWinners`, `KeepTie`, `DismissTieBreak` |
-| **State** | `ScoreDetailState`: `gameType`, `players`, `rounds`, `totals`, `showWinnerModal`, `modalWinners`, `showSecondaryScoreDialog`, `tiedPlayerIds`, `secondaryScoreInputs`, `showManualSelectionDialog`, `manualSelectionWinners`, `collectedSecondaryScores`, `error` |
+| **Intent** | `ScoreDetailIntent`: `UpdateScore`, `AddRound`, `RemoveRound`, `Terminate`, `ConfirmWinners`, `DismissModal`, `ToggleModalWinner`, `UpdateSecondaryScoreInput`, `SubmitSecondaryScores`, `ToggleManualSelectionWinner`, `ConfirmManualWinners`, `KeepTie`, `DismissTieBreak`, `CancelMatch`, `ConfirmCancel`, `DismissCancelConfirm` |
+| **State** | `ScoreDetailState`: `gameType`, `players`, `rounds`, `totals`, `showWinnerModal`, `modalWinners`, `showSecondaryScoreDialog`, `tiedPlayerIds`, `secondaryScoreInputs`, `showManualSelectionDialog`, `manualSelectionWinners`, `collectedSecondaryScores`, `error`, `saved`, `cancelled`, `editingMatchId`, `showCancelConfirm` |
 
 ## Screen: ScoreDetailScreen
 
-Grid: columns = players, rows = rounds + totals row.
+### Top bar
+- Title: "Score Detail" (new match) or "Edit match" (editing mode)
+- Back button:
+  - If new match: returns to Home
+  - If editing: returns to History
+- Cancel button: Opens cancel confirmation modal if scores are entered; closes screen without saving otherwise
+
+### Main grid: columns = players, rows = rounds + totals row.
 
 | Player 1 | Player 2 | ... |
 |----------|----------|-----|
@@ -28,8 +35,17 @@ Grid: columns = players, rows = rounds + totals row.
 - Editable score cells with numeric input
 - **✕** button on each round row to remove it
 - **＋ Add round** button at the bottom
-- **Finish match** to save
+- **Finish match** to save (also auto-saves to localStorage as MatchDraft after each score update)
 - For `MANUAL` win condition: modal appears listing each player's total with checkboxes to select winner(s)
+
+### Cancel confirmation
+When clicking **Cancel** with scores already entered:
+- A confirmation modal appears: "Discard unsaved scores?"
+- **Discard** button (red) → closes screen without saving, clears MatchDraft
+- **Resume** button (primary) → closes modal, stays in scoring
+
+When clicking **Cancel** with no scores entered:
+- Screen closes immediately (no confirmation needed)
 
 ### Tie-break resolution flow
 
@@ -136,6 +152,35 @@ Given a match created on 2026-01-01
 When I edit the match and change scores
 And click "Finish match"
 Then the match date remains 2026-01-01 (not updated to current date)
+```
+
+### Cancel match with confirmation
+```
+Given I'm in the scoring screen with entered scores
+When I click Cancel
+Then a modal appears: "Discard unsaved scores?"
+And I click Discard
+Then the screen closes without saving and returns to Home
+And the MatchDraft is cleared
+```
+
+### Auto-save & resume match
+```
+Given I'm in the scoring screen
+When I enter scores and then navigate away (or refresh page)
+Then a MatchDraft is saved to localStorage with the same gameTypeId and playerIds
+And I return to Home
+And I see a banner: "Resume match in progress: Alice vs Bob"
+When I click the resume button
+Then I return to the scoring screen with all previously entered scores
+```
+
+### Discard incomplete match
+```
+Given a MatchDraft exists
+When I'm on Home and I decide not to resume
+Then I can ignore the banner and start a new match
+And the previous MatchDraft will be overwritten by the new match's data
 ```
 
 ## Mockup

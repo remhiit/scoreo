@@ -14,7 +14,7 @@
 ## User Flow
 
 ### First Launch (new user)
-1. **Splash screen** visible while app loads (3-step getting started guide)
+1. **Splash screen** visible while app loads (logo + spinner)
 2. **Home screen** shows "Getting started" guide banner:
    - Add players
    - Create a game type
@@ -23,10 +23,13 @@
 4. Normal flow: select ≥2 players → **New Match**
 
 ### Subsequent Visits
-1. **Home** → select ≥2 players → **New Match**
+1. **Home** → check for "Resume match in progress" banner:
+   - If banner present: click to resume previous incomplete match (returns to score entry with saved data)
+   - If no banner: select ≥2 players → **New Match** (normal flow)
 2. **Game Selection** modal → pick or create a game type → **Start match**
-3. **Score Detail** → enter rounds → **End match**
-4. Back to **Home** — stats and selection reset
+3. **Score Detail** → enter rounds (auto-saved after each score) → **Finish match**
+4. If cancelling mid-match: confirmation modal asks to discard or resume
+5. Back to **Home** — stats and selection reset
 
 ## Navigation
 
