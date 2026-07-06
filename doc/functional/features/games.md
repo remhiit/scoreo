@@ -30,20 +30,30 @@
 | Component | Details |
 |-----------|---------|
 | **Handler** | `GameTypeHandler` — `src/commonMain/.../ui/gametype/GameTypeHandler.kt` |
-| **Intent** | `GameTypeIntent`: `UpdateName`, `SelectWinCondition`, `UpdateTieBreakRule`, `UpdateTieBreakCondition`, `UpdateTieBreakLabel`, `SelectGame`, `DeselectGame`, `AddGameType`, `EditGameType`, `CancelEdit`, `UpdateGameType` |
-| **State** | `GameTypeState`: `gameTypes`, `inputName`, `selectedWinCondition`, `selectedTieBreakRule`, `selectedTieBreakCondition`, `selectedTieBreakLabel`, `selectedGameId`, `editingGameId`, `error` |
+| **Intent** | `GameTypeIntent`: `UpdateName`, `SelectWinCondition`, `UpdateTieBreakRule`, `UpdateTieBreakCondition`, `UpdateTieBreakLabel`, `SelectGame`, `DeselectGame`, `AddGameType`, `EditGameType`, `CancelEdit`, `UpdateGameType`, `ShowArchiveConfirm`, `ArchiveGameType`, `DismissArchiveConfirm` |
+| **State** | `GameTypeState`: `gameTypes`, `inputName`, `selectedWinCondition`, `selectedTieBreakRule`, `selectedTieBreakCondition`, `selectedTieBreakLabel`, `selectedGameId`, `editingGameId`, `error`, `archiveConfirmGameTypeId` |
 
 ## Screen: GameTypeScreen
 
 ### List mode (default)
 - List of game type cards sorted by creation order
 - Each card shows name, win condition badge
-- Cards are clickable — selecting a card shows its detail view
+- Each card has action icons:
+  - 👁 (View) — opens detail modal
+  - ✏️ (Edit) — opens edit form in modal
+  - 🗑 (Archive/Delete) — opens archive confirmation modal
 
 ### Detail view
 - Shows: game name, win condition, tie-break rule, tie-break condition/label (if SECONDARY_SCORE)
 - Back button → returns to list
 - Edit button → switches to form mode with fields pre-filled
+- Archive button (🗑 red) → opens archive confirmation modal
+
+### Archive confirmation modal
+- Title: "Are you sure you want to archive '{gameName}'?"
+- Body: "This game type will be removed from the list."
+- Cancel button → close modal, keep game active
+- Archive button (red) → soft-delete game type (set `active=false`), refresh list, close modal
 
 ### Form mode (add / edit)
 - Text input: game name
@@ -81,6 +91,22 @@ Given a game "Belote" exists
 When I select it, click Edit, change name to "Belote 2.0"
 And click Save changes
 Then the game type is updated
+```
+
+### Archive a game type
+```
+Given a game "Old Game" exists
+When I select it, tap the (...) menu and click Archive
+Then a confirmation modal appears: "Are you sure you want to archive 'Old Game'?"
+And I click "Archive" to confirm
+Then the game is removed from the list (soft-delete with active=false flag)
+```
+
+### Cancel archive
+```
+Given an archive confirmation modal is open
+When I click "Cancel"
+Then the modal closes and the game remains active
 ```
 
 ## JSON Schema
