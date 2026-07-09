@@ -30,6 +30,8 @@ import com.scoreo.ui.scoredetail.ScoreDetailMode
 import com.scoreo.ui.scoredetail.ScoreDetailScreen
 import com.scoreo.ui.stats.StatsIntent
 import com.scoreo.ui.stats.StatsScreen
+import com.scoreo.ui.Strings
+import com.scoreo.ui.theme.ThemePickerDialog
 import com.scoreo.ui.theme.rememberThemeState
 import org.jetbrains.compose.web.dom.Button
 import org.jetbrains.compose.web.dom.Div
@@ -47,6 +49,7 @@ fun App(
     val deps = remember { createAppDependencies(playerRepository, gameTypeRepository, matchRepository, currentDate, cloudSyncRepository) }
     val navigator = deps.navigator
     var burgerOpen by remember { mutableStateOf(false) }
+    var themePickerOpen by remember { mutableStateOf(false) }
     val themeState = rememberThemeState()
 
     val screenTitle = when (val screen = navigator.current) {
@@ -84,10 +87,6 @@ fun App(
                 onClick { back() }
             }) { Text("←") }
         }
-        Button(attrs = {
-            classes("theme-toggle-btn")
-            onClick { themeState.toggle() }
-        }) { Text(if (themeState.isDark) "☀️" else "🌙") }
         Span(attrs = {
             classes("app-title", "clickable")
             onClick {
@@ -224,7 +223,16 @@ fun App(
                     navigator.navigate(Screen.Sync)
                 }
             }
+            BurgerItem("🎨", Strings.BURGER_THEME) {
+                burgerOpen = false
+                themePickerOpen = true
+            }
         }
+    }
+
+    // ── Theme picker ──────────────────────────────────────────
+    if (themePickerOpen) {
+        ThemePickerDialog(themeState) { themePickerOpen = false }
     }
 }
 

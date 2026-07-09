@@ -152,13 +152,15 @@ Files: `src/jsMain/kotlin/com/scoreo/ui/shared/ListContainer.kt`, `src/jsMain/ko
 
 ## CSS
 
-Files: `theme.css`, `layout.css`, `home.css`, `scoring.css`, `history.css`, `stats.css`, `import.css`, `sync.css`.
+Files: `tokens/*.css` (Catppuccin design tokens, see Styling in `doc/technical/architecture.md`), `theme.css`, `layout.css`, `home.css`, `scoring.css`, `history.css`, `stats.css`, `import.css`, `sync.css`, `theme-picker.css`.
 
 Sync classes (`sync.css`): `.sync-icon`, `.sync-status`, `.sync-conflict-container`, `.sync-card`, `.sync-card-title`, `.sync-card-stat`, `.sync-actions`.
 
-Key classes: `.home-player-card`, `.home-player-card.selected`, `.home-player-check`, `.player-info`, `.player-rename-input`, `.player-rename-container`, `.btn-edit`, `.btn-icon`, `.btn-icon--danger`, `.btn-sm`, `.btn-primary`, `.btn-secondary`, `.home-add-player-toggle`, `.home-add-player-form`, `.fab-disabled`, `.fab-error`, `.btn-danger`, `.btn-danger-filled`, `.modal-body`, `.card-selected`, `.detail-row`, `.detail-label`, `.detail-value`, `.badge-warn`, `.tie-break-info`, `.theme-toggle-btn`, `.splash`, `.splash-content`, `.spinner`, `.onboarding-guide`, `.list-container`, `.list-container--spaced`, `.list-item-row`, `.list-item-label`, `.list-item-label--selectable`, `.list-item-label--selected`, `.list-item-name`, `.list-item-subtitle`, `.list-item-actions`, `.list-item-select-picto`.
+Key classes: `.home-player-card`, `.home-player-card.selected`, `.home-player-check`, `.player-info`, `.player-rename-input`, `.player-rename-container`, `.btn-edit`, `.btn-icon`, `.btn-icon--danger`, `.btn-sm`, `.btn-primary`, `.btn-secondary`, `.home-add-player-toggle`, `.home-add-player-form`, `.fab-disabled`, `.fab-error`, `.btn-danger`, `.btn-danger-filled`, `.modal-body`, `.card-selected`, `.detail-row`, `.detail-label`, `.detail-value`, `.badge-warn`, `.tie-break-info`, `.splash`, `.splash-content`, `.spinner`, `.onboarding-guide`, `.list-container`, `.list-container--spaced`, `.list-item-row`, `.list-item-label`, `.list-item-label--selectable`, `.list-item-label--selected`, `.list-item-name`, `.list-item-subtitle`, `.list-item-actions`, `.list-item-select-picto`.
 
-Theme: CSS variables in `:root` (light) and `[data-theme="dark"]` (dark) in `theme.css`. The `data-theme="dark"` attribute on `<html>` is managed by `ThemeManager`.
+Theme picker classes (`theme-picker.css`): `.theme-picker-label`, `.theme-picker-row`, `.theme-chip`, `.theme-chip--active`, `.accent-swatch`, `.accent-swatch--active`.
+
+Theme: Catppuccin tokens (`tokens/colors-*.css` + `tokens/semantic.css`), 4 flavors + 14-hue accent. Historical variable names (`--primary`, `--surface`, `--on-surface`, …) are aliased onto the semantic tokens in `theme.css`. `data-theme`/`data-accent` attributes on `<html>` are managed by `ThemeManager` (`rememberThemeState()`), picked from the burger menu's "Theme" entry (`ThemePickerDialog`, `src/jsMain/.../ui/theme/ThemePicker.kt`).
 
 ## localStorage Keys
 
@@ -169,4 +171,6 @@ Theme: CSS variables in `:root` (light) and `[data-theme="dark"]` (dark) in `the
 | `scoreo_matches` | JSON `List<Match>` |
 | `scoreo_match_draft` | JSON `MatchDraft` (gameTypeId, playerIds, rounds) |
 | `scoreo_sync_config` | JSON `SyncConfig` (accessToken, email, expiresAt, lastSyncTimestamp, lastSyncFileId) |
-| `scoreo_theme` | `"dark"` or `"light"` (dark mode, optional) |
+| `scoreo_flavor` | `"latte"` \| `"frappe"` \| `"macchiato"` \| `"mocha"` (Catppuccin flavor, optional) |
+| `scoreo_accent` | one of the 14 Catppuccin hues, e.g. `"mauve"` (optional) |
+| `scoreo_theme` | **legacy**, pre-Catppuccin: `"dark"` or `"light"`. Only read once as a migration fallback when `scoreo_flavor` is absent (see `doc/technical/migrations.md`) — never written anymore. |
