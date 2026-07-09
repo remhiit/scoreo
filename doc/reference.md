@@ -106,8 +106,9 @@ All in `src/jsMain/kotlin/com/scoreo/`. Production: `LocalStorage*`, `GoogleDriv
 |---|---|---|
 | `ListContainer` | `className: String? = null`, `content: @Composable () -> Unit` | Generic wrapper for `ListItemRow` lists: `display:flex; flex-direction:column; gap:8px`. Pass `className="list-container--spaced"` to add `margin-top:16px` (e.g. GameTypeScreen). |
 | `ListItemRow` | `label: String`, `subtitle: String? = null`, `isSelectable: Boolean = false`, `isSelected: Boolean = false`, `onSelect: (() -> Unit)? = null`, `onView: (() -> Unit)? = null`, `onEdit: (() -> Unit)? = null`, `onDelete: (() -> Unit)? = null` | Uniform list display: players (HomeScreen), game types (GameTypeScreen), match history (HistoryScreen). Supports selection, view, edit, delete. |
+| `LudoButton` | `text: String`, `variant: ButtonVariant = Primary` (`Primary`/`Secondary`/`Ghost`/`Danger`), `size: ButtonSize = Md` (`Sm`/`Md`/`Lg`), `iconOnly: Boolean = false`, `disabled: Boolean = false`, `ariaLabel: String? = null`, `onClick: () -> Unit` | Ludo design system's button primitive (`.ludo-btn*` classes in `components.css`). Not yet wired into any screen — see `.task/P2/*` for the migration off `.btn`/`.btn-primary`/`.fab`/etc. |
 
-Files: `src/jsMain/kotlin/com/scoreo/ui/shared/ListContainer.kt`, `src/jsMain/kotlin/com/scoreo/ui/shared/ListItemRow.kt`
+Files: `src/jsMain/kotlin/com/scoreo/ui/shared/ListContainer.kt`, `src/jsMain/kotlin/com/scoreo/ui/shared/ListItemRow.kt`, `src/jsMain/kotlin/com/scoreo/ui/shared/Button.kt`
 
 ## Tests
 

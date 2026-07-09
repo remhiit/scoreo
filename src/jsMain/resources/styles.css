@@ -6,6 +6,7 @@
 @import url("tokens/typography.css");
 @import url("tokens/spacing.css");
 @import url("tokens/radius-shadow.css");
+@import url("components.css");
 @import url("theme.css");
 @import url("layout.css");
 @import url("home.css");
