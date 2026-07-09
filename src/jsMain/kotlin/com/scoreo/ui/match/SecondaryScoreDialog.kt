@@ -4,8 +4,10 @@ import androidx.compose.runtime.Composable
 import com.scoreo.domain.model.GameType
 import com.scoreo.domain.model.Player
 import com.scoreo.ui.Strings
+import com.scoreo.ui.shared.ButtonVariant
+import com.scoreo.ui.shared.LudoButton
+import com.scoreo.ui.shared.LudoModal
 import org.jetbrains.compose.web.attributes.InputType
-import org.jetbrains.compose.web.dom.Button
 import org.jetbrains.compose.web.dom.Div
 import org.jetbrains.compose.web.dom.Input
 import org.jetbrains.compose.web.dom.Span
@@ -28,36 +30,27 @@ fun SecondaryScoreDialog(
     onDismiss: () -> Unit,
 ) {
     val title = gameType.tieBreakLabel ?: Strings.LABEL_SECONDARY_SCORE
-    Div(attrs = {
-        classes("modal-overlay")
-        onClick { onDismiss() }
-    }) {}
-    Div(attrs = { classes("modal-content") }) {
-        Div(attrs = { classes("modal-title") }) { Text("$title ?") }
-        Div(attrs = { classes("modal-body") }) {
-            tiedPlayers.forEach { player ->
-                Div(attrs = { classes("modal-row") }) {
-                    Span { Text(player.name) }
-                     Input(type = InputType.Number, attrs = {
-                         classes("score-table-input")
-                         value(secondaryScoreInputs[player.id] ?: "")
-                         onInput { onUpdateInput(player.id, it.value?.toString() ?: "") }
-                     })
-                }
+    LudoModal(
+        open = true,
+        title = "$title ?",
+        onClose = onDismiss,
+        footer = {
+            LudoButton(text = Strings.BTN_CANCEL, variant = ButtonVariant.Secondary, onClick = onDismiss)
+            LudoButton(text = Strings.BTN_CONFIRM, variant = ButtonVariant.Primary, onClick = onSubmit)
+        },
+    ) {
+        tiedPlayers.forEach { player ->
+            Div(attrs = { classes("modal-row") }) {
+                Span { Text(player.name) }
+                Input(type = InputType.Number, attrs = {
+                    classes("ludo-input", "ludo-input--sm", "ludo-input--stepper-field", "ludo-input--mono")
+                    value(secondaryScoreInputs[player.id] ?: "")
+                    onInput { onUpdateInput(player.id, it.value?.toString() ?: "") }
+                })
             }
         }
         error?.let { msg ->
             Div(attrs = { classes("error-msg") }) { Text(msg) }
-        }
-        Div(attrs = { classes("modal-actions") }) {
-            Button(attrs = {
-                classes("btn", "btn-secondary")
-                onClick { onDismiss() }
-             }) { Text(Strings.BTN_CANCEL) }
-             Button(attrs = {
-                 classes("btn", "btn-primary")
-                 onClick { onSubmit() }
-             }) { Text(Strings.BTN_CONFIRM) }
         }
     }
 }
