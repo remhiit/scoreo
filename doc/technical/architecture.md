@@ -85,14 +85,18 @@ per-screen CSS files):
 Flavor and accent are switched by setting `data-theme`/`data-accent`
 attributes on `<html>` (see `ui/theme/ThemeManager.kt`).
 
-**Transition note**: the historical variable names used across the
-7 per-screen CSS files (`--primary`, `--surface`, `--on-surface`,
-`--outline`, `--win`/`--loss`/`--warn`, `--radius`, …) are aliased onto
-these semantic tokens in `theme.css`, so the whole app re-themes
-without editing per-screen CSS. Each screen is migrated to reference
-the semantic tokens directly as it's rewritten to use the shared
+Every screen references the semantic tokens directly — the shared
 `Ludo*` composables (`ui/shared/Button.kt`, `Input.kt`, `Table.kt`,
-`Modal.kt`) — see `.task/` for the migration tickets.
+`Modal.kt`) and each screen's own CSS all read `--color-primary`,
+`--surface-card`, `--text-body`, etc. The historical Material-era
+variable names (`--primary`, `--surface`, `--on-surface`, `--outline`,
+`--win`/`--loss`/`--warn`, `--radius`, …) that used to live in
+`theme.css` as a transitional alias layer are gone entirely — nothing
+in the codebase reads them anymore. `theme.css` now holds only the
+splash screen, a couple of shared layout classes (`.card`, `.form-row`,
+`.select`, `.error-msg`, `.empty`, `.section-label`), and the one
+non-color layout constant that's still a plain custom property,
+`--header-height`.
 
 ## PWA (Progressive Web App)
 

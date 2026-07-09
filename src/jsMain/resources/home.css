@@ -86,7 +86,7 @@
 }
 
 .detail-label {
-    color: var(--on-surface-variant);
+    color: var(--text-muted);
     font-size: 14px;
     min-width: 140px;
 }
@@ -99,7 +99,7 @@
 /* ── Onboarding guide ── */
 
 .onboarding-guide {
-    background: color-mix(in srgb, var(--color-info) 10%, var(--surface));
+    background: color-mix(in srgb, var(--color-info) 10%, var(--surface-app));
     border-left: 4px solid var(--color-info);
     padding: 16px;
     margin-bottom: 20px;
@@ -120,7 +120,7 @@
 
 .onboarding-guide li {
     margin: 6px 0;
-    color: var(--on-surface-variant);
+    color: var(--text-muted);
 }
 
 /* ── Boutons icône (2e définition — voir layout.css ; doublon signalé,
@@ -140,13 +140,13 @@
 }
 
 .btn-icon:hover {
-    background: color-mix(in srgb, var(--on-surface) 5%, transparent);
+    background: color-mix(in srgb, var(--text-body) 5%, transparent);
 }
 
 /* ── Draft resume banner ── */
 
 .draft-resume-banner {
-    background: color-mix(in srgb, var(--color-info) 10%, var(--surface));
+    background: color-mix(in srgb, var(--color-info) 10%, var(--surface-app));
     border-left: 4px solid var(--color-info);
     padding: 12px 16px;
     margin-bottom: 16px;

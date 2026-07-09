@@ -2,25 +2,30 @@ package com.scoreo.ui.theme
 
 import androidx.compose.runtime.Composable
 import com.scoreo.ui.Strings
+import com.scoreo.ui.shared.ButtonVariant
+import com.scoreo.ui.shared.LudoButton
+import com.scoreo.ui.shared.LudoModal
 import org.jetbrains.compose.web.dom.Button
 import org.jetbrains.compose.web.dom.Div
 import org.jetbrains.compose.web.dom.Text
 
 /**
- * Flavor + accent picker, opened from the burger menu. Reuses the
- * existing .modal-overlay/.modal-content pattern (see scoring.css) —
- * no need to wait for the LudoModal composable (P1) for a dialog this
- * simple.
+ * Flavor + accent picker, opened from the burger menu. Chips/swatches
+ * stay custom (Ludo has no "color swatch" primitive), but the dialog
+ * itself and its Close button now use LudoModal/LudoButton — this
+ * predated those composables (P0-03), so it was the last consumer of
+ * the legacy .modal-overlay/.modal-content/.btn-secondary pattern.
  */
 @Composable
 fun ThemePickerDialog(themeState: ThemeState, onClose: () -> Unit) {
-    Div(attrs = {
-        classes("modal-overlay")
-        onClick { onClose() }
-    }) {}
-    Div(attrs = { classes("modal-content") }) {
-        Div(attrs = { classes("modal-title") }) { Text(Strings.TITLE_THEME_PICKER) }
-
+    LudoModal(
+        open = true,
+        title = Strings.TITLE_THEME_PICKER,
+        onClose = onClose,
+        footer = {
+            LudoButton(text = Strings.BTN_CLOSE, variant = ButtonVariant.Secondary, onClick = onClose)
+        },
+    ) {
         Div(attrs = { classes("theme-picker-label") }) { Text(Strings.LABEL_FLAVOR) }
         Div(attrs = { classes("theme-picker-row") }) {
             FLAVORS.forEach { flavor ->
@@ -43,13 +48,6 @@ fun ThemePickerDialog(themeState: ThemeState, onClose: () -> Unit) {
                     onClick { themeState.setAccent(accent) }
                 }) {}
             }
-        }
-
-        Div(attrs = { classes("modal-actions") }) {
-            Button(attrs = {
-                classes("btn", "btn-secondary")
-                onClick { onClose() }
-            }) { Text(Strings.BTN_CLOSE) }
         }
     }
 }

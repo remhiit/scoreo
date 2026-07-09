@@ -39,14 +39,6 @@
     }
 }
 
-.header-title {
-    font-size: 18px;
-    font-weight: 600;
-    color: var(--text-heading);
-    flex: 1;
-    text-align: center;
-}
-
 .app-title {
     font-size: 18px;
     font-weight: 600;
@@ -60,11 +52,6 @@
 
 .app-title.clickable:hover {
     opacity: 0.7;
-}
-
-.header-spacer {
-    width: 44px;
-    height: 44px;
 }
 
 /* ── Burger menu ── */
@@ -87,7 +74,7 @@
     display: flex;
     flex-direction: column;
     padding: 16px 0;
-    box-shadow: -4px 0 24px var(--overlay-light);
+    box-shadow: -4px 0 24px color-mix(in srgb, var(--ctp-crust) 15%, transparent);
 }
 
 /* LudoButton handles size/color/hover; this is a layout-only override
@@ -212,6 +199,6 @@
 }
 
 .btn-icon--danger:hover {
-    background: var(--danger-hover);
+    background: color-mix(in srgb, var(--color-danger) 15%, var(--surface-card));
     color: var(--color-danger);
 }

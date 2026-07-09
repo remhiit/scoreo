@@ -1,32 +1,12 @@
 /* ── Design tokens & reset ──
-   These historical variable names are aliases onto the Catppuccin
-   semantic tokens (tokens/semantic.css) so every screen re-themes via
-   data-theme/data-accent without editing per-screen CSS. Screens are
-   migrated to reference the semantic tokens directly as they're
-   rewritten onto the shared Ludo* composables — see .task/.
-   --primary-rgb/--warn-rgb are gone: the two rgba(var(--x-rgb), a)
-   call sites (home.css .fab, history.css .badge-warn/.tie-break-info)
-   were converted to color-mix() instead, which composes with any
-   flavor/accent without needing a parallel RGB-triplet variable. */
+   The historical Material-era variable names (--primary, --surface,
+   --on-surface, --outline, --win/--loss/--warn, --radius, etc.) that
+   used to live here as aliases are gone — every screen was migrated
+   (P0 through P2) to reference the Catppuccin semantic tokens
+   (tokens/semantic.css) directly. --header-height is the one survivor:
+   not a color/theme concept, just a shared layout constant. */
 
 :root {
-    --primary: var(--color-primary);
-    --primary-light: var(--color-primary-tint);
-    --surface: var(--surface-app);
-    --surface-variant: var(--surface-sunken);
-    --on-surface: var(--text-body);
-    --on-surface-variant: var(--text-muted);
-    --outline: var(--border-default);
-    --error: var(--color-danger);
-    --win: var(--color-success);
-    --loss: var(--color-danger);
-    --warn: var(--color-warning);
-    --danger-hover: color-mix(in srgb, var(--color-danger) 15%, var(--surface-card));
-    --white: #ffffff;
-    --overlay: var(--scrim);
-    --overlay-light: color-mix(in srgb, var(--ctp-crust) 15%, transparent);
-    --overlay-medium: color-mix(in srgb, var(--ctp-crust) 20%, transparent);
-    --radius: var(--radius-md);
     --header-height: 56px;
 }
 
@@ -39,9 +19,9 @@
 html, body {
     width: 100%;
     height: 100%;
-    background: var(--surface);
+    background: var(--surface-app);
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    color: var(--on-surface);
+    color: var(--text-body);
     font-size: 16px;
 }
 
@@ -52,7 +32,7 @@ html, body {
     flex-direction: column;
 }
 
-h1 { font-size: 22px; font-weight: 600; margin-bottom: 16px; color: var(--on-surface); }
+h1 { font-size: 22px; font-weight: 600; margin-bottom: 16px; color: var(--text-heading); }
 h2 { font-size: 18px; font-weight: 500; margin-bottom: 12px; }
 
 /* ── Shared components ── */
@@ -77,23 +57,8 @@ h2 { font-size: 18px; font-weight: 500; margin-bottom: 12px; }
 /* .input has flex:1 directly; LudoTextInput's wrapper div needs it applied one level up */
 .form-row > .ludo-field { flex: 1; }
 
-.input {
-    flex: 1;
-    border: 1.5px solid var(--outline);
-    border-radius: var(--radius);
-    padding: 10px 14px;
-    font-size: 15px;
-    outline: none;
-    background: var(--surface);
-    color: var(--on-surface);
-    transition: border-color 0.15s;
-}
-
-.input:focus { border-color: var(--primary); }
-.input.error { border-color: var(--error); }
-
 .error-msg {
-    color: var(--error);
+    color: var(--color-danger);
     font-size: 13px;
     margin-bottom: 12px;
 }
@@ -116,7 +81,7 @@ h2 { font-size: 18px; font-weight: 500; margin-bottom: 12px; }
 .section-label {
     font-size: 13px;
     font-weight: 600;
-    color: var(--on-surface-variant);
+    color: var(--text-muted);
     text-transform: uppercase;
     letter-spacing: 0.05em;
     margin-bottom: 8px;
@@ -125,57 +90,10 @@ h2 { font-size: 18px; font-weight: 500; margin-bottom: 12px; }
 
 .empty {
     text-align: center;
-    color: var(--on-surface-variant);
+    color: var(--text-muted);
     padding: 40px 0;
     font-size: 15px;
 }
-
-/* ── Buttons ── */
-
-.btn {
-    border: none;
-    border-radius: var(--radius);
-    padding: 12px 24px;
-    font-size: 15px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: opacity 0.15s;
-    white-space: nowrap;
-}
-
-.btn:hover { opacity: 0.85; }
-.btn:disabled { opacity: 0.4; cursor: default; }
-
-.btn-primary { background: var(--primary); color: var(--white); }
-.btn-secondary { background: var(--surface-variant); color: var(--on-surface); }
-.btn-danger {
-    background: transparent;
-    border: none;
-    color: var(--on-surface-variant);
-    cursor: pointer;
-    font-size: 18px;
-    padding: 8px;
-    border-radius: 50%;
-    line-height: 1;
-    transition: background 0.15s, color 0.15s;
-}
-.btn-danger:hover {
-    background: var(--danger-hover);
-    color: var(--error);
-}
-.btn-danger-filled {
-    background: var(--error);
-    color: var(--white);
-    border-radius: var(--radius);
-    padding: 12px 24px;
-    font-size: 15px;
-    font-weight: 500;
-    border: none;
-    cursor: pointer;
-    transition: opacity 0.15s;
-}
-.btn-danger-filled:hover { opacity: 0.85; }
-.btn-full { width: 100%; margin-top: 8px; }
 
 /* ── Splash screen ── */
 
