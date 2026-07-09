@@ -102,18 +102,18 @@ h2 { font-size: 18px; font-weight: 500; margin-bottom: 12px; }
 
 .select {
     width: 100%;
-    border: 1.5px solid var(--outline);
-    border-radius: var(--radius);
+    border: 1.5px solid var(--border-default);
+    border-radius: var(--radius-md);
     padding: 10px 14px;
     font-size: 15px;
-    background: var(--surface);
-    color: var(--on-surface);
+    background: var(--surface-card);
+    color: var(--text-body);
     outline: none;
     margin-bottom: 16px;
     cursor: pointer;
 }
 
-.select:focus { border-color: var(--primary); }
+.select:focus { border-color: var(--border-focus); }
 
 .section-label {
     font-size: 13px;
