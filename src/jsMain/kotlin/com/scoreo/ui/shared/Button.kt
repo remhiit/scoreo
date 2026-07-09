@@ -36,11 +36,14 @@ fun LudoButton(
     iconOnly: Boolean = false,
     disabled: Boolean = false,
     ariaLabel: String? = null,
+    /** Escape hatch for layout-only overrides (e.g. `align-self` inside a flex panel) — never for restyling variants/colors. */
+    className: String? = null,
     onClick: () -> Unit,
 ) {
     Button(attrs = {
         classes("ludo-btn", "ludo-btn--${variant.cssName()}", "ludo-btn--${size.cssName()}")
         if (iconOnly) classes("ludo-btn--icon")
+        if (className != null) classes(className)
         if (disabled) attr("disabled", "")
         if (ariaLabel != null) attr("aria-label", ariaLabel)
         onClick { if (!disabled) onClick() }

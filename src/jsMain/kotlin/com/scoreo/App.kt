@@ -31,6 +31,9 @@ import com.scoreo.ui.scoredetail.ScoreDetailScreen
 import com.scoreo.ui.stats.StatsIntent
 import com.scoreo.ui.stats.StatsScreen
 import com.scoreo.ui.Strings
+import com.scoreo.ui.shared.ButtonSize
+import com.scoreo.ui.shared.ButtonVariant
+import com.scoreo.ui.shared.LudoButton
 import com.scoreo.ui.theme.ThemePickerDialog
 import com.scoreo.ui.theme.rememberThemeState
 import org.jetbrains.compose.web.dom.Button
@@ -82,10 +85,14 @@ fun App(
     // ── App header ────────────────────────────────────────────
     Div(attrs = { classes("app-header") }) {
         onBack?.let { back ->
-            Button(attrs = {
-                classes("back-btn")
-                onClick { back() }
-            }) { Text("←") }
+            LudoButton(
+                text = "←",
+                variant = ButtonVariant.Ghost,
+                size = ButtonSize.Md,
+                iconOnly = true,
+                ariaLabel = "Back",
+                onClick = back,
+            )
         }
         Span(attrs = {
             classes("app-title", "clickable")
@@ -95,10 +102,14 @@ fun App(
                 }
             }
         }) { Text(screenTitle) }
-        Button(attrs = {
-            classes("burger-btn")
-            onClick { burgerOpen = true }
-        }) { Text("☰") }
+        LudoButton(
+            text = "☰",
+            variant = ButtonVariant.Ghost,
+            size = ButtonSize.Md,
+            iconOnly = true,
+            ariaLabel = "Menu",
+            onClick = { burgerOpen = true },
+        )
     }
 
     // ── Screen content ────────────────────────────────────────
@@ -193,10 +204,15 @@ fun App(
             onClick { burgerOpen = false }
         }) {}
         Div(attrs = { classes("burger-menu") }) {
-            Button(attrs = {
-                classes("burger-close")
-                onClick { burgerOpen = false }
-            }) { Text("✕") }
+            LudoButton(
+                text = "✕",
+                variant = ButtonVariant.Ghost,
+                size = ButtonSize.Md,
+                iconOnly = true,
+                ariaLabel = "Close",
+                className = "burger-close",
+                onClick = { burgerOpen = false },
+            )
             BurgerItem("🏠", "Home") {
                 burgerOpen = false
                 navigator.navigate(Screen.Home)
