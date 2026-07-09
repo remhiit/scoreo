@@ -8,37 +8,24 @@
     gap: 12px;
     margin-bottom: 16px;
     padding: 12px;
-    background: #f5f5f5;
+    background: var(--surface-variant);
     border-radius: 4px;
-}
-
-[data-theme="dark"] .history-filter {
-    background: rgba(255, 255, 255, 0.05);
 }
 
 .history-filter label {
     font-weight: 500;
-    color: #333;
+    color: var(--on-surface);
     margin: 0;
-}
-
-[data-theme="dark"] .history-filter label {
-    color: #fff;
 }
 
 .filter-select {
     padding: 6px 12px;
-    border: 1px solid #ccc;
+    border: 1px solid var(--outline);
     border-radius: 4px;
-    background: white;
+    background: var(--surface);
+    color: var(--on-surface);
     cursor: pointer;
     font-size: 0.9rem;
-}
-
-[data-theme="dark"] .filter-select {
-    background: #333;
-    border-color: #555;
-    color: #fff;
 }
 
 /* ── Tie-break indeterminate badge ── */
@@ -47,7 +34,7 @@
     display: inline-flex;
     align-items: center;
     gap: 4px;
-    background: rgba(var(--warn-rgb), 0.12);
+    background: color-mix(in srgb, var(--warn) 12%, transparent);
     color: var(--warn);
     border-radius: 99px;
     padding: 2px 10px;
@@ -63,8 +50,8 @@
     margin-top: 8px;
     padding: 8px 10px;
     border-radius: 8px;
-    background: rgba(var(--warn-rgb), 0.06);
-    border: 1px solid rgba(var(--warn-rgb), 0.15);
+    background: color-mix(in srgb, var(--warn) 6%, transparent);
+    border: 1px solid color-mix(in srgb, var(--warn) 15%, transparent);
     color: var(--warn);
     font-size: 13px;
     line-height: 1.4;
