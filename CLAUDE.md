@@ -1,6 +1,36 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
 # Scoreo
 
-Kotlin/JS + Compose HTML. MVI (Handler/Intent/State). Architecture hexagonale (Ports & Adapters).
+PWA Kotlin/JS de suivi de scores entre amis. Compose HTML. MVI (Handler/Intent/State). Architecture hexagonale (Ports & Adapters). 100% local-first (localStorage), sync cloud optionnelle via Google Drive.
+
+## Commandes
+
+```bash
+# Dev server (hot reload, port 9191)
+./gradlew jsBrowserDevelopmentRun --continuous
+
+# Build production (sortie: build/kotlin-webpack/js/productionExecutable/)
+./gradlew jsBrowserProductionWebpack
+
+# Tous les tests (JVM, rapide, pas de navigateur)
+./gradlew jvmTest
+
+# Un seul fichier de test
+./gradlew jvmTest --tests "com.scoreo.ui.player.PlayerHandlerTest"
+
+# Tests jsMain (nécessitent un navigateur — GoogleDriveSyncAdapterTest, ThemeManagerTest)
+./gradlew jsTest
+
+# Valider la config Gradle (ce que fait le hook pre-push et la CI check.yml)
+./gradlew help --quiet
+```
+
+Le hook `pre-push` (`.githooks/pre-push`, activé automatiquement au premier `./gradlew`) lance `gradle help --quiet` avant chaque push. Pas de linter configuré (pas de ktlint/detekt).
+
+Pas de `package.json` / npm : tout passe par Gradle (Kotlin Multiplatform, cibles `jvm()` et `js(IR)`). Les tests métier vivent en `commonMain`/`commonTest` et tournent sur la JVM (`jvmTest`) — le JS n'est nécessaire que pour les adapters spécifiques au navigateur (`jsMain`/`jsTest`).
 
 ## Avant d'explorer le code
 
@@ -16,10 +46,13 @@ Lire ces fichiers dans l'ordre. Tout le contexte nécessaire y est :
 
 | Dossier | Contenu |
 |---|---|
-| `src/commonMain/` | Domaine, application, handlers MVI |
-| `src/jsMain/` | Écrans Compose HTML, localStorage |
+| `src/commonMain/` | `domain/` (models, ports), `application/` (use cases), `ui/*/` (Handler/Intent/State par écran), `di/` (wiring conditionnel, ex. sync) |
+| `src/jsMain/` | Écrans Compose HTML (`ui/*/`), `infrastructure/` (adapters localStorage), `di/`, `Main.kt` (entry point) |
 | `src/jsMain/.../infrastructure/google/` | Sync Google Drive (OAuth, DriveClient, DriveSyncAdapter, SyncConfig) |
-| `src/commonTest/` | Tests unitaires JVM |
+| `src/jsMain/resources/` | HTML, CSS (`theme.css`, `layout.css`, ...), assets PWA (`manifest.json`, `sw.js`, icônes) |
+| `src/commonTest/` | Tests unitaires JVM (use cases, handlers, domaine, DI) |
+| `src/jsTest/` | Tests nécessitant un environnement navigateur (Google Drive adapter, ThemeManager) |
+| `src/ressource/schemas/import/` | Schémas JSON du format d'import (versionnés) |
 
 ## Workflow
 
