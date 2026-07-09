@@ -76,6 +76,9 @@ h2 { font-size: 18px; font-weight: 500; margin-bottom: 12px; }
     align-items: flex-start;
 }
 
+/* .input has flex:1 directly; LudoTextInput's wrapper div needs it applied one level up */
+.form-row > .ludo-field { flex: 1; }
+
 .input {
     flex: 1;
     border: 1.5px solid var(--outline);

@@ -14,7 +14,17 @@ private fun clamp(n: Int, min: Int?, max: Int?): Int {
     return v
 }
 
-/** Plain text field. Controlled: `value` always reflects the caller's state. */
+/**
+ * Plain text field. Controlled: `value` always reflects the caller's
+ * state.
+ *
+ * `invalid`/`autofocus`/`onEnter` are intentional additions beyond the
+ * design system's original Input brief — not new visual variants,
+ * just the form ergonomics every real call site in this app needs
+ * (error border on validation failure, focus-on-open for a modal
+ * field, submit-on-Enter). See `.ludo-input--invalid` in
+ * components.css for the one new rule this adds.
+ */
 @Composable
 fun LudoTextInput(
     value: String,
@@ -23,6 +33,9 @@ fun LudoTextInput(
     placeholder: String? = null,
     size: ButtonSize = ButtonSize.Md,
     disabled: Boolean = false,
+    invalid: Boolean = false,
+    autofocus: Boolean = false,
+    onEnter: (() -> Unit)? = null,
 ) {
     Div(attrs = { classes("ludo-field") }) {
         if (label != null) {
@@ -32,10 +45,15 @@ fun LudoTextInput(
         val currentPlaceholder = placeholder
         Input(type = InputType.Text, attrs = {
             classes("ludo-input", "ludo-input--${size.cssName()}", "ludo-input--bare")
+            if (invalid) classes("ludo-input--invalid")
             value(currentValue)
             if (currentPlaceholder != null) attr("placeholder", currentPlaceholder)
             if (disabled) attr("disabled", "")
+            if (autofocus) attr("autofocus", "")
             onInput { onChange(it.value) }
+            if (onEnter != null) {
+                onKeyUp { e -> if (e.key == "Enter") onEnter() }
+            }
         })
     }
 }

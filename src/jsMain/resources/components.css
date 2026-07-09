@@ -45,6 +45,9 @@
 
 .ludo-btn--danger { background: var(--color-danger); color: var(--text-on-danger); border-color: transparent; }
 
+/* layout-only utility, not a variant — e.g. a full-width modal submit button */
+.ludo-btn--full { width: 100%; }
+
 /* ---------- Input (LudoTextInput/LudoNumberInput, ui/shared/Input.kt) ---------- */
 .ludo-field { display: flex; flex-direction: column; gap: 6px; }
 .ludo-field__label {
@@ -93,6 +96,9 @@
 
 /* type: number fields use the score font regardless of layout */
 .ludo-input--mono { font-family: var(--font-score); font-weight: var(--weight-semibold); }
+
+/* intentional addition beyond the design system brief — see LudoTextInput's invalid param */
+.ludo-input--invalid { border-color: var(--color-danger); }
 
 .ludo-stepper { display: flex; align-items: center; gap: var(--space-2); }
 
