@@ -22,17 +22,14 @@ Files:
   (`colors-latte.css`, `colors-frappe.css`, `colors-macchiato.css`,
   `colors-mocha.css`) + the semantic alias/accent layer
   (`semantic.css`).
-- `src/jsMain/resources/theme.css` — historical variable names
-  (`--primary`, `--surface`, `--on-surface`, `--win`/`--loss`/`--warn`,
-  `--radius`, etc.) aliased onto the semantic tokens, so the rest of
-  the app's CSS re-themes without being edited.
 - `src/jsMain/resources/theme-picker.css` — `.theme-chip`,
   `.accent-swatch` and their `--active` variants, for the picker
   dialog.
 
 Burger menu entry: `"🎨 Theme"` (`BurgerItem` in `App.kt`) opens
-`ThemePickerDialog`, reusing the existing `.modal-overlay`/
-`.modal-content` pattern.
+`ThemePickerDialog`, which uses `LudoModal`/`LudoButton` (the chips/
+swatches themselves stay custom — Ludo has no "color swatch"
+primitive).
 
 ## Code
 
