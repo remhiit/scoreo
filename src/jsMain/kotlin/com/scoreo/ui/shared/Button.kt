@@ -14,7 +14,8 @@ private fun ButtonVariant.cssName() = when (this) {
     ButtonVariant.Danger -> "danger"
 }
 
-private fun ButtonSize.cssName() = when (this) {
+/** Internal (not private): reused by Input.kt's stepper field sizing. */
+internal fun ButtonSize.cssName() = when (this) {
     ButtonSize.Sm -> "sm"
     ButtonSize.Md -> "md"
     ButtonSize.Lg -> "lg"

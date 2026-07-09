@@ -44,3 +44,54 @@
 .ludo-btn--ghost:hover:not(:disabled) { background: var(--surface-hover); }
 
 .ludo-btn--danger { background: var(--color-danger); color: var(--text-on-danger); border-color: transparent; }
+
+/* ---------- Input (LudoTextInput/LudoNumberInput, ui/shared/Input.kt) ---------- */
+.ludo-field { display: flex; flex-direction: column; gap: 6px; }
+.ludo-field__label {
+  font-family: var(--font-ui);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  color: var(--text-muted);
+}
+
+.ludo-input {
+  font-family: var(--font-ui);
+  font-weight: var(--weight-regular);
+  color: var(--text-body);
+  background: var(--surface-card);
+  border: var(--border-width) solid var(--border-default);
+  border-radius: var(--radius-md);
+  outline: none;
+  outline-offset: 1px;
+  transition: border-color var(--duration-fast) var(--ease-standard);
+  cursor: text;
+}
+.ludo-input:focus-visible,
+.ludo-input:focus {
+  border-color: var(--border-focus);
+  outline: 2px solid color-mix(in srgb, var(--color-primary) 30%, transparent);
+}
+.ludo-input:disabled { color: var(--text-disabled); cursor: not-allowed; }
+
+.ludo-input--sm { height: 36px; font-size: var(--text-sm); }
+.ludo-input--md { height: var(--tap-target); font-size: var(--text-md); }
+.ludo-input--lg { height: 56px; font-size: var(--text-xl); }
+
+/* layout: bare field (text, or number without a stepper) vs. stepper field */
+.ludo-input--bare { width: 100%; padding: 0 var(--space-3); }
+.ludo-input--stepper-field {
+  width: 72px;
+  text-align: center;
+  padding: 0 4px;
+  -moz-appearance: textfield;
+}
+.ludo-input--stepper-field::-webkit-outer-spin-button,
+.ludo-input--stepper-field::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* type: number fields use the score font regardless of layout */
+.ludo-input--mono { font-family: var(--font-score); font-weight: var(--weight-semibold); }
+
+.ludo-stepper { display: flex; align-items: center; gap: var(--space-2); }
