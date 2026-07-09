@@ -1,21 +1,11 @@
 /* ── Stats screen ── */
 
-.stats {
-    display: flex;
-    gap: 6px;
-}
-
-.stat-win { color: var(--win); font-weight: 600; font-size: 13px; }
-.stat-loss { color: var(--loss); font-weight: 600; font-size: 13px; }
-.stat-ratio { color: var(--on-surface-variant); font-size: 13px; }
-.stat-none { color: var(--on-surface-variant); font-size: 13px; font-style: italic; }
-
 .stats-row {
     cursor: pointer;
     gap: 12px;
 }
 
-.stats-row:hover { background: var(--primary-light); }
+.stats-row:hover { background: var(--color-primary-tint); }
 
 .stats-row-info {
     display: flex;
@@ -32,29 +22,29 @@
 
 .stats-row-record {
     font-size: 12px;
-    color: var(--on-surface-variant);
+    color: var(--text-muted);
 }
 
 .stats-row-bar-wrap {
     flex: 1;
     height: 8px;
-    background: var(--surface);
-    border-radius: 4px;
+    background: var(--surface-sunken);
+    border-radius: var(--radius-sm);
     overflow: hidden;
     min-width: 60px;
 }
 
 .stats-row-bar {
     height: 100%;
-    background: var(--primary);
-    border-radius: 4px;
+    background: var(--color-primary);
+    border-radius: var(--radius-sm);
     transition: width 0.3s;
 }
 
 .stats-row-pct {
     font-weight: 600;
     font-size: 14px;
-    color: var(--primary);
+    color: var(--color-primary);
     min-width: 36px;
     text-align: right;
 }
@@ -62,7 +52,7 @@
 .stats-elo {
     font-weight: 700;
     font-size: 16px;
-    color: var(--primary);
+    color: var(--color-primary);
     min-width: 44px;
     text-align: right;
 }
@@ -71,8 +61,8 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    background: var(--primary-light);
-    color: var(--primary);
+    background: var(--color-primary-tint);
+    color: var(--color-primary);
     font-weight: 700;
     font-size: 14px;
     padding: 2px 10px;
@@ -98,8 +88,8 @@
     gap: 8px;
     margin-bottom: 20px;
     padding: 12px 16px;
-    background: var(--surface-variant);
-    border-radius: var(--radius);
+    background: var(--surface-sunken);
+    border-radius: var(--radius-md);
 }
 
 .stats-detail-record {
@@ -109,7 +99,7 @@
 
 .stats-detail-pct {
     font-size: 14px;
-    color: var(--on-surface-variant);
+    color: var(--text-muted);
 }
 
 .stats-h2h-row {
@@ -117,7 +107,7 @@
     align-items: center;
     gap: 12px;
     padding: 8px 0;
-    border-bottom: 1px solid var(--outline);
+    border-bottom: 1px solid var(--border-subtle);
 }
 
 .stats-h2h-row:last-child { border-bottom: none; }
@@ -130,7 +120,7 @@
 .stats-h2h-record {
     font-size: 13px;
     font-weight: 600;
-    color: var(--on-surface);
+    color: var(--text-body);
     min-width: 48px;
     text-align: right;
 }
