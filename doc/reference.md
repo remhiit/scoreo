@@ -11,7 +11,7 @@ Exhaustive tables. Read before exploring `src/`.
 | `ImportHandler` | `ImportIntent` | `FileLoaded(content: String)`, `FileError(message: String)`, `Execute`, `Reset` | `ImportState(step: ImportStep, preview, jsonContent, result, error)` | `src/commonMain/.../ui/import/ImportHandler.kt` |
 | `ScoreDetailHandler` | `ScoreDetailIntent` | `UpdateScore(roundIndex, playerId, value)`, `AddRound`, `RemoveRound(index)`, `Terminate`, `ConfirmWinners`, `DismissModal`, `ToggleModalWinner(playerId)`, `UpdateSecondaryScoreInput(playerId, value)`, `SubmitSecondaryScores`, `ToggleManualSelectionWinner(playerId)`, `ConfirmManualWinners`, `KeepTie`, `DismissTieBreak`, `CancelMatch`, `ConfirmCancel`, `DismissCancelConfirm` | `ScoreDetailState` | `src/commonMain/.../ui/scoredetail/ScoreDetailHandler.kt` |
 | `StatsHandler` | `StatsIntent` | `SelectPlayer(playerId: String)`, `BackToLeaderboard`, `SelectGameType(gameTypeId: String?)` | `StatsState(leaderboard, selectedPlayerId, gameTypes, selectedGameTypeId)` | `src/commonMain/.../ui/stats/StatsHandler.kt` (**TS (TS-050)**: `src/ui/stats/{statsTypes,statsReducer,StatsScreen}.ts(x)` — `statsReducer(state, action)` pure function with actions `selectPlayer`/`backToLeaderboard`/`selectGameType`/`loaded`; the use-case calls that Kotlin's `refresh()` performs as a side effect inside the handler are done in `StatsScreen`'s `useEffect` (keyed on `selectedGameTypeId`, covering both mount and game-type-change triggers) via the exported `loadStats()` helper, dispatching `loaded`) |
-| `HistoryHandler` | `HistoryIntent` | `Refresh`, `ShowDeleteConfirm(matchId: String)`, `DeleteMatch(matchId: String)`, `DismissDeleteConfirm`, `SelectGameTypeFilter(gameTypeId: String?)` | `HistoryState` | `src/commonMain/.../ui/history/HistoryHandler.kt` |
+| `HistoryHandler` | `HistoryIntent` | `Refresh`, `ShowDeleteConfirm(matchId: String)`, `DeleteMatch(matchId: String)`, `DismissDeleteConfirm`, `SelectGameTypeFilter(gameTypeId: String?)` | `HistoryState` | `src/commonMain/.../ui/history/HistoryHandler.kt` (**TS (TS-051)**: `src/ui/history/{historyTypes,historyReducer,HistoryScreen}.ts(x)` — `historyReducer` actions `loaded`/`showDeleteConfirm`/`deleteFailed`/`dismissDeleteConfirm`/`selectGameTypeFilter`; `loadDisplays()` rebuilds `MatchDisplay[]` from the repositories (called on mount, mirroring `Refresh`), `deleteMatch()` wraps the use-case call in try/catch like the handler. `HistoryScreen` takes an optional `onEditMatch` callback instead of an `AppNavigator` instance — `App.tsx` wires it to `navigate(scoreDetailScreen(...))`.) |
 | `SyncHandler` | `SyncIntent` | `Login`, `Logout`, `RestoreSession`, `ResolveConflict(keepLocal: Boolean)`, `DismissError` | `SyncState(phase, email, conflict, result, error)` | `src/commonMain/.../ui/sync/SyncHandler.kt` |
 
 All in `src/commonMain/kotlin/com/scoreo/`.
@@ -103,7 +103,7 @@ All in `src/jsMain/kotlin/com/scoreo/`. Production: `LocalStorage*`, `GoogleDriv
 | Screen | Parameters | Destination |
 |---|---|---|
 | `Screen.Home` | — | HomeScreen (player selection, game modal, FAB) |
-| `Screen.History` | — | HistoryScreen (past matches list) |
+| `Screen.History` | — | HistoryScreen (past matches list, delete with confirmation, filter by game type) |
 | `Screen.Import` | — | ImportScreen (JSON import) |
 | `Screen.Stats` | — | StatsScreen (ELO leaderboard, head-to-head). Contextual back (App.tsx) clears the player selection when set, else navigates Home — see `StatsScreen`'s `onBackOverrideChange` prop. |
 | `Screen.Games` | — | GameTypeScreen (game type management) |
@@ -157,7 +157,7 @@ Files: `src/jsMain/kotlin/com/scoreo/ui/shared/ListContainer.kt`, `src/jsMain/ko
 | `src/commonTest/.../domain/SerializationTest.kt` | `SerializationTest` | 27 |
 | `src/commonTest/.../infrastructure/InMemoryRepositoryTest.kt` | `InMemoryRepositoryTest` | 11 |
 | `src/commonTest/.../ui/gametype/GameTypeHandlerTest.kt` | `GameTypeHandlerTest` | 22 |
-| `src/commonTest/.../ui/history/HistoryHandlerTest.kt` | `HistoryHandlerTest` | 24 |
+| `src/commonTest/.../ui/history/HistoryHandlerTest.kt` | `HistoryHandlerTest` | 24 (TS: `src/ui/history/historyReducer.test.ts`, 24 + `HistoryScreen.test.tsx`, 6) |
 | `src/commonTest/.../ui/import/ImportHandlerTest.kt` | `ImportHandlerTest` | 8 |
 | `src/commonTest/.../ui/navigation/AppNavigatorTest.kt` | `AppNavigatorTest` | 41 (TS: `src/ui/navigation/hash.test.ts`, 41 + `useHashRouter.test.ts`, 3) |
 | `src/commonTest/.../ui/player/PlayerHandlerTest.kt` | `PlayerHandlerTest` | 21 |
@@ -188,7 +188,7 @@ Theme: Catppuccin tokens (`tokens/colors-*.css` + `tokens/semantic.css`), 4 flav
 
 ## App shell (TS-043)
 
-`src/App.tsx` (`AppShell`, dispatch by `useHashRouter().current`) replaces `App.kt`'s root Composable — wraps content in `ServicesProvider`/`ThemeProvider` (which `Main.kt` didn't need since Compose has no context-provider pattern). Screen bodies are placeholders until their Phase F ticket lands, except `Stats` which is real as of TS-050; the header, contextual back button, and burger menu are the real, final logic:
+`src/App.tsx` (`AppShell`, dispatch by `useHashRouter().current`) replaces `App.kt`'s root Composable — wraps content in `ServicesProvider`/`ThemeProvider` (which `Main.kt` didn't need since Compose has no context-provider pattern). Screen bodies are placeholders until their Phase F ticket lands, except `Stats` (TS-050) and `History` (TS-051) which are real; the header, contextual back button, and burger menu are the real, final logic:
 
 - **Header**: back button hidden on Home; for `ScoreDetail` goes to `History` if `matchId` is set else `Home`; for `Stats` clears the player selection instead of navigating while a player is selected, else goes `Home`; all other screens go `Home`. Title text is clickable, navigates `Home` unless already there.
 - **Burger menu**: Home/Stats/History/Import/Games, + Sync only when `services.syncUseCase` is defined (mirrors `deps.syncHandler != null`), + non-navigating "Theme" item opening `ThemePickerDialog`.

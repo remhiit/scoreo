@@ -1,8 +1,20 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { DeleteMatchUseCase } from './application/deleteMatchUseCase'
 import { GetGameTypesUseCase } from './application/getGameTypesUseCase'
 import { GetHeadToHeadUseCase } from './application/getHeadToHeadUseCase'
+import { GetMatchesUseCase } from './application/getMatchesUseCase'
+import { GetPlayersUseCase } from './application/getPlayersUseCase'
 import { ServicesProvider, useServices } from './services/ServicesContext'
-import { GAMES_SCREEN, HISTORY_SCREEN, HOME_SCREEN, IMPORT_SCREEN, STATS_SCREEN, SYNC_SCREEN } from './ui/navigation/screen'
+import { HistoryScreen } from './ui/history/HistoryScreen'
+import {
+  GAMES_SCREEN,
+  HISTORY_SCREEN,
+  HOME_SCREEN,
+  IMPORT_SCREEN,
+  scoreDetailScreen,
+  STATS_SCREEN,
+  SYNC_SCREEN,
+} from './ui/navigation/screen'
 import type { Screen } from './ui/navigation/screen'
 import { useHashRouter } from './ui/navigation/useHashRouter'
 import { LudoButton } from './ui/shared/LudoButton'
@@ -55,9 +67,18 @@ function AppShell() {
     [services],
   )
   const getGameTypes = useMemo(() => new GetGameTypesUseCase(services.gameTypeRepository), [services])
+  const getMatches = useMemo(() => new GetMatchesUseCase(services.matchRepository), [services])
+  const getPlayers = useMemo(() => new GetPlayersUseCase(services.playerRepository), [services])
+  const deleteMatchUseCase = useMemo(() => new DeleteMatchUseCase(services.matchRepository), [services])
   const handleStatsBackOverrideChange = useCallback((override: (() => void) | null) => {
     setStatsBackOverride(() => override)
   }, [])
+  const handleEditMatch = useCallback(
+    (gameTypeId: string, playerIds: string[], matchId: string) => {
+      navigate(scoreDetailScreen(gameTypeId, playerIds, matchId))
+    },
+    [navigate],
+  )
 
   useEffect(() => {
     setStatsBackOverride(null)
@@ -93,7 +114,15 @@ function AppShell() {
 
       <div className="app-content">
         {current.type === 'Home' && <div>Home (placeholder)</div>}
-        {current.type === 'History' && <div>History (placeholder)</div>}
+        {current.type === 'History' && (
+          <HistoryScreen
+            getMatches={getMatches}
+            getPlayers={getPlayers}
+            getGameTypes={getGameTypes}
+            deleteMatchUseCase={deleteMatchUseCase}
+            onEditMatch={handleEditMatch}
+          />
+        )}
         {current.type === 'Stats' && (
           <StatsScreen
             getHeadToHead={getHeadToHead}

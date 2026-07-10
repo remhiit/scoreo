@@ -63,11 +63,27 @@ describe('App', () => {
     render(<App />)
     fireEvent.click(screen.getByLabelText('Menu'))
     fireEvent.click(screen.getByText('History'))
-    expect(screen.getByText('History (placeholder)')).toBeInTheDocument()
+    expect(screen.getByText('No matches yet.')).toBeInTheDocument()
     expect(screen.getByLabelText('Back')).toBeInTheDocument()
 
     fireEvent.click(screen.getByLabelText('Back'))
     expect(screen.getByText('Home (placeholder)')).toBeInTheDocument()
+  })
+
+  it('History: editing a match navigates to ScoreDetail with its parameters', () => {
+    seedStatsData()
+    render(<App />)
+    fireEvent.click(screen.getByLabelText('Menu'))
+    fireEvent.click(screen.getByText('History'))
+    expect(screen.getByText('Test Game', { selector: '.list-item-name' })).toBeInTheDocument()
+
+    fireEvent.click(screen.getByTitle('Edit'))
+
+    // The seeded id "m1" isn't a UUID, so LocalStorageMatchRepository's
+    // v1->v2 migration regenerates it on first read — only the shape and
+    // gameTypeId/playerIds are asserted here.
+    expect(window.location.hash).toMatch(/^#\/score\/gt1\/p1,p2\/[0-9a-f-]{36}$/)
+    expect(screen.getByText('Score Detail (placeholder)')).toBeInTheDocument()
   })
 
   it('clicking the title navigates Home from any screen', () => {
