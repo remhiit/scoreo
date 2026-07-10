@@ -37,7 +37,7 @@ All in `src/commonMain/kotlin/com/scoreo/`.
 | `FindGameTypeByIdUseCase` | `invoke(id: String)` | `GameType?` | `src/commonMain/.../application/FindGameTypeByIdUseCase.kt` | `findGameTypeByIdUseCase.ts` |
 | `GetGameTypesUseCase` | `invoke(includeInactive: Boolean = false)` | `List<GameType>` | `src/commonMain/.../application/GetGameTypesUseCase.kt` | `getGameTypesUseCase.ts` |
 | `GetMatchesUseCase` | `invoke()` | `List<Match>` | `src/commonMain/.../application/GetMatchesUseCase.kt` | `getMatchesUseCase.ts` |
-| `ImportMatchesUseCase` | `preview(jsonString: String)`, `execute(jsonString: String)` | `Result<ImportPreview>`, `Result<ImportResult>` | `src/commonMain/.../application/ImportMatchesUseCase.kt` | à venir (TS-015) |
+| `ImportMatchesUseCase` | `preview(jsonString: String)`, `execute(jsonString: String)` | `Result<ImportPreview>`, `Result<ImportResult>` | `src/commonMain/.../application/ImportMatchesUseCase.kt` | `importMatchesUseCase.ts` (`Result<T, Error>`) |
 | `SyncUseCase` | `suspend autoSync()` | `SyncOutcome` | `src/commonMain/.../application/SyncUseCase.kt` | à venir (TS-016) |
 | `UpdateGameTypeUseCase` | `invoke(gameType: GameType)` | `Unit` | `src/commonMain/.../application/UpdateGameTypeUseCase.kt` | `updateGameTypeUseCase.ts` |
 | `SyncUseCase` | `suspend resolveConflict(keepLocal: Boolean)` | `SyncResult` | `src/commonMain/.../application/SyncUseCase.kt` |
