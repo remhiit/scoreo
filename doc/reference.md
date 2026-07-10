@@ -147,7 +147,7 @@ Files: `src/jsMain/kotlin/com/scoreo/ui/shared/ListContainer.kt`, `src/jsMain/ko
 | `src/commonTest/.../application/SyncUseCaseTest.kt` | `SyncUseCaseTest` | 7 |
 | `src/commonTest/.../application/UpdateGameTypeUseCaseTest.kt` | `UpdateGameTypeUseCaseTest` | 3 |
 | `src/commonTest/.../application/UpdateMatchUseCaseTest.kt` | `UpdateMatchUseCaseTest` | 3 |
-| `src/commonTest/.../di/SyncDependenciesTest.kt` | `SyncDependenciesTest` | 2 |
+| `src/commonTest/.../di/SyncDependenciesTest.kt` | `SyncDependenciesTest` | 2 (TS: `src/services/createServices.test.ts` + `ServicesContext.test.tsx`, 6 tests) |
 | `src/commonTest/.../domain/GameTypeTest.kt` | `GameTypeTest` | 9 |
 | `src/commonTest/.../domain/MatchTieBreakTest.kt` | `MatchTieBreakTest` | 12 |
 | `src/commonTest/.../domain/SerializationTest.kt` | `SerializationTest` | 27 |

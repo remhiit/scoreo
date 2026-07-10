@@ -52,6 +52,10 @@ Kotlin's `CreateMatchUseCase`/`ImportMatchesUseCase` instead return `Result<T>` 
 
 So: **thrown errors** for use cases that behave like Kotlin's throwing ones, **`Result<T, E>`** for the two use cases that were already `Result<T>` in Kotlin. This is a deliberate 1:1 mapping, not a mix chosen ad hoc per ticket.
 
+### React/TypeScript port: DI (TS-030)
+
+Kotlin's `createAppDependencies`/`createSyncHandlerIfAvailable` build an `AppDependencies` bag containing one `Handler` per screen plus a couple of ad-hoc use cases used directly by `HomeScreen`. The TS port (`src/services/`) has no `Handler` equivalent — each screen owns its state via `useReducer` (TS-050+) and constructs its own use cases from the shared repositories. So `Services` (`createServices.ts`) only exposes the 4 repositories + the optional `cloudSyncRepository`/`syncUseCase` + `currentDate`, built once at the app root via `ServicesProvider` (`ServicesContext.tsx`, `useMemo`) and consumed through the `useServices()` hook. `cloudSyncRepository`/`syncUseCase` are `undefined` whenever no Google OAuth client id is configured (`VITE_GOOGLE_CLIENT_ID`), mirroring `createSyncHandlerIfAvailable` returning `null`.
+
 ## Web Target
 
 `js(IR)` — Compose HTML generates real HTML DOM elements.
