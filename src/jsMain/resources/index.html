@@ -13,8 +13,10 @@
     <meta name="apple-mobile-web-app-title" content="Scoreo">
     <title>Scoreo</title>
     <link rel="stylesheet" href="styles.css">
-    <!-- Google Identity Services (for OAuth login) -->
-    <script src="https://accounts.google.com/gsi/client"></script>
+    <!-- Google Identity Services (for OAuth login). Deferred so a slow/blocked
+         request to Google (ad blockers, restrictive networks) can't stall HTML
+         parsing and delay the page's own CSS/content from rendering. -->
+    <script src="https://accounts.google.com/gsi/client" defer></script>
 </head>
 <body>
     <!-- Splash/Loader (visible until bundle loads) -->
