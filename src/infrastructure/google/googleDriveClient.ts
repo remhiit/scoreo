@@ -24,7 +24,16 @@ function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
-export class GoogleDriveClient {
+/** Structural shape of GoogleDriveClient's public API, so tests can substitute a fake without extending the real class. */
+export interface DriveClient {
+  findFile(fileName: string): Promise<Result<string | undefined, SyncException>>
+  createFile(fileName: string, content: string, mimeType?: string): Promise<Result<string, SyncException>>
+  updateFile(fileId: string, content: string, mimeType?: string): Promise<Result<string, SyncException>>
+  readFile(fileId: string): Promise<Result<string, SyncException>>
+  upsertFile(fileName: string, content: string, mimeType?: string): Promise<Result<string, SyncException>>
+}
+
+export class GoogleDriveClient implements DriveClient {
   constructor(private readonly getToken: () => Promise<string | undefined>) {}
 
   async findFile(fileName: string): Promise<Result<string | undefined, SyncException>> {
