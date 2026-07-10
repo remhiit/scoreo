@@ -13,6 +13,7 @@ import { ServicesProvider, useServices } from './services/ServicesContext'
 import { GameTypeScreen } from './ui/gametype/GameTypeScreen'
 import { HistoryScreen } from './ui/history/HistoryScreen'
 import { ImportScreen } from './ui/import/ImportScreen'
+import { SyncScreen } from './ui/sync/SyncScreen'
 import {
   GAMES_SCREEN,
   HISTORY_SCREEN,
@@ -166,7 +167,7 @@ function AppShell() {
         )}
         {current.type === 'Sync' &&
           (services.syncUseCase ? (
-            <div>Sync (placeholder)</div>
+            <SyncScreen syncUseCase={services.syncUseCase} />
           ) : (
             <div className="empty">☁ Sync not available</div>
           ))}
