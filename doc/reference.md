@@ -83,13 +83,14 @@ All in `src/commonMain/kotlin/com/scoreo/`.
 | `LocalStorageGameTypeRepository` | `GameTypeRepository` | localStorage (`scoreo_gametypes`) | `src/jsMain/.../infrastructure/LocalStorageGameTypeRepository.kt` | `src/infrastructure/localStorage/localStorageGameTypeRepository.ts` |
 | `LocalStorageMatchRepository` | `MatchRepository` | localStorage (`scoreo_matches`) | `src/jsMain/.../infrastructure/LocalStorageMatchRepository.kt` | `src/infrastructure/localStorage/localStorageMatchRepository.ts` (migration v1->v2 branchee) |
 | `LocalStorageMatchDraftRepository` | `MatchDraftRepository` | localStorage (`scoreo_match_draft`) | `src/jsMain/.../infrastructure/LocalStorageMatchDraftRepository.kt` | `src/infrastructure/localStorage/localStorageMatchDraftRepository.ts` |
-| `GoogleDriveSyncAdapter` | `CloudSyncRepository` | Google Drive App Data Folder (async fetch + coroutines) | `src/jsMain/.../infrastructure/google/GoogleDriveSyncAdapter.kt` |
-| `OAuthConfig` | — (config object) | `CLIENT_ID: String` — generated at build from `GOOGLE_CLIENT_ID` env var | `build/generated/oauthconfig/.../OAuthConfig.kt` (generated) |
-| `InMemoryCloudSyncRepository` | `CloudSyncRepository` | in-memory (tests) | `src/commonTest/.../infrastructure/InMemoryCloudSyncRepository.kt` |
-| `InMemoryPlayerRepository` | `PlayerRepository` | in-memory (tests) | `src/commonTest/.../infrastructure/InMemoryPlayerRepository.kt` |
-| `InMemoryGameTypeRepository` | `GameTypeRepository` | in-memory (tests) | `src/commonTest/.../infrastructure/InMemoryGameTypeRepository.kt` |
-| `InMemoryMatchRepository` | `MatchRepository` | in-memory (tests) | `src/commonTest/.../infrastructure/InMemoryMatchRepository.kt` |
-| `MatchMigration` | — (utility) | `migrateMatchesJson()` | `src/commonMain/.../application/MatchMigration.kt` |
+| `GoogleDriveClient` | — (Drive REST v3 wrapper) | find/create/update/read/upsert `scoreo-data.json`, retry backoff | `src/jsMain/.../infrastructure/google/GoogleDriveClient.kt` | `src/infrastructure/google/googleDriveClient.ts` (`Result<T, SyncException>`) |
+| `GoogleDriveSyncAdapter` | `CloudSyncRepository` | Google Drive App Data Folder (async fetch + coroutines) | `src/jsMain/.../infrastructure/google/GoogleDriveSyncAdapter.kt` | à venir (TS-023) |
+| `OAuthConfig` | — (config object) | `CLIENT_ID: String` — generated at build from `GOOGLE_CLIENT_ID` env var | `build/generated/oauthconfig/.../OAuthConfig.kt` (generated) | à venir (TS-023, `import.meta.env.VITE_GOOGLE_CLIENT_ID`) |
+| `InMemoryCloudSyncRepository` | `CloudSyncRepository` | in-memory (tests) | `src/commonTest/.../infrastructure/InMemoryCloudSyncRepository.kt` | `src/infrastructure/testing/inMemoryCloudSyncRepository.ts` |
+| `InMemoryPlayerRepository` | `PlayerRepository` | in-memory (tests) | `src/commonTest/.../infrastructure/InMemoryPlayerRepository.kt` | `src/infrastructure/testing/inMemoryPlayerRepository.ts` |
+| `InMemoryGameTypeRepository` | `GameTypeRepository` | in-memory (tests) | `src/commonTest/.../infrastructure/InMemoryGameTypeRepository.kt` | `src/infrastructure/testing/inMemoryGameTypeRepository.ts` |
+| `InMemoryMatchRepository` | `MatchRepository` | in-memory (tests) | `src/commonTest/.../infrastructure/InMemoryMatchRepository.kt` | `src/infrastructure/testing/inMemoryMatchRepository.ts` |
+| `MatchMigration` | — (utility) | `migrateMatchesJson()` | `src/commonMain/.../application/MatchMigration.kt` | `src/infrastructure/migration/migrateMatches.ts` |
 
 All in `src/jsMain/kotlin/com/scoreo/`. Production: `LocalStorage*`, `GoogleDriveSyncAdapter`. Tests: `InMemory*`.
 
