@@ -7,10 +7,12 @@ import { GetGameTypesUseCase } from './application/getGameTypesUseCase'
 import { GetHeadToHeadUseCase } from './application/getHeadToHeadUseCase'
 import { GetMatchesUseCase } from './application/getMatchesUseCase'
 import { GetPlayersUseCase } from './application/getPlayersUseCase'
+import { ImportMatchesUseCase } from './application/importMatchesUseCase'
 import { UpdateGameTypeUseCase } from './application/updateGameTypeUseCase'
 import { ServicesProvider, useServices } from './services/ServicesContext'
 import { GameTypeScreen } from './ui/gametype/GameTypeScreen'
 import { HistoryScreen } from './ui/history/HistoryScreen'
+import { ImportScreen } from './ui/import/ImportScreen'
 import {
   GAMES_SCREEN,
   HISTORY_SCREEN,
@@ -79,6 +81,19 @@ function AppShell() {
   const updateGameType = useMemo(() => new UpdateGameTypeUseCase(services.gameTypeRepository), [services])
   const findGameTypeById = useMemo(() => new FindGameTypeByIdUseCase(services.gameTypeRepository), [services])
   const archiveGameType = useMemo(() => new ArchiveGameTypeUseCase(services.gameTypeRepository), [services])
+  const importUseCase = useMemo(
+    () =>
+      new ImportMatchesUseCase(
+        services.playerRepository,
+        services.gameTypeRepository,
+        services.matchRepository,
+        services.currentDate,
+      ),
+    [services],
+  )
+  const handleImportDone = useCallback(() => {
+    navigate(HOME_SCREEN)
+  }, [navigate])
   const handleStatsBackOverrideChange = useCallback((override: (() => void) | null) => {
     setStatsBackOverride(() => override)
   }, [])
@@ -139,7 +154,7 @@ function AppShell() {
             onBackOverrideChange={handleStatsBackOverrideChange}
           />
         )}
-        {current.type === 'Import' && <div>Import (placeholder)</div>}
+        {current.type === 'Import' && <ImportScreen importUseCase={importUseCase} onDone={handleImportDone} />}
         {current.type === 'Games' && (
           <GameTypeScreen
             addGameType={addGameType}
