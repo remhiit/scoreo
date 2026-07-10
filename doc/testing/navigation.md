@@ -145,3 +145,9 @@ Tests schema evolution (optional matchId field):
 - If modifying ScoreDetail parameters, update roundtrip tests
 - Keep helper functions (`parseHash`, `screenToHash`) in sync with `AppNavigator` methods
 - Test file is in `src/commonTest/` (JVM-testable, no JS-specific code)
+
+## TS port (TS-042)
+
+`src/ui/navigation/{screen,hash,useHashRouter}.ts` + `hash.test.ts` (41 tests, ported 1:1 from this file) + `useHashRouter.test.ts` (3 tests covering the hook's DOM wiring: initial-hash restore, `navigate()` pushing state, `popstate` sync).
+
+**Fixed defect vs. Kotlin**: the "Maintenance Notes" above openly admit `parseHash`/`screenToHash` are a hand-kept-in-sync duplicate of `AppNavigator.kt`'s private `restoreFromHash`/`toHash` — the 41 tests here never actually exercise production routing code, only a copy of it. In the TS port, `parseHash`/`screenToHash` are exported once from `hash.ts` and imported by both `useHashRouter.ts` (the real router) and `hash.test.ts` — one implementation, actually under test, no drift risk.

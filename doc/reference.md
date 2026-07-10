@@ -110,6 +110,8 @@ All in `src/jsMain/kotlin/com/scoreo/`. Production: `LocalStorage*`, `GoogleDriv
 | `Screen.Sync` | — | SyncScreen (Google Drive cloud backup) |
 | `Screen.ScoreDetail` | `gameTypeId: String`, `playerIds: List<String>`, `matchId: String? = null` | ScoreDetailScreen (round entry, create or edit mode via sealed ScoreDetailMode) |
 
+**TS (TS-042)**: `src/ui/navigation/screen.ts` (discriminated union `Screen`), `src/ui/navigation/hash.ts` (`parseHash`/`screenToHash`, pure), `src/ui/navigation/useHashRouter.ts` (hook syncing `Screen` with `window.location.hash` via `pushState`/`popstate`, replaces `AppNavigator.kt`'s class). Deliberate fix vs. Kotlin: `AppNavigatorTest.kt` tested a **private duplicate** of `parseHash`/`screenToHash` defined inside the test file itself (see its own "Maintenance Notes": *"Keep helper functions in sync with AppNavigator methods"*) rather than the real `AppNavigator.kt` methods — production routing and its tests could silently drift. In TS, `parseHash`/`screenToHash` are exported once from `hash.ts` and imported by both `useHashRouter.ts` and `hash.test.ts`, so there is a single implementation under test.
+
 ## Shared Components
 
 | Component | Parameters | Usage |
@@ -157,7 +159,7 @@ Files: `src/jsMain/kotlin/com/scoreo/ui/shared/ListContainer.kt`, `src/jsMain/ko
 | `src/commonTest/.../ui/gametype/GameTypeHandlerTest.kt` | `GameTypeHandlerTest` | 22 |
 | `src/commonTest/.../ui/history/HistoryHandlerTest.kt` | `HistoryHandlerTest` | 24 |
 | `src/commonTest/.../ui/import/ImportHandlerTest.kt` | `ImportHandlerTest` | 8 |
-| `src/commonTest/.../ui/navigation/AppNavigatorTest.kt` | `AppNavigatorTest` | 41 |
+| `src/commonTest/.../ui/navigation/AppNavigatorTest.kt` | `AppNavigatorTest` | 41 (TS: `src/ui/navigation/hash.test.ts`, 41 + `useHashRouter.test.ts`, 3) |
 | `src/commonTest/.../ui/player/PlayerHandlerTest.kt` | `PlayerHandlerTest` | 21 |
 | `src/commonTest/.../ui/scoredetail/ScoreDetailHandlerTest.kt` | `ScoreDetailHandlerTest` | 57 |
 | `src/commonTest/.../ui/stats/StatsHandlerTest.kt` | `StatsHandlerTest` | 6 |
