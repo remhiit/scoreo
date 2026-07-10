@@ -62,13 +62,13 @@ All in `src/commonMain/kotlin/com/scoreo/`.
 
 ## Ports (Repository Interfaces)
 
-| Interface | Methods | File |
-|---|---|---|
-| `PlayerRepository` | `getAll(includeInactive)`, `save(player)`, `saveAll(players)`, `delete(id, anonymize)` | `src/commonMain/.../domain/port/PlayerRepository.kt` |
-| `GameTypeRepository` | `getAll(includeInactive: Boolean = false)`, `save(gameType)`, `saveAll(gameTypes)`, `findById(id)` | `src/commonMain/.../domain/port/GameTypeRepository.kt` |
-| `MatchRepository` | `getAll()`, `save(match)`, `saveAll(matches)`, `findById(id)`, `delete(id)` | `src/commonMain/.../domain/port/MatchRepository.kt` |
-| `MatchDraftRepository` | `save(draft: MatchDraft)`, `load(): MatchDraft?`, `clear()` | `src/commonMain/.../domain/port/MatchDraftRepository.kt` |
-| `CloudSyncRepository` | `suspend push(data)`, `suspend pull()`, `suspend getStatus()`, `suspend login()`, `suspend logout()` | `src/commonMain/.../domain/port/CloudSyncRepository.kt` |
+| Interface | Methods | File (Kotlin) | TS |
+|---|---|---|---|
+| `PlayerRepository` | `getAll(includeInactive)`, `save(player)`, `saveAll(players)`, `delete(id, anonymize)` | `src/commonMain/.../domain/port/PlayerRepository.kt` | `src/domain/port/playerRepository.ts` |
+| `GameTypeRepository` | `getAll(includeInactive: Boolean = false)`, `save(gameType)`, `saveAll(gameTypes)`, `findById(id)` | `src/commonMain/.../domain/port/GameTypeRepository.kt` | `src/domain/port/gameTypeRepository.ts` |
+| `MatchRepository` | `getAll()`, `save(match)`, `saveAll(matches)`, `findById(id)`, `delete(id)` | `src/commonMain/.../domain/port/MatchRepository.kt` | `src/domain/port/matchRepository.ts` |
+| `MatchDraftRepository` | `save(draft: MatchDraft)`, `load(): MatchDraft?`, `clear()` | `src/commonMain/.../domain/port/MatchDraftRepository.kt` | `src/domain/port/matchDraftRepository.ts` |
+| `CloudSyncRepository` | `suspend push(data)`, `suspend pull()`, `suspend getStatus()`, `suspend login()`, `suspend logout()` | `src/commonMain/.../domain/port/CloudSyncRepository.kt` | `src/domain/port/cloudSyncRepository.ts` (Promise-based) |
 
 All in `src/commonMain/kotlin/com/scoreo/`.
 
