@@ -28,6 +28,14 @@ PWA Kotlin/JS de suivi de scores entre amis. Compose HTML. MVI (Handler/Intent/S
 ./gradlew help --quiet
 ```
 
+`.claude/hooks/session-start.sh` (déclaré dans `.claude/settings.json`) préchauffe les dépendances Gradle/Node/npm au démarrage d'une session Claude Code sur le web (`$CLAUDE_CODE_REMOTE`), pour que `jvmTest` et le build JS soient rapides dès la première commande. `gradle/wrapper/gradle-wrapper.jar` n'est pas commité (pas de binaires en version control) : le hook utilise `./gradlew` s'il est présent, sinon le `gradle` déjà installé dans l'image de session.
+
+**⚠️ Limitation réseau connue (sessions Claude Code sur le web) :** `dl.google.com` (dépôt Maven Google, déclaré dans `settings.gradle.kts` via `google { mavenContent { includeGroupAndSubgroups("androidx") ... } } }`) était bloqué par la politique d'egress de l'environnement — **résolu** (allowlist mise à jour) : `./gradlew jvmTest` fonctionne à nouveau en session web.
+
+Deux autres blocages ont été résolus différemment :
+- Le téléchargement de binaires tiers hébergés sur **GitHub Releases** (`services.gradle.org` → `github.com/gradle/gradle-distributions` pour la distribution Gradle) reste bloqué : les sessions Claude Code web restreignent l'accès `github.com` aux dépôts explicitement ajoutés à la session (mécanisme distinct de l'allowlist réseau, voir "GitHub access to this repository is not enabled for this session"). D'où le fallback vers le `gradle` système dans `.claude/hooks/session-start.sh` et `.githooks/pre-push` quand `gradle/wrapper/gradle-wrapper.jar` est absent ou que `./gradlew` échoue.
+- Yarn (téléchargé par défaut par le plugin Kotlin/JS depuis `github.com/yarnpkg/yarn`, même blocage) est maintenant activé via **Corepack** (`repo.yarnpkg.com`, ajouté à l'allowlist réseau) au lieu d'être téléchargé par Gradle : voir `build.gradle.kts` (`YarnRootExtension.download = false` quand `$CLAUDE_CODE_REMOTE` est défini) et `.claude/hooks/session-start.sh` (`corepack prepare yarn@1.22.22 --activate`). Le plugin Kotlin/JS attend la syntaxe **Yarn Classic (1.x)** (ex. `--ignore-scripts`) : `corepack prepare yarn@stable` active Yarn Berry (v4) et casse `kotlinNpmInstall`, il faut bien épingler `1.22.22`.
+
 Le hook `pre-push` (`.githooks/pre-push`, activé automatiquement au premier `./gradlew`) lance `gradle help --quiet` avant chaque push. Pas de linter configuré (pas de ktlint/detekt).
 
 Pas de `package.json` / npm : tout passe par Gradle (Kotlin Multiplatform, cibles `jvm()` et `js(IR)`). Les tests métier vivent en `commonMain`/`commonTest` et tournent sur la JVM (`jvmTest`) — le JS n'est nécessaire que pour les adapters spécifiques au navigateur (`jsMain`/`jsTest`).
