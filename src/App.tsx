@@ -1,10 +1,15 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { AddGameTypeUseCase } from './application/addGameTypeUseCase'
+import { ArchiveGameTypeUseCase } from './application/archiveGameTypeUseCase'
 import { DeleteMatchUseCase } from './application/deleteMatchUseCase'
+import { FindGameTypeByIdUseCase } from './application/findGameTypeByIdUseCase'
 import { GetGameTypesUseCase } from './application/getGameTypesUseCase'
 import { GetHeadToHeadUseCase } from './application/getHeadToHeadUseCase'
 import { GetMatchesUseCase } from './application/getMatchesUseCase'
 import { GetPlayersUseCase } from './application/getPlayersUseCase'
+import { UpdateGameTypeUseCase } from './application/updateGameTypeUseCase'
 import { ServicesProvider, useServices } from './services/ServicesContext'
+import { GameTypeScreen } from './ui/gametype/GameTypeScreen'
 import { HistoryScreen } from './ui/history/HistoryScreen'
 import {
   GAMES_SCREEN,
@@ -70,6 +75,10 @@ function AppShell() {
   const getMatches = useMemo(() => new GetMatchesUseCase(services.matchRepository), [services])
   const getPlayers = useMemo(() => new GetPlayersUseCase(services.playerRepository), [services])
   const deleteMatchUseCase = useMemo(() => new DeleteMatchUseCase(services.matchRepository), [services])
+  const addGameType = useMemo(() => new AddGameTypeUseCase(services.gameTypeRepository), [services])
+  const updateGameType = useMemo(() => new UpdateGameTypeUseCase(services.gameTypeRepository), [services])
+  const findGameTypeById = useMemo(() => new FindGameTypeByIdUseCase(services.gameTypeRepository), [services])
+  const archiveGameType = useMemo(() => new ArchiveGameTypeUseCase(services.gameTypeRepository), [services])
   const handleStatsBackOverrideChange = useCallback((override: (() => void) | null) => {
     setStatsBackOverride(() => override)
   }, [])
@@ -131,7 +140,15 @@ function AppShell() {
           />
         )}
         {current.type === 'Import' && <div>Import (placeholder)</div>}
-        {current.type === 'Games' && <div>Games (placeholder)</div>}
+        {current.type === 'Games' && (
+          <GameTypeScreen
+            addGameType={addGameType}
+            updateGameType={updateGameType}
+            getGameTypes={getGameTypes}
+            findGameTypeById={findGameTypeById}
+            archiveGameType={archiveGameType}
+          />
+        )}
         {current.type === 'Sync' &&
           (services.syncUseCase ? (
             <div>Sync (placeholder)</div>

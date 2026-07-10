@@ -90,9 +90,9 @@ describe('App', () => {
     render(<App />)
     fireEvent.click(screen.getByLabelText('Menu'))
     fireEvent.click(screen.getByText('Games'))
-    expect(screen.getByText('Games (placeholder)')).toBeInTheDocument()
+    expect(screen.getByText('No game types yet. Add one.')).toBeInTheDocument()
 
-    fireEvent.click(screen.getByText('Games'))
+    fireEvent.click(screen.getByText('Games', { selector: '.app-title' }))
     expect(screen.getByText('Home (placeholder)')).toBeInTheDocument()
   })
 
