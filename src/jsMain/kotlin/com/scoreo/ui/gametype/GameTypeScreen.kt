@@ -5,14 +5,14 @@ import com.scoreo.domain.model.GameType
 import com.scoreo.domain.model.TieBreakRule
 import com.scoreo.domain.model.WinCondition
 import com.scoreo.ui.Strings
+import com.scoreo.ui.shared.ButtonVariant
 import com.scoreo.ui.shared.ListContainer
 import com.scoreo.ui.shared.ListItemRow
-import org.jetbrains.compose.web.attributes.InputType
-import org.jetbrains.compose.web.attributes.placeholder
-import org.jetbrains.compose.web.dom.Button
+import com.scoreo.ui.shared.LudoButton
+import com.scoreo.ui.shared.LudoModal
+import com.scoreo.ui.shared.LudoTextInput
 import org.jetbrains.compose.web.dom.Div
 import org.jetbrains.compose.web.dom.H1
-import org.jetbrains.compose.web.dom.Input
 import org.jetbrains.compose.web.dom.Option
 import org.jetbrains.compose.web.dom.Select
 import org.jetbrains.compose.web.dom.Span
@@ -48,126 +48,112 @@ fun GameTypeScreen(handler: GameTypeHandler, showTitle: Boolean = true) {
     }
 
     // Modal de détail (ouverte si state.selectedGameId != null)
-    if (state.selectedGameId != null && state.editingGameId == null) {
+    run {
         val gameType = state.gameTypes.find { it.id == state.selectedGameId }
-        if (gameType != null) {
-            // Overlay pour fermer la modale
-            Div(attrs = {
-                classes("modal-overlay")
-                onClick { handler.handle(GameTypeIntent.DeselectGame) }
-            })
-            // Contenu de la modale (sibling de l'overlay, PAS imbriqué dedans)
-            Div(attrs = { classes("modal-content") }) {
-                Div(attrs = { classes("modal-title") }) { Text(gameType.name) }
-                Div(attrs = { classes("modal-body") }) {
-                    Div(attrs = { classes("detail-row") }) {
-                        Span(attrs = { classes("detail-label") }) { Text(Strings.LABEL_WIN_CONDITION_DETAIL) }
-                        Span(attrs = { classes("detail-value") }) { Text(gameType.winCondition.label()) }
-                    }
-
-                    Div(attrs = { classes("detail-row") }) {
-                        Span(attrs = { classes("detail-label") }) { Text(Strings.LABEL_TIE_BREAK_DETAIL) }
-                        Span(attrs = { classes("detail-value") }) { Text(gameType.tieBreakRule.label()) }
-                    }
-
-                    if (gameType.tieBreakRule == TieBreakRule.SECONDARY_SCORE) {
-                        Div(attrs = { classes("detail-row") }) {
-                            Span(attrs = { classes("detail-label") }) { Text(Strings.LABEL_TIE_BREAK_CONDITION) }
-                            Span(attrs = { classes("detail-value") }) { Text(gameType.tieBreakCondition.label()) }
-                        }
-                        gameType.tieBreakLabel?.let { label ->
-                            Div(attrs = { classes("detail-row") }) {
-                                Span(attrs = { classes("detail-label") }) { Text(Strings.LABEL_TIE_BREAK_LABEL) }
-                                Span(attrs = { classes("detail-value") }) { Text(label) }
-                            }
-                        }
-                    }
+        LudoModal(
+            open = state.selectedGameId != null && state.editingGameId == null && gameType != null,
+            title = gameType?.name ?: "",
+            onClose = { handler.handle(GameTypeIntent.DeselectGame) },
+            footer = {
+                LudoButton(
+                    text = Strings.BTN_BACK,
+                    variant = ButtonVariant.Secondary,
+                    onClick = { handler.handle(GameTypeIntent.DeselectGame) },
+                )
+                LudoButton(
+                    text = Strings.BTN_EDIT,
+                    variant = ButtonVariant.Primary,
+                    onClick = { handler.handle(GameTypeIntent.EditGameType(gameType!!.id)) },
+                )
+                LudoButton(
+                    text = Strings.BTN_ARCHIVE,
+                    variant = ButtonVariant.Danger,
+                    onClick = { handler.handle(GameTypeIntent.ShowArchiveConfirm(gameType!!.id)) },
+                )
+            },
+        ) {
+            if (gameType != null) {
+                Div(attrs = { classes("detail-row") }) {
+                    Span(attrs = { classes("detail-label") }) { Text(Strings.LABEL_WIN_CONDITION_DETAIL) }
+                    Span(attrs = { classes("detail-value") }) { Text(gameType.winCondition.label()) }
                 }
-                Div(attrs = { classes("modal-actions") }) {
-                    Button(attrs = {
-                        classes("btn", "btn-secondary")
-                        onClick { handler.handle(GameTypeIntent.DeselectGame) }
-                    }) { Text(Strings.BTN_BACK) }
-                    Button(attrs = {
-                        classes("btn", "btn-primary")
-                        onClick { handler.handle(GameTypeIntent.EditGameType(gameType.id)) }
-                    }) { Text(Strings.BTN_EDIT) }
-                    Button(attrs = {
-                        classes("btn", "btn-danger")
-                        onClick { handler.handle(GameTypeIntent.ShowArchiveConfirm(gameType.id)) }
-                    }) { Text(Strings.BTN_ARCHIVE) }
+
+                Div(attrs = { classes("detail-row") }) {
+                    Span(attrs = { classes("detail-label") }) { Text(Strings.LABEL_TIE_BREAK_DETAIL) }
+                    Span(attrs = { classes("detail-value") }) { Text(gameType.tieBreakRule.label()) }
+                }
+
+                if (gameType.tieBreakRule == TieBreakRule.SECONDARY_SCORE) {
+                    Div(attrs = { classes("detail-row") }) {
+                        Span(attrs = { classes("detail-label") }) { Text(Strings.LABEL_TIE_BREAK_CONDITION) }
+                        Span(attrs = { classes("detail-value") }) { Text(gameType.tieBreakCondition.label()) }
+                    }
+                    gameType.tieBreakLabel?.let { label ->
+                        Div(attrs = { classes("detail-row") }) {
+                            Span(attrs = { classes("detail-label") }) { Text(Strings.LABEL_TIE_BREAK_LABEL) }
+                            Span(attrs = { classes("detail-value") }) { Text(label) }
+                        }
+                    }
                 }
             }
         }
     }
 
     // Modal d'édition (ouverte si state.editingGameId != null)
-    if (state.editingGameId != null) {
+    run {
         val gameType = state.gameTypes.find { it.id == state.editingGameId }
-        if (gameType != null) {
-            // Overlay pour fermer (annuler)
-            Div(attrs = {
-                classes("modal-overlay")
-                onClick { handler.handle(GameTypeIntent.CancelEdit) }
-            })
-             // Contenu de la modale
-             Div(attrs = { classes("modal-content") }) {
-                 Div(attrs = { classes("modal-title") }) {
-                     Text(Strings.LABEL_EDIT_GAME.replace("{name}", gameType.name))
-                 }
-                Div(attrs = { classes("modal-body") }) {
-                    GameTypeFields(handler)
-                }
-                Div(attrs = { classes("modal-actions") }) {
-                    Button(attrs = {
-                        classes("btn", "btn-secondary")
-                        onClick { handler.handle(GameTypeIntent.CancelEdit) }
-                    }) { Text(Strings.BTN_CANCEL) }
-                    Button(attrs = {
-                        classes("btn", "btn-primary")
-                        onClick {
-                            handler.handle(GameTypeIntent.UpdateGameType(
-                                gameType.copy(
-                                    name = state.inputName.trim(),
-                                    winCondition = state.selectedWinCondition,
-                                    tieBreakRule = state.selectedTieBreakRule,
-                                    tieBreakCondition = state.selectedTieBreakCondition,
-                                    tieBreakLabel = state.selectedTieBreakLabel,
-                                )
-                            ))
-                        }
-                    }) { Text(Strings.BTN_SAVE) }
-                }
-            }
+        LudoModal(
+            open = state.editingGameId != null && gameType != null,
+            title = gameType?.let { Strings.LABEL_EDIT_GAME.replace("{name}", it.name) } ?: "",
+            onClose = { handler.handle(GameTypeIntent.CancelEdit) },
+            footer = {
+                LudoButton(
+                    text = Strings.BTN_CANCEL,
+                    variant = ButtonVariant.Secondary,
+                    onClick = { handler.handle(GameTypeIntent.CancelEdit) },
+                )
+                LudoButton(
+                    text = Strings.BTN_SAVE,
+                    variant = ButtonVariant.Primary,
+                    onClick = {
+                        handler.handle(GameTypeIntent.UpdateGameType(
+                            gameType!!.copy(
+                                name = state.inputName.trim(),
+                                winCondition = state.selectedWinCondition,
+                                tieBreakRule = state.selectedTieBreakRule,
+                                tieBreakCondition = state.selectedTieBreakCondition,
+                                tieBreakLabel = state.selectedTieBreakLabel,
+                            )
+                        ))
+                    },
+                )
+            },
+        ) {
+            GameTypeFields(handler)
         }
     }
 
     // Archive confirmation modal
-    if (state.archiveConfirmGameTypeId != null) {
+    run {
         val confirmGameType = state.gameTypes.find { it.id == state.archiveConfirmGameTypeId }
-        if (confirmGameType != null) {
-            Div(attrs = {
-                classes("modal-overlay")
-                onClick { handler.handle(GameTypeIntent.DismissArchiveConfirm) }
-            })
-            Div(attrs = { classes("modal-content") }) {
-                Div(attrs = { classes("modal-title") }) {
-                    Text(Strings.DIALOG_ARCHIVE.replace("{name}", confirmGameType.name))
-                }
-                Div(attrs = { classes("modal-body") }) {
-                    Text(Strings.DIALOG_ARCHIVE_MESSAGE)
-                }
-                Div(attrs = { classes("modal-actions") }) {
-                    Button(attrs = {
-                        classes("btn", "btn-secondary")
-                        onClick { handler.handle(GameTypeIntent.DismissArchiveConfirm) }
-                    }) { Text(Strings.BTN_CANCEL) }
-                    Button(attrs = {
-                        classes("btn", "btn-danger")
-                        onClick { handler.handle(GameTypeIntent.ArchiveGameType(state.archiveConfirmGameTypeId!!)) }
-                    }) { Text(Strings.BTN_ARCHIVE) }
-                }
-            }
+        LudoModal(
+            open = state.archiveConfirmGameTypeId != null && confirmGameType != null,
+            title = confirmGameType?.let { Strings.DIALOG_ARCHIVE.replace("{name}", it.name) } ?: "",
+            onClose = { handler.handle(GameTypeIntent.DismissArchiveConfirm) },
+            footer = {
+                LudoButton(
+                    text = Strings.BTN_CANCEL,
+                    variant = ButtonVariant.Secondary,
+                    onClick = { handler.handle(GameTypeIntent.DismissArchiveConfirm) },
+                )
+                LudoButton(
+                    text = Strings.BTN_ARCHIVE,
+                    variant = ButtonVariant.Danger,
+                    onClick = { handler.handle(GameTypeIntent.ArchiveGameType(state.archiveConfirmGameTypeId!!)) },
+                )
+            },
+        ) {
+            Text(Strings.DIALOG_ARCHIVE_MESSAGE)
         }
     }
 }
@@ -180,18 +166,13 @@ private fun GameTypeForm(handler: GameTypeHandler) {
     if (state.editingGameId != null) return
 
     Div(attrs = { classes("form-row") }) {
-         Input(type = InputType.Text, attrs = {
-              classes("input")
-              placeholder(Strings.LABEL_FORM_GAME_NAME)
-              value(state.inputName)
-             onInput { handler.handle(GameTypeIntent.UpdateName(it.value)) }
-             onKeyUp {
-                 if (it.key == "Enter") {
-                     handler.handle(GameTypeIntent.AddGameType)
-                 }
-             }
-         })
-     }
+        LudoTextInput(
+            value = state.inputName,
+            onChange = { handler.handle(GameTypeIntent.UpdateName(it)) },
+            placeholder = Strings.LABEL_FORM_GAME_NAME,
+            onEnter = { handler.handle(GameTypeIntent.AddGameType) },
+        )
+    }
 
     GameTypeFields(handler)
 
@@ -201,12 +182,12 @@ private fun GameTypeForm(handler: GameTypeHandler) {
             property("gap", "8px")
         }
     }) {
-        Button(attrs = {
-            classes("btn", "btn-primary", "btn-full")
-            onClick {
-                handler.handle(GameTypeIntent.AddGameType)
-            }
-        }) { Text(Strings.BTN_ADD_GAME_TYPE) }
+        LudoButton(
+            text = Strings.BTN_ADD_GAME_TYPE,
+            variant = ButtonVariant.Primary,
+            className = "ludo-btn--full",
+            onClick = { handler.handle(GameTypeIntent.AddGameType) },
+        )
     }
 }
 
@@ -270,12 +251,11 @@ private fun GameTypeFields(handler: GameTypeHandler) {
 
         Div(attrs = { classes("section-label") }) { Text(Strings.LABEL_TIE_BREAK_LABEL) }
         Div(attrs = { classes("form-row") }) {
-            Input(type = InputType.Text, attrs = {
-                classes("input")
-                placeholder("e.g. Number of cards")
-                value(state.selectedTieBreakLabel ?: "")
-                onInput { handler.handle(GameTypeIntent.UpdateTieBreakLabel(it.value)) }
-            })
+            LudoTextInput(
+                value = state.selectedTieBreakLabel ?: "",
+                onChange = { handler.handle(GameTypeIntent.UpdateTieBreakLabel(it)) },
+                placeholder = "e.g. Number of cards",
+            )
         }
     }
 }

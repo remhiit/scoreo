@@ -17,8 +17,8 @@
     left: 0;
     right: 0;
     height: var(--header-height);
-    background: var(--surface);
-    border-bottom: 1px solid var(--outline);
+    background: var(--surface-app);
+    border-bottom: 1px solid var(--border-default);
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -34,23 +34,15 @@
     .app-header {
         left: 50%;
         transform: translateX(-50%);
-        border-left: 1px solid var(--outline);
-        border-right: 1px solid var(--outline);
+        border-left: 1px solid var(--border-default);
+        border-right: 1px solid var(--border-default);
     }
-}
-
-.header-title {
-    font-size: 18px;
-    font-weight: 600;
-    color: var(--on-surface);
-    flex: 1;
-    text-align: center;
 }
 
 .app-title {
     font-size: 18px;
     font-weight: 600;
-    color: var(--on-surface);
+    color: var(--text-heading);
     flex: 1;
     text-align: center;
     cursor: pointer;
@@ -62,71 +54,12 @@
     opacity: 0.7;
 }
 
-.header-spacer {
-    width: 44px;
-    height: 44px;
-}
-
-.theme-toggle-btn {
-    width: 44px;
-    height: 44px;
-    border: none;
-    background: transparent;
-    font-size: 18px;
-    color: var(--on-surface-variant);
-    cursor: pointer;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-    transition: background 0.15s;
-}
-
-.theme-toggle-btn:hover { background: var(--surface-variant); }
-
-.back-btn {
-    width: 44px;
-    height: 44px;
-    border: none;
-    background: transparent;
-    font-size: 20px;
-    color: var(--primary);
-    cursor: pointer;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-    transition: background 0.15s;
-}
-
-.back-btn:hover { background: var(--primary-light); }
-
-.burger-btn {
-    width: 44px;
-    height: 44px;
-    border: none;
-    background: transparent;
-    font-size: 20px;
-    color: var(--on-surface);
-    cursor: pointer;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-    transition: background 0.15s;
-}
-
-.burger-btn:hover { background: var(--surface-variant); }
-
 /* ── Burger menu ── */
 
 .burger-overlay {
     position: fixed;
     inset: 0;
-    background: var(--overlay);
+    background: var(--scrim);
     z-index: 200;
 }
 
@@ -136,33 +69,21 @@
     right: 0;
     bottom: 0;
     width: 260px;
-    background: var(--surface);
+    background: var(--surface-app);
     z-index: 201;
     display: flex;
     flex-direction: column;
     padding: 16px 0;
-    box-shadow: -4px 0 24px var(--overlay-light);
+    box-shadow: -4px 0 24px color-mix(in srgb, var(--ctp-crust) 15%, transparent);
 }
 
+/* LudoButton handles size/color/hover; this is a layout-only override
+   for the panel-corner position (see Button.kt's className param). */
 .burger-close {
     align-self: flex-end;
     margin-right: 12px;
     margin-bottom: 8px;
-    width: 44px;
-    height: 44px;
-    border: none;
-    background: transparent;
-    font-size: 20px;
-    color: var(--on-surface-variant);
-    cursor: pointer;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: background 0.15s;
 }
-
-.burger-close:hover { background: var(--surface-variant); }
 
 .burger-item {
     display: flex;
@@ -172,23 +93,18 @@
     border: none;
     background: transparent;
     font-size: 16px;
-    color: var(--on-surface);
+    color: var(--text-body);
     cursor: pointer;
     text-align: left;
     transition: background 0.15s;
     width: 100%;
 }
 
-.burger-item:hover { background: var(--surface-variant); }
+.burger-item:hover { background: var(--surface-hover); }
 
-.burger-item-icon { 
+.burger-item-icon {
     font-size: 20px;
     flex-shrink: 0;
-}
-
-/* Dark mode adjustments */
-[data-theme="dark"] .burger-item:hover {
-    background: rgba(255, 255, 255, 0.08);
 }
 
 /* ── ListContainer — conteneur de liste générique ── */
@@ -210,8 +126,8 @@
     align-items: center;
     gap: 8px;
     padding: 12px 16px;
-    background: var(--surface-variant);
-    border-radius: var(--radius);
+    background: var(--surface-card);
+    border-radius: var(--radius-md);
 }
 
 .list-item-label {
@@ -224,23 +140,23 @@
 
 .list-item-label--selectable {
     cursor: pointer;
-    border-radius: var(--radius);
+    border-radius: var(--radius-md);
     padding: 4px 6px;
     margin: -4px -6px;
     transition: background 0.1s;
 }
 
 .list-item-label--selectable:hover {
-    background: var(--primary-light);
+    background: var(--color-primary-tint);
 }
 
 .list-item-label--selected .list-item-select-picto {
-    color: var(--primary);
+    color: var(--color-primary);
 }
 
 .list-item-select-picto {
     font-size: 16px;
-    color: var(--on-surface-variant);
+    color: var(--text-muted);
     flex-shrink: 0;
 }
 
@@ -252,7 +168,7 @@
 
 .list-item-subtitle {
     font-size: 13px;
-    color: var(--on-surface-variant);
+    color: var(--text-muted);
     display: block;
     margin-top: 2px;
 }
@@ -274,15 +190,15 @@
     border-radius: 50%;
     font-size: 16px;
     line-height: 1;
-    color: var(--on-surface-variant);
+    color: var(--text-muted);
     transition: background 0.15s, color 0.15s;
 }
 
 .btn-icon:hover {
-    background: var(--primary-light);
+    background: var(--color-primary-tint);
 }
 
 .btn-icon--danger:hover {
-    background: var(--danger-hover);
-    color: var(--error);
+    background: color-mix(in srgb, var(--color-danger) 15%, var(--surface-card));
+    color: var(--color-danger);
 }

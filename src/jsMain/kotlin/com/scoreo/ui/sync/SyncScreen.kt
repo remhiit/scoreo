@@ -3,7 +3,8 @@ package com.scoreo.ui.sync
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import com.scoreo.ui.Strings
-import org.jetbrains.compose.web.dom.Button
+import com.scoreo.ui.shared.ButtonVariant
+import com.scoreo.ui.shared.LudoButton
 import org.jetbrains.compose.web.dom.Div
 import org.jetbrains.compose.web.dom.Span
 import org.jetbrains.compose.web.dom.Text
@@ -36,10 +37,11 @@ fun SyncScreen(handler: SyncHandler) {
 
     s.error?.let { error ->
         Div(attrs = { classes("error-msg") }) { Text(error) }
-        Button(attrs = {
-            classes("btn", "btn-secondary")
-            onClick { handler.handle(SyncIntent.DismissError) }
-         }) { Text(Strings.BTN_DISMISS) }
+        LudoButton(
+            text = Strings.BTN_DISMISS,
+            variant = ButtonVariant.Secondary,
+            onClick = { handler.handle(SyncIntent.DismissError) },
+        )
     }
 }
 
@@ -49,10 +51,11 @@ private fun disconnectedView(handler: SyncHandler) {
         Span(attrs = { classes("sync-icon") }) { Text("☁") }
         Div(attrs = { classes("section-label") }) { Text(Strings.LABEL_CLOUD_SYNC) }
         Div { Text(Strings.MSG_SYNC_DATA_GOOGLE) }
-        Button(attrs = {
-            classes("btn", "btn-primary")
-            onClick { handler.handle(SyncIntent.Login) }
-        }) { Text(Strings.BTN_CONNECT_GOOGLE) }
+        LudoButton(
+            text = Strings.BTN_CONNECT_GOOGLE,
+            variant = ButtonVariant.Primary,
+            onClick = { handler.handle(SyncIntent.Login) },
+        )
     }
 }
 
@@ -75,10 +78,11 @@ private fun resolvedView(handler: SyncHandler, s: SyncState) {
         s.email?.let { email ->
             Div(attrs = { classes("sync-status") }) { Text("Connected as $email") }
         }
-        Button(attrs = {
-            classes("btn", "btn-secondary")
-            onClick { handler.handle(SyncIntent.Logout) }
-        }) { Text(Strings.BTN_DISCONNECT) }
+        LudoButton(
+            text = Strings.BTN_DISCONNECT,
+            variant = ButtonVariant.Secondary,
+            onClick = { handler.handle(SyncIntent.Logout) },
+        )
     }
 }
 
@@ -114,14 +118,16 @@ private fun conflictView(handler: SyncHandler, s: SyncState) {
         }
 
         Div(attrs = { classes("sync-actions") }) {
-            Button(attrs = {
-                classes("btn", "btn-primary")
-                onClick { handler.handle(SyncIntent.ResolveConflict(true)) }
-            }) { Text(Strings.BTN_KEEP_LOCAL) }
-            Button(attrs = {
-                classes("btn", "btn-secondary")
-                onClick { handler.handle(SyncIntent.ResolveConflict(false)) }
-            }) { Text(Strings.BTN_KEEP_REMOTE) }
+            LudoButton(
+                text = Strings.BTN_KEEP_LOCAL,
+                variant = ButtonVariant.Primary,
+                onClick = { handler.handle(SyncIntent.ResolveConflict(true)) },
+            )
+            LudoButton(
+                text = Strings.BTN_KEEP_REMOTE,
+                variant = ButtonVariant.Secondary,
+                onClick = { handler.handle(SyncIntent.ResolveConflict(false)) },
+            )
         }
     }
 }

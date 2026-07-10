@@ -3,6 +3,7 @@ package com.scoreo.ui
 object Strings {
     // Buttons & Actions
     const val BTN_ADD = "Add"
+    const val BTN_CLOSE = "Close"
     const val BTN_ADD_GAME_TYPE = "Add game type"
     const val BTN_ADD_GAME = "Add game"
     const val BTN_START_MATCH = "Start match"
@@ -152,4 +153,10 @@ object Strings {
      const val MSG_ERROR_CREATE_GAME = "Failed to create game type: {error}"
      const val MSG_ERROR_READ_FILE = "Failed to read file"
      const val MSG_ERROR_READ_ABORTED = "File read was aborted"
+
+     // Theme picker
+     const val BURGER_THEME = "Theme"
+     const val TITLE_THEME_PICKER = "Theme"
+     const val LABEL_FLAVOR = "Flavor"
+     const val LABEL_ACCENT = "Accent"
 }

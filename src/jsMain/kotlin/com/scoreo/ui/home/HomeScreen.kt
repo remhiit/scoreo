@@ -12,8 +12,13 @@ import com.scoreo.ui.player.PlayerHandler
 import com.scoreo.ui.player.PlayerIntent
 import com.scoreo.domain.DomainError
 import com.scoreo.ui.Strings
+import com.scoreo.ui.shared.ButtonSize
+import com.scoreo.ui.shared.ButtonVariant
 import com.scoreo.ui.shared.ListContainer
 import com.scoreo.ui.shared.ListItemRow
+import com.scoreo.ui.shared.LudoButton
+import com.scoreo.ui.shared.LudoModal
+import com.scoreo.ui.shared.LudoTextInput
 import org.jetbrains.compose.web.attributes.InputType
 import org.jetbrains.compose.web.dom.Button
 import org.jetbrains.compose.web.dom.Div
@@ -88,18 +93,18 @@ fun HomeScreen(
 
     // ── Add player form (always visible) ──
     Div(attrs = { classes("form-row") }) {
-        Input(type = InputType.Text, attrs = {
-            classes("input")
-            if (state.error != null) classes("error")
-            attr("placeholder", Strings.LABEL_PLAYER_NAME)
-            value(state.inputName)
-            onInput { playerHandler.handle(PlayerIntent.UpdateInput(it.value)) }
-            onKeyUp { if (it.key == "Enter") playerHandler.handle(PlayerIntent.AddPlayer) }
-        })
-        Button(attrs = {
-            classes("btn", "btn-primary")
-            onClick { playerHandler.handle(PlayerIntent.AddPlayer) }
-        }) { Text(Strings.BTN_ADD) }
+        LudoTextInput(
+            value = state.inputName,
+            onChange = { playerHandler.handle(PlayerIntent.UpdateInput(it)) },
+            placeholder = Strings.LABEL_PLAYER_NAME,
+            invalid = state.error != null,
+            onEnter = { playerHandler.handle(PlayerIntent.AddPlayer) },
+        )
+        LudoButton(
+            text = Strings.BTN_ADD,
+            variant = ButtonVariant.Primary,
+            onClick = { playerHandler.handle(PlayerIntent.AddPlayer) },
+        )
     }
 
     state.error?.let { msg ->
@@ -160,134 +165,141 @@ fun HomeScreen(
      // ── FAB ──
      if (state.players.isNotEmpty()) {
          val hasEnoughPlayers = selectedPlayers.size >= 2
-         Button(attrs = {
-             classes("fab")
-             if (!hasEnoughPlayers) {
-                 classes("fab-disabled")
-                 style { property("pointer-events", "none") }
-             }
-             onClick {
-                 if (selectedPlayers.size >= 2) {
-                     modalGameTypes = getGameTypes()
-                     selectedGameType = null
-                     gameModalError = null
-                     showAddGameForm = false
-                     showGameModal = true
-                 }
-             }
-         }) { Text(Strings.BTN_NEW_MATCH) }
+         LudoButton(
+             text = Strings.BTN_NEW_MATCH,
+             variant = ButtonVariant.Primary,
+             size = ButtonSize.Lg,
+             disabled = !hasEnoughPlayers,
+             className = "fab-position",
+             onClick = {
+                 modalGameTypes = getGameTypes()
+                 selectedGameType = null
+                 gameModalError = null
+                 showAddGameForm = false
+                 showGameModal = true
+             },
+         )
     }
 
     // ── Game selection modal ──
-    if (showGameModal) {
-        Div(attrs = {
-            classes("modal-overlay")
-            onClick { showGameModal = false }
-        }) {}
-        Div(attrs = { classes("modal-content") }) {
-            Div(attrs = { classes("modal-title") }) { Text(Strings.DIALOG_SELECT_GAME) }
+    LudoModal(
+        open = showGameModal,
+        title = Strings.DIALOG_SELECT_GAME,
+        onClose = { showGameModal = false },
+        footer = {
+            LudoButton(
+                text = Strings.BTN_CANCEL,
+                variant = ButtonVariant.Secondary,
+                onClick = { showGameModal = false },
+            )
+            LudoButton(
+                text = Strings.BTN_START_MATCH,
+                variant = ButtonVariant.Primary,
+                onClick = {
+                    if (selectedGameType == null) {
+                        gameModalError = Strings.MSG_ERROR_SELECT_GAME
+                        return@LudoButton
+                    }
+                    showGameModal = false
+                    onStartGame(selectedGameType!!.id, selectedPlayers.toList())
+                },
+            )
+        },
+    ) {
+        if (modalGameTypes.isEmpty()) {
+            Div(attrs = { classes("empty-inline") }) { Text(Strings.EMPTY_GAMES) }
+        } else {
+            Select(attrs = {
+                classes("select")
+                onChange { event ->
+                    val gt = modalGameTypes.find { it.id == event.value }
+                    if (gt != null) {
+                        selectedGameType = gt
+                        gameModalError = null
+                    }
+                }
+            }) {
+                Option(value = "", attrs = { if (selectedGameType == null) attr("selected", "") }) {
+                    Text("— ${Strings.LABEL_SELECT_GAME} —")
+                }
+                modalGameTypes.forEach { gt ->
+                    Option(value = gt.id, attrs = {
+                        if (gt.id == selectedGameType?.id) attr("selected", "")
+                    }) { Text(gt.name) }
+                }
+            }
+        }
 
-            if (modalGameTypes.isEmpty()) {
-                Div(attrs = { classes("empty-inline") }) { Text(Strings.EMPTY_GAMES) }
-            } else {
+        Div(attrs = { classes("modal-row") }) {
+            LudoButton(
+                text = if (showAddGameForm) "−" else "＋",
+                variant = ButtonVariant.Secondary,
+                iconOnly = true,
+                onClick = { showAddGameForm = !showAddGameForm },
+            )
+            Span { Text(Strings.LABEL_ADD_NEW_GAME) }
+        }
+
+        if (showAddGameForm) {
+            Div(attrs = { classes("inline-form") }) {
+                LudoTextInput(
+                    value = inlineGameName,
+                    onChange = { inlineGameName = it; inlineGameError = null },
+                    placeholder = Strings.LABEL_GAME_NAME,
+                    invalid = inlineGameError != null,
+                    onEnter = { if (inlineGameName.isNotBlank()) addInlineGameType() },
+                )
                 Select(attrs = {
                     classes("select")
                     onChange { event ->
-                        val gt = modalGameTypes.find { it.id == event.value }
-                        if (gt != null) {
-                            selectedGameType = gt
-                            gameModalError = null
-                        }
+                        val wc = WinCondition.entries.find { it.name == event.value }
+                            ?: WinCondition.HIGHEST_SCORE
+                        inlineGameWinCondition = wc
                     }
                 }) {
-                    Option(value = "", attrs = { if (selectedGameType == null) attr("selected", "") }) {
-                        Text("— ${Strings.LABEL_SELECT_GAME} —")
-                    }
-                    modalGameTypes.forEach { gt ->
-                        Option(value = gt.id, attrs = {
-                            if (gt.id == selectedGameType?.id) attr("selected", "")
-                        }) { Text(gt.name) }
+                    WinCondition.entries.forEach { wc ->
+                        Option(value = wc.name, attrs = {
+                            if (wc == inlineGameWinCondition) attr("selected", "")
+                        }) { Text(wc.label()) }
                     }
                 }
-            }
-
-            Div(attrs = { classes("modal-row") }) {
-                Button(attrs = {
-                    classes("btn-add")
-                    onClick { showAddGameForm = !showAddGameForm }
-                }) { Text(if (showAddGameForm) "−" else "＋") }
-                Span { Text(Strings.LABEL_ADD_NEW_GAME) }
-            }
-
-            if (showAddGameForm) {
-                Div(attrs = { classes("inline-form") }) {
-                    Input(type = InputType.Text, attrs = {
-                        classes("input")
-                        if (inlineGameError != null) classes("error")
-                        attr("placeholder", Strings.LABEL_GAME_NAME)
-                        value(inlineGameName)
-                        onInput { inlineGameName = it.value; inlineGameError = null }
-                        onKeyUp { if (it.key == "Enter" && inlineGameName.isNotBlank()) {
+                inlineGameError?.let { Div(attrs = { classes("error-msg") }) { Text(it) } }
+                LudoButton(
+                    text = Strings.BTN_ADD_GAME,
+                    variant = ButtonVariant.Primary,
+                    className = "ludo-btn--full",
+                    onClick = {
+                        if (inlineGameName.isNotBlank()) {
                             addInlineGameType()
-                        } }
-                    })
-                    Select(attrs = {
-                        classes("select")
-                        onChange { event ->
-                            val wc = WinCondition.entries.find { it.name == event.value }
-                                ?: WinCondition.HIGHEST_SCORE
-                            inlineGameWinCondition = wc
                         }
-                    }) {
-                        WinCondition.entries.forEach { wc ->
-                            Option(value = wc.name, attrs = {
-                                if (wc == inlineGameWinCondition) attr("selected", "")
-                            }) { Text(wc.label()) }
-                        }
-                    }
-                    inlineGameError?.let { Div(attrs = { classes("error-msg") }) { Text(it) } }
-                    Button(attrs = {
-                        classes("btn", "btn-primary", "btn-full")
-                        onClick {
-                            if (inlineGameName.isNotBlank()) {
-                                addInlineGameType()
-                            }
-                        }
-                    }) { Text(Strings.BTN_ADD_GAME) }
-                }
-            }
-
-            gameModalError?.let { Div(attrs = { classes("error-msg") }) { Text(it) } }
-
-            Div(attrs = { classes("modal-actions") }) {
-                Button(attrs = {
-                    classes("btn", "btn-secondary")
-                    onClick { showGameModal = false }
-                }) { Text(Strings.BTN_CANCEL) }
-                Button(attrs = {
-                    classes("btn", "btn-primary")
-                    onClick {
-                        if (selectedGameType == null) {
-                            gameModalError = Strings.MSG_ERROR_SELECT_GAME
-                            return@onClick
-                        }
-                        showGameModal = false
-                        onStartGame(selectedGameType!!.id, selectedPlayers.toList())
-                    }
-                }) { Text(Strings.BTN_START_MATCH) }
+                    },
+                )
             }
         }
+
+        gameModalError?.let { Div(attrs = { classes("error-msg") }) { Text(it) } }
     }
 
     // ── Delete confirmation modal ──
     state.deleteConfirmPlayerId?.let { playerId ->
         val player = state.players.find { it.id == playerId }
-        Div(attrs = {
-            classes("modal-overlay")
-            onClick { playerHandler.handle(PlayerIntent.DismissDeleteConfirm) }
-        }) {}
-        Div(attrs = { classes("modal-content") }) {
-            Div(attrs = { classes("modal-title") }) { Text(Strings.CONFIRM_DELETE_PLAYER.replace("{name}", player?.name ?: "?")) }
+        LudoModal(
+            open = true,
+            title = Strings.CONFIRM_DELETE_PLAYER.replace("{name}", player?.name ?: "?"),
+            onClose = { playerHandler.handle(PlayerIntent.DismissDeleteConfirm) },
+            footer = {
+                LudoButton(
+                    text = Strings.BTN_CANCEL,
+                    variant = ButtonVariant.Secondary,
+                    onClick = { playerHandler.handle(PlayerIntent.DismissDeleteConfirm) },
+                )
+                LudoButton(
+                    text = Strings.BTN_DELETE,
+                    variant = ButtonVariant.Danger,
+                    onClick = { playerHandler.handle(PlayerIntent.DeletePlayer(playerId, anonymize)) },
+                )
+            },
+        ) {
             Div(attrs = { classes("modal-body") }) { Text(Strings.MSG_MATCHES_PRESERVED) }
             Div(attrs = { classes("modal-row") }) {
                 Input(type = InputType.Checkbox, attrs = {
@@ -296,16 +308,6 @@ fun HomeScreen(
                 })
                 Span { Text(Strings.BTN_ERASE_NAME) }
             }
-            Div(attrs = { classes("modal-actions") }) {
-                Button(attrs = {
-                    classes("btn", "btn-secondary")
-                    onClick { playerHandler.handle(PlayerIntent.DismissDeleteConfirm) }
-                }) { Text(Strings.BTN_CANCEL) }
-                Button(attrs = {
-                    classes("btn", "btn-danger", "btn-danger-filled")
-                    onClick { playerHandler.handle(PlayerIntent.DeletePlayer(playerId, anonymize)) }
-                }) { Text(Strings.BTN_DELETE) }
-            }
         }
     }
 
@@ -313,37 +315,31 @@ fun HomeScreen(
     state.renamingPlayerId?.let { playerId ->
         val player = state.players.find { it.id == playerId }
         if (player != null) {
-            Div(attrs = {
-                classes("modal-overlay")
-                onClick { playerHandler.handle(PlayerIntent.CancelRename) }
-            }) {}
-            Div(attrs = { classes("modal-content") }) {
-                Div(attrs = { classes("modal-title") }) {
-                    Text(Strings.TITLE_RENAME_PLAYER.replace("{name}", player.name))
-                }
-                Div(attrs = { classes("modal-body") }) {
-                    Input(type = InputType.Text, attrs = {
-                        classes("input")
-                        value(state.renameInput)
-                        attr("autofocus", "")
-                        onInput { playerHandler.handle(PlayerIntent.UpdateRenameInput(it.value)) }
-                        onKeyUp { e ->
-                            if (e.key == "Enter") playerHandler.handle(PlayerIntent.ConfirmRename)
-                        }
-                    })
-                    state.error?.let { errorMsg ->
-                        Div(attrs = { classes("error-msg") }) { Text(errorMsg) }
-                    }
-                }
-                Div(attrs = { classes("modal-actions") }) {
-                    Button(attrs = {
-                        classes("btn", "btn-secondary")
-                        onClick { playerHandler.handle(PlayerIntent.CancelRename) }
-                    }) { Text(Strings.BTN_CANCEL) }
-                    Button(attrs = {
-                        classes("btn", "btn-primary")
-                        onClick { playerHandler.handle(PlayerIntent.ConfirmRename) }
-                    }) { Text(Strings.BTN_CONFIRM) }
+            LudoModal(
+                open = true,
+                title = Strings.TITLE_RENAME_PLAYER.replace("{name}", player.name),
+                onClose = { playerHandler.handle(PlayerIntent.CancelRename) },
+                footer = {
+                    LudoButton(
+                        text = Strings.BTN_CANCEL,
+                        variant = ButtonVariant.Secondary,
+                        onClick = { playerHandler.handle(PlayerIntent.CancelRename) },
+                    )
+                    LudoButton(
+                        text = Strings.BTN_CONFIRM,
+                        variant = ButtonVariant.Primary,
+                        onClick = { playerHandler.handle(PlayerIntent.ConfirmRename) },
+                    )
+                },
+            ) {
+                LudoTextInput(
+                    value = state.renameInput,
+                    onChange = { playerHandler.handle(PlayerIntent.UpdateRenameInput(it)) },
+                    autofocus = true,
+                    onEnter = { playerHandler.handle(PlayerIntent.ConfirmRename) },
+                )
+                state.error?.let { errorMsg ->
+                    Div(attrs = { classes("error-msg") }) { Text(errorMsg) }
                 }
             }
         }

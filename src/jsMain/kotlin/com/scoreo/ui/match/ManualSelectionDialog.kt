@@ -3,8 +3,10 @@ package com.scoreo.ui.match
 import androidx.compose.runtime.Composable
 import com.scoreo.domain.model.Player
 import com.scoreo.ui.Strings
+import com.scoreo.ui.shared.ButtonVariant
+import com.scoreo.ui.shared.LudoButton
+import com.scoreo.ui.shared.LudoModal
 import org.jetbrains.compose.web.attributes.InputType
-import org.jetbrains.compose.web.dom.Button
 import org.jetbrains.compose.web.dom.Div
 import org.jetbrains.compose.web.dom.Input
 import org.jetbrains.compose.web.dom.Span
@@ -28,39 +30,27 @@ fun ManualSelectionDialog(
     onKeepTie: () -> Unit,
     onDismiss: () -> Unit,
 ) {
-    Div(attrs = {
-        classes("modal-overlay")
-        onClick { onDismiss() }
-    }) {}
-    Div(attrs = { classes("modal-content") }) {
-        Div(attrs = { classes("modal-title") }) { Text(Strings.BTN_FINAL_DECISION) }
-        Div(attrs = { classes("modal-body") }) {
-            tiedPlayers.forEach { player ->
-                Div(attrs = { classes("modal-row") }) {
-                    Input(type = InputType.Checkbox, attrs = {
-                        checked(player.id in selectedWinners)
-                        onChange { onToggleWinner(player.id) }
-                    })
-                    Span { Text(player.name) }
-                }
+    LudoModal(
+        open = true,
+        title = Strings.BTN_FINAL_DECISION,
+        onClose = onDismiss,
+        footer = {
+            LudoButton(text = Strings.BTN_CANCEL, variant = ButtonVariant.Secondary, onClick = onDismiss)
+            LudoButton(text = Strings.BTN_KEEP_TIE, variant = ButtonVariant.Secondary, onClick = onKeepTie)
+            LudoButton(text = Strings.BTN_CONFIRM, variant = ButtonVariant.Primary, onClick = onConfirm)
+        },
+    ) {
+        tiedPlayers.forEach { player ->
+            Div(attrs = { classes("modal-row") }) {
+                Input(type = InputType.Checkbox, attrs = {
+                    checked(player.id in selectedWinners)
+                    onChange { onToggleWinner(player.id) }
+                })
+                Span { Text(player.name) }
             }
         }
         error?.let { msg ->
             Div(attrs = { classes("error-msg") }) { Text(msg) }
-        }
-        Div(attrs = { classes("modal-actions") }) {
-            Button(attrs = {
-                classes("btn", "btn-secondary")
-                onClick { onDismiss() }
-            }) { Text(Strings.BTN_CANCEL) }
-            Button(attrs = {
-                classes("btn", "btn-secondary")
-                onClick { onKeepTie() }
-            }) { Text(Strings.BTN_KEEP_TIE) }
-            Button(attrs = {
-                classes("btn", "btn-primary")
-                onClick { onConfirm() }
-            }) { Text(Strings.BTN_CONFIRM) }
         }
     }
 }

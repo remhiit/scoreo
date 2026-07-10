@@ -9,7 +9,7 @@
 | 5 | **Stats** | Leaderboard ELO, head-to-head, per-game-type filter | [`features/stats.md`](features/stats.md) |
 | 6 | **Import** | JSON import with preview, match-by-match execution, auto-creation of unknown entities | [`features/import.md`](features/import.md) |
 | 7 | **Google Sync** | Cloud backup/restore via Google Drive App Data Folder, OAuth Token Model, conflict detection | [`features/sync.md`](features/sync.md) |
-| 8 | **Theme** | Dark/light mode, toggle in header, auto browser detection, localStorage persistence | [`features/theme.md`](features/theme.md) |
+| 8 | **Theme** | Catppuccin: 4 flavors + swappable accent, picker in burger menu, auto browser detection, localStorage persistence | [`features/theme.md`](features/theme.md) |
 
 ## User Flow
 
@@ -37,10 +37,9 @@ Top header bar (all screens):
 
 | Element | Action |
 |---------|--------|
-| 🌙/☀️ | Toggle dark/light mode (always visible) |
 | ← Back | Returns to previous screen (hidden on Home). Contextual — see table below |
 | Title | Current screen name (clickable → Home, except when already on Home) |
-| ☰ Burger | Opens side menu |
+| ☰ Burger | Opens side menu (includes "🎨 Theme" — flavor + accent picker) |
 
 Back button destinations:
 
@@ -65,6 +64,7 @@ Burger menu items:
 | 📥 | Import | ImportScreen |
 | 🎮 | Games | GameTypeScreen |
 | ☁ | Sync | SyncScreen (visible only if `CloudSyncRepository` is configured) |
+| 🎨 | Theme | Opens `ThemePickerDialog` (flavor + accent, no navigation) |
 
 Screens:
 

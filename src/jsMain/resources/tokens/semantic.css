@@ -1,0 +1,72 @@
+/*
+  Semantic tokens — the only layer components should reference.
+  Maps Catppuccin roles → UI meaning, and defines the swappable
+  "primary" accent that host apps override per game/app.
+*/
+:root {
+  /* ---------- surfaces ---------- */
+  --surface-app: var(--ctp-base);
+  --surface-sunken: var(--ctp-mantle);
+  --surface-well: var(--ctp-crust);
+  --surface-card: var(--ctp-mantle);
+  --surface-raised: var(--ctp-surface0);
+  --surface-overlay: var(--ctp-surface0);
+  --surface-hover: var(--ctp-surface1);
+  --surface-active: var(--ctp-surface2);
+
+  /* ---------- text ---------- */
+  --text-heading: var(--ctp-text);
+  --text-body: var(--ctp-text);
+  --text-muted: var(--ctp-subtext1);
+  --text-faint: var(--ctp-subtext0);
+  --text-disabled: var(--ctp-overlay0);
+  --text-on-accent: var(--ctp-on-accent);
+
+  /* ---------- borders ---------- */
+  --border-subtle: var(--ctp-surface1);
+  --border-default: var(--ctp-surface2);
+  --border-strong: var(--ctp-overlay1);
+  --border-focus: var(--color-primary);
+
+  /* ---------- semantic status ---------- */
+  --color-success: var(--ctp-green);
+  --color-warning: var(--ctp-yellow);
+  --color-danger: var(--ctp-red);
+  --color-info: var(--ctp-blue);
+  --text-on-success: var(--ctp-on-accent);
+  --text-on-warning: var(--ctp-on-accent);
+  --text-on-danger: var(--ctp-on-accent);
+  --text-on-info: var(--ctp-on-accent);
+
+  /* ---------- overlay scrim ---------- */
+  --scrim: color-mix(in srgb, var(--ctp-crust) 60%, transparent);
+
+  /* ---------- primary accent ----------
+     Default flavor ships Mauve as primary, per the brief.
+     Apps override this ONE var (or set data-accent="…") to
+     retint every component without touching component code. */
+  --color-primary: var(--ctp-mauve);
+  --color-primary-hover: color-mix(in srgb, var(--color-primary) 88%, black 6%);
+  --color-primary-active: color-mix(in srgb, var(--color-primary) 78%, black 12%);
+  --color-primary-tint: color-mix(in srgb, var(--color-primary) 16%, var(--surface-app));
+  --color-primary-border: color-mix(in srgb, var(--color-primary) 45%, var(--border-default));
+}
+
+/* ---------- accent presets ----------
+   Opt in with <html data-accent="blue">. Any of the 14 Catppuccin
+   hues works as a drop-in primary; apps are free to skip this and
+   set --color-primary to an arbitrary value instead. */
+[data-accent="rosewater"] { --color-primary: var(--ctp-rosewater); }
+[data-accent="flamingo"]  { --color-primary: var(--ctp-flamingo); }
+[data-accent="pink"]      { --color-primary: var(--ctp-pink); }
+[data-accent="mauve"]     { --color-primary: var(--ctp-mauve); }
+[data-accent="red"]       { --color-primary: var(--ctp-red); }
+[data-accent="maroon"]    { --color-primary: var(--ctp-maroon); }
+[data-accent="peach"]     { --color-primary: var(--ctp-peach); }
+[data-accent="yellow"]    { --color-primary: var(--ctp-yellow); }
+[data-accent="green"]     { --color-primary: var(--ctp-green); }
+[data-accent="teal"]      { --color-primary: var(--ctp-teal); }
+[data-accent="sky"]       { --color-primary: var(--ctp-sky); }
+[data-accent="sapphire"]  { --color-primary: var(--ctp-sapphire); }
+[data-accent="blue"]      { --color-primary: var(--ctp-blue); }
+[data-accent="lavender"]  { --color-primary: var(--ctp-lavender); }

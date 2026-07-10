@@ -3,18 +3,18 @@ package com.scoreo.ui.history
 import androidx.compose.runtime.Composable
 import com.scoreo.ui.navigation.AppNavigator
 import com.scoreo.ui.navigation.Screen
+import com.scoreo.ui.shared.ButtonVariant
 import com.scoreo.ui.shared.ListContainer
 import com.scoreo.ui.shared.ListItemRow
+import com.scoreo.ui.shared.LudoButton
+import com.scoreo.ui.shared.LudoModal
 import com.scoreo.ui.Strings
-import org.jetbrains.compose.web.dom.Button
 import org.jetbrains.compose.web.dom.Div
-import org.jetbrains.compose.web.dom.H3
 import org.jetbrains.compose.web.dom.Label
 import org.jetbrains.compose.web.dom.Li
 import org.jetbrains.compose.web.dom.Option
 import org.jetbrains.compose.web.dom.P
 import org.jetbrains.compose.web.dom.Select
-import org.jetbrains.compose.web.dom.Span
 import org.jetbrains.compose.web.dom.Text
 import org.jetbrains.compose.web.dom.Ul
 import org.w3c.dom.HTMLSelectElement
@@ -25,7 +25,10 @@ fun HistoryScreen(handler: HistoryHandler, navigator: AppNavigator? = null) {
 
     // Show error if present
     if (handler.state.error != null) {
-        Div(attrs = { classes("error-message") }) { 
+        // was classes("error-message") — never defined anywhere, rendered
+        // unstyled; .error-msg is the real, already-styled class used
+        // everywhere else in the app for this exact purpose
+        Div(attrs = { classes("error-msg") }) {
             Text(handler.state.error!!)
         }
     }
@@ -103,33 +106,38 @@ fun HistoryScreen(handler: HistoryHandler, navigator: AppNavigator? = null) {
      }
 
     // Delete confirmation modal
-    if (handler.state.deleteConfirmMatchId != null) {
+    // was Div(classes("modal-overlay")) + Div(classes("modal")) — "modal"
+    // was never defined anywhere (unlike "modal-content" used everywhere
+    // else), so this dialog rendered as an unstyled, unpositioned block
+    // instead of a centered overlay. LudoModal fixes that as a side effect.
+    run {
         val matchToDelete = handler.state.displays.find { it.match.id == handler.state.deleteConfirmMatchId }
-        if (matchToDelete != null) {
-            Div(attrs = {
-                classes("modal-overlay")
-                onClick { handler.handle(HistoryIntent.DismissDeleteConfirm) }
-            }) {}
-             Div(attrs = { classes("modal") }) {
-                 H3 { Text(Strings.MSG_DELETE_MATCH) }
-                 P { Text("${matchToDelete.gameType?.name ?: "Unknown"} · ${matchToDelete.dateFormatted}") }
-                 Ul {
-                     matchToDelete.match.playerScores.forEach { ps ->
-                         val label = matchToDelete.playerLabels[ps.playerId] ?: "?"
-                         Li { Text("$label: ${ps.score}") }
-                     }
-                 }
-                 P(attrs = { classes("warning") }) { Text(Strings.MSG_DATA_LOST) }
-                 Div(attrs = { classes("modal-actions") }) {
-                     Button(attrs = {
-                         classes("btn", "btn-secondary")
-                         onClick { handler.handle(HistoryIntent.DismissDeleteConfirm) }
-                     }) { Text(Strings.BTN_CANCEL) }
-                     Button(attrs = {
-                         classes("btn", "btn-danger", "btn-danger-filled")
-                         onClick { handler.handle(HistoryIntent.DeleteMatch(handler.state.deleteConfirmMatchId!!)) }
-                     }) { Text(Strings.BTN_DELETE) }
+        LudoModal(
+            open = handler.state.deleteConfirmMatchId != null && matchToDelete != null,
+            title = Strings.MSG_DELETE_MATCH,
+            onClose = { handler.handle(HistoryIntent.DismissDeleteConfirm) },
+            footer = {
+                LudoButton(
+                    text = Strings.BTN_CANCEL,
+                    variant = ButtonVariant.Secondary,
+                    onClick = { handler.handle(HistoryIntent.DismissDeleteConfirm) },
+                )
+                LudoButton(
+                    text = Strings.BTN_DELETE,
+                    variant = ButtonVariant.Danger,
+                    onClick = { handler.handle(HistoryIntent.DeleteMatch(handler.state.deleteConfirmMatchId!!)) },
+                )
+            },
+        ) {
+            if (matchToDelete != null) {
+                P { Text("${matchToDelete.gameType?.name ?: "Unknown"} · ${matchToDelete.dateFormatted}") }
+                Ul {
+                    matchToDelete.match.playerScores.forEach { ps ->
+                        val label = matchToDelete.playerLabels[ps.playerId] ?: "?"
+                        Li { Text("$label: ${ps.score}") }
+                    }
                 }
+                P { Text(Strings.MSG_DATA_LOST) }
             }
         }
     }

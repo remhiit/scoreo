@@ -135,3 +135,44 @@ Stored in localStorage under key `scoreo_match_draft`.
 - `ScoreDetailScreen` auto-saves to MatchDraft after each score update.
 - `HomeScreen` displays "Resume match in progress" banner if a draft exists.
 
+---
+
+## `scoreo_theme` → `scoreo_flavor` + `scoreo_accent` (Catppuccin theme)
+
+**Background:** the binary dark/light toggle is replaced by the Ludo
+design system's Catppuccin theme — 4 flavors (`latte`/`frappe`/
+`macchiato`/`mocha`) plus an independently swappable accent hue (14
+presets, default `mauve`).
+
+**Storage Change**
+
+- Old key `scoreo_theme`: `"dark"` or `"light"`.
+- New keys: `scoreo_flavor` (one of the 4 flavor names) and
+  `scoreo_accent` (one of the 14 hue names).
+
+**Backward Compatibility**
+
+`ThemeManager.readInitialFlavor()` migrates on read, the first time a
+user without `scoreo_flavor` loads the app:
+- `scoreo_theme == "dark"` → flavor `"mocha"`
+- `scoreo_theme == "light"` → flavor `"latte"`
+- neither key present → `prefers-color-scheme: dark` decides (`mocha`
+  or `latte`)
+
+Accent always defaults to `"mauve"` for users migrating from the old
+scheme (there was no accent concept before). `scoreo_flavor`/
+`scoreo_accent` are written immediately on first read, so migration
+runs at most once per user. `scoreo_theme` is **not** deleted — it's
+simply never read again once `scoreo_flavor` exists — so a rollback
+to a pre-Catppuccin build would still find a valid (if stale) value.
+
+**Behavior Changes**
+
+- The header's 🌙/☀️ toggle button is gone. Theme is picked from the
+  burger menu's "🎨 Theme" entry, which opens a dialog with 4 flavor
+  chips + 14 accent swatches (`ThemePickerDialog`).
+- `data-theme` on `<html>` now holds a flavor name (`"latte"`, …)
+  instead of being present-only-for-dark (`"dark"` or absent). Any
+  code or CSS keying off `data-theme="dark"` specifically is dead —
+  the semantic tokens are flavor-aware directly instead.
+

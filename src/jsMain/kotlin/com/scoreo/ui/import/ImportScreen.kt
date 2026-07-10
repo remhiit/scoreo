@@ -2,8 +2,9 @@ package com.scoreo.ui.import
 
 import androidx.compose.runtime.Composable
 import com.scoreo.ui.Strings
+import com.scoreo.ui.shared.ButtonVariant
+import com.scoreo.ui.shared.LudoButton
 import org.jetbrains.compose.web.attributes.InputType
-import org.jetbrains.compose.web.dom.Button
 import org.jetbrains.compose.web.dom.Div
 import org.jetbrains.compose.web.dom.Input
 import org.jetbrains.compose.web.dom.Label
@@ -61,10 +62,12 @@ fun ImportScreen(
                     Span(attrs = { classes("import-preview-value") }) { Text("${preview.count}") }
                 }
             }
-            Button(attrs = {
-                classes("btn", "btn-primary", "btn-full")
-                onClick { handler.handle(ImportIntent.Execute) }
-             }) { Text(Strings.BTN_IMPORT) }
+            LudoButton(
+                text = Strings.BTN_IMPORT,
+                variant = ButtonVariant.Primary,
+                className = "ludo-btn--full",
+                onClick = { handler.handle(ImportIntent.Execute) },
+            )
         }
 
         ImportStep.DONE -> {
@@ -87,13 +90,15 @@ fun ImportScreen(
                     }
                 }
             }
-            Button(attrs = {
-                classes("btn", "btn-primary", "btn-full")
-                onClick {
+            LudoButton(
+                text = Strings.BTN_DONE,
+                variant = ButtonVariant.Primary,
+                className = "ludo-btn--full",
+                onClick = {
                     handler.handle(ImportIntent.Reset)
                     onDone()
-                }
-             }) { Text(Strings.BTN_DONE) }
+                },
+            )
         }
     }
 }

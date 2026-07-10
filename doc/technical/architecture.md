@@ -64,6 +64,40 @@ Run `find src -type d` for the exhaustive package list.
 Several `.css` files in `src/jsMain/resources/` (`theme.css`, `layout.css`, `home.css`, etc.) are imported by `styles.css` via `@import`. During the production build, all CSS files are copied to the output directory, and the browser resolves `@import` directives natively.
 Uses CSS custom properties (design tokens), a fixed top header bar, and minimal component styles (cards, inputs, buttons, modals, score table).
 
+### Design tokens — Catppuccin (Ludo design system)
+
+`src/jsMain/resources/tokens/` holds the color/type/spacing/radius
+tokens, imported first from `styles.css` (before `theme.css` and the
+per-screen CSS files):
+
+- `colors-latte.css` / `colors-frappe.css` / `colors-macchiato.css` /
+  `colors-mocha.css` — the 4 Catppuccin flavors, raw `--ctp-*` values,
+  each scoped to `[data-theme="…"]` (`latte` is also the `:root`
+  default). Never referenced directly outside `semantic.css`.
+- `semantic.css` — the only layer components/screens should read:
+  semantic aliases (`--surface-app`, `--surface-card`, `--text-body`,
+  `--border-subtle`, …) plus the independently swappable primary accent
+  (`--color-primary`, default Mauve) and its 14 presets, opted into via
+  `[data-accent="…"]` on `<html>`.
+- `typography.css`, `spacing.css`, `radius-shadow.css` — type scale,
+  4px spacing scale, radius/shadow/motion tokens.
+
+Flavor and accent are switched by setting `data-theme`/`data-accent`
+attributes on `<html>` (see `ui/theme/ThemeManager.kt`).
+
+Every screen references the semantic tokens directly — the shared
+`Ludo*` composables (`ui/shared/Button.kt`, `Input.kt`, `Table.kt`,
+`Modal.kt`) and each screen's own CSS all read `--color-primary`,
+`--surface-card`, `--text-body`, etc. The historical Material-era
+variable names (`--primary`, `--surface`, `--on-surface`, `--outline`,
+`--win`/`--loss`/`--warn`, `--radius`, …) that used to live in
+`theme.css` as a transitional alias layer are gone entirely — nothing
+in the codebase reads them anymore. `theme.css` now holds only the
+splash screen, a couple of shared layout classes (`.card`, `.form-row`,
+`.select`, `.error-msg`, `.empty`, `.section-label`), and the one
+non-color layout constant that's still a plain custom property,
+`--header-height`.
+
 ## PWA (Progressive Web App)
 
 Scoreo is installable as a native app on mobile and desktop.

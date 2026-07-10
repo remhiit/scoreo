@@ -8,7 +8,7 @@
 
 .sync-status {
     font-size: 0.875rem;
-    color: var(--color-on-surface-variant);
+    color: var(--text-muted);
     margin-top: 4px;
 }
 
@@ -31,21 +31,21 @@
     flex-direction: column;
     gap: 4px;
     padding: 12px 16px;
-    border-radius: 12px;
-    background: var(--color-surface-variant);
-    border: 1px solid var(--color-outline-variant);
+    border-radius: var(--radius-lg);
+    background: var(--surface-sunken);
+    border: 1px solid var(--border-default);
 }
 
 .sync-card-title {
     font-weight: 600;
     font-size: 0.9rem;
-    color: var(--color-on-surface);
+    color: var(--text-body);
     margin-bottom: 4px;
 }
 
 .sync-card-stat {
     font-size: 0.85rem;
-    color: var(--color-on-surface-variant);
+    color: var(--text-muted);
 }
 
 .sync-actions {
