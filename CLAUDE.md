@@ -28,6 +28,10 @@ PWA Kotlin/JS de suivi de scores entre amis. Compose HTML. MVI (Handler/Intent/S
 ./gradlew help --quiet
 ```
 
+`.claude/hooks/session-start.sh` (déclaré dans `.claude/settings.json`) préchauffe les dépendances Gradle/Node/npm au démarrage d'une session Claude Code sur le web (`$CLAUDE_CODE_REMOTE`), pour que `jvmTest` et le build JS soient rapides dès la première commande. `gradle/wrapper/gradle-wrapper.jar` n'est pas commité (pas de binaires en version control) : le hook utilise `./gradlew` s'il est présent, sinon le `gradle` déjà installé dans l'image de session.
+
+**⚠️ Limitation réseau connue (sessions Claude Code sur le web) :** `dl.google.com` (dépôt Maven Google, déclaré dans `settings.gradle.kts` via `google { mavenContent { includeGroupAndSubgroups("androidx") ... } } }`) est actuellement bloqué par la politique d'egress de l'environnement. Comme Compose Multiplatform (`runtime-desktop`, `runtime-js`) dépend transitivement d'`androidx.annotation`/`androidx.collection` hébergés uniquement là-bas, **`./gradlew jvmTest`, `jsBrowserDevelopmentRun` et `jsBrowserProductionWebpack` échouent tous dans une session web tant que `dl.google.com` n'est pas autorisé** (seule la compilation, ex. `jvmTestClasses`, passe car elle n'a pas besoin du classpath runtime). Ce n'est pas un problème de configuration du projet — `google()` est correctement déclaré. À corriger côté administration de l'environnement (allowlist réseau), pas en contournant la politique.
+
 Le hook `pre-push` (`.githooks/pre-push`, activé automatiquement au premier `./gradlew`) lance `gradle help --quiet` avant chaque push. Pas de linter configuré (pas de ktlint/detekt).
 
 Pas de `package.json` / npm : tout passe par Gradle (Kotlin Multiplatform, cibles `jvm()` et `js(IR)`). Les tests métier vivent en `commonMain`/`commonTest` et tournent sur la JVM (`jvmTest`) — le JS n'est nécessaire que pour les adapters spécifiques au navigateur (`jsMain`/`jsTest`).
