@@ -1,0 +1,78 @@
+/* ── Import screen ── */
+
+.import-zone {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    padding: 48px 24px;
+    border: 2px dashed var(--border-default);
+    border-radius: var(--radius-md);
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+}
+
+.import-zone:hover {
+    border-color: var(--color-primary);
+    background: var(--color-primary-tint);
+}
+
+.import-zone input[type="file"] {
+    margin-top: 8px;
+}
+
+.import-zone-icon {
+    font-size: 40px;
+}
+
+.import-zone-text {
+    font-size: 15px;
+    color: var(--text-muted);
+}
+
+.import-preview {
+    background: var(--surface-sunken);
+    border-radius: var(--radius-md);
+    padding: 16px;
+    margin-bottom: 16px;
+}
+
+.import-preview-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 4px 0;
+    font-size: 15px;
+}
+
+.import-preview-label {
+    color: var(--text-muted);
+}
+
+.import-preview-value {
+    font-weight: 600;
+}
+
+.import-result {
+    background: var(--surface-sunken);
+    border-radius: var(--radius-md);
+    padding: 16px;
+    margin-bottom: 16px;
+}
+
+.import-result-line {
+    font-size: 15px;
+    padding: 4px 0;
+}
+
+.import-success { color: var(--color-success); font-weight: 600; }
+.import-warn { color: var(--color-warning); font-weight: 600; }
+.import-error { color: var(--color-danger); font-weight: 600; }
+
+.import-failed-id {
+    font-size: 12px;
+    font-weight: 400;
+    padding-left: 20px;
+    color: var(--text-muted);
+    font-family: monospace;
+}

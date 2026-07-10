@@ -162,7 +162,7 @@ Files: `src/jsMain/kotlin/com/scoreo/ui/shared/ListContainer.kt`, `src/jsMain/ko
 | `src/commonTest/.../ui/sync/SyncHandlerTest.kt` | `SyncHandlerTest` | 10 |
 | `src/jsTest/.../infrastructure/google/GoogleAuthServiceTest.kt` | `GoogleAuthServiceTest` | 29 |
 | `src/jsTest/.../infrastructure/google/GoogleDriveSyncAdapterTest.kt` | `GoogleDriveSyncAdapterTest` | 23 (corrige au passage, la doc indiquait 11 par erreur) |
-| `src/jsTest/.../ui/theme/ThemeManagerTest.kt` | `ThemeManagerTest` | 7 |
+| `src/jsTest/.../ui/theme/ThemeManagerTest.kt` | `ThemeManagerTest` | 7 (TS: `src/ui/theme/themeManager.test.ts`, 7 portes + 7 tests additionnels sur la logique reelle de `readInitialFlavor`/`readInitialAccent` — prive en Kotlin, testable directement en TS ; + `ThemeContext.test.tsx`, 3 tests) |
 
 **Summary:** 31 commonTest files + 2 jsTest files = 33 test files. **Total: 429 tests** (commonTest: 411, jsTest: 18). All in `src/commonTest/` or `src/jsTest/`.
 

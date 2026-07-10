@@ -1,0 +1,29 @@
+/* ── History screen ── */
+
+/* ── Filter dropdown ── */
+
+.history-filter {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+    padding: 12px;
+    background: var(--surface-sunken);
+    border-radius: var(--radius-sm);
+}
+
+.history-filter label {
+    font-weight: 500;
+    color: var(--text-body);
+    margin: 0;
+}
+
+.filter-select {
+    padding: 6px 12px;
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-sm);
+    background: var(--surface-card);
+    color: var(--text-body);
+    cursor: pointer;
+    font-size: 0.9rem;
+}

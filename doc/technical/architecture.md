@@ -187,3 +187,7 @@ See `doc/technical/migrations.md` for details.
 - `kotlinx-coroutines-core` available in multiplatform (commonMain + jsMain)
 - `SuspendCancellableCoroutine` enables fine-grained cancellation control
 
+### React/TypeScript port: theme (TS-040)
+
+`rememberThemeState()` (a Compose `@Composable`) becomes `ThemeProvider`/`useTheme()` (`src/ui/theme/ThemeContext.tsx`) — a React Context so the burger menu's theme picker and the rest of the app share the same live flavor/accent state. The pure logic (`readInitialFlavor`/`readInitialAccent`/`applyTheme`, previously `private` in Kotlin) lives in `src/ui/theme/themeManager.ts` and is directly unit-tested (not possible in Kotlin without exposing them). CSS token files (`colors-{latte,frappe,macchiato,mocha}.css`, `semantic.css`, etc.) are copied verbatim into `public/css/`, native `@import` chain unchanged.
+
