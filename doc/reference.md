@@ -44,13 +44,17 @@ All in `src/commonMain/kotlin/com/scoreo/`.
 
 ## Domain Models
 
-| Model | Fields | File |
-|---|---|---|
-| `Player` | `id: String`, `name: String`, `active: Boolean = true` | `src/commonMain/.../domain/model/Player.kt` |
-| `GameType` | `id: String`, `name: String`, `winCondition: WinCondition`, `tieBreakRule: TieBreakRule = TieBreakRule.NONE`, `tieBreakCondition: WinCondition = WinCondition.HIGHEST_SCORE`, `tieBreakLabel: String? = null`, `active: Boolean = true` | `src/commonMain/.../domain/model/GameType.kt` |
-| `Match` | `id: String`, `date: Long`, `gameTypeId: String`, `playerScores: List<PlayerScore>`, `manualWinners: List<String> = emptyList()`, `secondaryPlayerScores: List<PlayerScore> = emptyList()` | `src/commonMain/.../domain/model/Match.kt` |
-| `MatchDraft` | `gameTypeId: String`, `playerIds: List<String>`, `rounds: List<Map<String, String>>`, `timestamp: Long` | `src/commonMain/.../domain/model/MatchDraft.kt` |
-| `PlayerScore` | `playerId: String`, `score: Int` | `src/commonMain/.../domain/model/PlayerScore.kt` |
+> Migration React/TS en cours (voir issues `migration-react`) : la colonne "TS" liste l'équivalent porté quand il existe. Tant que la parité n'est pas atteinte pour un modèle, la colonne "File" (Kotlin) reste la référence de comportement.
+
+| Model | Fields | File (Kotlin) | TS |
+|---|---|---|---|
+| `Player` | `id: String`, `name: String`, `active: Boolean = true` | `src/commonMain/.../domain/model/Player.kt` | `src/domain/model/player.ts` |
+| `GameType` | `id: String`, `name: String`, `winCondition: WinCondition`, `tieBreakRule: TieBreakRule = TieBreakRule.NONE`, `tieBreakCondition: WinCondition = WinCondition.HIGHEST_SCORE`, `tieBreakLabel: String? = null`, `active: Boolean = true` | `src/commonMain/.../domain/model/GameType.kt` | `src/domain/model/gameType.ts` (type only ; `computeWinners` arrive avec TS-004) |
+| `Match` | `id: String`, `date: Long`, `gameTypeId: String`, `playerScores: List<PlayerScore>`, `manualWinners: List<String> = emptyList()`, `secondaryPlayerScores: List<PlayerScore> = emptyList()` | `src/commonMain/.../domain/model/Match.kt` | `src/domain/model/match.ts` (type only ; `getWinners`/`isTieBreakIndeterminate` arrivent avec TS-004) |
+| `MatchDraft` | `gameTypeId: String`, `playerIds: List<String>`, `rounds: List<Map<String, String>>`, `timestamp: Long` | `src/commonMain/.../domain/model/MatchDraft.kt` | `src/domain/model/matchDraft.ts` |
+| `PlayerScore` | `playerId: String`, `score: Int` | `src/commonMain/.../domain/model/PlayerScore.kt` | `src/domain/model/playerScore.ts` |
+| `WinCondition` / `TieBreakRule` | enums + `label()` | `domain/model/{WinCondition,TieBreakRule}.kt` | `src/domain/model/enums.ts` |
+| `DomainError` | sealed `Validation`/`NotFound` | `domain/DomainError.kt` | `src/domain/model/errors.ts` (union discriminée) |
 | `WinCondition` | enum: `HIGHEST_SCORE`, `LOWEST_SCORE`, `MANUAL` | `src/commonMain/.../domain/model/WinCondition.kt` |
 | `TieBreakRule` | enum: `NONE`, `MANUAL_SELECTION`, `SECONDARY_SCORE` | `src/commonMain/.../domain/model/TieBreakRule.kt` |
 
