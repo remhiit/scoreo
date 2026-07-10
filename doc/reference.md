@@ -184,6 +184,16 @@ Theme picker classes (`theme-picker.css`): `.theme-picker-label`, `.theme-picker
 
 Theme: Catppuccin tokens (`tokens/colors-*.css` + `tokens/semantic.css`), 4 flavors + 14-hue accent. Historical variable names (`--primary`, `--surface`, `--on-surface`, …) are aliased onto the semantic tokens in `theme.css`. `data-theme`/`data-accent` attributes on `<html>` are managed by `ThemeManager` (`rememberThemeState()`), picked from the burger menu's "Theme" entry (`ThemePickerDialog`, `src/jsMain/.../ui/theme/ThemePicker.kt`).
 
+**TS (TS-043)**: `src/ui/theme/ThemePickerDialog.tsx` — function component using `useTheme()`/`LudoModal`/`LudoButton`, same `theme-picker.css` classes.
+
+## App shell (TS-043)
+
+`src/App.tsx` (`AppShell`, dispatch by `useHashRouter().current`) replaces `App.kt`'s root Composable — wraps content in `ServicesProvider`/`ThemeProvider` (which `Main.kt` didn't need since Compose has no context-provider pattern). Screen bodies are placeholders until their Phase F ticket lands (TS-050+); the header, contextual back button, and burger menu are the real, final logic:
+
+- **Header**: back button hidden on Home; for `ScoreDetail` goes to `History` if `matchId` is set else `Home`; for `Stats` clears the (placeholder) player selection instead of navigating while a player is selected, else goes `Home`; all other screens go `Home`. Title text is clickable, navigates `Home` unless already there.
+- **Burger menu**: Home/Stats/History/Import/Games, + Sync only when `services.syncUseCase` is defined (mirrors `deps.syncHandler != null`), + non-navigating "Theme" item opening `ThemePickerDialog`.
+- The Stats placeholder simulates the leaderboard/player-detail toggle (a button that "selects a player") purely so the contextual-back behavior above is exercisable and tested before the real Stats screen (TS-050) exists.
+
 ## localStorage Keys
 
 | Key | Content |
