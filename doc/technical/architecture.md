@@ -44,6 +44,14 @@
 - **Cloud sync**: `CloudSyncRepository` port (commonMain), `GoogleDriveSyncAdapter` implementation (jsMain) via async `fetch()` + coroutines, OAuth Token Model via Google Identity Services
 - **DI helpers**: `createSyncHandlerIfAvailable` in `commonMain/di/` — builds `SyncHandler` only if a `CloudSyncRepository` is provided. Allows the app to run without cloud sync (e.g. GitHub Pages without OAuth configured). Unit-tested in `commonTest/di/`.
 
+### React/TypeScript port: error modeling (TS-010/TS-011)
+
+Kotlin's `DomainError` is a `sealed class : Throwable` — validation/lookup use cases throw it directly. The TS port (`src/domain/model/errors.ts`) mirrors this with real `Error` subclasses (`ValidationError`, `NotFoundError`, union type `DomainError`), thrown directly by use cases like `AddPlayerUseCase`/`ArchiveGameTypeUseCase` — not wrapped in a `Result`.
+
+Kotlin's `CreateMatchUseCase`/`ImportMatchesUseCase` instead return `Result<T>` (`runCatching`), since callers need to inspect success/failure without a try/catch (e.g. to render an import preview). The TS port uses an explicit `Result<T, E>` type (`src/domain/result.ts`, `{ok: true, value} | {ok: false, error}`) for these — chosen over exceptions so failure handling is enforced by the type checker at call sites, matching how the Kotlin `Result<T>` return type is already exhaustively handled today.
+
+So: **thrown errors** for use cases that behave like Kotlin's throwing ones, **`Result<T, E>`** for the two use cases that were already `Result<T>` in Kotlin. This is a deliberate 1:1 mapping, not a mix chosen ad hoc per ticket.
+
 ## Web Target
 
 `js(IR)` — Compose HTML generates real HTML DOM elements.

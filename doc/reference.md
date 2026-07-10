@@ -26,8 +26,8 @@ All in `src/commonMain/kotlin/com/scoreo/`.
 | `AddGameTypeUseCase` | `invoke(name: String, winCondition: WinCondition, tieBreakRule: TieBreakRule = NONE, tieBreakCondition: WinCondition = HIGHEST_SCORE, tieBreakLabel: String? = null)` | `GameType` | `src/commonMain/.../application/AddGameTypeUseCase.kt` | `addGameTypeUseCase.ts` (options 3-5 regroupées dans un objet `AddGameTypeOptions`) |
 | `ArchiveGameTypeUseCase` | `invoke(gameTypeId: String)` | `Unit` | `src/commonMain/.../application/ArchiveGameTypeUseCase.kt` | `archiveGameTypeUseCase.ts` |
 | `CreateMatchUseCase` | `invoke(gameTypeId: String, playerScores: List<PlayerScore>, date: Long, manualWinners: List<String>, secondaryPlayerScores: List<PlayerScore>)` | `Match` | `src/commonMain/.../application/CreateMatchUseCase.kt` | à venir (TS-012) |
-| `UpdateMatchUseCase` | `invoke(match: Match)` | `Unit` | `src/commonMain/.../application/UpdateMatchUseCase.kt` | à venir (TS-011) |
-| `DeleteMatchUseCase` | `invoke(matchId: String)` | `Unit` | `src/commonMain/.../application/DeleteMatchUseCase.kt` | à venir (TS-011) |
+| `UpdateMatchUseCase` | `invoke(match: Match)` | `Unit` | `src/commonMain/.../application/UpdateMatchUseCase.kt` | `updateMatchUseCase.ts` |
+| `DeleteMatchUseCase` | `invoke(matchId: String)` | `Unit` | `src/commonMain/.../application/DeleteMatchUseCase.kt` | `deleteMatchUseCase.ts` |
 | `DeletePlayerUseCase` | `invoke(id: String, anonymize: Boolean = false)` | `Unit` | `src/commonMain/.../application/DeletePlayerUseCase.kt` | `deletePlayerUseCase.ts` |
 | `RenamePlayerUseCase` | `invoke(playerId: String, newName: String)` | `Unit` | `src/commonMain/.../application/RenamePlayerUseCase.kt` | `renamePlayerUseCase.ts` |
 | `GetPlayersUseCase` | `invoke(includeInactive: Boolean = false)` | `List<Player>` | `src/commonMain/.../application/GetPlayersUseCase.kt` | `getPlayersUseCase.ts` |
@@ -36,7 +36,7 @@ All in `src/commonMain/kotlin/com/scoreo/`.
 | `EloCalculator` | `compute(matches, gameTypes)` | `Map<String, Int>` | `src/commonMain/.../application/EloCalculator.kt` | à venir (TS-013) |
 | `FindGameTypeByIdUseCase` | `invoke(id: String)` | `GameType?` | `src/commonMain/.../application/FindGameTypeByIdUseCase.kt` | `findGameTypeByIdUseCase.ts` |
 | `GetGameTypesUseCase` | `invoke(includeInactive: Boolean = false)` | `List<GameType>` | `src/commonMain/.../application/GetGameTypesUseCase.kt` | `getGameTypesUseCase.ts` |
-| `GetMatchesUseCase` | `invoke()` | `List<Match>` | `src/commonMain/.../application/GetMatchesUseCase.kt` | à venir (TS-011) |
+| `GetMatchesUseCase` | `invoke()` | `List<Match>` | `src/commonMain/.../application/GetMatchesUseCase.kt` | `getMatchesUseCase.ts` |
 | `ImportMatchesUseCase` | `preview(jsonString: String)`, `execute(jsonString: String)` | `Result<ImportPreview>`, `Result<ImportResult>` | `src/commonMain/.../application/ImportMatchesUseCase.kt` | à venir (TS-015) |
 | `SyncUseCase` | `suspend autoSync()` | `SyncOutcome` | `src/commonMain/.../application/SyncUseCase.kt` | à venir (TS-016) |
 | `UpdateGameTypeUseCase` | `invoke(gameType: GameType)` | `Unit` | `src/commonMain/.../application/UpdateGameTypeUseCase.kt` | `updateGameTypeUseCase.ts` |
