@@ -1,9 +1,12 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { GetGameTypesUseCase } from './application/getGameTypesUseCase'
+import { GetHeadToHeadUseCase } from './application/getHeadToHeadUseCase'
 import { ServicesProvider, useServices } from './services/ServicesContext'
 import { GAMES_SCREEN, HISTORY_SCREEN, HOME_SCREEN, IMPORT_SCREEN, STATS_SCREEN, SYNC_SCREEN } from './ui/navigation/screen'
 import type { Screen } from './ui/navigation/screen'
 import { useHashRouter } from './ui/navigation/useHashRouter'
 import { LudoButton } from './ui/shared/LudoButton'
+import { StatsScreen } from './ui/stats/StatsScreen'
 import { ThemeProvider } from './ui/theme/ThemeContext'
 import { ThemePickerDialog } from './ui/theme/ThemePickerDialog'
 
@@ -41,30 +44,23 @@ function BurgerItem({ icon, label, onClick }: BurgerItemProps) {
   )
 }
 
-interface StatsPlaceholderProps {
-  hasSelection: boolean
-  onSelectPlayer: () => void
-}
-
-/** Stands in for the real Stats screen (ported in TS-050); simulates the leaderboard/player-detail toggle so the contextual back button can be exercised. */
-function StatsPlaceholder({ hasSelection, onSelectPlayer }: StatsPlaceholderProps) {
-  if (hasSelection) return <div>Stats: player detail (placeholder)</div>
-  return (
-    <button type="button" onClick={onSelectPlayer}>
-      Stats: leaderboard (placeholder) — select a player
-    </button>
-  )
-}
-
 function AppShell() {
   const services = useServices()
   const { current, navigate } = useHashRouter()
   const [burgerOpen, setBurgerOpen] = useState(false)
   const [themePickerOpen, setThemePickerOpen] = useState(false)
-  const [statsHasSelection, setStatsHasSelection] = useState(false)
+  const [statsBackOverride, setStatsBackOverride] = useState<(() => void) | null>(null)
+  const getHeadToHead = useMemo(
+    () => new GetHeadToHeadUseCase(services.matchRepository, services.gameTypeRepository, services.playerRepository),
+    [services],
+  )
+  const getGameTypes = useMemo(() => new GetGameTypesUseCase(services.gameTypeRepository), [services])
+  const handleStatsBackOverrideChange = useCallback((override: (() => void) | null) => {
+    setStatsBackOverride(() => override)
+  }, [])
 
   useEffect(() => {
-    setStatsHasSelection(false)
+    setStatsBackOverride(null)
   }, [current])
 
   const onBack: (() => void) | null = (() => {
@@ -72,7 +68,7 @@ function AppShell() {
       case 'Home':
         return null
       case 'Stats':
-        return statsHasSelection ? () => setStatsHasSelection(false) : () => navigate(HOME_SCREEN)
+        return statsBackOverride ?? (() => navigate(HOME_SCREEN))
       case 'ScoreDetail':
         return () => navigate(current.matchId !== undefined ? HISTORY_SCREEN : HOME_SCREEN)
       default:
@@ -99,7 +95,11 @@ function AppShell() {
         {current.type === 'Home' && <div>Home (placeholder)</div>}
         {current.type === 'History' && <div>History (placeholder)</div>}
         {current.type === 'Stats' && (
-          <StatsPlaceholder hasSelection={statsHasSelection} onSelectPlayer={() => setStatsHasSelection(true)} />
+          <StatsScreen
+            getHeadToHead={getHeadToHead}
+            getGameTypes={getGameTypes}
+            onBackOverrideChange={handleStatsBackOverrideChange}
+          />
         )}
         {current.type === 'Import' && <div>Import (placeholder)</div>}
         {current.type === 'Games' && <div>Games (placeholder)</div>}
