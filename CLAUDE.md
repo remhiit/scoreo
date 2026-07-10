@@ -40,7 +40,7 @@ Deux autres blocages ont été résolus différemment :
 
 Le hook `pre-push` (`.githooks/pre-push`, activé automatiquement au premier `./gradlew`) lance `gradle help --quiet` avant chaque push. Pas de linter configuré (pas de ktlint/detekt).
 
-Pas de `package.json` / npm : tout passe par Gradle (Kotlin Multiplatform, cibles `jvm()` et `js(IR)`). Les tests métier vivent en `commonMain`/`commonTest` et tournent sur la JVM (`jvmTest`) — le JS n'est nécessaire que pour les adapters spécifiques au navigateur (`jsMain`/`jsTest`).
+Côté Kotlin, pas de dépendance npm : tout passe par Gradle (Kotlin Multiplatform, cibles `jvm()` et `js(IR)`). Les tests métier vivent en `commonMain`/`commonTest` et tournent sur la JVM (`jvmTest`) — le JS n'est nécessaire que pour les adapters spécifiques au navigateur (`jsMain`/`jsTest`). Le nouveau stack React/TypeScript (voir note ci-dessus) a en revanche son propre `package.json` (pnpm, épinglé via le champ `packageManager` — voir `pnpm-workspace.yaml` pour les build scripts autorisés) : `pnpm dev`/`build`/`test`/`typecheck`/`lint`, indépendant de Gradle.
 
 ## Avant d'explorer le code
 

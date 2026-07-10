@@ -1,4 +1,7 @@
-export type WinCondition = 'HIGHEST_SCORE' | 'LOWEST_SCORE' | 'MANUAL'
+import { z } from 'zod'
+
+export const WinConditionSchema = z.enum(['HIGHEST_SCORE', 'LOWEST_SCORE', 'MANUAL'])
+export type WinCondition = z.infer<typeof WinConditionSchema>
 
 export function winConditionLabel(condition: WinCondition): string {
   switch (condition) {
@@ -11,7 +14,8 @@ export function winConditionLabel(condition: WinCondition): string {
   }
 }
 
-export type TieBreakRule = 'NONE' | 'MANUAL_SELECTION' | 'SECONDARY_SCORE'
+export const TieBreakRuleSchema = z.enum(['NONE', 'MANUAL_SELECTION', 'SECONDARY_SCORE'])
+export type TieBreakRule = z.infer<typeof TieBreakRuleSchema>
 
 export function tieBreakRuleLabel(rule: TieBreakRule): string {
   switch (rule) {

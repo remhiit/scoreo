@@ -1,8 +1,5 @@
 import { z } from 'zod'
-
-export const WinConditionSchema = z.enum(['HIGHEST_SCORE', 'LOWEST_SCORE', 'MANUAL'])
-
-export const TieBreakRuleSchema = z.enum(['NONE', 'MANUAL_SELECTION', 'SECONDARY_SCORE'])
+import { TieBreakRuleSchema, WinConditionSchema } from './enums'
 
 export const GameTypeSchema = z.object({
   id: z.string(),

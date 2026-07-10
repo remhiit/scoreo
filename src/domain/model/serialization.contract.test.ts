@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import { PlayerSchema } from './player.schema'
 import { PlayerScoreSchema } from './playerScore.schema'
-import { GameTypeSchema, TieBreakRuleSchema, WinConditionSchema } from './gameType.schema'
+import { GameTypeSchema } from './gameType.schema'
 import { MatchSchema } from './match.schema'
 import { MatchDraftSchema } from './matchDraft.schema'
-import { tieBreakRuleLabel } from './enums'
+import { TieBreakRuleSchema, WinConditionSchema, tieBreakRuleLabel } from './enums'
 
 /** Round-trips a value through JSON (as localStorage does) then re-validates it. */
 function roundTrip<T>(schema: { parse: (input: unknown) => T }, value: unknown): T {
