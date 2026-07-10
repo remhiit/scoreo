@@ -79,6 +79,15 @@ tasks.named<Copy>("jsBrowserDistribution") {
     duplicatesStrategy = DuplicatesStrategy.INCLUDE
 }
 
+// Claude Code web sessions can't download Yarn from GitHub Releases (see
+// CLAUDE.md). Use the Yarn already activated via Corepack instead of
+// letting the Kotlin/JS plugin fetch its own copy.
+if (System.getenv("CLAUDE_CODE_REMOTE") == "true") {
+    rootProject.plugins.withType<org.jetbrains.kotlin.gradle.targets.js.yarn.YarnPlugin> {
+        rootProject.the<org.jetbrains.kotlin.gradle.targets.js.yarn.YarnRootExtension>().download = false
+    }
+}
+
 if (System.getenv("CI") == null) {
     ProcessBuilder("git", "config", "core.hooksPath", ".githooks")
         .directory(rootDir)

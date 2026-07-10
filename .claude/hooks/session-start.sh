@@ -24,10 +24,13 @@ fi
 # jvmTest is fast on the first real command.
 "$GRADLE_CMD" jvmTestClasses --quiet
 
-# Best-effort: download Node.js/Yarn and install npm packages needed by the
-# js(IR) target. As of writing, this fails in Claude Code web sessions
-# because Yarn is fetched from github.com/yarnpkg/yarn releases, which this
-# session can't reach without adding that repo via add_repo — see the note
-# in CLAUDE.md. Don't fail the whole session over it.
-"$GRADLE_CMD" kotlinNodeJsSetup kotlinNpmInstall --quiet || \
-  echo "session-start: JS dependency warmup failed (see CLAUDE.md note on GitHub repo-scope restriction) — continuing." >&2
+# Kotlin/JS's Yarn plugin normally downloads its own copy of Yarn from
+# github.com/yarnpkg/yarn releases, which this session can't reach. Activate
+# Yarn Classic via Corepack instead (build.gradle.kts disables the plugin's
+# own download when $CLAUDE_CODE_REMOTE is set) — the Kotlin Gradle plugin
+# expects Yarn Classic's CLI (e.g. --ignore-scripts), not Yarn Berry.
+corepack enable
+corepack prepare yarn@1.22.22 --activate
+
+# Download Node.js and install npm packages needed by the js(IR) target.
+"$GRADLE_CMD" kotlinNodeJsSetup kotlinNpmInstall --quiet
