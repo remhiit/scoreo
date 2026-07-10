@@ -124,6 +124,8 @@ All in `src/jsMain/kotlin/com/scoreo/`. Production: `LocalStorage*`, `GoogleDriv
 
 Files: `src/jsMain/kotlin/com/scoreo/ui/shared/ListContainer.kt`, `src/jsMain/kotlin/com/scoreo/ui/shared/ListItemRow.kt`, `src/jsMain/kotlin/com/scoreo/ui/shared/Button.kt`, `src/jsMain/kotlin/com/scoreo/ui/shared/Input.kt`, `src/jsMain/kotlin/com/scoreo/ui/shared/Table.kt`, `src/jsMain/kotlin/com/scoreo/ui/shared/Modal.kt`
 
+**TS (TS-041)**: `src/ui/shared/{ListContainer,ListItemRow,LudoButton,LudoTextInput,LudoNumberInput,LudoTable,LudoModal}.tsx` — one component per file (idiomatic React, vs. Kotlin's per-family grouping in `Button.kt`/`Input.kt`). `LudoTable<T>` gains a required `rowKey: (row: T) => string` prop absent from the Kotlin version: React needs a stable key for list reconciliation, which Compose's diffing doesn't require. `Strings.TITLE_VIEW_DETAIL`/`TITLE_EDIT`/`TITLE_DELETE` are inlined directly in `ListItemRow.tsx` for now — the broader `Strings.kt` i18n module isn't ported yet (not in scope of any TS-0XX ticket currently; will be picked up screen-by-screen in Phase F, or as a dedicated ticket if it grows unwieldy).
+
 ## Tests
 
 | File | Class | Tests |
