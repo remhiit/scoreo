@@ -157,5 +157,48 @@ describe('ImportMatchesUseCase', () => {
         expect(result.value.skipped).toHaveLength(1)
       }
     })
+
+    it('imports legacy files with quoted numeric score/rank/date (Kotlin JsonPrimitive.content leniency)', () => {
+      // Kotlin reads these via `(obj["score"] as? JsonPrimitive)?.content?.toIntOrNull()`,
+      // which parses the primitive's raw text whether or not the source JSON quoted it.
+      const matchRepo = new InMemoryMatchRepository()
+      const json = `{
+        "version": "1.1",
+        "game": "TestGame",
+        "games": [
+            {
+                "id": "m1",
+                "date": "1000000",
+                "ranking": [
+                    {"name": "Alice", "score": "10", "rank": "1"},
+                    {"name": "Bob", "score": "5", "rank": "2"}
+                ]
+            }
+        ]
+      }`
+      const result = useCase(undefined, undefined, matchRepo).execute(json)
+      expect(result.ok).toBe(true)
+      if (result.ok) expect(result.value.imported).toBe(1)
+      expect(matchRepo.getAll()[0].date).toBe(1000000)
+      expect(matchRepo.getAll()[0].playerScores.map((s) => s.score)).toEqual([10, 5])
+      expect(matchRepo.getAll()[0].manualWinners).toEqual([matchRepo.getAll()[0].playerScores[0].playerId])
+    })
+  })
+
+  describe('version parsing', () => {
+    it('rejects a version with a missing minor part', () => {
+      const json = '{"version": "1.", "game": "X", "games": [{"id":"m1","ranking":[{"name":"A","score":1,"rank":1},{"name":"B","score":2,"rank":2}]}]}'
+      expect(useCase().preview(json).ok).toBe(false)
+    })
+
+    it('rejects a version using scientific notation', () => {
+      const json = '{"version": "1e0.1", "game": "X", "games": [{"id":"m1","ranking":[{"name":"A","score":1,"rank":1},{"name":"B","score":2,"rank":2}]}]}'
+      expect(useCase().preview(json).ok).toBe(false)
+    })
+
+    it('accepts a valid 1.x version', () => {
+      const json = '{"version": "1.5", "game": "X", "games": [{"id":"m1","ranking":[{"name":"A","score":1,"rank":1},{"name":"B","score":2,"rank":2}]}]}'
+      expect(useCase().preview(json).ok).toBe(true)
+    })
   })
 })

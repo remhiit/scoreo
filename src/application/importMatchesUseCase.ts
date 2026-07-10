@@ -1,4 +1,4 @@
-import type { WinCondition } from '../domain/model/enums'
+import { WinConditionSchema, type WinCondition } from '../domain/model/enums'
 import type { GameType } from '../domain/model/gameType'
 import type { Match } from '../domain/model/match'
 import type { Player } from '../domain/model/player'
@@ -14,13 +14,18 @@ export interface SemanticVersion {
   minor: number
 }
 
+/** Matches Kotlin's `String.toIntOrNull()`: digits only (optional leading minus), no ".", "e", or empty string. */
+function parseIntOrNull(s: string): number | null {
+  return /^-?\d+$/.test(s) ? Number(s) : null
+}
+
 function parseSemanticVersion(s: string): SemanticVersion {
   const parts = s.split('.')
   if (parts.length !== 2) throw new Error(`Invalid version format: ${s} (expected major.minor)`)
-  const major = Number(parts[0])
-  const minor = Number(parts[1])
-  if (!Number.isInteger(major)) throw new Error(`Invalid major version: ${s}`)
-  if (!Number.isInteger(minor)) throw new Error(`Invalid minor version: ${s}`)
+  const major = parseIntOrNull(parts[0])
+  const minor = parseIntOrNull(parts[1])
+  if (major === null) throw new Error(`Invalid major version: ${s}`)
+  if (minor === null) throw new Error(`Invalid minor version: ${s}`)
   return { major, minor }
 }
 
@@ -75,12 +80,24 @@ function asRecord(value: unknown, context: string): Record<string, unknown> {
   return value as Record<string, unknown>
 }
 
+/**
+ * Kotlin reads these fields via `(obj["x"] as? JsonPrimitive)?.content?.toIntOrNull()`,
+ * which parses the primitive's raw text regardless of whether the source JSON quoted it
+ * as a string — so legacy exports with quoted numbers ("score": "10") import fine there.
+ * Mirror that leniency here instead of requiring `typeof === 'number'`.
+ */
+function parseIntLike(value: unknown): number | null {
+  if (typeof value === 'number') return Number.isInteger(value) ? value : null
+  if (typeof value === 'string' && /^-?\d+$/.test(value)) return Number(value)
+  return null
+}
+
 function asArray(value: unknown, context: string): unknown[] {
   if (!Array.isArray(value)) throw new Error(`Expected an array for ${context}`)
   return value
 }
 
-const WIN_CONDITIONS: WinCondition[] = ['HIGHEST_SCORE', 'LOWEST_SCORE', 'MANUAL']
+const WIN_CONDITIONS: readonly WinCondition[] = WinConditionSchema.options
 
 export class ImportMatchesUseCase {
   constructor(
@@ -192,7 +209,7 @@ export class ImportMatchesUseCase {
     const obj = asRecord(raw, 'game')
     const id = obj.id
     if (typeof id !== 'string') throw new Error("Missing game 'id'")
-    const date = typeof obj.date === 'number' ? obj.date : null
+    const date = parseIntLike(obj.date)
     const rankingRaw = asArray(obj.ranking, `'ranking' in game ${id}`)
     if (rankingRaw.length < 2) throw new Error(`'ranking' must have at least 2 entries in game ${id}`)
     const details = Array.isArray(obj.details) ? obj.details.map((r) => this.parseRound(r)) : null
@@ -208,10 +225,10 @@ export class ImportMatchesUseCase {
     const obj = asRecord(raw, 'ranking entry')
     const name = obj.name
     if (typeof name !== 'string') throw new Error("Missing 'name' in ranking")
-    const score = obj.score
-    if (typeof score !== 'number') throw new Error(`Invalid 'score' in ranking for ${name}`)
-    const rank = obj.rank
-    if (typeof rank !== 'number') throw new Error(`Invalid 'rank' in ranking for ${name}`)
+    const score = parseIntLike(obj.score)
+    if (score === null) throw new Error(`Invalid 'score' in ranking for ${name}`)
+    const rank = parseIntLike(obj.rank)
+    if (rank === null) throw new Error(`Invalid 'rank' in ranking for ${name}`)
     return { name, score, rank }
   }
 
@@ -225,8 +242,8 @@ export class ImportMatchesUseCase {
     const obj = asRecord(raw, 'round score')
     const name = obj.name
     if (typeof name !== 'string') throw new Error("Missing 'name' in round score")
-    const score = obj.score
-    if (typeof score !== 'number') throw new Error(`Invalid 'score' in round for ${name}`)
+    const score = parseIntLike(obj.score)
+    if (score === null) throw new Error(`Invalid 'score' in round for ${name}`)
     return { name, score }
   }
 

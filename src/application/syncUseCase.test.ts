@@ -328,4 +328,27 @@ describe('SyncUseCase', () => {
     expect(gameTypeRepo.getAll()).toHaveLength(1)
     expect(matchRepo.getAll()).toHaveLength(1)
   })
+
+  it('autoSync treats identical data as Synced even with different object key order', async () => {
+    // Regression test: isSameState used to compare via JSON.stringify, which is
+    // key-order-sensitive. A real adapter round-tripping through JSON.parse can easily
+    // produce a different key order than locally-constructed objects even when the
+    // data is semantically identical, which would incorrectly report a Conflict.
+    const cloudRepo = new InMemoryCloudSyncRepository()
+    await cloudRepo.login()
+    cloudRepo.storedData = {
+      // Same Alice, but constructed with reversed key order compared to playerRepo below.
+      players: [{ active: true, name: 'Alice', id: 'p1' }],
+      gameTypes: [],
+      matches: [],
+      lastModified: 1000,
+    }
+    const playerRepo = new InMemoryPlayerRepository()
+    playerRepo.save({ id: 'p1', name: 'Alice', active: true })
+    const useCase = buildUseCase(cloudRepo, playerRepo)
+
+    const outcome = await useCase.autoSync()
+
+    expect(outcome.kind).toBe('Synced')
+  })
 })

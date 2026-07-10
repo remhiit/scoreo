@@ -49,11 +49,29 @@ function sortedById<T extends { id: string }>(items: T[]): T[] {
   return [...items].sort((a, b) => a.id.localeCompare(b.id))
 }
 
+/**
+ * Structural equality independent of object key order, matching Kotlin data class `==`.
+ * Plain `JSON.stringify` comparison is key-order-sensitive, which would report a false
+ * Conflict for objects that are semantically identical but serialized in a different
+ * field order (e.g. after a round-trip through a real network adapter's JSON parsing).
+ */
+function stableStringify(value: unknown): string {
+  if (Array.isArray(value)) {
+    return `[${value.map(stableStringify).join(',')}]`
+  }
+  if (value !== null && typeof value === 'object') {
+    const record = value as Record<string, unknown>
+    const keys = Object.keys(record).sort()
+    return `{${keys.map((key) => `${JSON.stringify(key)}:${stableStringify(record[key])}`).join(',')}}`
+  }
+  return JSON.stringify(value)
+}
+
 function isSameState(a: SyncData, b: SyncData): boolean {
   return (
-    JSON.stringify(sortedById(a.players)) === JSON.stringify(sortedById(b.players)) &&
-    JSON.stringify(sortedById(a.gameTypes)) === JSON.stringify(sortedById(b.gameTypes)) &&
-    JSON.stringify(sortedById(a.matches)) === JSON.stringify(sortedById(b.matches))
+    stableStringify(sortedById(a.players)) === stableStringify(sortedById(b.players)) &&
+    stableStringify(sortedById(a.gameTypes)) === stableStringify(sortedById(b.gameTypes)) &&
+    stableStringify(sortedById(a.matches)) === stableStringify(sortedById(b.matches))
   )
 }
 
