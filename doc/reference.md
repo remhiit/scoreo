@@ -77,12 +77,12 @@ All in `src/commonMain/kotlin/com/scoreo/`.
 
 ## Adapters (Implementations)
 
-| Class | Implements | Storage | File |
-|---|---|---|---|
-| `LocalStoragePlayerRepository` | `PlayerRepository` | localStorage | `src/jsMain/.../infrastructure/LocalStoragePlayerRepository.kt` |
-| `LocalStorageGameTypeRepository` | `GameTypeRepository` | localStorage | `src/jsMain/.../infrastructure/LocalStorageGameTypeRepository.kt` |
-| `LocalStorageMatchRepository` | `MatchRepository` | localStorage | `src/jsMain/.../infrastructure/LocalStorageMatchRepository.kt` |
-| `LocalStorageMatchDraftRepository` | `MatchDraftRepository` | localStorage | `src/jsMain/.../infrastructure/LocalStorageMatchDraftRepository.kt` |
+| Class | Implements | Storage | File (Kotlin) | TS |
+|---|---|---|---|---|
+| `LocalStoragePlayerRepository` | `PlayerRepository` | localStorage (`scoreo_players`) | `src/jsMain/.../infrastructure/LocalStoragePlayerRepository.kt` | `src/infrastructure/localStorage/localStoragePlayerRepository.ts` |
+| `LocalStorageGameTypeRepository` | `GameTypeRepository` | localStorage (`scoreo_gametypes`) | `src/jsMain/.../infrastructure/LocalStorageGameTypeRepository.kt` | `src/infrastructure/localStorage/localStorageGameTypeRepository.ts` |
+| `LocalStorageMatchRepository` | `MatchRepository` | localStorage (`scoreo_matches`) | `src/jsMain/.../infrastructure/LocalStorageMatchRepository.kt` | `src/infrastructure/localStorage/localStorageMatchRepository.ts` (migration v1->v2 branchee) |
+| `LocalStorageMatchDraftRepository` | `MatchDraftRepository` | localStorage (`scoreo_match_draft`) | `src/jsMain/.../infrastructure/LocalStorageMatchDraftRepository.kt` | `src/infrastructure/localStorage/localStorageMatchDraftRepository.ts` |
 | `GoogleDriveSyncAdapter` | `CloudSyncRepository` | Google Drive App Data Folder (async fetch + coroutines) | `src/jsMain/.../infrastructure/google/GoogleDriveSyncAdapter.kt` |
 | `OAuthConfig` | — (config object) | `CLIENT_ID: String` — generated at build from `GOOGLE_CLIENT_ID` env var | `build/generated/oauthconfig/.../OAuthConfig.kt` (generated) |
 | `InMemoryCloudSyncRepository` | `CloudSyncRepository` | in-memory (tests) | `src/commonTest/.../infrastructure/InMemoryCloudSyncRepository.kt` |
