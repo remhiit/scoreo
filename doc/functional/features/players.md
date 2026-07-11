@@ -18,6 +18,8 @@
 | **Intent** | `PlayerIntent`: `UpdateInput`, `AddPlayer`, `DeletePlayer`, `ShowDeleteConfirm`, `DismissDeleteConfirm`, `StartRename`, `UpdateRenameInput`, `ConfirmRename`, `CancelRename` |
 | **State** | `PlayerState`: `players`, `stats`, `inputName`, `error`, `deleteConfirmPlayerId`, `renamingPlayerId`, `renameInput` |
 
+**TS (TS-055)**: `src/ui/home/{playerTypes,playerReducer,HomeScreen}.ts(x)` — see `doc/reference.md` for the action-level mapping.
+
 ## Screen: PlayerScreen
 
 - Text input + **Add** button to create a player

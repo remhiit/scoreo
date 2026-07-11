@@ -6,37 +6,40 @@ Exhaustive tables. Read before exploring `src/`.
 
 | Handler | Intent | Intent subclasses | State | Handler file |
 |---|---|---|---|---|
-| `PlayerHandler` | `PlayerIntent` | `UpdateInput(name: String)`, `AddPlayer`, `DeletePlayer(id, anonymize)`, `ShowDeleteConfirm(id)`, `DismissDeleteConfirm`, `StartRename(playerId)`, `UpdateRenameInput(name)`, `ConfirmRename`, `CancelRename` | `PlayerState` | `src/commonMain/.../ui/player/PlayerHandler.kt` |
-| `GameTypeHandler` | `GameTypeIntent` | `UpdateName(name: String)`, `SelectWinCondition(winCondition: WinCondition)`, `UpdateTieBreakRule(rule: TieBreakRule)`, `UpdateTieBreakCondition(condition: WinCondition)`, `UpdateTieBreakLabel(label: String)`, `SelectGame(id: String)`, `DeselectGame`, `AddGameType`, `EditGameType(id: String)`, `CancelEdit`, `UpdateGameType(gameType: GameType)`, `ShowArchiveConfirm(gameTypeId: String)`, `ArchiveGameType(gameTypeId: String)`, `DismissArchiveConfirm` | `GameTypeState` | `src/commonMain/.../ui/gametype/GameTypeHandler.kt` |
-| `ImportHandler` | `ImportIntent` | `FileLoaded(content: String)`, `FileError(message: String)`, `Execute`, `Reset` | `ImportState(step: ImportStep, preview, jsonContent, result, error)` | `src/commonMain/.../ui/import/ImportHandler.kt` |
-| `ScoreDetailHandler` | `ScoreDetailIntent` | `UpdateScore(roundIndex, playerId, value)`, `AddRound`, `RemoveRound(index)`, `Terminate`, `ConfirmWinners`, `DismissModal`, `ToggleModalWinner(playerId)`, `UpdateSecondaryScoreInput(playerId, value)`, `SubmitSecondaryScores`, `ToggleManualSelectionWinner(playerId)`, `ConfirmManualWinners`, `KeepTie`, `DismissTieBreak`, `CancelMatch`, `ConfirmCancel`, `DismissCancelConfirm` | `ScoreDetailState` | `src/commonMain/.../ui/scoredetail/ScoreDetailHandler.kt` |
-| `StatsHandler` | `StatsIntent` | `SelectPlayer(playerId: String)`, `BackToLeaderboard`, `SelectGameType(gameTypeId: String?)` | `StatsState(leaderboard, selectedPlayerId, gameTypes, selectedGameTypeId)` | `src/commonMain/.../ui/stats/StatsHandler.kt` |
-| `HistoryHandler` | `HistoryIntent` | `Refresh`, `ShowDeleteConfirm(matchId: String)`, `DeleteMatch(matchId: String)`, `DismissDeleteConfirm`, `SelectGameTypeFilter(gameTypeId: String?)` | `HistoryState` | `src/commonMain/.../ui/history/HistoryHandler.kt` |
-| `SyncHandler` | `SyncIntent` | `Login`, `Logout`, `RestoreSession`, `ResolveConflict(keepLocal: Boolean)`, `DismissError` | `SyncState(phase, email, conflict, result, error)` | `src/commonMain/.../ui/sync/SyncHandler.kt` |
+| `PlayerHandler` | `PlayerIntent` | `UpdateInput(name: String)`, `AddPlayer`, `DeletePlayer(id, anonymize)`, `ShowDeleteConfirm(id)`, `DismissDeleteConfirm`, `StartRename(playerId)`, `UpdateRenameInput(name)`, `ConfirmRename`, `CancelRename` | `PlayerState` | `src/commonMain/.../ui/player/PlayerHandler.kt` (**TS (TS-055)**: `src/ui/home/{playerTypes,playerReducer,HomeScreen}.ts(x)` — `playerReducer` mirrors every intent 1:1; `submitAddPlayer`/`submitDeletePlayer`/`submitConfirmRename` call the use cases and dispatch the resulting action, same idiom as the other screens. `startRename` looks up the player directly in `state.players` (already loaded), no repository call needed, unlike Kotlin's redundant re-lookup. The UI-only state Kotlin never captured in a Handler (multi-player selection, game-selection modal, inline add-game-type form) is deliberately **not** in the reducer — plain `useState` in `HomeScreen`, exactly as untested on the Kotlin side.) |
+| `GameTypeHandler` | `GameTypeIntent` | `UpdateName(name: String)`, `SelectWinCondition(winCondition: WinCondition)`, `UpdateTieBreakRule(rule: TieBreakRule)`, `UpdateTieBreakCondition(condition: WinCondition)`, `UpdateTieBreakLabel(label: String)`, `SelectGame(id: String)`, `DeselectGame`, `AddGameType`, `EditGameType(id: String)`, `CancelEdit`, `UpdateGameType(gameType: GameType)`, `ShowArchiveConfirm(gameTypeId: String)`, `ArchiveGameType(gameTypeId: String)`, `DismissArchiveConfirm` | `GameTypeState` | `src/commonMain/.../ui/gametype/GameTypeHandler.kt` (**TS (TS-052)**: `src/ui/gametype/{gameTypeTypes,gameTypeReducer,GameTypeForm,GameTypeScreen}.ts(x)` — `gameTypeReducer` mirrors every intent 1:1 as an action; side-effecting ones (`AddGameType`/`UpdateGameType`/`ArchiveGameType`/`EditGameType`'s lookup) are performed by `submitAddGameType`/`submitUpdateGameType`/`submitArchiveGameType`/`resolveGameTypeForEdit` helpers called from `GameTypeScreen`, which then dispatch the resulting `*Succeeded`/`*Failed` action — same `resetForm`-on-success idiom as Kotlin's `resetForm(refresh: Boolean)`. `GameTypeForm.tsx` holds both the add-mode form and the shared `GameTypeFields` (win condition / tie-break selects) reused by the edit modal, matching Kotlin's private composable split. 3 modals (detail/edit/archive-confirm) driven by nullable-equivalent (`undefined`) ids in state, same idiom as Kotlin.) |
+| `ImportHandler` | `ImportIntent` | `FileLoaded(content: String)`, `FileError(message: String)`, `Execute`, `Reset` | `ImportState(step: ImportStep, preview, jsonContent, result, error)` | `src/commonMain/.../ui/import/ImportHandler.kt` (**TS (TS-053)**: `src/ui/import/{importTypes,importReducer,ImportScreen}.ts(x)` — `importReducer` actions `previewReady`/`previewFailed`/`importSucceeded`/`importFailed`/`fileError`/`reset`; `submitFileLoaded()`/`submitExecute()` call `ImportMatchesUseCase.preview()`/`.execute()` (both `Result<T, Error>`) and map the outcome to an action, dispatched from `ImportScreen`. The `Execute`-only-from-`READY` guard lives in the component (`if (state.step !== 'READY') return`), same as Kotlin's early return.) |
+| `ScoreDetailHandler` | `ScoreDetailIntent` | `UpdateScore(roundIndex, playerId, value)`, `AddRound`, `RemoveRound(index)`, `Terminate`, `ConfirmWinners`, `DismissModal`, `ToggleModalWinner(playerId)`, `UpdateSecondaryScoreInput(playerId, value)`, `SubmitSecondaryScores`, `ToggleManualSelectionWinner(playerId)`, `ConfirmManualWinners`, `KeepTie`, `DismissTieBreak`, `CancelMatch`, `ConfirmCancel`, `DismissCancelConfirm` | `ScoreDetailState` | `src/commonMain/.../ui/scoredetail/ScoreDetailHandler.kt` (**TS (TS-056)**: `src/ui/scoredetail/{scoreDetailTypes,scoreDetailReducer,ScoreDetailScreen,ManualSelectionDialog,SecondaryScoreDialog}.ts(x)` — `scoreDetailReducer` handles every pure transition; the intents that call `CreateMatchUseCase`/`UpdateMatchUseCase` (`Terminate`, `ConfirmWinners`, `SubmitSecondaryScores`, `ConfirmManualWinners`, `KeepTie`) go through `submitTerminate`/`submitConfirmWinners`/`submitSecondaryScores`/`submitConfirmManualWinners`/`submitKeepTie`, which share a `performSave()` helper (mirrors Kotlin's private `saveMatch`, including the edit-vs-create branch and try/catch). `buildInitialState()` mirrors the handler's `init` block (load a match for editing, or restore a matching draft); `resetState()` mirrors `reset()`. Draft autosave (`saveDraft()`, called after `UpdateScore`/`AddRound`/`RemoveRound`) is wired via a `useEffect` keyed on `state.rounds` (skipped on mount via a ref, since Kotlin never saves a draft before the first user edit) rather than being invoked from inside the reducer, since repository writes aren't pure.) |
+| `StatsHandler` | `StatsIntent` | `SelectPlayer(playerId: String)`, `BackToLeaderboard`, `SelectGameType(gameTypeId: String?)` | `StatsState(leaderboard, selectedPlayerId, gameTypes, selectedGameTypeId)` | `src/commonMain/.../ui/stats/StatsHandler.kt` (**TS (TS-050)**: `src/ui/stats/{statsTypes,statsReducer,StatsScreen}.ts(x)` — `statsReducer(state, action)` pure function with actions `selectPlayer`/`backToLeaderboard`/`selectGameType`/`loaded`; the use-case calls that Kotlin's `refresh()` performs as a side effect inside the handler are done in `StatsScreen`'s `useEffect` (keyed on `selectedGameTypeId`, covering both mount and game-type-change triggers) via the exported `loadStats()` helper, dispatching `loaded`) |
+| `HistoryHandler` | `HistoryIntent` | `Refresh`, `ShowDeleteConfirm(matchId: String)`, `DeleteMatch(matchId: String)`, `DismissDeleteConfirm`, `SelectGameTypeFilter(gameTypeId: String?)` | `HistoryState` | `src/commonMain/.../ui/history/HistoryHandler.kt` (**TS (TS-051)**: `src/ui/history/{historyTypes,historyReducer,HistoryScreen}.ts(x)` — `historyReducer` actions `loaded`/`showDeleteConfirm`/`deleteFailed`/`dismissDeleteConfirm`/`selectGameTypeFilter`; `loadDisplays()` rebuilds `MatchDisplay[]` from the repositories (called on mount, mirroring `Refresh`), `deleteMatch()` wraps the use-case call in try/catch like the handler. `HistoryScreen` takes an optional `onEditMatch` callback instead of an `AppNavigator` instance — `App.tsx` wires it to `navigate(scoreDetailScreen(...))`.) |
+| `SyncHandler` | `SyncIntent` | `Login`, `Logout`, `RestoreSession`, `ResolveConflict(keepLocal: Boolean)`, `DismissError` | `SyncState(phase, email, conflict, result, error)` | `src/commonMain/.../ui/sync/SyncHandler.kt` (**TS (TS-054)**: `src/ui/sync/{syncTypes,syncReducer,SyncScreen}.ts(x)` — pure `syncReducer` for state transitions; `submitLogin`/`submitLogout`/`submitRestoreSession`/`submitResolveConflict` are `async` functions (replacing Kotlin's `scope.launch`) that call `SyncUseCase` and dispatch the resulting action. `errorMessage()` mirrors Kotlin's `e.message` for `SyncException`: only `NotAuthenticated`/`ApiError` carry a message (`NetworkError`/`Conflict`/`RateLimited` don't), so each call site applies its own fallback string exactly like Kotlin's `e.message ?: "Login failed"`.) |
 
 All in `src/commonMain/kotlin/com/scoreo/`.
 
 ## Use Cases
 
-| Use Case | Method | Return | File |
-|---|---|---|---|
-| `AddPlayerUseCase` | `invoke(name: String)` | `Player` | `src/commonMain/.../application/AddPlayerUseCase.kt` |
-| `AddGameTypeUseCase` | `invoke(name: String, winCondition: WinCondition, tieBreakRule: TieBreakRule = NONE, tieBreakCondition: WinCondition = HIGHEST_SCORE, tieBreakLabel: String? = null)` | `GameType` | `src/commonMain/.../application/AddGameTypeUseCase.kt` |
-| `ArchiveGameTypeUseCase` | `invoke(gameTypeId: String)` | `Unit` | `src/commonMain/.../application/ArchiveGameTypeUseCase.kt` |
-| `CreateMatchUseCase` | `invoke(gameTypeId: String, playerScores: List<PlayerScore>, date: Long, manualWinners: List<String>, secondaryPlayerScores: List<PlayerScore>)` | `Match` | `src/commonMain/.../application/CreateMatchUseCase.kt` |
-| `UpdateMatchUseCase` | `invoke(match: Match)` | `Unit` | `src/commonMain/.../application/UpdateMatchUseCase.kt` |
-| `DeleteMatchUseCase` | `invoke(matchId: String)` | `Unit` | `src/commonMain/.../application/DeleteMatchUseCase.kt` |
-| `DeletePlayerUseCase` | `invoke(id: String, anonymize: Boolean = false)` | `Unit` | `src/commonMain/.../application/DeletePlayerUseCase.kt` |
-| `RenamePlayerUseCase` | `invoke(playerId: String, newName: String)` | `Unit` | `src/commonMain/.../application/RenamePlayerUseCase.kt` |
-| `GetPlayersUseCase` | `invoke(includeInactive: Boolean = false)` | `List<Player>` | `src/commonMain/.../application/GetPlayersUseCase.kt` |
-| `GetPlayerStatsUseCase` | `invoke()` | `Map<String, PlayerStats>` | `src/commonMain/.../application/GetPlayerStatsUseCase.kt` |
-| `GetHeadToHeadUseCase` | `invoke(gameTypeId: String? = null)` | `List<PlayerDetail>` | `src/commonMain/.../application/GetHeadToHeadUseCase.kt` |
-| `EloCalculator` | `compute(matches, gameTypes)` | `Map<String, Int>` | `src/commonMain/.../application/EloCalculator.kt` |
-| `FindGameTypeByIdUseCase` | `invoke(id: String)` | `GameType?` | `src/commonMain/.../application/FindGameTypeByIdUseCase.kt` |
-| `GetGameTypesUseCase` | `invoke(includeInactive: Boolean = false)` | `List<GameType>` | `src/commonMain/.../application/GetGameTypesUseCase.kt` |
-| `GetMatchesUseCase` | `invoke()` | `List<Match>` | `src/commonMain/.../application/GetMatchesUseCase.kt` |
-| `ImportMatchesUseCase` | `preview(jsonString: String)`, `execute(jsonString: String)` | `Result<ImportPreview>`, `Result<ImportResult>` | `src/commonMain/.../application/ImportMatchesUseCase.kt` |
-| `SyncUseCase` | `suspend autoSync()` | `SyncOutcome` | `src/commonMain/.../application/SyncUseCase.kt` |
+> TS: `src/application/*.ts`, classe avec méthode `invoke()` (au lieu de `operator fun invoke`) ; ports fournis au constructeur. Erreurs de validation/lookup lancées via `ValidationError`/`NotFoundError` (`src/domain/model/errors.ts`, classes `Error` réelles — pas seulement l'union `DomainError` initiale de TS-002, affinée en TS-010).
+
+| Use Case | Method | Return | File (Kotlin) | TS |
+|---|---|---|---|---|
+| `AddPlayerUseCase` | `invoke(name: String)` | `Player` | `src/commonMain/.../application/AddPlayerUseCase.kt` | `addPlayerUseCase.ts` |
+| `AddGameTypeUseCase` | `invoke(name: String, winCondition: WinCondition, tieBreakRule: TieBreakRule = NONE, tieBreakCondition: WinCondition = HIGHEST_SCORE, tieBreakLabel: String? = null)` | `GameType` | `src/commonMain/.../application/AddGameTypeUseCase.kt` | `addGameTypeUseCase.ts` (options 3-5 regroupées dans un objet `AddGameTypeOptions`) |
+| `ArchiveGameTypeUseCase` | `invoke(gameTypeId: String)` | `Unit` | `src/commonMain/.../application/ArchiveGameTypeUseCase.kt` | `archiveGameTypeUseCase.ts` |
+| `CreateMatchUseCase` | `invoke(gameTypeId: String, playerScores: List<PlayerScore>, date: Long, manualWinners: List<String>, secondaryPlayerScores: List<PlayerScore>)` | `Match` | `src/commonMain/.../application/CreateMatchUseCase.kt` | `createMatchUseCase.ts` (retourne `Result<Match, DomainError>`) |
+| `UpdateMatchUseCase` | `invoke(match: Match)` | `Unit` | `src/commonMain/.../application/UpdateMatchUseCase.kt` | `updateMatchUseCase.ts` |
+| `DeleteMatchUseCase` | `invoke(matchId: String)` | `Unit` | `src/commonMain/.../application/DeleteMatchUseCase.kt` | `deleteMatchUseCase.ts` |
+| `DeletePlayerUseCase` | `invoke(id: String, anonymize: Boolean = false)` | `Unit` | `src/commonMain/.../application/DeletePlayerUseCase.kt` | `deletePlayerUseCase.ts` |
+| `RenamePlayerUseCase` | `invoke(playerId: String, newName: String)` | `Unit` | `src/commonMain/.../application/RenamePlayerUseCase.kt` | `renamePlayerUseCase.ts` |
+| `GetPlayersUseCase` | `invoke(includeInactive: Boolean = false)` | `List<Player>` | `src/commonMain/.../application/GetPlayersUseCase.kt` | `getPlayersUseCase.ts` |
+| `GetPlayerStatsUseCase` | `invoke()` | `Map<String, PlayerStats>` | `src/commonMain/.../application/GetPlayerStatsUseCase.kt` | `getPlayerStatsUseCase.ts` (retourne `Map<string, PlayerStats>`) |
+| `GetHeadToHeadUseCase` | `invoke(gameTypeId: String? = null)` | `List<PlayerDetail>` | `src/commonMain/.../application/GetHeadToHeadUseCase.kt` | `getHeadToHeadUseCase.ts` |
+| `EloCalculator` | `compute(matches, gameTypes)` | `Map<String, Int>` | `src/commonMain/.../application/EloCalculator.kt` | `eloCalculator.ts` |
+| `FindGameTypeByIdUseCase` | `invoke(id: String)` | `GameType?` | `src/commonMain/.../application/FindGameTypeByIdUseCase.kt` | `findGameTypeByIdUseCase.ts` |
+| `GetGameTypesUseCase` | `invoke(includeInactive: Boolean = false)` | `List<GameType>` | `src/commonMain/.../application/GetGameTypesUseCase.kt` | `getGameTypesUseCase.ts` |
+| `GetMatchesUseCase` | `invoke()` | `List<Match>` | `src/commonMain/.../application/GetMatchesUseCase.kt` | `getMatchesUseCase.ts` |
+| `ImportMatchesUseCase` | `preview(jsonString: String)`, `execute(jsonString: String)` | `Result<ImportPreview>`, `Result<ImportResult>` | `src/commonMain/.../application/ImportMatchesUseCase.kt` | `importMatchesUseCase.ts` (`Result<T, Error>`) |
+| `SyncUseCase` | `suspend autoSync()` | `SyncOutcome` | `src/commonMain/.../application/SyncUseCase.kt` | `syncUseCase.ts` (async/await) |
+| `UpdateGameTypeUseCase` | `invoke(gameType: GameType)` | `Unit` | `src/commonMain/.../application/UpdateGameTypeUseCase.kt` | `updateGameTypeUseCase.ts` |
 | `SyncUseCase` | `suspend resolveConflict(keepLocal: Boolean)` | `SyncResult` | `src/commonMain/.../application/SyncUseCase.kt` |
 | `SyncUseCase` | `suspend login()` / `suspend logout()` / `suspend status()` | `Unit` / `SyncStatus` | `src/commonMain/.../application/SyncUseCase.kt` |
 
@@ -44,13 +47,17 @@ All in `src/commonMain/kotlin/com/scoreo/`.
 
 ## Domain Models
 
-| Model | Fields | File |
-|---|---|---|
-| `Player` | `id: String`, `name: String`, `active: Boolean = true` | `src/commonMain/.../domain/model/Player.kt` |
-| `GameType` | `id: String`, `name: String`, `winCondition: WinCondition`, `tieBreakRule: TieBreakRule = TieBreakRule.NONE`, `tieBreakCondition: WinCondition = WinCondition.HIGHEST_SCORE`, `tieBreakLabel: String? = null`, `active: Boolean = true` | `src/commonMain/.../domain/model/GameType.kt` |
-| `Match` | `id: String`, `date: Long`, `gameTypeId: String`, `playerScores: List<PlayerScore>`, `manualWinners: List<String> = emptyList()`, `secondaryPlayerScores: List<PlayerScore> = emptyList()` | `src/commonMain/.../domain/model/Match.kt` |
-| `MatchDraft` | `gameTypeId: String`, `playerIds: List<String>`, `rounds: List<Map<String, String>>`, `timestamp: Long` | `src/commonMain/.../domain/model/MatchDraft.kt` |
-| `PlayerScore` | `playerId: String`, `score: Int` | `src/commonMain/.../domain/model/PlayerScore.kt` |
+> Migration React/TS en cours (voir issues `migration-react`) : la colonne "TS" liste l'équivalent porté quand il existe. Tant que la parité n'est pas atteinte pour un modèle, la colonne "File" (Kotlin) reste la référence de comportement.
+
+| Model | Fields | File (Kotlin) | TS |
+|---|---|---|---|
+| `Player` | `id: String`, `name: String`, `active: Boolean = true` | `src/commonMain/.../domain/model/Player.kt` | `src/domain/model/player.ts` |
+| `GameType` | `id: String`, `name: String`, `winCondition: WinCondition`, `tieBreakRule: TieBreakRule = TieBreakRule.NONE`, `tieBreakCondition: WinCondition = WinCondition.HIGHEST_SCORE`, `tieBreakLabel: String? = null`, `active: Boolean = true` | `src/commonMain/.../domain/model/GameType.kt` | `src/domain/model/gameType.ts` (type only ; `computeWinners` arrive avec TS-004) |
+| `Match` | `id: String`, `date: Long`, `gameTypeId: String`, `playerScores: List<PlayerScore>`, `manualWinners: List<String> = emptyList()`, `secondaryPlayerScores: List<PlayerScore> = emptyList()` | `src/commonMain/.../domain/model/Match.kt` | `src/domain/model/match.ts` (type only ; `getWinners`/`isTieBreakIndeterminate` arrivent avec TS-004) |
+| `MatchDraft` | `gameTypeId: String`, `playerIds: List<String>`, `rounds: List<Map<String, String>>`, `timestamp: Long` | `src/commonMain/.../domain/model/MatchDraft.kt` | `src/domain/model/matchDraft.ts` |
+| `PlayerScore` | `playerId: String`, `score: Int` | `src/commonMain/.../domain/model/PlayerScore.kt` | `src/domain/model/playerScore.ts` |
+| `WinCondition` / `TieBreakRule` | enums + `label()` | `domain/model/{WinCondition,TieBreakRule}.kt` | `src/domain/model/enums.ts` |
+| `DomainError` | sealed `Validation`/`NotFound` | `domain/DomainError.kt` | `src/domain/model/errors.ts` (union discriminée) |
 | `WinCondition` | enum: `HIGHEST_SCORE`, `LOWEST_SCORE`, `MANUAL` | `src/commonMain/.../domain/model/WinCondition.kt` |
 | `TieBreakRule` | enum: `NONE`, `MANUAL_SELECTION`, `SECONDARY_SCORE` | `src/commonMain/.../domain/model/TieBreakRule.kt` |
 
@@ -58,31 +65,34 @@ All in `src/commonMain/kotlin/com/scoreo/`.
 
 ## Ports (Repository Interfaces)
 
-| Interface | Methods | File |
-|---|---|---|
-| `PlayerRepository` | `getAll(includeInactive)`, `save(player)`, `saveAll(players)`, `delete(id, anonymize)` | `src/commonMain/.../domain/port/PlayerRepository.kt` |
-| `GameTypeRepository` | `getAll(includeInactive: Boolean = false)`, `save(gameType)`, `saveAll(gameTypes)`, `findById(id)` | `src/commonMain/.../domain/port/GameTypeRepository.kt` |
-| `MatchRepository` | `getAll()`, `save(match)`, `saveAll(matches)`, `findById(id)`, `delete(id)` | `src/commonMain/.../domain/port/MatchRepository.kt` |
-| `MatchDraftRepository` | `save(draft: MatchDraft)`, `load(): MatchDraft?`, `clear()` | `src/commonMain/.../domain/port/MatchDraftRepository.kt` |
-| `CloudSyncRepository` | `suspend push(data)`, `suspend pull()`, `suspend getStatus()`, `suspend login()`, `suspend logout()` | `src/commonMain/.../domain/port/CloudSyncRepository.kt` |
+| Interface | Methods | File (Kotlin) | TS |
+|---|---|---|---|
+| `PlayerRepository` | `getAll(includeInactive)`, `save(player)`, `saveAll(players)`, `delete(id, anonymize)` | `src/commonMain/.../domain/port/PlayerRepository.kt` | `src/domain/port/playerRepository.ts` |
+| `GameTypeRepository` | `getAll(includeInactive: Boolean = false)`, `save(gameType)`, `saveAll(gameTypes)`, `findById(id)` | `src/commonMain/.../domain/port/GameTypeRepository.kt` | `src/domain/port/gameTypeRepository.ts` |
+| `MatchRepository` | `getAll()`, `save(match)`, `saveAll(matches)`, `findById(id)`, `delete(id)` | `src/commonMain/.../domain/port/MatchRepository.kt` | `src/domain/port/matchRepository.ts` |
+| `MatchDraftRepository` | `save(draft: MatchDraft)`, `load(): MatchDraft?`, `clear()` | `src/commonMain/.../domain/port/MatchDraftRepository.kt` | `src/domain/port/matchDraftRepository.ts` |
+| `CloudSyncRepository` | `suspend push(data)`, `suspend pull()`, `suspend getStatus()`, `suspend login()`, `suspend logout()` | `src/commonMain/.../domain/port/CloudSyncRepository.kt` | `src/domain/port/cloudSyncRepository.ts` (Promise-based) |
 
 All in `src/commonMain/kotlin/com/scoreo/`.
 
 ## Adapters (Implementations)
 
-| Class | Implements | Storage | File |
-|---|---|---|---|
-| `LocalStoragePlayerRepository` | `PlayerRepository` | localStorage | `src/jsMain/.../infrastructure/LocalStoragePlayerRepository.kt` |
-| `LocalStorageGameTypeRepository` | `GameTypeRepository` | localStorage | `src/jsMain/.../infrastructure/LocalStorageGameTypeRepository.kt` |
-| `LocalStorageMatchRepository` | `MatchRepository` | localStorage | `src/jsMain/.../infrastructure/LocalStorageMatchRepository.kt` |
-| `LocalStorageMatchDraftRepository` | `MatchDraftRepository` | localStorage | `src/jsMain/.../infrastructure/LocalStorageMatchDraftRepository.kt` |
-| `GoogleDriveSyncAdapter` | `CloudSyncRepository` | Google Drive App Data Folder (async fetch + coroutines) | `src/jsMain/.../infrastructure/google/GoogleDriveSyncAdapter.kt` |
-| `OAuthConfig` | — (config object) | `CLIENT_ID: String` — generated at build from `GOOGLE_CLIENT_ID` env var | `build/generated/oauthconfig/.../OAuthConfig.kt` (generated) |
-| `InMemoryCloudSyncRepository` | `CloudSyncRepository` | in-memory (tests) | `src/commonTest/.../infrastructure/InMemoryCloudSyncRepository.kt` |
-| `InMemoryPlayerRepository` | `PlayerRepository` | in-memory (tests) | `src/commonTest/.../infrastructure/InMemoryPlayerRepository.kt` |
-| `InMemoryGameTypeRepository` | `GameTypeRepository` | in-memory (tests) | `src/commonTest/.../infrastructure/InMemoryGameTypeRepository.kt` |
-| `InMemoryMatchRepository` | `MatchRepository` | in-memory (tests) | `src/commonTest/.../infrastructure/InMemoryMatchRepository.kt` |
-| `MatchMigration` | — (utility) | `migrateMatchesJson()` | `src/commonMain/.../application/MatchMigration.kt` |
+| Class | Implements | Storage | File (Kotlin) | TS |
+|---|---|---|---|---|
+| `LocalStoragePlayerRepository` | `PlayerRepository` | localStorage (`scoreo_players`) | `src/jsMain/.../infrastructure/LocalStoragePlayerRepository.kt` | `src/infrastructure/localStorage/localStoragePlayerRepository.ts` |
+| `LocalStorageGameTypeRepository` | `GameTypeRepository` | localStorage (`scoreo_gametypes`) | `src/jsMain/.../infrastructure/LocalStorageGameTypeRepository.kt` | `src/infrastructure/localStorage/localStorageGameTypeRepository.ts` |
+| `LocalStorageMatchRepository` | `MatchRepository` | localStorage (`scoreo_matches`) | `src/jsMain/.../infrastructure/LocalStorageMatchRepository.kt` | `src/infrastructure/localStorage/localStorageMatchRepository.ts` (migration v1->v2 branchee) |
+| `LocalStorageMatchDraftRepository` | `MatchDraftRepository` | localStorage (`scoreo_match_draft`) | `src/jsMain/.../infrastructure/LocalStorageMatchDraftRepository.kt` | `src/infrastructure/localStorage/localStorageMatchDraftRepository.ts` |
+| `GoogleDriveClient` | — (Drive REST v3 wrapper) | find/create/update/read/upsert `scoreo-data.json`, retry backoff | `src/jsMain/.../infrastructure/google/GoogleDriveClient.kt` | `src/infrastructure/google/googleDriveClient.ts` (`Result<T, SyncException>`) |
+| `GoogleDriveSyncAdapter` | `CloudSyncRepository` | Google Drive App Data Folder (async fetch + coroutines) | `src/jsMain/.../infrastructure/google/GoogleDriveSyncAdapter.kt` | `src/infrastructure/google/googleDriveSyncAdapter.ts` (async/await ; `driveClient` param typeé `DriveClient` — interface structurelle plutôt que la classe concrète, pour permettre un fake de test sans heritage) |
+| `GoogleAuthService` | — (GIS Token Model wrapper) | `accessToken`/`expiresAt`/`idToken` en memoire | `src/jsMain/.../infrastructure/google/GoogleIdentityService.kt` | `src/infrastructure/google/googleAuthService.ts` |
+| `SyncConfig` | — (config persistee) | localStorage (`scoreo_sync_config`) | `src/jsMain/.../infrastructure/google/SyncConfig.kt` | `src/infrastructure/google/syncConfig.ts` |
+| `OAuthConfig` | — (config object) | `CLIENT_ID: String` — generated at build from `GOOGLE_CLIENT_ID` env var | `build/generated/oauthconfig/.../OAuthConfig.kt` (generated) | `src/infrastructure/google/oauthConfig.ts` (`import.meta.env.VITE_GOOGLE_CLIENT_ID`) |
+| `InMemoryCloudSyncRepository` | `CloudSyncRepository` | in-memory (tests) | `src/commonTest/.../infrastructure/InMemoryCloudSyncRepository.kt` | `src/infrastructure/testing/inMemoryCloudSyncRepository.ts` |
+| `InMemoryPlayerRepository` | `PlayerRepository` | in-memory (tests) | `src/commonTest/.../infrastructure/InMemoryPlayerRepository.kt` | `src/infrastructure/testing/inMemoryPlayerRepository.ts` |
+| `InMemoryGameTypeRepository` | `GameTypeRepository` | in-memory (tests) | `src/commonTest/.../infrastructure/InMemoryGameTypeRepository.kt` | `src/infrastructure/testing/inMemoryGameTypeRepository.ts` |
+| `InMemoryMatchRepository` | `MatchRepository` | in-memory (tests) | `src/commonTest/.../infrastructure/InMemoryMatchRepository.kt` | `src/infrastructure/testing/inMemoryMatchRepository.ts` |
+| `MatchMigration` | — (utility) | `migrateMatchesJson()` | `src/commonMain/.../application/MatchMigration.kt` | `src/infrastructure/migration/migrateMatches.ts` |
 
 All in `src/jsMain/kotlin/com/scoreo/`. Production: `LocalStorage*`, `GoogleDriveSyncAdapter`. Tests: `InMemory*`.
 
@@ -92,13 +102,15 @@ All in `src/jsMain/kotlin/com/scoreo/`. Production: `LocalStorage*`, `GoogleDriv
 
 | Screen | Parameters | Destination |
 |---|---|---|
-| `Screen.Home` | — | HomeScreen (player selection, game modal, FAB) |
-| `Screen.History` | — | HistoryScreen (past matches list) |
-| `Screen.Import` | — | ImportScreen (JSON import) |
-| `Screen.Stats` | — | StatsScreen (ELO leaderboard, head-to-head) |
-| `Screen.Games` | — | GameTypeScreen (game type management) |
-| `Screen.Sync` | — | SyncScreen (Google Drive cloud backup) |
-| `Screen.ScoreDetail` | `gameTypeId: String`, `playerIds: List<String>`, `matchId: String? = null` | ScoreDetailScreen (round entry, create or edit mode via sealed ScoreDetailMode) |
+| `Screen.Home` | — | HomeScreen (onboarding banner, resume-draft banner, player list with multi-select, game selection modal with inline game-type creation, FAB) |
+| `Screen.History` | — | HistoryScreen (past matches list, delete with confirmation, filter by game type) |
+| `Screen.Import` | — | ImportScreen (JSON import, 3-step wizard: select file → preview → result) |
+| `Screen.Stats` | — | StatsScreen (ELO leaderboard, head-to-head). Contextual back (App.tsx) clears the player selection when set, else navigates Home — see `StatsScreen`'s `onBackOverrideChange` prop. |
+| `Screen.Games` | — | GameTypeScreen (game type management: create, edit, archive with confirmation) |
+| `Screen.Sync` | — | SyncScreen (Google Drive cloud backup, only reachable when `services.syncUseCase` is defined, i.e. `VITE_GOOGLE_CLIENT_ID` configured) |
+| `Screen.ScoreDetail` | `gameTypeId: String`, `playerIds: List<String>`, `matchId: String? = null` | ScoreDetailScreen (round entry, create or edit mode via sealed ScoreDetailMode). **TS (TS-056)**: gameType/players/mode resolution and the screen's `initialState` are all built ad hoc in `App.tsx`'s `ScoreDetailRoute` via `useMemo` keyed on the route params — deliberately not part of `ServicesContext`, matching `App.kt`'s `remember(screen) { ... }`. |
+
+**TS (TS-042)**: `src/ui/navigation/screen.ts` (discriminated union `Screen`), `src/ui/navigation/hash.ts` (`parseHash`/`screenToHash`, pure), `src/ui/navigation/useHashRouter.ts` (hook syncing `Screen` with `window.location.hash` via `pushState`/`popstate`, replaces `AppNavigator.kt`'s class). Deliberate fix vs. Kotlin: `AppNavigatorTest.kt` tested a **private duplicate** of `parseHash`/`screenToHash` defined inside the test file itself (see its own "Maintenance Notes": *"Keep helper functions in sync with AppNavigator methods"*) rather than the real `AppNavigator.kt` methods — production routing and its tests could silently drift. In TS, `parseHash`/`screenToHash` are exported once from `hash.ts` and imported by both `useHashRouter.ts` and `hash.test.ts`, so there is a single implementation under test.
 
 ## Shared Components
 
@@ -114,6 +126,8 @@ All in `src/jsMain/kotlin/com/scoreo/`. Production: `LocalStorage*`, `GoogleDriv
 
 Files: `src/jsMain/kotlin/com/scoreo/ui/shared/ListContainer.kt`, `src/jsMain/kotlin/com/scoreo/ui/shared/ListItemRow.kt`, `src/jsMain/kotlin/com/scoreo/ui/shared/Button.kt`, `src/jsMain/kotlin/com/scoreo/ui/shared/Input.kt`, `src/jsMain/kotlin/com/scoreo/ui/shared/Table.kt`, `src/jsMain/kotlin/com/scoreo/ui/shared/Modal.kt`
 
+**TS (TS-041)**: `src/ui/shared/{ListContainer,ListItemRow,LudoButton,LudoTextInput,LudoNumberInput,LudoTable,LudoModal}.tsx` — one component per file (idiomatic React, vs. Kotlin's per-family grouping in `Button.kt`/`Input.kt`). `LudoTable<T>` gains a required `rowKey: (row: T) => string` prop absent from the Kotlin version: React needs a stable key for list reconciliation, which Compose's diffing doesn't require. `Strings.TITLE_VIEW_DETAIL`/`TITLE_EDIT`/`TITLE_DELETE` are inlined directly in `ListItemRow.tsx` for now — the broader `Strings.kt` i18n module isn't ported yet (not in scope of any TS-0XX ticket currently; will be picked up screen-by-screen in Phase F, or as a dedicated ticket if it grows unwieldy).
+
 ## Tests
 
 | File | Class | Tests |
@@ -124,7 +138,7 @@ Files: `src/jsMain/kotlin/com/scoreo/ui/shared/ListContainer.kt`, `src/jsMain/ko
 | `src/commonTest/.../application/CreateMatchUseCaseTest.kt` | `CreateMatchUseCaseTest` | 8 |
 | `src/commonTest/.../application/DeleteMatchUseCaseTest.kt` | `DeleteMatchUseCaseTest` | 3 |
 | `src/commonTest/.../application/DeletePlayerUseCaseTest.kt` | `DeletePlayerUseCaseTest` | 6 |
-| `src/commonTest/.../application/EloCalculatorTest.kt` | `EloCalculatorTest` | 3 |
+| `src/commonTest/.../application/EloCalculatorTest.kt` | `EloCalculatorTest` | 22 |
 | `src/commonTest/.../application/GetGameTypesUseCaseTest.kt` | `GetGameTypesUseCaseTest` | 5 |
 | `src/commonTest/.../application/GetHeadToHeadUseCaseEloTest.kt` | `GetHeadToHeadUseCaseEloTest` | 10 |
 | `src/commonTest/.../application/GetHeadToHeadUseCaseTest.kt` | `GetHeadToHeadUseCaseTest` | 11 |
@@ -137,21 +151,22 @@ Files: `src/jsMain/kotlin/com/scoreo/ui/shared/ListContainer.kt`, `src/jsMain/ko
 | `src/commonTest/.../application/SyncUseCaseTest.kt` | `SyncUseCaseTest` | 7 |
 | `src/commonTest/.../application/UpdateGameTypeUseCaseTest.kt` | `UpdateGameTypeUseCaseTest` | 3 |
 | `src/commonTest/.../application/UpdateMatchUseCaseTest.kt` | `UpdateMatchUseCaseTest` | 3 |
-| `src/commonTest/.../di/SyncDependenciesTest.kt` | `SyncDependenciesTest` | 2 |
+| `src/commonTest/.../di/SyncDependenciesTest.kt` | `SyncDependenciesTest` | 2 (TS: `src/services/createServices.test.ts` + `ServicesContext.test.tsx`, 6 tests) |
 | `src/commonTest/.../domain/GameTypeTest.kt` | `GameTypeTest` | 9 |
 | `src/commonTest/.../domain/MatchTieBreakTest.kt` | `MatchTieBreakTest` | 12 |
 | `src/commonTest/.../domain/SerializationTest.kt` | `SerializationTest` | 27 |
 | `src/commonTest/.../infrastructure/InMemoryRepositoryTest.kt` | `InMemoryRepositoryTest` | 11 |
-| `src/commonTest/.../ui/gametype/GameTypeHandlerTest.kt` | `GameTypeHandlerTest` | 22 |
-| `src/commonTest/.../ui/history/HistoryHandlerTest.kt` | `HistoryHandlerTest` | 24 |
-| `src/commonTest/.../ui/import/ImportHandlerTest.kt` | `ImportHandlerTest` | 8 |
-| `src/commonTest/.../ui/navigation/AppNavigatorTest.kt` | `AppNavigatorTest` | 41 |
-| `src/commonTest/.../ui/player/PlayerHandlerTest.kt` | `PlayerHandlerTest` | 21 |
-| `src/commonTest/.../ui/scoredetail/ScoreDetailHandlerTest.kt` | `ScoreDetailHandlerTest` | 57 |
-| `src/commonTest/.../ui/stats/StatsHandlerTest.kt` | `StatsHandlerTest` | 6 |
-| `src/commonTest/.../ui/sync/SyncHandlerTest.kt` | `SyncHandlerTest` | 10 |
-| `src/jsTest/.../infrastructure/google/GoogleDriveSyncAdapterTest.kt` | `GoogleDriveSyncAdapterTest` | 11 |
-| `src/jsTest/.../ui/theme/ThemeManagerTest.kt` | `ThemeManagerTest` | 7 |
+| `src/commonTest/.../ui/gametype/GameTypeHandlerTest.kt` | `GameTypeHandlerTest` | 22 (TS: `src/ui/gametype/gameTypeReducer.test.ts`, 22 + `GameTypeScreen.test.tsx`, 9) |
+| `src/commonTest/.../ui/history/HistoryHandlerTest.kt` | `HistoryHandlerTest` | 24 (TS: `src/ui/history/historyReducer.test.ts`, 24 + `HistoryScreen.test.tsx`, 6) |
+| `src/commonTest/.../ui/import/ImportHandlerTest.kt` | `ImportHandlerTest` | 18 (stale count corrected from a previous "8" while porting; TS: `src/ui/import/importReducer.test.ts`, 18 + `ImportScreen.test.tsx`, 4) |
+| `src/commonTest/.../ui/navigation/AppNavigatorTest.kt` | `AppNavigatorTest` | 41 (TS: `src/ui/navigation/hash.test.ts`, 41 + `useHashRouter.test.ts`, 3) |
+| `src/commonTest/.../ui/player/PlayerHandlerTest.kt` | `PlayerHandlerTest` | 21 (TS: `src/ui/home/playerReducer.test.ts`, 21 + `HomeScreen.test.tsx`, 11 covering the untested-in-Kotlin UI flows: selection, game modal, inline game creation, resume draft) |
+| `src/commonTest/.../ui/scoredetail/ScoreDetailHandlerTest.kt` | `ScoreDetailHandlerTest` | 57 (TS: `src/ui/scoredetail/scoreDetailReducer.test.ts`, 57 + `ScoreDetailScreen.test.tsx`, 9) |
+| `src/commonTest/.../ui/stats/StatsHandlerTest.kt` | `StatsHandlerTest` | 6 (TS: `src/ui/stats/statsReducer.test.ts`, 6 + `StatsScreen.test.tsx`, 5) |
+| `src/commonTest/.../ui/sync/SyncHandlerTest.kt` | `SyncHandlerTest` | 10 (TS: `src/ui/sync/syncReducer.test.ts`, 10 + `SyncScreen.test.tsx`, 5) |
+| `src/jsTest/.../infrastructure/google/GoogleAuthServiceTest.kt` | `GoogleAuthServiceTest` | 29 |
+| `src/jsTest/.../infrastructure/google/GoogleDriveSyncAdapterTest.kt` | `GoogleDriveSyncAdapterTest` | 23 (corrige au passage, la doc indiquait 11 par erreur) |
+| `src/jsTest/.../ui/theme/ThemeManagerTest.kt` | `ThemeManagerTest` | 7 (TS: `src/ui/theme/themeManager.test.ts`, 7 portes + 7 tests additionnels sur la logique reelle de `readInitialFlavor`/`readInitialAccent` — prive en Kotlin, testable directement en TS ; + `ThemeContext.test.tsx`, 3 tests) |
 
 **Summary:** 31 commonTest files + 2 jsTest files = 33 test files. **Total: 429 tests** (commonTest: 411, jsTest: 18). All in `src/commonTest/` or `src/jsTest/`.
 
@@ -168,6 +183,16 @@ Every screen (P2-01 through P2-06) now uses `LudoButton`/`LudoTextInput`/`LudoMo
 Theme picker classes (`theme-picker.css`): `.theme-picker-label`, `.theme-picker-row`, `.theme-chip`, `.theme-chip--active`, `.accent-swatch`, `.accent-swatch--active`.
 
 Theme: Catppuccin tokens (`tokens/colors-*.css` + `tokens/semantic.css`), 4 flavors + 14-hue accent. Historical variable names (`--primary`, `--surface`, `--on-surface`, …) are aliased onto the semantic tokens in `theme.css`. `data-theme`/`data-accent` attributes on `<html>` are managed by `ThemeManager` (`rememberThemeState()`), picked from the burger menu's "Theme" entry (`ThemePickerDialog`, `src/jsMain/.../ui/theme/ThemePicker.kt`).
+
+**TS (TS-043)**: `src/ui/theme/ThemePickerDialog.tsx` — function component using `useTheme()`/`LudoModal`/`LudoButton`, same `theme-picker.css` classes.
+
+## App shell (TS-043)
+
+`src/App.tsx` (`AppShell`, dispatch by `useHashRouter().current`) replaces `App.kt`'s root Composable — wraps content in `ServicesProvider`/`ThemeProvider` (which `Main.kt` didn't need since Compose has no context-provider pattern). All screens are real as of TS-056 (`Stats` TS-050, `History` TS-051, `Games` TS-052, `Import` TS-053, `Sync` TS-054, `Home` TS-055, `ScoreDetail` TS-056) — no placeholders remain; the header, contextual back button, and burger menu are the real, final logic:
+
+- **Header**: back button hidden on Home; for `ScoreDetail` goes to `History` if `matchId` is set else `Home`; for `Stats` clears the player selection instead of navigating while a player is selected, else goes `Home`; all other screens go `Home`. Title text is clickable, navigates `Home` unless already there.
+- **Burger menu**: Home/Stats/History/Import/Games, + Sync only when `services.syncUseCase` is defined (mirrors `deps.syncHandler != null`), + non-navigating "Theme" item opening `ThemePickerDialog`.
+- **Stats back-override wiring (TS-050)**: `AppShell` can't read `StatsScreen`'s internal `useReducer` state directly (per-screen state, unlike Kotlin's shared `statsHandler` singleton), so `StatsScreen` accepts an `onBackOverrideChange: (override: (() => void) | null) => void` prop and calls it (from a `useEffect` on `selectedPlayerId`) with a clear-selection callback when a player is selected, or `null` otherwise. `AppShell` stores the latest value in `statsBackOverride` state (reset on every screen change) and uses it in place of the default `Home` navigation when set.
 
 ## localStorage Keys
 

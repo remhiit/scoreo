@@ -6,6 +6,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 PWA Kotlin/JS de suivi de scores entre amis. Compose HTML. MVI (Handler/Intent/State). Architecture hexagonale (Ports & Adapters). 100% local-first (localStorage), sync cloud optionnelle via Google Drive.
 
+> **⚠️ Réécriture React + TypeScript en cours.** Le projet migre entièrement vers React/TypeScript (Vite, Vitest, zod) — voir les issues GitHub labellisées `migration-react` (TS-001 à TS-092) pour le découpage en tickets. Le code Kotlin ci-dessous (`src/commonMain`, `src/jsMain`, `src/commonTest`, `src/jsTest`, Gradle) reste la référence fonctionnelle et de tests tant que la parité n'est pas atteinte ; le nouveau code TS vit à côté sous `src/domain`, `src/application`, `src/infrastructure`, `src/services`, `src/ui`. Les deux stacks coexistent jusqu'au ticket de bascule finale, qui supprimera cette note ainsi que tout le code Kotlin.
+
 ## Commandes
 
 ```bash
@@ -38,7 +40,7 @@ Deux autres blocages ont été résolus différemment :
 
 Le hook `pre-push` (`.githooks/pre-push`, activé automatiquement au premier `./gradlew`) lance `gradle help --quiet` avant chaque push. Pas de linter configuré (pas de ktlint/detekt).
 
-Pas de `package.json` / npm : tout passe par Gradle (Kotlin Multiplatform, cibles `jvm()` et `js(IR)`). Les tests métier vivent en `commonMain`/`commonTest` et tournent sur la JVM (`jvmTest`) — le JS n'est nécessaire que pour les adapters spécifiques au navigateur (`jsMain`/`jsTest`).
+Côté Kotlin, pas de dépendance npm : tout passe par Gradle (Kotlin Multiplatform, cibles `jvm()` et `js(IR)`). Les tests métier vivent en `commonMain`/`commonTest` et tournent sur la JVM (`jvmTest`) — le JS n'est nécessaire que pour les adapters spécifiques au navigateur (`jsMain`/`jsTest`). Le nouveau stack React/TypeScript (voir note ci-dessus) a en revanche son propre `package.json` (pnpm, épinglé via le champ `packageManager` — voir `pnpm-workspace.yaml` pour les build scripts autorisés) : `pnpm dev`/`build`/`test`/`typecheck`/`lint`, indépendant de Gradle.
 
 ## Avant d'explorer le code
 

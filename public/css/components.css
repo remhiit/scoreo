@@ -1,0 +1,233 @@
+/*
+  Shared Ludo* composable styles (src/jsMain/.../ui/shared/). Ported
+  from the Ludo design system's components.css — same tokens, same
+  values. Hover/active/disabled use native CSS pseudo-classes; Compose
+  HTML's recomposition (not JS-tracked hover/press state) drives the
+  rest.
+*/
+
+/* ---------- Button (LudoButton, ui/shared/Button.kt) ---------- */
+.ludo-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-ui);
+  font-weight: var(--weight-semibold);
+  border-radius: var(--radius-md);
+  border: 1px solid transparent;
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+  transition: background var(--duration-fast) var(--ease-standard),
+    transform var(--duration-fast) var(--ease-standard);
+}
+.ludo-btn:active:not(:disabled) { transform: scale(0.97); }
+.ludo-btn:disabled { cursor: not-allowed; opacity: 0.45; }
+
+.ludo-btn--sm { height: 36px; padding: 0 12px; font-size: var(--text-sm); gap: 6px; }
+.ludo-btn--md { height: var(--tap-target); padding: 0 18px; font-size: var(--text-md); gap: 8px; }
+.ludo-btn--lg { height: 52px; padding: 0 24px; font-size: var(--text-lg); gap: 10px; }
+
+.ludo-btn--icon { padding: 0; border-radius: var(--radius-pill); }
+.ludo-btn--icon.ludo-btn--sm { width: 36px; }
+.ludo-btn--icon.ludo-btn--md { width: var(--tap-target); }
+.ludo-btn--icon.ludo-btn--lg { width: 52px; }
+
+.ludo-btn--primary { background: var(--color-primary); color: var(--text-on-accent); border-color: transparent; }
+.ludo-btn--primary:hover:not(:disabled) { background: var(--color-primary-hover); }
+.ludo-btn--primary:active:not(:disabled) { background: var(--color-primary-active); }
+
+.ludo-btn--secondary { background: var(--surface-raised); color: var(--text-body); border-color: var(--border-default); }
+.ludo-btn--secondary:hover:not(:disabled) { background: var(--surface-hover); }
+
+.ludo-btn--ghost { background: transparent; color: var(--text-body); border-color: transparent; }
+.ludo-btn--ghost:hover:not(:disabled) { background: var(--surface-hover); }
+
+.ludo-btn--danger { background: var(--color-danger); color: var(--text-on-danger); border-color: transparent; }
+
+/* layout-only utility, not a variant — e.g. a full-width modal submit button */
+.ludo-btn--full { width: 100%; }
+
+/* ---------- Input (LudoTextInput/LudoNumberInput, ui/shared/Input.kt) ---------- */
+.ludo-field { display: flex; flex-direction: column; gap: 6px; }
+.ludo-field__label {
+  font-family: var(--font-ui);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  color: var(--text-muted);
+}
+
+.ludo-input {
+  font-family: var(--font-ui);
+  font-weight: var(--weight-regular);
+  color: var(--text-body);
+  background: var(--surface-card);
+  border: var(--border-width) solid var(--border-default);
+  border-radius: var(--radius-md);
+  outline: none;
+  outline-offset: 1px;
+  transition: border-color var(--duration-fast) var(--ease-standard);
+  cursor: text;
+}
+.ludo-input:focus-visible,
+.ludo-input:focus {
+  border-color: var(--border-focus);
+  outline: 2px solid color-mix(in srgb, var(--color-primary) 30%, transparent);
+}
+.ludo-input:disabled { color: var(--text-disabled); cursor: not-allowed; }
+
+.ludo-input--sm { height: 36px; font-size: var(--text-sm); }
+.ludo-input--md { height: var(--tap-target); font-size: var(--text-md); }
+.ludo-input--lg { height: 56px; font-size: var(--text-xl); }
+
+/* layout: bare field (text, or number without a stepper) vs. stepper field */
+.ludo-input--bare { width: 100%; padding: 0 var(--space-3); }
+.ludo-input--stepper-field {
+  width: 72px;
+  text-align: center;
+  padding: 0 4px;
+  -moz-appearance: textfield;
+}
+.ludo-input--stepper-field::-webkit-outer-spin-button,
+.ludo-input--stepper-field::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* type: number fields use the score font regardless of layout */
+.ludo-input--mono { font-family: var(--font-score); font-weight: var(--weight-semibold); }
+
+/* intentional addition beyond the design system brief — see LudoTextInput's invalid param */
+.ludo-input--invalid { border-color: var(--color-danger); }
+
+.ludo-stepper { display: flex; align-items: center; gap: var(--space-2); }
+
+/* ---------- Table (LudoTable, ui/shared/Table.kt) ---------- */
+.ludo-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-family: var(--font-ui);
+  font-size: var(--text-sm);
+  background: var(--surface-card);
+  border: var(--border-width) solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+.ludo-table th {
+  padding: 12px 14px;
+  text-align: right;
+  color: var(--text-muted);
+  font-weight: var(--weight-semibold);
+  font-size: var(--text-xs);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  background: var(--surface-sunken);
+  border-bottom: var(--border-width) solid var(--border-subtle);
+}
+.ludo-table td {
+  padding: 12px 14px;
+  text-align: right;
+  color: var(--text-body);
+  font-variant-numeric: tabular-nums;
+  border-bottom: var(--border-width) solid var(--border-subtle);
+}
+.ludo-table th:first-child,
+.ludo-table td:first-child { text-align: left; }
+
+.ludo-table--dense th,
+.ludo-table--dense td { padding: 8px 10px; }
+
+.ludo-table--striped tbody tr:nth-child(even) { background: var(--surface-sunken); }
+
+.ludo-table--no-footer tbody tr:last-child td { border-bottom: none; }
+
+.ludo-table tfoot td {
+  padding: 12px 14px;
+  text-align: right;
+  font-weight: var(--weight-bold);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-heading);
+  background: var(--surface-raised);
+  border-top: var(--border-width) solid var(--border-default);
+}
+.ludo-table--dense tfoot td { padding: 8px 10px; }
+.ludo-table tfoot td:first-child { text-align: left; }
+
+/* ---------- Modal (LudoModal, ui/shared/Modal.kt) ---------- */
+.ludo-modal-scrim {
+  position: fixed;
+  inset: 0;
+  background: var(--scrim);
+  backdrop-filter: blur(2px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-4);
+  z-index: 100;
+  animation: ludo-modal-scrim var(--duration-normal) var(--ease-standard);
+}
+
+.ludo-modal {
+  width: 420px;
+  max-width: 100%;
+  max-height: 85vh;
+  overflow-y: auto;
+  background: var(--surface-card);
+  border: var(--border-width) solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  animation: ludo-modal-pop var(--duration-normal) var(--ease-standard);
+}
+
+.ludo-modal__header {
+  padding: var(--space-4) var(--space-5);
+  border-bottom: var(--border-width) solid var(--border-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+.ludo-modal__title {
+  margin: 0;
+  font-family: var(--font-ui);
+  font-size: var(--text-lg);
+  font-weight: var(--weight-semibold);
+  color: var(--text-heading);
+}
+.ludo-modal__close {
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+  font-size: var(--text-lg);
+  line-height: 1;
+  transition: background var(--duration-fast) var(--ease-standard);
+}
+.ludo-modal__close:hover { background: var(--surface-hover); }
+
+.ludo-modal__body { padding: var(--space-5); }
+.ludo-modal__body p { margin: 0; color: var(--text-body); font-size: var(--text-md); }
+
+.ludo-modal__footer {
+  padding: var(--space-4) var(--space-5);
+  border-top: var(--border-width) solid var(--border-subtle);
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-3);
+}
+
+@keyframes ludo-modal-scrim {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes ludo-modal-pop {
+  from { opacity: 0; transform: scale(0.96) translateY(4px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}

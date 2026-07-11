@@ -44,6 +44,18 @@
 - **Cloud sync**: `CloudSyncRepository` port (commonMain), `GoogleDriveSyncAdapter` implementation (jsMain) via async `fetch()` + coroutines, OAuth Token Model via Google Identity Services
 - **DI helpers**: `createSyncHandlerIfAvailable` in `commonMain/di/` — builds `SyncHandler` only if a `CloudSyncRepository` is provided. Allows the app to run without cloud sync (e.g. GitHub Pages without OAuth configured). Unit-tested in `commonTest/di/`.
 
+### React/TypeScript port: error modeling (TS-010/TS-011)
+
+Kotlin's `DomainError` is a `sealed class : Throwable` — validation/lookup use cases throw it directly. The TS port (`src/domain/model/errors.ts`) mirrors this with real `Error` subclasses (`ValidationError`, `NotFoundError`, union type `DomainError`), thrown directly by use cases like `AddPlayerUseCase`/`ArchiveGameTypeUseCase` — not wrapped in a `Result`.
+
+Kotlin's `CreateMatchUseCase`/`ImportMatchesUseCase` instead return `Result<T>` (`runCatching`), since callers need to inspect success/failure without a try/catch (e.g. to render an import preview). The TS port uses an explicit `Result<T, E>` type (`src/domain/result.ts`, `{ok: true, value} | {ok: false, error}`) for these — chosen over exceptions so failure handling is enforced by the type checker at call sites, matching how the Kotlin `Result<T>` return type is already exhaustively handled today.
+
+So: **thrown errors** for use cases that behave like Kotlin's throwing ones, **`Result<T, E>`** for the two use cases that were already `Result<T>` in Kotlin. This is a deliberate 1:1 mapping, not a mix chosen ad hoc per ticket.
+
+### React/TypeScript port: DI (TS-030)
+
+Kotlin's `createAppDependencies`/`createSyncHandlerIfAvailable` build an `AppDependencies` bag containing one `Handler` per screen plus a couple of ad-hoc use cases used directly by `HomeScreen`. The TS port (`src/services/`) has no `Handler` equivalent — each screen owns its state via `useReducer` (TS-050+) and constructs its own use cases from the shared repositories. So `Services` (`createServices.ts`) only exposes the 4 repositories + the optional `cloudSyncRepository`/`syncUseCase` + `currentDate`, built once at the app root via `ServicesProvider` (`ServicesContext.tsx`, `useMemo`) and consumed through the `useServices()` hook. `cloudSyncRepository`/`syncUseCase` are `undefined` whenever no Google OAuth client id is configured (`VITE_GOOGLE_CLIENT_ID`), mirroring `createSyncHandlerIfAvailable` returning `null`.
+
 ## Web Target
 
 `js(IR)` — Compose HTML generates real HTML DOM elements.
@@ -174,4 +186,8 @@ See `doc/technical/migrations.md` for details.
 - Uses standard browser APIs (`fetch`), no third-party library
 - `kotlinx-coroutines-core` available in multiplatform (commonMain + jsMain)
 - `SuspendCancellableCoroutine` enables fine-grained cancellation control
+
+### React/TypeScript port: theme (TS-040)
+
+`rememberThemeState()` (a Compose `@Composable`) becomes `ThemeProvider`/`useTheme()` (`src/ui/theme/ThemeContext.tsx`) — a React Context so the burger menu's theme picker and the rest of the app share the same live flavor/accent state. The pure logic (`readInitialFlavor`/`readInitialAccent`/`applyTheme`, previously `private` in Kotlin) lives in `src/ui/theme/themeManager.ts` and is directly unit-tested (not possible in Kotlin without exposing them). CSS token files (`colors-{latte,frappe,macchiato,mocha}.css`, `semantic.css`, etc.) are copied verbatim into `public/css/`, native `@import` chain unchanged.
 

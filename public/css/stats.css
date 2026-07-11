@@ -1,0 +1,126 @@
+/* ── Stats screen ── */
+
+.stats-row {
+    cursor: pointer;
+    gap: 12px;
+}
+
+.stats-row:hover { background: var(--color-primary-tint); }
+
+.stats-row-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+    flex: 1;
+}
+
+.stats-row-name {
+    font-weight: 500;
+    font-size: 15px;
+}
+
+.stats-row-record {
+    font-size: 12px;
+    color: var(--text-muted);
+}
+
+.stats-row-bar-wrap {
+    flex: 1;
+    height: 8px;
+    background: var(--surface-sunken);
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    min-width: 60px;
+}
+
+.stats-row-bar {
+    height: 100%;
+    background: var(--color-primary);
+    border-radius: var(--radius-sm);
+    transition: width 0.3s;
+}
+
+.stats-row-pct {
+    font-weight: 600;
+    font-size: 14px;
+    color: var(--color-primary);
+    min-width: 36px;
+    text-align: right;
+}
+
+.stats-elo {
+    font-weight: 700;
+    font-size: 16px;
+    color: var(--color-primary);
+    min-width: 44px;
+    text-align: right;
+}
+
+.stats-elo-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--color-primary-tint);
+    color: var(--color-primary);
+    font-weight: 700;
+    font-size: 14px;
+    padding: 2px 10px;
+    border-radius: 99px;
+    margin-left: auto;
+}
+
+.stats-detail-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+.stats-detail-title {
+    font-size: 20px;
+    font-weight: 600;
+}
+
+.stats-detail-overall {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    margin-bottom: 20px;
+    padding: 12px 16px;
+    background: var(--surface-sunken);
+    border-radius: var(--radius-md);
+}
+
+.stats-detail-record {
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.stats-detail-pct {
+    font-size: 14px;
+    color: var(--text-muted);
+}
+
+.stats-h2h-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border-subtle);
+}
+
+.stats-h2h-row:last-child { border-bottom: none; }
+
+.stats-h2h-name {
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.stats-h2h-record {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-body);
+    min-width: 48px;
+    text-align: right;
+}

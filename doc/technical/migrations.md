@@ -176,3 +176,24 @@ to a pre-Catppuccin build would still find a valid (if stale) value.
   code or CSS keying off `data-theme="dark"` specifically is dead —
   the semantic tokens are flavor-aware directly instead.
 
+---
+
+## Note technique : moteur de sérialisation (kotlinx.serialization → zod)
+
+**Contexte :** réécriture React/TypeScript en cours (voir issues `migration-react`).
+
+Ce n'est **pas une migration de données** — le format JSON stocké dans
+`localStorage` reste strictement inchangé (mêmes clés, mêmes champs, mêmes
+valeurs par défaut). Seul le moteur de (dé)sérialisation change :
+
+- Kotlin : `kotlinx.serialization` avec `Json { ignoreUnknownKeys = true }`
+  + valeurs par défaut sur les data class (`Player.active = true`, etc.)
+- TypeScript : schémas [zod](https://zod.dev) avec `.default()` par champ
+  (`src/domain/model/*.schema.ts`), qui zod strip nativement les clés
+  inconnues à la validation (comportement équivalent à `ignoreUnknownKeys`)
+
+Les 27 tests de contrat backward-compat de `SerializationTest.kt` sont
+portés 1:1 dans `src/domain/model/serialization.contract.test.ts` (TS-002/
+TS-003) : chaque cas vérifie qu'un JSON dans un ancien format (sans les
+champs ajoutés depuis) se décode toujours avec les mêmes valeurs par défaut.
+
