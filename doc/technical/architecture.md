@@ -104,7 +104,7 @@ Static assets in `public/`:
 | `icon-192.png` | Home screen icon (Android, iOS) |
 | `icon-512.png` | Splash screen icon |
 
-`index.html` (project root, source for Vite's HTML transform) carries the PWA meta tags, the `#splash` div (hidden right after `createRoot(...).render(...)` in `src/main.tsx`), the dev-vs-prod service-worker registration script (unregisters on `localhost`/`127.0.0.1`, registers `./sw.js` via `navigator.serviceWorker.register()` otherwise), and the deferred Google Identity Services `<script>` tag.
+`index.html` (project root, source for Vite's HTML transform) carries the PWA meta tags, a `Content-Security-Policy` `<meta>` tag (see [Security](#security) below), the `#splash` div (hidden right after `createRoot(...).render(...)` in `src/main.tsx`), the dev-vs-prod service-worker registration script (`public/registerSw.js`, unregisters on `localhost`/`127.0.0.1`, registers `./sw.js` via `navigator.serviceWorker.register()` otherwise — kept as an external file rather than inline so the CSP's `script-src` can omit `'unsafe-inline'`), and the deferred Google Identity Services `<script>` tag.
 
 `public/sw.js`'s `ASSETS` precache list only contains stable, non-hashed paths (`./`, `./index.html`, `./css/styles.css`) since Vite's JS/CSS bundle filenames are content-hashed; hashed assets are cached on first fetch by the cache-first fetch handler instead. `vite.config.ts` sets `base: './'` so all root-relative hrefs are rewritten relative at build time, keeping the app deployable under any static-hosting subpath. `VITE_GOOGLE_CLIENT_ID` (consumed by `src/infrastructure/google/oauthConfig.ts`) is injected by Vite's native `import.meta.env` handling at build time.
 
@@ -121,6 +121,11 @@ Vite copies `public/` to the production output (`dist/`) natively — see [`depl
 - **Cloud Sync**: Google Drive via `GoogleDriveSyncAdapter`. Stores a single `scoreo-data.json` in the invisible App Data Folder. Syncs players, game types, and matches. Drive API v3, `fetch()` + async/await, OAuth Token Model (GIS). See `SyncUseCase`, `src/ui/sync/syncReducer.ts`.
 
 See [`deployment.md`](deployment.md) for CI/CD and deployment details.
+
+## Security
+
+- **OAuth access token: in-memory only, never persisted.** `GoogleAuthService.accessToken`/`expiresAt` live only as instance fields, for the lifetime of the page. `scoreo_sync_config` (`src/infrastructure/google/syncConfig.ts`) only stores `email`/`lastSyncTimestamp`/`lastSyncFileId` — no token. This closes the plaintext-token-in-localStorage exposure tracked in issue #51 (a token readable via a devtools/extension/third-party-script dump of localStorage, without needing an active XSS payload at read time). `loadSyncConfig()` also purges any leftover `accessToken`/`expiresAt` from a pre-fix localStorage entry the first time it's read. See `doc/functional/features/sync.md` for how the session is restored across reloads via a silent GIS refresh instead of a persisted token.
+- **Content-Security-Policy** (`index.html` `<meta http-equiv>`): `default-src 'self'`, `script-src 'self' https://accounts.google.com` (no `'unsafe-inline'` — the service worker bootstrap lives in `public/registerSw.js` precisely to keep this true), `style-src 'self' 'unsafe-inline'` (React's inline `style={{...}}` props need it — narrower risk than script injection), `connect-src`/`frame-src` scoped to Google's OAuth/Drive endpoints. Defense-in-depth: reduces what an XSS payload can do, doesn't eliminate the underlying vulnerability class (no `DOMPurify`/sanitization layer exists in the codebase yet — there's currently no known injection point, but none has been audited either).
 
 ## Backward Compatibility
 

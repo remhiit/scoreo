@@ -87,7 +87,7 @@ Notable design choices:
 | `GoogleDriveClient` | — (Drive REST v3 wrapper) | find/create/update/read/upsert `scoreo-data.json`, exponential-backoff retry on `RateLimited`/`NetworkError` | `src/infrastructure/google/googleDriveClient.ts` (`Result<T, SyncException>`) |
 | `GoogleDriveSyncAdapter` | `CloudSyncRepository` | Google Drive App Data Folder (async/await) — "cloud wins" on pull, no local merge | `src/infrastructure/google/googleDriveSyncAdapter.ts` |
 | `GoogleAuthService` | — (GIS Token Model wrapper) | `accessToken`/`expiresAt`/`idToken` in memory; `login`/`refreshToken`/`logout` | `src/infrastructure/google/googleAuthService.ts` |
-| `syncConfig` | — (functions, not a class) | localStorage (`scoreo_sync_config`): `loadSyncConfig()`, `saveSyncConfig()`, `clearSyncConfig()` | `src/infrastructure/google/syncConfig.ts` |
+| `syncConfig` | — (functions, not a class) | localStorage (`scoreo_sync_config`, non-sensitive fields only): `loadSyncConfig()`, `saveSyncConfig()`, `clearSyncConfig()` | `src/infrastructure/google/syncConfig.ts` |
 | `OAUTH_CLIENT_ID` | — (constant) | `import.meta.env.VITE_GOOGLE_CLIENT_ID`, empty string if unset | `src/infrastructure/google/oauthConfig.ts` |
 | `InMemory*Repository` (×5: Player, GameType, Match, MatchDraft, CloudSync) | matching port | in-memory, used by tests only | `src/infrastructure/testing/inMemory*Repository.ts` |
 | `mockGoogleDriveClient` | — (manual test double, no mock library) | in-memory | `src/infrastructure/testing/mockGoogleDriveClient.ts` |
@@ -126,7 +126,7 @@ Notable design choices:
 
 ## Tests
 
-59 test files, 619 tests, all colocated `*.test.ts(x)` next to the file they cover, running under Vitest + `jsdom` (no real browser needed for any of them, including the Google Drive/OAuth and theme tests that historically required one).
+59 test files, 622 tests, all colocated `*.test.ts(x)` next to the file they cover, running under Vitest + `jsdom` (no real browser needed for any of them, including the Google Drive/OAuth and theme tests that historically required one).
 
 Notable coverage that goes beyond a 1:1 port of business logic:
 - **Component tests** (`*Screen.test.tsx`) for every screen, on top of each reducer's own pure-function tests.
@@ -163,7 +163,7 @@ Theme: Catppuccin tokens (`tokens/colors-*.css` + `tokens/semantic.css`), 4 flav
 | `scoreo_gametypes` | JSON `GameType[]` |
 | `scoreo_matches` | JSON `Match[]` |
 | `scoreo_match_draft` | JSON `MatchDraft` (gameTypeId, playerIds, rounds, updatedAt) |
-| `scoreo_sync_config` | JSON `SyncConfig` (accessToken, email, lastSyncTimestamp, lastSyncFileId, expiresAt) |
+| `scoreo_sync_config` | JSON `SyncConfig` (email, lastSyncTimestamp, lastSyncFileId) — no OAuth token (kept in memory only, see #51) |
 | `scoreo_flavor` | `"latte"` \| `"frappe"` \| `"macchiato"` \| `"mocha"` (Catppuccin flavor, optional) |
 | `scoreo_accent` | one of the 14 Catppuccin hues, e.g. `"mauve"` (optional) |
 | `scoreo_theme` | **legacy**, pre-Catppuccin: `"dark"` or `"light"`. Only read once as a migration fallback when `scoreo_flavor` is absent (see `doc/technical/migrations.md`) — never written anymore. |

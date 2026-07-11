@@ -178,6 +178,28 @@ to a pre-Catppuccin build would still find a valid (if stale) value.
 
 ---
 
+## `SyncConfig` — retrait des champs `accessToken`/`expiresAt` (issue #51)
+
+**Contexte :** le token OAuth Google était stocké en clair dans `localStorage` (clé `scoreo_sync_config`), exploitable en cas de XSS (issue de sécurité #51).
+
+**Changement :** `SyncConfig` (`src/infrastructure/google/syncConfig.ts`) ne contient plus `accessToken` ni `expiresAt`. Ces deux valeurs vivent désormais uniquement en mémoire, dans `GoogleAuthService.accessToken`/`expiresAt` (jamais sérialisées). Champs restants, inchangés : `email`, `lastSyncTimestamp`, `lastSyncFileId`.
+
+**Ancien format :**
+```json
+{ "accessToken": "ya29....", "email": "user@example.com", "lastSyncTimestamp": 1700000000, "lastSyncFileId": "...", "expiresAt": 1700003600000 }
+```
+
+**Nouveau format :**
+```json
+{ "email": "user@example.com", "lastSyncTimestamp": 1700000000, "lastSyncFileId": "..." }
+```
+
+**Compatibilité ascendante :** le schéma zod strip nativement `accessToken`/`expiresAt` d'une ancienne entrée sans erreur. `loadSyncConfig()` réécrit immédiatement l'entrée nettoyée dans `localStorage` dès sa première lecture après la mise à jour, purgeant le token en clair résiduel plutôt que d'attendre un prochain `login()`/`push()`/`pull()`.
+
+**Comportement runtime :** au rechargement de page, `authService.accessToken` est `null` (rien à restaurer depuis le storage). La session est restaurée via un rafraîchissement silencieux GIS (`requestAccessToken({ prompt: '' })`) dès qu'un `email` sauvegardé indique une session précédente — voir `doc/functional/features/sync.md` § Session restore.
+
+---
+
 ## Note technique : moteur de sérialisation (zod)
 
 **Contexte historique :** le projet était initialement écrit en Kotlin/JS avec `kotlinx.serialization` (`Json { ignoreUnknownKeys = true }` + valeurs par défaut sur les data class). La réécriture complète vers React/TypeScript (achevée) a changé le moteur de (dé)sérialisation sans jamais changer le format JSON stocké dans `localStorage` — mêmes clés, mêmes champs, mêmes valeurs par défaut, à chaque étape.

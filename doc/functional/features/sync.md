@@ -14,18 +14,20 @@
 
 ## Session restore
 
-On every page reload, if a valid token exists in localStorage (`scoreo_sync_config`), the session is restored automatically:
+The OAuth access token is **never persisted** — it lives only in memory (`GoogleAuthService`), for the lifetime of the page (see #51: it used to be stored in plaintext in `scoreo_sync_config`, exploitable via XSS). `scoreo_sync_config` only keeps the non-sensitive `email`/`lastSyncTimestamp`/`lastSyncFileId`.
+
+On every page reload the in-memory token is gone, so the session is restored via a **silent GIS refresh** whenever a prior session is detected (a saved `email`):
 - No popup required
-- Sync triggers immediately (same flow as a fresh login)
-- If the token is expired, a silent refresh is attempted (no UI)
-- If the silent refresh fails, the user is shown the "Connect" screen
+- A silent `requestAccessToken({ prompt: '' })` call fetches a fresh token before the first sync
+- Sync then triggers immediately (same flow as a fresh login)
+- If the silent refresh fails (e.g. Google consent revoked), the saved session is cleared and the user is shown the "Connect" screen
 
 ## How it works
 
 - Storage: **App Data Folder** on Google Drive (invisible to the user, does not count against quota)
 - Single file: `scoreo-data.json`
 - Scope: `openid email https://www.googleapis.com/auth/drive.appdata`
-- OAuth Token Model (GIS) — token stored in `scoreo_sync_config`, silent refresh via `prompt=""`
+- OAuth Token Model (GIS) — token kept in memory only (never written to storage), silent refresh via `prompt=""`
 - Email extracted from the JWT `id_token` (no extra API call)
 
 ## Auto-sync
