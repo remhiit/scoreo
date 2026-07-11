@@ -34,8 +34,6 @@ This ensures configuration errors are caught immediately, even if the local hook
 
 ---
 
-Two workflows run on every push to `main`, both build the same production artifact.
-
 ## Google Drive Sync Setup
 
 To enable cloud backup, you need an OAuth 2.0 Client ID from Google Cloud.
@@ -47,9 +45,8 @@ To enable cloud backup, you need an OAuth 2.0 Client ID from Google Cloud.
 3. Enable the **Google Drive API**
 4. Create an **OAuth 2.0 Client ID** — type **Web application**
    - Authorized JavaScript origins:
-     - `http://localhost:9191` (local dev)
+     - `http://localhost:5173` (local dev, `pnpm dev`)
      - `https://<username>.github.io` (GitHub Pages)
-     - `https://<username>.codeberg.page` (Codeberg Pages)
    - Authorized redirect URIs: leave empty (Token Model does not use redirects)
 5. Copy the generated **Client ID**
 
@@ -57,20 +54,11 @@ To enable cloud backup, you need an OAuth 2.0 Client ID from Google Cloud.
 
 Add a repository secret `GOOGLE_CLIENT_ID` with the value from step 5.
 
-The `build.gradle.kts` `generateOAuthConfig` task reads `System.getenv("GOOGLE_CLIENT_ID")` and generates `OAuthConfig.kt` at build time. If the variable is absent, the sync feature is silently disabled (the Sync menu entry does not appear).
-
-**GitHub Actions** — add to `.github/workflows/deploy.yml` build step:
+`deploy.yml`'s build step passes it to Vite as `VITE_GOOGLE_CLIENT_ID`, read at build time by `src/infrastructure/google/oauthConfig.ts` via `import.meta.env.VITE_GOOGLE_CLIENT_ID`. If the variable is absent, the sync feature is silently disabled (the Sync menu entry does not appear).
 
 ```yaml
 env:
-  GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
-```
-
-**Forgejo Actions** — add to `.forgejo/workflows/deploy.yml` build step:
-
-```yaml
-env:
-  GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+  VITE_GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
 ```
 
 ### 3. Verify
@@ -79,41 +67,28 @@ After deployment, open the app → burger menu → ☁ Sync should appear. If `G
 
 ---
 
-## Codeberg Pages — Forgejo Actions
-
-File: `.forgejo/workflows/deploy.yml`
-
-Steps:
-1. Build: `./gradlew jsBrowserProductionWebpack` (container `gradle:8.12-jdk21`)
-2. Copy all resources (`cp -r src/jsMain/resources/.`) into `build/kotlin-webpack/js/productionExecutable/` — includes HTML, CSS, `manifest.json`, `sw.js`, and icon PNGs
-3. Publish via [`git-pages/action@v2`](https://codeberg.org/git-pages/action)
-
-> Note: CSS files are copied as static assets. The browser resolves `@import` directives natively.
-
-URL: `https://<username>.codeberg.page/Scoreo/`
-
-## GitHub Pages — GitHub Actions
+## GitHub Pages — GitHub Actions (TS-090)
 
 File: `.github/workflows/deploy.yml`
 
+**Since TS-090, this deploys the React/TypeScript (Vite) build, not the Kotlin/webpack one.** The `/preview/` subpath introduced in TS-071 to validate the rewrite alongside the Kotlin production site is gone — the Vite build *is* production now, served at the site root.
+
+Codeberg Pages deployment (`.forgejo/workflows/deploy.yml`, Kotlin/Gradle-based) was removed as part of this cutover rather than ported, since it couldn't be exercised or verified from this environment (no Forgejo runner/Codeberg account available here) — GitHub Pages is the only deployment target going forward.
+
 ### Pre-deployment verification
 
-Steps 1-6 build and verify the artifact:
-1. Set up JDK 21 (`actions/setup-java` temurin)
-2. Set up Gradle via [`gradle/actions/setup-gradle@v4`](https://github.com/gradle/actions) with `gradle-version: wrapper`
-3. Run tests: `gradle jvmTest`
-4. Build: `gradle jsBrowserProductionWebpack`
-5. Copy all resources (`cp -r src/jsMain/resources/.`) into `build/kotlin-webpack/js/productionExecutable/` — includes HTML, CSS, `manifest.json`, `sw.js`, and icon PNGs
-6. Verify `styles.css` exists in the output directory
-7. **Verify all resources are in artifact** — cross-check that every file from `src/jsMain/resources/` is present in the output directory. Fails if any file is missing.
-
-> Note: CSS files are copied as static assets. The browser resolves `@import` directives natively.
+1. Setup pnpm ([`pnpm/action-setup@v4`](https://github.com/pnpm/action-setup))
+2. Setup Node.js 22 (`actions/setup-node`, `cache: pnpm`)
+3. Install dependencies: `pnpm install --frozen-lockfile`
+4. Run tests: `pnpm test`
+5. Build: `pnpm build` (with `VITE_GOOGLE_CLIENT_ID` from `secrets.GOOGLE_CLIENT_ID`)
+6. **Verify all `public/` assets are in the artifact** — cross-check that every file/directory in `public/` made it into `dist/`. Fails if anything is missing. (Vite copies `public/` to `dist/` natively, unlike the old webpack pipeline's manual `cp -r`, so this step is mostly a regression guard rather than a required manual step.)
 
 ### Deployment
 
-8. Configure Pages
-9. Upload artifact
-10. Deploy to GitHub Pages
+7. Configure Pages
+8. Upload artifact (`dist/`)
+9. Deploy to GitHub Pages
 
 **Output exposure**: The `deploy` job exposes `${{ steps.deploy.outputs.page_url }}` so dependent jobs can verify the deployed site.
 
@@ -123,8 +98,11 @@ Steps 1-6 build and verify the artifact:
 
 Verifies the deployed site is fully functional by making HTTP requests to key URLs:
 - Root path (`/Scoreo/`) — confirms `index.html` is served
-- `styles.css` — confirms CSS assets are accessible
-- `scoreo.js` — confirms JavaScript bundle is accessible
+- `manifest.json` — confirms the PWA manifest is accessible
+- `sw.js` — confirms the service worker script is accessible
+- `css/styles.css` — confirms CSS assets are accessible
+
+The JS bundle itself isn't checked by name, since Vite's output is content-hashed (unlike Kotlin's fixed `scoreo.js`).
 
 Includes automatic retry logic (up to 5 retries with 15-second delays) to account for GitHub Pages propagation latency.
 
@@ -133,17 +111,3 @@ Includes automatic retry logic (up to 5 retries with 15-second delays) to accoun
 URL: `https://<username>.github.io/Scoreo/`
 
 > Enable in *Settings → Pages → Source: GitHub Actions*.
-
-> Note: `gradle-wrapper.jar` is **not** committed to the repository (excluded by `*.jar` in `.gitignore`). GitHub Actions workflows use the `gradle` command installed in PATH by `gradle/actions/setup-gradle@v4`, reading the version from `gradle-wrapper.properties`.
-
-## React/TypeScript rewrite preview (TS-071)
-
-GitHub Pages only serves **one live deployment per repo** through the Actions method — each deploy to the `github-pages` environment replaces the previous one. To validate the React/TypeScript rewrite's deployment before the final cutover (TS-090) without disturbing the Kotlin production site, `deploy.yml`'s `deploy` job builds both apps and publishes them in the **same Pages artifact**:
-
-- Steps 1-7 (unchanged): build and verify the Kotlin production app as described above.
-- Additional steps: `pnpm install --frozen-lockfile`, `pnpm build` (with `VITE_GOOGLE_CLIENT_ID` set from the same `secrets.GOOGLE_CLIENT_ID` used for Kotlin's `generateOAuthConfig`), then `dist/` is copied into `build/kotlin-webpack/js/productionExecutable/preview/` before the artifact is uploaded.
-- `vite.config.ts`'s `base: './'` (relative asset paths) is what makes this work unmodified: the same build output is valid whether served from the site root or from a `/preview/` subdirectory.
-
-Result: the Kotlin app stays at `https://<username>.github.io/Scoreo/` (untouched), and the React/TypeScript app is live at `https://<username>.github.io/Scoreo/preview/` for manual comparison.
-
-The `smoke-test` job checks `preview/`, `preview/manifest.json`, and `preview/sw.js` in addition to the existing Kotlin paths (the JS bundle itself isn't checked by name since Vite's output is content-hashed, unlike Kotlin's fixed `scoreo.js`).

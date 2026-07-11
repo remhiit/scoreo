@@ -43,8 +43,7 @@ Then open `http://localhost:9191`.
 
 The site is automatically deployed on every push to `main`:
 
-- **Codeberg Pages** via Forgejo Actions (`.forgejo/workflows/deploy.yml`) → `https://<username>.codeberg.page/Scoreo/`
-- **GitHub Pages** via GitHub Actions (`.github/workflows/deploy.yml`) → `https://<username>.github.io/Scoreo/`
+- **GitHub Pages** via GitHub Actions (`.github/workflows/deploy.yml`) → `https://<username>.github.io/Scoreo/` (deploys the React/TypeScript build — see TS-090)
 
 > GitHub Pages: enable in *Settings → Pages → Source: GitHub Actions*.
 
