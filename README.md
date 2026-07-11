@@ -1,10 +1,10 @@
 # Scoreo
 
-Scoreo is a Progressive Web App (PWA) built with Kotlin/JS for tracking game results between friends.
+Scoreo is a Progressive Web App (PWA) built with React + TypeScript for tracking game results between friends.
 
 ## Repository structure
 
-- `src/` — application source code
+- `src/domain`, `src/application`, `src/infrastructure`, `src/services`, `src/ui` — application source code
 - `doc/functional/` — functional documentation (features, user flows)
 - `doc/technical/` — technical documentation (architecture, design decisions)
 
@@ -12,50 +12,50 @@ Scoreo is a Progressive Web App (PWA) built with Kotlin/JS for tracking game res
 
 ### Prerequisites
 
-- JDK 17+ (e.g. [BellSoft Liberica](https://bell-sw.com/) via [sdkman](https://sdkman.io/))
-- Gradle 8.12+ (or use the `./gradlew` wrapper)
+- Node.js 22+
+- pnpm (version pinned in `package.json`'s `packageManager` field — activate via `corepack prepare --activate`)
 
 ### Development build
 
 ```bash
-./gradlew jsBrowserDevelopmentRun --continuous
+pnpm install
+pnpm dev
 ```
 
-Opens a dev server with hot reload at `http://localhost:9191`.
+Opens a dev server with hot reload.
 
 ### Production build
 
 ```bash
-./gradlew jsBrowserProductionWebpack
+pnpm build
 ```
 
-Output lands in `build/kotlin-webpack/js/productionExecutable/`. Copy assets and serve:
+Output lands in `dist/`. Preview it locally:
 
 ```bash
-cp -r src/jsMain/resources/. build/kotlin-webpack/js/productionExecutable/
-cd build/kotlin-webpack/js/productionExecutable
-python3 -m http.server 9191
+pnpm preview
 ```
-
-Then open `http://localhost:9191`.
 
 ### Deployment
 
 The site is automatically deployed on every push to `main`:
 
-- **GitHub Pages** via GitHub Actions (`.github/workflows/deploy.yml`) → `https://<username>.github.io/Scoreo/` (deploys the React/TypeScript build — see TS-090)
+- **GitHub Pages** via GitHub Actions (`.github/workflows/deploy.yml`) → `https://<username>.github.io/Scoreo/`
 
 > GitHub Pages: enable in *Settings → Pages → Source: GitHub Actions*.
 
 ### Run tests
 
 ```bash
-./gradlew jvmTest
+pnpm test
 ```
 
-### Git Hooks
+### Typecheck / lint
 
-The repository includes a pre-push hook that validates the Gradle build configuration. This is automatically configured on your first `./gradlew` invocation, preventing build configuration errors from being pushed to the repository.
+```bash
+pnpm typecheck
+pnpm lint
+```
 
 ## Documentation
 
