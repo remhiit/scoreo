@@ -12,3 +12,5 @@ createRoot(container).render(
     <App />
   </StrictMode>,
 )
+
+document.getElementById('splash')?.classList.add('hidden')
