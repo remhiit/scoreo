@@ -83,3 +83,24 @@ Screens:
 - All data is local-first (localStorage). No backend required.
 - Domain models are serialized with `ignoreUnknownKeys = true` for forward/backward compatibility.
 - Architecture: MVI (Handler/Intent/State) + hexagonal (Ports & Adapters).
+
+## Manual functional recipe — React/TS build (TS-082)
+
+Full checklist executed against `pnpm dev` (Chromium via Playwright, driving the real UI — no mocks) before the final cutover:
+
+| Item | Result |
+|---|---|
+| Onboarding: first visit → add player → create game type → select ≥2 players → start match | ✅ "Getting started" banner shown empty-state, disappears after first player added |
+| Multi-round scoring, autosave, resume after reload | ✅ Reloading mid-match restores every round and the running total exactly (verified with a 2-round draft) |
+| Finish match with **manual** tie-break | ✅ Tied score → "Final decision" modal → pick winner → saved, W/L reflected on Home |
+| Finish match with **secondary-score** tie-break | ✅ Tied score → "Secondary score?" modal → enter secondary scores → resolved, `manualWinners` set correctly |
+| Cancel match with data-loss confirmation | ✅ "Discard scores?" modal on Cancel with scores entered; Discard returns to Home, scores cleared |
+| History: list, filter by game type, delete with confirmation | ✅ Filter dropdown correctly hides non-matching games; delete shows a confirmation before removing |
+| Stats: leaderboard, player detail, head-to-head, ELO | ✅ Leaderboard shows all players with ELO; player detail shows win rate and per-opponent head-to-head record |
+| Import: v1.0 file, v1.1 file, duplicate skip, mismatched-details failure | ✅ Both format versions import correctly; re-importing the same file skips already-imported ids; a match whose `details` don't sum to the final score is reported as failed with its id |
+| Theme: 4 flavors × 14 accents, persistence | ✅ Each flavor sets `data-theme`; each accent swatch (identified by `aria-label`) sets `data-accent`; both persist across a reload |
+| Burger menu / header title-click navigation | ✅ Matches the table above exactly (title click → Home except already on Home; Sync entry absent since `VITE_GOOGLE_CLIENT_ID` is unset in this environment) |
+| Google Drive Sync: login, push, pull, conflict + resolution | ⚠️ Not executable in this sandbox (no real Google account/OAuth client available); covered instead by the mocked unit/integration tests in `googleAuthService.test.ts` and `googleDriveSyncAdapter.test.ts` |
+| PWA installability (Lighthouse PWA check) | ⚠️ Lighthouse CLI not available in this sandbox; manifest validity, icons, and service-worker registration behavior were verified directly (see TS-060/TS-061) instead of via a Lighthouse score |
+
+No anomaly found in any item that could be executed end-to-end in this environment. The two items marked ⚠️ require a real Google account and/or Lighthouse, neither available here — they're the same limitation already noted when TS-060/TS-061/TS-023 were verified.
