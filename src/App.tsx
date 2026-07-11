@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { AddGameTypeUseCase } from './application/addGameTypeUseCase'
 import { AddPlayerUseCase } from './application/addPlayerUseCase'
 import { ArchiveGameTypeUseCase } from './application/archiveGameTypeUseCase'
+import { CreateMatchUseCase } from './application/createMatchUseCase'
 import { DeleteMatchUseCase } from './application/deleteMatchUseCase'
 import { DeletePlayerUseCase } from './application/deletePlayerUseCase'
 import { FindGameTypeByIdUseCase } from './application/findGameTypeByIdUseCase'
@@ -13,13 +14,14 @@ import { GetPlayersUseCase } from './application/getPlayersUseCase'
 import { ImportMatchesUseCase } from './application/importMatchesUseCase'
 import { RenamePlayerUseCase } from './application/renamePlayerUseCase'
 import { UpdateGameTypeUseCase } from './application/updateGameTypeUseCase'
+import { UpdateMatchUseCase } from './application/updateMatchUseCase'
 import type { WinCondition } from './domain/model/enums'
+import type { Services } from './services/createServices'
 import { ServicesProvider, useServices } from './services/ServicesContext'
 import { GameTypeScreen } from './ui/gametype/GameTypeScreen'
 import { HistoryScreen } from './ui/history/HistoryScreen'
 import { HomeScreen } from './ui/home/HomeScreen'
 import { ImportScreen } from './ui/import/ImportScreen'
-import { SyncScreen } from './ui/sync/SyncScreen'
 import {
   GAMES_SCREEN,
   HISTORY_SCREEN,
@@ -31,8 +33,12 @@ import {
 } from './ui/navigation/screen'
 import type { Screen } from './ui/navigation/screen'
 import { useHashRouter } from './ui/navigation/useHashRouter'
+import { buildInitialState } from './ui/scoredetail/scoreDetailReducer'
+import { ScoreDetailScreen } from './ui/scoredetail/ScoreDetailScreen'
+import type { ScoreDetailMode } from './ui/scoredetail/scoreDetailTypes'
 import { LudoButton } from './ui/shared/LudoButton'
 import { StatsScreen } from './ui/stats/StatsScreen'
+import { SyncScreen } from './ui/sync/SyncScreen'
 import { ThemeProvider } from './ui/theme/ThemeContext'
 import { ThemePickerDialog } from './ui/theme/ThemePickerDialog'
 
@@ -67,6 +73,69 @@ function BurgerItem({ icon, label, onClick }: BurgerItemProps) {
       <span className="burger-item-icon">{icon}</span>
       <span>{label}</span>
     </button>
+  )
+}
+
+interface ScoreDetailRouteProps {
+  screen: Extract<Screen, { type: 'ScoreDetail' }>
+  services: Services
+  onSaved: () => void
+  onCancel: () => void
+  onMissingGameType: () => void
+}
+
+/**
+ * Resolves the gameType/players/mode for the ScoreDetail route and builds the
+ * screen's initial state, mirroring App.kt's `remember(screen) { ... }` +
+ * `ScoreDetailHandler(...)` construction — deliberately ad hoc per-screen
+ * wiring, not part of ServicesContext (per TS-056).
+ */
+function ScoreDetailRoute({ screen, services, onSaved, onCancel, onMissingGameType }: ScoreDetailRouteProps) {
+  const gameType = useMemo(
+    () => services.gameTypeRepository.findById(screen.gameTypeId),
+    [services, screen.gameTypeId],
+  )
+  const players = useMemo(
+    () => services.playerRepository.getAll().filter((p) => screen.playerIds.includes(p.id)),
+    [services, screen.playerIds],
+  )
+  const mode: ScoreDetailMode = useMemo(() => {
+    if (screen.matchId === undefined) return { type: 'Create' }
+    return {
+      type: 'Edit',
+      matchId: screen.matchId,
+      updateMatchUseCase: new UpdateMatchUseCase(services.matchRepository),
+      matchRepository: services.matchRepository,
+      playerRepository: services.playerRepository,
+      gameTypeRepository: services.gameTypeRepository,
+    }
+  }, [services, screen.matchId])
+  const createMatch = useMemo(
+    () => new CreateMatchUseCase(services.matchRepository, services.gameTypeRepository),
+    [services],
+  )
+  const initialState = useMemo(() => {
+    if (!gameType) return undefined
+    return buildInitialState(gameType, players, mode, services.matchDraftRepository)
+  }, [gameType, players, mode, services])
+
+  useEffect(() => {
+    if (!gameType) onMissingGameType()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [gameType])
+
+  if (!gameType || !initialState) return null
+
+  return (
+    <ScoreDetailScreen
+      initialState={initialState}
+      createMatch={createMatch}
+      mode={mode}
+      currentDate={services.currentDate}
+      matchDraftRepository={services.matchDraftRepository}
+      onSaved={onSaved}
+      onCancel={onCancel}
+    />
   )
 }
 
@@ -210,7 +279,15 @@ function AppShell() {
           ) : (
             <div className="empty">☁ Sync not available</div>
           ))}
-        {current.type === 'ScoreDetail' && <div>Score Detail (placeholder)</div>}
+        {current.type === 'ScoreDetail' && (
+          <ScoreDetailRoute
+            screen={current}
+            services={services}
+            onSaved={() => navigate(current.matchId !== undefined ? HISTORY_SCREEN : HOME_SCREEN)}
+            onCancel={() => navigate(current.matchId !== undefined ? HISTORY_SCREEN : HOME_SCREEN)}
+            onMissingGameType={() => navigate(HOME_SCREEN)}
+          />
+        )}
       </div>
 
       {burgerOpen && (
