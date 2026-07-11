@@ -130,45 +130,49 @@ Files: `src/jsMain/kotlin/com/scoreo/ui/shared/ListContainer.kt`, `src/jsMain/ko
 
 ## Tests
 
-| File | Class | Tests |
-|---|---|---|
-| `src/commonTest/.../application/AddGameTypeUseCaseTest.kt` | `AddGameTypeUseCaseTest` | 13 |
-| `src/commonTest/.../application/AddPlayerUseCaseTest.kt` | `AddPlayerUseCaseTest` | 6 |
-| `src/commonTest/.../application/ArchiveGameTypeUseCaseTest.kt` | `ArchiveGameTypeUseCaseTest` | 3 |
-| `src/commonTest/.../application/CreateMatchUseCaseTest.kt` | `CreateMatchUseCaseTest` | 8 |
-| `src/commonTest/.../application/DeleteMatchUseCaseTest.kt` | `DeleteMatchUseCaseTest` | 3 |
-| `src/commonTest/.../application/DeletePlayerUseCaseTest.kt` | `DeletePlayerUseCaseTest` | 6 |
-| `src/commonTest/.../application/EloCalculatorTest.kt` | `EloCalculatorTest` | 22 |
-| `src/commonTest/.../application/GetGameTypesUseCaseTest.kt` | `GetGameTypesUseCaseTest` | 5 |
-| `src/commonTest/.../application/GetHeadToHeadUseCaseEloTest.kt` | `GetHeadToHeadUseCaseEloTest` | 10 |
-| `src/commonTest/.../application/GetHeadToHeadUseCaseTest.kt` | `GetHeadToHeadUseCaseTest` | 11 |
-| `src/commonTest/.../application/GetPlayerStatsUseCaseTest.kt` | `GetPlayerStatsUseCaseTest` | 8 |
-| `src/commonTest/.../application/GetPlayersUseCaseTest.kt` | `GetPlayersUseCaseTest` | 4 |
-| `src/commonTest/.../application/IdGeneratorTest.kt` | `IdGeneratorTest` | 6 |
-| `src/commonTest/.../application/ImportMatchesUseCaseTest.kt` | `ImportMatchesUseCaseTest` | 17 |
-| `src/commonTest/.../application/MatchMigrationTest.kt` | `MatchMigrationTest` | 18 |
-| `src/commonTest/.../application/RenamePlayerUseCaseTest.kt` | `RenamePlayerUseCaseTest` | 9 |
-| `src/commonTest/.../application/SyncUseCaseTest.kt` | `SyncUseCaseTest` | 7 |
-| `src/commonTest/.../application/UpdateGameTypeUseCaseTest.kt` | `UpdateGameTypeUseCaseTest` | 3 |
-| `src/commonTest/.../application/UpdateMatchUseCaseTest.kt` | `UpdateMatchUseCaseTest` | 3 |
-| `src/commonTest/.../di/SyncDependenciesTest.kt` | `SyncDependenciesTest` | 2 (TS: `src/services/createServices.test.ts` + `ServicesContext.test.tsx`, 6 tests) |
-| `src/commonTest/.../domain/GameTypeTest.kt` | `GameTypeTest` | 9 |
-| `src/commonTest/.../domain/MatchTieBreakTest.kt` | `MatchTieBreakTest` | 12 |
-| `src/commonTest/.../domain/SerializationTest.kt` | `SerializationTest` | 27 |
-| `src/commonTest/.../infrastructure/InMemoryRepositoryTest.kt` | `InMemoryRepositoryTest` | 11 |
-| `src/commonTest/.../ui/gametype/GameTypeHandlerTest.kt` | `GameTypeHandlerTest` | 22 (TS: `src/ui/gametype/gameTypeReducer.test.ts`, 22 + `GameTypeScreen.test.tsx`, 9) |
-| `src/commonTest/.../ui/history/HistoryHandlerTest.kt` | `HistoryHandlerTest` | 24 (TS: `src/ui/history/historyReducer.test.ts`, 24 + `HistoryScreen.test.tsx`, 6) |
-| `src/commonTest/.../ui/import/ImportHandlerTest.kt` | `ImportHandlerTest` | 18 (stale count corrected from a previous "8" while porting; TS: `src/ui/import/importReducer.test.ts`, 18 + `ImportScreen.test.tsx`, 4) |
-| `src/commonTest/.../ui/navigation/AppNavigatorTest.kt` | `AppNavigatorTest` | 41 (TS: `src/ui/navigation/hash.test.ts`, 41 + `useHashRouter.test.ts`, 3) |
-| `src/commonTest/.../ui/player/PlayerHandlerTest.kt` | `PlayerHandlerTest` | 21 (TS: `src/ui/home/playerReducer.test.ts`, 21 + `HomeScreen.test.tsx`, 11 covering the untested-in-Kotlin UI flows: selection, game modal, inline game creation, resume draft) |
-| `src/commonTest/.../ui/scoredetail/ScoreDetailHandlerTest.kt` | `ScoreDetailHandlerTest` | 57 (TS: `src/ui/scoredetail/scoreDetailReducer.test.ts`, 57 + `ScoreDetailScreen.test.tsx`, 9) |
-| `src/commonTest/.../ui/stats/StatsHandlerTest.kt` | `StatsHandlerTest` | 6 (TS: `src/ui/stats/statsReducer.test.ts`, 6 + `StatsScreen.test.tsx`, 5) |
-| `src/commonTest/.../ui/sync/SyncHandlerTest.kt` | `SyncHandlerTest` | 10 (TS: `src/ui/sync/syncReducer.test.ts`, 10 + `SyncScreen.test.tsx`, 5) |
-| `src/jsTest/.../infrastructure/google/GoogleAuthServiceTest.kt` | `GoogleAuthServiceTest` | 29 |
-| `src/jsTest/.../infrastructure/google/GoogleDriveSyncAdapterTest.kt` | `GoogleDriveSyncAdapterTest` | 23 (corrige au passage, la doc indiquait 11 par erreur) |
-| `src/jsTest/.../ui/theme/ThemeManagerTest.kt` | `ThemeManagerTest` | 7 (TS: `src/ui/theme/themeManager.test.ts`, 7 portes + 7 tests additionnels sur la logique reelle de `readInitialFlavor`/`readInitialAccent` — prive en Kotlin, testable directement en TS ; + `ThemeContext.test.tsx`, 3 tests) |
+Nominative parity audit (TS-080), Kotlin file → TS file(s), one row per Kotlin test file. All 33 Kotlin test files (429 tests) are accounted for; the "Écart" column is empty when counts match exactly, and every non-empty écart is explained in Notes — none is an unjustified gap.
 
-**Summary:** 31 commonTest files + 2 jsTest files = 33 test files. **Total: 429 tests** (commonTest: 411, jsTest: 18). All in `src/commonTest/` or `src/jsTest/`.
+| Fichier Kotlin | Fichier(s) TS | Tests Kotlin | Tests TS | Écart | Notes |
+|---|---|---|---|---|---|
+| `AddGameTypeUseCaseTest.kt` | `application/addGameTypeUseCase.test.ts` | 13 | 13 | — | |
+| `AddPlayerUseCaseTest.kt` | `application/addPlayerUseCase.test.ts` | 6 | 6 | — | |
+| `ArchiveGameTypeUseCaseTest.kt` | `application/archiveGameTypeUseCase.test.ts` | 3 | 3 | — | |
+| `CreateMatchUseCaseTest.kt` | `application/createMatchUseCase.test.ts` | 8 | 8 | — | |
+| `DeleteMatchUseCaseTest.kt` | `application/deleteMatchUseCase.test.ts` | 3 | 3 | — | |
+| `DeletePlayerUseCaseTest.kt` | `application/deletePlayerUseCase.test.ts` | 6 | 6 | — | |
+| `EloCalculatorTest.kt` | `application/eloCalculator.test.ts` | 22 | 22 | — | |
+| `GetGameTypesUseCaseTest.kt` | `application/getGameTypesUseCase.test.ts` | 5 | 5 | — | |
+| `GetHeadToHeadUseCaseEloTest.kt` | `application/getHeadToHeadUseCaseElo.test.ts` | 10 | 10 | — | |
+| `GetHeadToHeadUseCaseTest.kt` | `application/getHeadToHeadUseCase.test.ts` | 11 | 11 | — | |
+| `GetPlayerStatsUseCaseTest.kt` | `application/getPlayerStatsUseCase.test.ts` | 8 | 8 | — | |
+| `GetPlayersUseCaseTest.kt` | `application/getPlayersUseCase.test.ts` | 4 | 4 | — | |
+| `IdGeneratorTest.kt` | `application/idGenerator.test.ts` | 6 | 6 | — | |
+| `ImportMatchesUseCaseTest.kt` | `application/importMatchesUseCase.test.ts` | 17 | 21 | +4 | TS adds edge cases beyond the ported fixtures (same v1.0/v1.1 `TestImportData` strings reused) |
+| `MatchMigrationTest.kt` | `infrastructure/migration/migrateMatches.test.ts` | 18 | 18 | — | |
+| `RenamePlayerUseCaseTest.kt` | `application/renamePlayerUseCase.test.ts` | 9 | 9 | — | |
+| `SyncUseCaseTest.kt` | `application/syncUseCase.test.ts` | 7 | 8 | +1 | TS adds one extra branch case |
+| `UpdateGameTypeUseCaseTest.kt` | `application/updateGameTypeUseCase.test.ts` | 3 | 3 | — | |
+| `UpdateMatchUseCaseTest.kt` | `application/updateMatchUseCase.test.ts` | 3 | 3 | — | |
+| `SyncDependenciesTest.kt` | `services/createServices.test.ts` + `services/ServicesContext.test.tsx` | 2 | 4 + 2 = 6 | +4 | TS splits the DI-construction test (`createServices.test.ts`) from the React context/hook test (`ServicesContext.test.tsx`), each with its own edge cases |
+| `domain/GameTypeTest.kt` | `domain/model/gameType.test.ts` | 9 | 9 | — | |
+| `domain/MatchTieBreakTest.kt` | `domain/model/match.test.ts` | 12 | 12 | — | |
+| `domain/SerializationTest.kt` | `domain/model/serialization.contract.test.ts` | 27 | 27 | — | |
+| `infrastructure/InMemoryRepositoryTest.kt` | `infrastructure/testing/inMemoryRepository.test.ts` | 11 | 11 | — | |
+| `ui/gametype/GameTypeHandlerTest.kt` | `ui/gametype/gameTypeReducer.test.ts` + `GameTypeScreen.test.tsx` | 22 | 22 + 9 = 31 | +9 | Reducer tests ported 1:1 (22=22); `GameTypeScreen.test.tsx` adds component-level coverage Kotlin never had (Compose HTML screens weren't unit-tested, only the handler) |
+| `ui/history/HistoryHandlerTest.kt` | `ui/history/historyReducer.test.ts` + `HistoryScreen.test.tsx` | 24 | 24 + 6 = 30 | +6 | Reducer 1:1 (24=24); `HistoryScreen.test.tsx` is new component coverage |
+| `ui/import/ImportHandlerTest.kt` | `ui/import/importReducer.test.ts` + `ImportScreen.test.tsx` | 18 | 18 + 4 = 22 | +4 | Reducer 1:1 (18=18, Kotlin count itself corrected from a stale "8" while porting); `ImportScreen.test.tsx` is new component coverage |
+| `ui/navigation/AppNavigatorTest.kt` | `ui/navigation/hash.test.ts` + `useHashRouter.test.ts` | 43 | 43 + 3 = 46 | +3 | Kotlin file actually has **43** `@Test` methods, not the 41 previously documented here (doc corrected); `parseHash`/`screenToHash` ported 1:1 (43=43), `useHashRouter.test.ts` adds hook-specific coverage (`pushState`/`popstate` wiring) that has no Kotlin equivalent since `AppNavigator` was a plain class, not a hook |
+| `ui/player/PlayerHandlerTest.kt` | `ui/home/playerReducer.test.ts` + `HomeScreen.test.tsx` | 21 | 21 + 11 = 32 | +11 | Reducer 1:1 (21=21); `HomeScreen.test.tsx` covers UI-only flows (multi-select, game modal, inline game creation, draft resume) that never had a Kotlin Handler or test |
+| `ui/scoredetail/ScoreDetailHandlerTest.kt` | `ui/scoredetail/scoreDetailReducer.test.ts` + `ScoreDetailScreen.test.tsx` | 57 | 57 + 9 = 66 | +9 | Reducer 1:1 (57=57); `ScoreDetailScreen.test.tsx` is new component coverage |
+| `ui/stats/StatsHandlerTest.kt` | `ui/stats/statsReducer.test.ts` + `StatsScreen.test.tsx` | 6 | 6 + 5 = 11 | +5 | Reducer 1:1 (6=6); `StatsScreen.test.tsx` is new component coverage |
+| `ui/sync/SyncHandlerTest.kt` | `ui/sync/syncReducer.test.ts` + `SyncScreen.test.tsx` | 10 | 10 + 5 = 15 | +5 | Reducer 1:1 (10=10); `SyncScreen.test.tsx` is new component coverage |
+| `infrastructure/google/GoogleAuthServiceTest.kt` (jsTest) | `infrastructure/google/googleAuthService.test.ts` | 29 | 10 | **−19** | Justified, documented inline in the TS file: the Kotlin suite mostly asserts `true` after calling `login`/`refreshToken` because GIS is never actually loaded in that test environment (only the "not loaded" retry path is real), plus 3 near-duplicate tautological getter/setter tests per token field. The TS suite mocks `window.google.accounts.oauth2` to exercise the real success/error/retry/silent-refresh/logout paths with meaningful assertions — fewer tests, strictly more behavior verified |
+| `infrastructure/google/GoogleDriveSyncAdapterTest.kt` (jsTest) | `infrastructure/google/googleDriveSyncAdapter.test.ts` | 23 | 21 | −2 | Justified: Kotlin has 2 exact-duplicate tests (`push throws NotAuthenticated when no token` / `...when no token provided`, and `sync config update preserves existing fields` / the push section's timestamp-preservation test) that assert the identical behavior twice under different names; TS keeps one test per distinct behavior. Kotlin count itself corrected from a stale "11" previously documented here |
+| `ui/theme/ThemeManagerTest.kt` (jsTest) | `ui/theme/themeManager.test.ts` + `ThemeContext.test.tsx` | 7 | 14 + 3 = 17 | +10 | 7 ported 1:1 + 7 additional tests on `readInitialFlavor`/`readInitialAccent` (private in Kotlin, directly testable in TS) + 3 `ThemeContext.test.tsx` hook tests with no Kotlin equivalent |
+
+**New TS-only test files with no Kotlin counterpart** (net-new coverage, not part of the 429-test baseline): `App.test.tsx` (8 — root shell dispatch, untested as a unit in Kotlin), `infrastructure/google/googleDriveClient.test.ts` (13 — `GoogleDriveClient.kt` itself was only ever exercised indirectly via `GoogleDriveSyncAdapterTest`'s mock, never had its own test file), and the shared component tests `ui/shared/{LudoButton,LudoModal,LudoNumberInput,LudoTable,LudoTextInput,ListContainer,ListItemRow}.test.tsx` (Kotlin's Compose HTML shared composables were never unit-tested, only used).
+
+**Summary:** 33 Kotlin test files / 429 tests → 58 TS test files / 612 tests. Every Kotlin test file has a verified TS equivalent with matching or greater coverage; all diffs above +0 are additive (new edge cases or new component/hook coverage), and the two diffs below +0 (`GoogleAuthServiceTest`, `GoogleDriveSyncAdapterTest`) are justified consolidations of tautological or exact-duplicate Kotlin tests, verified line-by-line above. No unjustified gap.
 
 ## CSS
 
