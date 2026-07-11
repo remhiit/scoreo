@@ -197,3 +197,21 @@ portés 1:1 dans `src/domain/model/serialization.contract.test.ts` (TS-002/
 TS-003) : chaque cas vérifie qu'un JSON dans un ancien format (sans les
 champs ajoutés depuis) se décode toujours avec les mêmes valeurs par défaut.
 
+## Test de migration croisée (TS-081)
+
+`src/infrastructure/crossMigration.test.ts` rejoue, dans un seul snapshot
+`localStorage`, le format le plus ancien documenté sur cette page : joueurs et
+types de jeu sans `active`, types de jeu sans champs tie-break, matches au
+format v1 (ids 12 caractères, dates `"YYYY-MM-DD"`, sans `manualWinners`/
+`secondaryPlayerScores`), et la clé legacy `scoreo_theme` au lieu de
+`scoreo_flavor`/`scoreo_accent` — sans `scoreo_match_draft` ni
+`scoreo_sync_config` (plus récents que ce snapshot). Ce snapshot est rejoué
+à travers les vrais adapters TS (pas des fakes), et chaque test vérifie
+qu'aucune donnée n'est perdue : mêmes joueurs, mêmes types de jeu, mêmes
+scores de match après migration, idempotence de la migration des matches
+vérifiée explicitement (un deuxième `getAll()` ne regénère pas les ids déjà
+migrés).
+
+App 100% local-first sans backend : c'est la seule garantie que les
+utilisateurs existants ne perdent rien lors du cutover final (TS-090).
+
