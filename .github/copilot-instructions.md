@@ -2,60 +2,64 @@
 
 ## Project
 
-PWA for tracking game/match results between friends, built with Kotlin/JS.
+PWA for tracking game/match results between friends, built with React + TypeScript.
 
 ## Repository structure
 
-- `src/commonMain` — domain, application, MVI handlers/intents/states, navigation (pure Kotlin, shared)
-- `src/jsMain` — Compose HTML screens, infrastructure adapters, entry point (`Main.kt`)
+- `src/domain` — models, schemas (zod), ports (repository interfaces)
+- `src/application` — use cases (business logic, framework-agnostic)
+- `src/infrastructure` — localStorage adapters, Google Drive sync, migrations
+- `src/services` — root DI context (`ServicesContext`)
+- `src/ui` — screens, per-screen `useReducer` (MVI-style), shared components, navigation, theme
 - `doc/functional/` — functional documentation (features, user flows)
 - `doc/technical/` — technical documentation (architecture, design decisions)
 
 ## Stack
 
-- **Platform:** Progressive Web App (PWA) — Android & iOS targets planned later
-- **Language:** Kotlin (`js(IR)` target)
-- **UI framework:** Compose HTML (`org.jetbrains.compose.html:html-core`) — generates real HTML DOM
-- **Build system:** Gradle (Kotlin DSL)
-- **UI pattern:** MVI (Model-View-Intent)
+- **Platform:** Progressive Web App (PWA)
+- **Language:** TypeScript (`strict: true`)
+- **UI framework:** React 18
+- **Build system:** Vite
+- **Test runner:** Vitest + Testing Library (`jsdom`)
+- **Validation/persistence:** zod schemas with `.default()` per field
+- **UI pattern:** MVI-style — `useReducer` per screen (Handler/Intent/State equivalent)
 - **Application architecture:** Hexagonal (Ports & Adapters)
-- **Styling:** `src/jsMain/resources/styles.css` — CSS custom properties, fixed top header
-- **Storage:** localStorage via `LocalStorage*Repository` (scoreo_players, scoreo_gametypes, scoreo_matches keys)
+- **Styling:** `public/css/` — CSS custom properties (Catppuccin tokens), fixed top header
+- **Storage:** localStorage via `LocalStorage*Repository` (`scoreo_players`, `scoreo_gametypes`, `scoreo_matches` keys)
 
 See [`doc/technical/architecture.md`](../doc/technical/architecture.md) for the full architecture description.
-See [`doc/functional/features.md`](../doc/functional/features.md) for the feature list.
+See [`doc/reference.md`](../doc/reference.md) for the full reducer/use-case/model/port/adapter reference.
 
 ## Backward Compatibility
 
 Any change to a serialized domain model (`Player`, `GameType`, `Match`, `PlayerScore`, `WinCondition`) must be backward compatible with at least the previous version.
 
-- **Adding a field**: provide a default value so old localStorage data deserializes without error.
+- **Adding a field**: provide a `.default()` in the zod schema so old localStorage data deserializes without error.
 - **Renaming or removing a field**: write a migration step and document it in `doc/technical/migrations.md`.
 - **Never change the type of an existing field** without a migration.
-
-`Json { ignoreUnknownKeys = true }` is already configured in all repositories.
 
 ## Documentation maintenance
 
 When implementing a new feature, update `doc/functional/` with the relevant user-facing behavior.
 When making a technical decision (architecture, library choice, data model, etc.), document it in `doc/technical/`.
-When adding a new handler or use case, add a corresponding test file in `src/commonTest/` under the matching package.
+When adding a new reducer or use case, add a corresponding colocated `*.test.ts(x)` file.
 
 ## Build Commands
 
 ```bash
-# Dev server (hot reload, port 9191)
-./gradlew jsBrowserDevelopmentRun --continuous
+# Dev server (hot reload)
+pnpm dev
 
 # Production build
-./gradlew jsBrowserProductionWebpack
-# Then copy assets and serve:
-# cp src/jsMain/resources/{index.html,styles.css} build/kotlin-webpack/js/productionExecutable/
-# cd build/kotlin-webpack/js/productionExecutable && python3 -m http.server 9191
+pnpm build
 
-# Run all tests (JVM — fast, no browser needed)
-./gradlew jvmTest
+# Preview a production build locally
+pnpm preview
 
-# Run a single test class
-./gradlew jvmTest --tests "com.scoreo.ui.player.PlayerHandlerTest"
+# Run all tests
+pnpm test
+
+# Typecheck / lint
+pnpm typecheck
+pnpm lint
 ```

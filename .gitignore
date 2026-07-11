@@ -209,8 +209,3 @@ vite.config.ts.timestamp-*
 # Tickets
 .task/
 
-# Never commit binaries to this repo. gradle-wrapper.jar isn't tracked here;
-# .claude/hooks/session-start.sh falls back to the system Gradle install
-# when it's absent.
-gradle/wrapper/gradle-wrapper.jar
-
