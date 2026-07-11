@@ -82,7 +82,7 @@ Screens:
 
 - All data is local-first (localStorage). No backend required.
 - Domain models are serialized with `ignoreUnknownKeys = true` for forward/backward compatibility.
-- Architecture: MVI (Handler/Intent/State) + hexagonal (Ports & Adapters).
+- Architecture: MVI-style (reducer/action/state, via `useReducer`) + hexagonal (Ports & Adapters).
 
 ## Manual functional recipe — React/TS build (TS-082)
 

@@ -9,12 +9,14 @@
 | `GetPlayersUseCase` | `includeInactive = true` | `List<Player>` | Includes deleted players for name resolution |
 | `DeleteMatchUseCase` | `matchId: String` | `Unit` | Deletes a match by ID; idempotent (no error if match not found) |
 
-## MVI
+## MVI-style
 
 | Component | Details |
 |-----------|---------|
-| **Handler** | `HistoryHandler` — `handle(HistoryIntent.Refresh)` |
-| **State** | `List<MatchDisplay>` computed from repositories |
+| **Reducer** | `historyReducer` — `src/ui/history/historyReducer.ts` (`loaded`, `showDeleteConfirm`, `deleteFailed`, `dismissDeleteConfirm`, `selectGameTypeFilter` actions) |
+| **State** | `MatchDisplay[]` computed from repositories on mount |
+
+Screen: `src/ui/history/HistoryScreen.tsx`.
 
 ### MatchDisplay
 
@@ -57,7 +59,7 @@
 ### Match listing
 ```
 Given 3 matches exist with dates 3000, 1000, 2000
-When HistoryHandler.refresh() is called
+When the History screen loads
 Then matches are ordered: 3000, 2000, 1000
 ```
 
@@ -65,7 +67,7 @@ Then matches are ordered: 3000, 2000, 1000
 ```
 Given a deleted player "Alice" with active=false and name="Alice"
 And a match referencing player "p1"
-When HistoryHandler.refresh() is called
+When the History screen loads
 Then playerLabels["p1"] = "Alice (deleted)"
 ```
 
@@ -73,14 +75,14 @@ Then playerLabels["p1"] = "Alice (deleted)"
 ```
 Given a deleted player with active=false and name=""
 And a match referencing that player
-When HistoryHandler.refresh() is called
+When the History screen loads
 Then playerLabels[playerId] = "Deleted player"
 ```
 
 ### Date formatting with time
 ```
 Given a match with timestamp 1672566300000L (2023-01-01 11:45:00 UTC)
-When HistoryHandler.refresh() is called
+When the History screen loads
 Then dateFormatted matches pattern "YYYY-MM-DD HH:mm" in local timezone
 ```
 

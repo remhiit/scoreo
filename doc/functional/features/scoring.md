@@ -6,13 +6,15 @@
 |----------|-------|--------|---------------|
 | `CreateMatchUseCase` | `gameTypeId, playerScores, date, manualWinners, secondaryPlayerScores` | `Match` | Saves match; returns `Result<Match>` |
 
-## MVI
+## MVI-style
 
 | Component | Details |
 |-----------|---------|
-| **Handler** | `ScoreDetailHandler` — `src/commonMain/.../ui/scoredetail/ScoreDetailHandler.kt` |
-| **Intent** | `ScoreDetailIntent`: `UpdateScore`, `AddRound`, `RemoveRound`, `Terminate`, `ConfirmWinners`, `DismissModal`, `ToggleModalWinner`, `UpdateSecondaryScoreInput`, `SubmitSecondaryScores`, `ToggleManualSelectionWinner`, `ConfirmManualWinners`, `KeepTie`, `DismissTieBreak`, `CancelMatch`, `ConfirmCancel`, `DismissCancelConfirm` |
-| **State** | `ScoreDetailState`: `gameType`, `players`, `rounds`, `totals`, `showWinnerModal`, `modalWinners`, `showSecondaryScoreDialog`, `tiedPlayerIds`, `secondaryScoreInputs`, `showManualSelectionDialog`, `manualSelectionWinners`, `collectedSecondaryScores`, `error`, `saved`, `cancelled`, `editingMatchId`, `showCancelConfirm` |
+| **Reducer** | `scoreDetailReducer` — `src/ui/scoredetail/scoreDetailReducer.ts` |
+| **Action** | `ScoreDetailAction`: `updateScore`, `addRound`, `removeRound`, `cancelImmediate`, `showCancelConfirm`, `confirmCancel`, `dismissCancelConfirm`, `validationFailed`, `openWinnerModal`, `openManualSelectionDialog`, `openSecondaryScoreDialog`, `saved`, `saveFailed`, `dismissModal`, `toggleModalWinner`, `confirmWinnersEmptyError`, `updateSecondaryScoreInput`, `secondaryScoreInvalid`, `secondaryScoreEscalate`, `toggleManualSelectionWinner`, `manualWinnersEmptyError`, `dismissTieBreak` |
+| **State** | `ScoreDetailState`: `gameType`, `players`, `rounds`, `showWinnerModal`, `modalWinners`, `showSecondaryScoreDialog`, `tiedPlayerIds`, `secondaryScoreInputs`, `showManualSelectionDialog`, `manualSelectionWinners`, `collectedSecondaryScores`, `error`, `saved`, `cancelled`, `editingMatchId`, `showCancelConfirm` |
+
+Screen: `src/ui/scoredetail/ScoreDetailScreen.tsx`. See `doc/reference.md` for the full reducer table.
 
 ## Screen: ScoreDetailScreen
 

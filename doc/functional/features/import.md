@@ -9,18 +9,27 @@
 
 ## Data Types
 
-```kotlin
-data class ImportPreview(val gameName: String, val count: Int)
-data class ImportResult(val imported: Int, val skipped: List<String>, val failed: List<String>)
+```typescript
+interface ImportPreview {
+  gameName: string
+  count: number
+}
+interface ImportResult {
+  imported: number
+  skipped: string[]
+  failed: string[]
+}
 ```
 
-## MVI
+## MVI-style
 
 | Component | Details |
 |-----------|---------|
-| **Handler** | `ImportHandler` — `src/commonMain/.../ui/import/ImportHandler.kt` |
-| **Intent** | `ImportIntent`: `FileLoaded`, `FileError`, `Execute`, `Reset` |
-| **State** | `ImportState`: `step` (IDLE → READY → DONE), `preview`, `jsonContent`, `result`, `error` |
+| **Reducer** | `importReducer` — `src/ui/import/importReducer.ts` |
+| **Action** | `ImportAction`: `previewReady`, `previewFailed`, `importSucceeded`, `importFailed`, `fileError`, `reset` |
+| **State** | `ImportState`: `step` (`'IDLE'` → `'READY'` → `'DONE'`), `preview`, `jsonContent`, `result`, `error` |
+
+Screen: `src/ui/import/ImportScreen.tsx`. See `doc/reference.md` for the full reducer table.
 
 ## Screen: ImportScreen
 
