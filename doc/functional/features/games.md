@@ -25,13 +25,15 @@
 | `LOWEST_SCORE` | Player(s) with the lowest total score win |
 | `MANUAL` | Player manually selects winner(s) after scoring |
 
-## MVI
+## MVI-style
 
 | Component | Details |
 |-----------|---------|
-| **Handler** | `GameTypeHandler` — `src/commonMain/.../ui/gametype/GameTypeHandler.kt` |
-| **Intent** | `GameTypeIntent`: `UpdateName`, `SelectWinCondition`, `UpdateTieBreakRule`, `UpdateTieBreakCondition`, `UpdateTieBreakLabel`, `SelectGame`, `DeselectGame`, `AddGameType`, `EditGameType`, `CancelEdit`, `UpdateGameType`, `ShowArchiveConfirm`, `ArchiveGameType`, `DismissArchiveConfirm` |
+| **Reducer** | `gameTypeReducer` — `src/ui/gametype/gameTypeReducer.ts` |
+| **Action** | `GameTypeAction`: `updateName`, `selectWinCondition`, `updateTieBreakRule`, `updateTieBreakCondition`, `updateTieBreakLabel`, `selectGame`, `deselectGame`, `addSucceeded`/`addFailed`, `editGameType`, `cancelEdit`, `updateSucceeded`/`updateFailed`, `showArchiveConfirm`, `archiveSucceeded`/`archiveFailed`, `dismissArchiveConfirm` |
 | **State** | `GameTypeState`: `gameTypes`, `inputName`, `selectedWinCondition`, `selectedTieBreakRule`, `selectedTieBreakCondition`, `selectedTieBreakLabel`, `selectedGameId`, `editingGameId`, `error`, `archiveConfirmGameTypeId` |
+
+Screen: `src/ui/gametype/GameTypeScreen.tsx`. See `doc/reference.md` for the full reducer table.
 
 ## Screen: GameTypeScreen
 

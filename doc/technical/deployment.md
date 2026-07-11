@@ -1,36 +1,15 @@
 # CI/CD & Deployment
 
-## Build Configuration Validation
-
-Two validation mechanisms prevent build configuration errors (e.g., missing version catalog entries) before they reach deployment.
-
-### Local: Pre-push Git Hook
-
-**File**: `.githooks/pre-push` (executable)
-
-Every `git push` automatically runs `./gradlew help --quiet`, which validates the Gradle build configuration. This catches version catalog mismatches, missing library definitions, and other script compilation errors before they reach CI.
-
-**Automatic Setup**: `build.gradle.kts` automatically configures git to use the `.githooks/` directory on the first `./gradlew` invocation (outside CI environments). No manual setup required.
-
-```sh
-# First Gradle invocation configures the hook
-./gradlew help
-
-# Now git push is protected
-git push  # pre-push hook validates build config
-```
-
-### CI: Build Check Workflow
+## CI: Build Check Workflow
 
 **File**: `.github/workflows/check.yml`
 
-Runs on every `push` (all branches) and `pull_request`. Executes `gradle help --quiet` to validate the build configuration independently of the deployment workflow.
+Runs on every `push` (all branches) and `pull_request`: `pnpm install --frozen-lockfile`, then `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm build`.
 
 - **Trigger**: `push` to any branch, `pull_request`
 - **Status**: Must pass before deployment jobs can run
-- **Runtime**: ~30 seconds
 
-This ensures configuration errors are caught immediately, even if the local hook is bypassed.
+This ensures type errors, lint issues, test failures, or build breakage are caught immediately on every push.
 
 ---
 

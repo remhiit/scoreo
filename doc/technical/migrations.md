@@ -178,26 +178,15 @@ to a pre-Catppuccin build would still find a valid (if stale) value.
 
 ---
 
-## Note technique : moteur de sérialisation (kotlinx.serialization → zod)
+## Note technique : moteur de sérialisation (zod)
 
-**Contexte :** réécriture React/TypeScript en cours (voir issues `migration-react`).
+**Contexte historique :** le projet était initialement écrit en Kotlin/JS avec `kotlinx.serialization` (`Json { ignoreUnknownKeys = true }` + valeurs par défaut sur les data class). La réécriture complète vers React/TypeScript (achevée) a changé le moteur de (dé)sérialisation sans jamais changer le format JSON stocké dans `localStorage` — mêmes clés, mêmes champs, mêmes valeurs par défaut, à chaque étape.
 
-Ce n'est **pas une migration de données** — le format JSON stocké dans
-`localStorage` reste strictement inchangé (mêmes clés, mêmes champs, mêmes
-valeurs par défaut). Seul le moteur de (dé)sérialisation change :
+Le moteur actuel : schémas [zod](https://zod.dev) avec `.default()` par champ (`src/domain/model/*.schema.ts`), qui strip nativement les clés inconnues à la validation (comportement équivalent à l'ancien `ignoreUnknownKeys`).
 
-- Kotlin : `kotlinx.serialization` avec `Json { ignoreUnknownKeys = true }`
-  + valeurs par défaut sur les data class (`Player.active = true`, etc.)
-- TypeScript : schémas [zod](https://zod.dev) avec `.default()` par champ
-  (`src/domain/model/*.schema.ts`), qui zod strip nativement les clés
-  inconnues à la validation (comportement équivalent à `ignoreUnknownKeys`)
+27 tests de contrat backward-compat dans `src/domain/model/serialization.contract.test.ts` : chaque cas vérifie qu'un JSON dans un ancien format (sans les champs ajoutés depuis) se décode toujours avec les mêmes valeurs par défaut.
 
-Les 27 tests de contrat backward-compat de `SerializationTest.kt` sont
-portés 1:1 dans `src/domain/model/serialization.contract.test.ts` (TS-002/
-TS-003) : chaque cas vérifie qu'un JSON dans un ancien format (sans les
-champs ajoutés depuis) se décode toujours avec les mêmes valeurs par défaut.
-
-## Test de migration croisée (TS-081)
+## Test de migration croisée
 
 `src/infrastructure/crossMigration.test.ts` rejoue, dans un seul snapshot
 `localStorage`, le format le plus ancien documenté sur cette page : joueurs et
@@ -206,12 +195,12 @@ format v1 (ids 12 caractères, dates `"YYYY-MM-DD"`, sans `manualWinners`/
 `secondaryPlayerScores`), et la clé legacy `scoreo_theme` au lieu de
 `scoreo_flavor`/`scoreo_accent` — sans `scoreo_match_draft` ni
 `scoreo_sync_config` (plus récents que ce snapshot). Ce snapshot est rejoué
-à travers les vrais adapters TS (pas des fakes), et chaque test vérifie
+à travers les vrais adapters (pas des fakes), et chaque test vérifie
 qu'aucune donnée n'est perdue : mêmes joueurs, mêmes types de jeu, mêmes
 scores de match après migration, idempotence de la migration des matches
 vérifiée explicitement (un deuxième `getAll()` ne regénère pas les ids déjà
 migrés).
 
 App 100% local-first sans backend : c'est la seule garantie que les
-utilisateurs existants ne perdent rien lors du cutover final (TS-090).
+utilisateurs existants ne perdent rien lors d'une mise à jour.
 

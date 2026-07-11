@@ -10,15 +10,15 @@
 | `GetPlayersUseCase` | `includeInactive: Boolean = false` | `List<Player>` | Excludes inactive by default |
 | `GetPlayerStatsUseCase` | — | `Map<String, PlayerStats>` | Computes wins/losses from all matches (regardless of player active status) |
 
-## MVI
+## MVI-style
 
 | Component | Details |
 |-----------|---------|
-| **Handler** | `PlayerHandler` — `src/commonMain/.../ui/player/PlayerHandler.kt` |
-| **Intent** | `PlayerIntent`: `UpdateInput`, `AddPlayer`, `DeletePlayer`, `ShowDeleteConfirm`, `DismissDeleteConfirm`, `StartRename`, `UpdateRenameInput`, `ConfirmRename`, `CancelRename` |
+| **Reducer** | `playerReducer` — `src/ui/home/playerReducer.ts` |
+| **Action** | `PlayerAction`: `updateInput`, `addSucceeded`/`addFailed`, `showDeleteConfirm`, `dismissDeleteConfirm`, `deleted`, `startRename`, `updateRenameInput`, `renameSucceeded`/`renameFailed`, `cancelRename` |
 | **State** | `PlayerState`: `players`, `stats`, `inputName`, `error`, `deleteConfirmPlayerId`, `renamingPlayerId`, `renameInput` |
 
-**TS (TS-055)**: `src/ui/home/{playerTypes,playerReducer,HomeScreen}.ts(x)` — see `doc/reference.md` for the action-level mapping.
+Screen: `src/ui/home/HomeScreen.tsx`. See `doc/reference.md` for the full reducer table.
 
 ## Screen: PlayerScreen
 

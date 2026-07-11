@@ -1,104 +1,60 @@
-# AppNavigator Tests
+# Navigation (hash router) Tests
 
-**File:** `src/commonTest/kotlin/com/scoreo/ui/navigation/AppNavigatorTest.kt`
+**File:** `src/ui/navigation/hash.test.ts`
 
-**Class:** `AppNavigatorTest`
-
-**Total Tests:** 41
+**Total Tests:** 43 (plus 3 in `src/ui/navigation/useHashRouter.test.ts` for the hook's DOM wiring)
 
 ## Overview
 
-Pure JVM tests for **routing logic**: URL ↔ Screen mapping. Tests hash fragment parsing (`#/route/params`) and serialization back to hash URLs, without any DOM or Compose HTML dependencies.
+Pure unit tests for **routing logic**: URL ↔ Screen mapping. Tests hash fragment parsing (`#/route/params`) and serialization back to hash URLs, with no DOM dependency — `parseHash`/`screenToHash` are plain functions.
 
 ## Architecture
 
 ### Pure Functions Tested
 
-The test extracts and tests two pure functions from `AppNavigator`:
+`src/ui/navigation/hash.ts` exports two pure functions, also the ones used by the real router:
 
-1. **`parseHash(hashFragment: String): Screen`**
-   - Mirrors `AppNavigator.restoreFromHash()`
+1. **`parseHash(hash: string): Screen`**
    - Parses URL hash (`#/route/...`) into a `Screen` object
    - Handles malformed input gracefully (fallback to `Screen.Home`)
 
-2. **`screenToHash(screen: Screen): String`**
-   - Mirrors `AppNavigator.toHash()`
+2. **`screenToHash(screen: Screen): string`**
    - Serializes a `Screen` object to a hash URL string
    - Always produces valid, predictable hashes
 
+`src/ui/navigation/useHashRouter.ts` is the hook that syncs a `Screen` with `window.location.hash` via `pushState`/`popstate`, built directly on top of these two functions — so the tests in `hash.test.ts` exercise the exact same code path the app uses, not a duplicate.
+
 ### Key Invariants
 
-- `Screen` is moved to `commonMain` (pure data model, no DOM)
-- `AppNavigator` in `jsMain` imports `Screen` from `commonMain`
-- **Roundtrip guarantee:** `parseHash(screenToHash(screen).removePrefix("#")) == original screen`
+- `Screen` (`src/ui/navigation/screen.ts`) is a plain discriminated union, no framework dependency
+- **Roundtrip guarantee:** `parseHash(screenToHash(screen).replace(/^#/, '')) === original screen`
 - All 7 screen types tested (Home, History, Import, Stats, Games, Sync, ScoreDetail)
 
-## Test Categories (41 Tests)
+## Test Categories (43 tests in `hash.test.ts`)
 
-### Hash → Screen Parsing (10 tests)
+### Hash → Screen Parsing
 
-Tests that hash fragments are correctly parsed into Screen objects:
+Tests that hash fragments are correctly parsed into Screen objects: empty hash / root slash → Home, `history`/`stats`/`import`/`games`/`sync` → their respective screens, `score/gt1/alice` and `score/gt1/alice,bob,charlie` → ScoreDetail (new match), `score/gt2/alice,bob/match123` → ScoreDetail (edit).
 
-- `parseHash_emptyHash_returnsHome()` — Empty string → Home
-- `parseHash_rootSlash_returnsHome()` — "/" → Home
-- `parseHash_historyRoute_returnsHistory()` — "history" → History
-- `parseHash_statsRoute_returnsStats()` — "stats" → Stats
-- `parseHash_importRoute_returnsImport()` — "import" → Import
-- `parseHash_gamesRoute_returnsGames()` — "games" → Games
-- `parseHash_syncRoute_returnsSync()` — "sync" → Sync
-- `parseHash_scoreDetailNewMatch_singlePlayer()` — "score/gt1/alice" → ScoreDetail
-- `parseHash_scoreDetailNewMatch_multiplePlayersCSV()` — "score/gt1/alice,bob,charlie" → ScoreDetail
-- `parseHash_scoreDetailExistingMatch()` — "score/gt2/alice,bob/match123" → ScoreDetail
+### Screen → Hash Serialization
 
-### Screen → Hash Serialization (7 tests)
+Tests that Screen objects are correctly serialized to hash URLs: Home → `#/`, each simple screen → `#/<name>`, ScoreDetail (edit) → `#/score/gt2/alice,bob/match123`.
 
-Tests that Screen objects are correctly serialized to hash URLs:
+### Roundtrip Idempotency
 
-- `toHash_home_producesRootHash()` — Home → "#/"
-- `toHash_history_producesCorrectHash()` — History → "#/history"
-- `toHash_stats_producesCorrectHash()` — Stats → "#/stats"
-- `toHash_import_producesCorrectHash()` — Import → "#/import"
-- `toHash_games_producesCorrectHash()` — Games → "#/games"
-- `toHash_sync_producesCorrectHash()` — Sync → "#/sync"
-- `toHash_scoreDetailExistingMatch()` — ScoreDetail → "#/score/gt2/alice,bob/match123"
+Tests that URL → Screen → URL maintains identity for every screen type, including new-match and edit-match ScoreDetail variants.
 
-### Roundtrip Idempotency (6 tests)
+### Error Handling & Edge Cases
 
-Tests that URL → Screen → URL maintains identity:
+Tests robustness with malformed/edge-case inputs: missing player ids or empty gameTypeId falls back to Home, unknown routes fall back gracefully, extra slashes are ignored, special characters in gameTypeId/playerId/matchId are preserved, empty strings in a CSV player-id list are filtered out.
 
-- `roundtrip_home_idempotent()` — Home cycles through hash correctly
-- `roundtrip_history_idempotent()` — History cycles through hash correctly
-- `roundtrip_scoreDetailNewMatch_idempotent()` — New match cycles correctly
-- `roundtrip_scoreDetailExistingMatch_idempotent()` — Existing match cycles correctly
-- `roundtrip_allScreenTypes_idempotent()` — All 7 types cycle correctly
-- (Comprehensive coverage of all screen types in one parametrized test)
+### ScoreDetail Details & Complex Routes
 
-### Error Handling & Edge Cases (8 tests)
+Extra URL segments beyond the expected shape are ignored; CSV generation for multiple player ids is correct with no trailing comma for a single id.
 
-Tests robustness with malformed/edge-case inputs:
+### Backward Compatibility
 
-- `parseHash_scoreDetailMissingPlayerIds_fallsBackToHome()` — Incomplete score route falls back
-- `parseHash_scoreDetailEmptyGameTypeId_fallsBackToHome()` — Empty gameTypeId falls back
-- `parseHash_unknownRoute_fallsBackToHome()` — Unknown routes fall back gracefully
-- `parseHash_extraSlashes_areIgnored()` — Extra slashes are handled (///history/// → History)
-- `parseHash_gameTypeIdWithSpecialChars_preserved()` — Hyphens, underscores preserved
-- `parseHash_playerIdWithSpecialChars_preserved()` — Special chars in player IDs preserved
-- `parseHash_matchIdWithSpecialChars_preserved()` — Special chars in match IDs preserved
-- `parseHash_playerIdListWithEmptyStrings_filtered()` — Empty strings in CSV filtered out
-
-### ScoreDetail Details & Complex Routes (3 tests)
-
-- `parseHash_scoreDetailWithExtraSegments_ignoresExtraSegments()` — Extra URL segments ignored
-- `toHash_multiplePlayerIds_correctCSV()` — CSV generation correct for many players
-- `toHash_singlePlayerCSV_noTrailingComma()` — No trailing commas in CSV
-
-### Backward Compatibility (3 tests)
-
-Tests schema evolution (optional matchId field):
-
-- `backwardCompat_oldStyleHomeHash_recognized()` — "/" still recognized as Home
-- `backwardCompat_scoreDetailNoMatchId_stillValid()` — Old URLs without matchId work
-- `backwardCompat_scoreDetailWithMatchId_newFeature()` — New matchId param optional, works
+`"/"` still recognized as Home; URLs without a `matchId` (create mode) still work; the `matchId` param is optional and additive.
 
 ## URL Scheme
 
@@ -123,31 +79,23 @@ Tests schema evolution (optional matchId field):
 
 ## Key Design Decisions
 
-1. **Pure logic extraction:** Hash parsing/serialization logic is testable without mocking `window` or DOM
-2. **Moved to commonMain:** `Screen` sealed class is now platform-independent (cross-platform)
-3. **CSV for player lists:** Comma-separated list for simple URL encoding (no special chars needed for player IDs)
-4. **Optional matchId:** 4th segment is optional; null → new match, value → edit mode
-5. **Fallback strategy:** Invalid routes → Screen.Home (graceful degradation)
+1. **Pure logic extraction:** Hash parsing/serialization logic is testable without mocking `window` or the DOM.
+2. **Single implementation under test:** `parseHash`/`screenToHash` are exported once from `hash.ts` and imported by both `useHashRouter.ts` (the real router) and `hash.test.ts` — no risk of the tests drifting from production routing code.
+3. **CSV for player lists:** Comma-separated list for simple URL encoding (no special chars needed for player IDs).
+4. **Optional matchId:** 4th segment is optional; absent → new match, present → edit mode.
+5. **Fallback strategy:** Invalid routes → `Screen.Home` (graceful degradation).
 
 ## Running Tests
 
 ```bash
-# Run all navigation tests
-./gradlew jvmTest --tests "*AppNavigatorTest*"
+# All tests (includes navigation)
+pnpm test
 
-# Or (project-specific):
-./gradlew allTests
+# Just the navigation tests
+pnpm exec vitest run src/ui/navigation
 ```
 
 ## Maintenance Notes
 
-- If adding new Screen types, add corresponding `toHash` and `parseHash` cases
-- If modifying ScoreDetail parameters, update roundtrip tests
-- Keep helper functions (`parseHash`, `screenToHash`) in sync with `AppNavigator` methods
-- Test file is in `src/commonTest/` (JVM-testable, no JS-specific code)
-
-## TS port (TS-042)
-
-`src/ui/navigation/{screen,hash,useHashRouter}.ts` + `hash.test.ts` (41 tests, ported 1:1 from this file) + `useHashRouter.test.ts` (3 tests covering the hook's DOM wiring: initial-hash restore, `navigate()` pushing state, `popstate` sync).
-
-**Fixed defect vs. Kotlin**: the "Maintenance Notes" above openly admit `parseHash`/`screenToHash` are a hand-kept-in-sync duplicate of `AppNavigator.kt`'s private `restoreFromHash`/`toHash` — the 41 tests here never actually exercise production routing code, only a copy of it. In the TS port, `parseHash`/`screenToHash` are exported once from `hash.ts` and imported by both `useHashRouter.ts` (the real router) and `hash.test.ts` — one implementation, actually under test, no drift risk.
+- If adding new Screen types, add corresponding `screenToHash` and `parseHash` cases (and a roundtrip test).
+- If modifying ScoreDetail parameters, update the roundtrip tests.

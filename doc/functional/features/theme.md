@@ -17,16 +17,16 @@ Accent: 14 Catppuccin hues (`mauve` default) — see `tokens/semantic.css`.
 
 ## CSS
 
-Files:
-- `src/jsMain/resources/tokens/` — Catppuccin flavor palettes
+Files (`public/css/`):
+- `tokens/` — Catppuccin flavor palettes
   (`colors-latte.css`, `colors-frappe.css`, `colors-macchiato.css`,
   `colors-mocha.css`) + the semantic alias/accent layer
   (`semantic.css`).
-- `src/jsMain/resources/theme-picker.css` — `.theme-chip`,
+- `theme-picker.css` — `.theme-chip`,
   `.accent-swatch` and their `--active` variants, for the picker
   dialog.
 
-Burger menu entry: `"🎨 Theme"` (`BurgerItem` in `App.kt`) opens
+Burger menu entry: `"🎨 Theme"` (in `src/App.tsx`) opens
 `ThemePickerDialog`, which uses `LudoModal`/`LudoButton` (the chips/
 swatches themselves stay custom — Ludo has no "color swatch"
 primitive).
@@ -35,12 +35,12 @@ primitive).
 
 | File | Role |
 |------|------|
-| `src/jsMain/.../ui/theme/ThemeManager.kt` | Composable `rememberThemeState()` — state, localStorage, `data-theme`/`data-accent` on `<html>`, legacy migration |
-| `src/jsMain/.../ui/theme/ThemePicker.kt` | `ThemePickerDialog` composable — flavor chips + accent swatches |
-| `src/jsMain/kotlin/.../App.kt` | Calls `rememberThemeState()`, renders the burger menu entry + dialog |
-| `src/jsTest/.../ui/theme/ThemeManagerTest.kt` | Unit tests: localStorage keys, legacy migration key, system preference, DOM attributes |
+| `src/ui/theme/themeManager.ts` | `readInitialFlavor`/`readInitialAccent`/`applyTheme`/`saveFlavor`/`saveAccent` — pure functions, localStorage, `data-theme`/`data-accent` on `<html>`, legacy migration |
+| `src/ui/theme/ThemeContext.tsx` | `ThemeProvider`/`useTheme()` — React Context wrapping `themeManager.ts` so the picker and the rest of the app share live state |
+| `src/ui/theme/ThemePickerDialog.tsx` | Flavor chips + accent swatches, rendered via `LudoModal` |
+| `src/App.tsx` | Renders the burger menu entry + dialog |
 
-No MVI Handler (global concern, no dedicated screen).
+No dedicated reducer (global concern, no dedicated screen) — state lives in `ThemeContext`.
 
 ## Tests
 
