@@ -22,47 +22,10 @@ jobs:
     environment:
       name: github-pages
       url: ${{ steps.deploy.outputs.page_url }}
-    env:
-      npm_config_registry: https://registry.npmjs.org
 
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up JDK 21
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: 21
-
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v4
-        with:
-          gradle-version: wrapper
-
-      - name: Run tests
-        run: gradle jvmTest
-
-      - name: Build production
-        run: gradle jsBrowserProductionWebpack
-
-      - name: Copy static assets
-        run: cp -r src/jsMain/resources/. build/kotlin-webpack/js/productionExecutable/
-
-      - name: Verify CSS is present
-        run: test -f build/kotlin-webpack/js/productionExecutable/styles.css
-
-      - name: Verify all resources are in artifact
-        run: |
-          for f in src/jsMain/resources/*; do
-            name=$(basename "$f")
-            test -e "build/kotlin-webpack/js/productionExecutable/$name" \
-              || (echo "Missing from artifact: $name" && exit 1)
-          done
-
-      # React/TypeScript rewrite preview (TS-071) — built alongside the Kotlin
-      # production app and published under /preview/ in the same Pages
-      # artifact, so it gets a real live URL without a second Pages
-      # deployment (GitHub Pages only serves one live deployment per repo).
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
 
@@ -72,18 +35,24 @@ jobs:
           node-version: 22
           cache: pnpm
 
-      - name: Install dependencies (React/TypeScript rewrite)
+      - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Build React/TypeScript preview
+      - name: Test
+        run: pnpm test
+
+      - name: Build production
         env:
           VITE_GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
         run: pnpm build
 
-      - name: Copy React/TypeScript preview into /preview/
+      - name: Verify all public/ assets are in the artifact
         run: |
-          mkdir -p build/kotlin-webpack/js/productionExecutable/preview
-          cp -r dist/. build/kotlin-webpack/js/productionExecutable/preview/
+          for f in public/*; do
+            name=$(basename "$f")
+            test -e "dist/$name" \
+              || (echo "Missing from artifact: $name" && exit 1)
+          done
 
       - name: Configure Pages
         uses: actions/configure-pages@v5
@@ -91,7 +60,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: build/kotlin-webpack/js/productionExecutable/
+          path: dist/
 
       - name: Deploy to GitHub Pages
         id: deploy
@@ -105,7 +74,7 @@ jobs:
         env:
           BASE: ${{ needs.deploy.outputs.page_url }}
         run: |
-          for path in "" styles.css scoreo.js preview/ preview/manifest.json preview/sw.js; do
+          for path in "" manifest.json sw.js css/styles.css; do
             url="${BASE}${path}"
             echo "Checking $url..."
             for i in 1 2 3 4 5; do
