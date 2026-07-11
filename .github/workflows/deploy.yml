@@ -59,6 +59,32 @@ jobs:
               || (echo "Missing from artifact: $name" && exit 1)
           done
 
+      # React/TypeScript rewrite preview (TS-071) — built alongside the Kotlin
+      # production app and published under /preview/ in the same Pages
+      # artifact, so it gets a real live URL without a second Pages
+      # deployment (GitHub Pages only serves one live deployment per repo).
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies (React/TypeScript rewrite)
+        run: pnpm install --frozen-lockfile
+
+      - name: Build React/TypeScript preview
+        env:
+          VITE_GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+        run: pnpm build
+
+      - name: Copy React/TypeScript preview into /preview/
+        run: |
+          mkdir -p build/kotlin-webpack/js/productionExecutable/preview
+          cp -r dist/. build/kotlin-webpack/js/productionExecutable/preview/
+
       - name: Configure Pages
         uses: actions/configure-pages@v5
 
@@ -79,7 +105,7 @@ jobs:
         env:
           BASE: ${{ needs.deploy.outputs.page_url }}
         run: |
-          for path in "" styles.css scoreo.js; do
+          for path in "" styles.css scoreo.js preview/ preview/manifest.json preview/sw.js; do
             url="${BASE}${path}"
             echo "Checking $url..."
             for i in 1 2 3 4 5; do
