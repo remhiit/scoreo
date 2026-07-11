@@ -126,7 +126,7 @@ Notable design choices:
 
 ## Tests
 
-58 test files, 612 tests, all colocated `*.test.ts(x)` next to the file they cover, running under Vitest + `jsdom` (no real browser needed for any of them, including the Google Drive/OAuth and theme tests that historically required one).
+59 test files, 619 tests, all colocated `*.test.ts(x)` next to the file they cover, running under Vitest + `jsdom` (no real browser needed for any of them, including the Google Drive/OAuth and theme tests that historically required one).
 
 Notable coverage that goes beyond a 1:1 port of business logic:
 - **Component tests** (`*Screen.test.tsx`) for every screen, on top of each reducer's own pure-function tests.
