@@ -135,3 +135,15 @@ URL: `https://<username>.github.io/Scoreo/`
 > Enable in *Settings → Pages → Source: GitHub Actions*.
 
 > Note: `gradle-wrapper.jar` is **not** committed to the repository (excluded by `*.jar` in `.gitignore`). GitHub Actions workflows use the `gradle` command installed in PATH by `gradle/actions/setup-gradle@v4`, reading the version from `gradle-wrapper.properties`.
+
+## React/TypeScript rewrite preview (TS-071)
+
+GitHub Pages only serves **one live deployment per repo** through the Actions method — each deploy to the `github-pages` environment replaces the previous one. To validate the React/TypeScript rewrite's deployment before the final cutover (TS-090) without disturbing the Kotlin production site, `deploy.yml`'s `deploy` job builds both apps and publishes them in the **same Pages artifact**:
+
+- Steps 1-7 (unchanged): build and verify the Kotlin production app as described above.
+- Additional steps: `pnpm install --frozen-lockfile`, `pnpm build` (with `VITE_GOOGLE_CLIENT_ID` set from the same `secrets.GOOGLE_CLIENT_ID` used for Kotlin's `generateOAuthConfig`), then `dist/` is copied into `build/kotlin-webpack/js/productionExecutable/preview/` before the artifact is uploaded.
+- `vite.config.ts`'s `base: './'` (relative asset paths) is what makes this work unmodified: the same build output is valid whether served from the site root or from a `/preview/` subdirectory.
+
+Result: the Kotlin app stays at `https://<username>.github.io/Scoreo/` (untouched), and the React/TypeScript app is live at `https://<username>.github.io/Scoreo/preview/` for manual comparison.
+
+The `smoke-test` job checks `preview/`, `preview/manifest.json`, and `preview/sw.js` in addition to the existing Kotlin paths (the JS bundle itself isn't checked by name since Vite's output is content-hashed, unlike Kotlin's fixed `scoreo.js`).

@@ -3,11 +3,48 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- Catppuccin Latte / Mauve accent (--ctp-mauve) — static, can't
+         track the user's saved flavor/accent before the app loads -->
+    <meta name="theme-color" content="#8839ef" />
+    <link rel="manifest" href="/manifest.json" />
+    <link rel="apple-touch-icon" href="/icon-192.png" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="Scoreo" />
     <title>Scoreo</title>
     <link rel="stylesheet" href="/css/styles.css" />
+    <!-- Google Identity Services (for OAuth login). Deferred so a slow/blocked
+         request to Google (ad blockers, restrictive networks) can't stall HTML
+         parsing and delay the page's own CSS/content from rendering. -->
+    <script src="https://accounts.google.com/gsi/client" defer></script>
   </head>
   <body>
+    <!-- Splash/Loader (visible until bundle loads) -->
+    <div id="splash" class="splash">
+      <div class="splash-content">
+        <h1>Scoreo</h1>
+        <div class="spinner"></div>
+        <p>Loading...</p>
+      </div>
+    </div>
+
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+    <script>
+      var isDev = location.hostname === 'localhost' || location.hostname === '127.0.0.1'
+      if ('serviceWorker' in navigator) {
+        if (isDev) {
+          navigator.serviceWorker.getRegistrations().then(function (regs) {
+            regs.forEach(function (r) {
+              r.unregister()
+            })
+          })
+        } else {
+          window.addEventListener('load', function () {
+            navigator.serviceWorker.register('./sw.js')
+          })
+        }
+      }
+    </script>
   </body>
 </html>
