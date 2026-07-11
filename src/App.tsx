@@ -1,17 +1,23 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { AddGameTypeUseCase } from './application/addGameTypeUseCase'
+import { AddPlayerUseCase } from './application/addPlayerUseCase'
 import { ArchiveGameTypeUseCase } from './application/archiveGameTypeUseCase'
 import { DeleteMatchUseCase } from './application/deleteMatchUseCase'
+import { DeletePlayerUseCase } from './application/deletePlayerUseCase'
 import { FindGameTypeByIdUseCase } from './application/findGameTypeByIdUseCase'
 import { GetGameTypesUseCase } from './application/getGameTypesUseCase'
 import { GetHeadToHeadUseCase } from './application/getHeadToHeadUseCase'
 import { GetMatchesUseCase } from './application/getMatchesUseCase'
+import { GetPlayerStatsUseCase } from './application/getPlayerStatsUseCase'
 import { GetPlayersUseCase } from './application/getPlayersUseCase'
 import { ImportMatchesUseCase } from './application/importMatchesUseCase'
+import { RenamePlayerUseCase } from './application/renamePlayerUseCase'
 import { UpdateGameTypeUseCase } from './application/updateGameTypeUseCase'
+import type { WinCondition } from './domain/model/enums'
 import { ServicesProvider, useServices } from './services/ServicesContext'
 import { GameTypeScreen } from './ui/gametype/GameTypeScreen'
 import { HistoryScreen } from './ui/history/HistoryScreen'
+import { HomeScreen } from './ui/home/HomeScreen'
 import { ImportScreen } from './ui/import/ImportScreen'
 import { SyncScreen } from './ui/sync/SyncScreen'
 import {
@@ -92,6 +98,13 @@ function AppShell() {
       ),
     [services],
   )
+  const addPlayer = useMemo(() => new AddPlayerUseCase(services.playerRepository), [services])
+  const getPlayerStats = useMemo(
+    () => new GetPlayerStatsUseCase(services.matchRepository, services.gameTypeRepository),
+    [services],
+  )
+  const deletePlayer = useMemo(() => new DeletePlayerUseCase(services.playerRepository), [services])
+  const renamePlayerUseCase = useMemo(() => new RenamePlayerUseCase(services.playerRepository), [services])
   const handleImportDone = useCallback(() => {
     navigate(HOME_SCREEN)
   }, [navigate])
@@ -104,6 +117,18 @@ function AppShell() {
     },
     [navigate],
   )
+  const handleStartGame = useCallback(
+    (gameTypeId: string, playerIds: string[]) => {
+      navigate(scoreDetailScreen(gameTypeId, playerIds))
+    },
+    [navigate],
+  )
+  const homeGetGameTypes = useCallback(() => getGameTypes.invoke(), [getGameTypes])
+  const homeOnAddGameType = useCallback(
+    (name: string, winCondition: WinCondition) => addGameType.invoke(name, winCondition),
+    [addGameType],
+  )
+  const homeGetMatchCount = useCallback(() => services.matchRepository.getAll().length, [services])
 
   useEffect(() => {
     setStatsBackOverride(null)
@@ -138,7 +163,21 @@ function AppShell() {
       </div>
 
       <div className="app-content">
-        {current.type === 'Home' && <div>Home (placeholder)</div>}
+        {current.type === 'Home' && (
+          <HomeScreen
+            addPlayer={addPlayer}
+            getPlayers={getPlayers}
+            getPlayerStats={getPlayerStats}
+            deletePlayer={deletePlayer}
+            renamePlayerUseCase={renamePlayerUseCase}
+            getGameTypes={homeGetGameTypes}
+            onAddGameType={homeOnAddGameType}
+            onStartGame={handleStartGame}
+            matchDraftRepository={services.matchDraftRepository}
+            onResumeDraft={handleStartGame}
+            getMatchCount={homeGetMatchCount}
+          />
+        )}
         {current.type === 'History' && (
           <HistoryScreen
             getMatches={getMatches}

@@ -67,7 +67,7 @@ describe('App', () => {
     expect(screen.getByLabelText('Back')).toBeInTheDocument()
 
     fireEvent.click(screen.getByLabelText('Back'))
-    expect(screen.getByText('Home (placeholder)')).toBeInTheDocument()
+    expect(screen.getByText('Getting started')).toBeInTheDocument()
   })
 
   it('History: editing a match navigates to ScoreDetail with its parameters', () => {
@@ -93,7 +93,7 @@ describe('App', () => {
     expect(screen.getByText('No game types yet. Add one.')).toBeInTheDocument()
 
     fireEvent.click(screen.getByText('Games', { selector: '.app-title' }))
-    expect(screen.getByText('Home (placeholder)')).toBeInTheDocument()
+    expect(screen.getByText('Getting started')).toBeInTheDocument()
   })
 
   it('Stats: back button navigates Home when the leaderboard is shown', () => {
@@ -103,7 +103,7 @@ describe('App', () => {
     expect(screen.getByText('No stats yet — play some matches first.')).toBeInTheDocument()
 
     fireEvent.click(screen.getByLabelText('Back'))
-    expect(screen.getByText('Home (placeholder)')).toBeInTheDocument()
+    expect(screen.getByText('Getting started')).toBeInTheDocument()
   })
 
   it('Stats: back button clears the player selection instead of navigating Home', () => {
@@ -121,7 +121,7 @@ describe('App', () => {
     expect(screen.queryByText('Head-to-head')).not.toBeInTheDocument()
 
     fireEvent.click(screen.getByLabelText('Back'))
-    expect(screen.getByText('Home (placeholder)')).toBeInTheDocument()
+    expect(screen.getByText('Alice', { selector: '.list-item-name' })).toBeInTheDocument()
   })
 
   it('opens the theme picker from the burger menu', () => {
