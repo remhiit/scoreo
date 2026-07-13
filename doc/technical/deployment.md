@@ -24,13 +24,33 @@ This ensures type errors, lint issues, test failures, dead doc links, or build b
 
 **File**: `setup-repo.sh`
 
-One-time repo configuration for `doc/technical/automation-plan.md` Phase 0: creates the automation labels (`ready`, `needs-fix`, `auto`, `attempt-1/2/3`, …), enables `allow_auto_merge`, sets `main` branch protection (`enforce_admins: true`, 0 required approvals, required status checks `lint`/`test`/`build`/`doc-links`), and can set the `GOOGLE_CLIENT_ID` secret.
+One-time repo configuration for `doc/technical/automation-plan.md` Phase 0: creates the automation labels (`ready`, `needs-fix`, `auto`, `attempt-1/2/3`, …), enables `allow_auto_merge`, sets `main` branch protection (`enforce_admins: true`, 0 required approvals, required status checks `lint`/`test`/`build`/`doc-links`), and can set the `GOOGLE_CLIENT_ID` and `PROJECT_TOKEN` secrets.
 
 Run manually by a repo admin with `gh` authenticated (not by CI or a routine — it changes shared repo configuration):
 
 ```bash
-GOOGLE_CLIENT_ID=xxx ./setup-repo.sh
+GOOGLE_CLIENT_ID=xxx PROJECT_TOKEN=xxx ./setup-repo.sh
 ```
+
+---
+
+## Project Status Sync
+
+**File**: `.github/workflows/project-sync.yml` + `scripts/sync-project-status.mjs`
+
+Mirrors each issue/PR's labels onto the `Status` field of the [Scoreo GitHub Project](https://github.com/users/remhiit/projects/1) — one-way only, labels are the source of truth (`doc/technical/automation-plan.md` §2.4). Never writes labels back from the board.
+
+| Label present | `Status` set to |
+|---|---|
+| `needs-human` | `In Progress` |
+| `needs-fix` | `In Progress` |
+| `in-progress` | `In Progress` |
+| `ready` | `Todo` |
+
+First match wins, in that priority order. If none of these labels are present, the item's status is left untouched (e.g. `Done`, set by the Project's own built-in "item closed" workflow).
+
+- **Triggers**: `issues`/`pull_request` `labeled`/`unlabeled` (immediate, single item), plus a `schedule` cron every 6 hours as a drift-correction fallback that reconciles every open issue and PR, and `workflow_dispatch` for manual runs.
+- **Requires** the `PROJECT_TOKEN` secret — a classic PAT with the `project` scope (fine-grained PATs don't yet cover writes to a user-owned Projects v2 board). Set via `setup-repo.sh`. Until it's set, the job logs a message and exits cleanly (no red check).
 
 ---
 

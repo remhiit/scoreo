@@ -206,15 +206,20 @@ Le `CLAUDE.md` disait : *« tu prends le premier ticket P0 non fait dans
 - [x] Réécrire la section *Workflow* du `CLAUDE.md` : le backlog, ce sont les
       Issues + le Project
 - [x] Supprimer `.task/` — déjà absent du repo
-- [ ] Créer le GitHub Project + workflows intégrés (auto-add, PR merged → Done)
-      — **hors de portée d'une session Claude Code** : les Projects v2 sont une
-      API GraphQL distincte, non exposée par les outils MCP GitHub disponibles
-      ici, et aucun `gh` CLI authentifié n'est accessible. À créer manuellement
-      via l'UI GitHub (Project vide, colonnes To do/In progress/Done, workflows
-      intégrés « Item added to project » et « Item closed »).
-- [ ] Action cron de sync label ↔ colonne (déterministe, coût nul) — bloquée
-      tant que le Project n'existe pas (a besoin de son node ID / des IDs de
-      champ)
+- [x] Créer le GitHub Project + workflows intégrés (auto-add, PR merged → Done)
+      — créé manuellement par Rémi : https://github.com/users/remhiit/projects/1
+      (Project utilisateur, hors de portée d'une session Claude Code : les
+      Projects v2 sont une API GraphQL distincte, non exposée par les outils
+      MCP GitHub disponibles ici, et aucun `gh` CLI authentifié n'est accessible)
+- [x] Action cron de sync label ↔ colonne (déterministe, coût nul) —
+      `.github/workflows/project-sync.yml` + `scripts/sync-project-status.mjs`.
+      Se déclenche sur `issues`/`pull_request` `labeled`/`unlabeled`, plus un
+      cron toutes les 6h en filet de sécurité. Sens unique (labels → champ
+      `Status`), jamais l'inverse — cohérent avec le principe directeur
+      « les labels sont le bus d'événements ». Nécessite le secret
+      `PROJECT_TOKEN` (PAT classique, scope `project`) via `setup-repo.sh` ;
+      tant qu'il est absent, le job se termine proprement sans erreur (pas de
+      check rouge en boucle)
 
 ### Phase 1 — Les skills (interactif uniquement)
 

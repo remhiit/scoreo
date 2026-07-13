@@ -6,7 +6,7 @@
 # it changes shared repo configuration (branch protection, secrets, labels).
 #
 # Usage:
-#   GOOGLE_CLIENT_ID=xxx ./setup-repo.sh
+#   GOOGLE_CLIENT_ID=xxx PROJECT_TOKEN=xxx ./setup-repo.sh
 set -euo pipefail
 
 REPO="${REPO:-remhiit/scoreo}"
@@ -48,6 +48,16 @@ if [ -n "${GOOGLE_CLIENT_ID:-}" ]; then
 else
   echo "GOOGLE_CLIENT_ID env var not set — skipping. Re-run as:"
   echo "  GOOGLE_CLIENT_ID=xxx ./setup-repo.sh"
+fi
+
+echo "== PROJECT_TOKEN secret (Project status sync) =="
+if [ -n "${PROJECT_TOKEN:-}" ]; then
+  gh secret set PROJECT_TOKEN --repo "$REPO" --body "$PROJECT_TOKEN"
+else
+  echo "PROJECT_TOKEN env var not set — skipping. Needs a classic PAT with the"
+  echo "'project' scope (fine-grained PATs don't yet cover writes to a user-owned"
+  echo "Projects v2 board). Re-run as:"
+  echo "  PROJECT_TOKEN=xxx ./setup-repo.sh"
 fi
 
 echo "== Branch protection (main) =="
