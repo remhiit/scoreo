@@ -14,7 +14,7 @@ interface GisTokenError {
 }
 
 interface GisTokenClientConfig {
-  clientId: string
+  client_id: string
   scope: string
   callback: (response: GisTokenResponse) => void
   error_callback: (error: GisTokenError) => void
@@ -67,7 +67,7 @@ export class GoogleAuthService {
   login(clientId: string, scope: string, onResult: LoginResult): void {
     this.withGis(onResult, (g) => {
       const client = g.initTokenClient({
-        clientId,
+        client_id: clientId,
         scope,
         callback: (response) => {
           this.accessToken = response.access_token
@@ -87,7 +87,7 @@ export class GoogleAuthService {
   refreshToken(clientId: string, scope: string, onResult: LoginResult): void {
     this.withGis(onResult, (g) => {
       const client = g.initTokenClient({
-        clientId,
+        client_id: clientId,
         scope,
         callback: (response) => {
           this.accessToken = response.access_token

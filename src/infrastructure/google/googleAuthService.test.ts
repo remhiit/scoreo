@@ -10,7 +10,7 @@ import { GoogleAuthService } from './googleAuthService'
  */
 function installMockGis(overrides: {
   onRequestAccessToken?: (config: {
-    clientId: string
+    client_id: string
     scope: string
     callback: (r: { access_token: string; expires_in: number; token_type: string; id_token?: string }) => void
     error_callback: (e: { type: string; message?: string }) => void
@@ -64,6 +64,27 @@ describe('GoogleAuthService', () => {
     expect(service.idToken).toBe('jwt-xyz')
     expect(service.expiresAt).toBeGreaterThan(Date.now())
     expect(onResult).toHaveBeenCalledWith({ ok: true, value: 'token-abc' })
+  })
+
+  it('login calls initTokenClient with a client_id key, matching the real GIS API contract', () => {
+    let capturedConfig: Record<string, unknown> | undefined
+    window.google = {
+      accounts: {
+        oauth2: {
+          initTokenClient: (config) => {
+            capturedConfig = config as unknown as Record<string, unknown>
+            return { requestAccessToken: () => {} }
+          },
+          revoke: (_token, callback) => callback(),
+        },
+      },
+    }
+    const service = new GoogleAuthService()
+
+    service.login('client-id-value', 'openid email', vi.fn())
+
+    expect(capturedConfig?.client_id).toBe('client-id-value')
+    expect(capturedConfig?.clientId).toBeUndefined()
   })
 
   it('login surfaces NotAuthenticated on GIS error_callback', () => {
