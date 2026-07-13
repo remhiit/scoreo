@@ -105,7 +105,13 @@ async function listOpenNumbers(kind) {
     }`,
     { owner: REPO_OWNER, repo: REPO_NAME },
   )
-  return data.repository[connection].nodes.map((n) => n.number)
+  const numbers = data.repository[connection].nodes.map((n) => n.number)
+  if (numbers.length === 100) {
+    console.warn(
+      `Fetched exactly 100 open ${connection} — there may be more that this reconciliation run is silently skipping (no pagination yet).`,
+    )
+  }
+  return numbers
 }
 
 async function setStatus(projectId, itemId, statusField, statusName) {
