@@ -38,17 +38,10 @@ export class GoogleDriveSyncAdapter implements CloudSyncRepository {
     driveClient?: DriveClient,
   ) {
     this.driveClient = driveClient ?? new GoogleDriveClient(async () => this.authService.accessToken ?? undefined)
-
-    const config = loadSyncConfig()
-    if (config.accessToken) {
-      this.authService.accessToken = config.accessToken
-      this.authService.expiresAt = config.expiresAt > 0 ? config.expiresAt : null
-    }
   }
 
   async push(data: SyncData): Promise<void> {
-    this.ensureAuthenticated()
-    await this.refreshTokenIfNeeded()
+    await this.ensureFreshToken()
     const json = this.serializeSyncData(data)
     const result = await this.driveClient.upsertFile(FILE_NAME, json)
     if (!result.ok) throw result.error
@@ -56,8 +49,7 @@ export class GoogleDriveSyncAdapter implements CloudSyncRepository {
   }
 
   async pull(): Promise<SyncData> {
-    this.ensureAuthenticated()
-    await this.refreshTokenIfNeeded()
+    await this.ensureFreshToken()
     const fileIdResult = await this.driveClient.findFile(FILE_NAME)
     if (!fileIdResult.ok) throw fileIdResult.error
     if (!fileIdResult.value) {
@@ -72,7 +64,7 @@ export class GoogleDriveSyncAdapter implements CloudSyncRepository {
   async getStatus(): Promise<SyncStatus> {
     const config = loadSyncConfig()
     return {
-      connected: this.authService.accessToken !== null,
+      connected: this.authService.accessToken !== null || config.email !== '',
       lastSync: config.lastSyncTimestamp > 0 ? config.lastSyncTimestamp : null,
       email: config.email ? config.email : null,
       isOnline: typeof navigator !== 'undefined' ? navigator.onLine : true,
@@ -84,12 +76,7 @@ export class GoogleDriveSyncAdapter implements CloudSyncRepository {
       this.authService.login(this.clientId, SCOPE, (result) => {
         if (result.ok) {
           const email = this.authService.idToken ? (decodeJwtEmail(this.authService.idToken) ?? '') : ''
-          saveSyncConfig({
-            ...loadSyncConfig(),
-            accessToken: result.value,
-            email,
-            expiresAt: this.authService.expiresAt ?? 0,
-          })
+          saveSyncConfig({ ...loadSyncConfig(), email })
           resolve()
         } else {
           reject(result.error)
@@ -103,16 +90,19 @@ export class GoogleDriveSyncAdapter implements CloudSyncRepository {
     clearSyncConfig()
   }
 
-  private ensureAuthenticated(): void {
-    if (this.authService.accessToken === null) {
+  /**
+   * The access token is kept in memory only (never persisted, see #51). After a page reload
+   * `authService.accessToken` is always null, so a previous session (marked by a saved `email`)
+   * is restored here via a silent GIS refresh instead of being read back from storage.
+   */
+  private async ensureFreshToken(): Promise<void> {
+    const config = loadSyncConfig()
+    if (this.authService.accessToken === null && !config.email) {
       throw { kind: 'NotAuthenticated', message: 'Not authenticated' } satisfies SyncException
     }
-  }
-
-  private async refreshTokenIfNeeded(): Promise<void> {
     const expiresAt = this.authService.expiresAt
-    if (expiresAt === null) return
-    if (Date.now() < expiresAt - 60_000) return
+    const needsRefresh = this.authService.accessToken === null || expiresAt === null || Date.now() >= expiresAt - 60_000
+    if (!needsRefresh) return
     try {
       await this.refreshTokenSilently()
     } catch {
@@ -127,11 +117,6 @@ export class GoogleDriveSyncAdapter implements CloudSyncRepository {
     return new Promise((resolve, reject) => {
       this.authService.refreshToken(this.clientId, SCOPE, (result) => {
         if (result.ok) {
-          saveSyncConfig({
-            ...loadSyncConfig(),
-            accessToken: result.value,
-            expiresAt: this.authService.expiresAt ?? 0,
-          })
           resolve()
         } else {
           reject(result.error)
