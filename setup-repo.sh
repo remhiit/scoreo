@@ -15,6 +15,8 @@ echo "== Labels =="
 declare -A LABELS=(
   [ready]="0e8a16:Spec validée, prête pour implémentation (déclenche R2)"
   [in-progress]="fbca04:Une routine travaille dessus"
+  [needs-review]="1d76db:En file d'attente pour pr-review (R3) — pose ce label pour (re)déclencher une review"
+  [review-pass]="0e8a16:pr-review (R3) a validé la PR — claude/review passe au vert"
   [needs-fix]="d93f0b:claude/review a échoué (déclenche R4)"
   [needs-human]="b60205:Escalade : plafond d'itérations ou hors périmètre"
   [blocked]="5319e7:Dépendance externe"
