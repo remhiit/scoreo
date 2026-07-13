@@ -60,10 +60,13 @@ Lire ces fichiers dans l'ordre. Tout le contexte nécessaire y est :
 
 ## Workflow
 
-- `.task/` contient les tickets de correction organisés par priorité (P0/P1/P2/P3).
-- **Plan** : je décris une feature ou correctif → tu crées les tickets dans `.task/` avec priorisation.
-- **Développe** : je dis de développer → tu prends le premier ticket P0 non fait dans `.task/`, tu le réalises, tu commit, puis tu passes au suivant.
-- Un commit par ticket. Message de commit = titre du ticket.
+- Le backlog vit dans les **Issues GitHub** (+ le GitHub Project en vue Kanban), pas dans `.task/` (supprimé — deux sources de vérité auraient fini par diverger).
+- Priorité : labels `P0`…`P3` (P0 = plus urgent).
+- **Plan** : je décris une feature ou un correctif → tu crées une issue (titre, critères d'acceptation, fichiers impactés) avec le label de priorité correspondant.
+- **Développe** : je dis de développer → tu prends la première issue `P0` ouverte non assignée (à défaut la priorité suivante disponible), tu la réalises, tu commit, tu ouvres une PR référençant `Closes #N`, puis tu passes à la suivante.
+- Un commit par issue. Message de commit = titre de l'issue.
+
+Voir `doc/technical/automation-plan.md` pour l'architecture d'automatisation cible (labels comme bus d'événements, skills, phases de mise en autonomie).
 
 ## Règles
 

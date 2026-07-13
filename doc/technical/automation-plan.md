@@ -8,7 +8,7 @@ via les **routines Claude Code**.
 > lire en premier. Il indique la phase en cours et le critère de passage à la
 > suivante. Ne pas sauter de phase : chaque gate protège la suivante.
 
-**Phase en cours : 0 — Fondations CI.**
+**Phase en cours : 0 bis — Migration `.task/` → Issues.**
 
 ---
 
@@ -190,23 +190,31 @@ après le merge. Le site est cassé sur `main` au moment où on l'apprend.
 **État constaté (2026-07-13) :** 1. confirmé (PRs mergées, CI verte). 2. partiellement
 confirmé : la CI existante (`lint`/`test`/`build`) a déjà bloqué une vraie PR
 (dependabot #63, Vite 5→8, échec CI, jamais mergée) ; le cas combiné avec
-`doc-links` reste à observer sur une prochaine PR cassée. 3. **pas encore
-franchi** : le commit `87bacf5` a été poussé directement sur `main` via l'éditeur
-web GitHub (parent unique, commit `web-flow`), preuve que la branch protection
-n'est pas encore active. Ne clôturer la Phase 0 qu'après exécution de
-`setup-repo.sh` par un admin et vérification qu'un push direct est bien refusé.
+`doc-links` reste à observer sur une prochaine PR cassée. 3. `setup-repo.sh` a
+été exécuté par Rémi — **non vérifié indépendamment** depuis une session
+Claude Code (aucun outil MCP GitHub ni `gh` CLI ne permet de lire l'état de la
+branch protection ici). À confirmer par un test réel (`git push` direct sur
+`main` refusé) avant de considérer ce point définitivement acquis.
 
 ### Phase 0 bis — Migration `.task/` → Issues
 
-Le `CLAUDE.md` dit aujourd'hui : *« tu prends le premier ticket P0 non fait dans
+Le `CLAUDE.md` disait : *« tu prends le premier ticket P0 non fait dans
 `.task/` »*. **Deux sources de vérité = R2 lira le mauvais backlog.**
 
-- [ ] Convertir les tickets `.task/` en issues (priorité → label `P0`…`P3`)
-- [ ] Réécrire la section *Workflow* du `CLAUDE.md` : le backlog, ce sont les
+- [x] Convertir les tickets `.task/` en issues (priorité → label `P0`…`P3`) —
+      `.task/` était déjà vide au moment de cette phase, rien à convertir
+- [x] Réécrire la section *Workflow* du `CLAUDE.md` : le backlog, ce sont les
       Issues + le Project
-- [ ] Supprimer `.task/`
+- [x] Supprimer `.task/` — déjà absent du repo
 - [ ] Créer le GitHub Project + workflows intégrés (auto-add, PR merged → Done)
-- [ ] Action cron de sync label ↔ colonne (déterministe, coût nul)
+      — **hors de portée d'une session Claude Code** : les Projects v2 sont une
+      API GraphQL distincte, non exposée par les outils MCP GitHub disponibles
+      ici, et aucun `gh` CLI authentifié n'est accessible. À créer manuellement
+      via l'UI GitHub (Project vide, colonnes To do/In progress/Done, workflows
+      intégrés « Item added to project » et « Item closed »).
+- [ ] Action cron de sync label ↔ colonne (déterministe, coût nul) — bloquée
+      tant que le Project n'existe pas (a besoin de son node ID / des IDs de
+      champ)
 
 ### Phase 1 — Les skills (interactif uniquement)
 
