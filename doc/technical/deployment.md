@@ -80,7 +80,13 @@ GitHub triggers and API triggers on a Routine can only be configured from the we
    comment only if there are blocking issues to explain.
    ```
 3. **Repository**: `remhiit/scoreo`.
-4. **Trigger**: GitHub event → Pull request → actions `opened` and `synchronize`.
+4. **Triggers** — a GitHub trigger only accepts one specific action *or* every
+   action in the category, not a multi-select of a few. Picking "all actions"
+   would also fire on `labeled` — including R3's own `review-pass`/`needs-fix`
+   label, i.e. a self-retriggering loop. Instead, add **two separate GitHub
+   triggers** to the same routine (a routine can combine several):
+   - **Add another trigger** → GitHub event → Pull request → action `opened`
+   - **Add another trigger** → GitHub event → Pull request → action `synchronize`
 5. Leave connectors at their default (GitHub MCP tools included); no extra network access needed.
 
 **Gate before making `claude/review` a required check** (`doc/technical/automation-plan.md` Phase 2): let it run unrequired on ~10 PRs. Add it to `setup-repo.sh`'s required checks only once it has said "no" at least once, correctly.
