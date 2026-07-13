@@ -58,3 +58,31 @@ reason. End with an overall verdict:
 Don't soften a real blocker into a "nit" to avoid friction — a review that
 never says no isn't protecting anything (see `automation-plan.md`'s risk
 table: "Review sans mordant").
+
+## Label the verdict (R3 only)
+
+No tool available to a Claude Code session here can post a raw commit
+status, so the verdict surfaces as a label instead — a separate,
+deterministic GitHub Action (`.github/workflows/review-status-sync.yml`)
+translates it into the `claude/review` commit status. This step only
+applies when running as the automated R3 step (a routine triggered by a
+GitHub PR event); skip it for an ad hoc interactive review the user asked
+for directly.
+
+The routine's only GitHub trigger fires on *any* PR action while the PR
+carries the `needs-review` label (a Routine allows one GitHub trigger, not a
+multi-select of actions, so `needs-review` acts as the queue flag instead of
+picking specific event types). Always **remove `needs-review`** as part of
+applying the verdict — otherwise every subsequent PR action (assigned,
+edited, closed, …) keeps matching the trigger and re-reviews the same PR for
+no reason.
+
+- **Conforms** → set labels to `review-pass`, removing `needs-fix` and
+  `needs-review` if present.
+- **Needs changes** → set labels to `needs-fix`, removing `review-pass` and
+  `needs-review` if present, and post a PR comment listing exactly what's
+  blocking (this is what `address-feedback` will act on).
+
+Apply exactly one of `review-pass`/`needs-fix`, never both. Re-adding
+`needs-review` later (e.g. after a fix is pushed) queues another pass —
+that's the mechanism Phase 5 (R4) will use to request re-review.
