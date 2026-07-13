@@ -209,6 +209,3 @@ vite.config.ts.timestamp-*
 # Lighthouse CI reports
 .lighthouseci/
 
-# Tickets
-.task/
-
