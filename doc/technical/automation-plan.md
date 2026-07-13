@@ -164,14 +164,21 @@ changement de comportement public.
 Le repo n'a **aucune CI de PR** : les tests tournent dans `deploy.yml`, donc
 après le merge. Le site est cassé sur `main` au moment où on l'apprend.
 
-- [ ] `.github/workflows/ci.yml` — jobs `build`, `test`, `lint`, `doc-links`,
+- [x] `.github/workflows/ci.yml` — jobs `build`, `test`, `lint`, `doc-links`,
       `lighthouse` (non bloquant au départ)
-- [ ] `lighthouserc.json` — assertions en `warn` le temps de mesurer la baseline
-- [ ] `gh secret set GOOGLE_CLIENT_ID` (le build en dépend)
-- [ ] `setup-repo.sh` — labels, `allow_auto_merge`, branch protection
+- [x] `lighthouserc.json` — assertions en `warn` le temps de mesurer la baseline
+      (baseline mesurée : performance 0.96, accessibilité 0.95, bonnes pratiques
+      0.96, SEO 0.90 — catégorie `pwa` retirée des assertions, Lighthouse 12 ne
+      la calcule plus par défaut)
+- [ ] `gh secret set GOOGLE_CLIENT_ID` (le build en dépend) — à exécuter par un
+      admin via `setup-repo.sh` (nécessite un token `gh` non disponible en
+      session Claude Code)
+- [x] `setup-repo.sh` — labels, `allow_auto_merge`, branch protection
       (`enforce_admins: true`, 0 approbation, checks requis :
-      `build`/`test`/`lint`/`doc-links`)
-- [ ] Alléger `deploy.yml` : retirer l'étape `Test` (doublon avec la CI de PR),
+      `lint`/`test`/`build`/`doc-links`). Script écrit, **pas encore exécuté** :
+      il modifie la config partagée du repo et nécessite un `gh` authentifié en
+      admin, hors de portée d'une session Claude Code.
+- [x] Alléger `deploy.yml` : retirer l'étape `Test` (doublon avec la CI de PR),
       garder le déploiement et le smoke test
 
 **Gate :**
@@ -179,6 +186,15 @@ après le merge. Le site est cassé sur `main` au moment où on l'apprend.
 2. PR volontairement cassée (erreur de lint + test rouge + lien mort dans
    `doc/`) → **rouge, bouton de merge grisé**.
 3. `git push origin main` → refusé.
+
+**État constaté (2026-07-13) :** 1. confirmé (PRs mergées, CI verte). 2. partiellement
+confirmé : la CI existante (`lint`/`test`/`build`) a déjà bloqué une vraie PR
+(dependabot #63, Vite 5→8, échec CI, jamais mergée) ; le cas combiné avec
+`doc-links` reste à observer sur une prochaine PR cassée. 3. **pas encore
+franchi** : le commit `87bacf5` a été poussé directement sur `main` via l'éditeur
+web GitHub (parent unique, commit `web-flow`), preuve que la branch protection
+n'est pas encore active. Ne clôturer la Phase 0 qu'après exécution de
+`setup-repo.sh` par un admin et vérification qu'un push direct est bien refusé.
 
 ### Phase 0 bis — Migration `.task/` → Issues
 

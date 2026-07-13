@@ -2,14 +2,35 @@
 
 ## CI: Build Check Workflow
 
-**File**: `.github/workflows/check.yml`
+**File**: `.github/workflows/ci.yml`
 
-Runs on every `push` (all branches) and `pull_request`: `pnpm install --frozen-lockfile`, then `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm build`.
+Runs on every `push` (all branches) and `pull_request`, as five independent jobs:
 
-- **Trigger**: `push` to any branch, `pull_request`
-- **Status**: Must pass before deployment jobs can run
+| Job | What it runs | Blocking? |
+|---|---|---|
+| `lint` | `pnpm lint` | Yes |
+| `test` | `pnpm test` | Yes |
+| `build` | `pnpm typecheck` then `pnpm build` | Yes |
+| `doc-links` | `node scripts/check-doc-links.mjs` — fails on any relative Markdown link under `doc/` pointing to a non-existent file | Yes |
+| `lighthouse` | Builds, then runs Lighthouse CI against `dist/` using `lighthouserc.json` (assertions in `warn` mode) | No — `continue-on-error: true`, report uploaded as a build artifact |
 
-This ensures type errors, lint issues, test failures, or build breakage are caught immediately on every push.
+Each job name (`lint`, `test`, `build`, `doc-links`) is meant to be set as a required status check in branch protection (see `setup-repo.sh`). `lighthouse` stays non-blocking while the score baseline is measured (currently: performance 0.96, accessibility 0.95, best-practices 0.96, SEO 0.90 — the `pwa` category was dropped from the assertions since Lighthouse 12 no longer computes it by default).
+
+This ensures type errors, lint issues, test failures, dead doc links, or build breakage are caught immediately on every push.
+
+---
+
+## Repo Setup Script
+
+**File**: `setup-repo.sh`
+
+One-time repo configuration for `doc/technical/automation-plan.md` Phase 0: creates the automation labels (`ready`, `needs-fix`, `auto`, `attempt-1/2/3`, …), enables `allow_auto_merge`, sets `main` branch protection (`enforce_admins: true`, 0 required approvals, required status checks `lint`/`test`/`build`/`doc-links`), and can set the `GOOGLE_CLIENT_ID` secret.
+
+Run manually by a repo admin with `gh` authenticated (not by CI or a routine — it changes shared repo configuration):
+
+```bash
+GOOGLE_CLIENT_ID=xxx ./setup-repo.sh
+```
 
 ---
 
@@ -59,15 +80,16 @@ Codeberg Pages deployment (`.forgejo/workflows/deploy.yml`, Kotlin/Gradle-based)
 1. Setup pnpm ([`pnpm/action-setup@v4`](https://github.com/pnpm/action-setup))
 2. Setup Node.js 22 (`actions/setup-node`, `cache: pnpm`)
 3. Install dependencies: `pnpm install --frozen-lockfile`
-4. Run tests: `pnpm test`
-5. Build: `pnpm build` (with `VITE_GOOGLE_CLIENT_ID` from `secrets.GOOGLE_CLIENT_ID`)
-6. **Verify all `public/` assets are in the artifact** — cross-check that every file/directory in `public/` made it into `dist/`. Fails if anything is missing. (Vite copies `public/` to `dist/` natively, unlike the old webpack pipeline's manual `cp -r`, so this step is mostly a regression guard rather than a required manual step.)
+4. Build: `pnpm build` (with `VITE_GOOGLE_CLIENT_ID` from `secrets.GOOGLE_CLIENT_ID`)
+5. **Verify all `public/` assets are in the artifact** — cross-check that every file/directory in `public/` made it into `dist/`. Fails if anything is missing. (Vite copies `public/` to `dist/` natively, unlike the old webpack pipeline's manual `cp -r`, so this step is mostly a regression guard rather than a required manual step.)
+
+`deploy.yml` no longer runs `pnpm test` itself — `ci.yml`'s `test` job already covers the same push event, so re-running it here was a pure duplicate.
 
 ### Deployment
 
-7. Configure Pages
-8. Upload artifact (`dist/`)
-9. Deploy to GitHub Pages
+6. Configure Pages
+7. Upload artifact (`dist/`)
+8. Deploy to GitHub Pages
 
 **Output exposure**: The `deploy` job exposes `${{ steps.deploy.outputs.page_url }}` so dependent jobs can verify the deployed site.
 
