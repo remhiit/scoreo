@@ -74,13 +74,13 @@ describe('ScoreDetailScreen', () => {
   it('adds and removes rounds', () => {
     renderScreen(gameType())
 
-    expect(screen.queryByText('✕')).not.toBeInTheDocument()
+    expect(screen.queryByTitle('Remove round')).not.toBeInTheDocument()
 
     fireEvent.click(screen.getByText('＋'))
     expect(scoreInputs()).toHaveLength(4)
-    expect(screen.getAllByText('✕')).toHaveLength(2)
+    expect(screen.getAllByTitle('Remove round')).toHaveLength(2)
 
-    fireEvent.click(screen.getAllByText('✕')[0])
+    fireEvent.click(screen.getAllByTitle('Remove round')[0])
     expect(scoreInputs()).toHaveLength(2)
   })
 

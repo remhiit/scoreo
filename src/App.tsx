@@ -1,3 +1,16 @@
+import {
+  ArrowLeft,
+  BarChart3,
+  Cloud,
+  Gamepad2,
+  History,
+  Home,
+  Menu,
+  Palette,
+  Upload,
+  X,
+  type LucideIcon,
+} from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { AddGameTypeUseCase } from './application/addGameTypeUseCase'
 import { AddPlayerUseCase } from './application/addPlayerUseCase'
@@ -62,15 +75,17 @@ function screenTitle(screen: Screen): string {
 }
 
 interface BurgerItemProps {
-  icon: string
+  icon: LucideIcon
   label: string
   onClick: () => void
 }
 
-function BurgerItem({ icon, label, onClick }: BurgerItemProps) {
+function BurgerItem({ icon: Icon, label, onClick }: BurgerItemProps) {
   return (
     <button type="button" className="burger-item" onClick={onClick}>
-      <span className="burger-item-icon">{icon}</span>
+      <span className="burger-item-icon">
+        <Icon size={20} aria-hidden />
+      </span>
       <span>{label}</span>
     </button>
   )
@@ -219,7 +234,9 @@ function AppShell() {
   return (
     <>
       <div className="app-header">
-        {onBack && <LudoButton text="←" variant="ghost" iconOnly ariaLabel="Back" onClick={onBack} />}
+        {onBack && (
+          <LudoButton text={<ArrowLeft size={20} />} variant="ghost" iconOnly ariaLabel="Back" onClick={onBack} />
+        )}
         <span
           className="app-title clickable"
           onClick={() => {
@@ -228,7 +245,13 @@ function AppShell() {
         >
           {screenTitle(current)}
         </span>
-        <LudoButton text="☰" variant="ghost" iconOnly ariaLabel="Menu" onClick={() => setBurgerOpen(true)} />
+        <LudoButton
+          text={<Menu size={20} />}
+          variant="ghost"
+          iconOnly
+          ariaLabel="Menu"
+          onClick={() => setBurgerOpen(true)}
+        />
       </div>
 
       <div className="app-content">
@@ -277,7 +300,9 @@ function AppShell() {
           (services.syncUseCase ? (
             <SyncScreen syncUseCase={services.syncUseCase} />
           ) : (
-            <div className="empty">☁ Sync not available</div>
+            <div className="empty">
+            <Cloud size={20} aria-hidden /> Sync not available
+          </div>
           ))}
         {current.type === 'ScoreDetail' && (
           <ScoreDetailRoute
@@ -295,7 +320,7 @@ function AppShell() {
           <div className="burger-overlay" onClick={() => setBurgerOpen(false)} />
           <div className="burger-menu">
             <LudoButton
-              text="✕"
+              text={<X size={20} />}
               variant="ghost"
               iconOnly
               ariaLabel="Close"
@@ -303,7 +328,7 @@ function AppShell() {
               onClick={() => setBurgerOpen(false)}
             />
             <BurgerItem
-              icon="🏠"
+              icon={Home}
               label="Home"
               onClick={() => {
                 setBurgerOpen(false)
@@ -311,7 +336,7 @@ function AppShell() {
               }}
             />
             <BurgerItem
-              icon="📊"
+              icon={BarChart3}
               label="Stats"
               onClick={() => {
                 setBurgerOpen(false)
@@ -319,7 +344,7 @@ function AppShell() {
               }}
             />
             <BurgerItem
-              icon="📋"
+              icon={History}
               label="History"
               onClick={() => {
                 setBurgerOpen(false)
@@ -327,7 +352,7 @@ function AppShell() {
               }}
             />
             <BurgerItem
-              icon="📥"
+              icon={Upload}
               label="Import"
               onClick={() => {
                 setBurgerOpen(false)
@@ -335,7 +360,7 @@ function AppShell() {
               }}
             />
             <BurgerItem
-              icon="🎮"
+              icon={Gamepad2}
               label="Games"
               onClick={() => {
                 setBurgerOpen(false)
@@ -344,7 +369,7 @@ function AppShell() {
             />
             {services.syncUseCase && (
               <BurgerItem
-                icon="☁"
+                icon={Cloud}
                 label="Sync"
                 onClick={() => {
                   setBurgerOpen(false)
@@ -353,7 +378,7 @@ function AppShell() {
               />
             )}
             <BurgerItem
-              icon="🎨"
+              icon={Palette}
               label="Theme"
               onClick={() => {
                 setBurgerOpen(false)

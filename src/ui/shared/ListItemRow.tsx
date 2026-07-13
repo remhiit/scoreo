@@ -1,3 +1,5 @@
+import { Eye, Pencil, Trash2 } from 'lucide-react'
+
 const TITLE_VIEW_DETAIL = 'View details'
 const TITLE_EDIT = 'Edit'
 const TITLE_DELETE = 'Delete'
@@ -11,11 +13,11 @@ export interface ListItemRowProps {
   isSelected?: boolean
   /** undefined = passive label zone (no pointer cursor). */
   onSelect?: () => void
-  /** undefined = no 👁 button. */
+  /** undefined = no Eye button. */
   onView?: () => void
-  /** undefined = no ✏ button. */
+  /** undefined = no Pencil button. */
   onEdit?: () => void
-  /** undefined = no 🗑 button. */
+  /** undefined = no Trash button. */
   onDelete?: () => void
 }
 
@@ -54,7 +56,7 @@ export function ListItemRow({
               onView()
             }}
           >
-            👁
+            <Eye size={18} aria-hidden />
           </button>
         )}
         {onEdit && (
@@ -67,7 +69,7 @@ export function ListItemRow({
               onEdit()
             }}
           >
-            ✏
+            <Pencil size={18} aria-hidden />
           </button>
         )}
         {onDelete && (
@@ -80,7 +82,7 @@ export function ListItemRow({
               onDelete()
             }}
           >
-            🗑
+            <Trash2 size={18} aria-hidden />
           </button>
         )}
       </div>

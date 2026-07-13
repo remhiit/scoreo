@@ -72,7 +72,7 @@ describe('HomeScreen', () => {
     render(<HomeScreen {...props} />)
 
     expect(screen.getByText('0/2 players selected')).toBeInTheDocument()
-    const newMatchButton = screen.getByText('▶ New Match').closest('button')!
+    const newMatchButton = screen.getByText('New Match').closest('button')!
     expect(newMatchButton).toBeDisabled()
 
     fireEvent.click(screen.getByText('Alice', { selector: '.list-item-name' }))
@@ -101,7 +101,7 @@ describe('HomeScreen', () => {
 
     fireEvent.click(screen.getByText('Alice', { selector: '.list-item-name' }))
     fireEvent.click(screen.getByText('Bob', { selector: '.list-item-name' }))
-    fireEvent.click(screen.getByText('▶ New Match'))
+    fireEvent.click(screen.getByText('New Match'))
 
     expect(screen.getByText('Select a game')).toBeInTheDocument()
 
@@ -129,7 +129,7 @@ describe('HomeScreen', () => {
 
     fireEvent.click(screen.getByText('Alice', { selector: '.list-item-name' }))
     fireEvent.click(screen.getByText('Bob', { selector: '.list-item-name' }))
-    fireEvent.click(screen.getByText('▶ New Match'))
+    fireEvent.click(screen.getByText('New Match'))
     fireEvent.click(within(screen.getByRole('dialog')).getByText('Start match'))
 
     expect(screen.getByText('Please select a game')).toBeInTheDocument()
@@ -143,7 +143,7 @@ describe('HomeScreen', () => {
 
     fireEvent.click(screen.getByText('Alice', { selector: '.list-item-name' }))
     fireEvent.click(screen.getByText('Bob', { selector: '.list-item-name' }))
-    fireEvent.click(screen.getByText('▶ New Match'))
+    fireEvent.click(screen.getByText('New Match'))
 
     expect(screen.getByText('No game types yet. Add one.')).toBeInTheDocument()
 

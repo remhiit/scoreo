@@ -1,3 +1,4 @@
+import { X } from 'lucide-react'
 import { useEffect, useReducer, useRef } from 'react'
 import { LudoButton } from '../shared/LudoButton'
 import { LudoModal } from '../shared/LudoModal'
@@ -90,9 +91,10 @@ export function ScoreDetailScreen({ initialState, onSaved, onCancel, ...deps }: 
                   <button
                     type="button"
                     className="btn-icon btn-icon--danger"
+                    title="Remove round"
                     onClick={() => dispatch({ type: 'removeRound', index: roundIndex })}
                   >
-                    ✕
+                    <X size={16} aria-hidden />
                   </button>
                 </td>
               )}

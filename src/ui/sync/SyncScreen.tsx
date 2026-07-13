@@ -1,3 +1,4 @@
+import { CheckCircle2, Cloud, Loader2, WifiOff } from 'lucide-react'
 import { useEffect, useReducer, useState } from 'react'
 import type { SyncUseCase } from '../../application/syncUseCase'
 import { LudoButton } from '../shared/LudoButton'
@@ -32,13 +33,17 @@ export function SyncScreen({ syncUseCase }: SyncScreenProps) {
     <>
       {!isOnline && (
         <div className="error-msg">
-          <span>📡 Offline — changes will sync when reconnected</span>
+          <span>
+            <WifiOff size={16} aria-hidden /> Offline — changes will sync when reconnected
+          </span>
         </div>
       )}
 
       {state.phase === 'Disconnected' && (
         <div className="empty">
-          <span className="sync-icon">☁</span>
+          <span className="sync-icon">
+            <Cloud size={32} aria-hidden />
+          </span>
           <div className="section-label">Cloud Sync</div>
           <div>Sync your data with Google Drive</div>
           <LudoButton
@@ -55,7 +60,9 @@ export function SyncScreen({ syncUseCase }: SyncScreenProps) {
 
       {state.phase === 'Resolved' && (
         <div className="empty">
-          <span className="sync-icon">✅</span>
+          <span className="sync-icon">
+            <CheckCircle2 size={32} aria-hidden />
+          </span>
           <div className="section-label">Sync complete</div>
           {state.result && (
             <div>
@@ -127,7 +134,9 @@ export function SyncScreen({ syncUseCase }: SyncScreenProps) {
 function LoadingView({ message }: { message: string }) {
   return (
     <div className="empty">
-      <div className="import-zone-icon">⏳</div>
+      <div className="import-zone-icon">
+        <Loader2 size={32} aria-hidden />
+      </div>
       <div>{message}</div>
     </div>
   )

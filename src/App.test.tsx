@@ -142,6 +142,6 @@ describe('App', () => {
       window.history.replaceState(null, '', '#/sync')
       window.dispatchEvent(new PopStateEvent('popstate'))
     })
-    expect(screen.getByText('☁ Sync not available')).toBeInTheDocument()
+    expect(screen.getByText('Sync not available')).toBeInTheDocument()
   })
 })

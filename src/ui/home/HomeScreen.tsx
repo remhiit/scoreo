@@ -1,3 +1,4 @@
+import { Play } from 'lucide-react'
 import { useEffect, useReducer, useState } from 'react'
 import type { AddPlayerUseCase } from '../../application/addPlayerUseCase'
 import type { DeletePlayerUseCase } from '../../application/deletePlayerUseCase'
@@ -123,7 +124,9 @@ export function HomeScreen({
             className="draft-resume-button"
             onClick={() => onResumeDraft(draft.gameTypeId, draft.playerIds)}
           >
-            <span>▶ </span>
+            <span>
+              <Play size={16} aria-hidden />
+            </span>
             <span>Resume match in progress</span>
           </button>
         </div>
@@ -190,7 +193,11 @@ export function HomeScreen({
 
       {state.players.length > 0 && (
         <LudoButton
-          text="▶ New Match"
+          text={
+            <>
+              <Play size={18} aria-hidden /> New Match
+            </>
+          }
           variant="primary"
           size="lg"
           disabled={selectedPlayers.size < 2}
