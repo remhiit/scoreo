@@ -4,7 +4,7 @@
 
 **File**: `.github/workflows/ci.yml`
 
-Runs on every `push` (all branches) and `pull_request`, as five independent jobs:
+Runs on every `push` to `main` and every `pull_request`, as five independent jobs. The `push` trigger is scoped to `main` only — without that, a push to a branch with an open PR fires both the `push` and `pull_request: synchronize` events for the same commit, doubling every job for no benefit (10 check runs instead of 5, observed on PRs #64–#68 before this was fixed).
 
 | Job | What it runs | Blocking? |
 |---|---|---|
