@@ -69,9 +69,20 @@ applies when running as the automated R3 step (a routine triggered by a
 GitHub PR event); skip it for an ad hoc interactive review the user asked
 for directly.
 
-- **Conforms** → apply label `review-pass`, remove `needs-fix` if present.
-- **Needs changes** → apply label `needs-fix`, remove `review-pass` if
-  present, and post a PR comment listing exactly what's blocking (this is
-  what `address-feedback` will act on).
+The routine's only GitHub trigger fires on *any* PR action while the PR
+carries the `needs-review` label (a Routine allows one GitHub trigger, not a
+multi-select of actions, so `needs-review` acts as the queue flag instead of
+picking specific event types). Always **remove `needs-review`** as part of
+applying the verdict — otherwise every subsequent PR action (assigned,
+edited, closed, …) keeps matching the trigger and re-reviews the same PR for
+no reason.
 
-Apply exactly one of the two labels, never both.
+- **Conforms** → set labels to `review-pass`, removing `needs-fix` and
+  `needs-review` if present.
+- **Needs changes** → set labels to `needs-fix`, removing `review-pass` and
+  `needs-review` if present, and post a PR comment listing exactly what's
+  blocking (this is what `address-feedback` will act on).
+
+Apply exactly one of `review-pass`/`needs-fix`, never both. Re-adding
+`needs-review` later (e.g. after a fix is pushed) queues another pass —
+that's the mechanism Phase 5 (R4) will use to request re-review.

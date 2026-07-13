@@ -56,12 +56,15 @@ First match wins, in that priority order. If none of these labels are present, t
 
 ## PR Review (R3)
 
-**Files**: a Claude Code Routine (created via [claude.ai/code/routines](https://claude.ai/code/routines) — not reachable from any tool in a session) + `.github/workflows/review-status-sync.yml`
+**Files**: a Claude Code Routine (created via [claude.ai/code/routines](https://claude.ai/code/routines) — not reachable from any tool in a session) + `.github/workflows/needs-review-label.yml` + `.github/workflows/review-status-sync.yml`
 
-Automates the subjective review pass from `.claude/skills/pr-review`. Split into a judgment step (LLM) and a translation step (deterministic), because no Claude Code session — interactive or routine — has a tool that can post a raw commit status; only the usual GitHub MCP tools (issues, PRs, labels) are available.
+Automates the subjective review pass from `.claude/skills/pr-review`. Split into a queueing step, a judgment step (LLM), and a translation step (deterministic), because (a) a Routine only accepts **one** GitHub trigger, not a multi-select of PR actions, and (b) no Claude Code session — interactive or routine — has a tool that can post a raw commit status; only the usual GitHub MCP tools (issues, PRs, labels) are available.
 
-1. **The Routine** triggers on a GitHub `pull_request` event (`opened`/`synchronize`), runs `.claude/skills/pr-review` against the triggering PR, then applies exactly one label: `review-pass` (conforms) or `needs-fix` (needs changes, plus a PR comment explaining what).
-2. **`review-status-sync.yml`** triggers on `pull_request.labeled`, checks for `review-pass`/`needs-fix`, and sets the `claude/review` commit status (`success`/`failure`) via `GITHUB_TOKEN` — no LLM involved, pure deterministic translation of a label into a status GitHub can gate on.
+1. **`needs-review-label.yml`** triggers on `pull_request.opened`/`ready_for_review` (skipping drafts) and adds the `needs-review` label — zero LLM, just queues the PR.
+2. **The Routine**'s only GitHub trigger is `pull_request`, **all actions**, filtered to `Labels is one of needs-review`. Since the filter only matches while the label is present, this behaves as an edge-triggered queue rather than firing on every PR action: it reviews once when `needs-review` lands, and stays silent afterward because `pr-review`'s last step removes that label. Re-adding `needs-review` later (e.g. once R4 exists and pushes a fix) queues another pass.
+3. **`review-status-sync.yml`** triggers on `pull_request.labeled`, checks for `review-pass`/`needs-fix`, and sets the `claude/review` commit status (`success`/`failure`) via `GITHUB_TOKEN` — no LLM involved, pure deterministic translation of a label into a status GitHub can gate on.
+
+A Routine's GitHub trigger only accepts one specific action *or* every action in the category — not a multi-select of a few, and a routine only allows one GitHub trigger at all (tested live: adding a second is not possible). Using "all actions" with no filter would fire on every `assigned`/`edited`/`closed`/… on top of `labeled` (including R3's own verdict labels) — the `needs-review` label filter is what keeps this bounded to one pass per queueing.
 
 ### Creating the Routine (manual, one-time)
 
@@ -70,23 +73,17 @@ GitHub triggers and API triggers on a Routine can only be configured from the we
 1. **New routine** → name it (e.g. `R3 — PR Review (Scoreo)`).
 2. **Prompt**:
    ```
-   You were triggered by a pull_request event on remhiit/scoreo. Identify
-   the specific PR that triggered this run (check open PRs for the one
-   matching the current branch/head commit; if ambiguous, use the most
-   recently updated open PR). Read and follow
-   .claude/skills/pr-review/SKILL.md exactly to review that PR, including
+   You were triggered because a PR on remhiit/scoreo was labeled
+   needs-review. Identify which PR currently carries that label (there
+   should be exactly one — the one that just triggered this run). Read and
+   follow .claude/skills/pr-review/SKILL.md exactly to review it, including
    its final "Label the verdict (R3 only)" step — apply exactly one of
-   review-pass or needs-fix, removing the other if present, and post a PR
-   comment only if there are blocking issues to explain.
+   review-pass or needs-fix, remove needs-review and the other verdict
+   label, and post a PR comment only if there are blocking issues to
+   explain.
    ```
 3. **Repository**: `remhiit/scoreo`.
-4. **Triggers** — a GitHub trigger only accepts one specific action *or* every
-   action in the category, not a multi-select of a few. Picking "all actions"
-   would also fire on `labeled` — including R3's own `review-pass`/`needs-fix`
-   label, i.e. a self-retriggering loop. Instead, add **two separate GitHub
-   triggers** to the same routine (a routine can combine several):
-   - **Add another trigger** → GitHub event → Pull request → action `opened`
-   - **Add another trigger** → GitHub event → Pull request → action `synchronize`
+4. **Trigger**: GitHub event → Pull request → **all actions** → filter **Labels is one of `needs-review`**.
 5. Leave connectors at their default (GitHub MCP tools included); no extra network access needed.
 
 **Gate before making `claude/review` a required check** (`doc/technical/automation-plan.md` Phase 2): let it run unrequired on ~10 PRs. Add it to `setup-repo.sh`'s required checks only once it has said "no" at least once, correctly.

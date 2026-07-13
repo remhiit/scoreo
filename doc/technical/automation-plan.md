@@ -122,6 +122,7 @@ dans la boucle.
 |---|---|
 | `ready` | Spec validée → déclenche R2 |
 | `in-progress` | Une routine travaille dessus |
+| `needs-review` | File d'attente pour `pr-review` (R3) — seul trigger GitHub possible sur une Routine, posé automatiquement à l'ouverture d'une PR, retiré une fois la review faite |
 | `review-pass` | Verdict `pr-review` (R3) : conforme → traduit en commit status `claude/review` succès |
 | `needs-fix` | Verdict `pr-review` (R3) : à corriger → traduit en commit status `claude/review` échec, déclenche R4 |
 | `needs-human` | Escalade : plafond d'itérations ou hors périmètre |
@@ -237,25 +238,43 @@ n'utilisant *que* les skills, sans les corriger à la volée dans le chat.
 
 ### Phase 2 — R3, la review (première autonomie)
 
-**Révisé (2026-07-13) :** le mécanisme d'origine (la routine poste directement
-le commit status via `gh api`) n'est pas réalisable — aucune session Claude
-Code (interactive ou routine) n'a accès au CLI `gh` ni à un outil MCP posant un
-commit status brut, seulement les outils MCP GitHub habituels (issues/PRs/labels).
-Le jugement (subjectif, LLM) et la traduction en verdict machine (déterministe)
-sont donc séparés en deux étapes, cohérent avec le principe directeur
-« le déterministe ne passe pas par un LLM » :
+**Révisé (2026-07-13) :** deux contraintes découvertes en construisant cette
+phase, aucune des deux visible avant de l'essayer réellement :
 
-1. **La routine R3** tourne `pr-review` sur la PR déclenchante, puis pose le
-   label `review-pass` ou `needs-fix` (jamais les deux) — voir la section
-   « Label the verdict » de `.claude/skills/pr-review/SKILL.md`.
-2. **`.github/workflows/review-status-sync.yml`** (zéro LLM, déclenché sur
-   `pull_request.labeled`) traduit ce label en commit status `claude/review`
-   (succès/échec) via `GITHUB_TOKEN`.
+1. Aucune session Claude Code (interactive ou routine) n'a accès au CLI `gh`
+   ni à un outil MCP posant un commit status brut — seulement les outils MCP
+   GitHub habituels (issues/PRs/labels). Le mécanisme d'origine (la routine
+   poste directement le commit status via `gh api`) n'est donc pas réalisable.
+2. Une Routine n'accepte qu'**un seul** trigger GitHub, et ce trigger ne
+   filtre que sur une action précise (`opened` seul, `synchronize` seul, …)
+   *ou* toutes les actions de la catégorie — jamais une combinaison des deux
+   qu'on visait (`opened` + `synchronize`).
 
-- [x] Skill `pr-review` mise à jour avec l'étape de labellisation
-- [x] `review-status-sync.yml` écrit et testable indépendamment (pas besoin de
-      la routine pour valider sa logique)
-- [x] Label `review-pass` ajouté à `setup-repo.sh`
+Le jugement (subjectif, LLM) et la traduction en verdict machine
+(déterministe) sont donc séparés en trois étapes, cohérent avec le principe
+directeur « le déterministe ne passe pas par un LLM » :
+
+1. **`.github/workflows/needs-review-label.yml`** (zéro LLM, déclenché sur
+   `pull_request.opened`/`ready_for_review`) pose le label `needs-review` —
+   la file d'attente qui contourne la limite « un seul trigger ».
+2. **La routine R3** a pour unique trigger GitHub `pull_request`, toutes
+   actions, filtré sur `Labels is one of needs-review`. Le filtre ne matche
+   que tant que le label est présent, donc ça se comporte comme un
+   déclenchement one-shot plutôt qu'un vrai « toutes actions » : une review a
+   lieu quand `needs-review` apparaît, puis plus rien tant qu'il n'est pas
+   reposé (la dernière étape de `pr-review` le retire). Reposer ce label plus
+   tard (une fois R4 construit) redéclenche une review — le mécanisme sert
+   aussi de boucle de re-review pour la Phase 5.
+3. **`.github/workflows/review-status-sync.yml`** (zéro LLM, déclenché sur
+   `pull_request.labeled`) traduit `review-pass`/`needs-fix` en commit status
+   `claude/review` (succès/échec) via `GITHUB_TOKEN`.
+
+- [x] Skill `pr-review` mise à jour avec l'étape de labellisation (pose
+      `review-pass`/`needs-fix`, retire `needs-review`)
+- [x] `needs-review-label.yml` et `review-status-sync.yml` écrits et
+      testables indépendamment (pas besoin de la routine pour valider leur
+      logique)
+- [x] Labels `needs-review`/`review-pass` ajoutés à `setup-repo.sh`
 - [ ] **La Routine elle-même reste à créer manuellement** sur
       https://claude.ai/code/routines — les triggers GitHub et API d'une
       Routine ne sont configurables que depuis cette UI web, aucun outil
