@@ -8,7 +8,7 @@ via les **routines Claude Code**.
 > lire en premier. Il indique la phase en cours et le critère de passage à la
 > suivante. Ne pas sauter de phase : chaque gate protège la suivante.
 
-**Phase en cours : 0 bis — Migration `.task/` → Issues.**
+**Phase en cours : 1 — Les skills (écrites, gate d'usage réel non franchi).**
 
 ---
 
@@ -225,6 +225,13 @@ Le `CLAUDE.md` disait : *« tu prends le premier ticket P0 non fait dans
 
 Écrire les 6 skills. **Gate :** 2–3 tickets réels fermés en interactif en
 n'utilisant *que* les skills, sans les corriger à la volée dans le chat.
+
+- [x] Les 6 skills sont écrites dans `.claude/skills/` : `project-conventions`,
+      `issue-to-spec`, `implement-task`, `pr-review`, `address-feedback`,
+      `site-quality`
+- [ ] Gate non franchi : aucun ticket réel n'a encore été fermé en n'utilisant
+      *que* ces skills, sans correction manuelle en aparté. Ne pas passer à la
+      Phase 2 avant ça.
 
 ### Phase 2 — R3, la review (première autonomie)
 
