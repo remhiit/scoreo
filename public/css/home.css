@@ -12,6 +12,13 @@
     border-radius: var(--radius-pill);
 }
 
+/* .ludo-btn:active alone would replace translateX(-50%) with scale(0.97)
+   (transform is a single property) and make the fixed, centered button
+   jump sideways mid-click; combine both here instead. */
+.fab-position.ludo-btn:active:not(:disabled) {
+    transform: translateX(-50%) scale(0.97);
+}
+
 /* ── Selection hint ── */
 
 .selection-hint {
