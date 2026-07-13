@@ -1,3 +1,4 @@
+import { AlertTriangle, CheckCircle2, Upload, XCircle } from 'lucide-react'
 import { useReducer, type ChangeEvent } from 'react'
 import type { ImportMatchesUseCase } from '../../application/importMatchesUseCase'
 import { LudoButton } from '../shared/LudoButton'
@@ -42,7 +43,9 @@ export function ImportScreen({ importUseCase, onDone }: ImportScreenProps) {
     return (
       <>
         <label className="import-zone">
-          <span className="import-zone-icon">📥</span>
+          <span className="import-zone-icon">
+            <Upload size={24} aria-hidden />
+          </span>
           <span className="import-zone-text">Select a JSON file to import</span>
           <input type="file" accept=".json,application/json" onChange={handleFileChange} />
         </label>
@@ -74,15 +77,17 @@ export function ImportScreen({ importUseCase, onDone }: ImportScreenProps) {
   return (
     <>
       <div className="import-result">
-        <div className="import-result-line import-success">✅ {state.result.imported} imported</div>
+        <div className="import-result-line import-success">
+          <CheckCircle2 size={18} aria-hidden /> {state.result.imported} imported
+        </div>
         {state.result.skipped.length > 0 && (
           <div className="import-result-line import-warn">
-            ⚠️ {state.result.skipped.length} skipped (duplicate IDs)
+            <AlertTriangle size={18} aria-hidden /> {state.result.skipped.length} skipped (duplicate IDs)
           </div>
         )}
         {state.result.failed.length > 0 && (
           <div className="import-result-line import-error">
-            ❌ {state.result.failed.length} failed
+            <XCircle size={18} aria-hidden /> {state.result.failed.length} failed
             {state.result.failed.map((id) => (
               <div key={id} className="import-failed-id">
                 {id}

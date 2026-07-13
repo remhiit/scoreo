@@ -1,8 +1,10 @@
+import type { ReactNode } from 'react'
+
 export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger'
 export type ButtonSize = 'sm' | 'md' | 'lg'
 
 export interface LudoButtonProps {
-  text: string
+  text: ReactNode
   variant?: ButtonVariant
   size?: ButtonSize
   iconOnly?: boolean
