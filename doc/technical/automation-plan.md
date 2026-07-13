@@ -8,7 +8,7 @@ via les **routines Claude Code**.
 > lire en premier. Il indique la phase en cours et le critère de passage à la
 > suivante. Ne pas sauter de phase : chaque gate protège la suivante.
 
-**Phase en cours : 1 — Les skills (écrites, gate d'usage réel non franchi).**
+**Phase en cours : 2 — R3, la review (mécanisme révisé, Routine à créer manuellement).**
 
 ---
 
@@ -122,7 +122,8 @@ dans la boucle.
 |---|---|
 | `ready` | Spec validée → déclenche R2 |
 | `in-progress` | Une routine travaille dessus |
-| `needs-fix` | `claude/review` a échoué → déclenche R4 |
+| `review-pass` | Verdict `pr-review` (R3) : conforme → traduit en commit status `claude/review` succès |
+| `needs-fix` | Verdict `pr-review` (R3) : à corriger → traduit en commit status `claude/review` échec, déclenche R4 |
 | `needs-human` | Escalade : plafond d'itérations ou hors périmètre |
 | `blocked` | Dépendance externe |
 | `auto` | Autorisé à l'auto-merge une fois les checks verts |
@@ -229,24 +230,42 @@ n'utilisant *que* les skills, sans les corriger à la volée dans le chat.
 - [x] Les 6 skills sont écrites dans `.claude/skills/` : `project-conventions`,
       `issue-to-spec`, `implement-task`, `pr-review`, `address-feedback`,
       `site-quality`
-- [ ] Gate non franchi : aucun ticket réel n'a encore été fermé en n'utilisant
-      *que* ces skills, sans correction manuelle en aparté. Ne pas passer à la
-      Phase 2 avant ça.
+- [x] **Gate franchi** : 3 tickets réels fermés en interactif via
+      `issue-to-spec` + `implement-task` seuls, sans correction manuelle en
+      aparté — #61 (favicon), #69 (double trigger CI), #71 (icônes
+      lucide-react)
 
 ### Phase 2 — R3, la review (première autonomie)
 
-Trigger GitHub `pull_request.opened` + `synchronize`. Prompt court pointant vers
-`pr-review`. Verdict via commit status :
+**Révisé (2026-07-13) :** le mécanisme d'origine (la routine poste directement
+le commit status via `gh api`) n'est pas réalisable — aucune session Claude
+Code (interactive ou routine) n'a accès au CLI `gh` ni à un outil MCP posant un
+commit status brut, seulement les outils MCP GitHub habituels (issues/PRs/labels).
+Le jugement (subjectif, LLM) et la traduction en verdict machine (déterministe)
+sont donc séparés en deux étapes, cohérent avec le principe directeur
+« le déterministe ne passe pas par un LLM » :
 
-```bash
-gh api repos/remhiit/scoreo/statuses/$SHA \
-  -f state=success -f context=claude/review \
-  -f description="Conforme à la spec #N"
-```
+1. **La routine R3** tourne `pr-review` sur la PR déclenchante, puis pose le
+   label `review-pass` ou `needs-fix` (jamais les deux) — voir la section
+   « Label the verdict » de `.claude/skills/pr-review/SKILL.md`.
+2. **`.github/workflows/review-status-sync.yml`** (zéro LLM, déclenché sur
+   `pull_request.labeled`) traduit ce label en commit status `claude/review`
+   (succès/échec) via `GITHUB_TOKEN`.
+
+- [x] Skill `pr-review` mise à jour avec l'étape de labellisation
+- [x] `review-status-sync.yml` écrit et testable indépendamment (pas besoin de
+      la routine pour valider sa logique)
+- [x] Label `review-pass` ajouté à `setup-repo.sh`
+- [ ] **La Routine elle-même reste à créer manuellement** sur
+      https://claude.ai/code/routines — les triggers GitHub et API d'une
+      Routine ne sont configurables que depuis cette UI web, aucun outil
+      disponible ici ne le permet (même limitation que le GitHub Project en
+      Phase 0 bis). Voir `deployment.md` pour la configuration exacte
+      (prompt, repo, trigger) à saisir.
 
 Laisser tourner ~10 PR **sans** que `claude/review` soit requis.
 **Gate :** le check dit « non » au moins une fois à raison, et ne crie pas au
-loup. Alors seulement, l'ajouter aux checks requis.
+loup. Alors seulement, l'ajouter aux checks requis (`setup-repo.sh`).
 
 ### Phase 3 — R5, hygiène hebdo
 

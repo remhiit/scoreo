@@ -54,6 +54,39 @@ First match wins, in that priority order. If none of these labels are present, t
 
 ---
 
+## PR Review (R3)
+
+**Files**: a Claude Code Routine (created via [claude.ai/code/routines](https://claude.ai/code/routines) — not reachable from any tool in a session) + `.github/workflows/review-status-sync.yml`
+
+Automates the subjective review pass from `.claude/skills/pr-review`. Split into a judgment step (LLM) and a translation step (deterministic), because no Claude Code session — interactive or routine — has a tool that can post a raw commit status; only the usual GitHub MCP tools (issues, PRs, labels) are available.
+
+1. **The Routine** triggers on a GitHub `pull_request` event (`opened`/`synchronize`), runs `.claude/skills/pr-review` against the triggering PR, then applies exactly one label: `review-pass` (conforms) or `needs-fix` (needs changes, plus a PR comment explaining what).
+2. **`review-status-sync.yml`** triggers on `pull_request.labeled`, checks for `review-pass`/`needs-fix`, and sets the `claude/review` commit status (`success`/`failure`) via `GITHUB_TOKEN` — no LLM involved, pure deterministic translation of a label into a status GitHub can gate on.
+
+### Creating the Routine (manual, one-time)
+
+GitHub triggers and API triggers on a Routine can only be configured from the web UI — no MCP tool or API reaches that config. At [claude.ai/code/routines](https://claude.ai/code/routines):
+
+1. **New routine** → name it (e.g. `R3 — PR Review (Scoreo)`).
+2. **Prompt**:
+   ```
+   You were triggered by a pull_request event on remhiit/scoreo. Identify
+   the specific PR that triggered this run (check open PRs for the one
+   matching the current branch/head commit; if ambiguous, use the most
+   recently updated open PR). Read and follow
+   .claude/skills/pr-review/SKILL.md exactly to review that PR, including
+   its final "Label the verdict (R3 only)" step — apply exactly one of
+   review-pass or needs-fix, removing the other if present, and post a PR
+   comment only if there are blocking issues to explain.
+   ```
+3. **Repository**: `remhiit/scoreo`.
+4. **Trigger**: GitHub event → Pull request → actions `opened` and `synchronize`.
+5. Leave connectors at their default (GitHub MCP tools included); no extra network access needed.
+
+**Gate before making `claude/review` a required check** (`doc/technical/automation-plan.md` Phase 2): let it run unrequired on ~10 PRs. Add it to `setup-repo.sh`'s required checks only once it has said "no" at least once, correctly.
+
+---
+
 ## Google Drive Sync Setup
 
 To enable cloud backup, you need an OAuth 2.0 Client ID from Google Cloud.

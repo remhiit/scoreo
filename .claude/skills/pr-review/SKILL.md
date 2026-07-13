@@ -58,3 +58,20 @@ reason. End with an overall verdict:
 Don't soften a real blocker into a "nit" to avoid friction — a review that
 never says no isn't protecting anything (see `automation-plan.md`'s risk
 table: "Review sans mordant").
+
+## Label the verdict (R3 only)
+
+No tool available to a Claude Code session here can post a raw commit
+status, so the verdict surfaces as a label instead — a separate,
+deterministic GitHub Action (`.github/workflows/review-status-sync.yml`)
+translates it into the `claude/review` commit status. This step only
+applies when running as the automated R3 step (a routine triggered by a
+GitHub PR event); skip it for an ad hoc interactive review the user asked
+for directly.
+
+- **Conforms** → apply label `review-pass`, remove `needs-fix` if present.
+- **Needs changes** → apply label `needs-fix`, remove `review-pass` if
+  present, and post a PR comment listing exactly what's blocking (this is
+  what `address-feedback` will act on).
+
+Apply exactly one of the two labels, never both.
