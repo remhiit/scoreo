@@ -206,6 +206,9 @@ vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 .vite/
 
+# Lighthouse CI reports
+.lighthouseci/
+
 # Tickets
 .task/
 
