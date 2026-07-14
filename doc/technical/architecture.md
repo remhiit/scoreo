@@ -161,7 +161,7 @@ This applies to: `Player`, `GameType`, `Match`, `PlayerScore`, `WinCondition`.
 ### Architecture
 
 - `CloudSyncRepository` (port): all methods return a `Promise`
-- `GoogleDriveClient`: wraps Drive REST calls via `window.fetch()`
+- `GoogleDriveClient`: wraps Drive REST calls via `window.fetch()`. Drive v3 splits its API across two base URLs: `https://www.googleapis.com/drive/v3/files` for metadata-only calls (`findFile`, `readFile`), and `https://www.googleapis.com/upload/drive/v3/files` (note the `/upload/` prefix) for any request that carries file content (`createFile`'s `uploadType=multipart`, `updateFile`'s `uploadType=media`) — sending an upload body to the metadata endpoint makes Google try to parse it as metadata JSON and fail.
 - `SyncUseCase`: `async` method for each operation (`autoSync`, `resolveConflict`, `login`, `logout`)
 - `src/ui/sync/syncReducer.ts`'s `submit*` helpers are `async` functions that call `SyncUseCase` and dispatch the resulting action
 - `SyncScreen` itself stays a plain function component — the async work happens in the `submit*` helpers, not inline in the component

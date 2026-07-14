@@ -2,6 +2,8 @@ import type { SyncException } from '../../domain/port/cloudSyncRepository'
 import { err, ok, type Result } from '../../domain/result'
 
 const DRIVE_API_BASE = 'https://www.googleapis.com/drive/v3/files'
+/** Drive v3 requires this dedicated /upload/ prefix for any request that carries file content (multipart or media uploadType). */
+const DRIVE_UPLOAD_API_BASE = 'https://www.googleapis.com/upload/drive/v3/files'
 
 interface FileInfo {
   id: string
@@ -62,7 +64,7 @@ export class GoogleDriveClient implements DriveClient {
     const metadata = `{ "name": "${fileName}", "parents": ["appDataFolder"], "mimeType": "${mimeType}" }`
     const boundary = 'scoreo_boundary'
     const body = this.buildMultipartBody(boundary, metadata, content, mimeType)
-    const url = `${DRIVE_API_BASE}?spaces=appDataFolder&uploadType=multipart`
+    const url = `${DRIVE_UPLOAD_API_BASE}?spaces=appDataFolder&uploadType=multipart`
     return this.retryWithBackoff(async () => {
       try {
         const responseBody = await this.asyncPost(url, token, body, `multipart/related; boundary=${boundary}`)
@@ -82,7 +84,7 @@ export class GoogleDriveClient implements DriveClient {
   ): Promise<Result<string, SyncException>> {
     const token = await this.getToken()
     if (!token) return err({ kind: 'NotAuthenticated', message: 'Not authenticated' })
-    const url = `${DRIVE_API_BASE}/${fileId}?spaces=appDataFolder&uploadType=media`
+    const url = `${DRIVE_UPLOAD_API_BASE}/${fileId}?spaces=appDataFolder&uploadType=media`
     return this.retryWithBackoff(async () => {
       try {
         await this.asyncPatch(url, token, content, mimeType)
