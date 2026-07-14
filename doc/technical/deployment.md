@@ -88,7 +88,7 @@ GitHub triggers and API triggers on a Routine can only be configured from the we
 4. **Trigger**: GitHub event → Pull request → **all actions** → filter **Labels is one of `needs-review`**.
 5. Leave connectors at their default (GitHub MCP tools included); no extra network access needed.
 
-**Gate before making `claude/review` a required check** (`doc/technical/automation-plan.md` Phase 2): let it run unrequired on ~10 PRs. Add it to `setup-repo.sh`'s required checks only once it has said "no" at least once, correctly.
+**Gate crossed** (`doc/technical/automation-plan.md` Phase 2): PR #90 was the first correct `needs-fix` — R3 blocked an unverifiable factual claim in a doc update without crying wolf on the rest of the entry. `claude/review` has been added to `setup-repo.sh`'s required checks; a repo admin needs to re-run the script for it to take effect on branch protection.
 
 ---
 

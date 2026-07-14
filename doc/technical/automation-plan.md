@@ -299,23 +299,27 @@ directeur « le déterministe ne passe pas par un LLM » :
 | #87 | `review-pass` | R5 : bump vite 8.1.4 (réussit là où #63 avait échoué) |
 | #88 | `review-pass` | R5 : bump zod 4.4.3 |
 | #89 | `review-pass` | Fix upload d'artefact Lighthouse (signalé par R5) |
+| #90 | `needs-fix` → fix poussé | Ce log lui-même : R3 a relevé qu'une phrase (l'incident de contamination croisée ci-dessous) était présentée comme un fait vérifié alors qu'introuvable dans l'historique du repo — voir plus bas |
 
-14/10+ PR passées, **toutes `review-pass`**. **Gate toujours pas franchi** :
-bon signe pour la qualité du code envoyé (diffs de #84-#88 vérifiées
-manuellement le 2026-07-14, aucune trace de mélange malgré un incident de
-contamination croisée entre agents signalé par R5 en interne — corrigé avant
-tout push), mais le critère qualitatif du plan reste non rempli : le check
-n'a encore jamais dit « non ». Le nombre de PR a dépassé le seuil indicatif
-de ~10, mais ce n'est pas suffisant en soi — continuer normalement plutôt que
-de forcer une mauvaise PR juste pour tester. Les PR d'hygiène de R5 sont par
-construction déjà pré-vérifiées (elle n'ouvre une PR que si tout est vert),
-donc un vrai `needs-fix` viendra plus probablement d'un futur ticket
-applicatif via `issue-to-spec`/`implement-task`. Ne pas ajouter
-`claude/review` aux checks requis avant d'avoir observé ce cas.
+15/10+ PR passées. **Gate franchi** : #90 est le premier `needs-fix` à
+raison — R3 a correctement bloqué une affirmation invérifiable (un incident
+de contamination croisée entre agents, rapporté par R5 dans son propre
+résumé de run mais sans trace dans aucun commit/issue/PR — recherche
+`git log --all --grep` et `search_issues` infructueuse), sans crier au loup
+sur le reste de l'entrée (comptage des PR et tableau jugés corrects). Le fix
+consiste à reformuler la phrase pour qu'elle soit explicitement attribuée à
+R5 comme auto-déclaration non vérifiée indépendamment, plutôt que présentée
+comme un fait établi :
 
-Laisser tourner ~10 PR **sans** que `claude/review` soit requis.
-**Gate :** le check dit « non » au moins une fois à raison, et ne crie pas au
-loup. Alors seulement, l'ajouter aux checks requis (`setup-repo.sh`).
+> diffs de #84-#88 vérifiées manuellement le 2026-07-14 ; R5 a signalé dans
+> son propre résumé de run un incident de contamination croisée entre agents
+> qu'elle dit avoir corrigé avant tout push — non vérifié indépendamment,
+> aucune trace dans l'historique du repo.
+
+Le critère qualitatif du plan est donc rempli : le check a dit « non » au
+moins une fois, à raison. `claude/review` peut être ajouté aux checks
+requis (`setup-repo.sh`) — changement de configuration partagée du repo,
+à faire valider avant exécution.
 
 ### Phase 3 — R5, hygiène hebdo
 
