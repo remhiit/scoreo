@@ -14,7 +14,13 @@ fix is harder to review and riskier to revert. Each PR goes through
 
 ### 1. Dependencies
 
-`pnpm outdated`. For each outdated package, weigh:
+`pnpm outdated`. **It exits with code 1 whenever it finds any outdated
+package** — that's the command reporting results, not an error. Don't treat
+a non-zero exit here as a failure to stop on; read the printed table and
+keep going. (Contrast with `pnpm lint`/`typecheck`/`test`/`build` elsewhere
+in this repo's tooling, where non-zero really does mean broken.)
+
+For each outdated package, weigh:
 
 - Patch/minor bumps with no breaking changes noted in the changelog: safe to
   bump directly.
