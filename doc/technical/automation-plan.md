@@ -275,12 +275,27 @@ directeur « le déterministe ne passe pas par un LLM » :
       testables indépendamment (pas besoin de la routine pour valider leur
       logique)
 - [x] Labels `needs-review`/`review-pass` ajoutés à `setup-repo.sh`
-- [ ] **La Routine elle-même reste à créer manuellement** sur
-      https://claude.ai/code/routines — les triggers GitHub et API d'une
-      Routine ne sont configurables que depuis cette UI web, aucun outil
-      disponible ici ne le permet (même limitation que le GitHub Project en
-      Phase 0 bis). Voir `deployment.md` pour la configuration exacte
-      (prompt, repo, trigger) à saisir.
+- [x] **Routine créée** par Rémi sur https://claude.ai/code/routines — pipeline
+      confirmé bout-en-bout sur PR #73 (label `review-pass` posé par la
+      routine → commit status `claude/review` succès posé par
+      `review-status-sync.yml`)
+
+**Suivi du gate (~10 PR, au moins un « non » correct avant de rendre
+`claude/review` requis) :**
+
+| PR | Verdict R3 | Note |
+|---|---|---|
+| #73 | `review-pass` | Infra Phase 2 elle-même |
+| #75 | `review-pass` | Fix bouton New Match |
+| #77 | `review-pass` | Fix `client_id` manquant OAuth |
+| #79 | `review-pass` | Fix endpoint upload Google Drive — diff vérifiée manuellement (2026-07-14), qualité réelle : bug identifié correctement, tests de non-régression ajoutés, doc mise à jour |
+
+4/10 PR passées, toutes `review-pass`. **Gate pas encore franchi** : bon signe
+pour la qualité du code envoyé, mais le critère du plan exige explicitement
+que le check dise « non » au moins une fois à raison — pas encore observé.
+Continuer normalement plutôt que de forcer une mauvaise PR juste pour tester ;
+un vrai `needs-fix` finira par se présenter. Ne pas ajouter `claude/review`
+aux checks requis avant ça.
 
 Laisser tourner ~10 PR **sans** que `claude/review` soit requis.
 **Gate :** le check dit « non » au moins une fois à raison, et ne crie pas au
