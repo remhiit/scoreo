@@ -160,6 +160,11 @@ function AppShell() {
   const [burgerOpen, setBurgerOpen] = useState(false)
   const [themePickerOpen, setThemePickerOpen] = useState(false)
   const [statsBackOverride, setStatsBackOverride] = useState<(() => void) | null>(null)
+  const [prevScreenForStatsBack, setPrevScreenForStatsBack] = useState(current)
+  if (prevScreenForStatsBack !== current) {
+    setPrevScreenForStatsBack(current)
+    setStatsBackOverride(null)
+  }
   const getHeadToHead = useMemo(
     () => new GetHeadToHeadUseCase(services.matchRepository, services.gameTypeRepository, services.playerRepository),
     [services],
@@ -213,10 +218,6 @@ function AppShell() {
     [addGameType],
   )
   const homeGetMatchCount = useCallback(() => services.matchRepository.getAll().length, [services])
-
-  useEffect(() => {
-    setStatsBackOverride(null)
-  }, [current])
 
   const onBack: (() => void) | null = (() => {
     switch (current.type) {
