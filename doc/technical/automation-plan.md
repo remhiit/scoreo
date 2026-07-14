@@ -8,7 +8,7 @@ via les **routines Claude Code**.
 > lire en premier. Il indique la phase en cours et le critère de passage à la
 > suivante. Ne pas sauter de phase : chaque gate protège la suivante.
 
-**Phase en cours : 2 — R3, la review (mécanisme révisé, Routine à créer manuellement).**
+**Phase en cours : 2 — R3, la review (gate ~10 PR en cours, 6/10 au 2026-07-14) — et 3 — R5, hygiène hebdo (routine créée, premier run pas encore observé), démarrées en parallèle.**
 
 ---
 
@@ -289,8 +289,10 @@ directeur « le déterministe ne passe pas par un LLM » :
 | #75 | `review-pass` | Fix bouton New Match |
 | #77 | `review-pass` | Fix `client_id` manquant OAuth |
 | #79 | `review-pass` | Fix endpoint upload Google Drive — diff vérifiée manuellement (2026-07-14), qualité réelle : bug identifié correctement, tests de non-régression ajoutés, doc mise à jour |
+| #80 | `review-pass` | Doc : suivi de ce gate |
+| #81 | `review-pass` | Doc : consigne de langue française dans `CLAUDE.md` |
 
-4/10 PR passées, toutes `review-pass`. **Gate pas encore franchi** : bon signe
+6/10 PR passées, toutes `review-pass`. **Gate pas encore franchi** : bon signe
 pour la qualité du code envoyé, mais le critère du plan exige explicitement
 que le check dise « non » au moins une fois à raison — pas encore observé.
 Continuer normalement plutôt que de forcer une mauvaise PR juste pour tester ;
@@ -305,6 +307,20 @@ loup. Alors seulement, l'ajouter aux checks requis (`setup-repo.sh`).
 
 Routine planifiée → `site-quality` → une PR par catégorie. Risque nul, et ça rode
 le chemin *routine → PR → R3* avant d'y injecter du code généré.
+
+Démarrée en parallèle du gate de la Phase 2 (pas en violation du principe
+« ne pas sauter de phase » : R5 alimente elle-même le compteur de PR dont ce
+gate a besoin) :
+
+- [x] **Routine créée** (`trig_01Y4gg6E5uMfD9XWFpBBxrt8`, cron `0 6 * * 1` —
+      chaque lundi 6h UTC), pointée vers `.claude/skills/site-quality`. À
+      la différence de R3, un trigger planifié est créable directement par
+      outil, pas seulement depuis claude.ai/code/routines — aucune étape
+      manuelle ici.
+- [ ] Premier run réel pas encore observé (prochain déclenchement
+      automatique : 2026-07-20). À valider : accès correct au repo depuis
+      une session fraîche par cron, et qu'une seule PR par catégorie
+      concernée est bien ouverte (jamais combinée).
 
 ### Phase 4 — R2, l'implémentation
 
