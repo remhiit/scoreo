@@ -291,13 +291,27 @@ directeur « le déterministe ne passe pas par un LLM » :
 | #79 | `review-pass` | Fix endpoint upload Google Drive — diff vérifiée manuellement (2026-07-14), qualité réelle : bug identifié correctement, tests de non-régression ajoutés, doc mise à jour |
 | #80 | `review-pass` | Doc : suivi de ce gate |
 | #81 | `review-pass` | Doc : consigne de langue française dans `CLAUDE.md` |
+| #82 | `review-pass` | Doc : création de la routine R5 |
+| #83 | `review-pass` | Doc : piège `pnpm outdated` exit code 1 dans `site-quality` |
+| #84 | `review-pass` | R5 : bump react/react-dom 19.2.7 |
+| #85 | `review-pass` | R5 : bump vitest/jsdom |
+| #86 | `review-pass` | R5 : bump eslint tooling + 2 fixes mécaniques (nouvelle règle `react-hooks/set-state-in-effect`) |
+| #87 | `review-pass` | R5 : bump vite 8.1.4 (réussit là où #63 avait échoué) |
+| #88 | `review-pass` | R5 : bump zod 4.4.3 |
+| #89 | `review-pass` | Fix upload d'artefact Lighthouse (signalé par R5) |
 
-6/10 PR passées, toutes `review-pass`. **Gate pas encore franchi** : bon signe
-pour la qualité du code envoyé, mais le critère du plan exige explicitement
-que le check dise « non » au moins une fois à raison — pas encore observé.
-Continuer normalement plutôt que de forcer une mauvaise PR juste pour tester ;
-un vrai `needs-fix` finira par se présenter. Ne pas ajouter `claude/review`
-aux checks requis avant ça.
+14/10+ PR passées, **toutes `review-pass`**. **Gate toujours pas franchi** :
+bon signe pour la qualité du code envoyé (diffs de #84-#88 vérifiées
+manuellement le 2026-07-14, aucune trace de mélange malgré un incident de
+contamination croisée entre agents signalé par R5 en interne — corrigé avant
+tout push), mais le critère qualitatif du plan reste non rempli : le check
+n'a encore jamais dit « non ». Le nombre de PR a dépassé le seuil indicatif
+de ~10, mais ce n'est pas suffisant en soi — continuer normalement plutôt que
+de forcer une mauvaise PR juste pour tester. Les PR d'hygiène de R5 sont par
+construction déjà pré-vérifiées (elle n'ouvre une PR que si tout est vert),
+donc un vrai `needs-fix` viendra plus probablement d'un futur ticket
+applicatif via `issue-to-spec`/`implement-task`. Ne pas ajouter
+`claude/review` aux checks requis avant d'avoir observé ce cas.
 
 Laisser tourner ~10 PR **sans** que `claude/review` soit requis.
 **Gate :** le check dit « non » au moins une fois à raison, et ne crie pas au
