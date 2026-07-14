@@ -1,5 +1,5 @@
 import { Play } from 'lucide-react'
-import { useEffect, useReducer, useState } from 'react'
+import { useReducer, useState } from 'react'
 import type { AddPlayerUseCase } from '../../application/addPlayerUseCase'
 import type { DeletePlayerUseCase } from '../../application/deletePlayerUseCase'
 import type { GetPlayerStatsUseCase } from '../../application/getPlayerStatsUseCase'
@@ -78,9 +78,11 @@ export function HomeScreen({
   const [inlineGameWinCondition, setInlineGameWinCondition] = useState<WinCondition>('HIGHEST_SCORE')
   const [inlineGameError, setInlineGameError] = useState<string | undefined>(undefined)
 
-  useEffect(() => {
+  const [prevDeleteConfirmPlayerId, setPrevDeleteConfirmPlayerId] = useState(state.deleteConfirmPlayerId)
+  if (prevDeleteConfirmPlayerId !== state.deleteConfirmPlayerId) {
+    setPrevDeleteConfirmPlayerId(state.deleteConfirmPlayerId)
     setAnonymize(false)
-  }, [state.deleteConfirmPlayerId])
+  }
 
   function toggleSelectPlayer(playerId: string) {
     setSelectedPlayers((prev) => {
