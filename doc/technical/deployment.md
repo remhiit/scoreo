@@ -16,6 +16,8 @@ Runs on every `push` to `main` and every `pull_request`, as five independent job
 
 Each job name (`lint`, `test`, `build`, `doc-links`) is meant to be set as a required status check in branch protection (see `setup-repo.sh`). `lighthouse` stays non-blocking while the score baseline is measured (currently: performance 0.96, accessibility 0.95, best-practices 0.96, SEO 0.90 — the `pwa` category was dropped from the assertions since Lighthouse 12 no longer computes it by default).
 
+The `lighthouse` job's "Upload Lighthouse report" step needs `include-hidden-files: true` — `actions/upload-artifact@v4` excludes dotfiles/dotdirs by default, and Lighthouse CI writes its report to `.lighthouseci/` (per `lighthouserc.json`'s `upload.outputDir`). Without that flag the step silently uploads nothing (`No files were found`, a warning, not a failure — R5's 2026-07-14 run caught this after several prior runs had gone unnoticed).
+
 This ensures type errors, lint issues, test failures, dead doc links, or build breakage are caught immediately on every push.
 
 ---
