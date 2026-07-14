@@ -6,6 +6,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 PWA React + TypeScript de suivi de scores entre amis. MVI-style (reducer/action/state par écran, via `useReducer`). Architecture hexagonale (Ports & Adapters). 100% local-first (localStorage), sync cloud optionnelle via Google Drive.
 
+## Langue
+
+Toujours répondre en français dans le chat (texte adressé à l'utilisateur), y compris les messages de statut, résumés et questions. Le code, les identifiants, les commit/PR et la documentation technique restent en anglais, conformément aux conventions déjà en place dans le repo.
+
 ## Commandes
 
 ```bash
