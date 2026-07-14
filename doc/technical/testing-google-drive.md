@@ -19,7 +19,7 @@ L'ancienne suite Kotlin ne pouvait pas réellement charger Google Identity Servi
 |---|---|---|
 | `googleAuthService.test.ts` | Login, refresh, logout, gestion d'erreur GIS | `installMockGis()` simule `initTokenClient`/`requestAccessToken`/`revoke` ; `vi.useFakeTimers()` pour le retry loop (10 tentatives × 200ms) ; un test dédié vérifie que `initTokenClient` reçoit la clé `client_id` (snake_case, contrat réel de l'API GIS) et non `clientId`, pour éviter une régression silencieuse comme celle corrigée dans #76 |
 | `googleDriveSyncAdapter.test.ts` | `getStatus`, restauration de session, push/pull, "cloud wins", logout | Utilise `mockGoogleDriveClient.ts` comme double du client HTTP |
-| `googleDriveClient.test.ts` | Wrapper REST v3 (find/create/update/read/upsert), mapping d'erreurs HTTP → `SyncException`, retry backoff | `fetch` mocké via `vi.fn()`, un cas par code HTTP mappé (401, 429, 5xx, autre) |
+| `googleDriveClient.test.ts` | Wrapper REST v3 (find/create/update/read/upsert), mapping d'erreurs HTTP → `SyncException`, retry backoff | `fetch` mocké via `vi.fn()`, un cas par code HTTP mappé (401, 429, 5xx, autre) ; des tests dédiés assertent explicitement l'URL appelée pour `createFile`/`updateFile` (endpoint `/upload/drive/v3/files`) vs `findFile`/`readFile` (endpoint `/drive/v3/files`), pour éviter une régression silencieuse comme celle corrigée dans #78 |
 | `mockGoogleDriveClient.ts` | — (double de test, pas un fichier de test) | Simule `findFile`/`createFile`/`updateFile`/`readFile`/`upsertFile`, avec des flags pour simuler des échecs |
 
 ## Running Tests

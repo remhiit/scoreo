@@ -125,7 +125,8 @@ describe('GoogleDriveClient', () => {
     const result = await client.createFile('scoreo-data.json', '{"players":[]}')
 
     expect(result).toEqual({ ok: true, value: 'new-file-id' })
-    const [, options] = vi.mocked(fetch).mock.calls[0]
+    const [url, options] = vi.mocked(fetch).mock.calls[0]
+    expect(String(url)).toMatch(/^https:\/\/www\.googleapis\.com\/upload\/drive\/v3\/files\?/)
     expect(options?.method).toBe('POST')
     expect(String(options?.body)).toContain('{"players":[]}')
   })
@@ -138,8 +139,28 @@ describe('GoogleDriveClient', () => {
 
     expect(result).toEqual({ ok: true, value: 'file-1' })
     const [url, options] = vi.mocked(fetch).mock.calls[0]
-    expect(String(url)).toContain('file-1')
+    expect(String(url)).toMatch(/^https:\/\/www\.googleapis\.com\/upload\/drive\/v3\/files\/file-1\?/)
     expect(options?.method).toBe('PATCH')
+  })
+
+  it('findFile queries the standard metadata endpoint (not the upload endpoint)', async () => {
+    vi.mocked(fetch).mockResolvedValueOnce(jsonResponse(200, { files: [] }))
+    const client = new GoogleDriveClient(getToken)
+
+    await client.findFile('scoreo-data.json')
+
+    const [url] = vi.mocked(fetch).mock.calls[0]
+    expect(String(url)).toMatch(/^https:\/\/www\.googleapis\.com\/drive\/v3\/files\?/)
+  })
+
+  it('readFile reads from the standard metadata endpoint (not the upload endpoint)', async () => {
+    vi.mocked(fetch).mockResolvedValueOnce(textResponse(200, '{}'))
+    const client = new GoogleDriveClient(getToken)
+
+    await client.readFile('file-1')
+
+    const [url] = vi.mocked(fetch).mock.calls[0]
+    expect(String(url)).toMatch(/^https:\/\/www\.googleapis\.com\/drive\/v3\/files\/file-1\?/)
   })
 
   it('readFile returns the raw body', async () => {
