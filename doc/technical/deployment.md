@@ -90,6 +90,18 @@ GitHub triggers and API triggers on a Routine can only be configured from the we
 
 ---
 
+## Weekly Hygiene (R5)
+
+**Routine**: `trig_01Y4gg6E5uMfD9XWFpBBxrt8` — `R5 — Hygiène hebdo (Scoreo)`
+
+Unlike R3, a scheduled (cron) trigger can be created directly by tool — no claude.ai/code/routines web step needed. Runs every Monday 06:00 UTC (`0 6 * * 1`), as a fresh session each time, following `.claude/skills/site-quality`: dependency updates, dead doc links, Lighthouse regressions, PWA manifest/service-worker validity — one PR per category with something to report, never a combined PR, and nothing opened for a clean category.
+
+Every PR it opens flows through the same `needs-review` → R3 → `review-status-sync.yml` pipeline as any other PR (see "PR Review (R3)" above) — R5 doesn't self-review or apply `needs-review` itself.
+
+To change the schedule or prompt, use `update_trigger`/`delete_trigger` (MCP `Claude_Code_Remote` server) from any session, or manage it at [claude.ai/code/routines](https://claude.ai/code/routines).
+
+---
+
 ## Google Drive Sync Setup
 
 To enable cloud backup, you need an OAuth 2.0 Client ID from Google Cloud.
