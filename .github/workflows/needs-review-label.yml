@@ -19,3 +19,12 @@ jobs:
           REPO: ${{ github.repository }}
           NUMBER: ${{ github.event.pull_request.number }}
         run: gh api "repos/$REPO/issues/$NUMBER/labels" -f "labels[]=needs-review"
+
+      - name: Remove stale verdict labels
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          gh api -X DELETE "repos/$REPO/issues/$NUMBER/labels/review-pass" || true
+          gh api -X DELETE "repos/$REPO/issues/$NUMBER/labels/needs-fix" || true
