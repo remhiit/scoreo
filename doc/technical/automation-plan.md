@@ -258,8 +258,15 @@ Le jugement (subjectif, LLM) et la traduction en verdict machine
 directeur « le déterministe ne passe pas par un LLM » :
 
 1. **`.github/workflows/needs-review-label.yml`** (zéro LLM, déclenché sur
-   `pull_request.opened`/`ready_for_review`) pose le label `needs-review` —
-   la file d'attente qui contourne la limite « un seul trigger ».
+   `pull_request.opened`/`ready_for_review`/`synchronize`) pose le label
+   `needs-review` et retire `review-pass`/`needs-fix` s'ils traînent d'une
+   passe précédente — la file d'attente qui contourne la limite « un seul
+   trigger ». Couvrir `synchronize` re-déclenche une review à chaque
+   nouveau push (fix, rebase) ; retirer le verdict précédent garantit que
+   GitHub émette bien un événement `labeled` même si R3 reconclut le même
+   verdict sur le nouveau commit (sinon pas de transition absent→présent,
+   donc `review-status-sync.yml` ne se déclenche pas — bloqué à répétition
+   sur les PR #91/#93, corrigé sur #94).
 2. **La routine R3** a pour unique trigger GitHub `pull_request`, toutes
    actions, filtré sur `Labels is one of needs-review`. Le filtre ne matche
    que tant que le label est présent, donc ça se comporte comme un
