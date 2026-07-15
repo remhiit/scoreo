@@ -383,8 +383,23 @@ Implementation (R2)).
 | Issue | PR | Note |
 |---|---|---|
 | #96 | #97 | Bouton Disconnect visible quand la synchro échoue après connexion — `review-pass`, mergé sans intervention manuelle |
+| #99 | #100 | `deleteAll()` sur les ports Player/GameType/Match pour un vrai remplacement des données au « Keep remote » — `review-pass`, pas encore mergée, voir incident double-fire ci-dessous |
 
-Compteur : 1/5.
+Compteur : 1/5 (mergées) — #99/#100 en cours de merge.
+
+**Incident (2026-07-15) — double-fire de R2 sur l'issue #99 :** même classe
+de cause que le double-fire de R3 (PR #94), côté labellisation cette fois.
+`P2` et `ready` posés en un seul appel `issue_write` (`labels: ["P2",
+"ready"]`) — GitHub émet un événement `labeled` par label ajouté, et le
+filtre du trigger GitHub de R2 (`issues`, action `labeled`, filtré `Labels
+is one of ready`) matche sur l'état courant des labels de l'issue, pas sur
+le label spécifique nommé par l'événement. Les deux livraisons de webhook
+(`labeled: P2` et `labeled: ready`) ont donc chacune matché le filtre,
+produisant deux PR quasi identiques (#100 et #101, toutes deux `Closes
+#99`). #101 fermée comme doublon, #100 conservée (`review-pass`, pas encore
+mergée). Correctif :
+`issue-to-spec/SKILL.md` (PR #103) exige désormais que `ready` soit posé
+seul, dans son propre appel, toujours en dernier.
 
 ### Phase 5 — R4 et auto-merge
 
