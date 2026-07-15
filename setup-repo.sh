@@ -62,17 +62,6 @@ else
   echo "  PROJECT_TOKEN=xxx ./setup-repo.sh"
 fi
 
-echo "== ROUTINE_ID / ROUTINE_TOKEN secrets (R2 dispatch) =="
-if [ -n "${ROUTINE_ID:-}" ] && [ -n "${ROUTINE_TOKEN:-}" ]; then
-  gh secret set ROUTINE_ID --repo "$REPO" --body "$ROUTINE_ID"
-  gh secret set ROUTINE_TOKEN --repo "$REPO" --body "$ROUTINE_TOKEN"
-else
-  echo "ROUTINE_ID/ROUTINE_TOKEN env vars not set — skipping. Generated from the"
-  echo "R2 routine's API trigger (claude.ai/code/routines → edit routine → Add"
-  echo "another trigger → API → Generate token). Re-run as:"
-  echo "  ROUTINE_ID=xxx ROUTINE_TOKEN=xxx ./setup-repo.sh"
-fi
-
 echo "== Branch protection (main) =="
 # required_approving_review_count: 0 — no approval mechanism (see automation-plan.md
 # §3): the review verdict is a commit status (claude/review), not a GitHub approval,
