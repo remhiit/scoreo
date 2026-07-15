@@ -22,9 +22,9 @@ const STATUS_FIELD_NAME = 'Status'
 
 // First matching label wins.
 const LABEL_STATUS_PRIORITY = [
-  ['needs-human', 'In Progress'],
-  ['needs-fix', 'In Progress'],
-  ['in-progress', 'In Progress'],
+  ['needs-human', 'In progress'],
+  ['needs-fix', 'In progress'],
+  ['in-progress', 'In progress'],
   ['ready', 'Todo'],
 ]
 
