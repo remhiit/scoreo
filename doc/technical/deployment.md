@@ -44,15 +44,16 @@ Mirrors each issue/PR's labels onto the `Status` field of the [Scoreo GitHub Pro
 
 | Label present | `Status` set to |
 |---|---|
-| `needs-human` | `In Progress` |
-| `needs-fix` | `In Progress` |
-| `in-progress` | `In Progress` |
+| `needs-human` | `In progress` |
+| `needs-fix` | `In progress` |
+| `in-progress` | `In progress` |
 | `ready` | `Todo` |
 
 First match wins, in that priority order. If none of these labels are present, the item's status is left untouched (e.g. `Done`, set by the Project's own built-in "item closed" workflow).
 
 - **Triggers**: `issues`/`pull_request` `labeled`/`unlabeled` (immediate, single item), plus a `schedule` cron every 6 hours as a drift-correction fallback that reconciles every open issue and PR, and `workflow_dispatch` for manual runs.
 - **Requires** the `PROJECT_TOKEN` secret — a classic PAT with the `project` scope (fine-grained PATs don't yet cover writes to a user-owned Projects v2 board). Set via `setup-repo.sh`. Until it's set, the job logs a message and exits cleanly (no red check).
+- **Status names must match the board's option exactly**, including case — `sync-project-status.mjs` looks up the option by exact string equality, and a mismatch throws rather than silently skipping (caught 2026-07-15: the script had `In Progress`, the board's actual option is `In progress`).
 
 ---
 
