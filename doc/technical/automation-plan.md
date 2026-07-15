@@ -8,7 +8,7 @@ via les **routines Claude Code**.
 > lire en premier. Il indique la phase en cours et le critère de passage à la
 > suivante. Ne pas sauter de phase : chaque gate protège la suivante.
 
-**Phase en cours : 2 — R3, la review (gate ~10 PR en cours, 6/10 au 2026-07-14) — et 3 — R5, hygiène hebdo (routine créée, premier run pas encore observé), démarrées en parallèle.**
+**Phase en cours : 4 — R2, l'implémentation (Action `dispatch-ready.yml` écrite, routine à créer par Rémi). Phases 0 à 3 closes : gate Phase 2 franchi (2026-07-14, PR #90) et premier run réel de R5 observé (2026-07-14, PR #84-89).**
 
 ---
 
@@ -172,14 +172,15 @@ après le merge. Le site est cassé sur `main` au moment où on l'apprend.
       (baseline mesurée : performance 0.96, accessibilité 0.95, bonnes pratiques
       0.96, SEO 0.90 — catégorie `pwa` retirée des assertions, Lighthouse 12 ne
       la calcule plus par défaut)
-- [ ] `gh secret set GOOGLE_CLIENT_ID` (le build en dépend) — à exécuter par un
-      admin via `setup-repo.sh` (nécessite un token `gh` non disponible en
-      session Claude Code)
+- [x] `gh secret set GOOGLE_CLIENT_ID` (le build en dépend) — exécuté par Rémi
+      via `setup-repo.sh`
 - [x] `setup-repo.sh` — labels, `allow_auto_merge`, branch protection
-      (`enforce_admins: true`, 0 approbation, checks requis :
-      `lint`/`test`/`build`/`doc-links`). Script écrit, **pas encore exécuté** :
-      il modifie la config partagée du repo et nécessite un `gh` authentifié en
-      admin, hors de portée d'une session Claude Code.
+      (`enforce_admins: true`, 0 approbation). Script écrit et **exécuté par
+      Rémi** ; checks requis actuels : `lint`/`test`/`build`/`doc-links`/
+      `claude/review` (ce dernier ajouté au script le 2026-07-14, gate Phase 2
+      franchi — voir Phase 2 ci-dessous). Toujours hors de portée d'une
+      session Claude Code : modifie la config partagée du repo, nécessite un
+      `gh` authentifié en admin.
 - [x] Alléger `deploy.yml` : retirer l'étape `Test` (doublon avec la CI de PR),
       garder le déploiement et le smoke test
 
@@ -335,15 +336,46 @@ gate a besoin) :
       la différence de R3, un trigger planifié est créable directement par
       outil, pas seulement depuis claude.ai/code/routines — aucune étape
       manuelle ici.
-- [ ] Premier run réel pas encore observé (prochain déclenchement
-      automatique : 2026-07-20). À valider : accès correct au repo depuis
-      une session fraîche par cron, et qu'une seule PR par catégorie
-      concernée est bien ouverte (jamais combinée).
+- [x] **Premier run réel observé** (2026-07-14) : accès correct au repo
+      depuis une session fraîche par cron confirmé, 5 PR ouvertes (une par
+      catégorie concernée : #84-88 dépendances, jamais combinées), plus un
+      vrai bug d'infra repéré et corrigé (upload d'artefact Lighthouse, #89).
+      Prochain run planifié : 2026-07-20.
 
-### Phase 4 — R2, l'implémentation
+### Phase 4 — R2, l'implémentation ⬅️ *en cours*
 
-Token API sur la routine, secrets `ROUTINE_ID` / `ROUTINE_TOKEN`, Action
-`dispatch-ready.yml` sur `issues.labeled == ready` :
+**Pourquoi une Action + trigger API plutôt qu'un trigger GitHub direct comme
+R3 ?** Un trigger GitHub sur une routine ne transmet pas le numéro de
+l'issue/PR dans le prompt — c'est pourquoi R3 doit lui-même retrouver « la PR
+qui porte actuellement `needs-review` (il devrait y en avoir exactement
+une) ». Cette hypothèse tient à peu près pour `needs-review` (posé et retiré
+dans la même fenêtre courte qu'une review). Elle casserait pour `ready` :
+plusieurs tickets peuvent rester `ready` en attente simultanément (backlog
+normal), donc une routine déclenchée en aveugle ne saurait pas lequel
+traiter — risque réel de runs qui se marchent dessus ou traitent le mauvais
+ticket. `dispatch-ready.yml` capte l'événement `issues.labeled == ready` et
+passe explicitement le numéro d'issue dans le champ `text` du `/fire` :
+aucune ambiguïté possible, quel que soit le nombre d'autres tickets `ready`
+en attente.
+
+- [x] Header beta vérifié (2026-07-15) auprès de la doc officielle
+      (`platform.claude.com/docs/en/api/claude-code/routines-fire`) :
+      `experimental-cc-routine-2026-04-01` toujours à jour, endpoint et forme
+      de requête/réponse conformes au brouillon ci-dessous.
+- [x] `.github/workflows/dispatch-ready.yml` — déclenché sur
+      `issues.labeled == ready`, POST vers `/fire` avec le numéro d'issue
+      dans le champ `text`. Zéro LLM. Si `ROUTINE_ID`/`ROUTINE_TOKEN` absents
+      (routine pas encore créée), sort proprement sans échouer.
+- [x] Secrets `ROUTINE_ID`/`ROUTINE_TOKEN` ajoutés à `setup-repo.sh`
+      (générés depuis le trigger API de la routine R2, à créer manuellement)
+- [x] Coquille de la routine R2 créée par outil (`trig_01D2429DJ7p8cok2VDiCANPS`,
+      poke-only, `create_new_session_on_fire: true` — une session fraîche par
+      déclenchement, cohérent avec « un run = un ticket »). `create_trigger`
+      ne configure que planification/poke, pas les triggers GitHub ou API.
+- [ ] **Trigger API à ajouter par Rémi** sur claude.ai/code/routines (Add
+      another trigger → API → Generate token — aucun outil MCP n'atteint ce
+      modal) puis passer `ROUTINE_ID`/`ROUTINE_TOKEN` à `setup-repo.sh` —
+      condition pour que `dispatch-ready.yml` fasse réellement quelque chose
 
 ```yaml
 curl -sf -X POST \
@@ -354,8 +386,6 @@ curl -sf -X POST \
   -H "content-type: application/json" \
   -d '{"text":"Implémente l'\''issue #${{ github.event.issue.number }} en suivant .claude/skills/implement-task"}'
 ```
-
-> Vérifier la valeur courante du header beta dans la doc avant de figer.
 
 **Gate :** 5 tickets faciles traités, PR lisibles, **merge encore manuel**.
 

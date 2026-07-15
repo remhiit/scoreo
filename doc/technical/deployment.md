@@ -56,6 +56,40 @@ First match wins, in that priority order. If none of these labels are present, t
 
 ---
 
+## Issue Implementation (R2)
+
+**Files**: a Claude Code Routine (created via [claude.ai/code/routines](https://claude.ai/code/routines) — not reachable from any tool in a session) + `.github/workflows/dispatch-ready.yml`
+
+Automates `.claude/skills/implement-task` for issues that have already been groomed interactively (R1, `issue-to-spec`) and carry the `ready` label. Split into a dispatch step (deterministic) and the implementation itself (LLM), same separation of concerns as R3.
+
+1. **`dispatch-ready.yml`** triggers on `issues.labeled`, filters for the `ready` label, and POSTs to the routine's `/fire` API endpoint with the issue number in the `text` field — zero LLM, just wakes the routine with the right context.
+2. **The Routine** has its only trigger set to **API** (not GitHub — the dispatch already happened in the Action). It reads the issue number from the fired `text`, then follows `implement-task` exactly: branch, tests first, `pnpm lint typecheck test build` green, visual check for UI changes, doc updates, PR referencing `Closes #N`. One run = one issue, never a batch.
+3. The resulting PR flows through the same `needs-review` → R3 → `review-status-sync.yml` pipeline as any other PR — R2 doesn't self-review.
+
+### Creating the Routine
+
+The routine shell (name, prompt, `create_new_session_on_fire: true` so each dispatch is a fresh session — matching "one run, one issue") was created by tool via `create_trigger` (`trig_01D2429DJ7p8cok2VDiCANPS`, poke-only: no schedule, never fires on its own). Only the API trigger itself needs the web UI — no MCP tool or API reaches that config:
+
+1. Open **R2 — Implementation (Scoreo)** at [claude.ai/code/routines](https://claude.ai/code/routines).
+2. **Add another trigger** → **API** → **Generate token** (shown once — copy both the routine ID and the token immediately).
+3. Set the `ROUTINE_ID`/`ROUTINE_TOKEN` repo secrets from that token via `setup-repo.sh` (`ROUTINE_ID=xxx ROUTINE_TOKEN=xxx ./setup-repo.sh`) so `dispatch-ready.yml` can fire it.
+
+For reference, the prompt used when creating the routine shell:
+```
+You were fired via the API with a run-specific text payload naming a
+GitHub issue on remhiit/scoreo (e.g. "Implémente l'issue #42 en suivant
+.claude/skills/implement-task"). Read and follow
+.claude/skills/implement-task/SKILL.md exactly for that issue: branch,
+tests first, pnpm lint/typecheck/test/build green, visual check for UI
+changes, doc updates per the CLAUDE.md pre-commit checklist, and open a
+PR referencing "Closes #N". One run, one issue — never batch multiple
+issues even if several carry the ready label.
+```
+
+**Gate before widening the `auto` allow-list** (`doc/technical/automation-plan.md` Phase 4): 5 easy tickets handled, PRs readable, merge still manual. Only after that does Phase 5 (R4 + auto-merge) become relevant.
+
+---
+
 ## PR Review (R3)
 
 **Files**: a Claude Code Routine (created via [claude.ai/code/routines](https://claude.ai/code/routines) — not reachable from any tool in a session) + `.github/workflows/needs-review-label.yml` + `.github/workflows/review-status-sync.yml`
@@ -73,17 +107,15 @@ A Routine's GitHub trigger only accepts one specific action *or* every action in
 GitHub triggers and API triggers on a Routine can only be configured from the web UI — no MCP tool or API reaches that config. At [claude.ai/code/routines](https://claude.ai/code/routines):
 
 1. **New routine** → name it (e.g. `R3 — PR Review (Scoreo)`).
-2. **Prompt**:
+2. **Prompt** (kept to a one-line pointer — all the actual process lives in the skill, per `automation-plan.md` §2.5):
    ```
-   You were triggered because a PR on remhiit/scoreo was labeled
-   needs-review. Identify which PR currently carries that label (there
-   should be exactly one — the one that just triggered this run). Read and
-   follow .claude/skills/pr-review/SKILL.md exactly to review it, including
-   its final "Label the verdict (R3 only)" step — apply exactly one of
-   review-pass or needs-fix, remove needs-review and the other verdict
-   label, and post a PR comment only if there are blocking issues to
-   explain.
+   Review the pull request from your triggering context by following
+   .claude/skills/pr-review/SKILL.md exactly.
    ```
+   Confirmed live (2026-07-15) that a GitHub-triggered routine's session has
+   the specific PR from the triggering event in context — no need for the
+   routine prompt to instruct it to search for "the PR carrying
+   needs-review". `pr-review/SKILL.md`'s "Which PR" section covers this.
 3. **Repository**: `remhiit/scoreo`.
 4. **Trigger**: GitHub event → Pull request → **all actions** → filter **Labels is one of `needs-review`**.
 5. Leave connectors at their default (GitHub MCP tools included); no extra network access needed.
