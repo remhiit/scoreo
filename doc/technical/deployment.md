@@ -58,7 +58,7 @@ First match wins, in that priority order. If none of these labels are present, t
 
 ## Issue Implementation (R2)
 
-**Files**: a Claude Code Routine (created via [claude.ai/code/routines](https://claude.ai/code/routines) — not reachable from any tool in a session)
+**Files**: a Claude Code Routine (created via [claude.ai/code/routines](https://claude.ai/code/routines))
 
 Automates `.claude/skills/implement-task` for issues that have already been groomed interactively (R1, `issue-to-spec`) and carry the `ready` label.
 

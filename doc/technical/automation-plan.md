@@ -66,7 +66,9 @@ Issue créée
    │  skill issue-to-spec → critères d'acceptation, fichiers, catégorie de risque
    │  pose le label `ready`
    ▼
-Action `issues.labeled: ready` ──POST /fire──► [R2 — IMPLÉMENTATION]
+      GitHub trigger `issues.labeled`, filtre `ready`
+                                                 ▼
+                                     [R2 — IMPLÉMENTATION]
                                                  │ skill implement-task
                                                  │ 1 run = 1 issue
                                                  │ branche + code + tests + PR

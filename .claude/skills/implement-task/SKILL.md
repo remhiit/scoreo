@@ -20,7 +20,9 @@ backward-compat rules referenced throughout.
   and not assigned, highest priority first (`P0` > `P1` > `P2` > `P3`).
 - **Interactive, issue named**: use that one.
 
-Add the `in-progress` label before starting, in every case.
+Replace `ready` with `in-progress` before starting, in every case — remove
+`ready`, add `in-progress`. A stale `ready` left in place would mislead
+anyone scanning the backlog into thinking the issue is still unclaimed.
 
 ## Workflow
 
