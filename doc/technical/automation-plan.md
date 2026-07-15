@@ -8,7 +8,7 @@ via les **routines Claude Code**.
 > lire en premier. Il indique la phase en cours et le critère de passage à la
 > suivante. Ne pas sauter de phase : chaque gate protège la suivante.
 
-**Phase en cours : 4 — R2, l'implémentation (Action `dispatch-ready.yml` écrite, routine à créer par Rémi). Phases 0 à 3 closes : gate Phase 2 franchi (2026-07-14, PR #90) et premier run réel de R5 observé (2026-07-14, PR #84-89).**
+**Phase en cours : 4 — R2, l'implémentation (trigger GitHub direct `issues.labeled == ready`, prompt et trigger à finaliser par Rémi sur la routine existante). Phases 0 à 3 closes : gate Phase 2 franchi (2026-07-14, PR #90) et premier run réel de R5 observé (2026-07-14, PR #84-89).**
 
 ---
 
@@ -49,7 +49,7 @@ remettre en cause revient à refaire le plan.
   `required_approving_review_count: 0`, et le verdict de la review passe par un
   **commit status requis** (`claude/review`), que le compte a le droit de poser.
 - **Déclencheurs disponibles :** planification, appel API (`/fire`), événement
-  GitHub (PR, release). Rien d'autre.
+  GitHub (pull request, issue, release). Rien d'autre.
 - **Les events GitHub dépassant le plafond horaire d'une routine sont ignorés,
   pas mis en file.** Les filtres doivent rester étroits.
 - **Tout porte l'identité GitHub de Rémi.** Commits, PR, commentaires.
@@ -344,48 +344,29 @@ gate a besoin) :
 
 ### Phase 4 — R2, l'implémentation ⬅️ *en cours*
 
-**Pourquoi une Action + trigger API plutôt qu'un trigger GitHub direct comme
-R3 ?** Un trigger GitHub sur une routine ne transmet pas le numéro de
-l'issue/PR dans le prompt — c'est pourquoi R3 doit lui-même retrouver « la PR
-qui porte actuellement `needs-review` (il devrait y en avoir exactement
-une) ». Cette hypothèse tient à peu près pour `needs-review` (posé et retiré
-dans la même fenêtre courte qu'une review). Elle casserait pour `ready` :
-plusieurs tickets peuvent rester `ready` en attente simultanément (backlog
-normal), donc une routine déclenchée en aveugle ne saurait pas lequel
-traiter — risque réel de runs qui se marchent dessus ou traitent le mauvais
-ticket. `dispatch-ready.yml` capte l'événement `issues.labeled == ready` et
-passe explicitement le numéro d'issue dans le champ `text` du `/fire` :
-aucune ambiguïté possible, quel que soit le nombre d'autres tickets `ready`
-en attente.
+**Révisé (2026-07-15) :** conçu au départ avec une Action (`dispatch-ready.yml`)
++ trigger API, sur l'hypothèse (erronée) que les triggers GitHub d'une
+routine ne couvraient que Pull request/Release, pas Issues — ce que la doc
+consultée alors semblait indiquer. Rémi a trouvé en pratique un déclencheur
+GitHub natif sur les événements Issue dans l'interface. Même mécanisme que
+R3 : trigger `issues`, action `labeled`, filtré `Labels is one of ready`.
+Chaque événement qui matche démarre sa propre session avec le ticket précis
+dans son contexte — cf. `implement-task/SKILL.md` § « Which issue » — donc
+même avec plusieurs tickets `ready` en attente simultanément, chaque session
+sait exactement lequel traiter, sans l'indirection Action + secrets
+`ROUTINE_ID`/`ROUTINE_TOKEN` (supprimée, cf. `deployment.md` § Issue
+Implementation (R2)).
 
-- [x] Header beta vérifié (2026-07-15) auprès de la doc officielle
-      (`platform.claude.com/docs/en/api/claude-code/routines-fire`) :
-      `experimental-cc-routine-2026-04-01` toujours à jour, endpoint et forme
-      de requête/réponse conformes au brouillon ci-dessous.
-- [x] `.github/workflows/dispatch-ready.yml` — déclenché sur
-      `issues.labeled == ready`, POST vers `/fire` avec le numéro d'issue
-      dans le champ `text`. Zéro LLM. Si `ROUTINE_ID`/`ROUTINE_TOKEN` absents
-      (routine pas encore créée), sort proprement sans échouer.
-- [x] Secrets `ROUTINE_ID`/`ROUTINE_TOKEN` ajoutés à `setup-repo.sh`
-      (générés depuis le trigger API de la routine R2, à créer manuellement)
-- [x] Coquille de la routine R2 créée par outil (`trig_01D2429DJ7p8cok2VDiCANPS`,
-      poke-only, `create_new_session_on_fire: true` — une session fraîche par
-      déclenchement, cohérent avec « un run = un ticket »). `create_trigger`
-      ne configure que planification/poke, pas les triggers GitHub ou API.
-- [ ] **Trigger API à ajouter par Rémi** sur claude.ai/code/routines (Add
-      another trigger → API → Generate token — aucun outil MCP n'atteint ce
-      modal) puis passer `ROUTINE_ID`/`ROUTINE_TOKEN` à `setup-repo.sh` —
-      condition pour que `dispatch-ready.yml` fasse réellement quelque chose
-
-```yaml
-curl -sf -X POST \
-  https://api.anthropic.com/v1/claude_code/routines/${{ secrets.ROUTINE_ID }}/fire \
-  -H "Authorization: Bearer ${{ secrets.ROUTINE_TOKEN }}" \
-  -H "anthropic-version: 2023-06-01" \
-  -H "anthropic-beta: experimental-cc-routine-2026-04-01" \
-  -H "content-type: application/json" \
-  -d '{"text":"Implémente l'\''issue #${{ github.event.issue.number }} en suivant .claude/skills/implement-task"}'
-```
+- [x] `.claude/skills/implement-task/SKILL.md` — section « Which issue »
+      ajoutée (contexte du trigger pour R2, sélection manuelle sinon)
+- [x] `.github/workflows/dispatch-ready.yml` et les secrets `ROUTINE_ID`/
+      `ROUTINE_TOKEN` supprimés — plus nécessaires
+- [x] Coquille de la routine R2 créée par outil (`trig_01D2429DJ7p8cok2VDiCANPS`) —
+      prompt et trigger à finaliser manuellement (voir ci-dessous)
+- [ ] **Rémi** : sur la routine R2, remplacer le prompt par la version
+      courte documentée dans `deployment.md` et configurer le trigger GitHub
+      `issues.labeled` filtré `ready` (au lieu du trigger API prévu
+      initialement)
 
 **Gate :** 5 tickets faciles traités, PR lisibles, **merge encore manuel**.
 

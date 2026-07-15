@@ -58,35 +58,29 @@ First match wins, in that priority order. If none of these labels are present, t
 
 ## Issue Implementation (R2)
 
-**Files**: a Claude Code Routine (created via [claude.ai/code/routines](https://claude.ai/code/routines) — not reachable from any tool in a session) + `.github/workflows/dispatch-ready.yml`
+**Files**: a Claude Code Routine (created via [claude.ai/code/routines](https://claude.ai/code/routines) — not reachable from any tool in a session)
 
-Automates `.claude/skills/implement-task` for issues that have already been groomed interactively (R1, `issue-to-spec`) and carry the `ready` label. Split into a dispatch step (deterministic) and the implementation itself (LLM), same separation of concerns as R3.
+Automates `.claude/skills/implement-task` for issues that have already been groomed interactively (R1, `issue-to-spec`) and carry the `ready` label.
 
-1. **`dispatch-ready.yml`** triggers on `issues.labeled`, filters for the `ready` label, and POSTs to the routine's `/fire` API endpoint with the issue number in the `text` field — zero LLM, just wakes the routine with the right context.
-2. **The Routine** has its only trigger set to **API** (not GitHub — the dispatch already happened in the Action). It reads the issue number from the fired `text`, then follows `implement-task` exactly: branch, tests first, `pnpm lint typecheck test build` green, visual check for UI changes, doc updates, PR referencing `Closes #N`. One run = one issue, never a batch.
-3. The resulting PR flows through the same `needs-review` → R3 → `review-status-sync.yml` pipeline as any other PR — R2 doesn't self-review.
+The Routine's only GitHub trigger is `issues`, action **labeled**, filtered to `Labels is one of ready`. Each matching event starts its own independent session with that specific issue in its triggering context — `implement-task/SKILL.md`'s "Which issue" section covers identifying it, so several issues carrying `ready` at once each get their own session rather than being ambiguous. Follows `implement-task` exactly: branch, tests first, `pnpm lint typecheck test build` green, visual check for UI changes, doc updates, PR referencing `Closes #N`. One run = one issue, never a batch.
 
-### Creating the Routine
+The resulting PR flows through the same `needs-review` → R3 → `review-status-sync.yml` pipeline as any other PR — R2 doesn't self-review.
 
-The routine shell (name, prompt, `create_new_session_on_fire: true` so each dispatch is a fresh session — matching "one run, one issue") was created by tool via `create_trigger` (`trig_01D2429DJ7p8cok2VDiCANPS`, poke-only: no schedule, never fires on its own). Only the API trigger itself needs the web UI — no MCP tool or API reaches that config:
+### Creating the Routine (manual, one-time)
 
-1. Open **R2 — Implementation (Scoreo)** at [claude.ai/code/routines](https://claude.ai/code/routines).
-2. **Add another trigger** → **API** → **Generate token** (shown once — copy both the routine ID and the token immediately).
-3. Set the `ROUTINE_ID`/`ROUTINE_TOKEN` repo secrets from that token via `setup-repo.sh` (`ROUTINE_ID=xxx ROUTINE_TOKEN=xxx ./setup-repo.sh`) so `dispatch-ready.yml` can fire it.
+Routine at [claude.ai/code/routines](https://claude.ai/code/routines):
 
-For reference, the prompt used when creating the routine shell:
-```
-You were fired via the API with a run-specific text payload naming a
-GitHub issue on remhiit/scoreo (e.g. "Implémente l'issue #42 en suivant
-.claude/skills/implement-task"). Read and follow
-.claude/skills/implement-task/SKILL.md exactly for that issue: branch,
-tests first, pnpm lint/typecheck/test/build green, visual check for UI
-changes, doc updates per the CLAUDE.md pre-commit checklist, and open a
-PR referencing "Closes #N". One run, one issue — never batch multiple
-issues even if several carry the ready label.
-```
-
-**Gate before widening the `auto` allow-list** (`doc/technical/automation-plan.md` Phase 4): 5 easy tickets handled, PRs readable, merge still manual. Only after that does Phase 5 (R4 + auto-merge) become relevant.
+1. **Name**: `R2 — Implementation (Scoreo)`.
+2. **Prompt**:
+   ```
+   Implement the GitHub issue from your triggering context by following
+   .claude/skills/implement-task/SKILL.md exactly.
+   ```
+3. **Repository**: `remhiit/scoreo`.
+4. **Trigger**:
+   - GitHub event → Issue → **labeled**
+   - Filter → **Labels is one of `ready`**.
+5. **Connectors**: leave at their default (GitHub MCP tools included); no extra network access needed.
 
 ---
 
@@ -94,43 +88,43 @@ issues even if several carry the ready label.
 
 **Files**: a Claude Code Routine (created via [claude.ai/code/routines](https://claude.ai/code/routines) — not reachable from any tool in a session) + `.github/workflows/needs-review-label.yml` + `.github/workflows/review-status-sync.yml`
 
-Automates the subjective review pass from `.claude/skills/pr-review`. Split into a queueing step, a judgment step (LLM), and a translation step (deterministic), because (a) a Routine only accepts **one** GitHub trigger, not a multi-select of PR actions, and (b) no Claude Code session — interactive or routine — has a tool that can post a raw commit status; only the usual GitHub MCP tools (issues, PRs, labels) are available.
+Automates the subjective review pass from `.claude/skills/pr-review`. Split into a queueing step, a judgment step (LLM), and a translation step (deterministic), because (a) a routine's GitHub trigger only accepts one specific action or every action in a category — not a multi-select of a few — so `pull_request.labeled` alone can't be combined with `opened`/`synchronize` on the same trigger, and (b) no Claude Code session — interactive or routine — has a tool that can post a raw commit status; only the usual GitHub MCP tools (issues, PRs, labels) are available.
 
 1. **`needs-review-label.yml`** triggers on `pull_request.opened`/`ready_for_review` (skipping drafts) and adds the `needs-review` label — zero LLM, just queues the PR.
-2. **The Routine**'s only GitHub trigger is `pull_request`, **all actions**, filtered to `Labels is one of needs-review`. Since the filter only matches while the label is present, this behaves as an edge-triggered queue rather than firing on every PR action: it reviews once when `needs-review` lands, and stays silent afterward because `pr-review`'s last step removes that label. Re-adding `needs-review` later (e.g. once R4 exists and pushes a fix) queues another pass.
+2. **The Routine**'s GitHub trigger is `pull_request`, **all actions**, filtered to `Labels is one of needs-review` — this filter is what lets one trigger stand in for the `opened`/`synchronize` combination it can't express directly. It stays silent afterward because `pr-review`'s last step removes `needs-review` — re-adding it later (e.g. once R4 exists and pushes a fix) queues another pass.
 3. **`review-status-sync.yml`** triggers on `pull_request.labeled`, checks for `review-pass`/`needs-fix`, and sets the `claude/review` commit status (`success`/`failure`) via `GITHUB_TOKEN` — no LLM involved, pure deterministic translation of a label into a status GitHub can gate on.
-
-A Routine's GitHub trigger only accepts one specific action *or* every action in the category — not a multi-select of a few, and a routine only allows one GitHub trigger at all (tested live: adding a second is not possible). Using "all actions" with no filter would fire on every `assigned`/`edited`/`closed`/… on top of `labeled` (including R3's own verdict labels) — the `needs-review` label filter is what keeps this bounded to one pass per queueing.
 
 ### Creating the Routine (manual, one-time)
 
-GitHub triggers and API triggers on a Routine can only be configured from the web UI — no MCP tool or API reaches that config. At [claude.ai/code/routines](https://claude.ai/code/routines):
+Routine at [claude.ai/code/routines](https://claude.ai/code/routines):
 
-1. **New routine** → name it (e.g. `R3 — PR Review (Scoreo)`).
-2. **Prompt** (kept to a one-line pointer — all the actual process lives in the skill, per `automation-plan.md` §2.5):
+1. **Name**: `R3 — PR Review (Scoreo)`.
+2. **Prompt**:
    ```
    Review the pull request from your triggering context by following
    .claude/skills/pr-review/SKILL.md exactly.
    ```
-   Confirmed live (2026-07-15) that a GitHub-triggered routine's session has
-   the specific PR from the triggering event in context — no need for the
-   routine prompt to instruct it to search for "the PR carrying
-   needs-review". `pr-review/SKILL.md`'s "Which PR" section covers this.
 3. **Repository**: `remhiit/scoreo`.
-4. **Trigger**: GitHub event → Pull request → **all actions** → filter **Labels is one of `needs-review`**.
-5. Leave connectors at their default (GitHub MCP tools included); no extra network access needed.
-
-**Gate crossed** (`doc/technical/automation-plan.md` Phase 2): PR #90 was the first correct `needs-fix` — R3 blocked an unverifiable factual claim in a doc update without crying wolf on the rest of the entry. `claude/review` has been added to `setup-repo.sh`'s required checks; a repo admin needs to re-run the script for it to take effect on branch protection.
+4. **Trigger**:
+   - GitHub event → Pull request → **all actions**
+   - Filter → **Labels is one of `needs-review`**.
+5. **Connectors**: leave at their default (GitHub MCP tools included); no extra network access needed.
 
 ---
 
 ## Weekly Hygiene (R5)
 
-**Routine**: `trig_01Y4gg6E5uMfD9XWFpBBxrt8` — `R5 — Hygiène hebdo (Scoreo)`
+**Files**: a Claude Code Routine (`trig_01Y4gg6E5uMfD9XWFpBBxrt8`, created by tool — a schedule trigger doesn't need the web UI, unlike R2/R3's GitHub triggers)
 
-Unlike R3, a scheduled (cron) trigger can be created directly by tool — no claude.ai/code/routines web step needed. Runs every Monday 06:00 UTC (`0 6 * * 1`), as a fresh session each time, following `.claude/skills/site-quality`: dependency updates, dead doc links, Lighthouse regressions, PWA manifest/service-worker validity — one PR per category with something to report, never a combined PR, and nothing opened for a clean category.
+Runs `.claude/skills/site-quality` on a schedule: dependency updates, dead doc links, Lighthouse regressions, PWA manifest/service-worker validity — one PR per category with something to report, never a combined PR, and nothing opened for a clean category. Every PR it opens flows through the same `needs-review` → R3 → `review-status-sync.yml` pipeline as any other PR — R5 doesn't self-review or apply `needs-review` itself.
 
-Every PR it opens flows through the same `needs-review` → R3 → `review-status-sync.yml` pipeline as any other PR (see "PR Review (R3)" above) — R5 doesn't self-review or apply `needs-review` itself.
+### Creating the Routine
+
+1. **Name**: `R5 — Hygiène hebdo (Scoreo)`.
+2. **Prompt**: a one-line pointer to `.claude/skills/site-quality/SKILL.md`.
+3. **Repository**: `remhiit/scoreo`.
+4. **Trigger**: schedule, cron `0 6 * * 1` (every Monday 06:00 UTC).
+5. **Connectors**: leave at their default (GitHub MCP tools included); no extra network access needed.
 
 To change the schedule or prompt, use `update_trigger`/`delete_trigger` (MCP `Claude_Code_Remote` server) from any session, or manage it at [claude.ai/code/routines](https://claude.ai/code/routines).
 
