@@ -66,26 +66,25 @@ Automates `.claude/skills/implement-task` for issues that have already been groo
 2. **The Routine** has its only trigger set to **API** (not GitHub — the dispatch already happened in the Action). It reads the issue number from the fired `text`, then follows `implement-task` exactly: branch, tests first, `pnpm lint typecheck test build` green, visual check for UI changes, doc updates, PR referencing `Closes #N`. One run = one issue, never a batch.
 3. The resulting PR flows through the same `needs-review` → R3 → `review-status-sync.yml` pipeline as any other PR — R2 doesn't self-review.
 
-### Creating the Routine (manual, one-time)
+### Creating the Routine
 
-API triggers on a Routine can only be configured from the web UI — no MCP tool or API reaches that config. At [claude.ai/code/routines](https://claude.ai/code/routines):
+The routine shell (name, prompt, `create_new_session_on_fire: true` so each dispatch is a fresh session — matching "one run, one issue") was created by tool via `create_trigger` (`trig_01D2429DJ7p8cok2VDiCANPS`, poke-only: no schedule, never fires on its own). Only the API trigger itself needs the web UI — no MCP tool or API reaches that config:
 
-1. **New routine** → name it (e.g. `R2 — Implementation (Scoreo)`).
-2. **Prompt**:
-   ```
-   You were fired via the API with a run-specific text payload naming a
-   GitHub issue on remhiit/scoreo (e.g. "Implémente l'issue #42 en suivant
-   .claude/skills/implement-task"). Read and follow
-   .claude/skills/implement-task/SKILL.md exactly for that issue: branch,
-   tests first, pnpm lint/typecheck/test/build green, visual check for UI
-   changes, doc updates per the CLAUDE.md pre-commit checklist, and open a
-   PR referencing "Closes #N". One run, one issue — never batch multiple
-   issues even if several carry the ready label.
-   ```
-3. **Repository**: `remhiit/scoreo`.
-4. **Trigger**: **Add another trigger** → **API** → **Generate token** (shown once — copy both the routine ID and the token immediately).
-5. Set the `ROUTINE_ID`/`ROUTINE_TOKEN` repo secrets from that token via `setup-repo.sh` (`ROUTINE_ID=xxx ROUTINE_TOKEN=xxx ./setup-repo.sh`) so `dispatch-ready.yml` can fire it.
-6. Leave connectors at their default (GitHub MCP tools included); no extra network access needed.
+1. Open **R2 — Implementation (Scoreo)** at [claude.ai/code/routines](https://claude.ai/code/routines).
+2. **Add another trigger** → **API** → **Generate token** (shown once — copy both the routine ID and the token immediately).
+3. Set the `ROUTINE_ID`/`ROUTINE_TOKEN` repo secrets from that token via `setup-repo.sh` (`ROUTINE_ID=xxx ROUTINE_TOKEN=xxx ./setup-repo.sh`) so `dispatch-ready.yml` can fire it.
+
+For reference, the prompt used when creating the routine shell:
+```
+You were fired via the API with a run-specific text payload naming a
+GitHub issue on remhiit/scoreo (e.g. "Implémente l'issue #42 en suivant
+.claude/skills/implement-task"). Read and follow
+.claude/skills/implement-task/SKILL.md exactly for that issue: branch,
+tests first, pnpm lint/typecheck/test/build green, visual check for UI
+changes, doc updates per the CLAUDE.md pre-commit checklist, and open a
+PR referencing "Closes #N". One run, one issue — never batch multiple
+issues even if several carry the ready label.
+```
 
 **Gate before widening the `auto` allow-list** (`doc/technical/automation-plan.md` Phase 4): 5 easy tickets handled, PRs readable, merge still manual. Only after that does Phase 5 (R4 + auto-merge) become relevant.
 

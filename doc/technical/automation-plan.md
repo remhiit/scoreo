@@ -354,9 +354,13 @@ gate a besoin) :
       (routine pas encore créée), sort proprement sans échouer.
 - [x] Secrets `ROUTINE_ID`/`ROUTINE_TOKEN` ajoutés à `setup-repo.sh`
       (générés depuis le trigger API de la routine R2, à créer manuellement)
-- [ ] **Routine R2 à créer par Rémi** sur claude.ai/code/routines (trigger
-      API uniquement, pas GitHub — voir `doc/technical/deployment.md`
-      « Issue Implementation (R2) » pour le prompt exact et les étapes) —
+- [x] Coquille de la routine R2 créée par outil (`trig_01D2429DJ7p8cok2VDiCANPS`,
+      poke-only, `create_new_session_on_fire: true` — une session fraîche par
+      déclenchement, cohérent avec « un run = un ticket »). `create_trigger`
+      ne configure que planification/poke, pas les triggers GitHub ou API.
+- [ ] **Trigger API à ajouter par Rémi** sur claude.ai/code/routines (Add
+      another trigger → API → Generate token — aucun outil MCP n'atteint ce
+      modal) puis passer `ROUTINE_ID`/`ROUTINE_TOKEN` à `setup-repo.sh` —
       condition pour que `dispatch-ready.yml` fasse réellement quelque chose
 
 ```yaml
