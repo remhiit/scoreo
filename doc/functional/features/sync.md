@@ -21,6 +21,7 @@ On every page reload the in-memory token is gone, so the session is restored via
 - A silent `requestAccessToken({ prompt: '' })` call fetches a fresh token before the first sync
 - Sync then triggers immediately (same flow as a fresh login)
 - If the silent refresh fails (e.g. Google consent revoked), the saved session is cleared and the user is shown the "Connect" screen
+- If the silent refresh succeeds but the **auto-sync itself** then fails (network error, API error), the phase falls back to `Disconnected` while `email` is kept (the account is still configured, only the last sync attempt failed). The Sync screen reflects this by showing a **"Disconnect"** button instead of "Connect with Google", so the user can cleanly log out rather than being stuck retrying a silent connect
 
 ## How it works
 

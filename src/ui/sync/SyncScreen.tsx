@@ -46,11 +46,19 @@ export function SyncScreen({ syncUseCase }: SyncScreenProps) {
           </span>
           <div className="section-label">Cloud Sync</div>
           <div>Sync your data with Google Drive</div>
-          <LudoButton
-            text="Connect with Google"
-            variant="primary"
-            onClick={() => void submitLogin(syncUseCase, dispatch)}
-          />
+          {state.email !== null ? (
+            <LudoButton
+              text="Disconnect"
+              variant="secondary"
+              onClick={() => void submitLogout(syncUseCase, dispatch)}
+            />
+          ) : (
+            <LudoButton
+              text="Connect with Google"
+              variant="primary"
+              onClick={() => void submitLogin(syncUseCase, dispatch)}
+            />
+          )}
         </div>
       )}
 
