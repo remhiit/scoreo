@@ -8,7 +8,7 @@ via les **routines Claude Code**.
 > lire en premier. Il indique la phase en cours et le critère de passage à la
 > suivante. Ne pas sauter de phase : chaque gate protège la suivante.
 
-**Phase en cours : 4 — R2, l'implémentation (routine opérationnelle depuis le 2026-07-15, gate 0/5 — en attente du premier ticket `ready`). Phases 0 à 3 closes : gate Phase 2 franchi (2026-07-14, PR #90) et premier run réel de R5 observé (2026-07-14, PR #84-89).**
+**Phase en cours : 4 — R2, l'implémentation (routine opérationnelle depuis le 2026-07-15, gate 1/5 — premier ticket #96/PR #97 traité de bout en bout). Phases 0 à 3 closes : gate Phase 2 franchi (2026-07-14, PR #90) et premier run réel de R5 observé (2026-07-14, PR #84-89).**
 
 ---
 
@@ -379,8 +379,12 @@ Implementation (R2)).
       `issues.labeled` filtré `ready` configurés. R2 est opérationnelle.
 
 **Gate :** 5 tickets faciles traités, PR lisibles, **merge encore manuel**.
-Compteur : 0/5 — aucune issue `ready` traitée pour l'instant (backlog vide
-au 2026-07-15).
+
+| Issue | PR | Note |
+|---|---|---|
+| #96 | #97 | Bouton Disconnect visible quand la synchro échoue après connexion — `review-pass`, mergé sans intervention manuelle |
+
+Compteur : 1/5.
 
 ### Phase 5 — R4 et auto-merge
 
