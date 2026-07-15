@@ -13,13 +13,6 @@ jobs:
     if: github.event.pull_request.draft == false
     runs-on: ubuntu-latest
     steps:
-      - name: Add needs-review label
-        env:
-          GH_TOKEN: ${{ github.token }}
-          REPO: ${{ github.repository }}
-          NUMBER: ${{ github.event.pull_request.number }}
-        run: gh api "repos/$REPO/issues/$NUMBER/labels" -f "labels[]=needs-review"
-
       - name: Remove stale verdict labels
         env:
           GH_TOKEN: ${{ github.token }}
@@ -28,3 +21,10 @@ jobs:
         run: |
           gh api -X DELETE "repos/$REPO/issues/$NUMBER/labels/review-pass" || true
           gh api -X DELETE "repos/$REPO/issues/$NUMBER/labels/needs-fix" || true
+
+      - name: Add needs-review label
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          NUMBER: ${{ github.event.pull_request.number }}
+        run: gh api "repos/$REPO/issues/$NUMBER/labels" -f "labels[]=needs-review"
