@@ -8,7 +8,7 @@ via les **routines Claude Code**.
 > lire en premier. Il indique la phase en cours et le critère de passage à la
 > suivante. Ne pas sauter de phase : chaque gate protège la suivante.
 
-**Phase en cours : 4 — R2, l'implémentation (trigger GitHub direct `issues.labeled == ready`, prompt et trigger à finaliser par Rémi sur la routine existante). Phases 0 à 3 closes : gate Phase 2 franchi (2026-07-14, PR #90) et premier run réel de R5 observé (2026-07-14, PR #84-89).**
+**Phase en cours : 4 — R2, l'implémentation (routine opérationnelle depuis le 2026-07-15, gate 0/5 — en attente du premier ticket `ready`). Phases 0 à 3 closes : gate Phase 2 franchi (2026-07-14, PR #90) et premier run réel de R5 observé (2026-07-14, PR #84-89).**
 
 ---
 
@@ -374,14 +374,13 @@ Implementation (R2)).
       ajoutée (contexte du trigger pour R2, sélection manuelle sinon)
 - [x] `.github/workflows/dispatch-ready.yml` et les secrets `ROUTINE_ID`/
       `ROUTINE_TOKEN` supprimés — plus nécessaires
-- [x] Coquille de la routine R2 créée par outil (`trig_01D2429DJ7p8cok2VDiCANPS`) —
-      prompt et trigger à finaliser manuellement (voir ci-dessous)
-- [ ] **Rémi** : sur la routine R2, remplacer le prompt par la version
-      courte documentée dans `deployment.md` et configurer le trigger GitHub
-      `issues.labeled` filtré `ready` (au lieu du trigger API prévu
-      initialement)
+- [x] Coquille de la routine R2 créée par outil (`trig_01D2429DJ7p8cok2VDiCANPS`)
+- [x] **Routine R2 finalisée par Rémi** : prompt court + trigger GitHub
+      `issues.labeled` filtré `ready` configurés. R2 est opérationnelle.
 
 **Gate :** 5 tickets faciles traités, PR lisibles, **merge encore manuel**.
+Compteur : 0/5 — aucune issue `ready` traitée pour l'instant (backlog vide
+au 2026-07-15).
 
 ### Phase 5 — R4 et auto-merge
 
