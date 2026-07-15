@@ -2,7 +2,7 @@ name: Queue PR for Review
 
 on:
   pull_request:
-    types: [opened, ready_for_review]
+    types: [opened, ready_for_review, synchronize]
 
 permissions:
   issues: write
@@ -13,6 +13,15 @@ jobs:
     if: github.event.pull_request.draft == false
     runs-on: ubuntu-latest
     steps:
+      - name: Remove stale verdict labels
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          gh api -X DELETE "repos/$REPO/issues/$NUMBER/labels/review-pass" || true
+          gh api -X DELETE "repos/$REPO/issues/$NUMBER/labels/needs-fix" || true
+
       - name: Add needs-review label
         env:
           GH_TOKEN: ${{ github.token }}
