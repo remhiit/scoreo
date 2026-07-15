@@ -9,11 +9,20 @@ Executes a single GitHub issue's spec (written by `issue-to-spec`) as one
 branch, one commit, one PR. See `project-conventions` for the layering and
 backward-compat rules referenced throughout.
 
-## Picking the issue
+## Which issue
 
-If not told which issue, take the first open issue labeled `ready` and not
-assigned, highest priority first (`P0` > `P1` > `P2` > `P3`). Add the
-`in-progress` label before starting.
+- **As R2** (fired by the routine's GitHub trigger): the issue is the one
+  from your triggering context — the `issues` `labeled` event that started
+  this run. Don't search for it; the trigger context already identifies it
+  precisely, including when several issues carry `ready` at once (each
+  matching event starts its own independent session, one issue each).
+- **Interactive, no issue named**: take the first open issue labeled `ready`
+  and not assigned, highest priority first (`P0` > `P1` > `P2` > `P3`).
+- **Interactive, issue named**: use that one.
+
+Replace `ready` with `in-progress` before starting, in every case — remove
+`ready`, add `in-progress`. A stale `ready` left in place would mislead
+anyone scanning the backlog into thinking the issue is still unclaimed.
 
 ## Workflow
 
