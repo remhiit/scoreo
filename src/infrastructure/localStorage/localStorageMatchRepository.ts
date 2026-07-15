@@ -59,6 +59,10 @@ export class LocalStorageMatchRepository implements MatchRepository {
     writeAll(this.getAll().filter((m) => m.id !== id))
   }
 
+  deleteAll(): void {
+    writeAll([])
+  }
+
   private migrateIfNeeded(): void {
     const raw = localStorage.getItem(KEY)
     if (raw === null) return

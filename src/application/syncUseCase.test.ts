@@ -329,6 +329,49 @@ describe('SyncUseCase', () => {
     expect(matchRepo.getAll()).toHaveLength(1)
   })
 
+  it('resolveConflict keepRemote replaces local data instead of merging it', async () => {
+    // Regression test: writeRemoteToLocal used to only saveAll (upsert), so a local
+    // player/gameType/match absent from the remote dataset would survive "Keep remote"
+    // — effectively merging instead of replacing. deleteAll() must run first.
+    const cloudRepo = new InMemoryCloudSyncRepository()
+    await cloudRepo.login()
+    cloudRepo.storedData = {
+      players: [{ id: 'p1', name: 'Alice', active: true }],
+      gameTypes: [],
+      matches: [],
+      lastModified: 1000,
+    }
+    const playerRepo = new InMemoryPlayerRepository()
+    playerRepo.save({ id: 'p1', name: 'Alice', active: true })
+    playerRepo.save({ id: 'p2', name: 'Bob (local only)', active: true })
+    const gameTypeRepo = new InMemoryGameTypeRepository()
+    gameTypeRepo.save({
+      id: 'gt-local-only',
+      name: 'Local only',
+      winCondition: 'HIGHEST_SCORE',
+      tieBreakRule: 'NONE',
+      tieBreakCondition: 'HIGHEST_SCORE',
+      tieBreakLabel: null,
+      active: true,
+    })
+    const matchRepo = new InMemoryMatchRepository()
+    matchRepo.save({
+      id: 'm-local-only',
+      date: 1000,
+      gameTypeId: 'gt-local-only',
+      playerScores: [{ playerId: 'p2', score: 10 }],
+      manualWinners: [],
+      secondaryPlayerScores: [],
+    })
+    const useCase = buildUseCase(cloudRepo, playerRepo, gameTypeRepo, matchRepo)
+
+    await useCase.resolveConflict(false)
+
+    expect(playerRepo.getAll(true)).toEqual([{ id: 'p1', name: 'Alice', active: true }])
+    expect(gameTypeRepo.getAll()).toEqual([])
+    expect(matchRepo.getAll()).toEqual([])
+  })
+
   it('autoSync treats identical data as Synced even with different object key order', async () => {
     // Regression test: isSameState used to compare via JSON.stringify, which is
     // key-order-sensitive. A real adapter round-tripping through JSON.parse can easily

@@ -163,4 +163,40 @@ describe('InMemoryRepository fakes', () => {
     repo.saveAll([{ id: 'p1', name: 'Updated Alice', active: true }])
     expect(repo.getAll(true)[0].name).toBe('Updated Alice')
   })
+
+  it('PlayerRepository: deleteAll clears every player', () => {
+    const repo = new InMemoryPlayerRepository()
+    repo.save({ id: 'p1', name: 'Alice', active: true })
+    repo.deleteAll()
+    expect(repo.getAll(true)).toEqual([])
+  })
+
+  it('GameTypeRepository: deleteAll clears every game type', () => {
+    const repo = new InMemoryGameTypeRepository()
+    repo.save({
+      id: 'gt1',
+      name: 'Belote',
+      winCondition: 'HIGHEST_SCORE',
+      tieBreakRule: 'NONE',
+      tieBreakCondition: 'HIGHEST_SCORE',
+      tieBreakLabel: null,
+      active: true,
+    })
+    repo.deleteAll()
+    expect(repo.getAll(true)).toEqual([])
+  })
+
+  it('MatchRepository: deleteAll clears every match', () => {
+    const repo = new InMemoryMatchRepository()
+    repo.save({
+      id: 'm1',
+      date: 1000,
+      gameTypeId: 'gt1',
+      playerScores: [{ playerId: 'p1', score: 10 }],
+      manualWinners: [],
+      secondaryPlayerScores: [],
+    })
+    repo.deleteAll()
+    expect(repo.getAll()).toEqual([])
+  })
 })

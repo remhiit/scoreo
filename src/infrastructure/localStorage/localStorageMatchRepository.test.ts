@@ -104,4 +104,14 @@ describe('LocalStorageMatchRepository', () => {
 
     expect(repo.getAll()[0].secondaryPlayerScores).toEqual([])
   })
+
+  it('deleteAll clears every match', () => {
+    const repo = new LocalStorageMatchRepository()
+    repo.save({ id: 'm1', date: 1000, gameTypeId: 'gt1', playerScores: [], manualWinners: [], secondaryPlayerScores: [] })
+    repo.save({ id: 'm2', date: 2000, gameTypeId: 'gt1', playerScores: [], manualWinners: [], secondaryPlayerScores: [] })
+
+    repo.deleteAll()
+
+    expect(repo.getAll()).toEqual([])
+  })
 })

@@ -48,7 +48,9 @@ Triggered after each connection:
 
 The user sees both versions (local and remote) with counts and dates. Choice:
 - **Keep local** → local data overwrites Drive
-- **Keep remote** → remote data overwrites local
+- **Keep remote** → remote data **replaces** local: every local player/gameType/match is deleted first (`deleteAll()` on each repository), then the remote dataset is written. A local entry absent from Drive does not survive — this is a real replacement, not a merge (same behavior applies to the auto-sync auto-pull path when local is empty).
+
+This is deliberately different from **Import** (`schemas/import/`), which always merges (upserts) the imported data into whatever already exists locally.
 
 ## Offline mode
 

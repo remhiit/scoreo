@@ -175,6 +175,9 @@ export class SyncUseCase {
   }
 
   private writeRemoteToLocal(data: SyncData): void {
+    this.playerRepo.deleteAll()
+    this.gameTypeRepo.deleteAll()
+    this.matchRepo.deleteAll()
     this.playerRepo.saveAll(data.players)
     this.gameTypeRepo.saveAll(data.gameTypes)
     this.matchRepo.saveAll(data.matches)
