@@ -344,6 +344,20 @@ gate a besoin) :
 
 ### Phase 4 — R2, l'implémentation ⬅️ *en cours*
 
+**Pourquoi une Action + trigger API plutôt qu'un trigger GitHub direct comme
+R3 ?** Un trigger GitHub sur une routine ne transmet pas le numéro de
+l'issue/PR dans le prompt — c'est pourquoi R3 doit lui-même retrouver « la PR
+qui porte actuellement `needs-review` (il devrait y en avoir exactement
+une) ». Cette hypothèse tient à peu près pour `needs-review` (posé et retiré
+dans la même fenêtre courte qu'une review). Elle casserait pour `ready` :
+plusieurs tickets peuvent rester `ready` en attente simultanément (backlog
+normal), donc une routine déclenchée en aveugle ne saurait pas lequel
+traiter — risque réel de runs qui se marchent dessus ou traitent le mauvais
+ticket. `dispatch-ready.yml` capte l'événement `issues.labeled == ready` et
+passe explicitement le numéro d'issue dans le champ `text` du `/fire` :
+aucune ambiguïté possible, quel que soit le nombre d'autres tickets `ready`
+en attente.
+
 - [x] Header beta vérifié (2026-07-15) auprès de la doc officielle
       (`platform.claude.com/docs/en/api/claude-code/routines-fire`) :
       `experimental-cc-routine-2026-04-01` toujours à jour, endpoint et forme
