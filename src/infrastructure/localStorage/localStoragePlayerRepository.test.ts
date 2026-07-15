@@ -74,4 +74,14 @@ describe('LocalStoragePlayerRepository', () => {
 
     expect(repo.getAll()).toHaveLength(2)
   })
+
+  it('deleteAll clears every stored player', () => {
+    const repo = new LocalStoragePlayerRepository()
+    repo.save({ id: 'p1', name: 'Alice', active: true })
+    repo.save({ id: 'p2', name: 'Bob', active: false })
+
+    repo.deleteAll()
+
+    expect(repo.getAll(true)).toEqual([])
+  })
 })

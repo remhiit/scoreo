@@ -329,6 +329,82 @@ describe('SyncUseCase', () => {
     expect(matchRepo.getAll()).toHaveLength(1)
   })
 
+  it('resolveConflict keepRemote replaces local data instead of merging it', async () => {
+    const cloudRepo = new InMemoryCloudSyncRepository()
+    await cloudRepo.login()
+    cloudRepo.storedData = {
+      players: [{ id: 'p1', name: 'Alice', active: true }],
+      gameTypes: [
+        {
+          id: 'gt1',
+          name: 'Test',
+          winCondition: 'HIGHEST_SCORE',
+          tieBreakRule: 'NONE',
+          tieBreakCondition: 'HIGHEST_SCORE',
+          tieBreakLabel: null,
+          active: true,
+        },
+      ],
+      matches: [
+        {
+          id: 'm1',
+          date: 1000,
+          gameTypeId: 'gt1',
+          playerScores: [{ playerId: 'p1', score: 10 }],
+          manualWinners: [],
+          secondaryPlayerScores: [],
+        },
+      ],
+      lastModified: 1000,
+    }
+    const playerRepo = new InMemoryPlayerRepository()
+    playerRepo.save({ id: 'p1', name: 'Alice', active: true })
+    playerRepo.save({ id: 'p2', name: 'Bob (local only)', active: true })
+    const gameTypeRepo = new InMemoryGameTypeRepository()
+    gameTypeRepo.save({
+      id: 'gt1',
+      name: 'Test',
+      winCondition: 'HIGHEST_SCORE',
+      tieBreakRule: 'NONE',
+      tieBreakCondition: 'HIGHEST_SCORE',
+      tieBreakLabel: null,
+      active: true,
+    })
+    gameTypeRepo.save({
+      id: 'gt2',
+      name: 'Local only',
+      winCondition: 'HIGHEST_SCORE',
+      tieBreakRule: 'NONE',
+      tieBreakCondition: 'HIGHEST_SCORE',
+      tieBreakLabel: null,
+      active: true,
+    })
+    const matchRepo = new InMemoryMatchRepository()
+    matchRepo.save({
+      id: 'm1',
+      date: 1000,
+      gameTypeId: 'gt1',
+      playerScores: [{ playerId: 'p1', score: 10 }],
+      manualWinners: [],
+      secondaryPlayerScores: [],
+    })
+    matchRepo.save({
+      id: 'm2',
+      date: 2000,
+      gameTypeId: 'gt1',
+      playerScores: [{ playerId: 'p2', score: 5 }],
+      manualWinners: [],
+      secondaryPlayerScores: [],
+    })
+    const useCase = buildUseCase(cloudRepo, playerRepo, gameTypeRepo, matchRepo)
+
+    await useCase.resolveConflict(false)
+
+    expect(playerRepo.getAll(true).map((p) => p.id)).toEqual(['p1'])
+    expect(gameTypeRepo.getAll().map((g) => g.id)).toEqual(['gt1'])
+    expect(matchRepo.getAll().map((m) => m.id)).toEqual(['m1'])
+  })
+
   it('autoSync treats identical data as Synced even with different object key order', async () => {
     // Regression test: isSameState used to compare via JSON.stringify, which is
     // key-order-sensitive. A real adapter round-tripping through JSON.parse can easily

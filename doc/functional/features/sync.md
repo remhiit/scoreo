@@ -48,7 +48,7 @@ Triggered after each connection:
 
 The user sees both versions (local and remote) with counts and dates. Choice:
 - **Keep local** → local data overwrites Drive
-- **Keep remote** → remote data overwrites local
+- **Keep remote** → remote data overwrites local. This is a real replacement, not a merge: local players/game types/matches absent from the remote data set are deleted (`syncUseCase.writeRemoteToLocal` calls each repository's `deleteAll()` before `saveAll()`). A "Local empty" auto-sync pull (see above) goes through the same path. This is deliberately different from **Import** (see `doc/functional/features/import.md`), which always merges and never deletes existing local data.
 
 ## Offline mode
 

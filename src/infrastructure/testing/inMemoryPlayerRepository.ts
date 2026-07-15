@@ -32,4 +32,8 @@ export class InMemoryPlayerRepository implements PlayerRepository {
     const existing = this.players[idx]
     this.players[idx] = { ...existing, active: false, name: anonymize ? '' : existing.name }
   }
+
+  deleteAll(): void {
+    this.players = []
+  }
 }

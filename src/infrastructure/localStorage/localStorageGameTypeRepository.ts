@@ -47,4 +47,8 @@ export class LocalStorageGameTypeRepository implements GameTypeRepository {
   findById(id: string): GameType | undefined {
     return readAll().find((g) => g.id === id)
   }
+
+  deleteAll(): void {
+    writeAll([])
+  }
 }

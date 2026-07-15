@@ -5,4 +5,5 @@ export interface GameTypeRepository {
   save(gameType: GameType): void
   saveAll(gameTypes: GameType[]): void
   findById(id: string): GameType | undefined
+  deleteAll(): void
 }

@@ -33,4 +33,8 @@ export class InMemoryMatchRepository implements MatchRepository {
   delete(id: string): void {
     this.matches = this.matches.filter((m) => m.id !== id)
   }
+
+  deleteAll(): void {
+    this.matches = []
+  }
 }
