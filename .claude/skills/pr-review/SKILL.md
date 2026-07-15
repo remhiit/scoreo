@@ -10,6 +10,17 @@ issue it claims to close, and whether it's honest about the repo's
 architecture and backward-compat rules. See `project-conventions` for the
 rules this checklist is built on.
 
+## Which PR
+
+- **As R3** (fired by the routine's GitHub trigger): the PR is the one from
+  your triggering context — the `pull_request` event that started this run.
+  Don't search for it (e.g. by scanning for `needs-review`); the trigger
+  context already identifies it precisely, including when several PRs carry
+  `needs-review` at once (each matching event starts its own independent
+  session, one PR each).
+- **Interactive** (asked directly in a session): review the PR the user
+  named. Ask for the number if it wasn't given.
+
 ## Out of scope — don't re-check these
 
 `ci.yml` already runs `lint`, `test`, `build`, `doc-links` on every push. Redoing

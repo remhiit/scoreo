@@ -107,17 +107,15 @@ A Routine's GitHub trigger only accepts one specific action *or* every action in
 GitHub triggers and API triggers on a Routine can only be configured from the web UI — no MCP tool or API reaches that config. At [claude.ai/code/routines](https://claude.ai/code/routines):
 
 1. **New routine** → name it (e.g. `R3 — PR Review (Scoreo)`).
-2. **Prompt**:
+2. **Prompt** (kept to a one-line pointer — all the actual process lives in the skill, per `automation-plan.md` §2.5):
    ```
-   You were triggered because a PR on remhiit/scoreo was labeled
-   needs-review. Identify which PR currently carries that label (there
-   should be exactly one — the one that just triggered this run). Read and
-   follow .claude/skills/pr-review/SKILL.md exactly to review it, including
-   its final "Label the verdict (R3 only)" step — apply exactly one of
-   review-pass or needs-fix, remove needs-review and the other verdict
-   label, and post a PR comment only if there are blocking issues to
-   explain.
+   Review the pull request from your triggering context by following
+   .claude/skills/pr-review/SKILL.md exactly.
    ```
+   Confirmed live (2026-07-15) that a GitHub-triggered routine's session has
+   the specific PR from the triggering event in context — no need for the
+   routine prompt to instruct it to search for "the PR carrying
+   needs-review". `pr-review/SKILL.md`'s "Which PR" section covers this.
 3. **Repository**: `remhiit/scoreo`.
 4. **Trigger**: GitHub event → Pull request → **all actions** → filter **Labels is one of `needs-review`**.
 5. Leave connectors at their default (GitHub MCP tools included); no extra network access needed.
