@@ -8,7 +8,7 @@ via les **routines Claude Code**.
 > lire en premier. Il indique la phase en cours et le critère de passage à la
 > suivante. Ne pas sauter de phase : chaque gate protège la suivante.
 
-**Phase en cours : 4 — R2, l'implémentation (routine opérationnelle depuis le 2026-07-15, gate 3/5 — #96/#97, #99/#100 et #102/#104 mergées de bout en bout). Phases 0 à 3 closes : gate Phase 2 franchi (2026-07-14, PR #90) et premier run réel de R5 observé (2026-07-14, PR #84-89).**
+**Phase 4 — R2 : gate franchi (2026-07-16, 5/5 tickets mergés). Phases 0 à 3 closes : gate Phase 2 franchi (2026-07-14, PR #90) et premier run réel de R5 observé (2026-07-14, PR #84-89). Prochaine étape : Phase 5 (R4 + auto-merge), pas encore démarrée.**
 
 ---
 
@@ -355,7 +355,7 @@ gate a besoin) :
       vrai bug d'infra repéré et corrigé (upload d'artefact Lighthouse, #89).
       Prochain run planifié : 2026-07-20.
 
-### Phase 4 — R2, l'implémentation ⬅️ *en cours*
+### Phase 4 — R2, l'implémentation — **Gate franchi (2026-07-16)**
 
 **Révisé (2026-07-15) :** conçu au départ avec une Action (`dispatch-ready.yml`)
 + trigger API, sur l'hypothèse (erronée) que les triggers GitHub d'une
@@ -382,11 +382,18 @@ Implementation (R2)).
 
 | Issue | PR | Note |
 |---|---|---|
-| #96 | #97 | Bouton Disconnect visible quand la synchro échoue après connexion — `review-pass`, mergé sans intervention manuelle |
+| #96 | #97 | Bouton Disconnect visible quand la synchro échoue après connexion — `review-pass`, mergée sans intervention manuelle |
 | #99 | #100 | `deleteAll()` sur les ports Player/GameType/Match pour un vrai remplacement des données au « Keep remote » — mergée, voir incident double-fire ci-dessous |
 | #102 | #104 | Nouvelle phase `Restoring` pour éviter le flash du bouton Connect au montage de `SyncScreen` — premier `needs-fix` de R3 sur ce ticket (piège `useEffect`/paint vs `useLayoutEffect`), corrigé, mergée |
+| #106 | #107 | Nettoyage définitif des joueurs inactifs sans match enregistré (`hardDelete` sur `PlayerRepository`) — mergée |
+| #108 | #109 | Retrait de l'email comme signal de connexion (jamais renvoyé par l'API GIS Token Model) au profit d'un rafraîchissement silencieux systématique — risque Élevé, mergée |
 
-Compteur (mergées) : 3/5.
+**Compteur (mergées) : 5/5 — gate franchi.** Les 5 tickets ont été traités
+de bout en bout par R2 (branche + code + tests + PR), passés par R3, et
+mergés manuellement par Rémi (comme prévu par le gate — l'auto-merge reste
+Phase 5). Le critère qualitatif tient aussi : les PR couvrent des risques
+réels (dont deux **Élevé** — #100 et #109 — touchant ports/adapters), pas
+seulement des changements triviaux.
 
 **Incident (2026-07-15) — double-fire de R2 sur l'issue #99 :** même classe
 de cause que le double-fire de R3 (PR #94), côté labellisation cette fois.
