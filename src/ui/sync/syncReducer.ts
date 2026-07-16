@@ -2,6 +2,8 @@ import type { SyncConflict, SyncResult, SyncUseCase } from '../../application/sy
 import { initialSyncState, type SyncState } from './syncTypes'
 
 export type SyncAction =
+  | { type: 'restoringSession' }
+  | { type: 'restoreFinished' }
   | { type: 'loginStarted' }
   | { type: 'loginFailed'; error: string }
   | { type: 'connected'; email: string | null }
@@ -16,6 +18,10 @@ export type SyncAction =
 
 export function syncReducer(state: SyncState, action: SyncAction): SyncState {
   switch (action.type) {
+    case 'restoringSession':
+      return { ...state, phase: 'Restoring', error: undefined }
+    case 'restoreFinished':
+      return { ...state, phase: 'Disconnected' }
     case 'loginStarted':
       return { ...state, phase: 'Connecting', error: undefined }
     case 'loginFailed':
@@ -73,14 +79,18 @@ export async function submitRestoreSession(
   syncUseCase: SyncUseCase,
   dispatch: (action: SyncAction) => void,
 ): Promise<void> {
+  dispatch({ type: 'restoringSession' })
   try {
     const status = await syncUseCase.status()
     if (status.connected) {
       dispatch({ type: 'connected', email: status.email })
       await runAutoSync(syncUseCase, dispatch)
+    } else {
+      dispatch({ type: 'restoreFinished' })
     }
   } catch {
     // Invalid or missing token — stay disconnected.
+    dispatch({ type: 'restoreFinished' })
   }
 }
 

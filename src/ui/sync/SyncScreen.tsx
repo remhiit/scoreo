@@ -62,6 +62,7 @@ export function SyncScreen({ syncUseCase }: SyncScreenProps) {
         </div>
       )}
 
+      {state.phase === 'Restoring' && <LoadingView message="Restoring session..." />}
       {state.phase === 'Connecting' && <LoadingView message="Connecting to Google..." />}
       {state.phase === 'Detecting' && <LoadingView message="Checking sync status..." />}
       {state.phase === 'Syncing' && <LoadingView message="Synchronising data..." />}

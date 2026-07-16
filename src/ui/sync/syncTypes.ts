@@ -1,6 +1,6 @@
 import type { SyncConflict, SyncResult } from '../../application/syncUseCase'
 
-export type SyncPhase = 'Disconnected' | 'Connecting' | 'Detecting' | 'Syncing' | 'Resolved' | 'Conflict'
+export type SyncPhase = 'Disconnected' | 'Restoring' | 'Connecting' | 'Detecting' | 'Syncing' | 'Resolved' | 'Conflict'
 
 export interface SyncState {
   phase: SyncPhase
