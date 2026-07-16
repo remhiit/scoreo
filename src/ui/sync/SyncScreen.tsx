@@ -10,7 +10,7 @@ export interface SyncScreenProps {
 }
 
 export function SyncScreen({ syncUseCase }: SyncScreenProps) {
-  const [state, dispatch] = useReducer(syncReducer, initialSyncState)
+  const [state, dispatch] = useReducer(syncReducer, initialSyncState, (s) => ({ ...s, phase: 'Restoring' as const }))
   const [isOnline, setIsOnline] = useState(() => navigator.onLine)
 
   useEffect(() => {
