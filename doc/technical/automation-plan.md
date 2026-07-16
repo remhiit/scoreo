@@ -384,9 +384,9 @@ Implementation (R2)).
 |---|---|---|
 | #96 | #97 | Bouton Disconnect visible quand la synchro échoue après connexion — `review-pass`, mergé sans intervention manuelle |
 | #99 | #100 | `deleteAll()` sur les ports Player/GameType/Match pour un vrai remplacement des données au « Keep remote » — mergée, voir incident double-fire ci-dessous |
-| #102 | #104 | Nouvelle phase `Restoring` pour éviter le flash du bouton Connect au montage de `SyncScreen` — premier `needs-fix` de R3 sur ce ticket (piège `useEffect`/paint vs `useLayoutEffect`), corrigé, en attente de re-review |
+| #102 | #104 | Nouvelle phase `Restoring` pour éviter le flash du bouton Connect au montage de `SyncScreen` — premier `needs-fix` de R3 sur ce ticket (piège `useEffect`/paint vs `useLayoutEffect`), corrigé, re-review passée (`review-pass`), en attente de merge manuel |
 
-Compteur : 2/5.
+Compteur (mergées) : 1/5 — #102/#104 est `review-pass` mais pas encore mergée, ne compte pas tant que ce n'est pas fait.
 
 **Incident (2026-07-15) — double-fire de R2 sur l'issue #99 :** même classe
 de cause que le double-fire de R3 (PR #94), côté labellisation cette fois.
