@@ -74,10 +74,18 @@ interactive grooming gate — don't skip it):
 1. Create the issue with `mcp__github__issue_write` (title = a short
    imperative summary, not the full spec).
 2. Add the priority label (`P0`…`P3` — P0 most urgent; ask the user if not
-   obvious from context).
-3. Add the `ready` label — this is what would trigger implementation
-   (autonomously in a later phase; for now, `implement-task` picks up the
-   first open `ready` issue when told to "développe").
+   obvious from context) in its **own** `issue_write` call.
+3. **In a separate call**, add the `ready` label — this is what triggers
+   R2. **Never add `ready` together with another label in the same call.**
+   GitHub fires one `labeled` webhook per label added, and R2's GitHub
+   trigger filter matches on the issue's *current* label state (not which
+   label the event named) — so adding `ready` alongside another label in
+   one request can double-fire R2 (each of the two webhook deliveries sees
+   `ready` already present and independently matches the filter). Hit in
+   practice on issue #99: two near-identical PRs (#100/#101) from a single
+   `labels: ["P2", "ready"]` call. Posing `ready` alone, last, means it's
+   the only event where the label state transitions into matching the
+   filter.
 
 Do not add `auto` here — that's `implement-task`'s call to make once the
 actual diff exists, not a prediction made before any code is written.
