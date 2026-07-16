@@ -383,9 +383,10 @@ Implementation (R2)).
 | Issue | PR | Note |
 |---|---|---|
 | #96 | #97 | Bouton Disconnect visible quand la synchro échoue après connexion — `review-pass`, mergé sans intervention manuelle |
-| #99 | #100 | `deleteAll()` sur les ports Player/GameType/Match pour un vrai remplacement des données au « Keep remote » — `review-pass`, pas encore mergée, voir incident double-fire ci-dessous |
+| #99 | #100 | `deleteAll()` sur les ports Player/GameType/Match pour un vrai remplacement des données au « Keep remote » — mergée, voir incident double-fire ci-dessous |
+| #102 | #104 | Nouvelle phase `Restoring` pour éviter le flash du bouton Connect au montage de `SyncScreen` — premier `needs-fix` de R3 sur ce ticket (piège `useEffect`/paint vs `useLayoutEffect`), corrigé, en attente de re-review |
 
-Compteur : 1/5 (mergées) — #99/#100 en cours de merge.
+Compteur : 2/5.
 
 **Incident (2026-07-15) — double-fire de R2 sur l'issue #99 :** même classe
 de cause que le double-fire de R3 (PR #94), côté labellisation cette fois.
@@ -396,8 +397,7 @@ is one of ready`) matche sur l'état courant des labels de l'issue, pas sur
 le label spécifique nommé par l'événement. Les deux livraisons de webhook
 (`labeled: P2` et `labeled: ready`) ont donc chacune matché le filtre,
 produisant deux PR quasi identiques (#100 et #101, toutes deux `Closes
-#99`). #101 fermée comme doublon, #100 conservée (`review-pass`, pas encore
-mergée). Correctif :
+#99`). #101 fermée comme doublon, #100 conservée et mergée. Correctif :
 `issue-to-spec/SKILL.md` (PR #103) exige désormais que `ready` soit posé
 seul, dans son propre appel, toujours en dernier.
 
