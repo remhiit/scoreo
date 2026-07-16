@@ -8,7 +8,7 @@ via les **routines Claude Code**.
 > lire en premier. Il indique la phase en cours et le critère de passage à la
 > suivante. Ne pas sauter de phase : chaque gate protège la suivante.
 
-**Phase en cours : 5 — R4 et auto-merge (skill + Action écrits, routine R4 à finaliser par Rémi). Phase 4 close : gate franchi (2026-07-16, 5/5 tickets mergés). Phases 0 à 3 closes : gate Phase 2 franchi (2026-07-14, PR #90) et premier run réel de R5 observé (2026-07-14, PR #84-89).**
+**Phase en cours : 5 — R4 et auto-merge (routine opérationnelle depuis le 2026-07-16, gate de 2 semaines démarré, aucun cycle needs-fix→R4→merge observé pour l'instant). Phase 4 close : gate franchi (2026-07-16, 5/5 tickets mergés). Phases 0 à 3 closes : gate Phase 2 franchi (2026-07-14, PR #90) et premier run réel de R5 observé (2026-07-14, PR #84-89).**
 
 ---
 
@@ -434,13 +434,15 @@ cohérent avec le principe directeur §2.2.
 - [x] `.github/workflows/auto-merge-sync.yml` écrit — active/désactive
       l'auto-merge natif GitHub sur pose/retrait du label `auto`
 - [x] Coquille de la routine R4 créée par outil (`trig_014VemW9wW5MopAjDHaaiYK7`,
-      poke-only) — trigger GitHub et connecteurs à finaliser manuellement
-      (voir `deployment.md` § Auto-Fix (R4) — la coquille n'a **aucun**
-      connecteur par défaut, à ajouter avant que R4 soit fonctionnelle)
-- [ ] **Rémi** : finaliser la routine R4 (trigger `pull_request.labeled`
-      filtré `needs-fix` + connecteurs GitHub MCP)
+      poke-only)
+- [x] **Routine R4 finalisée par Rémi (2026-07-16)** : trigger GitHub
+      `pull_request.labeled` filtré `needs-fix` + connecteurs GitHub MCP
+      configurés. R4 est opérationnelle.
 
-**Gate :** 2 semaines, zéro merge qu'on aurait refusé.
+**Gate :** 2 semaines, zéro merge qu'on aurait refusé. **Horloge démarrée
+le 2026-07-16** — pas encore observé de cycle `needs-fix` → R4 → merge en
+conditions réelles (à date, tous les tickets du gate Phase 4 sont passés
+directement en `review-pass`, aucun n'a eu besoin de R4).
 
 ### Phase 6 — Observabilité
 
