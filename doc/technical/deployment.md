@@ -121,12 +121,12 @@ Automates `.claude/skills/address-feedback` for PRs R3 sends back with `needs-fi
 
 R4 manages its own `attempt-1`/`attempt-2`/`attempt-3` counter as the first step of `address-feedback/SKILL.md` — no separate Action for that, the same way R3 already manages `review-pass`/`needs-fix`/`needs-review` itself. At `attempt-3`, R4 stops instead of trying a 4th time: removes `needs-fix` and `auto`, adds `needs-human`. Otherwise it pushes a fix, which `needs-review-label.yml` (`synchronize`) picks up on its own to re-queue R3 — R4 doesn't need to touch `needs-review` itself.
 
-### Creating the Routine (manual, one-time)
+### Creating the Routine (done — 2026-07-16)
 
-The routine shell (name, prompt, `create_new_session_on_fire: true`) was created by tool (`trig_014VemW9wW5MopAjDHaaiYK7`, poke-only — no schedule, never fires on its own). It has **no connectors** (the tool that creates schedule/poke shells can't attach MCP connectors it doesn't itself hold) — the web UI step below must add them, or R4 has no GitHub tools to work with:
+The routine shell (name, prompt, `create_new_session_on_fire: true`) was created by tool (`trig_014VemW9wW5MopAjDHaaiYK7`, poke-only — no schedule, never fires on its own). Tool-created schedule/poke shells can't attach MCP connectors they don't themselves hold, so the trigger and connectors below were finished manually by Rémi through the web UI. R4 is operational: trigger and connectors are both configured, for reference —
 
-1. Open **R4 — Address Feedback (Scoreo)** at [claude.ai/code/routines](https://claude.ai/code/routines).
-2. **Prompt** (already set, for reference):
+1. **R4 — Address Feedback (Scoreo)** at [claude.ai/code/routines](https://claude.ai/code/routines).
+2. **Prompt**:
    ```
    Address the pull request feedback from your triggering context by
    following .claude/skills/address-feedback/SKILL.md exactly, starting
@@ -136,7 +136,7 @@ The routine shell (name, prompt, `create_new_session_on_fire: true`) was created
 4. **Trigger**:
    - GitHub event → Pull request → **labeled**
    - Filter → **Labels is one of `needs-fix`**.
-5. **Connectors**: add the GitHub MCP connector (missing by default on this tool-created shell — check before saving).
+5. **Connectors**: GitHub MCP connector added (the tool-created shell had none by default).
 
 ## Auto-Merge
 
