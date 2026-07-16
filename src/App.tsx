@@ -15,6 +15,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { AddGameTypeUseCase } from './application/addGameTypeUseCase'
 import { AddPlayerUseCase } from './application/addPlayerUseCase'
 import { ArchiveGameTypeUseCase } from './application/archiveGameTypeUseCase'
+import { CleanupInactivePlayersUseCase } from './application/cleanupInactivePlayersUseCase'
 import { CreateMatchUseCase } from './application/createMatchUseCase'
 import { DeleteMatchUseCase } from './application/deleteMatchUseCase'
 import { DeletePlayerUseCase } from './application/deletePlayerUseCase'
@@ -194,6 +195,10 @@ function AppShell() {
   )
   const deletePlayer = useMemo(() => new DeletePlayerUseCase(services.playerRepository), [services])
   const renamePlayerUseCase = useMemo(() => new RenamePlayerUseCase(services.playerRepository), [services])
+  const cleanupInactivePlayers = useMemo(
+    () => new CleanupInactivePlayersUseCase(services.playerRepository, services.matchRepository),
+    [services],
+  )
   const handleImportDone = useCallback(() => {
     navigate(HOME_SCREEN)
   }, [navigate])
@@ -263,6 +268,7 @@ function AppShell() {
             getPlayerStats={getPlayerStats}
             deletePlayer={deletePlayer}
             renamePlayerUseCase={renamePlayerUseCase}
+            cleanupInactivePlayers={cleanupInactivePlayers}
             getGameTypes={homeGetGameTypes}
             onAddGameType={homeOnAddGameType}
             onStartGame={handleStartGame}
