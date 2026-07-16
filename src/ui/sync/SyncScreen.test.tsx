@@ -47,8 +47,9 @@ describe('SyncScreen', () => {
     const { syncUseCase } = buildUseCase(cloudRepo, playerRepo)
     render(<SyncScreen syncUseCase={syncUseCase} />)
 
+    await screen.findByText('Connect with Google')
     await act(async () => {
-      fireEvent.click(await screen.findByText('Connect with Google'))
+      fireEvent.click(screen.getByText('Connect with Google'))
     })
 
     expect(await screen.findByText('Sync conflict')).toBeInTheDocument()
@@ -75,8 +76,9 @@ describe('SyncScreen', () => {
     const { syncUseCase } = buildUseCase(cloudRepo)
     render(<SyncScreen syncUseCase={syncUseCase} />)
 
+    await screen.findByText('Connect with Google')
     await act(async () => {
-      fireEvent.click(await screen.findByText('Connect with Google'))
+      fireEvent.click(screen.getByText('Connect with Google'))
     })
 
     expect(await screen.findByText('Network timeout')).toBeInTheDocument()
@@ -123,5 +125,13 @@ describe('SyncScreen', () => {
 
     expect(await screen.findByText('Connect with Google')).toBeInTheDocument()
     expect(screen.queryByText('Disconnect')).not.toBeInTheDocument()
+  })
+
+  it('shows a Restoring view immediately on mount, never the Connect button first', () => {
+    const { syncUseCase } = buildUseCase()
+    render(<SyncScreen syncUseCase={syncUseCase} />)
+
+    expect(screen.getByText('Restoring session...')).toBeInTheDocument()
+    expect(screen.queryByText('Connect with Google')).not.toBeInTheDocument()
   })
 })

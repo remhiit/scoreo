@@ -174,6 +174,34 @@ describe('syncReducer', () => {
     expect(state.email).toBe('test@example.com')
   })
 
+  it('restoringSession sets phase to Restoring', () => {
+    const state = syncReducer(initialSyncState, { type: 'restoringSession' })
+
+    expect(state.phase).toBe('Restoring')
+  })
+
+  it('restoreFinished returns to the Disconnected phase', () => {
+    const restoring = syncReducer(initialSyncState, { type: 'restoringSession' })
+
+    const state = syncReducer(restoring, { type: 'restoreFinished' })
+
+    expect(state.phase).toBe('Disconnected')
+  })
+
+  it('restoreSession phase is Restoring synchronously, never Disconnected, before it resolves', async () => {
+    const { syncUseCase } = buildUseCase()
+    let state = initialSyncState
+    const dispatch = (action: SyncAction) => {
+      state = syncReducer(state, action)
+    }
+
+    const pending = submitRestoreSession(syncUseCase, dispatch)
+
+    expect(state.phase).toBe('Restoring')
+
+    await pending
+  })
+
   it('restoreSession does nothing when not connected', async () => {
     const { syncUseCase } = buildUseCase()
 

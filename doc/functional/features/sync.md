@@ -17,6 +17,7 @@
 The OAuth access token is **never persisted** — it lives only in memory (`GoogleAuthService`), for the lifetime of the page (see #51: it used to be stored in plaintext in `scoreo_sync_config`, exploitable via XSS). `scoreo_sync_config` only keeps the non-sensitive `email`/`lastSyncTimestamp`/`lastSyncFileId`.
 
 On every page reload the in-memory token is gone, so the session is restored via a **silent GIS refresh** whenever a prior session is detected (a saved `email`):
+- On mount, the Sync screen immediately shows a **"Restoring session..."** loading view (`SyncPhase.Restoring`) instead of the "Connect with Google" button, so a reloading user can't click Connect while the silent refresh is still in flight
 - No popup required
 - A silent `requestAccessToken({ prompt: '' })` call fetches a fresh token before the first sync
 - Sync then triggers immediately (same flow as a fresh login)
