@@ -151,7 +151,7 @@ dans la boucle.
 |---|---|
 | `ready` | Spec validée → déclenche R2 |
 | `in-progress` | Une routine travaille dessus |
-| `needs-review` | File d'attente pour `pr-review` (R3) — seul trigger GitHub possible sur une Routine, posé automatiquement à l'ouverture d'une PR, retiré une fois la review faite |
+| `needs-review` | File d'attente pour `pr-review` (R3) — seul trigger GitHub possible sur une Routine, posé automatiquement à l'ouverture d'une PR, retiré par R3 en tout premier geste (« claim the run », §4) |
 | `review-pass` | Verdict `pr-review` (R3) : conforme → traduit en commit status `claude/review` succès |
 | `needs-fix` | Verdict `pr-review` (R3) : à corriger → traduit en commit status `claude/review` échec, déclenche R4 |
 | `needs-human` | Escalade : plafond d'itérations ou hors périmètre |
