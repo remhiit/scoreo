@@ -113,6 +113,41 @@ Routine at [claude.ai/code/routines](https://claude.ai/code/routines):
 
 ---
 
+## Auto-Fix (R4)
+
+**Files**: a Claude Code Routine (created via [claude.ai/code/routines](https://claude.ai/code/routines)) + `.github/workflows/auto-merge-sync.yml`
+
+Automates `.claude/skills/address-feedback` for PRs R3 sends back with `needs-fix`. The Routine's GitHub trigger is `pull_request`, action **labeled** (not "all actions" — an `unlabeled` event never matches this action, so removing a label can't itself double-fire R4 the way it once did for R3, see the Phase 2 incident in `automation-plan.md`), filtered to `Labels is one of needs-fix`.
+
+R4 manages its own `attempt-1`/`attempt-2`/`attempt-3` counter as the first step of `address-feedback/SKILL.md` — no separate Action for that, the same way R3 already manages `review-pass`/`needs-fix`/`needs-review` itself. At `attempt-3`, R4 stops instead of trying a 4th time: removes `needs-fix` and `auto`, adds `needs-human`. Otherwise it pushes a fix, which `needs-review-label.yml` (`synchronize`) picks up on its own to re-queue R3 — R4 doesn't need to touch `needs-review` itself.
+
+### Creating the Routine (manual, one-time)
+
+The routine shell (name, prompt, `create_new_session_on_fire: true`) was created by tool (`trig_014VemW9wW5MopAjDHaaiYK7`, poke-only — no schedule, never fires on its own). It has **no connectors** (the tool that creates schedule/poke shells can't attach MCP connectors it doesn't itself hold) — the web UI step below must add them, or R4 has no GitHub tools to work with:
+
+1. Open **R4 — Address Feedback (Scoreo)** at [claude.ai/code/routines](https://claude.ai/code/routines).
+2. **Prompt** (already set, for reference):
+   ```
+   Address the pull request feedback from your triggering context by
+   following .claude/skills/address-feedback/SKILL.md exactly, starting
+   with its attempt-counter step.
+   ```
+3. **Repository**: `remhiit/scoreo`.
+4. **Trigger**:
+   - GitHub event → Pull request → **labeled**
+   - Filter → **Labels is one of `needs-fix`**.
+5. **Connectors**: add the GitHub MCP connector (missing by default on this tool-created shell — check before saving).
+
+## Auto-Merge
+
+**File**: `.github/workflows/auto-merge-sync.yml`
+
+Zero-LLM Action, triggered on `pull_request.labeled`/`unlabeled` filtered to the `auto` label: on add, calls `gh pr merge --auto --squash` to enable GitHub's native auto-merge (waits for required checks — including `claude/review` — then squash-merges on its own); on remove, calls `gh pr merge --disable-auto`. The disable path matters: once native auto-merge is enabled, GitHub doesn't automatically turn it off just because a label changed — R4 escalating to `needs-human` at `attempt-3` removes `auto`, and this Action is what actually stops the pending merge from going through once checks eventually pass.
+
+`auto` is applied by R2 (`implement-task`) at PR-open time when the issue's risk was assessed **Faible** and the diff still matches that — never by R1, never predicted before the diff exists.
+
+---
+
 ## Weekly Hygiene (R5)
 
 **Files**: a Claude Code Routine (`trig_01Y4gg6E5uMfD9XWFpBBxrt8`, created by tool — a schedule trigger doesn't need the web UI, unlike R2/R3's GitHub triggers)
