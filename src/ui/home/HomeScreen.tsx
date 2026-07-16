@@ -1,6 +1,7 @@
-import { Play } from 'lucide-react'
+import { Play, Sparkles } from 'lucide-react'
 import { useReducer, useState } from 'react'
 import type { AddPlayerUseCase } from '../../application/addPlayerUseCase'
+import type { CleanupInactivePlayersUseCase } from '../../application/cleanupInactivePlayersUseCase'
 import type { DeletePlayerUseCase } from '../../application/deletePlayerUseCase'
 import type { GetPlayerStatsUseCase } from '../../application/getPlayerStatsUseCase'
 import type { GetPlayersUseCase } from '../../application/getPlayersUseCase'
@@ -19,6 +20,7 @@ import {
   loadPlayers,
   playerReducer,
   submitAddPlayer,
+  submitCleanup,
   submitConfirmRename,
   submitDeletePlayer,
 } from './playerReducer'
@@ -30,6 +32,7 @@ export interface HomeScreenProps {
   getPlayerStats: GetPlayerStatsUseCase
   deletePlayer: DeletePlayerUseCase
   renamePlayerUseCase: RenamePlayerUseCase
+  cleanupInactivePlayers: CleanupInactivePlayersUseCase
   getGameTypes: () => GameType[]
   onAddGameType: (name: string, winCondition: WinCondition) => GameType
   onStartGame: (gameTypeId: string, playerIds: string[]) => void
@@ -49,6 +52,7 @@ export function HomeScreen({
   getPlayerStats,
   deletePlayer,
   renamePlayerUseCase,
+  cleanupInactivePlayers,
   getGameTypes,
   onAddGameType,
   onStartGame,
@@ -59,7 +63,7 @@ export function HomeScreen({
   const [state, dispatch] = useReducer(
     playerReducer,
     initialPlayerState,
-    (init) => ({ ...init, ...loadPlayers(getPlayers, getPlayerStats) }),
+    (init) => ({ ...init, ...loadPlayers(getPlayers, getPlayerStats, cleanupInactivePlayers) }),
   )
 
   const draft = matchDraftRepository?.load()
@@ -140,12 +144,16 @@ export function HomeScreen({
           onChange={(name) => dispatch({ type: 'updateInput', name })}
           placeholder="Player name"
           invalid={state.error !== undefined}
-          onEnter={() => dispatch(submitAddPlayer(addPlayer, getPlayers, getPlayerStats, state))}
+          onEnter={() =>
+            dispatch(submitAddPlayer(addPlayer, getPlayers, getPlayerStats, cleanupInactivePlayers, state))
+          }
         />
         <LudoButton
           text="Add"
           variant="primary"
-          onClick={() => dispatch(submitAddPlayer(addPlayer, getPlayers, getPlayerStats, state))}
+          onClick={() =>
+            dispatch(submitAddPlayer(addPlayer, getPlayers, getPlayerStats, cleanupInactivePlayers, state))
+          }
         />
       </div>
 
@@ -191,6 +199,18 @@ export function HomeScreen({
 
       {state.players.length > 0 && selectedPlayers.size < 2 && (
         <div className="selection-hint">{selectedPlayers.size}/2 players selected</div>
+      )}
+
+      {state.cleanupCandidates.length > 0 && (
+        <LudoButton
+          text={
+            <>
+              <Sparkles size={16} aria-hidden /> Clean up ({state.cleanupCandidates.length})
+            </>
+          }
+          variant="secondary"
+          onClick={() => dispatch({ type: 'showCleanupConfirm' })}
+        />
       )}
 
       {state.players.length > 0 && (
@@ -322,7 +342,14 @@ export function HomeScreen({
               onClick={() => {
                 if (state.deleteConfirmPlayerId === undefined) return
                 dispatch(
-                  submitDeletePlayer(deletePlayer, getPlayers, getPlayerStats, state.deleteConfirmPlayerId, anonymize),
+                  submitDeletePlayer(
+                    deletePlayer,
+                    getPlayers,
+                    getPlayerStats,
+                    cleanupInactivePlayers,
+                    state.deleteConfirmPlayerId,
+                    anonymize,
+                  ),
                 )
               }}
             />
@@ -347,7 +374,13 @@ export function HomeScreen({
               text="Confirm"
               variant="primary"
               onClick={() => {
-                const action = submitConfirmRename(renamePlayerUseCase, getPlayers, getPlayerStats, state)
+                const action = submitConfirmRename(
+                  renamePlayerUseCase,
+                  getPlayers,
+                  getPlayerStats,
+                  cleanupInactivePlayers,
+                  state,
+                )
                 if (action) dispatch(action)
               }}
             />
@@ -359,11 +392,44 @@ export function HomeScreen({
           onChange={(name) => dispatch({ type: 'updateRenameInput', name })}
           autofocus
           onEnter={() => {
-            const action = submitConfirmRename(renamePlayerUseCase, getPlayers, getPlayerStats, state)
+            const action = submitConfirmRename(
+              renamePlayerUseCase,
+              getPlayers,
+              getPlayerStats,
+              cleanupInactivePlayers,
+              state,
+            )
             if (action) dispatch(action)
           }}
         />
         {state.error && <div className="error-msg">{state.error}</div>}
+      </LudoModal>
+
+      <LudoModal
+        open={state.showCleanupConfirm}
+        title={`Clean up ${state.cleanupCandidates.length} inactive player(s)?`}
+        onClose={() => dispatch({ type: 'dismissCleanupConfirm' })}
+        footer={
+          <>
+            <LudoButton
+              text="Cancel"
+              variant="secondary"
+              onClick={() => dispatch({ type: 'dismissCleanupConfirm' })}
+            />
+            <LudoButton
+              text="Delete permanently"
+              variant="danger"
+              onClick={() => dispatch(submitCleanup(cleanupInactivePlayers, getPlayers, getPlayerStats))}
+            />
+          </>
+        }
+      >
+        <div className="modal-body">This permanently deletes players with no recorded match. This cannot be undone.</div>
+        <ul>
+          {state.cleanupCandidates.map((player) => (
+            <li key={player.id}>{player.name || '(unnamed player)'}</li>
+          ))}
+        </ul>
       </LudoModal>
     </>
   )

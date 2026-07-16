@@ -2,6 +2,7 @@ import { fireEvent, render, screen, within } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import { AddGameTypeUseCase } from '../../application/addGameTypeUseCase'
 import { AddPlayerUseCase } from '../../application/addPlayerUseCase'
+import { CleanupInactivePlayersUseCase } from '../../application/cleanupInactivePlayersUseCase'
 import { DeletePlayerUseCase } from '../../application/deletePlayerUseCase'
 import { GetGameTypesUseCase } from '../../application/getGameTypesUseCase'
 import { GetPlayerStatsUseCase } from '../../application/getPlayerStatsUseCase'
@@ -27,6 +28,7 @@ function buildProps(overrides: Partial<HomeScreenProps> = {}) {
     getPlayerStats: new GetPlayerStatsUseCase(matchRepo, gameTypeRepo),
     deletePlayer: new DeletePlayerUseCase(playerRepo),
     renamePlayerUseCase: new RenamePlayerUseCase(playerRepo),
+    cleanupInactivePlayers: new CleanupInactivePlayersUseCase(playerRepo, matchRepo),
     getGameTypes: () => getGameTypesUseCase.invoke(),
     onAddGameType: (name, winCondition) => addGameTypeUseCase.invoke(name, winCondition),
     onStartGame,
@@ -194,6 +196,76 @@ describe('HomeScreen', () => {
     fireEvent.click(within(dialog).getByText('Confirm'))
 
     expect(screen.getByText('Alicia', { selector: '.list-item-name' })).toBeInTheDocument()
+  })
+
+  it('does not show the cleanup button when there are no eligible players', () => {
+    const { props, playerRepo } = buildProps()
+    playerRepo.save({ id: 'p1', name: 'Alice', active: true })
+    render(<HomeScreen {...props} />)
+
+    expect(screen.queryByText(/Clean up/)).not.toBeInTheDocument()
+  })
+
+  it('shows the cleanup button with a count when inactive, unreferenced players exist', () => {
+    const { props, playerRepo } = buildProps()
+    playerRepo.save({ id: 'p1', name: 'Alice', active: false })
+    playerRepo.save({ id: 'p2', name: 'Bob', active: false })
+    render(<HomeScreen {...props} />)
+
+    expect(screen.getByText('Clean up (2)')).toBeInTheDocument()
+  })
+
+  it('does not show the cleanup button for an inactive player referenced in a match', () => {
+    const { props, playerRepo, matchRepo } = buildProps()
+    playerRepo.save({ id: 'p1', name: 'Alice', active: false })
+    matchRepo.save({
+      id: 'm1',
+      date: 1000,
+      gameTypeId: 'gt1',
+      playerScores: [{ playerId: 'p1', score: 10 }],
+      manualWinners: [],
+      secondaryPlayerScores: [],
+    })
+    render(<HomeScreen {...props} />)
+
+    expect(screen.queryByText(/Clean up/)).not.toBeInTheDocument()
+  })
+
+  it('cleans up eligible players through the confirmation modal', () => {
+    const { props, playerRepo } = buildProps()
+    playerRepo.save({ id: 'p1', name: 'Alice', active: false })
+    render(<HomeScreen {...props} />)
+
+    fireEvent.click(screen.getByText('Clean up (1)'))
+    expect(within(screen.getByRole('dialog')).getByText('Alice')).toBeInTheDocument()
+
+    fireEvent.click(screen.getByText('Delete permanently'))
+
+    expect(screen.queryByText(/Clean up/)).not.toBeInTheDocument()
+    expect(playerRepo.getAll(true)).toEqual([])
+  })
+
+  it('shows the cleanup button right after soft-deleting a player with no matches', () => {
+    const { props, playerRepo } = buildProps()
+    playerRepo.save({ id: 'p1', name: 'Alice', active: true })
+    render(<HomeScreen {...props} />)
+
+    fireEvent.click(screen.getByTitle('Delete'))
+    fireEvent.click(screen.getByText('Delete', { selector: 'button' }))
+
+    expect(screen.getByText('Clean up (1)')).toBeInTheDocument()
+  })
+
+  it('cancelling the cleanup confirmation deletes nothing', () => {
+    const { props, playerRepo } = buildProps()
+    playerRepo.save({ id: 'p1', name: 'Alice', active: false })
+    render(<HomeScreen {...props} />)
+
+    fireEvent.click(screen.getByText('Clean up (1)'))
+    fireEvent.click(within(screen.getByRole('dialog')).getByText('Cancel'))
+
+    expect(screen.getByText('Clean up (1)')).toBeInTheDocument()
+    expect(playerRepo.getAll(true)).toHaveLength(1)
   })
 
   it('shows the resume-draft banner and calls onResumeDraft', () => {
