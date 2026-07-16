@@ -12,7 +12,7 @@ function installMockGis(overrides: {
   onRequestAccessToken?: (config: {
     client_id: string
     scope: string
-    callback: (r: { access_token: string; expires_in: number; token_type: string; id_token?: string }) => void
+    callback: (r: { access_token: string; expires_in: number; token_type: string }) => void
     error_callback: (e: { type: string; message?: string }) => void
   }, overrideConfig?: { prompt?: string }) => void
   onRevoke?: (token: string) => void
@@ -46,13 +46,12 @@ describe('GoogleAuthService', () => {
     const service = new GoogleAuthService()
     expect(service.accessToken).toBeNull()
     expect(service.expiresAt).toBeNull()
-    expect(service.idToken).toBeNull()
   })
 
-  it('login stores accessToken, expiresAt and idToken on success', () => {
+  it('login stores accessToken and expiresAt on success', () => {
     installMockGis({
       onRequestAccessToken: (config) => {
-        config.callback({ access_token: 'token-abc', expires_in: 3600, token_type: 'Bearer', id_token: 'jwt-xyz' })
+        config.callback({ access_token: 'token-abc', expires_in: 3600, token_type: 'Bearer' })
       },
     })
     const service = new GoogleAuthService()
@@ -61,7 +60,6 @@ describe('GoogleAuthService', () => {
     service.login('client-id', 'openid email', onResult)
 
     expect(service.accessToken).toBe('token-abc')
-    expect(service.idToken).toBe('jwt-xyz')
     expect(service.expiresAt).toBeGreaterThan(Date.now())
     expect(onResult).toHaveBeenCalledWith({ ok: true, value: 'token-abc' })
   })

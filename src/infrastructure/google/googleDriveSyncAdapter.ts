@@ -19,16 +19,6 @@ const SyncFileSchema = z.object({
   matches: MatchSchema.array(),
 })
 
-function decodeJwtEmail(idToken: string): string | null {
-  try {
-    const base64 = idToken.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')
-    const json = JSON.parse(atob(base64)) as { email?: string }
-    return json.email ?? null
-  } catch {
-    return null
-  }
-}
-
 export class GoogleDriveSyncAdapter implements CloudSyncRepository {
   private readonly driveClient: DriveClient
 
@@ -61,12 +51,22 @@ export class GoogleDriveSyncAdapter implements CloudSyncRepository {
     return this.deserializeSyncData(contentResult.value)
   }
 
+  /**
+   * Connected state is decided purely by the presence of an access token — in memory, or
+   * obtained here via a silent GIS refresh. After a page reload `authService.accessToken` is
+   * always null (never persisted, see #51), so this attempt is what lets a still-valid Google
+   * session survive an F5 instead of falling back to "Connect with Google" every time.
+   */
   async getStatus(): Promise<SyncStatus> {
     const config = loadSyncConfig()
+    try {
+      await this.ensureFreshToken()
+    } catch {
+      // No active Google session (or it could not be silently refreshed) — stays disconnected.
+    }
     return {
-      connected: this.authService.accessToken !== null || config.email !== '',
+      connected: this.authService.accessToken !== null,
       lastSync: config.lastSyncTimestamp > 0 ? config.lastSyncTimestamp : null,
-      email: config.email ? config.email : null,
       isOnline: typeof navigator !== 'undefined' ? navigator.onLine : true,
     }
   }
@@ -75,8 +75,6 @@ export class GoogleDriveSyncAdapter implements CloudSyncRepository {
     return new Promise((resolve, reject) => {
       this.authService.login(this.clientId, SCOPE, (result) => {
         if (result.ok) {
-          const email = this.authService.idToken ? (decodeJwtEmail(this.authService.idToken) ?? '') : ''
-          saveSyncConfig({ ...loadSyncConfig(), email })
           resolve()
         } else {
           reject(result.error)
@@ -91,15 +89,10 @@ export class GoogleDriveSyncAdapter implements CloudSyncRepository {
   }
 
   /**
-   * The access token is kept in memory only (never persisted, see #51). After a page reload
-   * `authService.accessToken` is always null, so a previous session (marked by a saved `email`)
-   * is restored here via a silent GIS refresh instead of being read back from storage.
+   * Always attempts a silent GIS refresh when there's no fresh in-memory token, regardless of
+   * any persisted signal — there is none to depend on (see getStatus doc above).
    */
   private async ensureFreshToken(): Promise<void> {
-    const config = loadSyncConfig()
-    if (this.authService.accessToken === null && !config.email) {
-      throw { kind: 'NotAuthenticated', message: 'Not authenticated' } satisfies SyncException
-    }
     const expiresAt = this.authService.expiresAt
     const needsRefresh = this.authService.accessToken === null || expiresAt === null || Date.now() >= expiresAt - 60_000
     if (!needsRefresh) return

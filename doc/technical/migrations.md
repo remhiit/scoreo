@@ -200,6 +200,26 @@ to a pre-Catppuccin build would still find a valid (if stale) value.
 
 ---
 
+## `SyncConfig`/`SyncStatus` — retrait du champ `email` (issue #108)
+
+**Contexte :** l'email de l'utilisateur connecté était censé être extrait d'un `id_token` OAuth, mais l'API GIS Token Model (`google.accounts.oauth2.initTokenClient`) ne renvoie jamais cet `id_token` en pratique (seul `access_token` est fourni). `syncConfig.email` restait donc toujours vide, et comme le token d'accès n'est volontairement jamais persisté (issue #51), le signal censé indiquer une session restaurable après un F5 (`config.email !== ''`) ne fonctionnait jamais : `getStatus()` retombait à `connected: false` à chaque rechargement de page.
+
+**Changement :** `email` est retiré de `SyncConfig` (`src/infrastructure/google/syncConfig.ts`), de `SyncStatus` (`src/domain/port/cloudSyncRepository.ts`), de `GoogleAuthService.idToken` (plus décodé du tout), et de l'UI (`SyncScreen` n'affiche plus "Connected as {email}"). L'état "connecté" est désormais déterminé uniquement par la présence d'un access token en mémoire (`GoogleAuthService.accessToken`), obtenu directement ou via un rafraîchissement silencieux GIS tenté systématiquement par `getStatus()`/`ensureFreshToken()` — plus jamais conditionné par un email ou un flag persisté. `SyncState` (`src/ui/sync/syncTypes.ts`) remplace son champ `email: string | null` par `connected: boolean`, qui reste `true` après un login réussi même si l'auto-sync qui suit échoue (comportement de l'issue #97 préservé).
+
+**Ancien format :**
+```json
+{ "email": "user@example.com", "lastSyncTimestamp": 1700000000, "lastSyncFileId": "..." }
+```
+
+**Nouveau format :**
+```json
+{ "lastSyncTimestamp": 1700000000, "lastSyncFileId": "..." }
+```
+
+**Compatibilité ascendante :** le schéma zod strip nativement `email` d'une ancienne entrée sans erreur — aucune migration de code nécessaire. `loadSyncConfig()` réécrit l'entrée nettoyée au premier accès, comme pour les champs `accessToken`/`expiresAt` déjà purgés par le fix #51.
+
+---
+
 ## Note technique : moteur de sérialisation (zod)
 
 **Contexte historique :** le projet était initialement écrit en Kotlin/JS avec `kotlinx.serialization` (`Json { ignoreUnknownKeys = true }` + valeurs par défaut sur les data class). La réécriture complète vers React/TypeScript (achevée) a changé le moteur de (dé)sérialisation sans jamais changer le format JSON stocké dans `localStorage` — mêmes clés, mêmes champs, mêmes valeurs par défaut, à chaque étape.

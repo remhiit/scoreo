@@ -4,7 +4,7 @@ export type SyncPhase = 'Disconnected' | 'Restoring' | 'Connecting' | 'Detecting
 
 export interface SyncState {
   phase: SyncPhase
-  email: string | null
+  connected: boolean
   conflict: SyncConflict | undefined
   result: SyncResult | undefined
   error: string | undefined
@@ -12,7 +12,7 @@ export interface SyncState {
 
 export const initialSyncState: SyncState = {
   phase: 'Disconnected',
-  email: null,
+  connected: false,
   conflict: undefined,
   result: undefined,
   error: undefined,

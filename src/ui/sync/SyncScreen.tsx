@@ -46,7 +46,7 @@ export function SyncScreen({ syncUseCase }: SyncScreenProps) {
           </span>
           <div className="section-label">Cloud Sync</div>
           <div>Sync your data with Google Drive</div>
-          {state.email !== null ? (
+          {state.connected ? (
             <LudoButton
               text="Disconnect"
               variant="secondary"
@@ -78,7 +78,6 @@ export function SyncScreen({ syncUseCase }: SyncScreenProps) {
               {state.result.pushed} pushed, {state.result.pulled} pulled
             </div>
           )}
-          {state.email && <div className="sync-status">Connected as {state.email}</div>}
           <LudoButton
             text="Disconnect"
             variant="secondary"
