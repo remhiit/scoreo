@@ -8,7 +8,7 @@ via les **routines Claude Code**.
 > lire en premier. Il indique la phase en cours et le critère de passage à la
 > suivante. Ne pas sauter de phase : chaque gate protège la suivante.
 
-**Phase en cours : 5 — R4 et auto-merge (routine opérationnelle depuis le 2026-07-16, gate de 2 semaines démarré, aucun cycle needs-fix→R4→merge observé pour l'instant). Phase 4 close : gate franchi (2026-07-16, 5/5 tickets mergés). Phases 0 à 3 closes : gate Phase 2 franchi (2026-07-14, PR #90) et premier run réel de R5 observé (2026-07-14, PR #84-89).**
+**Phase en cours : 5 — R4 et auto-merge (routine opérationnelle depuis le 2026-07-16, gate de 2 semaines démarré). Premier cycle needs-fix→R4 observé et corrigé le jour même (chaîne de déclenchements sur PR #111, cf. §4 « claim the run » et Phase 5). Phase 4 close : gate franchi (2026-07-16, 5/5 tickets mergés). Phases 0 à 3 closes : gate Phase 2 franchi (2026-07-14, PR #90) et premier run réel de R5 observé (2026-07-14, PR #84-89).**
 
 ---
 
@@ -58,6 +58,23 @@ remettre en cause revient à refaire le plan.
 
 ## 4. Architecture cible
 
+**Principe « claim the run ».** Toute routine déclenchée par un label
+GitHub doit, en tout premier geste, **retirer ce label et poser
+`in-progress`** avant de faire quoi que ce soit d'autre — y compris avant
+de poser un label intermédiaire (`attempt-N`, etc.). Un trigger GitHub
+filtré sur « le label X est présent » matche n'importe quel événement
+`labeled` tant que X reste posé, y compris ceux que la routine elle-même
+déclenche en travaillant. Ne retirer X qu'à la toute fin (une fois le
+verdict final prêt) laisse une fenêtre où la routine peut se
+re-déclencher sur ses propres écritures de label. C'est exactement ce qui
+s'est produit sur la PR #111 (Phase 5) : R4 posait `attempt-1` sans
+retirer `needs-fix`, donc ce dépôt de label a lui-même re-déclenché R4,
+qui a reposé `attempt-2` (toujours sans retirer `needs-fix`), etc. — le
+compteur a grimpé jusqu'à `needs-human` en une minute, sans trois vrais
+essais de correction. R2 suivait déjà ce principe (`implement-task`
+remplace `ready` par `in-progress` avant de commencer) ; R3 et R4 ont été
+corrigés pour faire de même (voir Phase 2 et Phase 5 ci-dessous).
+
 ```
 Issue créée
    │
@@ -70,6 +87,7 @@ Issue créée
                                                  ▼
                                      [R2 — IMPLÉMENTATION]
                                                  │ skill implement-task
+                                                 │ retire `ready`, pose `in-progress`
                                                  │ 1 run = 1 issue
                                                  │ branche + code + tests + PR
                                                  │ pose `auto` si risque faible
@@ -80,6 +98,7 @@ Issue créée
                                                  ▼
                                          [R3 — REVIEW]
                                           │ skill pr-review
+                                          │ retire `needs-review`, pose `in-progress`
                                           │ commentaires inline
                                           │ commit status claude/review ✅/❌
                                           ▼
@@ -92,6 +111,7 @@ Issue créée
                       ▼                                      │
                 [R4 — FIX]                                   │
                       │ skill address-feedback               │
+                      │ retire `needs-fix`, pose `in-progress`│
                       │ attempt-1 → 2 → 3 (géré par R4)       │
                       │ à attempt-3 : STOP, retire `auto`,    │
                       │ pose `needs-human`                    │
@@ -283,9 +303,11 @@ directeur « le déterministe ne passe pas par un LLM » :
    que tant que le label est présent, donc ça se comporte comme un
    déclenchement one-shot plutôt qu'un vrai « toutes actions » : une review a
    lieu quand `needs-review` apparaît, puis plus rien tant qu'il n'est pas
-   reposé (la dernière étape de `pr-review` le retire). Reposer ce label plus
-   tard (une fois R4 construit) redéclenche une review — le mécanisme sert
-   aussi de boucle de re-review pour la Phase 5.
+   reposé. `pr-review` retire `needs-review` en tout premier geste (« Claim
+   the run », pas à la fin — voir §4 et l'incident Phase 5/PR #111), pour
+   qu'aucun label posé pendant la review elle-même ne puisse re-matcher le
+   trigger. Reposer `needs-review` plus tard (par R4) redéclenche une
+   review — le mécanisme sert aussi de boucle de re-review pour la Phase 5.
 3. **`.github/workflows/review-status-sync.yml`** (zéro LLM, déclenché sur
    `pull_request.labeled`) traduit `review-pass`/`needs-fix` en commit status
    `claude/review` (succès/échec) via `GITHUB_TOKEN`.
@@ -440,9 +462,26 @@ cohérent avec le principe directeur §2.2.
       configurés. R4 est opérationnelle.
 
 **Gate :** 2 semaines, zéro merge qu'on aurait refusé. **Horloge démarrée
-le 2026-07-16** — pas encore observé de cycle `needs-fix` → R4 → merge en
-conditions réelles (à date, tous les tickets du gate Phase 4 sont passés
-directement en `review-pass`, aucun n'a eu besoin de R4).
+le 2026-07-16.**
+
+**Incident (2026-07-16) — chaîne de déclenchements R4 sur la PR #111 :**
+le premier vrai cycle `needs-fix` → R4 a mis au jour un défaut de
+conception (repéré et diagnostiqué par Rémi, pas par une session Claude
+Code) : `address-feedback/SKILL.md` posait `attempt-1` sans retirer
+`needs-fix` au préalable. Le trigger GitHub de R4 matche tant que
+`needs-fix` est présent, donc ce dépôt de `attempt-1` a lui-même
+re-déclenché R4, qui a reposé `attempt-2` (toujours avec `needs-fix`
+présent), puis `attempt-3` → `needs-human` — le tout en about une minute,
+sans trois vrais essais de correction (le seul vrai correctif nécessaire,
+la mise à jour de `deployment.md`, avait déjà été poussé par l'un des
+runs). Correctif : principe général « claim the run » ajouté à l'§4 —
+toute routine déclenchée par un label doit le retirer et poser
+`in-progress` en tout premier geste, avant de poser quoi que ce soit
+d'autre. Appliqué à `address-feedback/SKILL.md` (retire `needs-fix` avant
+`attempt-N`) et rétroactivement à `pr-review/SKILL.md` (retire
+`needs-review` en premier geste plutôt qu'au dernier — R3 n'avait pas
+encore été prise en défaut sur ce point précis, mais partageait la même
+fragilité de principe).
 
 ### Phase 6 — Observabilité
 

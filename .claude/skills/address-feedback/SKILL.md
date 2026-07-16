@@ -16,29 +16,48 @@ review didn't raise.
   (label `needs-fix`) that started this run. Don't search for it.
 - **Interactive** (asked directly in a session): the PR the user named.
 
-## Attempt counter (check this first, before reading the review)
+## Claim the run (R4 only, first action)
+
+Before touching any code: read the PR's current labels (note which of
+`attempt-1`/`attempt-2`/`attempt-3` is present, if any — this decides the
+attempt number, see below), then immediately **remove `needs-fix` and add
+`in-progress`**, before anything else, including before posting any
+`attempt-N` label.
+
+This order matters and isn't optional. R4's GitHub trigger fires on *any*
+`pull_request.labeled` event while `needs-fix` is present. If `needs-fix`
+is still there when this step posts `attempt-1`, that post is itself a
+`labeled` event that matches the trigger and re-fires R4 — which then
+sees `attempt-1`, posts `attempt-2` (still with `needs-fix` present),
+re-fires again, and so on. This isn't hypothetical: it happened on PR
+#111, where R4 chained through `attempt-1` → `attempt-2` → `attempt-3` →
+`needs-human` within about a minute from its own label writes, not from
+three genuine fix attempts. Removing `needs-fix` first closes that door
+before any later label-add can reopen it.
+
+Skip this step in interactive mode (no labels to manage there), but still
+apply the attempt-count decision below.
+
+## Attempt counter
 
 `automation-plan.md` caps autonomous fix attempts at 3 per recurring
-`needs-fix` cycle — this is the anti-loop guard, and it's the first thing
-to check, before touching any code. `pr-review/SKILL.md` clears any
-`attempt-*` label when it reaches `review-pass`, so a stale counter from
-an already-resolved cycle never carries over into a later, unrelated
-`needs-fix`:
+`needs-fix` cycle. Using the labels read in "Claim the run" above (before
+they were changed):
 
-1. Look at the PR's current labels for `attempt-1`/`attempt-2`/`attempt-3`.
-2. **No attempt label present** → this is attempt 1. Add `attempt-1`, then
-   proceed with the workflow below.
-3. **`attempt-1` present** → this is attempt 2. Remove `attempt-1`, add
-   `attempt-2`, then proceed.
-4. **`attempt-2` present** → this is attempt 3, the last one allowed.
-   Remove `attempt-2`, add `attempt-3`, then proceed.
-5. **`attempt-3` present** → this would be a 4th attempt. **Stop here —
-   do not touch the code.** Remove `needs-fix`, remove `auto` if present,
-   add `needs-human`, and post a comment summarizing what's still wrong
-   and why it wasn't fixed automatically (so the human doesn't have to
-   reconstruct the loop from label history). This is exactly the case
-   this cap exists for: the same disagreement surviving two fix attempts
-   means a human decision is needed, not a third guess.
+- **No attempt label was present** → this is attempt 1.
+- **`attempt-1` was present** → this is attempt 2.
+- **`attempt-2` was present** → this is attempt 3, the last one allowed.
+- **`attempt-3` was present** → this would be a 4th attempt. **Stop here —
+  do not touch the code.** Remove `in-progress`, remove `auto` if present,
+  add `needs-human`, and post a comment summarizing what's still wrong and
+  why it wasn't fixed automatically (so the human doesn't have to
+  reconstruct the loop from label history). This is exactly the case this
+  cap exists for: the same disagreement surviving two fix attempts means a
+  human decision is needed, not a third guess.
+
+`pr-review/SKILL.md` clears any `attempt-*` label when it reaches
+`review-pass`, so a stale counter from an already-resolved cycle never
+carries over into a later, unrelated `needs-fix`.
 
 Even run interactively (no routine involved), apply the same check — an
 issue that's already at `attempt-3` shouldn't get a fourth try just
@@ -60,5 +79,8 @@ because a human happened to invoke the skill this time.
    since their comment). Pushing triggers `needs-review-label.yml`
    (`synchronize`), which re-queues R3 on its own — nothing else to do
    here to get re-reviewed.
-5. Reply only if the fix resolves the thread or raises a genuine question —
+5. **Remove `in-progress` and add the attempt label determined above**
+   (`attempt-1`/`attempt-2`/`attempt-3`) — the run's terminal label, posted
+   only now that the fix is actually done.
+6. Reply only if the fix resolves the thread or raises a genuine question —
    don't narrate "done" on every single comment; the diff is the record.

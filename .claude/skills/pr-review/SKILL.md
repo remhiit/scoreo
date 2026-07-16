@@ -21,6 +21,19 @@ rules this checklist is built on.
 - **Interactive** (asked directly in a session): review the PR the user
   named. Ask for the number if it wasn't given.
 
+## Claim the run (R3 only, first action)
+
+Before reading anything else: remove `needs-review` and add `in-progress`.
+Do this immediately, before the checklist below — not after. The routine's
+GitHub trigger fires on *any* `pull_request` action while `needs-review` is
+present (a Routine allows one GitHub trigger, not a multi-select of
+actions, so `needs-review` acts as the queue flag instead of picking
+specific event types). If `needs-review` is still there when this step
+posts *any* label, that label-add is itself a qualifying event and
+re-triggers R3 on the same PR — clearing it first closes that door before
+it can reopen. Skip this step for an ad hoc interactive review the user
+asked for directly (no labels to manage there).
+
 ## Out of scope — don't re-check these
 
 `ci.yml` already runs `lint`, `test`, `build`, `doc-links` on every push. Redoing
@@ -76,30 +89,24 @@ No tool available to a Claude Code session here can post a raw commit
 status, so the verdict surfaces as a label instead — a separate,
 deterministic GitHub Action (`.github/workflows/review-status-sync.yml`)
 translates it into the `claude/review` commit status. This step only
-applies when running as the automated R3 step (a routine triggered by a
-GitHub PR event); skip it for an ad hoc interactive review the user asked
-for directly.
+applies when running as the automated R3 step; skip it for an ad hoc
+interactive review the user asked for directly.
 
-The routine's only GitHub trigger fires on *any* PR action while the PR
-carries the `needs-review` label (a Routine allows one GitHub trigger, not a
-multi-select of actions, so `needs-review` acts as the queue flag instead of
-picking specific event types). Always **remove `needs-review`** as part of
-applying the verdict — otherwise every subsequent PR action (assigned,
-edited, closed, …) keeps matching the trigger and re-reviews the same PR for
-no reason.
+`needs-review` is already gone (removed in "Claim the run" above) — this
+step's job is to remove `in-progress` and post the terminal label:
 
-- **Conforms** → set labels to `review-pass`, removing `needs-fix`,
-  `needs-review`, and any `attempt-1`/`attempt-2`/`attempt-3` if present.
+- **Conforms** → set labels to `review-pass`, removing `in-progress`,
+  `needs-fix`, and any `attempt-1`/`attempt-2`/`attempt-3` if present.
   Clearing the attempt counter matters: it's what `address-feedback` (R4)
   uses to cap retries on a *recurring* failure — leaving a stale
   `attempt-N` from an already-resolved cycle would make R4 misread a
   brand-new `needs-fix` (e.g. from a later rebase) as a continuation of
   the old one, and escalate to `needs-human` after fewer genuine attempts
   than the cap intends.
-- **Needs changes** → set labels to `needs-fix`, removing `review-pass` and
-  `needs-review` if present, and post a PR comment listing exactly what's
+- **Needs changes** → set labels to `needs-fix`, removing `in-progress` and
+  `review-pass` if present, and post a PR comment listing exactly what's
   blocking (this is what `address-feedback` will act on).
 
 Apply exactly one of `review-pass`/`needs-fix`, never both. Re-adding
 `needs-review` later (e.g. after a fix is pushed) queues another pass —
-that's the mechanism Phase 5 (R4) will use to request re-review.
+that's the mechanism R4 uses to request re-review.
