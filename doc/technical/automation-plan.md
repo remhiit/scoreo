@@ -8,7 +8,7 @@ via les **routines Claude Code**.
 > lire en premier. Il indique la phase en cours et le critère de passage à la
 > suivante. Ne pas sauter de phase : chaque gate protège la suivante.
 
-**Phase en cours : 4 — R2, l'implémentation (routine opérationnelle depuis le 2026-07-15, gate 1/5 — premier ticket #96/PR #97 traité de bout en bout). Phases 0 à 3 closes : gate Phase 2 franchi (2026-07-14, PR #90) et premier run réel de R5 observé (2026-07-14, PR #84-89).**
+**Phase en cours : 4 — R2, l'implémentation (routine opérationnelle depuis le 2026-07-15, gate 3/5 — #96/#97, #99/#100 et #102/#104 mergées de bout en bout). Phases 0 à 3 closes : gate Phase 2 franchi (2026-07-14, PR #90) et premier run réel de R5 observé (2026-07-14, PR #84-89).**
 
 ---
 
@@ -386,7 +386,7 @@ Implementation (R2)).
 | #99 | #100 | `deleteAll()` sur les ports Player/GameType/Match pour un vrai remplacement des données au « Keep remote » — mergée, voir incident double-fire ci-dessous |
 | #102 | #104 | Nouvelle phase `Restoring` pour éviter le flash du bouton Connect au montage de `SyncScreen` — premier `needs-fix` de R3 sur ce ticket (piège `useEffect`/paint vs `useLayoutEffect`), corrigé, mergée |
 
-Compteur (mergées) : 2/5.
+Compteur (mergées) : 3/5.
 
 **Incident (2026-07-15) — double-fire de R2 sur l'issue #99 :** même classe
 de cause que le double-fire de R3 (PR #94), côté labellisation cette fois.
