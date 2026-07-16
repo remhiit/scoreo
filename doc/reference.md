@@ -74,7 +74,7 @@ Notable design choices:
 | `GameTypeRepository` | `getAll(includeInactive?)`, `save(gameType)`, `saveAll(gameTypes)`, `findById(id)`, `deleteAll()` |
 | `MatchRepository` | `getAll()`, `save(match)`, `saveAll(matches)`, `findById(id)`, `delete(id)`, `deleteAll()` |
 | `MatchDraftRepository` | `save(draft)`, `load(): MatchDraft \| undefined`, `clear()` |
-| `CloudSyncRepository` | `push(data): Promise<void>`, `pull(): Promise<SyncData>`, `getStatus(): Promise<SyncStatus>`, `login(): Promise<void>`, `logout(): Promise<void>` — plus `SyncData`, `SyncStatus`, and the discriminated union `SyncException` (`NotAuthenticated`, `NetworkError`, `ApiError{code,message}`, `Conflict`, `RateLimited`), all in `cloudSyncRepository.ts` |
+| `CloudSyncRepository` | `push(data): Promise<void>`, `pull(): Promise<SyncData>`, `getStatus(): Promise<SyncStatus>`, `login(): Promise<void>`, `logout(): Promise<void>` — plus `SyncData`, `SyncStatus` (`connected`, `lastSync`, `isOnline` — no `email`), and the discriminated union `SyncException` (`NotAuthenticated`, `NetworkError`, `ApiError{code,message}`, `Conflict`, `RateLimited`), all in `cloudSyncRepository.ts` |
 
 ## Adapters (Implementations)
 
@@ -164,7 +164,7 @@ Theme: Catppuccin tokens (`tokens/colors-*.css` + `tokens/semantic.css`), 4 flav
 | `scoreo_gametypes` | JSON `GameType[]` |
 | `scoreo_matches` | JSON `Match[]` |
 | `scoreo_match_draft` | JSON `MatchDraft` (gameTypeId, playerIds, rounds, updatedAt) |
-| `scoreo_sync_config` | JSON `SyncConfig` (email, lastSyncTimestamp, lastSyncFileId) — no OAuth token (kept in memory only, see #51) |
+| `scoreo_sync_config` | JSON `SyncConfig` (lastSyncTimestamp, lastSyncFileId) — no OAuth token and no email (kept in memory only / not tracked, see #51 and #108) |
 | `scoreo_flavor` | `"latte"` \| `"frappe"` \| `"macchiato"` \| `"mocha"` (Catppuccin flavor, optional) |
 | `scoreo_accent` | one of the 14 Catppuccin hues, e.g. `"mauve"` (optional) |
 | `scoreo_theme` | **legacy**, pre-Catppuccin: `"dark"` or `"light"`. Only read once as a migration fallback when `scoreo_flavor` is absent (see `doc/technical/migrations.md`) — never written anymore. |

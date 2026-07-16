@@ -182,7 +182,7 @@ to a pre-Catppuccin build would still find a valid (if stale) value.
 
 **Contexte :** le token OAuth Google était stocké en clair dans `localStorage` (clé `scoreo_sync_config`), exploitable en cas de XSS (issue de sécurité #51).
 
-**Changement :** `SyncConfig` (`src/infrastructure/google/syncConfig.ts`) ne contient plus `accessToken` ni `expiresAt`. Ces deux valeurs vivent désormais uniquement en mémoire, dans `GoogleAuthService.accessToken`/`expiresAt` (jamais sérialisées). Champs restants, inchangés : `email`, `lastSyncTimestamp`, `lastSyncFileId`.
+**Changement :** `SyncConfig` (`src/infrastructure/google/syncConfig.ts`) ne contient plus `accessToken` ni `expiresAt`. Ces deux valeurs vivent désormais uniquement en mémoire, dans `GoogleAuthService.accessToken`/`expiresAt` (jamais sérialisées). Champs restants à cette étape : `email`, `lastSyncTimestamp`, `lastSyncFileId` — `email` sera lui aussi retiré par la suite, voir entrée #108 ci-dessous.
 
 **Ancien format :**
 ```json
@@ -196,7 +196,27 @@ to a pre-Catppuccin build would still find a valid (if stale) value.
 
 **Compatibilité ascendante :** le schéma zod strip nativement `accessToken`/`expiresAt` d'une ancienne entrée sans erreur. `loadSyncConfig()` réécrit immédiatement l'entrée nettoyée dans `localStorage` dès sa première lecture après la mise à jour, purgeant le token en clair résiduel plutôt que d'attendre un prochain `login()`/`push()`/`pull()`.
 
-**Comportement runtime :** au rechargement de page, `authService.accessToken` est `null` (rien à restaurer depuis le storage). La session est restaurée via un rafraîchissement silencieux GIS (`requestAccessToken({ prompt: '' })`) dès qu'un `email` sauvegardé indique une session précédente — voir `doc/functional/features/sync.md` § Session restore.
+**Comportement runtime (historique, remplacé par #108) :** au rechargement de page, `authService.accessToken` est `null` (rien à restaurer depuis le storage). La session était restaurée via un rafraîchissement silencieux GIS (`requestAccessToken({ prompt: '' })`) dès qu'un `email` sauvegardé indiquait une session précédente. Ce signal ne fonctionnait en réalité jamais (`email` restait toujours vide, voir entrée #108) — le rafraîchissement silencieux est désormais tenté systématiquement, indépendamment de tout champ persisté. Voir `doc/functional/features/sync.md` § Session restore et l'entrée #108 ci-dessous.
+
+---
+
+## `SyncConfig`/`SyncStatus` — retrait du champ `email` (issue #108)
+
+**Contexte :** l'email de l'utilisateur connecté était censé être extrait d'un `id_token` OAuth, mais l'API GIS Token Model (`google.accounts.oauth2.initTokenClient`) ne renvoie jamais cet `id_token` en pratique (seul `access_token` est fourni). `syncConfig.email` restait donc toujours vide, et comme le token d'accès n'est volontairement jamais persisté (issue #51), le signal censé indiquer une session restaurable après un F5 (`config.email !== ''`) ne fonctionnait jamais : `getStatus()` retombait à `connected: false` à chaque rechargement de page.
+
+**Changement :** `email` est retiré de `SyncConfig` (`src/infrastructure/google/syncConfig.ts`), de `SyncStatus` (`src/domain/port/cloudSyncRepository.ts`), de `GoogleAuthService.idToken` (plus décodé du tout), et de l'UI (`SyncScreen` n'affiche plus "Connected as {email}"). L'état "connecté" est désormais déterminé uniquement par la présence d'un access token en mémoire (`GoogleAuthService.accessToken`), obtenu directement ou via un rafraîchissement silencieux GIS tenté systématiquement par `getStatus()`/`ensureFreshToken()` — plus jamais conditionné par un email ou un flag persisté. `SyncState` (`src/ui/sync/syncTypes.ts`) remplace son champ `email: string | null` par `connected: boolean`, qui reste `true` après un login réussi même si l'auto-sync qui suit échoue (comportement de l'issue #97 préservé).
+
+**Ancien format :**
+```json
+{ "email": "user@example.com", "lastSyncTimestamp": 1700000000, "lastSyncFileId": "..." }
+```
+
+**Nouveau format :**
+```json
+{ "lastSyncTimestamp": 1700000000, "lastSyncFileId": "..." }
+```
+
+**Compatibilité ascendante :** le schéma zod strip nativement `email` d'une ancienne entrée sans erreur — aucune migration de code nécessaire. `loadSyncConfig()` réécrit l'entrée nettoyée au premier accès, comme pour les champs `accessToken`/`expiresAt` déjà purgés par le fix #51.
 
 ---
 

@@ -6,7 +6,7 @@ export type SyncAction =
   | { type: 'restoreFinished' }
   | { type: 'loginStarted' }
   | { type: 'loginFailed'; error: string }
-  | { type: 'connected'; email: string | null }
+  | { type: 'connected' }
   | { type: 'synced'; result: SyncResult }
   | { type: 'conflictDetected'; conflict: SyncConflict }
   | { type: 'syncFailed'; error: string }
@@ -21,13 +21,13 @@ export function syncReducer(state: SyncState, action: SyncAction): SyncState {
     case 'restoringSession':
       return { ...state, phase: 'Restoring', error: undefined }
     case 'restoreFinished':
-      return { ...state, phase: 'Disconnected' }
+      return { ...state, phase: 'Disconnected', connected: false }
     case 'loginStarted':
       return { ...state, phase: 'Connecting', error: undefined }
     case 'loginFailed':
-      return { ...state, phase: 'Disconnected', error: action.error }
+      return { ...state, phase: 'Disconnected', connected: false, error: action.error }
     case 'connected':
-      return { ...state, phase: 'Detecting', email: action.email }
+      return { ...state, phase: 'Detecting', connected: true }
     case 'synced':
       return { ...state, phase: 'Resolved', result: action.result }
     case 'conflictDetected':
@@ -83,7 +83,7 @@ export async function submitRestoreSession(
   try {
     const status = await syncUseCase.status()
     if (status.connected) {
-      dispatch({ type: 'connected', email: status.email })
+      dispatch({ type: 'connected' })
       await runAutoSync(syncUseCase, dispatch)
     } else {
       dispatch({ type: 'restoreFinished' })
@@ -98,8 +98,7 @@ export async function submitLogin(syncUseCase: SyncUseCase, dispatch: (action: S
   dispatch({ type: 'loginStarted' })
   try {
     await syncUseCase.login()
-    const status = await syncUseCase.status()
-    dispatch({ type: 'connected', email: status.email })
+    dispatch({ type: 'connected' })
     await runAutoSync(syncUseCase, dispatch)
   } catch (e) {
     dispatch({ type: 'loginFailed', error: errorMessage(e) ?? 'Login failed' })

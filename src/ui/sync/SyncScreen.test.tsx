@@ -31,7 +31,6 @@ describe('SyncScreen', () => {
     })
 
     expect(await screen.findByText('Sync complete')).toBeInTheDocument()
-    expect(screen.getByText('Connected as test@example.com')).toBeInTheDocument()
   })
 
   it('shows the conflict view with both snapshots and resolves by keeping local', async () => {
@@ -91,18 +90,15 @@ describe('SyncScreen', () => {
   it('restores an already-connected session on mount', async () => {
     const cloudRepo = new InMemoryCloudSyncRepository()
     cloudRepo.connected = true
-    cloudRepo.email = 'restored@example.com'
     const { syncUseCase } = buildUseCase(cloudRepo)
     render(<SyncScreen syncUseCase={syncUseCase} />)
 
     expect(await screen.findByText('Sync complete')).toBeInTheDocument()
-    expect(screen.getByText('Connected as restored@example.com')).toBeInTheDocument()
   })
 
   it('shows a Disconnect button when auto-sync fails after a successful login', async () => {
     const cloudRepo = new InMemoryCloudSyncRepository()
     cloudRepo.connected = true
-    cloudRepo.email = 'restored@example.com'
     cloudRepo.failNext = () => ({ kind: 'ApiError', code: 0, message: 'Network timeout' })
     const { syncUseCase } = buildUseCase(cloudRepo)
     render(<SyncScreen syncUseCase={syncUseCase} />)
