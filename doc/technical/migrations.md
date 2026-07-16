@@ -182,7 +182,7 @@ to a pre-Catppuccin build would still find a valid (if stale) value.
 
 **Contexte :** le token OAuth Google était stocké en clair dans `localStorage` (clé `scoreo_sync_config`), exploitable en cas de XSS (issue de sécurité #51).
 
-**Changement :** `SyncConfig` (`src/infrastructure/google/syncConfig.ts`) ne contient plus `accessToken` ni `expiresAt`. Ces deux valeurs vivent désormais uniquement en mémoire, dans `GoogleAuthService.accessToken`/`expiresAt` (jamais sérialisées). Champs restants, inchangés : `email`, `lastSyncTimestamp`, `lastSyncFileId`.
+**Changement :** `SyncConfig` (`src/infrastructure/google/syncConfig.ts`) ne contient plus `accessToken` ni `expiresAt`. Ces deux valeurs vivent désormais uniquement en mémoire, dans `GoogleAuthService.accessToken`/`expiresAt` (jamais sérialisées). Champs restants à cette étape : `email`, `lastSyncTimestamp`, `lastSyncFileId` — `email` sera lui aussi retiré par la suite, voir entrée #108 ci-dessous.
 
 **Ancien format :**
 ```json
@@ -196,7 +196,7 @@ to a pre-Catppuccin build would still find a valid (if stale) value.
 
 **Compatibilité ascendante :** le schéma zod strip nativement `accessToken`/`expiresAt` d'une ancienne entrée sans erreur. `loadSyncConfig()` réécrit immédiatement l'entrée nettoyée dans `localStorage` dès sa première lecture après la mise à jour, purgeant le token en clair résiduel plutôt que d'attendre un prochain `login()`/`push()`/`pull()`.
 
-**Comportement runtime :** au rechargement de page, `authService.accessToken` est `null` (rien à restaurer depuis le storage). La session est restaurée via un rafraîchissement silencieux GIS (`requestAccessToken({ prompt: '' })`) dès qu'un `email` sauvegardé indique une session précédente — voir `doc/functional/features/sync.md` § Session restore.
+**Comportement runtime (historique, remplacé par #108) :** au rechargement de page, `authService.accessToken` est `null` (rien à restaurer depuis le storage). La session était restaurée via un rafraîchissement silencieux GIS (`requestAccessToken({ prompt: '' })`) dès qu'un `email` sauvegardé indiquait une session précédente. Ce signal ne fonctionnait en réalité jamais (`email` restait toujours vide, voir entrée #108) — le rafraîchissement silencieux est désormais tenté systématiquement, indépendamment de tout champ persisté. Voir `doc/functional/features/sync.md` § Session restore et l'entrée #108 ci-dessous.
 
 ---
 
