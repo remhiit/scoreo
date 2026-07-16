@@ -3,7 +3,6 @@ import { z } from 'zod'
 const KEY = 'scoreo_sync_config'
 
 const SyncConfigSchema = z.object({
-  email: z.string().default(''),
   lastSyncTimestamp: z.number().default(0),
   lastSyncFileId: z.string().default(''),
 })

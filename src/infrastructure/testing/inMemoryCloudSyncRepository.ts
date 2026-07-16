@@ -10,7 +10,6 @@ const notAuthenticated = (): SyncException => ({ kind: 'NotAuthenticated', messa
 export class InMemoryCloudSyncRepository implements CloudSyncRepository {
   storedData: SyncData | undefined
   connected = false
-  email: string | null = null
   /** Optional hook: return a SyncException to make the next push/pull throw it. */
   failNext: (() => SyncException | undefined) | undefined
 
@@ -44,18 +43,15 @@ export class InMemoryCloudSyncRepository implements CloudSyncRepository {
     return {
       connected: this.connected,
       lastSync: this.lastSync,
-      email: this.email,
       isOnline: this.isOnline,
     }
   }
 
   async login(): Promise<void> {
     this.connected = true
-    this.email = 'test@example.com'
   }
 
   async logout(): Promise<void> {
     this.connected = false
-    this.email = null
   }
 }

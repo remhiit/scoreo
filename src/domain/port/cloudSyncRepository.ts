@@ -12,7 +12,6 @@ export interface SyncData {
 export interface SyncStatus {
   connected: boolean
   lastSync: number | null
-  email: string | null
   isOnline: boolean
 }
 

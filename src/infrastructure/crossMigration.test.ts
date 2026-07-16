@@ -141,7 +141,7 @@ describe('cross-migration: real old-format localStorage export', () => {
     expect(draftRepo.load()).toBeUndefined()
 
     const syncConfig = loadSyncConfig()
-    expect(syncConfig).toEqual({ email: '', lastSyncTimestamp: 0, lastSyncFileId: '' })
+    expect(syncConfig).toEqual({ lastSyncTimestamp: 0, lastSyncFileId: '' })
   })
 
   it('no data is lost across the full migration: every player, game type, and match round-trips', () => {

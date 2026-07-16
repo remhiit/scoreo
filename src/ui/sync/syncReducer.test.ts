@@ -32,7 +32,7 @@ async function runWithDispatch(
 describe('syncReducer', () => {
   it('initial state is Disconnected with no error', () => {
     expect(initialSyncState.phase).toBe('Disconnected')
-    expect(initialSyncState.email).toBeNull()
+    expect(initialSyncState.connected).toBe(false)
     expect(initialSyncState.conflict).toBeUndefined()
     expect(initialSyncState.result).toBeUndefined()
     expect(initialSyncState.error).toBeUndefined()
@@ -44,7 +44,7 @@ describe('syncReducer', () => {
     const state = await runWithDispatch((dispatch) => submitLogin(syncUseCase, dispatch))
 
     expect(state.phase).toBe('Resolved')
-    expect(state.email).toBe('test@example.com')
+    expect(state.connected).toBe(true)
     expect(state.result).toBeDefined()
     expect(state.error).toBeUndefined()
     expect(state.conflict).toBeUndefined()
@@ -65,7 +65,7 @@ describe('syncReducer', () => {
     const state = await runWithDispatch((dispatch) => submitLogin(syncUseCase, dispatch))
 
     expect(state.phase).toBe('Conflict')
-    expect(state.email).toBe('test@example.com')
+    expect(state.connected).toBe(true)
     expect(state.conflict).toBeDefined()
     expect(state.error).toBeUndefined()
 
@@ -91,7 +91,7 @@ describe('syncReducer', () => {
     await submitLogout(syncUseCase, dispatch)
 
     expect(state.phase).toBe('Disconnected')
-    expect(state.email).toBeNull()
+    expect(state.connected).toBe(false)
     expect(state.conflict).toBeUndefined()
     expect(state.result).toBeUndefined()
     expect(state.error).toBeUndefined()
@@ -171,7 +171,7 @@ describe('syncReducer', () => {
 
     expect(state.error).toBeUndefined()
     expect(state.phase).toBe('Disconnected')
-    expect(state.email).toBe('test@example.com')
+    expect(state.connected).toBe(true)
   })
 
   it('restoringSession sets phase to Restoring', () => {
@@ -208,20 +208,19 @@ describe('syncReducer', () => {
     const state = await runWithDispatch((dispatch) => submitRestoreSession(syncUseCase, dispatch))
 
     expect(state.phase).toBe('Disconnected')
-    expect(state.email).toBeNull()
+    expect(state.connected).toBe(false)
     expect(state.error).toBeUndefined()
   })
 
   it('restoreSession runs autoSync when already connected', async () => {
     const cloudRepo = new InMemoryCloudSyncRepository()
     cloudRepo.connected = true
-    cloudRepo.email = 'restored@example.com'
     const { syncUseCase } = buildUseCase(cloudRepo)
 
     const state = await runWithDispatch((dispatch) => submitRestoreSession(syncUseCase, dispatch))
 
     expect(state.phase).toBe('Resolved')
-    expect(state.email).toBe('restored@example.com')
+    expect(state.connected).toBe(true)
     expect(state.result).toBeDefined()
     expect(state.error).toBeUndefined()
   })
@@ -248,7 +247,7 @@ describe('syncReducer', () => {
     await submitLogout(syncUseCase, dispatch)
 
     expect(state.phase).toBe('Disconnected')
-    expect(state.email).toBeNull()
+    expect(state.connected).toBe(false)
     expect(state.conflict).toBeUndefined()
     expect(state.result).toBeUndefined()
     expect(state.error).toBeUndefined()

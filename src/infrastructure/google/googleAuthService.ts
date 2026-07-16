@@ -5,7 +5,6 @@ interface GisTokenResponse {
   access_token: string
   expires_in: number
   token_type: string
-  id_token?: string
 }
 
 interface GisTokenError {
@@ -48,7 +47,6 @@ type LoginResult = (result: Result<string, SyncException>) => void
 export class GoogleAuthService {
   accessToken: string | null = null
   expiresAt: number | null = null
-  idToken: string | null = null
 
   private withGis(onResult: LoginResult, block: (g: GisOAuth2) => void, retries = 10, delayMs = 200): void {
     const g = typeof window !== 'undefined' ? window.google?.accounts?.oauth2 : undefined
@@ -72,7 +70,6 @@ export class GoogleAuthService {
         callback: (response) => {
           this.accessToken = response.access_token
           this.expiresAt = Date.now() + response.expires_in * 1000
-          this.idToken = response.id_token ?? null
           onResult(ok(response.access_token))
         },
         error_callback: (error) => {
@@ -92,7 +89,6 @@ export class GoogleAuthService {
         callback: (response) => {
           this.accessToken = response.access_token
           this.expiresAt = Date.now() + response.expires_in * 1000
-          this.idToken = response.id_token ?? null
           onResult(ok(response.access_token))
         },
         error_callback: (error) => {
