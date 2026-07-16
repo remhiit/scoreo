@@ -20,7 +20,10 @@ review didn't raise.
 
 `automation-plan.md` caps autonomous fix attempts at 3 per recurring
 `needs-fix` cycle — this is the anti-loop guard, and it's the first thing
-to check, before touching any code:
+to check, before touching any code. `pr-review/SKILL.md` clears any
+`attempt-*` label when it reaches `review-pass`, so a stale counter from
+an already-resolved cycle never carries over into a later, unrelated
+`needs-fix`:
 
 1. Look at the PR's current labels for `attempt-1`/`attempt-2`/`attempt-3`.
 2. **No attempt label present** → this is attempt 1. Add `attempt-1`, then
