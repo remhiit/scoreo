@@ -51,6 +51,10 @@ export class LocalStoragePlayerRepository implements PlayerRepository {
     writeAll(updated)
   }
 
+  hardDelete(id: string): void {
+    writeAll(readAll().filter((player) => player.id !== id))
+  }
+
   deleteAll(): void {
     writeAll([])
   }

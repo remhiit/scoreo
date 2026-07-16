@@ -24,6 +24,22 @@ describe('InMemoryRepository fakes', () => {
     expect(repo.getAll(true)).toHaveLength(2)
   })
 
+  it('PlayerRepository: hardDelete removes the player entirely, unlike delete which soft-deletes', () => {
+    const repo = new InMemoryPlayerRepository()
+    repo.save({ id: 'p1', name: 'Alice', active: false })
+    repo.save({ id: 'p2', name: 'Bob', active: true })
+
+    repo.hardDelete('p1')
+
+    expect(repo.getAll(true)).toEqual([{ id: 'p2', name: 'Bob', active: true }])
+  })
+
+  it('PlayerRepository: hardDelete of a nonexistent id does not throw', () => {
+    const repo = new InMemoryPlayerRepository()
+
+    expect(() => repo.hardDelete('non_existent')).not.toThrow()
+  })
+
   it('GameTypeRepository: save twice with same id does not create a duplicate', () => {
     const repo = new InMemoryGameTypeRepository()
     const gt = {

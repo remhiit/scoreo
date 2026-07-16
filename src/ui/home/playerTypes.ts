@@ -9,6 +9,8 @@ export interface PlayerState {
   deleteConfirmPlayerId: string | undefined
   renamingPlayerId: string | undefined
   renameInput: string
+  cleanupCandidates: Player[]
+  showCleanupConfirm: boolean
 }
 
 export const initialPlayerState: PlayerState = {
@@ -19,4 +21,6 @@ export const initialPlayerState: PlayerState = {
   deleteConfirmPlayerId: undefined,
   renamingPlayerId: undefined,
   renameInput: '',
+  cleanupCandidates: [],
+  showCleanupConfirm: false,
 }

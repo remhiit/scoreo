@@ -75,6 +75,22 @@ describe('LocalStoragePlayerRepository', () => {
     expect(repo.getAll()).toHaveLength(2)
   })
 
+  it('hardDelete removes the player entirely, unlike delete which soft-deletes', () => {
+    const repo = new LocalStoragePlayerRepository()
+    repo.save({ id: 'p1', name: 'Alice', active: false })
+    repo.save({ id: 'p2', name: 'Bob', active: true })
+
+    repo.hardDelete('p1')
+
+    expect(repo.getAll(true)).toEqual([{ id: 'p2', name: 'Bob', active: true }])
+  })
+
+  it('hardDelete of a nonexistent id does not throw', () => {
+    const repo = new LocalStoragePlayerRepository()
+
+    expect(() => repo.hardDelete('non_existent')).not.toThrow()
+  })
+
   it('deleteAll clears every stored player', () => {
     const repo = new LocalStoragePlayerRepository()
     repo.save({ id: 'p1', name: 'Alice', active: true })
