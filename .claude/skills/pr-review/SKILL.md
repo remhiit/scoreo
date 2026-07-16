@@ -88,8 +88,14 @@ applying the verdict — otherwise every subsequent PR action (assigned,
 edited, closed, …) keeps matching the trigger and re-reviews the same PR for
 no reason.
 
-- **Conforms** → set labels to `review-pass`, removing `needs-fix` and
-  `needs-review` if present.
+- **Conforms** → set labels to `review-pass`, removing `needs-fix`,
+  `needs-review`, and any `attempt-1`/`attempt-2`/`attempt-3` if present.
+  Clearing the attempt counter matters: it's what `address-feedback` (R4)
+  uses to cap retries on a *recurring* failure — leaving a stale
+  `attempt-N` from an already-resolved cycle would make R4 misread a
+  brand-new `needs-fix` (e.g. from a later rebase) as a continuation of
+  the old one, and escalate to `needs-human` after fewer genuine attempts
+  than the cap intends.
 - **Needs changes** → set labels to `needs-fix`, removing `review-pass` and
   `needs-review` if present, and post a PR comment listing exactly what's
   blocking (this is what `address-feedback` will act on).
