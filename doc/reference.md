@@ -8,7 +8,7 @@ Each screen owns a pure `(state, action) => state` reducer, colocated with its s
 
 | Screen | Reducer file | Action type | Actions | State file |
 |---|---|---|---|---|
-| Home (players) | `src/ui/home/playerReducer.ts` | `PlayerAction` | `loaded`, `updateInput`, `addSucceeded`, `addFailed`, `showDeleteConfirm`, `dismissDeleteConfirm`, `deleted`, `startRename`, `updateRenameInput`, `renameSucceeded`, `renameFailed`, `cancelRename` | `src/ui/home/playerTypes.ts` (`PlayerState`) |
+| Home (players) | `src/ui/home/playerReducer.ts` | `PlayerAction` | `loaded`, `updateInput`, `addSucceeded`, `addFailed`, `showDeleteConfirm`, `dismissDeleteConfirm`, `deleted`, `startRename`, `updateRenameInput`, `renameSucceeded`, `renameFailed`, `cancelRename`, `showCleanupConfirm`, `dismissCleanupConfirm`, `cleanupCompleted` | `src/ui/home/playerTypes.ts` (`PlayerState`) |
 | Games | `src/ui/gametype/gameTypeReducer.ts` | `GameTypeAction` | `loaded`, `updateName`, `selectWinCondition`, `updateTieBreakRule`, `updateTieBreakCondition`, `updateTieBreakLabel`, `selectGame`, `deselectGame`, `addSucceeded`, `addFailed`, `editGameType`, `cancelEdit`, `updateSucceeded`, `updateFailed`, `showArchiveConfirm`, `archiveSucceeded`, `archiveFailed`, `dismissArchiveConfirm` | `src/ui/gametype/gameTypeTypes.ts` (`GameTypeState`) |
 | Import | `src/ui/import/importReducer.ts` | `ImportAction` | `previewReady`, `previewFailed`, `importSucceeded`, `importFailed`, `fileError`, `reset` | `src/ui/import/importTypes.ts` (`ImportState`, `step: 'IDLE' \| 'READY' \| 'DONE'`) |
 | ScoreDetail | `src/ui/scoredetail/scoreDetailReducer.ts` | `ScoreDetailAction` | `updateScore`, `addRound`, `removeRound`, `cancelImmediate`, `showCancelConfirm`, `confirmCancel`, `dismissCancelConfirm`, `validationFailed`, `openWinnerModal`, `openManualSelectionDialog`, `openSecondaryScoreDialog`, `saved`, `saveFailed`, `dismissModal`, `toggleModalWinner`, `confirmWinnersEmptyError`, `updateSecondaryScoreInput`, `secondaryScoreInvalid`, `secondaryScoreEscalate`, `toggleManualSelectionWinner`, `manualWinnersEmptyError`, `dismissTieBreak` | `src/ui/scoredetail/scoreDetailTypes.ts` (`ScoreDetailState`, `ScoreDetailMode` = `Create` \| `Edit`) |
@@ -17,7 +17,7 @@ Each screen owns a pure `(state, action) => state` reducer, colocated with its s
 | Sync | `src/ui/sync/syncReducer.ts` | `SyncAction` | `restoringSession`, `restoreFinished`, `loginStarted`, `loginFailed`, `connected`, `synced`, `conflictDetected`, `syncFailed`, `loggedOut`, `resolvingConflict`, `conflictResolved`, `conflictResolveFailed`, `dismissError` | `src/ui/sync/syncTypes.ts` (`SyncState`, `phase: SyncPhase` — `Disconnected \| Restoring \| Connecting \| Detecting \| Syncing \| Resolved \| Conflict`) |
 
 Notable design choices:
-- **Home/players**: UI-only state that was never captured by a reducer (multi-player selection, game-selection modal, inline add-game-type form, onboarding/resume-draft banners) lives in plain `useState` inside `HomeScreen.tsx`, not the reducer.
+- **Home/players**: UI-only state that was never captured by a reducer (multi-player selection, game-selection modal, inline add-game-type form, onboarding/resume-draft banners) lives in plain `useState` inside `HomeScreen.tsx`, not the reducer. `cleanupCandidates` (inactive players with no recorded match, from `CleanupInactivePlayersUseCase.preview()`) and `showCleanupConfirm` are recomputed by every `loadPlayers()` call, alongside `players`/`stats`, so the "Clean up (N)" button and its confirmation modal always reflect the current preview.
 - **ScoreDetail**: `buildInitialState()` resolves `Create` vs `Edit` mode and restores a matching draft; a `useEffect` keyed on `state.rounds` autosaves the draft after each score change (skipped on the initial mount via a ref, so no draft is written before the first user edit).
 - **Stats**: `StatsScreen` exposes an `onBackOverrideChange` prop so `App.tsx` can make the header's back button clear the player selection instead of navigating, when a player is selected (see App shell below).
 
@@ -35,6 +35,7 @@ Notable design choices:
 | `DeleteMatchUseCase` | `invoke(matchId: string)` | `void` |
 | `DeletePlayerUseCase` | `invoke(id: string, anonymize = false)` | `void` |
 | `RenamePlayerUseCase` | `invoke(playerId: string, newName: string)` | `void` |
+| `CleanupInactivePlayersUseCase` | `preview()`, `execute()` | `Player[]` (inactive players referenced by no match; `execute()` hard-deletes them and returns the same list) |
 | `GetPlayersUseCase` | `invoke(includeInactive = false)` | `Player[]` |
 | `GetPlayerStatsUseCase` | `invoke()` | `Map<string, PlayerStats>` |
 | `GetHeadToHeadUseCase` | `invoke(gameTypeId?: string)` | `PlayerDetail[]` (sorted by ELO desc, ≥1 match only) |
@@ -69,7 +70,7 @@ Notable design choices:
 
 | Interface | Methods |
 |---|---|
-| `PlayerRepository` | `getAll(includeInactive?)`, `save(player)`, `saveAll(players)`, `delete(id, anonymize?)`, `deleteAll()` |
+| `PlayerRepository` | `getAll(includeInactive?)`, `save(player)`, `saveAll(players)`, `delete(id, anonymize?)`, `hardDelete(id)`, `deleteAll()` |
 | `GameTypeRepository` | `getAll(includeInactive?)`, `save(gameType)`, `saveAll(gameTypes)`, `findById(id)`, `deleteAll()` |
 | `MatchRepository` | `getAll()`, `save(match)`, `saveAll(matches)`, `findById(id)`, `delete(id)`, `deleteAll()` |
 | `MatchDraftRepository` | `save(draft)`, `load(): MatchDraft \| undefined`, `clear()` |
@@ -126,7 +127,7 @@ Notable design choices:
 
 ## Tests
 
-59 test files, 622 tests, all colocated `*.test.ts(x)` next to the file they cover, running under Vitest + `jsdom` (no real browser needed for any of them, including the Google Drive/OAuth and theme tests that historically required one).
+60 test files, 656 tests, all colocated `*.test.ts(x)` next to the file they cover, running under Vitest + `jsdom` (no real browser needed for any of them, including the Google Drive/OAuth and theme tests that historically required one).
 
 Notable coverage that goes beyond a 1:1 port of business logic:
 - **Component tests** (`*Screen.test.tsx`) for every screen, on top of each reducer's own pure-function tests.

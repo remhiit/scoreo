@@ -9,6 +9,7 @@
 | `RenamePlayerUseCase` | `playerId: String, newName: String` | `Unit` | Updates player name by id (preserves UUID). Validates non-blank, max 50 chars. |
 | `GetPlayersUseCase` | `includeInactive: Boolean = false` | `List<Player>` | Excludes inactive by default |
 | `GetPlayerStatsUseCase` | — | `Map<String, PlayerStats>` | Computes wins/losses from all matches (regardless of player active status) |
+| `CleanupInactivePlayersUseCase` | `preview()` / `execute()` | `List<Player>` | Finds inactive players referenced by no match (neither `playerScores` nor `secondaryPlayerScores`); `execute()` hard-deletes them via `PlayerRepository.hardDelete` and returns the deleted list |
 
 ## MVI-style
 
@@ -16,7 +17,7 @@
 |-----------|---------|
 | **Reducer** | `playerReducer` — `src/ui/home/playerReducer.ts` |
 | **Action** | `PlayerAction`: `updateInput`, `addSucceeded`/`addFailed`, `showDeleteConfirm`, `dismissDeleteConfirm`, `deleted`, `startRename`, `updateRenameInput`, `renameSucceeded`/`renameFailed`, `cancelRename` |
-| **State** | `PlayerState`: `players`, `stats`, `inputName`, `error`, `deleteConfirmPlayerId`, `renamingPlayerId`, `renameInput` |
+| **State** | `PlayerState`: `players`, `stats`, `inputName`, `error`, `deleteConfirmPlayerId`, `renamingPlayerId`, `renameInput`, `cleanupCandidates`, `showCleanupConfirm` |
 
 Screen: `src/ui/home/HomeScreen.tsx`. See `doc/reference.md` for the full reducer table.
 
@@ -36,6 +37,10 @@ Screen: `src/ui/home/HomeScreen.tsx`. See `doc/reference.md` for the full reduce
   - Warning: "Matches are preserved"
   - Checkbox: "Erase name from history" (controls `anonymize` flag)
   - **Cancel** / **Delete** buttons
+- "Clean up (N)" button (only shown when `CleanupInactivePlayersUseCase.preview()` returns at least one player, `N` being that count): opens a confirmation modal listing the eligible players by name
+  - **Cancel** closes the modal, deletes nothing
+  - **Delete permanently** hard-deletes every listed player (`PlayerRepository.hardDelete`, irreversible) and closes the modal
+  - Recomputed after every player mutation (add/soft-delete/rename), so a player soft-deleted with no match immediately makes the button appear
 - Called from `HomeScreen` (inline add)
 
 ## Functional Tests
@@ -69,6 +74,16 @@ And "Deleted player" appears in history
 Given no players exist
 When I call DeletePlayerUseCase("non_existent")
 Then no exception is thrown
+```
+
+### Clean up inactive players with no match
+```
+Given "Alice" exists and has 2 matches, and "Bob" was deleted (soft) with no match ever recorded
+When the Home screen loads
+Then the "Clean up (1)" button is visible
+When I click it, then "Delete permanently" in the confirmation modal
+Then "Bob" is permanently removed from storage (not just marked inactive)
+And "Alice" is unaffected, the "Clean up" button disappears
 ```
 
 ### Rename a player (fix typo)

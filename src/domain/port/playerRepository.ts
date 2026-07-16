@@ -5,5 +5,6 @@ export interface PlayerRepository {
   save(player: Player): void
   saveAll(players: Player[]): void
   delete(id: string, anonymize?: boolean): void
+  hardDelete(id: string): void
   deleteAll(): void
 }

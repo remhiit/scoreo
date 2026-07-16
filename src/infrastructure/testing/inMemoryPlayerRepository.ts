@@ -33,6 +33,10 @@ export class InMemoryPlayerRepository implements PlayerRepository {
     this.players[idx] = { ...existing, active: false, name: anonymize ? '' : existing.name }
   }
 
+  hardDelete(id: string): void {
+    this.players = this.players.filter((p) => p.id !== id)
+  }
+
   deleteAll(): void {
     this.players = []
   }
