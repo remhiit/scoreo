@@ -309,6 +309,7 @@ describe('historyReducer', () => {
       delete: () => {
         throw new Error('Storage error: failed to delete match')
       },
+      deleteAll: () => {},
     }
     const deleteMatchUseCase = new DeleteMatchUseCase(failingMatchRepo)
 

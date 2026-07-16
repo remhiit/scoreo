@@ -87,6 +87,16 @@ describe('LocalStorageMatchRepository', () => {
     expect(second.getAll()[0].id).toBe(migratedId)
   })
 
+  it('deleteAll clears every stored match', () => {
+    const repo = new LocalStorageMatchRepository()
+    repo.save({ id: 'm1', date: 1000, gameTypeId: 'gt1', playerScores: [], manualWinners: [], secondaryPlayerScores: [] })
+    repo.save({ id: 'm2', date: 2000, gameTypeId: 'gt1', playerScores: [], manualWinners: [], secondaryPlayerScores: [] })
+
+    repo.deleteAll()
+
+    expect(repo.getAll()).toEqual([])
+  })
+
   it('backward compat: old JSON without secondaryPlayerScores defaults to empty array', () => {
     localStorage.setItem(
       'scoreo_matches',

@@ -69,9 +69,9 @@ Notable design choices:
 
 | Interface | Methods |
 |---|---|
-| `PlayerRepository` | `getAll(includeInactive?)`, `save(player)`, `saveAll(players)`, `delete(id, anonymize?)` |
-| `GameTypeRepository` | `getAll(includeInactive?)`, `save(gameType)`, `saveAll(gameTypes)`, `findById(id)` |
-| `MatchRepository` | `getAll()`, `save(match)`, `saveAll(matches)`, `findById(id)`, `delete(id)` |
+| `PlayerRepository` | `getAll(includeInactive?)`, `save(player)`, `saveAll(players)`, `delete(id, anonymize?)`, `deleteAll()` |
+| `GameTypeRepository` | `getAll(includeInactive?)`, `save(gameType)`, `saveAll(gameTypes)`, `findById(id)`, `deleteAll()` |
+| `MatchRepository` | `getAll()`, `save(match)`, `saveAll(matches)`, `findById(id)`, `delete(id)`, `deleteAll()` |
 | `MatchDraftRepository` | `save(draft)`, `load(): MatchDraft \| undefined`, `clear()` |
 | `CloudSyncRepository` | `push(data): Promise<void>`, `pull(): Promise<SyncData>`, `getStatus(): Promise<SyncStatus>`, `login(): Promise<void>`, `logout(): Promise<void>` — plus `SyncData`, `SyncStatus`, and the discriminated union `SyncException` (`NotAuthenticated`, `NetworkError`, `ApiError{code,message}`, `Conflict`, `RateLimited`), all in `cloudSyncRepository.ts` |
 

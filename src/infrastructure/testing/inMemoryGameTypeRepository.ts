@@ -29,4 +29,8 @@ export class InMemoryGameTypeRepository implements GameTypeRepository {
   findById(id: string): GameType | undefined {
     return this.getAll(true).find((g) => g.id === id)
   }
+
+  deleteAll(): void {
+    this.gameTypes = []
+  }
 }

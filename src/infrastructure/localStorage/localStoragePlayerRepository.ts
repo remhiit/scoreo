@@ -50,4 +50,8 @@ export class LocalStoragePlayerRepository implements PlayerRepository {
     )
     writeAll(updated)
   }
+
+  deleteAll(): void {
+    writeAll([])
+  }
 }

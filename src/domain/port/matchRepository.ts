@@ -6,4 +6,5 @@ export interface MatchRepository {
   saveAll(matches: Match[]): void
   findById(id: string): Match | undefined
   delete(id: string): void
+  deleteAll(): void
 }

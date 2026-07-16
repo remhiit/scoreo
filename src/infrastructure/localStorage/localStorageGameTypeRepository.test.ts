@@ -106,4 +106,21 @@ describe('LocalStorageGameTypeRepository', () => {
       },
     ])
   })
+
+  it('deleteAll clears every stored game type', () => {
+    const repo = new LocalStorageGameTypeRepository()
+    repo.save({
+      id: 'gt1',
+      name: 'Belote',
+      winCondition: 'HIGHEST_SCORE',
+      tieBreakRule: 'NONE',
+      tieBreakCondition: 'HIGHEST_SCORE',
+      tieBreakLabel: null,
+      active: true,
+    })
+
+    repo.deleteAll()
+
+    expect(repo.getAll(true)).toEqual([])
+  })
 })
