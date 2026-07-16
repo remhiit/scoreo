@@ -166,6 +166,19 @@ describe('GoogleDriveSyncAdapter', () => {
       expect(raw).not.toContain('email')
     })
 
+    it('purges a lingering email field from an entry already past the #51 fix (accessToken/expiresAt already gone)', () => {
+      localStorage.setItem(
+        'scoreo_sync_config',
+        JSON.stringify({ email: 'user@example.com', lastSyncTimestamp: 1_700_000_000_000, lastSyncFileId: 'file-xyz' }),
+      )
+
+      const config1 = loadSyncConfig()
+
+      expect(config1).toEqual(config({ lastSyncTimestamp: 1_700_000_000_000, lastSyncFileId: 'file-xyz' }))
+      const raw = localStorage.getItem('scoreo_sync_config')
+      expect(raw).not.toContain('email')
+    })
+
     it('does not persist an access token across adapter instances', () => {
       const authService1 = new GoogleAuthService()
       new GoogleDriveSyncAdapter(authService1, 'test-client-id')

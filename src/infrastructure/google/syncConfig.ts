@@ -25,7 +25,7 @@ export function loadSyncConfig(): SyncConfig {
   try {
     const parsed: unknown = JSON.parse(raw)
     const config = SyncConfigSchema.parse(parsed)
-    const hasLegacyFields = typeof parsed === 'object' && parsed !== null && ('accessToken' in parsed || 'expiresAt' in parsed)
+    const hasLegacyFields = typeof parsed === 'object' && parsed !== null && ('accessToken' in parsed || 'expiresAt' in parsed || 'email' in parsed)
     if (hasLegacyFields) saveSyncConfig(config)
     return config
   } catch {
