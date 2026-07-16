@@ -383,17 +383,17 @@ Implementation (R2)).
 | Issue | PR | Note |
 |---|---|---|
 | #96 | #97 | Bouton Disconnect visible quand la synchro échoue après connexion — `review-pass`, mergée sans intervention manuelle |
-| #99 | #100 | `deleteAll()` sur les ports Player/GameType/Match pour un vrai remplacement des données au « Keep remote » — mergée, voir incident double-fire ci-dessous |
+| #99 | #100 | `deleteAll()` sur les ports Player/GameType/Match pour un vrai remplacement des données au « Keep remote » — risque Élevé, mergée, voir incident double-fire ci-dessous |
 | #102 | #104 | Nouvelle phase `Restoring` pour éviter le flash du bouton Connect au montage de `SyncScreen` — premier `needs-fix` de R3 sur ce ticket (piège `useEffect`/paint vs `useLayoutEffect`), corrigé, mergée |
-| #106 | #107 | Nettoyage définitif des joueurs inactifs sans match enregistré (`hardDelete` sur `PlayerRepository`) — mergée |
+| #106 | #107 | Nettoyage définitif des joueurs inactifs sans match enregistré (`hardDelete` sur `PlayerRepository`) — risque Élevé, mergée |
 | #108 | #109 | Retrait de l'email comme signal de connexion (jamais renvoyé par l'API GIS Token Model) au profit d'un rafraîchissement silencieux systématique — risque Élevé, mergée |
 
 **Compteur (mergées) : 5/5 — gate franchi.** Les 5 tickets ont été traités
 de bout en bout par R2 (branche + code + tests + PR), passés par R3, et
 mergés manuellement par Rémi (comme prévu par le gate — l'auto-merge reste
 Phase 5). Le critère qualitatif tient aussi : les PR couvrent des risques
-réels (dont deux **Élevé** — #100 et #109 — touchant ports/adapters), pas
-seulement des changements triviaux.
+réels (dont trois **Élevé** — #100, #107 et #109 — touchant ports/adapters),
+pas seulement des changements triviaux.
 
 **Incident (2026-07-15) — double-fire de R2 sur l'issue #99 :** même classe
 de cause que le double-fire de R3 (PR #94), côté labellisation cette fois.
