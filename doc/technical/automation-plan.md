@@ -8,7 +8,7 @@ via les **routines Claude Code**.
 > lire en premier. Il indique la phase en cours et le critère de passage à la
 > suivante. Ne pas sauter de phase : chaque gate protège la suivante.
 
-**Phase 4 — R2 : gate franchi (2026-07-16, 5/5 tickets mergés). Phases 0 à 3 closes : gate Phase 2 franchi (2026-07-14, PR #90) et premier run réel de R5 observé (2026-07-14, PR #84-89). Prochaine étape : Phase 5 (R4 + auto-merge), pas encore démarrée.**
+**Phase en cours : 5 — R4 et auto-merge (skill + Action écrits, routine R4 à finaliser par Rémi). Phase 4 close : gate franchi (2026-07-16, 5/5 tickets mergés). Phases 0 à 3 closes : gate Phase 2 franchi (2026-07-14, PR #90) et premier run réel de R5 observé (2026-07-14, PR #84-89).**
 
 ---
 
@@ -87,15 +87,22 @@ Issue créée
                    ❌ failure                            ✅ success
                       │ label `needs-fix`                    │
                       ▼                                      │
-   Action `pull_request.labeled` ──/fire──► [R4 — FIX]       │
+      GitHub trigger `pull_request.labeled`, filtre          │
+      `needs-fix`                                            │
+                      ▼                                      │
+                [R4 — FIX]                                   │
                       │ skill address-feedback               │
-                      │ attempt-1 → 2 → 3                    │
-                      │ à attempt-3 : STOP, `needs-human`    │
-                      └──────────► repush ──► R3 (boucle)    │
+                      │ attempt-1 → 2 → 3 (géré par R4)       │
+                      │ à attempt-3 : STOP, retire `auto`,    │
+                      │ pose `needs-human`                    │
+                      └──────────► repush ──► R3 (boucle,    │
+                                    needs-review-label.yml    │
+                                    requeue automatique)      │
                                                              ▼
                                           Tous les checks verts + label `auto`
                                                              │
-                                              `gh pr merge --auto --squash`
+                              Action auto-merge-sync.yml (zéro LLM)
+                              → `gh pr merge --auto --squash`
                                                              ▼
                                                       main → deploy.yml
                                                              ▼
@@ -408,13 +415,30 @@ produisant deux PR quasi identiques (#100 et #101, toutes deux `Closes
 `issue-to-spec/SKILL.md` (PR #103) exige désormais que `ready` soit posé
 seul, dans son propre appel, toujours en dernier.
 
-### Phase 5 — R4 et auto-merge
+### Phase 5 — R4 et auto-merge ⬅️ *en cours*
 
-R3 en échec → label `needs-fix` → Action → `/fire` R4. R4 incrémente
-`attempt-N`. **À `attempt-3` : stop, retire `auto`, pose `needs-human`.**
-Sans ce plafond, une seule PR brûle le quota journalier en une nuit.
+R3 en échec → label `needs-fix` → trigger GitHub direct (même mécanisme que
+R2/R3, pas d'indirection Action + API) → R4. R4 gère lui-même son compteur
+`attempt-N` (comme R3 gère déjà `review-pass`/`needs-fix`/`needs-review`) :
+**à `attempt-3` : stop, retire `auto`, pose `needs-human`.** Sans ce
+plafond, une seule PR brûle le quota journalier en une nuit.
 
-Auto-merge conditionné au label `auto` uniquement.
+Auto-merge conditionné au label `auto` uniquement, via une Action
+déterministe (`auto-merge-sync.yml`) qui active/désactive le auto-merge
+natif GitHub à la pose/au retrait du label — pas une routine, zéro LLM,
+cohérent avec le principe directeur §2.2.
+
+- [x] `.claude/skills/address-feedback/SKILL.md` — section « Which PR »
+      et logique du compteur `attempt-N` explicitées (mécanique identique
+      à `pr-review`/`implement-task`)
+- [x] `.github/workflows/auto-merge-sync.yml` écrit — active/désactive
+      l'auto-merge natif GitHub sur pose/retrait du label `auto`
+- [x] Coquille de la routine R4 créée par outil (`trig_014VemW9wW5MopAjDHaaiYK7`,
+      poke-only) — trigger GitHub et connecteurs à finaliser manuellement
+      (voir `deployment.md` § Auto-Fix (R4) — la coquille n'a **aucun**
+      connecteur par défaut, à ajouter avant que R4 soit fonctionnelle)
+- [ ] **Rémi** : finaliser la routine R4 (trigger `pull_request.labeled`
+      filtré `needs-fix` + connecteurs GitHub MCP)
 
 **Gate :** 2 semaines, zéro merge qu'on aurait refusé.
 
