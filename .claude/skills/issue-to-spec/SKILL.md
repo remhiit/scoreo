@@ -49,6 +49,25 @@ Write the issue body as:
 **Faible** | **Élevé** — <justification>
 ```
 
+### Section « Dépendances » (optionnelle)
+
+Quand cette issue ne peut pas être implémentée avant qu'une autre soit
+fermée, ajoute une section `## Dépendances` juste après `## Hors scope` (ou
+`## Catégorie de risque` si `Hors scope` est absent) :
+
+```markdown
+## Dépendances
+
+Dépend de #114 (pose le port dont ce ticket a besoin)
+Dépend de #117 (même raison)
+```
+
+Une ligne par bloqueur, forme exacte `Dépend de #N (raison)` — c'est le
+format que `.github/workflows/sync-issue-dependencies.yml` parse pour poser
+le lien natif GitHub `blocked_by` (zéro LLM, cf.
+`doc/technical/automation-plan.md` §2.2 et §4). Sans cette section, aucune
+automatisation ne sait que l'issue est bloquée.
+
 ## Determining the risk category
 
 This is the one field that isn't free-form — it comes straight from the
