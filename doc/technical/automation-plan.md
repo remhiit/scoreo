@@ -143,6 +143,21 @@ Branch protection + checks requis + `gh pr merge --auto --squash`. La PR se
 merge seule quand la CI est verte et que le label `auto` est présent. Aucun LLM
 dans la boucle.
 
+### Déblocage automatique des issues bloquées
+
+Zéro LLM, cohérent avec le principe directeur §2.2. `.github/workflows/
+unblock-issues.yml` se déclenche sur `issues` `closed`, et ne s'exécute que
+si l'issue est fermée avec `state_reason: completed` (une fermeture « not
+planned » ne débloque rien). Il liste les issues que l'issue fermée
+bloquait (`GET .../dependencies/blocking`), puis pour chaque candidate
+vérifie via `GET .../dependencies/blocked_by` que **tous** ses bloqueurs
+natifs sont fermés avant de poser `ready` et de retirer `blocked`. N'agit
+jamais sur une issue déjà `ready`/`in-progress` (même classe de garde que
+l'incident double-fire #99, §4 « claim the run »). Suppose que le lien
+natif `blocked_by` a été posé au préalable par
+`.github/workflows/sync-issue-dependencies.yml` ; sans donnée à traiter,
+c'est un no-op.
+
 ---
 
 ## 5. Labels (le bus d'événements)
@@ -155,7 +170,7 @@ dans la boucle.
 | `review-pass` | Verdict `pr-review` (R3) : conforme → traduit en commit status `claude/review` succès |
 | `needs-fix` | Verdict `pr-review` (R3) : à corriger → traduit en commit status `claude/review` échec, déclenche R4 |
 | `needs-human` | Escalade : plafond d'itérations ou hors périmètre |
-| `blocked` | Dépendance externe |
+| `blocked` | Dépendance externe — retiré automatiquement par `unblock-issues.yml` une fois tous les bloqueurs natifs fermés |
 | `auto` | Autorisé à l'auto-merge une fois les checks verts |
 | `attempt-1/2/3` | Compteur anti-boucle. **À `attempt-3` : stop.** |
 | `P0`…`P3` | Priorité (reprise de la sémantique de `.task/`) |
