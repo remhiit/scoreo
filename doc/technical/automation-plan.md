@@ -528,6 +528,18 @@ fois le réglage repo en place ; à surveiller si `setup-repo.sh` doit être
 corrigé pour que ce PATCH prenne effet de façon fiable la prochaine fois
 qu'il tourne sur un nouveau repo.
 
+**Incident (2026-07-17) — issue liée non fermée après auto-merge :** sur
+les PR #124 (Closes #122) et #126 (Closes #114), toutes deux mergées par
+`github-actions[bot]` via `auto-merge-sync.yml`, l'issue liée référencée par
+« Closes #N » dans le corps de la PR n'a **pas** été fermée automatiquement
+par GitHub — à l'inverse de la PR #123 (Closes #121), mergée manuellement
+par un humain (pas de label `auto`), qui a fermé #121 normalement. Cause :
+le `GITHUB_TOKEN` du job `sync` ne portait pas le droit `issues: write`,
+nécessaire à cet effet de bord du merge (`gh pr merge --auto --squash`).
+Ce défaut bloque en cascade `unblock-issues.yml` (#122), qui dépend d'un
+véritable événement `issues.closed` pour se déclencher. Correctif :
+`permissions:` de `auto-merge-sync.yml` étendu avec `issues: write` (#128).
+
 ### Phase 6 — Observabilité
 
 R6 hebdo. C'est le rapport qui pilote l'élargissement de la liste blanche `auto`.
