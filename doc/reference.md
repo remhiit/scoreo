@@ -139,6 +139,7 @@ Notable coverage that goes beyond a 1:1 port of business logic:
 **E2E** (`e2e/`, Playwright + real Chromium, `pnpm test:e2e`): separate from the Vitest/jsdom suite above — runs the built app (`pnpm build` + `pnpm preview`) in an actual browser to catch rendering/CSS issues jsdom can't. Config: `playwright.config.ts` (root).
 
 - `e2e/add-player.spec.ts` — adding a player from Home.
+- `e2e/import-json.spec.ts` — the Import screen's 3-step wizard (select → aperçu → résultat) using `e2e/fixtures/import-sample.json` (v1.1 format), asserting the imported players appear on Home and the imported match appears in History.
 - `e2e/full-match-flow.spec.ts` — full functional flow: create 2 players, create a game type inline, play a round with a clear (non-tied) winner, finish the match, and check the winner/loser's wins/losses and ELO on Stats.
 - `e2e/helpers/players.ts` (`addPlayer`), `e2e/helpers/gameTypes.ts` (`createGameType`), `e2e/helpers/match.ts` (`startMatch`, `enterRoundScore`, `finishMatch`), `e2e/helpers/stats.ts` (`readLeaderboardRow`) — reusable Playwright helpers by functional domain, meant to be shared by future e2e specs instead of duplicating player/game-type/match setup.
 
