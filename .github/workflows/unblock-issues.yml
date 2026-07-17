@@ -1,0 +1,27 @@
+name: Unblock Issues
+
+on:
+  issues:
+    types: [closed]
+
+permissions:
+  issues: write
+
+jobs:
+  unblock:
+    if: github.event.issue.state_reason == 'completed'
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPO_OWNER: remhiit
+      REPO_NAME: scoreo
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Promote unblocked issues to ready
+        run: node scripts/unblock-issues.mjs
