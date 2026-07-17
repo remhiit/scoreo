@@ -514,6 +514,20 @@ d'autre. Appliqué à `address-feedback/SKILL.md` (retire `needs-fix` avant
 encore été prise en défaut sur ce point précis, mais partageait la même
 fragilité de principe).
 
+**Incident (2026-07-17) — auto-merge natif désactivé au niveau du repo :**
+sur les PR #125 et #126 (toutes deux `auto`/`review-pass`, CI verte),
+`auto-merge-sync.yml` échouait silencieusement au moment de poser le
+label `auto` : `GraphQL: Auto merge is not allowed for this repository`
+(repéré par Rémi, confirmé via les logs du job). Pas un problème de
+timing — le réglage `allow_auto_merge` du repo (censé être posé par
+`setup-repo.sh`) n'était en fait pas actif. Une fois activé manuellement
+par Rémi, les deux PR ont mergé correctement — #126 automatiquement par
+`github-actions[bot]` (premier auto-merge de bout en bout observé), #125
+peu après. **Le mécanisme d'auto-merge est donc confirmé fonctionnel** une
+fois le réglage repo en place ; à surveiller si `setup-repo.sh` doit être
+corrigé pour que ce PATCH prenne effet de façon fiable la prochaine fois
+qu'il tourne sur un nouveau repo.
+
 ### Phase 6 — Observabilité
 
 R6 hebdo. C'est le rapport qui pilote l'élargissement de la liste blanche `auto`.
