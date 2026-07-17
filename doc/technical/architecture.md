@@ -56,6 +56,13 @@ So: **thrown errors** for use cases where the caller just needs the happy path o
 
 Vite dev server / production build, output to `dist/`. Entry point: `src/main.tsx` → `createRoot(...).render(<App />)`.
 
+## Testing
+
+Two separate suites, run by different `pnpm` scripts and CI jobs:
+
+- **Unit/component (`pnpm test`)** — Vitest + `jsdom`. No real browser; covers reducers, use cases, and screen components. See "Tests" in `doc/reference.md`.
+- **E2E (`pnpm test:e2e`)** — Playwright driving real Chromium against a production build (`pnpm build` + `pnpm preview`). Catches real-DOM/CSS rendering issues `jsdom` can't. Lives in `e2e/`, config at `playwright.config.ts`. CI installs Chromium (`playwright install --with-deps chromium`) in a dedicated `e2e` job.
+
 ## Source structure
 
 - **`src/domain/`** — `model/` (types + zod schemas), `port/` (repository interfaces), `result.ts`

@@ -136,6 +136,8 @@ Notable coverage that goes beyond a 1:1 port of business logic:
 - **`src/infrastructure/google/googleAuthService.test.ts`** and **`googleDriveSyncAdapter.test.ts`** mock `window.google.accounts.oauth2` / the Drive client to exercise real success/error/retry/conflict paths without a browser or a live Google account.
 - **`src/ui/theme/themeManager.test.ts`** covers `readInitialFlavor`/`readInitialAccent` (including the `scoreo_theme` legacy-key migration) directly with `jsdom`'s native `localStorage`/`matchMedia`.
 
+**E2E** (`e2e/`, Playwright + real Chromium, `pnpm test:e2e`): separate from the Vitest/jsdom suite above — runs the built app (`pnpm build` + `pnpm preview`) in an actual browser to catch rendering/CSS issues jsdom can't. `e2e/add-player.spec.ts` covers adding a player from Home. Config: `playwright.config.ts` (root).
+
 ## CSS
 
 Files (`public/css/`): `tokens/*.css` (Catppuccin design tokens, see Styling in `doc/technical/architecture.md`), `theme.css`, `layout.css`, `home.css`, `scoring.css`, `history.css`, `stats.css`, `import.css`, `sync.css`, `theme-picker.css`, `components.css`, `styles.css` (entry point, `@import`s the rest).

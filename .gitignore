@@ -209,3 +209,7 @@ vite.config.ts.timestamp-*
 # Lighthouse CI reports
 .lighthouseci/
 
+# Playwright E2E reports
+playwright-report/
+test-results/
+
