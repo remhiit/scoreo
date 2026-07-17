@@ -528,6 +528,21 @@ fois le réglage repo en place ; à surveiller si `setup-repo.sh` doit être
 corrigé pour que ce PATCH prenne effet de façon fiable la prochaine fois
 qu'il tourne sur un nouveau repo.
 
+**Incident (2026-07-17) — `issues: write` manquant, fermeture auto des
+issues liées cassée :** `auto-merge-sync.yml` ne déclarait que
+`permissions: contents: write, pull-requests: write`. Quand le workflow
+exécute `gh pr merge --auto --squash` pour une PR labellisée `auto`, le
+merge réussit mais GitHub ne ferme pas l'issue référencée par « Closes #N »
+dans le corps de la PR — le `GITHUB_TOKEN` du job n'avait pas le droit
+`issues: write` nécessaire à cet effet de bord du merge. Constaté sur PR
+#124 (Closes #122) et PR #126 (Closes #114), toutes deux mergées par
+`github-actions[bot]` via ce workflow — les deux issues liées sont restées
+ouvertes. À l'inverse, PR #123 (Closes #121), mergée manuellement par un
+humain (pas de label `auto`), a fermé #121 normalement. Ce bug bloquait en
+cascade `unblock-issues.yml` (#122), qui dépend d'un véritable événement
+`issues.closed` pour se déclencher. Correctif : `issues: write` ajouté aux
+`permissions:` de `auto-merge-sync.yml` (#128).
+
 ### Phase 6 — Observabilité
 
 R6 hebdo. C'est le rapport qui pilote l'élargissement de la liste blanche `auto`.
