@@ -13,3 +13,13 @@ export async function createGameType(page: Page, name: string, winCondition: Win
   await dialog.locator('.inline-form').getByRole('combobox').selectOption(winCondition)
   await dialog.getByRole('button', { name: 'Add game' }).click()
 }
+
+/**
+ * Archives the named game type from the Games screen: clicks its Delete
+ * (trash) icon, then confirms in the "Archive <name>?" modal.
+ */
+export async function archiveGameType(page: Page, name: string): Promise<void> {
+  const row = page.locator('.list-item-row', { hasText: name })
+  await row.getByTitle('Delete').click()
+  await page.getByRole('dialog', { name: `Archive ${name}?` }).getByRole('button', { name: 'Archive' }).click()
+}
