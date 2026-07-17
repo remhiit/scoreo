@@ -1,0 +1,26 @@
+name: Sync Issue Dependencies
+
+on:
+  issues:
+    types: [opened, edited]
+
+permissions:
+  issues: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_TOKEN: ${{ github.token }}
+      REPO_OWNER: remhiit
+      REPO_NAME: scoreo
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Sync blocked_by links from the Dépendances section
+        run: node scripts/sync-issue-dependencies.mjs
