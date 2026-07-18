@@ -81,8 +81,15 @@ Issue créée
    ▼
 [R1 — GROOMING : session interactive, PAS une routine]
    │  skill issue-to-spec → critères d'acceptation, fichiers, catégorie de risque
-   │  pose le label `ready`
+   │  pose le label `queued`
    ▼
+      Cron horaire + GitHub trigger `issues.unlabeled`/`closed`
+                                                 ▼
+                              [DISPATCHER — zéro LLM, scripts/dispatch-ready.mjs]
+                                                 │ si 0 issue ready/in-progress (MAX_IN_FLIGHT=1)
+                                                 │ et ≤2 PR needs-review (anti-rafale R5)
+                                                 │ retire `queued`, pose `ready` seul, en dernier
+                                                 ▼
       GitHub trigger `issues.labeled`, filtre `ready`
                                                  ▼
                                      [R2 — IMPLÉMENTATION]
@@ -157,7 +164,7 @@ chaque bloqueur cité, via `scripts/sync-issue-dependencies.mjs`. Idempotent
 job pour les autres). Ce lien natif est le préalable au déblocage
 automatique : une fois interrogeable par API, une automatisation peut
 détecter qu'une issue n'a plus de bloqueur ouvert et la faire passer en
-`ready`.
+`queued`.
 
 ### Déblocage automatique des issues bloquées
 
@@ -167,12 +174,38 @@ si l'issue est fermée avec `state_reason: completed` (une fermeture « not
 planned » ne débloque rien). Il liste les issues que l'issue fermée
 bloquait (`GET .../dependencies/blocking`), puis pour chaque candidate
 vérifie via `GET .../dependencies/blocked_by` que **tous** ses bloqueurs
-natifs sont fermés avant de poser `ready` et de retirer `blocked`. N'agit
-jamais sur une issue déjà `ready`/`in-progress` (même classe de garde que
-l'incident double-fire #99, §4 « claim the run »). Suppose que le lien
+natifs sont fermés avant de poser `queued` et de retirer `blocked` — c'est
+au dispatcher (ci-dessous) de décider quand cette issue `queued` devient
+`ready`. N'agit jamais sur une issue déjà `queued`/`ready`/`in-progress`
+(même classe de garde que l'incident double-fire #99, §4 « claim the run »).
+Suppose que le lien
 natif `blocked_by` a été posé au préalable par
 `.github/workflows/sync-issue-dependencies.yml` ; sans donnée à traiter,
 c'est un no-op.
+
+### Dispatcher : promotion `queued` → `ready`
+
+Poser plusieurs `ready` d'un coup ferait partir autant d'événements vers R2
+simultanément — au-delà du plafond de runs (5/jour en Pro), les
+événements excédentaires sont perdus (§3). Plutôt que de compter sur le
+seul rattrapage a posteriori (balayeur ci-dessous), on lisse le débit en
+amont : R1 pose désormais `queued` (pas `ready`), et une Action
+déterministe (zéro LLM, §2.2) promeut en `ready` **une issue à la fois**,
+seulement quand rien n'est en cours.
+
+`scripts/dispatch-ready.mjs`, appelé par le même workflow que le balayeur
+horaire (`.github/workflows/requeue-lost-events.yml` — cron + les
+triggers `issues` `unlabeled`/`closed`, pour réagir vite à la fin d'un
+run) : si le nombre d'issues ouvertes portant `ready` ou `in-progress` est
+inférieur à `MAX_IN_FLIGHT` (1), sélectionne la plus ancienne issue
+`queued` de plus haute priorité (`P0` > `P1` > `P2` > `P3`, puis date de
+création croissante), retire `queued` puis pose `ready` **seul, dans son
+propre appel, en dernier** (leçon #99, §4 « claim the run »). Ne
+promeut jamais une issue portant `blocked`, `needs-human` ou
+`in-progress`. Garde anti-rafale R5 : si plus de `MAX_NEEDS_REVIEW_BACKLOG`
+(2) PR ouvertes portent `needs-review`, ne dispatche pas à ce run — laisse
+R3 absorber la file d'abord. Par construction, le débit d'événements vers
+R2 ne dépasse plus jamais le quota.
 
 ### Balayeur horaire des événements de routine perdus
 
@@ -206,6 +239,7 @@ doit remonter une routine cassée, pas un problème de quota.
 
 | Label | Rôle |
 |---|---|
+| `queued` | Spec validée, en attente d'un créneau de routine — promue en `ready` une à la fois par le dispatcher (`scripts/dispatch-ready.mjs`) |
 | `ready` | Spec validée → déclenche R2 |
 | `in-progress` | Une routine travaille dessus |
 | `needs-review` | File d'attente pour `pr-review` (R3) — seul trigger GitHub possible sur une Routine, posé automatiquement à l'ouverture d'une PR, retiré par R3 en tout premier geste (« claim the run », §4) |

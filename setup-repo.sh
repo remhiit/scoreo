@@ -13,6 +13,7 @@ REPO="${REPO:-remhiit/scoreo}"
 
 echo "== Labels =="
 declare -A LABELS=(
+  [queued]="fef2c0:Spec validée, en attente d'un créneau de routine — promue en ready par le dispatcher"
   [ready]="0e8a16:Spec validée, prête pour implémentation (déclenche R2)"
   [in-progress]="fbca04:Une routine travaille dessus"
   [needs-review]="1d76db:En file d'attente pour pr-review (R3) — pose ce label pour (re)déclencher une review"

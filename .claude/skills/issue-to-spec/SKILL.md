@@ -94,17 +94,19 @@ interactive grooming gate — don't skip it):
    imperative summary, not the full spec).
 2. Add the priority label (`P0`…`P3` — P0 most urgent; ask the user if not
    obvious from context) in its **own** `issue_write` call.
-3. **In a separate call**, add the `ready` label — this is what triggers
-   R2. **Never add `ready` together with another label in the same call.**
-   GitHub fires one `labeled` webhook per label added, and R2's GitHub
-   trigger filter matches on the issue's *current* label state (not which
-   label the event named) — so adding `ready` alongside another label in
-   one request can double-fire R2 (each of the two webhook deliveries sees
-   `ready` already present and independently matches the filter). Hit in
-   practice on issue #99: two near-identical PRs (#100/#101) from a single
-   `labels: ["P2", "ready"]` call. Posing `ready` alone, last, means it's
-   the only event where the label state transitions into matching the
-   filter.
+3. **In a separate call**, add the `queued` label — not `ready` directly.
+   Posing several `ready` at once would fire that many R2 events
+   simultaneously; past the run cap (5/day on Pro), the excess events are
+   lost (`automation-plan.md` §3). The dispatcher (`scripts/dispatch-ready.mjs`,
+   zero LLM, same workflow as the hourly sweeper) promotes one `queued`
+   issue to `ready` at a time, only once nothing is already
+   `ready`/`in-progress` — this bounds the event rate into R2 by
+   construction. Pose `queued` alone, in its own call, last, for the same
+   reason `ready` used to be: GitHub fires one `labeled` webhook per label
+   added, and a routine's trigger filter matches on the issue's *current*
+   label state, not which label the event named (issue #99). The rule
+   "never `ready` with another label in the same call" still holds — it's
+   now the dispatcher's responsibility, not R1's.
 
 Do not add `auto` here — that's `implement-task`'s call to make once the
 actual diff exists, not a prediction made before any code is written.

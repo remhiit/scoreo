@@ -1,9 +1,10 @@
 #!/usr/bin/env node
-// On `issues` `closed` (state_reason "completed"), promotes to `ready` every
+// On `issues` `closed` (state_reason "completed"), promotes to `queued` every
 // issue the closed one was blocking, once ALL of that issue's native
-// `blocked_by` dependencies are closed. Depends on the blocked_by link
-// posed by sync-issue-dependencies.yml — without data, this is a no-op.
-// Zero LLM (doc/technical/automation-plan.md §2.2).
+// `blocked_by` dependencies are closed. The dispatcher (scripts/dispatch-
+// ready.mjs) decides when a `queued` issue actually becomes `ready`.
+// Depends on the blocked_by link posed by sync-issue-dependencies.yml —
+// without data, this is a no-op. Zero LLM (doc/technical/automation-plan.md §2.2).
 import { readFileSync } from 'node:fs'
 
 const GH_TOKEN = process.env.GH_TOKEN
@@ -52,8 +53,8 @@ async function removeLabel(issueNumber, label) {
 
 async function tryUnblock(issueNumber) {
   const labels = await getLabels(issueNumber)
-  if (labels.includes('ready') || labels.includes('in-progress')) {
-    console.log(`#${issueNumber}: already ready/in-progress, skipping`)
+  if (labels.includes('queued') || labels.includes('ready') || labels.includes('in-progress')) {
+    console.log(`#${issueNumber}: already queued/ready/in-progress, skipping`)
     return
   }
 
@@ -64,8 +65,8 @@ async function tryUnblock(issueNumber) {
     return
   }
 
-  console.log(`#${issueNumber}: all blockers closed -> ready`)
-  await addLabel(issueNumber, 'ready')
+  console.log(`#${issueNumber}: all blockers closed -> queued`)
+  await addLabel(issueNumber, 'queued')
   if (labels.includes('blocked')) {
     await removeLabel(issueNumber, 'blocked')
   }
