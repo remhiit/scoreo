@@ -43,7 +43,12 @@ for name in "${!LABELS[@]}"; do
 done
 
 echo "== Auto-merge =="
-gh api "repos/$REPO" -X PATCH -f allow_auto_merge=true >/dev/null
+gh api "repos/$REPO" -X PATCH -F allow_auto_merge=true >/dev/null
+actual_allow_auto_merge="$(gh api "repos/$REPO" --jq .allow_auto_merge)"
+if [ "$actual_allow_auto_merge" != "true" ]; then
+  echo "ERROR: allow_auto_merge is '$actual_allow_auto_merge' after PATCH, expected 'true'." >&2
+  exit 1
+fi
 
 echo "== GOOGLE_CLIENT_ID secret =="
 if [ -n "${GOOGLE_CLIENT_ID:-}" ]; then
