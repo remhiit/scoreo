@@ -602,6 +602,33 @@ mergées, et bloquait en cascade `unblock-issues.yml` (#122), qui dépend
 d'un vrai événement `issues.closed`. Correctif : `issues: write` ajouté
 aux `permissions` de `auto-merge-sync.yml` (#128).
 
+**Incident (2026-07-18) — le correctif de #128 était insuffisant (#139) :**
+la PR #138 (Closes #120), branchée depuis `main` *après* le merge du
+correctif ci-dessus, a auto-mergé avec succès (run `auto-merge-sync.yml`
+vert, `issues: write` bien présent) — et #120 est pourtant restée ouverte,
+comme avant le correctif. Cause probable : `gh pr merge --auto --squash`
+ne fait qu'*activer* l'auto-merge natif GitHub ; le squash-merge réel a
+lieu plus tard, de façon asynchrone, dès que les checks requis passent —
+en dehors de l'exécution du job qui a appelé cette commande. Le bloc
+`permissions:` d'un workflow ne scope le `GITHUB_TOKEN` que pendant
+l'exécution de ce job précis, donc n'a vraisemblablement aucun effet sur
+cette complétion différée gérée nativement par GitHub — indépendamment du
+réglage repo-wide « Workflow permissions », que ni un outil MCP GitHub ni
+`gh` ne permettent de lire depuis une session ici (même limite déjà notée
+Phase 0 pour la branch protection). Plutôt que de dépendre de ce réglage
+non vérifiable, correctif appliqué : `.github/workflows/
+close-linked-issues.yml` (+ `scripts/close-linked-issues.mjs`), déclenché
+sur `pull_request` `closed` filtré `merged == true`, avec son propre
+`GITHUB_TOKEN` scopé `issues: write` — parse les mots-clés de fermeture
+(`close(s/d)`, `fix(es/ed)`, `resolve(s/d)`) suivis de `#N` dans le corps
+de la PR mergée et ferme explicitement chaque issue référencée du même
+dépôt (ignore les références cross-repo `owner/repo#N`). Ce mécanisme ne
+dépend plus du chemin (auto-merge natif ou merge manuel) ni du réglage
+repo-wide. **Vérification bout-en-bout en attente** : nécessite qu'une
+vraie PR référençant `Closes #N` merge après ce correctif — à confirmer
+sur la prochaine PR mergée (y compris celle de #139 elle-même, mergée
+manuellement vu son risque Élevé).
+
 ### Phase 6 — Observabilité
 
 R6 hebdo. C'est le rapport qui pilote l'élargissement de la liste blanche `auto`.

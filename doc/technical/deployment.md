@@ -148,6 +148,16 @@ Zero-LLM Action, triggered on `pull_request.labeled`/`unlabeled` filtered to the
 
 ---
 
+## Close Linked Issues
+
+**Files**: `.github/workflows/close-linked-issues.yml` + `scripts/close-linked-issues.mjs`
+
+Zero-LLM Action, triggered on `pull_request.closed` filtered to `github.event.pull_request.merged == true`. Parses the merged PR's body for closing keywords (`close`/`closes`/`closed`, `fix`/`fixes`/`fixed`, `resolve`/`resolves`/`resolved`, case-insensitive, followed by one or more `#N` references) and explicitly closes each referenced issue in this repo via the REST API (`PATCH /issues/{n}` with `state: closed`, `state_reason: completed`) — using its own `GITHUB_TOKEN`, scoped `issues: write` in this workflow's `permissions:` block. Cross-repo references (`owner/repo#N`) are ignored; issues already closed are skipped.
+
+Exists because GitHub's own "Closes #N" auto-close was observed to silently not fire for PRs merged through `auto-merge-sync.yml`'s native auto-merge (`gh pr merge --auto --squash` only *enables* auto-merge — the actual squash-merge happens later, asynchronously, once checks pass, outside that job's execution) — see `doc/technical/automation-plan.md` Phase 5, incidents #128 and #139. This job makes issue-closing independent of that path and of the repo-wide "Workflow permissions" setting, which no tool available in a Claude Code session here can read.
+
+---
+
 ## Weekly Hygiene (R5)
 
 **Files**: a Claude Code Routine (`trig_01Y4gg6E5uMfD9XWFpBBxrt8`, created by tool — a schedule trigger doesn't need the web UI, unlike R2/R3's GitHub triggers)
