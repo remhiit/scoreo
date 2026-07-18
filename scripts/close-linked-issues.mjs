@@ -10,6 +10,7 @@
 // this job parses the merged PR's body for closing keywords itself and closes
 // the referenced issues explicitly, with its own `issues: write` token.
 import { readFileSync } from 'node:fs'
+import { pathToFileURL } from 'node:url'
 
 const GH_TOKEN = process.env.GH_TOKEN
 const REPO_OWNER = process.env.REPO_OWNER
@@ -77,6 +78,9 @@ async function main() {
   }
 }
 
-if (process.env.GITHUB_EVENT_PATH) {
+// GITHUB_EVENT_PATH is set for every step of every Actions job — including
+// `pnpm test` in ci.yml, where importing this module from its test file must
+// not run main(). Only run when this file is the entry point.
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   main()
 }
