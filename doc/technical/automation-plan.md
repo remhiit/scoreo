@@ -174,6 +174,32 @@ natif `blocked_by` a été posé au préalable par
 `.github/workflows/sync-issue-dependencies.yml` ; sans donnée à traiter,
 c'est un no-op.
 
+### Balayeur horaire des événements de routine perdus
+
+Un event GitHub dépassant le plafond horaire d'une routine est ignoré, pas
+mis en file (§3). Grâce au principe « claim the run » (ci-dessus), ce run
+perdu se lit dans l'état des labels : le label déclencheur (`ready`,
+`needs-review`, `needs-fix`) n'a jamais été remplacé par `in-progress`. Un
+item qui porte encore son label déclencheur longtemps après sa pose est
+donc un événement perdu.
+
+`.github/workflows/requeue-lost-events.yml` (cron horaire `0 * * * *` +
+`workflow_dispatch`) exécute `scripts/requeue-lost-events.mjs`, qui pour
+chaque issue ouverte labellisée `ready` et chaque PR ouverte labellisée
+`needs-review`/`needs-fix` : lit le dernier événement `labeled` pour ce
+label via l'API timeline (`GET .../issues/{n}/timeline`) et, si posé depuis
+plus de `ORPHAN_THRESHOLD_MINUTES` (30 min — le temps qu'une session
+démarre et claim le run), retire le label puis le repose **seul, dans son
+propre appel** (leçons #94/#99, §4 « claim the run ») pour régénérer
+l'événement `labeled` qui re-matche le trigger de la routine. Ne touche
+jamais un item portant `in-progress` (run en cours) ou `needs-human` (état
+terminal) ; chaque skip et chaque re-pose est journalisé, servant de
+donnée pour le rapport R6. Retry aveugle à coût nul et sans plafond : rien
+ne permet d'interroger le quota Claude depuis GitHub, donc si le quota est
+encore épuisé l'événement retombe dans le vide et le prochain passage
+horaire réessaie ; un item qui reste coincé des jours est le signal que R6
+doit remonter une routine cassée, pas un problème de quota.
+
 ---
 
 ## 5. Labels (le bus d'événements)
@@ -558,6 +584,7 @@ R6 hebdo. C'est le rapport qui pilote l'élargissement de la liste blanche `auto
 | Budget Lighthouse désactivé à la première PR rouge | Mesurer la baseline avant de le rendre bloquant |
 | Régression de backward-compat sur les schémas zod | Hors liste blanche `auto` : merge manuel obligatoire |
 | `pull_request_target` expose les secrets | Ne jamais y exécuter le code de la PR |
+| Événement de routine perdu par plafond de runs | Balayeur horaire (`requeue-lost-events.yml`) qui rejoue tout label déclencheur orphelin |
 
 ## 9. Décisions ouvertes
 
