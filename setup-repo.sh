@@ -74,6 +74,7 @@ gh api "repos/$REPO/branches/main/protection" -X PUT \
   -f "required_status_checks[contexts][]=test" \
   -f "required_status_checks[contexts][]=build" \
   -f "required_status_checks[contexts][]=doc-links" \
+  -f "required_status_checks[contexts][]=e2e" \
   -f "required_status_checks[contexts][]=claude/review" \
   -F "enforce_admins=true" \
   -f "required_pull_request_reviews[required_approving_review_count]=0" \
