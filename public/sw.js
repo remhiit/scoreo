@@ -1,8 +1,12 @@
-const CACHE_NAME = 'scoreo-v2'
+const CACHE_NAME = 'scoreo-v3'
 // Vite's build output uses content-hashed JS/CSS filenames unknown ahead of
 // time (unlike the Kotlin/webpack bundle's fixed `scoreo.js`), so only the
-// stable, non-hashed entry points are precached here; everything else is
-// cached on first fetch by the cache-first handler below.
+// stable, non-hashed entry points are precached here. At runtime, GET
+// same-origin requests are split in two: hashed assets (`/assets/*`) are
+// served cache-first and populated on first fetch — immutable, the hash
+// guarantees freshness. Everything else same-origin (navigations,
+// `css/*.css`, `manifest.json`, icons) is served network-first with a cache
+// fallback for offline, refreshing the cache on every successful response.
 const ASSETS = ['./', './index.html', './css/styles.css']
 
 self.addEventListener('install', (event) => {
@@ -17,10 +21,26 @@ self.addEventListener('activate', (event) => {
   self.clients.claim()
 })
 
+const isHashedAsset = (url) => /\/assets\//.test(url.pathname)
+
+const putInCache = (request, response) => {
+  if (response.ok) caches.open(CACHE_NAME).then((cache) => cache.put(request, response.clone()))
+  return response
+}
+
+const cacheFirst = (request) =>
+  caches.match(request).then((cached) => cached || fetch(request).then((response) => putInCache(request, response)))
+
+const networkFirst = (request) =>
+  fetch(request)
+    .then((response) => putInCache(request, response))
+    .catch(() => caches.match(request))
+
 self.addEventListener('fetch', (event) => {
-  if (event.request.mode === 'navigate') {
-    event.respondWith(fetch(event.request).catch(() => caches.match(event.request)))
-    return
-  }
-  event.respondWith(caches.match(event.request).then((cached) => cached || fetch(event.request)))
+  const { request } = event
+  if (request.method !== 'GET') return
+  const url = new URL(request.url)
+  if (url.origin !== self.location.origin) return
+
+  event.respondWith(isHashedAsset(url) ? cacheFirst(request) : networkFirst(request))
 })
