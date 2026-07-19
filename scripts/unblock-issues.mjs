@@ -51,10 +51,17 @@ async function removeLabel(issueNumber, label) {
   }
 }
 
+const BLOCKING_LABELS = ['queued', 'ready', 'in-progress', 'needs-human']
+
 async function tryUnblock(issueNumber) {
   const labels = await getLabels(issueNumber)
-  if (labels.includes('queued') || labels.includes('ready') || labels.includes('in-progress')) {
-    console.log(`#${issueNumber}: already queued/ready/in-progress, skipping`)
+  const blocker = BLOCKING_LABELS.find((label) => labels.includes(label))
+  if (blocker) {
+    console.log(
+      blocker === 'needs-human'
+        ? `#${issueNumber}: escalated to needs-human, skipping — a human must re-queue it`
+        : `#${issueNumber}: already queued/ready/in-progress, skipping`,
+    )
     return
   }
 
