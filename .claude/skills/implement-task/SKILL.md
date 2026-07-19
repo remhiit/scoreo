@@ -40,9 +40,16 @@ anyone scanning the backlog into thinking the issue is still unclaimed.
    `domain/port/`, implementation in `infrastructure/`. Any new field on a
    serialized model gets a zod `.default()`; any removal/rename gets a
    migration entry in `doc/technical/migrations.md`.
-5. **Verify green**: `pnpm lint && pnpm typecheck && pnpm test && pnpm build`
-   — all four, not a subset. This mirrors what `ci.yml` will run on the PR;
-   catch failures here rather than in CI.
+5. **Verify green**: `pnpm lint && pnpm typecheck && pnpm test && pnpm build
+   && pnpm test:e2e` — all five, not a subset. This mirrors what `ci.yml`
+   will run on the PR; catch failures here rather than in CI. Build before
+   the e2e run — `playwright.config.ts` starts its server with `pnpm
+   preview`, which serves `dist/`. In the Claude Code remote environment,
+   Chromium is preinstalled (`PLAYWRIGHT_BROWSERS_PATH=/opt/pw-browsers`) —
+   do not run `playwright install`; locally, run `pnpm exec playwright
+   install chromium` first if needed. If an e2e test fails in a way that
+   looks unrelated to this diff, re-run once before concluding it's flaky —
+   don't "fix" a test at random just to make it pass.
 6. **Visual check for UI changes.** If the issue touches a screen
    (`src/ui/*/`), start the dev server and exercise the actual flow in a
    browser — golden path and the edge cases named in the acceptance
