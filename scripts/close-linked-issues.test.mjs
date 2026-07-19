@@ -1,4 +1,7 @@
-import { describe, expect, it } from 'vitest'
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { extractClosedIssueNumbers } from './close-linked-issues.mjs'
 
 describe('extractClosedIssueNumbers', () => {
@@ -28,5 +31,38 @@ describe('extractClosedIssueNumbers', () => {
     expect(extractClosedIssueNumbers('See #120 for context.')).toEqual([])
     expect(extractClosedIssueNumbers(null)).toEqual([])
     expect(extractClosedIssueNumbers(undefined)).toEqual([])
+  })
+})
+
+describe('entry-point guard', () => {
+  afterEach(() => {
+    vi.unstubAllEnvs()
+    vi.restoreAllMocks()
+  })
+
+  // Regression test for the red main build fixed by #161: GITHUB_EVENT_PATH is
+  // set for every step of every Actions job, including `pnpm test`, so a guard
+  // based on it ran main() whenever this test file imported the module in CI.
+  // The payload deliberately carries a closing reference: a regressed guard
+  // would run main() to completion and become observable as a fetch call,
+  // instead of only surfacing as an unhandled rejection outside any assertion.
+  it('does not run main() on import even when GITHUB_EVENT_PATH is set', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'close-linked-issues-'))
+    const eventPath = join(dir, 'event.json')
+    writeFileSync(eventPath, JSON.stringify({ pull_request: { number: 1, body: 'Closes #2' } }))
+    vi.stubEnv('GITHUB_EVENT_PATH', eventPath)
+    const fetchSpy = vi
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValue({ ok: false, status: 404, json: async () => ({}) })
+
+    try {
+      vi.resetModules()
+      await import('./close-linked-issues.mjs')
+      await new Promise((resolve) => setTimeout(resolve, 0))
+
+      expect(fetchSpy).not.toHaveBeenCalled()
+    } finally {
+      rmSync(dir, { recursive: true, force: true })
+    }
   })
 })

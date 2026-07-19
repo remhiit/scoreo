@@ -296,11 +296,15 @@ après le merge. Le site est cassé sur `main` au moment où on l'apprend.
       via `setup-repo.sh`
 - [x] `setup-repo.sh` — labels, `allow_auto_merge`, branch protection
       (`enforce_admins: true`, 0 approbation). Script écrit et **exécuté par
-      Rémi** ; checks requis actuels : `lint`/`test`/`build`/`doc-links`/
-      `claude/review` (ce dernier ajouté au script le 2026-07-14, gate Phase 2
-      franchi — voir Phase 2 ci-dessous). Toujours hors de portée d'une
-      session Claude Code : modifie la config partagée du repo, nécessite un
-      `gh` authentifié en admin.
+      Rémi** ; checks requis actuels : `lint`/`test`/`build`/`doc-links`/`e2e`/
+      `claude/review` (`claude/review` ajouté au script le 2026-07-14, gate
+      Phase 2 franchi — voir Phase 2 ci-dessous ; `e2e` ajouté le 2026-07-18,
+      issue #141 — le job existe dans `ci.yml` depuis la PR #113 mais n'était
+      pas déclaré requis, ce qui laissait l'auto-merge ignorer un `e2e` rouge).
+      **Le script doit être ré-exécuté par Rémi pour que ce changement prenne
+      effet côté branch protection.** Toujours hors de portée d'une session
+      Claude Code : modifie la config partagée du repo, nécessite un `gh`
+      authentifié en admin.
 - [x] Alléger `deploy.yml` : retirer l'étape `Test` (doublon avec la CI de PR),
       garder le déploiement et le smoke test
 
