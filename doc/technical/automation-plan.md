@@ -177,7 +177,10 @@ vérifie via `GET .../dependencies/blocked_by` que **tous** ses bloqueurs
 natifs sont fermés avant de poser `queued` et de retirer `blocked` — c'est
 au dispatcher (ci-dessous) de décider quand cette issue `queued` devient
 `ready`. N'agit jamais sur une issue déjà `queued`/`ready`/`in-progress`
-(même classe de garde que l'incident double-fire #99, §4 « claim the run »).
+(même classe de garde que l'incident double-fire #99, §4 « claim the run »)
+ni sur une issue `needs-human` : cet état est terminal pour
+l'automatisation (issue escaladée, plafond `attempt-3` atteint ou hors
+périmètre) — seul un humain la re-queue, jamais le déblocage automatique.
 Suppose que le lien
 natif `blocked_by` a été posé au préalable par
 `.github/workflows/sync-issue-dependencies.yml` ; sans donnée à traiter,
