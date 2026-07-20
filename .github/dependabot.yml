@@ -9,3 +9,9 @@ updates:
     directory: "/" # Location of package manifests
     schedule:
       interval: "daily"
+    ignore:
+      # TypeScript 7.x crashes typescript-eslint (peer dependency caps at
+      # <6.1.0): https://github.com/remhiit/scoreo/pull/172. Keep taking
+      # 6.x updates; lift this once typescript-eslint supports TS 7.
+      - dependency-name: "typescript"
+        versions: [">=7.0.0"]
