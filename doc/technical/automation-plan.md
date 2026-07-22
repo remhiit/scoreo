@@ -295,7 +295,8 @@ après le merge. Le site est cassé sur `main` au moment où on l'apprend.
 - [x] `lighthouserc.json` — assertions en `warn` le temps de mesurer la baseline
       (baseline mesurée : performance 0.96, accessibilité 0.95, bonnes pratiques
       0.96, SEO 0.90 — catégorie `pwa` retirée des assertions, Lighthouse 12 ne
-      la calcule plus par défaut)
+      la calcule plus par défaut). Seuils figés en `error` le 2026-07-22 (voir
+      §9)
 - [x] `gh secret set GOOGLE_CLIENT_ID` (le build en dépend) — exécuté par Rémi
       via `setup-repo.sh`
 - [x] `setup-repo.sh` — labels, `allow_auto_merge`, branch protection
@@ -673,7 +674,7 @@ R6 hebdo. C'est le rapport qui pilote l'élargissement de la liste blanche `auto
 | Boucle R3 ↔ R4 infinie | Plafond `attempt-3`, puis `needs-human` |
 | Quota de runs épuisé par une seule PR | Même plafond + `concurrency` dans la CI |
 | Review sans mordant (le modèle relit son propre travail) | Le mécanisable sort de la review et devient un job CI. `claude/review` ne juge que le subjectif |
-| Budget Lighthouse désactivé à la première PR rouge | Mesurer la baseline avant de le rendre bloquant |
+| Budget Lighthouse désactivé à la première PR rouge | Seuils figés ~0.05 sous la baseline (marge pour le bruit inter-runs) ; job toujours hors checks requis, donc rouge = signal visible, pas encore bloquant |
 | Régression de backward-compat sur les schémas zod | Hors liste blanche `auto` : merge manuel obligatoire |
 | `pull_request_target` expose les secrets | Ne jamais y exécuter le code de la PR |
 | Événement de routine perdu par plafond de runs | Balayeur horaire (`requeue-lost-events.yml`) qui rejoue tout label déclencheur orphelin |
@@ -684,4 +685,13 @@ R6 hebdo. C'est le rapport qui pilote l'élargissement de la liste blanche `auto
   place de R2 redonnerait un approbateur légitime. Complexité non justifiée tant
   que le commit status requis fait le travail. À reconsidérer si le repo
   s'ouvre à des contributions externes.
-- **Seuils Lighthouse définitifs** — à figer après mesure de la baseline.
+- **Seuils Lighthouse définitifs** — **figé (2026-07-22).** Assertions
+  passées de `warn` à `error` dans `lighthouserc.json`, avec des seuils
+  ~0.05 sous la baseline mesurée (performance 0.96 → seuil 0.90,
+  accessibilité 0.95 → 0.90, bonnes pratiques 0.96 → 0.90, SEO 0.90 → 0.85)
+  pour absorber le bruit inter-runs. `continue-on-error: true` retiré du job
+  `lighthouse` dans `ci.yml` : un échec d'assertion rend désormais le job
+  rouge et visible sur la PR. Le job reste volontairement **hors** des
+  checks requis de la branch protection (`setup-repo.sh` non modifié) —
+  rouge = signal visible, pas encore bloquant. Le rendre requis se décidera
+  avec le recul de quelques semaines d'observation en conditions réelles.
