@@ -89,8 +89,15 @@ because a human happened to invoke the skill this time.
    explicitly rather than expanding scope unilaterally — this is the one
    case where checking in beats plowing ahead.
 3. **Re-run the full check suite** (`pnpm lint && pnpm typecheck && pnpm test
-   && pnpm build`) before pushing — a fix for one flagged item shouldn't
-   introduce a new failure elsewhere.
+   && pnpm build && pnpm test:e2e`) before pushing — a fix for one flagged
+   item shouldn't introduce a new failure elsewhere. Build before the e2e
+   run — `playwright.config.ts` starts its server with `pnpm preview`,
+   which serves `dist/`. In the Claude Code remote environment, Chromium is
+   preinstalled (`PLAYWRIGHT_BROWSERS_PATH=/opt/pw-browsers`) — do not run
+   `playwright install`; locally, run `pnpm exec playwright install
+   chromium` first if needed. If an e2e test fails in a way that looks
+   unrelated to this diff, re-run once before concluding it's flaky — don't
+   "fix" a test at random just to make it pass.
 4. **Push to the same branch** (new commit, not an amend of history that's
    already been reviewed — the reviewer should be able to see what changed
    since their comment). Pushing triggers `needs-review-label.yml`

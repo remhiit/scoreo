@@ -5,7 +5,23 @@
 
 version: 2
 updates:
-  - package-ecosystem: "" # See documentation for possible values
+  - package-ecosystem: "npm" # See documentation for possible values
     directory: "/" # Location of package manifests
     schedule:
-      interval: "weekly"
+      interval: "daily"
+    # pnpm enforces a minimumReleaseAge supply-chain check (24h, i.e. 1440
+    # minutes) before trusting a newly published package — see the
+    # ERR_PNPM_MINIMUM_RELEASE_AGE_VIOLATION failures on PR #176. Without a
+    # matching cooldown here, Dependabot opens PRs for packages that are
+    # still too fresh, and `pnpm install --frozen-lockfile` fails in CI
+    # until the package ages out on its own. A 2-day cooldown keeps a
+    # safety margin over pnpm's 24h window (Dependabot's daily schedule
+    # means the exact time-of-day drifts).
+    cooldown:
+      default-days: 2
+    ignore:
+      # TypeScript 7.x crashes typescript-eslint (peer dependency caps at
+      # <6.1.0): https://github.com/remhiit/scoreo/pull/172. Keep taking
+      # 6.x updates; lift this once typescript-eslint supports TS 7.
+      - dependency-name: "typescript"
+        versions: [">=7.0.0"]
