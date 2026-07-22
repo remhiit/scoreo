@@ -595,6 +595,16 @@ fois le réglage repo en place ; à surveiller si `setup-repo.sh` doit être
 corrigé pour que ce PATCH prenne effet de façon fiable la prochaine fois
 qu'il tourne sur un nouveau repo.
 
+**Cause racine identifiée et corrigée (#140) :** dans `setup-repo.sh`, le
+PATCH `gh api "repos/$REPO" -X PATCH -f allow_auto_merge=true` utilisait
+`-f`, qui envoie la **chaîne** `"true"` au lieu du **booléen** `true` —
+contrairement au reste du script, qui utilise correctement `-F` pour les
+champs booléens de la branch protection. Corrigé en `-F
+allow_auto_merge=true`, avec une vérification post-PATCH (`gh api
+"repos/$REPO" --jq .allow_auto_merge` doit imprimer `true`) qui fait
+échouer le script explicitement (`exit 1`) plutôt que de laisser le
+réglage silencieusement inactif.
+
 **Incident (2026-07-17) — fermeture auto des issues liées cassée par un
 `GITHUB_TOKEN` sous-privilégié :** `auto-merge-sync.yml` ne déclarait que
 `contents: write` et `pull-requests: write`. Or `gh pr merge --auto
