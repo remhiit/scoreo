@@ -69,7 +69,7 @@ echo "== Branch protection (main) =="
 # since every routine acts under the same GitHub identity and can't approve its own PR.
 gh api "repos/$REPO/branches/main/protection" -X PUT \
   -H "Accept: application/vnd.github+json" \
-  -f "required_status_checks[strict]=true" \
+  -F "required_status_checks[strict]=true" \
   -f "required_status_checks[contexts][]=lint" \
   -f "required_status_checks[contexts][]=test" \
   -f "required_status_checks[contexts][]=build" \
@@ -77,7 +77,7 @@ gh api "repos/$REPO/branches/main/protection" -X PUT \
   -f "required_status_checks[contexts][]=e2e" \
   -f "required_status_checks[contexts][]=claude/review" \
   -F "enforce_admins=true" \
-  -f "required_pull_request_reviews[required_approving_review_count]=0" \
+  -F "required_pull_request_reviews[required_approving_review_count]=0" \
   -F "restrictions=null" \
   -F "required_linear_history=true" \
   -F "allow_force_pushes=false" \
