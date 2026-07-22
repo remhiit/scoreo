@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, type ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
 import {
   applyTheme,
   readInitialAccent,
@@ -8,15 +8,7 @@ import {
   type Accent,
   type Flavor,
 } from './themeManager'
-
-export interface ThemeState {
-  flavor: Flavor
-  accent: Accent
-  setFlavor: (flavor: Flavor) => void
-  setAccent: (accent: Accent) => void
-}
-
-const ThemeContext = createContext<ThemeState | undefined>(undefined)
+import { ThemeContext } from './themeContext'
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
   // Lazy initializer runs exactly once, covering first paint and the legacy-key
@@ -49,10 +41,4 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       {children}
     </ThemeContext.Provider>
   )
-}
-
-export function useTheme(): ThemeState {
-  const state = useContext(ThemeContext)
-  if (!state) throw new Error('useTheme must be used within a ThemeProvider')
-  return state
 }

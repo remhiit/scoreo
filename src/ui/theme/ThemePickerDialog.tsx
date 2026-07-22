@@ -1,7 +1,7 @@
 import { LudoButton } from '../shared/LudoButton'
 import { LudoModal } from '../shared/LudoModal'
 import { ACCENTS, FLAVORS } from './themeManager'
-import { useTheme } from './ThemeContext'
+import { useTheme } from './useTheme'
 
 export interface ThemePickerDialogProps {
   onClose: () => void
