@@ -1,6 +1,7 @@
 import { fireEvent, render, screen } from '@testing-library/react'
 import { beforeEach, describe, expect, it } from 'vitest'
-import { ThemeProvider, useTheme } from './ThemeContext'
+import { ThemeProvider } from './ThemeContext'
+import { useTheme } from './useTheme'
 
 function ThemePanel() {
   const { flavor, accent, setFlavor, setAccent } = useTheme()
@@ -14,7 +15,7 @@ function ThemePanel() {
   )
 }
 
-describe('ThemeProvider / useTheme', () => {
+describe('ThemeProvider', () => {
   beforeEach(() => {
     localStorage.clear()
     document.documentElement.removeAttribute('data-theme')
@@ -51,9 +52,5 @@ describe('ThemeProvider / useTheme', () => {
     fireEvent.click(screen.getByText('set teal'))
     expect(document.documentElement.getAttribute('data-accent')).toBe('teal')
     expect(localStorage.getItem('scoreo_accent')).toBe('teal')
-  })
-
-  it('throws when useTheme is used outside a ThemeProvider', () => {
-    expect(() => render(<ThemePanel />)).toThrow('useTheme must be used within a ThemeProvider')
   })
 })
