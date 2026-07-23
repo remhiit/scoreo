@@ -6,7 +6,6 @@ import type { DeletePlayerUseCase } from '../../application/deletePlayerUseCase'
 import type { GetPlayerStatsUseCase } from '../../application/getPlayerStatsUseCase'
 import type { GetPlayersUseCase } from '../../application/getPlayersUseCase'
 import type { RenamePlayerUseCase } from '../../application/renamePlayerUseCase'
-import { NotFoundError, ValidationError } from '../../domain/model/errors'
 import type { WinCondition } from '../../domain/model/enums'
 import type { GameType } from '../../domain/model/gameType'
 import type { MatchDraftRepository } from '../../domain/port/matchDraftRepository'
@@ -17,6 +16,7 @@ import { DeletePlayerModal } from './DeletePlayerModal'
 import { GameSelectModal } from './GameSelectModal'
 import { PlayerListSection } from './PlayerListSection'
 import { RenamePlayerModal } from './RenamePlayerModal'
+import { useGameSelectModal } from './useGameSelectModal'
 import {
   loadPlayers,
   playerReducer,
@@ -40,11 +40,6 @@ export interface HomeScreenProps {
   matchDraftRepository?: MatchDraftRepository
   onResumeDraft?: (gameTypeId: string, playerIds: string[]) => void
   getMatchCount?: () => number
-}
-
-function domainErrorMessage(e: unknown): string {
-  if (e instanceof ValidationError || e instanceof NotFoundError) return e.message
-  return `Failed to create game type: ${e instanceof Error ? e.message : ''}`
 }
 
 export function HomeScreen({
@@ -72,16 +67,7 @@ export function HomeScreen({
   const [selectedPlayers, setSelectedPlayers] = useState<Set<string>>(new Set())
   const [anonymize, setAnonymize] = useState(false)
 
-  const [showGameModal, setShowGameModal] = useState(false)
-  const [modalGameTypes, setModalGameTypes] = useState<GameType[]>(() => getGameTypes())
-  const [selectedGameType, setSelectedGameType] = useState<GameType | undefined>(undefined)
-  const [gameModalError, setGameModalError] = useState<string | undefined>(undefined)
-
-  const [showAddGameForm, setShowAddGameForm] = useState(false)
-  const [inlineGameName, setInlineGameName] = useState('')
-  const [inlineGameWinCondition, setInlineGameWinCondition] =
-    useState<WinCondition>('HIGHEST_SCORE')
-  const [inlineGameError, setInlineGameError] = useState<string | undefined>(undefined)
+  const gameModal = useGameSelectModal(getGameTypes, onAddGameType)
 
   const [prevDeleteConfirmPlayerId, setPrevDeleteConfirmPlayerId] = useState(
     state.deleteConfirmPlayerId,
@@ -98,22 +84,6 @@ export function HomeScreen({
       else next.add(playerId)
       return next
     })
-  }
-
-  function addInlineGameType() {
-    const name = inlineGameName.trim()
-    try {
-      const created = onAddGameType(name, inlineGameWinCondition)
-      const refreshed = getGameTypes()
-      setModalGameTypes(refreshed)
-      setSelectedGameType(refreshed.find((gt) => gt.id === created.id))
-      setShowAddGameForm(false)
-      setInlineGameName('')
-      setInlineGameWinCondition('HIGHEST_SCORE')
-      setInlineGameError(undefined)
-    } catch (e) {
-      setInlineGameError(domainErrorMessage(e))
-    }
   }
 
   const isFirstLaunch = state.players.length === 0 && matchCount === 0
@@ -188,45 +158,15 @@ export function HomeScreen({
           size="lg"
           disabled={selectedPlayers.size < 2}
           className="fab-position"
-          onClick={() => {
-            setModalGameTypes(getGameTypes())
-            setSelectedGameType(undefined)
-            setGameModalError(undefined)
-            setShowAddGameForm(false)
-            setShowGameModal(true)
-          }}
+          onClick={gameModal.openModal}
         />
       )}
 
       <GameSelectModal
-        open={showGameModal}
-        onClose={() => setShowGameModal(false)}
-        gameTypes={modalGameTypes}
-        selectedGameType={selectedGameType}
-        onSelectGameType={(gt) => {
-          setSelectedGameType(gt)
-          setGameModalError(undefined)
-        }}
-        onStartMatch={() => {
-          if (!selectedGameType) {
-            setGameModalError('Please select a game')
-            return
-          }
-          setShowGameModal(false)
-          onStartGame(selectedGameType.id, [...selectedPlayers])
-        }}
-        error={gameModalError}
-        showAddGameForm={showAddGameForm}
-        onToggleAddGameForm={() => setShowAddGameForm(!showAddGameForm)}
-        inlineGameName={inlineGameName}
-        onChangeInlineGameName={(name) => {
-          setInlineGameName(name)
-          setInlineGameError(undefined)
-        }}
-        inlineGameWinCondition={inlineGameWinCondition}
-        onChangeInlineGameWinCondition={setInlineGameWinCondition}
-        inlineGameError={inlineGameError}
-        onAddInlineGameType={addInlineGameType}
+        {...gameModal}
+        onStartMatch={() =>
+          gameModal.confirmStart((gameTypeId) => onStartGame(gameTypeId, [...selectedPlayers]))
+        }
       />
 
       <DeletePlayerModal
