@@ -4,32 +4,52 @@ import { join } from 'node:path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { desiredStatus } from './sync-project-status.mjs'
 
+function open(labelNames) {
+  return { labelNames, state: 'OPEN', stateReason: null }
+}
+
 describe('desiredStatus', () => {
   it('maps needs-human/needs-fix/in-progress to "In progress"', () => {
-    expect(desiredStatus(['needs-human'])).toBe('In progress')
-    expect(desiredStatus(['needs-fix'])).toBe('In progress')
-    expect(desiredStatus(['in-progress'])).toBe('In progress')
+    expect(desiredStatus(open(['needs-human']))).toBe('In progress')
+    expect(desiredStatus(open(['needs-fix']))).toBe('In progress')
+    expect(desiredStatus(open(['in-progress']))).toBe('In progress')
   })
 
   it('maps ready to "Todo"', () => {
-    expect(desiredStatus(['ready'])).toBe('Todo')
+    expect(desiredStatus(open(['ready']))).toBe('Todo')
   })
 
   it('maps needs-review and review-pass to "In progress"', () => {
-    expect(desiredStatus(['needs-review'])).toBe('In progress')
-    expect(desiredStatus(['review-pass'])).toBe('In progress')
+    expect(desiredStatus(open(['needs-review']))).toBe('In progress')
+    expect(desiredStatus(open(['review-pass']))).toBe('In progress')
   })
 
   it('maps blocked to "Todo"', () => {
-    expect(desiredStatus(['blocked'])).toBe('Todo')
+    expect(desiredStatus(open(['blocked']))).toBe('Todo')
   })
 
   it('returns null when no known label is present', () => {
-    expect(desiredStatus(['P3', 'auto'])).toBeNull()
+    expect(desiredStatus(open(['P3', 'auto']))).toBeNull()
   })
 
   it('first matching label in priority order wins over a co-present blocked/ready', () => {
-    expect(desiredStatus(['blocked', 'needs-human'])).toBe('In progress')
+    expect(desiredStatus(open(['blocked', 'needs-human']))).toBe('In progress')
+  })
+
+  it('open item still carrying in-progress maps to "In progress" (non-régression)', () => {
+    expect(desiredStatus({ labelNames: ['in-progress'], state: 'OPEN', stateReason: null })).toBe('In progress')
+  })
+
+  it('a closed item with state_reason completed maps to "Done", regardless of leftover labels', () => {
+    expect(desiredStatus({ labelNames: ['in-progress'], state: 'CLOSED', stateReason: 'COMPLETED' })).toBe('Done')
+  })
+
+  it('a closed item with state_reason not_planned is not forced to "Done"', () => {
+    expect(desiredStatus({ labelNames: ['in-progress'], state: 'CLOSED', stateReason: 'NOT_PLANNED' })).toBeNull()
+  })
+
+  it('a merged PR (no native stateReason, MERGED stands in for completed) maps to "Done"', () => {
+    expect(desiredStatus({ labelNames: ['review-pass'], state: 'MERGED', stateReason: 'COMPLETED' })).toBe('Done')
   })
 })
 

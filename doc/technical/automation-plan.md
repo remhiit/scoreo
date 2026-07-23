@@ -133,7 +133,7 @@ Issue créée
                                                              ▼
                                                       main → deploy.yml
                                                              ▼
-                                          Project : carte → Done (workflow intégré)
+                                          Project : carte → Done (project-sync.yml, cf. #195)
 ```
 
 **En parallèle, sur planification :**
@@ -346,13 +346,24 @@ Le `CLAUDE.md` disait : *« tu prends le premier ticket P0 non fait dans
       MCP GitHub disponibles ici, et aucun `gh` CLI authentifié n'est accessible)
 - [x] Action cron de sync label ↔ colonne (déterministe, coût nul) —
       `.github/workflows/project-sync.yml` + `scripts/sync-project-status.mjs`.
-      Se déclenche sur `issues`/`pull_request` `labeled`/`unlabeled`, plus un
-      cron toutes les 6h en filet de sécurité. Sens unique (labels → champ
-      `Status`), jamais l'inverse — cohérent avec le principe directeur
+      Se déclenche sur `issues`/`pull_request` `labeled`/`unlabeled`/`closed`,
+      plus un cron toutes les 6h en filet de sécurité. Sens unique (labels →
+      champ `Status`), jamais l'inverse — cohérent avec le principe directeur
       « les labels sont le bus d'événements ». Nécessite le secret
       `PROJECT_TOKEN` (PAT classique, scope `project`) via `setup-repo.sh` ;
       tant qu'il est absent, le job se termine proprement sans erreur (pas de
       check rouge en boucle)
+- [x] Correctif (#195) : une issue fermée restait figée sur « In progress »
+      car `in-progress` n'est jamais retiré à la fermeture
+      (`close-linked-issues.mjs` ferme sans toucher aux labels) et le sync ne
+      réconciliait que les items ouverts. La fermeture prime désormais sur le
+      label : `desiredStatus` bascule un item fermé avec `state_reason:
+      completed` (issue) — ou une PR mergée, qui n'a pas de `stateReason`
+      natif mais dont `state: MERGED` porte le même signal — vers `Done`,
+      quel que soit le label restant ; une fermeture `not_planned` (ou une PR
+      closed sans merge) n'impose aucun statut. La réconciliation planifiée
+      couvre aussi les items fermés dans les 30 derniers jours, pour que les
+      issues déjà fermées avant ce correctif finissent par basculer.
 
 ### Phase 1 — Les skills (interactif uniquement)
 
