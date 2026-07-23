@@ -46,8 +46,11 @@ Mirrors each issue/PR's labels onto the `Status` field of the [Scoreo GitHub Pro
 |---|---|
 | `needs-human` | `In progress` |
 | `needs-fix` | `In progress` |
+| `needs-review` | `In progress` |
+| `review-pass` | `In progress` |
 | `in-progress` | `In progress` |
 | `ready` | `Todo` |
+| `blocked` | `Todo` |
 
 First match wins, in that priority order. If none of these labels are present, the item's status is left untouched (e.g. `Done`, set by the Project's own built-in "item closed" workflow).
 
