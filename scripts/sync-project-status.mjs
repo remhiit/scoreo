@@ -6,6 +6,7 @@
 //     just that one item, read from GITHUB_EVENT_PATH
 //   - triggered by schedule/workflow_dispatch: reconciles every open issue and PR
 import { readFileSync } from 'node:fs'
+import { pathToFileURL } from 'node:url'
 
 const PROJECT_TOKEN = process.env.PROJECT_TOKEN
 const PROJECT_OWNER = process.env.PROJECT_OWNER
@@ -13,19 +14,27 @@ const PROJECT_NUMBER = Number(process.env.PROJECT_NUMBER)
 const REPO_OWNER = process.env.REPO_OWNER
 const REPO_NAME = process.env.REPO_NAME
 
-if (!PROJECT_TOKEN) {
-  console.log('PROJECT_TOKEN secret not set — skipping project sync.')
-  process.exit(0)
-}
-
 const STATUS_FIELD_NAME = 'Status'
 
-// First matching label wins.
+// First matching label wins — order matters only for items carrying more
+// than one of these labels at once:
+//   - needs-human  → In progress (escalade, état terminal — priorité max)
+//   - needs-fix    → In progress (verdict R3 « à corriger », déclenche R4)
+//   - needs-review → In progress (file d'attente R3)
+//   - review-pass  → In progress (verdict R3 conforme, en attente de merge)
+//   - in-progress  → In progress (générique, une routine travaille dessus)
+//   - ready        → Todo (spec validée, en attente de R2)
+//   - blocked      → Todo (dépendance externe ouverte ; en pratique jamais
+//                    combiné à `ready`/`in-progress`, cf. unblock-issues.mjs
+//                    et dispatch-ready.mjs qui excluent l'un et l'autre)
 const LABEL_STATUS_PRIORITY = [
   ['needs-human', 'In progress'],
   ['needs-fix', 'In progress'],
+  ['needs-review', 'In progress'],
+  ['review-pass', 'In progress'],
   ['in-progress', 'In progress'],
   ['ready', 'Todo'],
+  ['blocked', 'Todo'],
 ]
 
 async function graphql(query, variables) {
@@ -64,7 +73,7 @@ async function getProjectMeta() {
   return { projectId: project.id, statusField }
 }
 
-function desiredStatus(labelNames) {
+export function desiredStatus(labelNames) {
   for (const [label, status] of LABEL_STATUS_PRIORITY) {
     if (labelNames.includes(label)) return status
   }
@@ -167,4 +176,14 @@ async function main() {
   }
 }
 
-main()
+// GITHUB_EVENT_PATH and PROJECT_TOKEN are set for every step of every Actions
+// job — including `pnpm test` in ci.yml, where importing this module from its
+// test file must not run main() (same regression class as close-linked-
+// issues.mjs, #161). Only run when this file is the entry point.
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  if (!PROJECT_TOKEN) {
+    console.log('PROJECT_TOKEN secret not set — skipping project sync.')
+    process.exit(0)
+  }
+  main()
+}
