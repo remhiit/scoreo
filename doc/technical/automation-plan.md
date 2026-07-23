@@ -409,6 +409,11 @@ directeur « le déterministe ne passe pas par un LLM » :
    qu'aucun label posé pendant la review elle-même ne puisse re-matcher le
    trigger. Reposer `needs-review` plus tard (par R4) redéclenche une
    review — le mécanisme sert aussi de boucle de re-review pour la Phase 5.
+   Garde ajoutée (#153) : au claim, `pr-review` note le HEAD SHA de la PR ;
+   juste avant de poser le verdict, il le relit et, s'il a bougé (push
+   intercalé pendant la review), ne pose aucun verdict — repose
+   `needs-review` seul et s'arrête, plutôt que de tamponner un commit jamais
+   relu.
 3. **`.github/workflows/review-status-sync.yml`** (zéro LLM, déclenché sur
    `pull_request.labeled`) traduit `review-pass`/`needs-fix` en commit status
    `claude/review` (succès/échec) via `GITHUB_TOKEN`.
