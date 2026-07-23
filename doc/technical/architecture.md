@@ -42,7 +42,8 @@
 - **UI adapter** (`src/ui/`): React screens, dispatching actions to reducers and calling use cases from `submit*`/`load*` helpers
 - **Storage adapter** (`src/infrastructure/localStorage/`): `LocalStorage*Repository` classes (`scoreo_players`, `scoreo_gametypes`, `scoreo_matches` keys)
 - **Cloud sync**: `CloudSyncRepository` port (`domain/port/`), `GoogleDriveSyncAdapter` implementation (`infrastructure/google/`) via `fetch()` + async/await, OAuth Token Model via Google Identity Services
-- **DI**: `src/services/createServices.ts` builds the concrete repositories + use cases once, exposed via `ServicesProvider`/`useServices()` (`src/services/ServicesContext.tsx`). The sync use case is `undefined` whenever no Google OAuth client id is configured (`VITE_GOOGLE_CLIENT_ID`), so the app runs fine without cloud sync (e.g. GitHub Pages without OAuth configured).
+- **Auto-sync**: `DataChangeNotifier` port (`domain/port/`), `InMemoryDataChangeNotifier` implementation (`infrastructure/events/`) — the 3 synchronizable localStorage repositories call `notifyChanged()` after every write; `AutoSyncCoordinator` (`application/`) subscribes, debounces (~2.5s), and pushes to Drive via `SyncUseCase.pushLocalData()`. See `doc/functional/features/sync.md`.
+- **DI**: `src/services/createServices.ts` builds the concrete repositories + use cases once, exposed via `ServicesProvider`/`useServices()` (`src/services/ServicesContext.tsx`). The sync use case is `undefined` whenever no Google OAuth client id is configured (`VITE_GOOGLE_CLIENT_ID`), so the app runs fine without cloud sync (e.g. GitHub Pages without OAuth configured). `autoSyncCoordinator` is `undefined` under the same condition. The `DataChangeNotifier` itself is always built (the localStorage repositories depend on it regardless of whether sync is configured).
 
 ### Error modeling
 
@@ -125,7 +126,7 @@ Vite copies `public/` to the production output (`dist/`) natively — see [`depl
 
 - **Current**: localStorage via `LocalStorage*Repository` (`scoreo_players`, `scoreo_gametypes`, `scoreo_matches` keys)
 - **Import**: `ImportMatchesUseCase` reads the same repositories and writes through `MatchRepository.save()`, `GameTypeRepository.save()`, and `PlayerRepository.save()`
-- **Cloud Sync**: Google Drive via `GoogleDriveSyncAdapter`. Stores a single `scoreo-data.json` in the invisible App Data Folder. Syncs players, game types, and matches. Drive API v3, `fetch()` + async/await, OAuth Token Model (GIS). See `SyncUseCase`, `src/ui/sync/syncReducer.ts`.
+- **Cloud Sync**: Google Drive via `GoogleDriveSyncAdapter`. Stores a single `scoreo-data.json` in the invisible App Data Folder. Syncs players, game types, and matches. Drive API v3, `fetch()` + async/await, OAuth Token Model (GIS). See `SyncUseCase`, `src/ui/sync/syncReducer.ts`. Beyond the login-time `autoSync()`, every local mutation triggers a debounced push via `AutoSyncCoordinator`/`DataChangeNotifier` — see `doc/functional/features/sync.md`.
 
 See [`deployment.md`](deployment.md) for CI/CD and deployment details.
 

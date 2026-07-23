@@ -1,4 +1,5 @@
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { InMemoryDataChangeNotifier } from '../events/inMemoryDataChangeNotifier'
 import { LocalStorageGameTypeRepository } from './localStorageGameTypeRepository'
 
 describe('LocalStorageGameTypeRepository', () => {
@@ -122,5 +123,34 @@ describe('LocalStorageGameTypeRepository', () => {
     repo.deleteAll()
 
     expect(repo.getAll(true)).toEqual([])
+  })
+
+  it('notifies the notifier after each mutation, but not on reads', () => {
+    const notifier = new InMemoryDataChangeNotifier()
+    const listener = vi.fn()
+    notifier.subscribe(listener)
+    const repo = new LocalStorageGameTypeRepository(notifier)
+    const gt = {
+      id: 'gt1',
+      name: 'Belote',
+      winCondition: 'HIGHEST_SCORE' as const,
+      tieBreakRule: 'NONE' as const,
+      tieBreakCondition: 'HIGHEST_SCORE' as const,
+      tieBreakLabel: null,
+      active: true,
+    }
+
+    repo.save(gt)
+    expect(listener).toHaveBeenCalledTimes(1)
+
+    repo.saveAll([{ ...gt, id: 'gt2' }])
+    expect(listener).toHaveBeenCalledTimes(2)
+
+    repo.deleteAll()
+    expect(listener).toHaveBeenCalledTimes(3)
+
+    repo.getAll(true)
+    repo.findById('gt1')
+    expect(listener).toHaveBeenCalledTimes(3)
   })
 })

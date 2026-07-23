@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { AutoSyncCoordinator } from '../application/autoSyncCoordinator'
 import { SyncUseCase } from '../application/syncUseCase'
 import { InMemoryCloudSyncRepository } from '../infrastructure/testing/inMemoryCloudSyncRepository'
 import { InMemoryGameTypeRepository } from '../infrastructure/testing/inMemoryGameTypeRepository'
@@ -17,19 +18,21 @@ function baseOptions() {
 }
 
 describe('createServices', () => {
-  it('cloudSyncRepository/syncUseCase are undefined when no cloud repository is available', () => {
+  it('cloudSyncRepository/syncUseCase/autoSyncCoordinator are undefined when no cloud repository is available', () => {
     const services = createServices(baseOptions())
 
     expect(services.cloudSyncRepository).toBeUndefined()
     expect(services.syncUseCase).toBeUndefined()
+    expect(services.autoSyncCoordinator).toBeUndefined()
   })
 
-  it('cloudSyncRepository/syncUseCase are created when a cloud repository is provided', () => {
+  it('cloudSyncRepository/syncUseCase/autoSyncCoordinator are created when a cloud repository is provided', () => {
     const cloudSyncRepository = new InMemoryCloudSyncRepository()
     const services = createServices({ ...baseOptions(), cloudSyncRepository })
 
     expect(services.cloudSyncRepository).toBe(cloudSyncRepository)
     expect(services.syncUseCase).toBeInstanceOf(SyncUseCase)
+    expect(services.autoSyncCoordinator).toBeInstanceOf(AutoSyncCoordinator)
   })
 
   it('exposes the repositories passed in, unchanged', () => {

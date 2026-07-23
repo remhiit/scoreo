@@ -1,4 +1,5 @@
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { InMemoryDataChangeNotifier } from '../events/inMemoryDataChangeNotifier'
 import { LocalStorageMatchRepository } from './localStorageMatchRepository'
 
 describe('LocalStorageMatchRepository', () => {
@@ -113,5 +114,29 @@ describe('LocalStorageMatchRepository', () => {
     const repo = new LocalStorageMatchRepository()
 
     expect(repo.getAll()[0].secondaryPlayerScores).toEqual([])
+  })
+
+  it('notifies the notifier after each mutation, but not on reads', () => {
+    const notifier = new InMemoryDataChangeNotifier()
+    const listener = vi.fn()
+    notifier.subscribe(listener)
+    const repo = new LocalStorageMatchRepository(notifier)
+    const match = { id: 'm1', date: 1000, gameTypeId: 'gt1', playerScores: [], manualWinners: [], secondaryPlayerScores: [] }
+
+    repo.save(match)
+    expect(listener).toHaveBeenCalledTimes(1)
+
+    repo.saveAll([{ ...match, id: 'm2' }])
+    expect(listener).toHaveBeenCalledTimes(2)
+
+    repo.delete('m1')
+    expect(listener).toHaveBeenCalledTimes(3)
+
+    repo.deleteAll()
+    expect(listener).toHaveBeenCalledTimes(4)
+
+    repo.getAll()
+    repo.findById('m2')
+    expect(listener).toHaveBeenCalledTimes(4)
   })
 })

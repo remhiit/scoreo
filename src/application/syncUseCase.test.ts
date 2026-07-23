@@ -1,5 +1,6 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import type { Match } from '../domain/model/match'
+import { InMemoryDataChangeNotifier } from '../infrastructure/events/inMemoryDataChangeNotifier'
 import { InMemoryCloudSyncRepository } from '../infrastructure/testing/inMemoryCloudSyncRepository'
 import { InMemoryGameTypeRepository } from '../infrastructure/testing/inMemoryGameTypeRepository'
 import { InMemoryMatchRepository } from '../infrastructure/testing/inMemoryMatchRepository'
@@ -23,8 +24,9 @@ function buildUseCase(
   playerRepo = new InMemoryPlayerRepository(),
   gameTypeRepo = new InMemoryGameTypeRepository(),
   matchRepo = new InMemoryMatchRepository(),
+  notifier: InMemoryDataChangeNotifier = new InMemoryDataChangeNotifier(),
 ) {
-  return new SyncUseCase(cloudRepo, playerRepo, gameTypeRepo, matchRepo)
+  return new SyncUseCase(cloudRepo, playerRepo, gameTypeRepo, matchRepo, notifier)
 }
 
 describe('SyncUseCase', () => {
@@ -497,5 +499,39 @@ describe('SyncUseCase', () => {
     expect(playerRepo.getAll(true).map((p) => p.id)).toEqual(['p1'])
     expect(gameTypeRepo.getAll(true).map((g) => g.id)).toEqual(['gt1'])
     expect(matchRepo.getAll().map((m) => m.id)).toEqual(['m1'])
+  })
+
+  it('pushLocalData pushes the full local snapshot and returns pulled: 0', async () => {
+    const cloudRepo = new InMemoryCloudSyncRepository()
+    await cloudRepo.login()
+    const playerRepo = new InMemoryPlayerRepository()
+    playerRepo.save({ id: 'p1', name: 'Alice', active: true })
+    const useCase = buildUseCase(cloudRepo, playerRepo)
+
+    const result = await useCase.pushLocalData()
+
+    expect(result.pushed).toBe(1)
+    expect(result.pulled).toBe(0)
+    expect(result.timestamp).toBeGreaterThan(0)
+    expect(cloudRepo.storedData!.players).toHaveLength(1)
+  })
+
+  it('writeRemoteToLocal (pull side of autoSync/resolveConflict) runs inside notifier.runMuted', async () => {
+    const cloudRepo = new InMemoryCloudSyncRepository()
+    await cloudRepo.login()
+    cloudRepo.storedData = {
+      players: [{ id: 'p1', name: 'Alice', active: true }],
+      gameTypes: [],
+      matches: [],
+      lastModified: 1000,
+    }
+    const notifier = new InMemoryDataChangeNotifier()
+    const listener = vi.fn()
+    notifier.subscribe(listener)
+    const useCase = buildUseCase(cloudRepo, new InMemoryPlayerRepository(), undefined, undefined, notifier)
+
+    await useCase.autoSync()
+
+    expect(listener).not.toHaveBeenCalled()
   })
 })
