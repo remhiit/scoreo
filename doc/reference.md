@@ -158,7 +158,7 @@ Sync classes (`sync.css`): `.sync-icon`, `.sync-status`, `.sync-conflict-contain
 
 Theme picker classes (`theme-picker.css`): `.theme-picker-label`, `.theme-picker-row`, `.theme-chip`, `.theme-chip--active`, `.accent-swatch`, `.accent-swatch--active`.
 
-Theme: Catppuccin tokens (`tokens/colors-*.css` + `tokens/semantic.css`), 4 flavors + 14-hue accent. `data-theme`/`data-accent` attributes on `<html>` are managed by `src/ui/theme/themeManager.ts` (`readInitialFlavor`/`readInitialAccent`/`applyTheme`/`saveFlavor`/`saveAccent`) and `src/ui/theme/ThemeContext.tsx` (`useTheme()` hook), picked from the burger menu's "🎨 Theme" entry (`ThemePickerDialog.tsx`).
+Theme: Catppuccin tokens (`tokens/colors-*.css` + `tokens/semantic.css`), 4 flavors + 14-hue accent. `data-theme`/`data-accent` attributes on `<html>` are managed by `src/ui/theme/themeManager.ts` (`readInitialFlavor`/`readInitialAccent`/`applyTheme`/`saveFlavor`/`saveAccent`), `src/ui/theme/ThemeContext.tsx` (`ThemeProvider`) and `src/ui/theme/useTheme.ts` (`useTheme()` hook), picked from the burger menu's "🎨 Theme" entry (`ThemePickerDialog.tsx`).
 
 ## App shell
 

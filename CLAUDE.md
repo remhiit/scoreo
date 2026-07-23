@@ -8,7 +8,7 @@ PWA React + TypeScript de suivi de scores entre amis. MVI-style (reducer/action/
 
 ## Langue
 
-Toujours répondre en français dans le chat (texte adressé à l'utilisateur), y compris les messages de statut, résumés et questions. Le code, les identifiants, les commit/PR et la documentation technique restent en anglais, conformément aux conventions déjà en place dans le repo.
+Toujours répondre en français dans le chat (texte adressé à l'utilisateur), y compris les messages de statut, résumés et questions. Les commits, PR et issues sont également en français (message de commit = titre de l'issue, cf. section Workflow), conformément à la pratique déjà en place dans le repo. Le code, les identifiants et la documentation technique (`doc/`) restent en anglais.
 
 ## Commandes
 
@@ -93,13 +93,13 @@ Avant de committer une évolution Reducer/Action/State/UseCase/Model/Port :
 
 **Exemple bon commit:**
 ```
-Add archive confirmation for game types
+Ajouter la confirmation d'archivage pour les types de jeu
 
-- Add showArchiveConfirm/archiveGameType/dismissArchiveConfirm actions
-- Add archiveConfirmGameTypeId to GameTypeState
-- Archive button (🗑) with modal confirmation in detail view
-- Updated doc/functional/features/games.md with archive flow
-- ArchiveGameTypeUseCase tested
+- Ajout des actions showArchiveConfirm/archiveGameType/dismissArchiveConfirm
+- Ajout de archiveConfirmGameTypeId à GameTypeState
+- Bouton Archiver (🗑) avec modale de confirmation dans la vue détail
+- Mise à jour de doc/functional/features/games.md avec le flow d'archivage
+- ArchiveGameTypeUseCase testé
 ```
 
 **Exemple mauvais commit:**
