@@ -1,10 +1,13 @@
 #!/usr/bin/env node
 // Mirrors each issue/PR's label state onto the GitHub Project "Status" field.
 // Labels are the source of truth (doc/technical/automation-plan.md §2.4) — this
-// is a one-way sync, never the reverse. Two modes:
-//   - triggered by an `issues`/`pull_request` labeled/unlabeled event: syncs
-//     just that one item, read from GITHUB_EVENT_PATH
-//   - triggered by schedule/workflow_dispatch: reconciles every open issue and PR
+// is a one-way sync, never the reverse. A closed item overrides its labels:
+// completed (issue `state_reason`, or a merged PR) always reads as "Done".
+// Two modes:
+//   - triggered by an `issues`/`pull_request` labeled/unlabeled/closed event:
+//     syncs just that one item, read from GITHUB_EVENT_PATH
+//   - triggered by schedule/workflow_dispatch: reconciles every open issue/PR,
+//     plus items closed within RECENT_CLOSED_WINDOW_DAYS
 import { readFileSync } from 'node:fs'
 import { pathToFileURL } from 'node:url'
 
@@ -15,6 +18,11 @@ const REPO_OWNER = process.env.REPO_OWNER
 const REPO_NAME = process.env.REPO_NAME
 
 const STATUS_FIELD_NAME = 'Status'
+
+// Bounded window for the scheduled/manual reconciliation to also pick up
+// items closed before this fix existed (or missed by the labeled/unlabeled
+// triggers) — avoids paginating the entire closed-issues history every run.
+const RECENT_CLOSED_WINDOW_DAYS = 30
 
 // First matching label wins — order matters only for items carrying more
 // than one of these labels at once:
@@ -73,7 +81,16 @@ async function getProjectMeta() {
   return { projectId: project.id, statusField }
 }
 
-export function desiredStatus(labelNames) {
+// Closing state beats labels: an item closed as `completed` (issue) or
+// merged (PR, no native `stateReason` — treated as the same signal) always
+// reads as "Done", even while it still carries `in-progress` (never removed
+// by close-linked-issues.mjs, cf. #195). A `not_planned` close (or a PR
+// closed without merging) imposes no status, consistent with the "unknown
+// label" case below.
+export function desiredStatus({ labelNames, state, stateReason }) {
+  if (state !== 'OPEN') {
+    return stateReason === 'COMPLETED' ? 'Done' : null
+  }
   for (const [label, status] of LABEL_STATUS_PRIORITY) {
     if (labelNames.includes(label)) return status
   }
@@ -90,10 +107,15 @@ function connectionName(kind) {
 
 async function getItem(kind, number) {
   const field = graphqlFieldName(kind)
+  // PullRequest has no `stateReason` field (that's issue-specific) — its
+  // `state` already distinguishes MERGED from CLOSED, which is all syncOne
+  // needs to derive the equivalent completed/not_planned signal.
+  const extraFields = kind === 'issue' ? 'state\n          stateReason' : 'state'
   const data = await graphql(
     `query($owner: String!, $repo: String!, $number: Int!) {
       repository(owner: $owner, name: $repo) {
         ${field}(number: $number) {
+          ${extraFields}
           labels(first: 20) { nodes { name } }
           projectItems(first: 10) { nodes { id project { id } } }
         }
@@ -123,6 +145,34 @@ async function listOpenNumbers(kind) {
   return numbers
 }
 
+// Bounded reconciliation of recently-closed items (see RECENT_CLOSED_WINDOW_DAYS)
+// so a closed issue/PR eventually reaches "Done" even when the `closed` event
+// itself was missed (predates this fix, or a filter dropped it, cf. #195).
+async function listClosedNumbers(kind, sinceIso) {
+  const connection = connectionName(kind)
+  const states = kind === 'issue' ? ['CLOSED'] : ['CLOSED', 'MERGED']
+  const stateType = kind === 'issue' ? 'IssueState' : 'PullRequestState'
+  const data = await graphql(
+    `query($owner: String!, $repo: String!, $states: [${stateType}!]) {
+      repository(owner: $owner, name: $repo) {
+        ${connection}(states: $states, first: 100, orderBy: { field: UPDATED_AT, direction: DESC }) {
+          nodes { number closedAt }
+        }
+      }
+    }`,
+    { owner: REPO_OWNER, repo: REPO_NAME, states },
+  )
+  const nodes = data.repository[connection].nodes
+  const cutoff = new Date(sinceIso).getTime()
+  const recent = nodes.filter((n) => n.closedAt && new Date(n.closedAt).getTime() >= cutoff)
+  if (nodes.length === 100 && recent.length === nodes.length) {
+    console.warn(
+      `Fetched exactly 100 closed ${connection} ordered by updated_at, all within the ${RECENT_CLOSED_WINDOW_DAYS}-day window — there may be more that this reconciliation run is silently skipping (no pagination yet).`,
+    )
+  }
+  return recent.map((n) => n.number)
+}
+
 async function setStatus(projectId, itemId, statusField, statusName) {
   const option = statusField.options.find((o) => o.name === statusName)
   if (!option) throw new Error(`Status option "${statusName}" not found`)
@@ -142,7 +192,10 @@ async function syncOne(projectId, statusField, kind, number) {
   if (!node) return
 
   const labelNames = node.labels.nodes.map((l) => l.name)
-  const target = desiredStatus(labelNames)
+  // PR: no native stateReason, so MERGED stands in for "completed" and a
+  // plain CLOSED (never merged) stands in for "not_planned".
+  const stateReason = kind === 'issue' ? node.stateReason : node.state === 'MERGED' ? 'COMPLETED' : 'NOT_PLANNED'
+  const target = desiredStatus({ labelNames, state: node.state, stateReason })
   if (!target) return
 
   const item = node.projectItems.nodes.find((i) => i.project.id === projectId)
@@ -167,12 +220,16 @@ async function main() {
     return
   }
 
-  // Scheduled / manual run: reconcile every open issue and PR.
-  for (const number of await listOpenNumbers('issue')) {
-    await syncOne(projectId, statusField, 'issue', number)
-  }
-  for (const number of await listOpenNumbers('pull_request')) {
-    await syncOne(projectId, statusField, 'pull_request', number)
+  // Scheduled / manual run: reconcile every open issue/PR, plus items closed
+  // within the last RECENT_CLOSED_WINDOW_DAYS days.
+  const sinceIso = new Date(Date.now() - RECENT_CLOSED_WINDOW_DAYS * 24 * 60 * 60 * 1000).toISOString()
+  for (const kind of ['issue', 'pull_request']) {
+    for (const number of await listOpenNumbers(kind)) {
+      await syncOne(projectId, statusField, kind, number)
+    }
+    for (const number of await listClosedNumbers(kind, sinceIso)) {
+      await syncOne(projectId, statusField, kind, number)
+    }
   }
 }
 
