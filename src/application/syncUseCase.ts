@@ -175,11 +175,24 @@ export class SyncUseCase {
   }
 
   private writeRemoteToLocal(data: SyncData): void {
-    this.playerRepo.deleteAll()
-    this.gameTypeRepo.deleteAll()
-    this.matchRepo.deleteAll()
-    this.playerRepo.saveAll(data.players)
-    this.gameTypeRepo.saveAll(data.gameTypes)
-    this.matchRepo.saveAll(data.matches)
+    const localPlayers = this.playerRepo.getAll(true)
+    const localGameTypes = this.gameTypeRepo.getAll(true)
+    const localMatches = this.matchRepo.getAll()
+    try {
+      this.playerRepo.deleteAll()
+      this.gameTypeRepo.deleteAll()
+      this.matchRepo.deleteAll()
+      this.playerRepo.saveAll(data.players)
+      this.gameTypeRepo.saveAll(data.gameTypes)
+      this.matchRepo.saveAll(data.matches)
+    } catch (error) {
+      this.playerRepo.deleteAll()
+      this.gameTypeRepo.deleteAll()
+      this.matchRepo.deleteAll()
+      this.playerRepo.saveAll(localPlayers)
+      this.gameTypeRepo.saveAll(localGameTypes)
+      this.matchRepo.saveAll(localMatches)
+      throw error
+    }
   }
 }

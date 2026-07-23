@@ -1,9 +1,22 @@
 import { describe, expect, it } from 'vitest'
+import type { Match } from '../domain/model/match'
 import { InMemoryCloudSyncRepository } from '../infrastructure/testing/inMemoryCloudSyncRepository'
 import { InMemoryGameTypeRepository } from '../infrastructure/testing/inMemoryGameTypeRepository'
 import { InMemoryMatchRepository } from '../infrastructure/testing/inMemoryMatchRepository'
 import { InMemoryPlayerRepository } from '../infrastructure/testing/inMemoryPlayerRepository'
 import { SyncUseCase } from './syncUseCase'
+
+class ThrowingSaveAllMatchRepository extends InMemoryMatchRepository {
+  private callCount = 0
+
+  saveAll(matches: Match[]): void {
+    this.callCount += 1
+    if (this.callCount === 1) {
+      throw new Error('quota exceeded')
+    }
+    super.saveAll(matches)
+  }
+}
 
 function buildUseCase(
   cloudRepo = new InMemoryCloudSyncRepository(),
@@ -426,5 +439,63 @@ describe('SyncUseCase', () => {
     const outcome = await useCase.autoSync()
 
     expect(outcome.kind).toBe('Synced')
+  })
+
+  it('resolveConflict keepRemote restores local data if the write fails mid-way', async () => {
+    const cloudRepo = new InMemoryCloudSyncRepository()
+    await cloudRepo.login()
+    cloudRepo.storedData = {
+      players: [{ id: 'p2', name: 'Bob', active: true }],
+      gameTypes: [
+        {
+          id: 'gt2',
+          name: 'Remote game',
+          winCondition: 'HIGHEST_SCORE',
+          tieBreakRule: 'NONE',
+          tieBreakCondition: 'HIGHEST_SCORE',
+          tieBreakLabel: null,
+          active: true,
+        },
+      ],
+      matches: [
+        {
+          id: 'm2',
+          date: 2000,
+          gameTypeId: 'gt2',
+          playerScores: [{ playerId: 'p2', score: 5 }],
+          manualWinners: [],
+          secondaryPlayerScores: [],
+        },
+      ],
+      lastModified: 2000,
+    }
+    const playerRepo = new InMemoryPlayerRepository()
+    playerRepo.save({ id: 'p1', name: 'Alice', active: true })
+    const gameTypeRepo = new InMemoryGameTypeRepository()
+    gameTypeRepo.save({
+      id: 'gt1',
+      name: 'Local game',
+      winCondition: 'HIGHEST_SCORE',
+      tieBreakRule: 'NONE',
+      tieBreakCondition: 'HIGHEST_SCORE',
+      tieBreakLabel: null,
+      active: true,
+    })
+    const matchRepo = new ThrowingSaveAllMatchRepository()
+    matchRepo.save({
+      id: 'm1',
+      date: 1000,
+      gameTypeId: 'gt1',
+      playerScores: [{ playerId: 'p1', score: 10 }],
+      manualWinners: [],
+      secondaryPlayerScores: [],
+    })
+    const useCase = buildUseCase(cloudRepo, playerRepo, gameTypeRepo, matchRepo)
+
+    await expect(useCase.resolveConflict(false)).rejects.toThrow('quota exceeded')
+
+    expect(playerRepo.getAll(true).map((p) => p.id)).toEqual(['p1'])
+    expect(gameTypeRepo.getAll(true).map((g) => g.id)).toEqual(['gt1'])
+    expect(matchRepo.getAll().map((m) => m.id)).toEqual(['m1'])
   })
 })
