@@ -34,6 +34,10 @@ re-triggers R3 on the same PR — clearing it first closes that door before
 it can reopen. Skip this step for an ad hoc interactive review the user
 asked for directly (no labels to manage there).
 
+At this same moment, note the PR's current HEAD SHA (`pull_request_read`).
+The checklist below reads the diff at this SHA — the guard just before
+"Label the verdict" needs it to detect a HEAD that moved mid-review.
+
 ## Out of scope — don't re-check these
 
 `ci.yml` already runs `lint`, `test`, `build`, `doc-links` on every push. Redoing
@@ -82,6 +86,23 @@ reason. End with an overall verdict:
 Don't soften a real blocker into a "nit" to avoid friction — a review that
 never says no isn't protecting anything (see `automation-plan.md`'s risk
 table: "Review sans mordant").
+
+## Guard against a moved HEAD (R3 only, just before labeling)
+
+Before posting any verdict label, re-read the PR's current HEAD SHA
+(`pull_request_read`) and compare it to the SHA noted in "Claim the run".
+If it differs, **do not post a verdict** — post `needs-review` back on its
+own, in its own call, and stop there.
+
+Why this matters: `review-status-sync.yml` stamps the `claude/review`
+commit status onto `github.event.pull_request.head.sha` at the moment its
+`labeled` event fires. A push landing between the start of this review
+(which read the diff at the old HEAD) and the verdict label would get the
+verdict's status stamped onto a commit this review never actually read.
+`needs-review-label.yml`'s `synchronize` handler mostly closes this window
+by re-queuing on every push, but webhook delivery order isn't guaranteed —
+so this check stays load-bearing even though the race is rare. Don't drop
+it as a "simplification" later.
 
 ## Label the verdict (R3 only)
 
