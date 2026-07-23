@@ -15,9 +15,20 @@ backward-compat rules referenced throughout.
   from your triggering context — the `issues` `labeled` event that started
   this run. Don't search for it; the trigger context already identifies it
   precisely, including when several issues carry `ready` at once (each
-  matching event starts its own independent session, one issue each).
-- **Interactive, no issue named**: take the first open issue labeled `ready`
-  and not assigned, highest priority first (`P0` > `P1` > `P2` > `P3`).
+  matching event starts its own independent session, one issue each). If
+  that issue turns out not to be actionable any more (no longer `ready`,
+  already closed, etc.), **stop right there and do nothing else** — never
+  search for or pick a different `ready` issue instead, even if one exists.
+  Other `ready` issues waiting means other R2 sessions are already each
+  working their own (see #149: a session whose triggering issue wasn't
+  actionable searched and picked a different `ready` issue instead, risking
+  a duplicate PR on an issue another R2 session was already handling).
+- **Interactive, no issue named**: use an explicit selection algorithm, not
+  "first in the listing" — list open issues labeled `ready`, group them by
+  priority label (`P0`…`P3`), take the highest-priority non-empty group, and
+  within that group break ties by the oldest issue (lowest issue number).
+  Don't just take the first result a `ready` listing happens to return
+  without checking its priority against the other candidates.
 - **Interactive, issue named**: use that one.
 
 Replace `ready` with `in-progress` before starting, in every case — remove

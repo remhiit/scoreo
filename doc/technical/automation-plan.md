@@ -277,6 +277,7 @@ changement de comportement public.
 | `pr-review` | Checklist **subjective uniquement** : conformité à la spec, respect de l'archi hexagonale, backward-compat des schémas zod, doc à jour, dette introduite. Le mécanisable est déjà en CI |
 | `address-feedback` | Corriger le périmètre signalé. Ne pas refondre |
 | `site-quality` | Deps, liens de doc, Lighthouse, PWA. Utilisée par R5 |
+| `weekly-report` | Rapport hebdo : PR ouvertes > 3 jours, issues `needs-human`, taux `review-pass`/`needs-fix`, incidents depuis le dernier rapport, recommandation sur la liste blanche `auto`. Utilisée par R6 |
 
 **Règle :** une skill non éprouvée en interactif ne passe pas en autonome.
 
@@ -595,6 +596,16 @@ fois le réglage repo en place ; à surveiller si `setup-repo.sh` doit être
 corrigé pour que ce PATCH prenne effet de façon fiable la prochaine fois
 qu'il tourne sur un nouveau repo.
 
+**Cause racine identifiée et corrigée (#140) :** dans `setup-repo.sh`, le
+PATCH `gh api "repos/$REPO" -X PATCH -f allow_auto_merge=true` utilisait
+`-f`, qui envoie la **chaîne** `"true"` au lieu du **booléen** `true` —
+contrairement au reste du script, qui utilise correctement `-F` pour les
+champs booléens de la branch protection. Corrigé en `-F
+allow_auto_merge=true`, avec une vérification post-PATCH (`gh api
+"repos/$REPO" --jq .allow_auto_merge` doit imprimer `true`) qui fait
+échouer le script explicitement (`exit 1`) plutôt que de laisser le
+réglage silencieusement inactif.
+
 **Incident (2026-07-17) — fermeture auto des issues liées cassée par un
 `GITHUB_TOKEN` sous-privilégié :** `auto-merge-sync.yml` ne déclarait que
 `contents: write` et `pull-requests: write`. Or `gh pr merge --auto
@@ -639,6 +650,19 @@ manuellement vu son risque Élevé).
 ### Phase 6 — Observabilité
 
 R6 hebdo. C'est le rapport qui pilote l'élargissement de la liste blanche `auto`.
+
+- [x] `.claude/skills/weekly-report/SKILL.md` écrite (issue #146) : PR
+      ouvertes > 3 jours, issues `needs-human`, décompte
+      `review-pass`/`needs-fix` de la semaine (approximatif — voir la
+      section « Ce que ce rapport ne peut pas mesurer » de la skill),
+      incidents `automation-plan.md` depuis le rapport précédent,
+      recommandation explicite sur la liste blanche `auto`. Livrable :
+      issue `Rapport hebdo <date>`, `P3`, sans `ready`.
+- [ ] Rodage interactif (2-3 runs réels) avant de considérer la skill
+      éprouvée — règle §6 « une skill non éprouvée en interactif ne passe
+      pas en autonome »
+- [ ] Création de la routine planifiée R6 (à la main de Rémi, après le
+      rodage ci-dessus)
 
 ---
 

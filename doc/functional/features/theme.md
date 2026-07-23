@@ -36,7 +36,9 @@ primitive).
 | File | Role |
 |------|------|
 | `src/ui/theme/themeManager.ts` | `readInitialFlavor`/`readInitialAccent`/`applyTheme`/`saveFlavor`/`saveAccent` — pure functions, localStorage, `data-theme`/`data-accent` on `<html>`, legacy migration |
-| `src/ui/theme/ThemeContext.tsx` | `ThemeProvider`/`useTheme()` — React Context wrapping `themeManager.ts` so the picker and the rest of the app share live state |
+| `src/ui/theme/themeContext.ts` | `ThemeContext` (`createContext`) + `ThemeState` type — no component, so importing it doesn't break Fast Refresh |
+| `src/ui/theme/ThemeContext.tsx` | `ThemeProvider` — wraps `themeManager.ts`, provides `ThemeContext` so the picker and the rest of the app share live state |
+| `src/ui/theme/useTheme.ts` | `useTheme()` hook, reads `ThemeContext` |
 | `src/ui/theme/ThemePickerDialog.tsx` | Flavor chips + accent swatches, rendered via `LudoModal` |
 | `src/App.tsx` | Renders the burger menu entry + dialog |
 
