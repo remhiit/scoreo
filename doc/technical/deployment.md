@@ -42,6 +42,10 @@ GOOGLE_CLIENT_ID=xxx PROJECT_TOKEN=xxx ./setup-repo.sh
 
 Mirrors each issue/PR's labels onto the `Status` field of the [Scoreo GitHub Project](https://github.com/users/remhiit/projects/1) — one-way only, labels are the source of truth (`doc/technical/automation-plan.md` §2.4). Never writes labels back from the board.
 
+A closed item overrides its labels: `state_reason: completed` on an issue, or a merged PR (no native `stateReason`, so `state: MERGED` stands in for the same signal), always sets `Done` — even if `in-progress` was never removed (it isn't, cf. `close-linked-issues.mjs` and issue #195). A `not_planned` close (or a PR closed without merging) imposes no status.
+
+Otherwise, for an open item:
+
 | Label present | `Status` set to |
 |---|---|
 | `needs-human` | `In progress` |
@@ -52,9 +56,9 @@ Mirrors each issue/PR's labels onto the `Status` field of the [Scoreo GitHub Pro
 | `ready` | `Todo` |
 | `blocked` | `Todo` |
 
-First match wins, in that priority order. If none of these labels are present, the item's status is left untouched (e.g. `Done`, set by the Project's own built-in "item closed" workflow).
+First match wins, in that priority order. If none of these labels are present, the item's status is left untouched.
 
-- **Triggers**: `issues`/`pull_request` `labeled`/`unlabeled` (immediate, single item), plus a `schedule` cron every 6 hours as a drift-correction fallback that reconciles every open issue and PR, and `workflow_dispatch` for manual runs.
+- **Triggers**: `issues`/`pull_request` `labeled`/`unlabeled`/`closed` (immediate, single item), plus a `schedule` cron every 6 hours as a drift-correction fallback that reconciles every open issue/PR plus items closed in the last 30 days (`listClosedNumbers`, bounded window — avoids paginating the entire closed history every run), and `workflow_dispatch` for manual runs.
 - **Requires** the `PROJECT_TOKEN` secret — a classic PAT with the `project` scope (fine-grained PATs don't yet cover writes to a user-owned Projects v2 board). Set via `setup-repo.sh`. Until it's set, the job logs a message and exits cleanly (no red check).
 - **Status names must match the board's option exactly**, including case — `sync-project-status.mjs` looks up the option by exact string equality, and a mismatch throws rather than silently skipping (caught 2026-07-15: the script had `In Progress`, the board's actual option is `In progress`).
 
