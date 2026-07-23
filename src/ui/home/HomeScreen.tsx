@@ -1,5 +1,5 @@
 import { Play } from 'lucide-react'
-import { useReducer, useState } from 'react'
+import { useReducer, useRef, useState } from 'react'
 import type { AddPlayerUseCase } from '../../application/addPlayerUseCase'
 import type { CleanupInactivePlayersUseCase } from '../../application/cleanupInactivePlayersUseCase'
 import type { DeletePlayerUseCase } from '../../application/deletePlayerUseCase'
@@ -11,20 +11,10 @@ import type { GameType } from '../../domain/model/gameType'
 import type { MatchDraftRepository } from '../../domain/port/matchDraftRepository'
 import { LudoButton } from '../shared/LudoButton'
 import { AddPlayerField } from './AddPlayerField'
-import { CleanupConfirmModal } from './CleanupConfirmModal'
-import { DeletePlayerModal } from './DeletePlayerModal'
-import { GameSelectModal } from './GameSelectModal'
+import { GameSelectModalContainer, type GameSelectModalHandle } from './GameSelectModalContainer'
+import { PlayerActionModals } from './PlayerActionModals'
 import { PlayerListSection } from './PlayerListSection'
-import { RenamePlayerModal } from './RenamePlayerModal'
-import { useGameSelectModal } from './useGameSelectModal'
-import {
-  loadPlayers,
-  playerReducer,
-  submitAddPlayer,
-  submitCleanup,
-  submitConfirmRename,
-  submitDeletePlayer,
-} from './playerReducer'
+import { loadPlayers, playerReducer, submitAddPlayer } from './playerReducer'
 import { initialPlayerState } from './playerTypes'
 
 export interface HomeScreenProps {
@@ -65,17 +55,8 @@ export function HomeScreen({
   const matchCount = getMatchCount()
 
   const [selectedPlayers, setSelectedPlayers] = useState<Set<string>>(new Set())
-  const [anonymize, setAnonymize] = useState(false)
 
-  const gameModal = useGameSelectModal(getGameTypes, onAddGameType)
-
-  const [prevDeleteConfirmPlayerId, setPrevDeleteConfirmPlayerId] = useState(
-    state.deleteConfirmPlayerId,
-  )
-  if (prevDeleteConfirmPlayerId !== state.deleteConfirmPlayerId) {
-    setPrevDeleteConfirmPlayerId(state.deleteConfirmPlayerId)
-    setAnonymize(false)
-  }
+  const gameModalRef = useRef<GameSelectModalHandle>(null)
 
   function toggleSelectPlayer(playerId: string) {
     setSelectedPlayers((prev) => {
@@ -87,12 +68,6 @@ export function HomeScreen({
   }
 
   const isFirstLaunch = state.players.length === 0 && matchCount === 0
-  const playerToDelete = state.deleteConfirmPlayerId
-    ? state.players.find((p) => p.id === state.deleteConfirmPlayerId)
-    : undefined
-  const playerToRename = state.renamingPlayerId
-    ? state.players.find((p) => p.id === state.renamingPlayerId)
-    : undefined
 
   return (
     <>
@@ -139,10 +114,7 @@ export function HomeScreen({
         selectedPlayers={selectedPlayers}
         onToggleSelect={toggleSelectPlayer}
         onEditPlayer={(playerId) => dispatch({ type: 'startRename', playerId })}
-        onDeleteRequest={(playerId) => {
-          dispatch({ type: 'showDeleteConfirm', id: playerId })
-          setAnonymize(false)
-        }}
+        onDeleteRequest={(playerId) => dispatch({ type: 'showDeleteConfirm', id: playerId })}
         cleanupCandidatesCount={state.cleanupCandidates.length}
         onShowCleanupConfirm={() => dispatch({ type: 'showCleanupConfirm' })}
       />
@@ -158,64 +130,26 @@ export function HomeScreen({
           size="lg"
           disabled={selectedPlayers.size < 2}
           className="fab-position"
-          onClick={gameModal.openModal}
+          onClick={() => gameModalRef.current?.open()}
         />
       )}
 
-      <GameSelectModal
-        {...gameModal}
-        onStartMatch={() =>
-          gameModal.confirmStart((gameTypeId) => onStartGame(gameTypeId, [...selectedPlayers]))
-        }
+      <GameSelectModalContainer
+        ref={gameModalRef}
+        getGameTypes={getGameTypes}
+        onAddGameType={onAddGameType}
+        onStartGame={onStartGame}
+        selectedPlayerIds={[...selectedPlayers]}
       />
 
-      <DeletePlayerModal
-        open={state.deleteConfirmPlayerId !== undefined}
-        playerName={playerToDelete?.name}
-        anonymize={anonymize}
-        onToggleAnonymize={() => setAnonymize(!anonymize)}
-        onClose={() => dispatch({ type: 'dismissDeleteConfirm' })}
-        onConfirmDelete={() => {
-          if (state.deleteConfirmPlayerId === undefined) return
-          dispatch(
-            submitDeletePlayer(
-              deletePlayer,
-              getPlayers,
-              getPlayerStats,
-              cleanupInactivePlayers,
-              state.deleteConfirmPlayerId,
-              anonymize,
-            ),
-          )
-        }}
-      />
-
-      <RenamePlayerModal
-        open={state.renamingPlayerId !== undefined && playerToRename !== undefined}
-        playerName={playerToRename?.name}
-        value={state.renameInput}
-        onChange={(name) => dispatch({ type: 'updateRenameInput', name })}
-        error={state.error}
-        onClose={() => dispatch({ type: 'cancelRename' })}
-        onConfirmRename={() => {
-          const action = submitConfirmRename(
-            renamePlayerUseCase,
-            getPlayers,
-            getPlayerStats,
-            cleanupInactivePlayers,
-            state,
-          )
-          if (action) dispatch(action)
-        }}
-      />
-
-      <CleanupConfirmModal
-        open={state.showCleanupConfirm}
-        candidates={state.cleanupCandidates}
-        onClose={() => dispatch({ type: 'dismissCleanupConfirm' })}
-        onConfirmCleanup={() =>
-          dispatch(submitCleanup(cleanupInactivePlayers, getPlayers, getPlayerStats))
-        }
+      <PlayerActionModals
+        state={state}
+        dispatch={dispatch}
+        deletePlayer={deletePlayer}
+        renamePlayerUseCase={renamePlayerUseCase}
+        cleanupInactivePlayers={cleanupInactivePlayers}
+        getPlayers={getPlayers}
+        getPlayerStats={getPlayerStats}
       />
     </>
   )
