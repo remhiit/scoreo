@@ -291,11 +291,13 @@ Le repo n'a **aucune CI de PR** : les tests tournent dans `deploy.yml`, donc
 après le merge. Le site est cassé sur `main` au moment où on l'apprend.
 
 - [x] `.github/workflows/ci.yml` — jobs `build`, `test`, `lint`, `doc-links`,
-      `lighthouse` (non bloquant au départ)
-- [x] `lighthouserc.json` — assertions en `warn` le temps de mesurer la baseline
-      (baseline mesurée : performance 0.96, accessibilité 0.95, bonnes pratiques
-      0.96, SEO 0.90 — catégorie `pwa` retirée des assertions, Lighthouse 12 ne
-      la calcule plus par défaut)
+      `lighthouse` (rouge visible sur échec, toujours hors checks requis — voir
+      §9)
+- [x] `lighthouserc.json` — assertions en `error` depuis la mesure de la
+      baseline (baseline mesurée : performance 0.96, accessibilité 0.95, bonnes
+      pratiques 0.96, SEO 0.90 — catégorie `pwa` retirée des assertions, Lighthouse 12 ne
+      la calcule plus par défaut). Seuil `performance` recalibré ensuite
+      directement depuis des mesures sur le runner CI, voir §9.
 - [x] `gh secret set GOOGLE_CLIENT_ID` (le build en dépend) — exécuté par Rémi
       via `setup-repo.sh`
 - [x] `setup-repo.sh` — labels, `allow_auto_merge`, branch protection
@@ -673,7 +675,7 @@ R6 hebdo. C'est le rapport qui pilote l'élargissement de la liste blanche `auto
 | Boucle R3 ↔ R4 infinie | Plafond `attempt-3`, puis `needs-human` |
 | Quota de runs épuisé par une seule PR | Même plafond + `concurrency` dans la CI |
 | Review sans mordant (le modèle relit son propre travail) | Le mécanisable sort de la review et devient un job CI. `claude/review` ne juge que le subjectif |
-| Budget Lighthouse désactivé à la première PR rouge | Mesurer la baseline avant de le rendre bloquant |
+| Budget Lighthouse désactivé à la première PR rouge | Seuils `error` fixés depuis la baseline (accessibilité/bonnes pratiques/SEO, marge anti-bruit inter-runs) ou depuis des mesures directes sur le runner CI (performance, écart bien trop grand avec la baseline — voir §9), job toujours hors checks requis (#147) |
 | Régression de backward-compat sur les schémas zod | Hors liste blanche `auto` : merge manuel obligatoire |
 | `pull_request_target` expose les secrets | Ne jamais y exécuter le code de la PR |
 | Événement de routine perdu par plafond de runs | Balayeur horaire (`requeue-lost-events.yml`) qui rejoue tout label déclencheur orphelin |
@@ -684,4 +686,24 @@ R6 hebdo. C'est le rapport qui pilote l'élargissement de la liste blanche `auto
   place de R2 redonnerait un approbateur légitime. Complexité non justifiée tant
   que le commit status requis fait le travail. À reconsidérer si le repo
   s'ouvre à des contributions externes.
-- **Seuils Lighthouse définitifs** — à figer après mesure de la baseline.
+- **Seuils Lighthouse définitifs — figés (#147, 2026-07-22 ; performance
+  recalibrée le 2026-07-23 suite à la revue R3 de la PR #183).** Baseline
+  mesurée en Phase 0 (performance 0.96, accessibilité 0.95, bonnes pratiques
+  0.96, SEO 0.90), hors du runner CI. Seuils retenus : accessibilité ≥ 0.90,
+  bonnes pratiques ≥ 0.90, SEO ≥ 0.85 (~0.05 sous la baseline, marge
+  anti-bruit inter-runs — ces trois catégories restent stables sur le runner
+  CI). Pour `performance`, le seuil ~0.05-sous-baseline (0.90) s'est révélé
+  inapplicable : mesuré directement sur le runner CI (`treosh/lighthouse-ci-action`,
+  build `dist/` servi tel que le fait le job `lighthouse`), le score varie de
+  0.65 à 0.81 sur 3 exécutions consécutives du même commit — un écart de plus
+  de 25 points de la baseline, dû à la variance CPU du runner GitHub Actions
+  partagé et pas à une régression du site. Seuil `performance` recalibré à
+  ≥ 0.60 (sous le plancher observé de 0.65) et `numberOfRuns` passé de 1 à 3
+  (LHCI retient la médiane) pour réduire ce bruit inter-runs. Assertions au
+  niveau `error` (`lighthouserc.json`) et `continue-on-error` retiré du job
+  `lighthouse` (`ci.yml`) — un échec rend le job rouge et visible sur la PR.
+  Le job reste **hors** des checks requis de la branch protection : rouge =
+  signal, pas encore bloquant. Critère pour le rendre requis plus tard :
+  quelques semaines de recul sans faux positif (bruit inter-runs faisant
+  chuter un score sous le seuil sans régression réelle) — à revoir alors via
+  `setup-repo.sh`, hors scope de #147.
