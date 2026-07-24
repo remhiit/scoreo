@@ -3,6 +3,7 @@ import type {
   SyncData,
   SyncStatus,
 } from '../domain/port/cloudSyncRepository'
+import type { DataChangeNotifier } from '../domain/port/dataChangeNotifier'
 import type { GameTypeRepository } from '../domain/port/gameTypeRepository'
 import type { MatchRepository } from '../domain/port/matchRepository'
 import type { PlayerRepository } from '../domain/port/playerRepository'
@@ -91,6 +92,7 @@ export class SyncUseCase {
     private readonly playerRepo: PlayerRepository,
     private readonly gameTypeRepo: GameTypeRepository,
     private readonly matchRepo: MatchRepository,
+    private readonly notifier: DataChangeNotifier,
   ) {}
 
   async autoSync(): Promise<SyncOutcome> {
@@ -153,6 +155,16 @@ export class SyncUseCase {
     }
   }
 
+  async pushLocalData(): Promise<SyncResult> {
+    const localData = this.buildLocalSyncData()
+    await this.cloudRepo.push(localData)
+    return {
+      pushed: localData.players.length + localData.gameTypes.length + localData.matches.length,
+      pulled: 0,
+      timestamp: now(),
+    }
+  }
+
   async login(): Promise<void> {
     await this.cloudRepo.login()
   }
@@ -174,25 +186,29 @@ export class SyncUseCase {
     }
   }
 
+  private replaceAllLocalData(data: SyncData): void {
+    this.playerRepo.deleteAll()
+    this.gameTypeRepo.deleteAll()
+    this.matchRepo.deleteAll()
+    this.playerRepo.saveAll(data.players)
+    this.gameTypeRepo.saveAll(data.gameTypes)
+    this.matchRepo.saveAll(data.matches)
+  }
+
   private writeRemoteToLocal(data: SyncData): void {
-    const localPlayers = this.playerRepo.getAll(true)
-    const localGameTypes = this.gameTypeRepo.getAll(true)
-    const localMatches = this.matchRepo.getAll()
-    try {
-      this.playerRepo.deleteAll()
-      this.gameTypeRepo.deleteAll()
-      this.matchRepo.deleteAll()
-      this.playerRepo.saveAll(data.players)
-      this.gameTypeRepo.saveAll(data.gameTypes)
-      this.matchRepo.saveAll(data.matches)
-    } catch (error) {
-      this.playerRepo.deleteAll()
-      this.gameTypeRepo.deleteAll()
-      this.matchRepo.deleteAll()
-      this.playerRepo.saveAll(localPlayers)
-      this.gameTypeRepo.saveAll(localGameTypes)
-      this.matchRepo.saveAll(localMatches)
-      throw error
-    }
+    this.notifier.runMuted(() => {
+      const localData: SyncData = {
+        players: this.playerRepo.getAll(true),
+        gameTypes: this.gameTypeRepo.getAll(true),
+        matches: this.matchRepo.getAll(),
+        lastModified: now(),
+      }
+      try {
+        this.replaceAllLocalData(data)
+      } catch (error) {
+        this.replaceAllLocalData(localData)
+        throw error
+      }
+    })
   }
 }

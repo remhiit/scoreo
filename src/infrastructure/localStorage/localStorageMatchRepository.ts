@@ -1,6 +1,7 @@
 import { newId } from '../../application/idGenerator'
 import type { Match } from '../../domain/model/match'
 import { MatchSchema } from '../../domain/model/match.schema'
+import type { DataChangeNotifier } from '../../domain/port/dataChangeNotifier'
 import type { MatchRepository } from '../../domain/port/matchRepository'
 import { migrateMatches } from '../migration/migrateMatches'
 
@@ -25,6 +26,8 @@ function writeAll(matches: Match[]): void {
 export class LocalStorageMatchRepository implements MatchRepository {
   private migrated = false
 
+  constructor(private readonly notifier?: DataChangeNotifier) {}
+
   getAll(): Match[] {
     if (!this.migrated) {
       this.migrateIfNeeded()
@@ -39,6 +42,7 @@ export class LocalStorageMatchRepository implements MatchRepository {
     if (idx >= 0) updated[idx] = match
     else updated.push(match)
     writeAll(updated)
+    this.notifier?.notifyChanged()
   }
 
   saveAll(matches: Match[]): void {
@@ -49,6 +53,7 @@ export class LocalStorageMatchRepository implements MatchRepository {
       else existing.push(match)
     }
     writeAll(existing)
+    this.notifier?.notifyChanged()
   }
 
   findById(id: string): Match | undefined {
@@ -57,10 +62,12 @@ export class LocalStorageMatchRepository implements MatchRepository {
 
   delete(id: string): void {
     writeAll(this.getAll().filter((m) => m.id !== id))
+    this.notifier?.notifyChanged()
   }
 
   deleteAll(): void {
     writeAll([])
+    this.notifier?.notifyChanged()
   }
 
   private migrateIfNeeded(): void {

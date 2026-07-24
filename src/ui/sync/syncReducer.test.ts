@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { SyncData } from '../../domain/port/cloudSyncRepository'
 import { SyncUseCase } from '../../application/syncUseCase'
+import { InMemoryDataChangeNotifier } from '../../infrastructure/events/inMemoryDataChangeNotifier'
 import { InMemoryCloudSyncRepository } from '../../infrastructure/testing/inMemoryCloudSyncRepository'
 import { InMemoryGameTypeRepository } from '../../infrastructure/testing/inMemoryGameTypeRepository'
 import { InMemoryMatchRepository } from '../../infrastructure/testing/inMemoryMatchRepository'
@@ -15,7 +16,11 @@ function buildUseCase(
   gameTypeRepo = new InMemoryGameTypeRepository(),
   matchRepo = new InMemoryMatchRepository(),
 ) {
-  return { cloudRepo, playerRepo, syncUseCase: new SyncUseCase(cloudRepo, playerRepo, gameTypeRepo, matchRepo) }
+  return {
+    cloudRepo,
+    playerRepo,
+    syncUseCase: new SyncUseCase(cloudRepo, playerRepo, gameTypeRepo, matchRepo, new InMemoryDataChangeNotifier()),
+  }
 }
 
 async function runWithDispatch(

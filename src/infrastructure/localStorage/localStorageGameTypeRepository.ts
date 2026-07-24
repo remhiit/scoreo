@@ -1,5 +1,6 @@
 import type { GameType } from '../../domain/model/gameType'
 import { GameTypeSchema } from '../../domain/model/gameType.schema'
+import type { DataChangeNotifier } from '../../domain/port/dataChangeNotifier'
 import type { GameTypeRepository } from '../../domain/port/gameTypeRepository'
 
 const KEY = 'scoreo_gametypes'
@@ -21,6 +22,8 @@ function writeAll(gameTypes: GameType[]): void {
 }
 
 export class LocalStorageGameTypeRepository implements GameTypeRepository {
+  constructor(private readonly notifier?: DataChangeNotifier) {}
+
   getAll(includeInactive = false): GameType[] {
     const all = readAll()
     return includeInactive ? all : all.filter((g) => g.active)
@@ -32,6 +35,7 @@ export class LocalStorageGameTypeRepository implements GameTypeRepository {
     if (idx >= 0) updated[idx] = gameType
     else updated.push(gameType)
     writeAll(updated)
+    this.notifier?.notifyChanged()
   }
 
   saveAll(gameTypes: GameType[]): void {
@@ -42,6 +46,7 @@ export class LocalStorageGameTypeRepository implements GameTypeRepository {
       else existing.push(gameType)
     }
     writeAll(existing)
+    this.notifier?.notifyChanged()
   }
 
   findById(id: string): GameType | undefined {
@@ -50,5 +55,6 @@ export class LocalStorageGameTypeRepository implements GameTypeRepository {
 
   deleteAll(): void {
     writeAll([])
+    this.notifier?.notifyChanged()
   }
 }

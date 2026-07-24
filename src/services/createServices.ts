@@ -1,9 +1,13 @@
+import { AutoSyncCoordinator } from '../application/autoSyncCoordinator'
 import { SyncUseCase } from '../application/syncUseCase'
 import type { CloudSyncRepository } from '../domain/port/cloudSyncRepository'
+import type { DataChangeNotifier } from '../domain/port/dataChangeNotifier'
 import type { GameTypeRepository } from '../domain/port/gameTypeRepository'
 import type { MatchDraftRepository } from '../domain/port/matchDraftRepository'
 import type { MatchRepository } from '../domain/port/matchRepository'
 import type { PlayerRepository } from '../domain/port/playerRepository'
+import { BrowserConnectivityChecker } from '../infrastructure/browser/browserConnectivityChecker'
+import { InMemoryDataChangeNotifier } from '../infrastructure/events/inMemoryDataChangeNotifier'
 import { GoogleAuthService } from '../infrastructure/google/googleAuthService'
 import { GoogleDriveSyncAdapter } from '../infrastructure/google/googleDriveSyncAdapter'
 import { OAUTH_CLIENT_ID } from '../infrastructure/google/oauthConfig'
@@ -27,6 +31,8 @@ export interface Services {
   cloudSyncRepository: CloudSyncRepository | undefined
   /** undefined whenever cloudSyncRepository is, mirroring createSyncHandlerIfAvailable returning null. */
   syncUseCase: SyncUseCase | undefined
+  /** undefined whenever syncUseCase is — no push destination, nothing to debounce. */
+  autoSyncCoordinator: AutoSyncCoordinator | undefined
   currentDate: () => number
 }
 
@@ -36,6 +42,7 @@ export interface CreateServicesOptions {
   matchRepository?: MatchRepository
   matchDraftRepository?: MatchDraftRepository
   cloudSyncRepository?: CloudSyncRepository
+  dataChangeNotifier?: DataChangeNotifier
   currentDate?: () => number
 }
 
@@ -45,15 +52,19 @@ function createDefaultCloudSyncRepository(): CloudSyncRepository | undefined {
 }
 
 export function createServices(options: CreateServicesOptions = {}): Services {
-  const playerRepository = options.playerRepository ?? new LocalStoragePlayerRepository()
-  const gameTypeRepository = options.gameTypeRepository ?? new LocalStorageGameTypeRepository()
-  const matchRepository = options.matchRepository ?? new LocalStorageMatchRepository()
+  const dataChangeNotifier = options.dataChangeNotifier ?? new InMemoryDataChangeNotifier()
+  const playerRepository = options.playerRepository ?? new LocalStoragePlayerRepository(dataChangeNotifier)
+  const gameTypeRepository = options.gameTypeRepository ?? new LocalStorageGameTypeRepository(dataChangeNotifier)
+  const matchRepository = options.matchRepository ?? new LocalStorageMatchRepository(dataChangeNotifier)
   const matchDraftRepository = options.matchDraftRepository ?? new LocalStorageMatchDraftRepository()
   const currentDate = options.currentDate ?? (() => Date.now())
   const cloudSyncRepository = options.cloudSyncRepository ?? createDefaultCloudSyncRepository()
 
   const syncUseCase = cloudSyncRepository
-    ? new SyncUseCase(cloudSyncRepository, playerRepository, gameTypeRepository, matchRepository)
+    ? new SyncUseCase(cloudSyncRepository, playerRepository, gameTypeRepository, matchRepository, dataChangeNotifier)
+    : undefined
+  const autoSyncCoordinator = syncUseCase
+    ? new AutoSyncCoordinator(dataChangeNotifier, syncUseCase, new BrowserConnectivityChecker())
     : undefined
 
   return {
@@ -63,6 +74,7 @@ export function createServices(options: CreateServicesOptions = {}): Services {
     matchDraftRepository,
     cloudSyncRepository,
     syncUseCase,
+    autoSyncCoordinator,
     currentDate,
   }
 }

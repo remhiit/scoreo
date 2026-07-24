@@ -47,7 +47,9 @@ Notable design choices:
 | `ImportMatchesUseCase` | `preview(jsonString)`, `execute(jsonString)` | `Result<ImportPreview, Error>`, `Result<ImportResult, Error>` |
 | `SyncUseCase` | `async autoSync()` | `Promise<SyncOutcome>` (`{kind:'Synced', result} \| {kind:'Conflict', conflict}`) |
 | `SyncUseCase` | `async resolveConflict(keepLocal: boolean)` | `Promise<SyncResult>` |
+| `SyncUseCase` | `async pushLocalData()` | `Promise<SyncResult>` (`{pushed, pulled: 0, timestamp}`) — pushes the full local snapshot, used by `AutoSyncCoordinator` |
 | `SyncUseCase` | `async login()` / `async logout()` / `async status()` | `Promise<void>` / `Promise<void>` / `Promise<SyncStatus>` |
+| `AutoSyncCoordinator` | `start()` / `stop()` | `void` / `void` — subscribes to `DataChangeNotifier`, debounces ~2.5s, checks `ConnectivityChecker.isOnline()`, calls `SyncUseCase.pushLocalData()`; both idempotent |
 
 ## Domain Models
 
@@ -75,6 +77,8 @@ Notable design choices:
 | `MatchRepository` | `getAll()`, `save(match)`, `saveAll(matches)`, `findById(id)`, `delete(id)`, `deleteAll()` |
 | `MatchDraftRepository` | `save(draft)`, `load(): MatchDraft \| undefined`, `clear()` |
 | `CloudSyncRepository` | `push(data): Promise<void>`, `pull(): Promise<SyncData>`, `getStatus(): Promise<SyncStatus>`, `login(): Promise<void>`, `logout(): Promise<void>` — plus `SyncData`, `SyncStatus` (`connected`, `lastSync`, `isOnline` — no `email`), and the discriminated union `SyncException` (`NotAuthenticated`, `NetworkError`, `ApiError{code,message}`, `Conflict`, `RateLimited`), all in `cloudSyncRepository.ts` |
+| `DataChangeNotifier` | `notifyChanged(): void`, `subscribe(listener): () => void` (returns an unsubscribe function), `runMuted<T>(fn: () => T): T` (suppresses `notifyChanged()` calls raised inside `fn`, nestable) |
+| `ConnectivityChecker` | `isOnline(): boolean` — lets `AutoSyncCoordinator` (in `application/`) check network status without touching `navigator` directly |
 
 ## Adapters (Implementations)
 
@@ -92,10 +96,13 @@ Notable design choices:
 | `OAUTH_CLIENT_ID` | — (constant) | `import.meta.env.VITE_GOOGLE_CLIENT_ID`, empty string if unset | `src/infrastructure/google/oauthConfig.ts` |
 | `InMemory*Repository` (×5: Player, GameType, Match, MatchDraft, CloudSync) | matching port | in-memory, used by tests only | `src/infrastructure/testing/inMemory*Repository.ts` |
 | `mockGoogleDriveClient` | — (manual test double, no mock library) | in-memory | `src/infrastructure/testing/mockGoogleDriveClient.ts` |
+| `InMemoryDataChangeNotifier` | `DataChangeNotifier` | in-memory (`Set` of listeners + a mute-depth counter) | `src/infrastructure/events/inMemoryDataChangeNotifier.ts` |
+| `BrowserConnectivityChecker` | `ConnectivityChecker` | reads `navigator.onLine` | `src/infrastructure/browser/browserConnectivityChecker.ts` |
+| `InMemoryConnectivityChecker` | `ConnectivityChecker` | in-memory, settable via `setOnline()`, used by tests only | `src/infrastructure/testing/inMemoryConnectivityChecker.ts` |
 
 ## Services (root DI)
 
-`src/services/createServices.ts` builds the concrete repositories + use cases once; `src/services/ServicesContext.tsx` exposes them via `ServicesProvider`/`useServices()`. Sync is conditional: if `VITE_GOOGLE_CLIENT_ID` is empty, `cloudSyncRepository` and `syncUseCase` are `undefined` — this is what hides the Sync entry in the burger menu. `ScoreDetail`'s use cases are deliberately **not** in this bag — they're constructed ad hoc per-screen from route params (see App shell below).
+`src/services/createServices.ts` builds the concrete repositories + use cases once; `src/services/ServicesContext.tsx` exposes them via `ServicesProvider`/`useServices()`. Sync is conditional: if `VITE_GOOGLE_CLIENT_ID` is empty, `cloudSyncRepository`, `syncUseCase`, and `autoSyncCoordinator` are `undefined` — this is what hides the Sync entry in the burger menu. The `DataChangeNotifier` (`InMemoryDataChangeNotifier` by default) is always constructed and injected into the 3 synchronizable localStorage repositories regardless of sync being configured — `AppShell` starts/stops `autoSyncCoordinator` via the `useAutoSync` hook (`src/ui/sync/useAutoSync.ts`), a no-op when it's `undefined`. `ScoreDetail`'s use cases are deliberately **not** in this bag — they're constructed ad hoc per-screen from route params (see App shell below).
 
 ## Navigation
 
@@ -127,7 +134,7 @@ Notable design choices:
 
 ## Tests
 
-60 test files, 656 tests, all colocated `*.test.ts(x)` next to the file they cover, running under Vitest + `jsdom` (no real browser needed for any of them, including the Google Drive/OAuth and theme tests that historically required one).
+68 test files, 716 tests, all colocated `*.test.ts(x)` next to the file they cover, running under Vitest + `jsdom` (no real browser needed for any of them, including the Google Drive/OAuth and theme tests that historically required one).
 
 Notable coverage that goes beyond a 1:1 port of business logic:
 - **Component tests** (`*Screen.test.tsx`) for every screen, on top of each reducer's own pure-function tests.
@@ -162,7 +169,7 @@ Theme: Catppuccin tokens (`tokens/colors-*.css` + `tokens/semantic.css`), 4 flav
 
 ## App shell
 
-`src/App.tsx` (`AppShell`) dispatches by `useHashRouter().current` and wraps content in `ServicesProvider`/`ThemeProvider`. The header, contextual back button, and burger menu are the app's chrome:
+`src/App.tsx` (`AppShell`) dispatches by `useHashRouter().current` and wraps content in `ServicesProvider`/`ThemeProvider`. `AppShell` also calls `useAutoSync(services.autoSyncCoordinator)` unconditionally at the top of the component, starting/stopping the debounced Drive push coordinator alongside the component's lifecycle (no-op when `autoSyncCoordinator` is `undefined`). The header, contextual back button, and burger menu are the app's chrome:
 
 - **Header**: back button hidden on Home; for `ScoreDetail` goes to `History` if `matchId` is set else `Home`; for `Stats` clears the player selection instead of navigating while a player is selected, else goes `Home`; all other screens go `Home`. The title text is clickable and navigates `Home` unless already there.
 - **Burger menu**: Home/Stats/History/Import/Games, + Sync only when `services.syncUseCase` is defined, + a non-navigating "🎨 Theme" item opening `ThemePickerDialog`.

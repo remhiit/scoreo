@@ -1,6 +1,7 @@
 import { act, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { SyncUseCase } from '../../application/syncUseCase'
+import { InMemoryDataChangeNotifier } from '../../infrastructure/events/inMemoryDataChangeNotifier'
 import { InMemoryCloudSyncRepository } from '../../infrastructure/testing/inMemoryCloudSyncRepository'
 import { InMemoryGameTypeRepository } from '../../infrastructure/testing/inMemoryGameTypeRepository'
 import { InMemoryMatchRepository } from '../../infrastructure/testing/inMemoryMatchRepository'
@@ -8,7 +9,16 @@ import { InMemoryPlayerRepository } from '../../infrastructure/testing/inMemoryP
 import { SyncScreen } from './SyncScreen'
 
 function buildUseCase(cloudRepo = new InMemoryCloudSyncRepository(), playerRepo = new InMemoryPlayerRepository()) {
-  return { cloudRepo, syncUseCase: new SyncUseCase(cloudRepo, playerRepo, new InMemoryGameTypeRepository(), new InMemoryMatchRepository()) }
+  return {
+    cloudRepo,
+    syncUseCase: new SyncUseCase(
+      cloudRepo,
+      playerRepo,
+      new InMemoryGameTypeRepository(),
+      new InMemoryMatchRepository(),
+      new InMemoryDataChangeNotifier(),
+    ),
+  }
 }
 
 describe('SyncScreen', () => {

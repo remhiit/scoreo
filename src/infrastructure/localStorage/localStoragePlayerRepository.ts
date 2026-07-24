@@ -1,5 +1,6 @@
 import { PlayerSchema } from '../../domain/model/player.schema'
 import type { Player } from '../../domain/model/player'
+import type { DataChangeNotifier } from '../../domain/port/dataChangeNotifier'
 import type { PlayerRepository } from '../../domain/port/playerRepository'
 
 const KEY = 'scoreo_players'
@@ -21,6 +22,8 @@ function writeAll(players: Player[]): void {
 }
 
 export class LocalStoragePlayerRepository implements PlayerRepository {
+  constructor(private readonly notifier?: DataChangeNotifier) {}
+
   getAll(includeInactive = false): Player[] {
     const all = readAll()
     return includeInactive ? all : all.filter((p) => p.active)
@@ -32,6 +35,7 @@ export class LocalStoragePlayerRepository implements PlayerRepository {
     if (idx >= 0) updated[idx] = player
     else updated.push(player)
     writeAll(updated)
+    this.notifier?.notifyChanged()
   }
 
   saveAll(players: Player[]): void {
@@ -42,6 +46,7 @@ export class LocalStoragePlayerRepository implements PlayerRepository {
       else existing.push(player)
     }
     writeAll(existing)
+    this.notifier?.notifyChanged()
   }
 
   delete(id: string, anonymize = false): void {
@@ -49,13 +54,16 @@ export class LocalStoragePlayerRepository implements PlayerRepository {
       player.id === id ? { ...player, active: false, name: anonymize ? '' : player.name } : player,
     )
     writeAll(updated)
+    this.notifier?.notifyChanged()
   }
 
   hardDelete(id: string): void {
     writeAll(readAll().filter((player) => player.id !== id))
+    this.notifier?.notifyChanged()
   }
 
   deleteAll(): void {
     writeAll([])
+    this.notifier?.notifyChanged()
   }
 }

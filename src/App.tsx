@@ -53,6 +53,7 @@ import type { ScoreDetailMode } from './ui/scoredetail/scoreDetailTypes'
 import { LudoButton } from './ui/shared/LudoButton'
 import { StatsScreen } from './ui/stats/StatsScreen'
 import { SyncScreen } from './ui/sync/SyncScreen'
+import { useAutoSync } from './ui/sync/useAutoSync'
 import { ThemeProvider } from './ui/theme/ThemeContext'
 import { ThemePickerDialog } from './ui/theme/ThemePickerDialog'
 
@@ -157,6 +158,7 @@ function ScoreDetailRoute({ screen, services, onSaved, onCancel, onMissingGameTy
 
 function AppShell() {
   const services = useServices()
+  useAutoSync(services.autoSyncCoordinator)
   const { current, navigate } = useHashRouter()
   const [burgerOpen, setBurgerOpen] = useState(false)
   const [themePickerOpen, setThemePickerOpen] = useState(false)
