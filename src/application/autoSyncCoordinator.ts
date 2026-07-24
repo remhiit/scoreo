@@ -1,3 +1,4 @@
+import type { ConnectivityChecker } from '../domain/port/connectivityChecker'
 import type { DataChangeNotifier } from '../domain/port/dataChangeNotifier'
 import type { SyncUseCase } from './syncUseCase'
 
@@ -14,6 +15,7 @@ export class AutoSyncCoordinator {
   constructor(
     private readonly notifier: DataChangeNotifier,
     private readonly syncUseCase: SyncUseCase,
+    private readonly connectivityChecker: ConnectivityChecker,
   ) {}
 
   start(): void {
@@ -39,7 +41,7 @@ export class AutoSyncCoordinator {
   }
 
   private async flush(): Promise<void> {
-    if (!navigator.onLine) return
+    if (!this.connectivityChecker.isOnline()) return
     try {
       await this.syncUseCase.pushLocalData()
     } catch {

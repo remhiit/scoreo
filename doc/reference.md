@@ -49,7 +49,7 @@ Notable design choices:
 | `SyncUseCase` | `async resolveConflict(keepLocal: boolean)` | `Promise<SyncResult>` |
 | `SyncUseCase` | `async pushLocalData()` | `Promise<SyncResult>` (`{pushed, pulled: 0, timestamp}`) — pushes the full local snapshot, used by `AutoSyncCoordinator` |
 | `SyncUseCase` | `async login()` / `async logout()` / `async status()` | `Promise<void>` / `Promise<void>` / `Promise<SyncStatus>` |
-| `AutoSyncCoordinator` | `start()` / `stop()` | `void` / `void` — subscribes to `DataChangeNotifier`, debounces ~2.5s, checks `navigator.onLine`, calls `SyncUseCase.pushLocalData()`; both idempotent |
+| `AutoSyncCoordinator` | `start()` / `stop()` | `void` / `void` — subscribes to `DataChangeNotifier`, debounces ~2.5s, checks `ConnectivityChecker.isOnline()`, calls `SyncUseCase.pushLocalData()`; both idempotent |
 
 ## Domain Models
 
@@ -78,6 +78,7 @@ Notable design choices:
 | `MatchDraftRepository` | `save(draft)`, `load(): MatchDraft \| undefined`, `clear()` |
 | `CloudSyncRepository` | `push(data): Promise<void>`, `pull(): Promise<SyncData>`, `getStatus(): Promise<SyncStatus>`, `login(): Promise<void>`, `logout(): Promise<void>` — plus `SyncData`, `SyncStatus` (`connected`, `lastSync`, `isOnline` — no `email`), and the discriminated union `SyncException` (`NotAuthenticated`, `NetworkError`, `ApiError{code,message}`, `Conflict`, `RateLimited`), all in `cloudSyncRepository.ts` |
 | `DataChangeNotifier` | `notifyChanged(): void`, `subscribe(listener): () => void` (returns an unsubscribe function), `runMuted<T>(fn: () => T): T` (suppresses `notifyChanged()` calls raised inside `fn`, nestable) |
+| `ConnectivityChecker` | `isOnline(): boolean` — lets `AutoSyncCoordinator` (in `application/`) check network status without touching `navigator` directly |
 
 ## Adapters (Implementations)
 
@@ -96,6 +97,8 @@ Notable design choices:
 | `InMemory*Repository` (×5: Player, GameType, Match, MatchDraft, CloudSync) | matching port | in-memory, used by tests only | `src/infrastructure/testing/inMemory*Repository.ts` |
 | `mockGoogleDriveClient` | — (manual test double, no mock library) | in-memory | `src/infrastructure/testing/mockGoogleDriveClient.ts` |
 | `InMemoryDataChangeNotifier` | `DataChangeNotifier` | in-memory (`Set` of listeners + a mute-depth counter) | `src/infrastructure/events/inMemoryDataChangeNotifier.ts` |
+| `BrowserConnectivityChecker` | `ConnectivityChecker` | reads `navigator.onLine` | `src/infrastructure/browser/browserConnectivityChecker.ts` |
+| `InMemoryConnectivityChecker` | `ConnectivityChecker` | in-memory, settable via `setOnline()`, used by tests only | `src/infrastructure/testing/inMemoryConnectivityChecker.ts` |
 
 ## Services (root DI)
 

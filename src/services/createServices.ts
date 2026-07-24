@@ -6,6 +6,7 @@ import type { GameTypeRepository } from '../domain/port/gameTypeRepository'
 import type { MatchDraftRepository } from '../domain/port/matchDraftRepository'
 import type { MatchRepository } from '../domain/port/matchRepository'
 import type { PlayerRepository } from '../domain/port/playerRepository'
+import { BrowserConnectivityChecker } from '../infrastructure/browser/browserConnectivityChecker'
 import { InMemoryDataChangeNotifier } from '../infrastructure/events/inMemoryDataChangeNotifier'
 import { GoogleAuthService } from '../infrastructure/google/googleAuthService'
 import { GoogleDriveSyncAdapter } from '../infrastructure/google/googleDriveSyncAdapter'
@@ -62,7 +63,9 @@ export function createServices(options: CreateServicesOptions = {}): Services {
   const syncUseCase = cloudSyncRepository
     ? new SyncUseCase(cloudSyncRepository, playerRepository, gameTypeRepository, matchRepository, dataChangeNotifier)
     : undefined
-  const autoSyncCoordinator = syncUseCase ? new AutoSyncCoordinator(dataChangeNotifier, syncUseCase) : undefined
+  const autoSyncCoordinator = syncUseCase
+    ? new AutoSyncCoordinator(dataChangeNotifier, syncUseCase, new BrowserConnectivityChecker())
+    : undefined
 
   return {
     playerRepository,

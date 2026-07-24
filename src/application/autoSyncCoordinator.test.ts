@@ -3,6 +3,7 @@ import { AutoSyncCoordinator } from './autoSyncCoordinator'
 import { InMemoryDataChangeNotifier } from '../infrastructure/events/inMemoryDataChangeNotifier'
 import { SyncUseCase } from './syncUseCase'
 import { InMemoryCloudSyncRepository } from '../infrastructure/testing/inMemoryCloudSyncRepository'
+import { InMemoryConnectivityChecker } from '../infrastructure/testing/inMemoryConnectivityChecker'
 import { InMemoryGameTypeRepository } from '../infrastructure/testing/inMemoryGameTypeRepository'
 import { InMemoryMatchRepository } from '../infrastructure/testing/inMemoryMatchRepository'
 import { InMemoryPlayerRepository } from '../infrastructure/testing/inMemoryPlayerRepository'
@@ -15,7 +16,6 @@ function buildSyncUseCase(notifier: InMemoryDataChangeNotifier) {
 describe('AutoSyncCoordinator', () => {
   beforeEach(() => {
     vi.useFakeTimers()
-    vi.spyOn(window.navigator, 'onLine', 'get').mockReturnValue(true)
   })
 
   afterEach(() => {
@@ -28,7 +28,7 @@ describe('AutoSyncCoordinator', () => {
     const { cloudRepo, syncUseCase } = buildSyncUseCase(notifier)
     await cloudRepo.login()
     const pushSpy = vi.spyOn(syncUseCase, 'pushLocalData')
-    const coordinator = new AutoSyncCoordinator(notifier, syncUseCase)
+    const coordinator = new AutoSyncCoordinator(notifier, syncUseCase, new InMemoryConnectivityChecker())
     coordinator.start()
 
     notifier.notifyChanged()
@@ -44,7 +44,7 @@ describe('AutoSyncCoordinator', () => {
     const { cloudRepo, syncUseCase } = buildSyncUseCase(notifier)
     await cloudRepo.login()
     const pushSpy = vi.spyOn(syncUseCase, 'pushLocalData')
-    const coordinator = new AutoSyncCoordinator(notifier, syncUseCase)
+    const coordinator = new AutoSyncCoordinator(notifier, syncUseCase, new InMemoryConnectivityChecker())
     coordinator.start()
 
     notifier.notifyChanged()
@@ -58,12 +58,13 @@ describe('AutoSyncCoordinator', () => {
   })
 
   it('does not push while offline', async () => {
-    vi.spyOn(window.navigator, 'onLine', 'get').mockReturnValue(false)
+    const connectivityChecker = new InMemoryConnectivityChecker()
+    connectivityChecker.setOnline(false)
     const notifier = new InMemoryDataChangeNotifier()
     const { cloudRepo, syncUseCase } = buildSyncUseCase(notifier)
     await cloudRepo.login()
     const pushSpy = vi.spyOn(syncUseCase, 'pushLocalData')
-    const coordinator = new AutoSyncCoordinator(notifier, syncUseCase)
+    const coordinator = new AutoSyncCoordinator(notifier, syncUseCase, connectivityChecker)
     coordinator.start()
 
     notifier.notifyChanged()
@@ -76,7 +77,7 @@ describe('AutoSyncCoordinator', () => {
     const notifier = new InMemoryDataChangeNotifier()
     const { syncUseCase } = buildSyncUseCase(notifier)
     vi.spyOn(syncUseCase, 'pushLocalData').mockRejectedValue(new Error('token expired'))
-    const coordinator = new AutoSyncCoordinator(notifier, syncUseCase)
+    const coordinator = new AutoSyncCoordinator(notifier, syncUseCase, new InMemoryConnectivityChecker())
     coordinator.start()
 
     notifier.notifyChanged()
@@ -89,7 +90,7 @@ describe('AutoSyncCoordinator', () => {
     const { syncUseCase } = buildSyncUseCase(notifier)
     vi.spyOn(syncUseCase, 'pushLocalData').mockRejectedValue(new Error('token expired'))
     const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
-    const coordinator = new AutoSyncCoordinator(notifier, syncUseCase)
+    const coordinator = new AutoSyncCoordinator(notifier, syncUseCase, new InMemoryConnectivityChecker())
     coordinator.start()
 
     notifier.notifyChanged()
@@ -103,7 +104,7 @@ describe('AutoSyncCoordinator', () => {
     const { cloudRepo, syncUseCase } = buildSyncUseCase(notifier)
     await cloudRepo.login()
     const pushSpy = vi.spyOn(syncUseCase, 'pushLocalData')
-    const coordinator = new AutoSyncCoordinator(notifier, syncUseCase)
+    const coordinator = new AutoSyncCoordinator(notifier, syncUseCase, new InMemoryConnectivityChecker())
     coordinator.start()
 
     notifier.notifyChanged()
@@ -120,7 +121,7 @@ describe('AutoSyncCoordinator', () => {
     const { cloudRepo, syncUseCase } = buildSyncUseCase(notifier)
     await cloudRepo.login()
     const pushSpy = vi.spyOn(syncUseCase, 'pushLocalData')
-    const coordinator = new AutoSyncCoordinator(notifier, syncUseCase)
+    const coordinator = new AutoSyncCoordinator(notifier, syncUseCase, new InMemoryConnectivityChecker())
     coordinator.start()
 
     notifier.notifyChanged()
@@ -138,7 +139,7 @@ describe('AutoSyncCoordinator', () => {
     const { cloudRepo, syncUseCase } = buildSyncUseCase(notifier)
     await cloudRepo.login()
     const pushSpy = vi.spyOn(syncUseCase, 'pushLocalData')
-    const coordinator = new AutoSyncCoordinator(notifier, syncUseCase)
+    const coordinator = new AutoSyncCoordinator(notifier, syncUseCase, new InMemoryConnectivityChecker())
     coordinator.start()
     coordinator.start()
 
@@ -151,7 +152,7 @@ describe('AutoSyncCoordinator', () => {
   it('stop is idempotent: calling it when not started does not throw', () => {
     const notifier = new InMemoryDataChangeNotifier()
     const { syncUseCase } = buildSyncUseCase(notifier)
-    const coordinator = new AutoSyncCoordinator(notifier, syncUseCase)
+    const coordinator = new AutoSyncCoordinator(notifier, syncUseCase, new InMemoryConnectivityChecker())
 
     expect(() => {
       coordinator.stop()
