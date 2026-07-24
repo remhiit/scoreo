@@ -44,6 +44,7 @@ export class AutoSyncCoordinator {
       await this.syncUseCase.pushLocalData()
     } catch {
       // Token expired, network error, ... — the next local change reschedules a push.
+      console.error('Scoreo: la synchronisation automatique avec Drive a échoué.')
     }
   }
 }

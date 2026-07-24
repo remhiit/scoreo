@@ -84,6 +84,20 @@ describe('AutoSyncCoordinator', () => {
     await expect(vi.advanceTimersByTimeAsync(2500)).resolves.not.toThrow()
   })
 
+  it('logs a generic error when a push fails', async () => {
+    const notifier = new InMemoryDataChangeNotifier()
+    const { syncUseCase } = buildSyncUseCase(notifier)
+    vi.spyOn(syncUseCase, 'pushLocalData').mockRejectedValue(new Error('token expired'))
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const coordinator = new AutoSyncCoordinator(notifier, syncUseCase)
+    coordinator.start()
+
+    notifier.notifyChanged()
+    await vi.advanceTimersByTimeAsync(2500)
+
+    expect(errorSpy).toHaveBeenCalledTimes(1)
+  })
+
   it('a change after a completed flush schedules a new push', async () => {
     const notifier = new InMemoryDataChangeNotifier()
     const { cloudRepo, syncUseCase } = buildSyncUseCase(notifier)

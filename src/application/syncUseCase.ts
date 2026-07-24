@@ -186,25 +186,27 @@ export class SyncUseCase {
     }
   }
 
+  private replaceAllLocalData(data: SyncData): void {
+    this.playerRepo.deleteAll()
+    this.gameTypeRepo.deleteAll()
+    this.matchRepo.deleteAll()
+    this.playerRepo.saveAll(data.players)
+    this.gameTypeRepo.saveAll(data.gameTypes)
+    this.matchRepo.saveAll(data.matches)
+  }
+
   private writeRemoteToLocal(data: SyncData): void {
     this.notifier.runMuted(() => {
-      const localPlayers = this.playerRepo.getAll(true)
-      const localGameTypes = this.gameTypeRepo.getAll(true)
-      const localMatches = this.matchRepo.getAll()
+      const localData: SyncData = {
+        players: this.playerRepo.getAll(true),
+        gameTypes: this.gameTypeRepo.getAll(true),
+        matches: this.matchRepo.getAll(),
+        lastModified: now(),
+      }
       try {
-        this.playerRepo.deleteAll()
-        this.gameTypeRepo.deleteAll()
-        this.matchRepo.deleteAll()
-        this.playerRepo.saveAll(data.players)
-        this.gameTypeRepo.saveAll(data.gameTypes)
-        this.matchRepo.saveAll(data.matches)
+        this.replaceAllLocalData(data)
       } catch (error) {
-        this.playerRepo.deleteAll()
-        this.gameTypeRepo.deleteAll()
-        this.matchRepo.deleteAll()
-        this.playerRepo.saveAll(localPlayers)
-        this.gameTypeRepo.saveAll(localGameTypes)
-        this.matchRepo.saveAll(localMatches)
+        this.replaceAllLocalData(localData)
         throw error
       }
     })
