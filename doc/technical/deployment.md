@@ -12,9 +12,9 @@ Runs on every `push` to `main` and every `pull_request`, as five independent job
 | `test` | `pnpm test` | Yes |
 | `build` | `pnpm typecheck` then `pnpm build` | Yes |
 | `doc-links` | `node scripts/check-doc-links.mjs` — fails on any relative Markdown link under `doc/` pointing to a non-existent file | Yes |
-| `lighthouse` | Builds, then runs Lighthouse CI against `dist/` using `lighthouserc.json` (assertions in `warn` mode) | No — `continue-on-error: true`, report uploaded as a build artifact |
+| `lighthouse` | Builds, then runs Lighthouse CI against `dist/` using `lighthouserc.json` (assertions at `error` level since #183) | Turns the job red on a failing assertion, but not a required status check — no `continue-on-error`, report uploaded as a build artifact |
 
-Each job name (`lint`, `test`, `build`, `doc-links`) is meant to be set as a required status check in branch protection (see `setup-repo.sh`). `lighthouse` stays non-blocking while the score baseline is measured (currently: performance 0.96, accessibility 0.95, best-practices 0.96, SEO 0.90 — the `pwa` category was dropped from the assertions since Lighthouse 12 no longer computes it by default).
+Each job name (`lint`, `test`, `build`, `doc-links`) is meant to be set as a required status check in branch protection (see `setup-repo.sh`). `lighthouse` is deliberately left out of that required list — its assertions run at `error` level with minScore thresholds derived from the Phase 0 baseline (performance 0.96, accessibility 0.95, best-practices 0.96, SEO 0.90 — the `pwa` category was dropped since Lighthouse 12 no longer computes it by default), but `performance` was recalibrated down to 0.60 after direct runner measurements showed 25+ points of CPU-variance noise on GitHub Actions (see `doc/technical/automation-plan.md` §9). A red `lighthouse` run is a visible signal on the PR, not yet a merge blocker.
 
 The `lighthouse` job's "Upload Lighthouse report" step needs `include-hidden-files: true` — `actions/upload-artifact@v4` excludes dotfiles/dotdirs by default, and Lighthouse CI writes its report to `.lighthouseci/` (per `lighthouserc.json`'s `upload.outputDir`). Without that flag the step silently uploads nothing (`No files were found`, a warning, not a failure — R5's 2026-07-14 run caught this after several prior runs had gone unnoticed).
 
