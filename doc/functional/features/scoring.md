@@ -38,7 +38,7 @@ Screen: `src/ui/scoredetail/ScoreDetailScreen.tsx`. See `doc/reference.md` for t
 - **✕** button on each round row to remove it
 - **＋ Add round** button at the bottom
 - **Finish match** to save (also auto-saves to localStorage as MatchDraft after each score update)
-- For `MANUAL` win condition: modal appears listing each player's total with checkboxes to select winner(s)
+- For `MANUAL` win condition: modal appears listing each player's total as a selectable row (○/●) to select winner(s)
 
 ### Cancel confirmation
 When clicking **Cancel** with scores already entered:
@@ -54,7 +54,7 @@ When clicking **Cancel** with no scores entered:
 When a tie is detected (multiple players have the same top/lowest score), the system follows the game type's `tieBreakRule`:
 
 1. **NONE** → All tied players are winners (equality preserved)
-2. **MANUAL_SELECTION** → A **ManualSelectionDialog** appears immediately with checkboxes to select winners among tied players
+2. **MANUAL_SELECTION** → A **ManualSelectionDialog** appears immediately with selectable rows (○/●) to select winners among tied players
 3. **SECONDARY_SCORE** → A **SecondaryScoreDialog** appears:
    - Title uses `tieBreakLabel` (e.g. "Number of cards ?")
    - One numeric input per tied player
@@ -62,7 +62,7 @@ When a tie is detected (multiple players have the same top/lowest score), the sy
    - If the tie persists → escalates to **ManualSelectionDialog**
 
 The **ManualSelectionDialog** offers:
-- Checkboxes to select one or more winners
+- Selectable rows (○/●, `ListItemRow`) to select one or more winners
 - "Keep tie" button to preserve equality (all tied win)
 - Confirm button to finalize
 
@@ -109,8 +109,8 @@ Then I'm back to 1 round
 Given a game with MANUAL win condition
 And Alice has 10, Bob has 5
 When I click "Finish match"
-Then a modal appears showing both players' totals
-And I can check Alice as winner
+Then a modal appears showing both players' totals as selectable rows
+And I can select Alice as winner
 When I confirm
 Then the match is saved with manualWinners=["Alice"]
 ```

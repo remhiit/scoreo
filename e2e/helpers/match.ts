@@ -27,6 +27,6 @@ export async function finishMatch(page: Page): Promise<void> {
 /** Selects the given player as winner in the "Final decision" manual tie-break dialog, then confirms. */
 export async function resolveTieManually(page: Page, winnerName: string): Promise<void> {
   const dialog = page.getByRole('dialog', { name: 'Final decision' })
-  await dialog.locator('.modal-row', { hasText: winnerName }).getByRole('checkbox').check()
+  await dialog.getByText(winnerName, { exact: true }).click()
   await dialog.getByRole('button', { name: 'Confirm' }).click()
 }

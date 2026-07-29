@@ -1,5 +1,7 @@
 import { X } from 'lucide-react'
 import { useEffect, useReducer, useRef } from 'react'
+import { ListContainer } from '../shared/ListContainer'
+import { ListItemRow } from '../shared/ListItemRow'
 import { LudoButton } from '../shared/LudoButton'
 import { LudoModal } from '../shared/LudoModal'
 import { ManualSelectionDialog } from './ManualSelectionDialog'
@@ -135,18 +137,18 @@ export function ScoreDetailScreen({ initialState, onSaved, onCancel, ...deps }: 
           </>
         }
       >
-        {state.players.map((player) => (
-          <div key={player.id} className="modal-row">
-            <input
-              type="checkbox"
-              checked={state.modalWinners.has(player.id)}
-              onChange={() => dispatch({ type: 'toggleModalWinner', playerId: player.id })}
+        <ListContainer>
+          {state.players.map((player) => (
+            <ListItemRow
+              key={player.id}
+              label={player.name}
+              subtitle={`${totals.get(player.id) ?? 0} pts`}
+              isSelectable
+              isSelected={state.modalWinners.has(player.id)}
+              onSelect={() => dispatch({ type: 'toggleModalWinner', playerId: player.id })}
             />
-            <span>
-              {player.name} — {totals.get(player.id) ?? 0} pts
-            </span>
-          </div>
-        ))}
+          ))}
+        </ListContainer>
         {state.error && <div className="error-msg">{state.error}</div>}
       </LudoModal>
 
