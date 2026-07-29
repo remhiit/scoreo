@@ -61,6 +61,7 @@ Lire ces fichiers dans l'ordre. Tout le contexte nécessaire y est :
 | `src/ui/navigation/` | `screen.ts` (union `Screen`), `hash.ts` (`parseHash`/`screenToHash`), `useHashRouter.ts` |
 | `public/` | `manifest.json`, `sw.js`, icônes PWA, `css/` (dont `css/tokens/`) |
 | `schemas/import/` | Schémas JSON du format d'import (versionnés, `v1.0`/`v1.1`) |
+| `ds_temp/` | Référence temporaire du handoff design (Ludo Design System) : tokens, composants, mapping écran→fichiers. Source de vérité visuelle pour les issues de migration à venir ; à supprimer une fois la migration terminée. Voir `ds_temp/design_handoff_scoreo_ds/README.md` |
 
 ## Workflow
 
