@@ -1,4 +1,6 @@
 import type { Player } from '../../domain/model/player'
+import { ListContainer } from '../shared/ListContainer'
+import { ListItemRow } from '../shared/ListItemRow'
 import { LudoButton } from '../shared/LudoButton'
 import { LudoModal } from '../shared/LudoModal'
 
@@ -38,16 +40,17 @@ export function ManualSelectionDialog({
         </>
       }
     >
-      {tiedPlayers.map((player) => (
-        <div key={player.id} className="modal-row">
-          <input
-            type="checkbox"
-            checked={selectedWinners.has(player.id)}
-            onChange={() => onToggleWinner(player.id)}
+      <ListContainer>
+        {tiedPlayers.map((player) => (
+          <ListItemRow
+            key={player.id}
+            label={player.name}
+            isSelectable
+            isSelected={selectedWinners.has(player.id)}
+            onSelect={() => onToggleWinner(player.id)}
           />
-          <span>{player.name}</span>
-        </div>
-      ))}
+        ))}
+      </ListContainer>
       {error && <div className="error-msg">{error}</div>}
     </LudoModal>
   )

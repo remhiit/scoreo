@@ -109,7 +109,8 @@ describe('ScoreDetailScreen', () => {
 
     expect(screen.getByText('Select winner(s)')).toBeInTheDocument()
     const dialog = screen.getByRole('dialog')
-    fireEvent.click(within(dialog).getAllByRole('checkbox')[0])
+    expect(within(dialog).queryByRole('checkbox')).not.toBeInTheDocument()
+    fireEvent.click(within(dialog).getByText('Alice', { selector: '.list-item-name' }))
     fireEvent.click(within(dialog).getByText('Confirm'))
 
     expect(matchRepo.getAll()).toHaveLength(1)
@@ -156,6 +157,22 @@ describe('ScoreDetailScreen', () => {
     fireEvent.click(within(manualDialog).getByText('Keep tie'))
 
     expect(matchRepo.getAll()[0].manualWinners).toEqual(['alice', 'bob'])
+  })
+
+  it('manual selection dialog selects a winner via a selectable row, not a checkbox', () => {
+    const { matchRepo } = renderScreen(gameType('HIGHEST_SCORE', 'MANUAL_SELECTION'))
+
+    const [aliceInput, bobInput] = scoreInputs()
+    fireEvent.change(aliceInput, { target: { value: '10' } })
+    fireEvent.change(bobInput, { target: { value: '10' } })
+    fireEvent.click(screen.getByText('Finish match'))
+
+    const dialog = screen.getByRole('dialog', { name: 'Final decision' })
+    expect(within(dialog).queryByRole('checkbox')).not.toBeInTheDocument()
+    fireEvent.click(within(dialog).getByText('Alice', { selector: '.list-item-name' }))
+    fireEvent.click(within(dialog).getByText('Confirm'))
+
+    expect(matchRepo.getAll()[0].manualWinners).toEqual(['alice'])
   })
 
   it('cancelling with entered scores shows a confirmation, discard clears and calls onCancel', () => {
