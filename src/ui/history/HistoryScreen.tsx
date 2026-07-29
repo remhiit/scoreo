@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useReducer } from 'react'
+import { Fragment, useCallback, useEffect, useReducer } from 'react'
 import type { DeleteMatchUseCase } from '../../application/deleteMatchUseCase'
 import type { GetGameTypesUseCase } from '../../application/getGameTypesUseCase'
 import type { GetMatchesUseCase } from '../../application/getMatchesUseCase'
@@ -8,7 +8,7 @@ import { ListContainer } from '../shared/ListContainer'
 import { ListItemRow } from '../shared/ListItemRow'
 import { LudoButton } from '../shared/LudoButton'
 import { LudoModal } from '../shared/LudoModal'
-import { deleteMatch, historyReducer, loadDisplays } from './historyReducer'
+import { buildScoreSummary, deleteMatch, historyReducer, loadDisplays } from './historyReducer'
 import { initialHistoryState } from './historyTypes'
 
 export interface HistoryScreenProps {
@@ -97,16 +97,22 @@ export function HistoryScreen({
         <ListContainer>
           {filteredDisplays.map((display) => {
             const gameLabel = display.gameType?.name ?? 'Unknown game'
-            const scoresSubtitle = display.match.playerScores
-              .map((ps) => `${display.playerLabels[ps.playerId] ?? ps.playerId} ${ps.score}`)
-              .join(' / ')
-            const subtitle = `${scoresSubtitle}  •  ${display.dateFormatted}`
             const gameType = display.gameType
             return (
               <ListItemRow
                 key={display.match.id}
                 label={gameLabel}
-                subtitle={subtitle}
+                players={
+                  <>
+                    {buildScoreSummary(display).map((part, i) => (
+                      <Fragment key={part.playerId}>
+                        {i > 0 && ' · '}
+                        {part.isWinner ? <strong>{part.text}</strong> : part.text}
+                      </Fragment>
+                    ))}
+                  </>
+                }
+                date={display.dateFormatted}
                 onEdit={
                   onEditMatch && gameType
                     ? () =>
