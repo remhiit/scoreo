@@ -27,6 +27,21 @@ export function historyReducer(state: HistoryState, action: HistoryAction): Hist
   }
 }
 
+export interface ScoreSummaryPart {
+  playerId: string
+  text: string
+  isWinner: boolean
+}
+
+/** Builds the `.list-item-players` parts for a match: one per player, winner(s) flagged for bold rendering. */
+export function buildScoreSummary(display: MatchDisplay): ScoreSummaryPart[] {
+  return display.match.playerScores.map((ps) => ({
+    playerId: ps.playerId,
+    text: `${display.playerLabels[ps.playerId] ?? ps.playerId} ${ps.score}`,
+    isWinner: display.winners.includes(ps.playerId),
+  }))
+}
+
 function playerLabel(name: string, active: boolean): string {
   if (active) return name
   return name.trim() === '' ? 'Deleted player' : `${name} (deleted)`

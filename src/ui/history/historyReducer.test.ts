@@ -10,7 +10,8 @@ import { GetPlayersUseCase } from '../../application/getPlayersUseCase'
 import { InMemoryGameTypeRepository } from '../../infrastructure/testing/inMemoryGameTypeRepository'
 import { InMemoryMatchRepository } from '../../infrastructure/testing/inMemoryMatchRepository'
 import { InMemoryPlayerRepository } from '../../infrastructure/testing/inMemoryPlayerRepository'
-import { deleteMatch, historyReducer, loadDisplays } from './historyReducer'
+import { buildScoreSummary, deleteMatch, historyReducer, loadDisplays } from './historyReducer'
+import type { MatchDisplay } from './historyTypes'
 import { initialHistoryState } from './historyTypes'
 
 function player(id: string, name: string, active = true): Player {
@@ -363,5 +364,44 @@ describe('historyReducer', () => {
     state = historyReducer(state, { type: 'loaded', displays: [] })
 
     expect(state.selectedGameTypeFilter).toBe('gt1')
+  })
+})
+
+function buildDisplay(overrides: Partial<MatchDisplay> = {}): MatchDisplay {
+  return {
+    match: match('m1', 1000, 'gt1', [
+      { playerId: 'p1', score: 10 },
+      { playerId: 'p2', score: 5 },
+    ]),
+    gameType: gameType('gt1', 'Test'),
+    players: {},
+    playerLabels: { p1: 'Alice', p2: 'Bob' },
+    winners: ['p1'],
+    dateFormatted: '2026-01-01 10:00',
+    isTieBreakIndeterminate: false,
+    ...overrides,
+  }
+}
+
+describe('buildScoreSummary', () => {
+  it('marks the sole winner and keeps the players in scoring order', () => {
+    const parts = buildScoreSummary(buildDisplay())
+
+    expect(parts).toEqual([
+      { playerId: 'p1', text: 'Alice 10', isWinner: true },
+      { playerId: 'p2', text: 'Bob 5', isWinner: false },
+    ])
+  })
+
+  it('marks every tied player as a winner', () => {
+    const parts = buildScoreSummary(buildDisplay({ winners: ['p1', 'p2'] }))
+
+    expect(parts.every((p) => p.isWinner)).toBe(true)
+  })
+
+  it('falls back to the raw player id when the label is unknown', () => {
+    const parts = buildScoreSummary(buildDisplay({ playerLabels: {} }))
+
+    expect(parts[0].text).toBe('p1 10')
   })
 })

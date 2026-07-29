@@ -13,7 +13,7 @@
 
 | Component | Details |
 |-----------|---------|
-| **Reducer** | `historyReducer` — `src/ui/history/historyReducer.ts` (`loaded`, `showDeleteConfirm`, `deleteFailed`, `dismissDeleteConfirm`, `selectGameTypeFilter` actions) |
+| **Reducer** | `historyReducer` — `src/ui/history/historyReducer.ts` (`loaded`, `showDeleteConfirm`, `deleteFailed`, `dismissDeleteConfirm`, `selectGameTypeFilter` actions), plus pure helper `buildScoreSummary(display)` building the per-player score-line parts (text + `isWinner`) rendered by `HistoryScreen` |
 | **State** | `MatchDisplay[]` computed from repositories on mount |
 
 Screen: `src/ui/history/HistoryScreen.tsx`.
@@ -33,12 +33,14 @@ Screen: `src/ui/history/HistoryScreen.tsx`.
 ## Screen: HistoryScreen
 
 - **Filter dropdown** at top: "Filter by game type" — shows all game types from loaded matches, or "All games" for no filter
-- List of match cards sorted by date descending (most recent first)
-- Each card shows: game type name, date **with time-of-day** (HH:mm in local timezone), per-player scores
-- Each card has action icons:
+- List of match rows (`ListItemRow`) sorted by date descending (most recent first), each spanning three lines:
+  1. Game type name (`.list-item-name`)
+  2. Per-player scores (`.list-item-players`), players separated by ` · `, winner(s) rendered in `<strong>` (all tied winners are bold)
+  3. Match date **with time-of-day** (`.list-item-date`, HH:mm in local timezone)
+- The winner(s) are read from `MatchDisplay.winners` (already computed by `loadDisplays`) — no extra use case call to build the row
+- Each row has action icons:
   - ✏️ (Edit) — navigates to `ScoreDetailScreen` in edit mode to re-enter scores
   - 🗑 (Delete) — opens delete confirmation modal
-- Winner is highlighted with bold + 🏆
 - Deleted player names show one of:
    - `"Alice (deleted)"` — if name was kept on delete
    - `"Deleted player"` — if name was erased (anonymized)
@@ -84,6 +86,22 @@ Then playerLabels[playerId] = "Deleted player"
 Given a match with timestamp 1672566300000L (2023-01-01 11:45:00 UTC)
 When the History screen loads
 Then dateFormatted matches pattern "YYYY-MM-DD HH:mm" in local timezone
+```
+
+### Score line rendering
+```
+Given a match between Alice (score 10) and Bob (score 5)
+When the History screen loads
+Then the row's second line reads "Alice 10 · Bob 5"
+  And "Alice 10" is rendered in <strong> (Alice is the winner)
+  And "Bob 5" is not bold
+```
+
+### Score line rendering on a tie
+```
+Given a match where Alice and Bob both scored 10
+When the History screen loads
+Then both "Alice 10" and "Bob 10" are rendered in <strong>
 ```
 
 ### Game type filter
@@ -156,14 +174,16 @@ Then match is updated (overwrites original with same ID and date)
 │ Filter by game: [All games    ▼]    │
 ├──────────────────────────────────────┤
 │  ┌──────────────────────────────┐    │
-│  │ Belote   2026-06-10 14:30  🗑│    │
-│  │ Alice 🏆       10           │    │
-│  │ Bob             5           │    │
+│  │ Belote                    🗑│    │
+│  │ Alice 10 · Bob 5             │    │
+│  │ 2026-06-10 14:30             │    │
 │  └──────────────────────────────┘    │
 │  ┌──────────────────────────────┐    │
-│  │ Custom   2026-06-09 10:15  🗑│    │
-│  │ Alice (deleted)        8    │    │
-│  │ Deleted player         3    │    │
+│  │ Custom                    🗑│    │
+│  │ Alice (deleted) 8 · Deleted player 3 │
+│  │ 2026-06-09 10:15             │    │
 │  └──────────────────────────────┘    │
 └──────────────────────────────────────┘
 ```
+
+*(Alice is rendered in bold in both rows above — she has the highest score in each match.)*

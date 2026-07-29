@@ -88,12 +88,26 @@ describe('HistoryScreen', () => {
 
     expect(itemName('Chess')).toBeInTheDocument()
     expect(itemName('Darts')).toBeInTheDocument()
-    expect(screen.getByText(/Alice 10 \/ Bob 5/)).toBeInTheDocument()
 
     fireEvent.change(screen.getByRole('combobox'), { target: { value: 'gt1' } })
 
     expect(itemName('Chess')).toBeInTheDocument()
     expect(queryItemName('Darts')).not.toBeInTheDocument()
+  })
+
+  it('renders each match over three lines: name, scores with the winner in bold, then date', () => {
+    renderHistory()
+
+    const chessRow = itemName('Chess').closest('.list-item-row')
+    expect(chessRow).not.toBeNull()
+
+    const scoresLine = chessRow!.querySelector('.list-item-players')
+    expect(scoresLine).toHaveTextContent('Alice 10 · Bob 5')
+    expect(scoresLine!.querySelector('strong')).toHaveTextContent('Alice 10')
+
+    const dateLine = chessRow!.querySelector('.list-item-date')
+    expect(dateLine).toHaveTextContent(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/)
+    expect(chessRow!.querySelector('.list-item-subtitle')).not.toBeInTheDocument()
   })
 
   it('shows the generic empty message once every match is deleted', () => {
