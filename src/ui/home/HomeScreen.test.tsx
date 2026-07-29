@@ -161,7 +161,7 @@ describe('HomeScreen', () => {
     playerRepo.save({ id: 'p1', name: 'Alice', active: true })
     render(<HomeScreen {...props} />)
 
-    fireEvent.click(screen.getByTitle('Delete'))
+    fireEvent.click(screen.getByLabelText('Delete'))
     expect(screen.getByText('Delete Alice?')).toBeInTheDocument()
 
     fireEvent.click(screen.getByText('Delete', { selector: 'button' }))
@@ -176,7 +176,7 @@ describe('HomeScreen', () => {
     playerRepo.save({ id: 'p1', name: 'Alice', active: true })
     render(<HomeScreen {...props} />)
 
-    fireEvent.click(screen.getByTitle('Delete'))
+    fireEvent.click(screen.getByLabelText('Delete'))
     fireEvent.click(screen.getByRole('checkbox'))
     fireEvent.click(screen.getByText('Delete', { selector: 'button' }))
 
@@ -188,7 +188,7 @@ describe('HomeScreen', () => {
     playerRepo.save({ id: 'p1', name: 'Alice', active: true })
     render(<HomeScreen {...props} />)
 
-    fireEvent.click(screen.getByTitle('Edit'))
+    fireEvent.click(screen.getByLabelText('Edit'))
     expect(screen.getByText('Rename Alice')).toBeInTheDocument()
 
     const dialog = screen.getByRole('dialog')
@@ -250,7 +250,7 @@ describe('HomeScreen', () => {
     playerRepo.save({ id: 'p1', name: 'Alice', active: true })
     render(<HomeScreen {...props} />)
 
-    fireEvent.click(screen.getByTitle('Delete'))
+    fireEvent.click(screen.getByLabelText('Delete'))
     fireEvent.click(screen.getByText('Delete', { selector: 'button' }))
 
     expect(screen.getByText('Clean up (1)')).toBeInTheDocument()

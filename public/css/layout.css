@@ -124,25 +124,28 @@
 .list-item-row {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 0;
     padding: 12px 16px;
     background: var(--surface-card);
+    border: var(--border-width) solid var(--border-subtle);
     border-radius: var(--radius-md);
+    overflow: hidden;
 }
 
 .list-item-label {
     flex: 1;
     display: flex;
     align-items: center;
+    align-self: stretch;
     gap: 10px;
     min-width: 0; /* empêche le texte long de déborder */
 }
 
 .list-item-label--selectable {
     cursor: pointer;
-    border-radius: var(--radius-md);
-    padding: 4px 6px;
-    margin: -4px -6px;
+    border-radius: 0;
+    padding: 12px 16px;
+    margin: -12px 0 -12px -16px;
     transition: background 0.1s;
 }
 
@@ -173,14 +176,42 @@
     margin-top: 2px;
 }
 
+.list-item-players {
+    font-size: 13px;
+    color: var(--text-body);
+    display: block;
+    margin-top: 3px;
+}
+
+.list-item-players strong {
+    font-weight: var(--weight-semibold);
+    color: var(--text-heading);
+}
+
+.list-item-date {
+    font-size: 12px;
+    color: var(--text-muted);
+    display: block;
+    margin-top: 3px;
+}
+
 .list-item-actions {
     display: flex;
-    align-items: center;
-    gap: 2px;
+    align-items: stretch;
+    align-self: stretch;
+    margin: -12px -16px -12px 0;
+    gap: 0;
     flex-shrink: 0;
 }
 
-/* ── Boutons icône (réutilisables partout) ── */
+.list-item-actions .ludo-btn {
+    width: 56px;
+    height: 100%;
+    border-radius: 0;
+    border-left: var(--border-width) solid var(--border-default);
+}
+
+/* ── Boutons icône (réutilisables partout hors listes) ── */
 
 .btn-icon {
     background: transparent;

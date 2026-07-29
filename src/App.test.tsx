@@ -77,7 +77,7 @@ describe('App', () => {
     fireEvent.click(screen.getByText('History'))
     expect(screen.getByText('Test Game', { selector: '.list-item-name' })).toBeInTheDocument()
 
-    fireEvent.click(screen.getByTitle('Edit'))
+    fireEvent.click(screen.getByLabelText('Edit'))
 
     // The seeded id "m1" isn't a UUID, so LocalStorageMatchRepository's
     // v1->v2 migration regenerates it on first read — only the shape and

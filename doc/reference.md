@@ -125,7 +125,7 @@ Notable design choices:
 | Component | Props | Usage |
 |---|---|---|
 | `ListContainer` | `className?`, `children` | Generic wrapper for `ListItemRow` lists: `display:flex; flex-direction:column; gap:8px`. |
-| `ListItemRow` | `label`, `subtitle?`, `isSelectable?`, `isSelected?`, `onSelect?`, `onView?`, `onEdit?`, `onDelete?` | Uniform list display: players (Home), game types (Games), match history (History). |
+| `ListItemRow` | `label`, `subtitle?`, `players?`, `date?`, `isSelectable?`, `isSelected?`, `onSelect?`, `onView?`, `onEdit?`, `onDelete?` | Uniform list display: players (Home), game types (Games), match history (History). `players`/`date` render in `.list-item-players`/`.list-item-date` (opened for the History row redesign, not yet wired up there). Action buttons are `LudoButton` (`ghost` for view/edit, `danger` for delete), square and flush against the row's right edge. |
 | `LudoButton` | `text`, `variant?` (`'primary' \| 'secondary' \| 'ghost' \| 'danger'`, default `primary`), `size?` (`'sm' \| 'md' \| 'lg'`, default `md`), `iconOnly?`, `disabled?`, `ariaLabel?`, `className?` (layout-only escape hatch), `onClick` | The single interactive-action primitive. Some interactive elements deliberately aren't `LudoButton` (Stats tabs, burger menu items, theme swatches) since they don't fit its centered-content model. |
 | `LudoTextInput` | `value`, `onChange`, `label?`, `placeholder?`, `size?`, `disabled?`, `invalid?`, `autofocus?`, `onEnter?` | Controlled text field. |
 | `LudoNumberInput` | `value`, `onChange`, `min?`, `max?`, `step?`, `stepper?` (default `true`), `size?`, `disabled?` | Controlled number field, `-`/`+` stepper by default. |

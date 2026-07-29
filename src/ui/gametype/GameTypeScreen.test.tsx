@@ -65,7 +65,7 @@ describe('GameTypeScreen', () => {
     fireEvent.change(nameInput(), { target: { value: 'Belote' } })
     fireEvent.click(screen.getByText('Add game type'))
 
-    fireEvent.click(screen.getByTitle('View details'))
+    fireEvent.click(screen.getByLabelText('View details'))
     expect(screen.getByRole('dialog')).toBeInTheDocument()
     expect(screen.getByText('Win condition:')).toBeInTheDocument()
 
@@ -79,7 +79,7 @@ describe('GameTypeScreen', () => {
     fireEvent.change(nameInput(), { target: { value: 'Belote' } })
     fireEvent.click(screen.getByText('Add game type'))
 
-    fireEvent.click(screen.getByTitle('Edit'))
+    fireEvent.click(screen.getByLabelText('Edit'))
     expect(screen.getByText('Edit Belote')).toBeInTheDocument()
 
     const editDialog = screen.getByRole('dialog')
@@ -91,7 +91,7 @@ describe('GameTypeScreen', () => {
     expect(screen.getByText('Belote', { selector: '.list-item-name' })).toBeInTheDocument()
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
 
-    fireEvent.click(screen.getByTitle('View details'))
+    fireEvent.click(screen.getByLabelText('View details'))
     expect(within(screen.getByRole('dialog')).getByText('Manual selection')).toBeInTheDocument()
   })
 
@@ -100,7 +100,7 @@ describe('GameTypeScreen', () => {
     fireEvent.change(nameInput(), { target: { value: 'Belote' } })
     fireEvent.click(screen.getByText('Add game type'))
 
-    fireEvent.click(screen.getByTitle('Edit'))
+    fireEvent.click(screen.getByLabelText('Edit'))
     fireEvent.click(screen.getByText('Cancel'))
 
     expect(screen.getByText('Belote', { selector: '.list-item-name' })).toBeInTheDocument()
@@ -112,13 +112,13 @@ describe('GameTypeScreen', () => {
     fireEvent.change(nameInput(), { target: { value: 'Belote' } })
     fireEvent.click(screen.getByText('Add game type'))
 
-    fireEvent.click(screen.getByTitle('Delete'))
+    fireEvent.click(screen.getByLabelText('Delete'))
     expect(screen.getByText('Archive Belote?')).toBeInTheDocument()
 
     fireEvent.click(screen.getByText('Cancel'))
     expect(screen.getByText('Belote', { selector: '.list-item-name' })).toBeInTheDocument()
 
-    fireEvent.click(screen.getByTitle('Delete'))
+    fireEvent.click(screen.getByLabelText('Delete'))
     fireEvent.click(within(screen.getByRole('dialog')).getByText('Archive'))
 
     expect(screen.queryByText('Belote', { selector: '.list-item-name' })).not.toBeInTheDocument()
