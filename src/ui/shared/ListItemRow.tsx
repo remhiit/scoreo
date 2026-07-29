@@ -1,12 +1,18 @@
+import type { ReactNode } from 'react'
 import { Eye, Pencil, Trash2 } from 'lucide-react'
+import { LudoButton } from './LudoButton'
 
-const TITLE_VIEW_DETAIL = 'View details'
-const TITLE_EDIT = 'Edit'
-const TITLE_DELETE = 'Delete'
+const LABEL_VIEW_DETAIL = 'View details'
+const LABEL_EDIT = 'Edit'
+const LABEL_DELETE = 'Delete'
 
 export interface ListItemRowProps {
   label: string
   subtitle?: string
+  /** Rendered in `.list-item-players` — e.g. per-player scores. */
+  players?: ReactNode
+  /** Rendered in `.list-item-date`. */
+  date?: ReactNode
   /** Shows the ○/● picto. */
   isSelectable?: boolean
   /** ● if true, ○ if false. */
@@ -24,6 +30,8 @@ export interface ListItemRowProps {
 export function ListItemRow({
   label,
   subtitle,
+  players,
+  date,
   isSelectable = false,
   isSelected = false,
   onSelect,
@@ -42,48 +50,41 @@ export function ListItemRow({
         <div>
           <span className="list-item-name">{label}</span>
           {subtitle && <span className="list-item-subtitle">{subtitle}</span>}
+          {players && <span className="list-item-players">{players}</span>}
+          {date && <span className="list-item-date">{date}</span>}
         </div>
       </div>
 
       <div className="list-item-actions">
         {onView && (
-          <button
-            type="button"
-            className="btn-icon"
-            title={TITLE_VIEW_DETAIL}
-            onClick={(e) => {
-              e.stopPropagation()
-              onView()
-            }}
-          >
-            <Eye size={18} aria-hidden />
-          </button>
+          <LudoButton
+            text={<Eye size={18} aria-hidden />}
+            variant="ghost"
+            size="sm"
+            iconOnly
+            ariaLabel={LABEL_VIEW_DETAIL}
+            onClick={onView}
+          />
         )}
         {onEdit && (
-          <button
-            type="button"
-            className="btn-icon"
-            title={TITLE_EDIT}
-            onClick={(e) => {
-              e.stopPropagation()
-              onEdit()
-            }}
-          >
-            <Pencil size={18} aria-hidden />
-          </button>
+          <LudoButton
+            text={<Pencil size={18} aria-hidden />}
+            variant="ghost"
+            size="sm"
+            iconOnly
+            ariaLabel={LABEL_EDIT}
+            onClick={onEdit}
+          />
         )}
         {onDelete && (
-          <button
-            type="button"
-            className="btn-icon btn-icon--danger"
-            title={TITLE_DELETE}
-            onClick={(e) => {
-              e.stopPropagation()
-              onDelete()
-            }}
-          >
-            <Trash2 size={18} aria-hidden />
-          </button>
+          <LudoButton
+            text={<Trash2 size={18} aria-hidden />}
+            variant="danger"
+            size="sm"
+            iconOnly
+            ariaLabel={LABEL_DELETE}
+            onClick={onDelete}
+          />
         )}
       </div>
     </div>

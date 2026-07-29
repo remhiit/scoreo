@@ -29,17 +29,29 @@ describe('ListItemRow', () => {
 
   it('only renders action buttons whose handler is provided', () => {
     render(<ListItemRow label="Alice" onEdit={() => {}} />)
-    expect(screen.getByTitle('Edit')).toBeInTheDocument()
-    expect(screen.queryByTitle('View details')).not.toBeInTheDocument()
-    expect(screen.queryByTitle('Delete')).not.toBeInTheDocument()
+    expect(screen.getByLabelText('Edit')).toBeInTheDocument()
+    expect(screen.queryByLabelText('View details')).not.toBeInTheDocument()
+    expect(screen.queryByLabelText('Delete')).not.toBeInTheDocument()
   })
 
-  it('action buttons stop propagation so onSelect is not also triggered', () => {
+  it('a click on an action button does not also trigger onSelect', () => {
     const onSelect = vi.fn()
     const onDelete = vi.fn()
     render(<ListItemRow label="Alice" onSelect={onSelect} onDelete={onDelete} />)
-    fireEvent.click(screen.getByTitle('Delete'))
+    fireEvent.click(screen.getByLabelText('Delete'))
     expect(onDelete).toHaveBeenCalledTimes(1)
     expect(onSelect).not.toHaveBeenCalled()
+  })
+
+  it('renders the optional players and date slots', () => {
+    render(<ListItemRow label="Belote" players="Camille 101 · Malik 92" date="12 Jul 2026" />)
+    expect(screen.getByText('Camille 101 · Malik 92')).toBeInTheDocument()
+    expect(screen.getByText('12 Jul 2026')).toBeInTheDocument()
+  })
+
+  it('omits the players and date slots when not provided', () => {
+    const { container } = render(<ListItemRow label="Belote" />)
+    expect(container.querySelector('.list-item-players')).not.toBeInTheDocument()
+    expect(container.querySelector('.list-item-date')).not.toBeInTheDocument()
   })
 })

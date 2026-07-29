@@ -45,6 +45,6 @@ export async function createGameType(
  */
 export async function archiveGameType(page: Page, name: string): Promise<void> {
   const row = page.locator('.list-item-row', { hasText: name })
-  await row.getByTitle('Delete').click()
+  await row.getByRole('button', { name: 'Delete' }).click()
   await page.getByRole('dialog', { name: `Archive ${name}?` }).getByRole('button', { name: 'Archive' }).click()
 }

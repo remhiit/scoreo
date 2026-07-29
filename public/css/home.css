@@ -130,26 +130,6 @@
     color: var(--text-muted);
 }
 
-/* ── Boutons icône (2e définition — voir layout.css ; doublon signalé,
-   non résolu ici, cf .task/P2/01-shared-list-and-nav.md) ── */
-
-.btn-icon {
-    background: transparent;
-    border: none;
-    cursor: pointer;
-    padding: 4px 8px;
-    border-radius: 4px;
-    font-size: 16px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: background 0.2s;
-}
-
-.btn-icon:hover {
-    background: color-mix(in srgb, var(--text-body) 5%, transparent);
-}
-
 /* ── Draft resume banner ── */
 
 .draft-resume-banner {

@@ -99,9 +99,9 @@ describe('HistoryScreen', () => {
   it('shows the generic empty message once every match is deleted', () => {
     renderHistory()
 
-    fireEvent.click(screen.getAllByTitle('Delete')[0])
+    fireEvent.click(screen.getAllByLabelText('Delete')[0])
     fireEvent.click(screen.getByText('Delete', { selector: 'button' }))
-    fireEvent.click(screen.getAllByTitle('Delete')[0])
+    fireEvent.click(screen.getAllByLabelText('Delete')[0])
     fireEvent.click(screen.getByText('Delete', { selector: 'button' }))
 
     expect(screen.getByText('No matches yet.')).toBeInTheDocument()
@@ -110,7 +110,7 @@ describe('HistoryScreen', () => {
   it('delete flow: confirms via modal and removes the match', () => {
     renderHistory()
 
-    const deleteButtons = screen.getAllByTitle('Delete')
+    const deleteButtons = screen.getAllByLabelText('Delete')
     fireEvent.click(deleteButtons[0])
 
     expect(screen.getByText('Delete match?')).toBeInTheDocument()
@@ -120,7 +120,7 @@ describe('HistoryScreen', () => {
     expect(screen.queryByText('Delete match?')).not.toBeInTheDocument()
     expect(itemName('Chess')).toBeInTheDocument()
 
-    fireEvent.click(screen.getAllByTitle('Delete')[0])
+    fireEvent.click(screen.getAllByLabelText('Delete')[0])
     fireEvent.click(screen.getByText('Delete', { selector: 'button' }))
 
     expect(screen.queryByText('Delete match?')).not.toBeInTheDocument()
@@ -132,7 +132,7 @@ describe('HistoryScreen', () => {
     const onEditMatch = vi.fn()
     renderHistory(onEditMatch)
 
-    fireEvent.click(screen.getAllByTitle('Edit')[0])
+    fireEvent.click(screen.getAllByLabelText('Edit')[0])
 
     expect(onEditMatch).toHaveBeenCalledWith('gt1', ['p1', 'p2'], 'm1')
   })
