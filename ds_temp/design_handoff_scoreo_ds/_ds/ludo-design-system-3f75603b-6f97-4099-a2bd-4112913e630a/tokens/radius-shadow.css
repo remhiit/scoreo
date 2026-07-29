@@ -1,0 +1,27 @@
+/*
+  Radius, elevation, borders, motion.
+  Catppuccin itself is flat and low-chrome: soft rounded corners,
+  thin 1px borders in a surface tone (not the primary color),
+  and shadows so quiet they read as depth, not drop-shadow.
+*/
+:root {
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-pill: 999px;
+
+  --border-width: 1px;
+
+  --shadow-sm: 0 1px 2px color-mix(in srgb, var(--ctp-crust) 14%, transparent);
+  --shadow-md: 0 4px 12px color-mix(in srgb, var(--ctp-crust) 18%, transparent);
+  --shadow-lg: 0 12px 32px color-mix(in srgb, var(--ctp-crust) 24%, transparent);
+
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1); /* @kind other */
+  --duration-fast: 100ms; /* @kind other */
+  --duration-normal: 160ms; /* @kind other */
+  --duration-slow: 240ms; /* @kind other */
+}
+
+* {
+  box-sizing: border-box;
+}

@@ -1,0 +1,1192 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="stylesheet" href="_ds/ludo-design-system-3f75603b-6f97-4099-a2bd-4112913e630a/tokens/colors-latte.css">
+<link rel="stylesheet" href="_ds/ludo-design-system-3f75603b-6f97-4099-a2bd-4112913e630a/tokens/colors-frappe.css">
+<link rel="stylesheet" href="_ds/ludo-design-system-3f75603b-6f97-4099-a2bd-4112913e630a/tokens/colors-macchiato.css">
+<link rel="stylesheet" href="_ds/ludo-design-system-3f75603b-6f97-4099-a2bd-4112913e630a/tokens/colors-mocha.css">
+<link rel="stylesheet" href="_ds/ludo-design-system-3f75603b-6f97-4099-a2bd-4112913e630a/tokens/semantic.css">
+<link rel="stylesheet" href="_ds/ludo-design-system-3f75603b-6f97-4099-a2bd-4112913e630a/tokens/typography.css">
+<link rel="stylesheet" href="_ds/ludo-design-system-3f75603b-6f97-4099-a2bd-4112913e630a/tokens/spacing.css">
+<link rel="stylesheet" href="_ds/ludo-design-system-3f75603b-6f97-4099-a2bd-4112913e630a/tokens/radius-shadow.css">
+<link rel="stylesheet" href="_ds/ludo-design-system-3f75603b-6f97-4099-a2bd-4112913e630a/styles.css">
+<script src="_ds/ludo-design-system-3f75603b-6f97-4099-a2bd-4112913e630a/_ds_bundle.js"></script>
+<style>
+  body { margin: 0; background: #cdd0d8; font-family: var(--font-ui); }
+  .sg-root { padding: 56px 64px 96px; }
+  .sg-root[data-lang="en"] .l-fr { display: none; }
+  .sg-root[data-lang="fr"] .l-en { display: none; }
+
+  /* The DS maps its semantic tokens on :root only, so they compute once
+     against Latte and inherit down — element-scoped [data-theme] retints the
+     raw --ctp-* palette but never the surfaces. Re-map the semantic layer on
+     every themed element so flavors actually change backgrounds and text.
+     (--color-primary is deliberately left out: re-declaring it here would
+     outrank the DS's own [data-accent] presets.) */
+  [data-theme]{
+    --surface-app: var(--ctp-base);
+    --surface-sunken: var(--ctp-mantle);
+    --surface-well: var(--ctp-crust);
+    --surface-card: var(--ctp-mantle);
+    --surface-raised: var(--ctp-surface0);
+    --surface-overlay: var(--ctp-surface0);
+    --surface-hover: var(--ctp-surface1);
+    --surface-active: var(--ctp-surface2);
+    --text-heading: var(--ctp-text);
+    --text-body: var(--ctp-text);
+    --text-muted: var(--ctp-subtext1);
+    --text-faint: var(--ctp-subtext0);
+    --text-disabled: var(--ctp-overlay0);
+    --text-on-accent: var(--ctp-on-accent);
+    --border-subtle: var(--ctp-surface1);
+    --border-default: var(--ctp-surface2);
+    --border-strong: var(--ctp-overlay1);
+    --color-success: var(--ctp-green);
+    --color-warning: var(--ctp-yellow);
+    --color-danger: var(--ctp-red);
+    --color-info: var(--ctp-blue);
+    --text-on-success: var(--ctp-on-accent);
+    --text-on-warning: var(--ctp-on-accent);
+    --text-on-danger: var(--ctp-on-accent);
+    --text-on-info: var(--ctp-on-accent);
+    --scrim: color-mix(in srgb, var(--ctp-crust) 60%, transparent);
+    --color-primary-tint: color-mix(in srgb, var(--color-primary) 16%, var(--surface-app));
+    --color-primary-border: color-mix(in srgb, var(--color-primary) 45%, var(--border-default));
+  }
+
+  /* App-specific screen CSS. The DS ships Button/Input/Table/Modal as
+     components (mounted below); everything here is Scoreo chrome the DS
+     does not define, built only on DS tokens. */
+  .scoreo, .scoreo *, .scoreo *::before, .scoreo *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  .scoreo { --header-height: 56px; font-family: var(--font-ui); color: var(--text-body); font-variant-numeric: tabular-nums; }
+  .scoreo h1 { font-size: 22px; font-weight: 600; margin-bottom: 16px; color: var(--text-heading); }
+  .ic { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
+  .no-spin{ -webkit-appearance:none !important; appearance:none !important; }
+  .no-spin::-webkit-inner-spin-button, .no-spin::-webkit-outer-spin-button{ -webkit-appearance:none !important; margin:0 !important; }
+  .ic--sm { width: 16px; height: 16px; }
+  .ic--lg { width: 30px; height: 30px; }
+
+  /* Selects and tabs: no DS component exists for these yet (see summary) */
+  /* Native select arrows sit hard against the edge and can't be moved with
+     padding, so the marker is drawn as a background chevron instead. */
+  .select, .filter-select{ appearance:none; -webkit-appearance:none; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%239195a8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-origin:padding-box; background-clip:padding-box; }
+  .select{ display:block; width:100%; min-height:44px; border:var(--border-width) solid var(--border-default); border-radius:var(--radius-md); padding:10px 40px 10px 14px; font-size:15px; line-height:1.3; font-family:var(--font-ui); background-color:var(--surface-card); background-position:right 14px center; background-size:16px 16px; color:var(--text-body); outline:none; cursor:pointer; }
+  .filter-select{ display:block; min-height:32px; padding:6px 30px 6px 12px; border:var(--border-width) solid var(--border-default); border-radius:var(--radius-sm); background-color:var(--surface-card); background-position:right 11px center; background-size:14px 14px; color:var(--text-body); cursor:pointer; font-size:.9rem; line-height:1.3; font-family:var(--font-ui); }
+  .tab-bar{ display:flex; border-bottom:2px solid var(--border-default); margin-bottom:16px; }
+  .tab-btn{ flex:1; background:transparent; border:none; box-shadow:inset 0 -2px 0 transparent; padding:14px 12px; font-size:15px; font-weight:500; color:var(--text-muted); cursor:pointer; font-family:inherit; }
+  .tab-btn:hover{ background:var(--surface-hover); }
+  .tab-btn.active{ color:var(--color-primary); box-shadow:inset 0 -2px 0 var(--color-primary); font-weight:600; }
+
+  .form-row{ display:flex; gap:8px; align-items:flex-end; }
+  .section-label{ font-size:13px; font-weight:600; color:var(--text-muted); text-transform:uppercase; letter-spacing:var(--tracking-wide); margin:16px 0 8px; }
+  .empty{ text-align:center; color:var(--text-muted); padding:40px 0; font-size:15px; }
+  .card{ background:var(--surface-sunken); border-radius:var(--radius-md); padding:12px 16px; display:flex; align-items:center; justify-content:space-between; }
+
+  /* Device shell. transform makes this the containing block so the DS
+     Modal's position:fixed scrim resolves inside the phone, not the page. */
+  .device{ width:390px; height:780px; background:var(--surface-app); border:var(--border-width) solid var(--border-default); border-radius:28px; overflow:hidden; position:relative; transform:translateZ(0); box-shadow:0 24px 60px -20px rgba(24,24,37,.4); display:flex; flex-direction:column; }
+  /* The DS Modal caps its panel at 85vh. Scoped inside a phone frame that
+     resolves against the real viewport, so re-cap it against the device. */
+  .device [role="dialog"]{ max-height:88% !important; }
+  .app-header{ height:var(--header-height); flex-shrink:0; background:var(--surface-app); border-bottom:var(--border-width) solid var(--border-default); display:flex; align-items:center; justify-content:space-between; padding:0 8px; position:relative; z-index:5; }
+  .app-title{ font-size:18px; font-weight:600; color:var(--text-heading); flex:1; text-align:center; }
+  .app-content{ flex:1; overflow-y:auto; padding:16px 16px 24px; display:flex; flex-direction:column; }
+
+  .list-container{ display:flex; flex-direction:column; gap:8px; }
+  .list-container--spaced{ margin-top:16px; }
+  .list-item-row{ display:flex; align-items:center; gap:0; padding:12px 16px; background:var(--surface-card); border:var(--border-width) solid var(--border-subtle); border-radius:var(--radius-md); overflow:hidden; }
+  .list-item-label{ flex:1; display:flex; align-items:center; align-self:stretch; gap:10px; min-width:0; }
+  /* The select area fills the row too, so the whole left side is one target. */
+  .list-item-label--selectable{ cursor:pointer; border-radius:0; padding:12px 16px; margin:-12px 0 -12px -16px; }
+  .list-item-label--selectable:hover{ background:var(--color-primary-tint); }
+  .list-item-label--selected .list-item-select-picto{ color:var(--color-primary); }
+  .list-item-select-picto{ font-size:16px; color:var(--text-muted); flex-shrink:0; display:flex; }
+  .list-item-name{ font-weight:500; font-size:15px; display:block; }
+  .list-item-subtitle{ font-size:13px; color:var(--text-muted); display:block; margin-top:2px; }
+  .list-item-players{ font-size:13px; color:var(--text-body); display:block; margin-top:3px; }
+  .list-item-players strong{ font-weight:var(--weight-semibold); color:var(--text-heading); }
+  .list-item-date{ font-size:12px; color:var(--text-muted); display:block; margin-top:3px; }
+  /* Row actions fill the row edge to edge — squarer, bordered, so each tap
+     target's limits are visible. */
+  .list-item-actions{ display:flex; align-items:stretch; align-self:stretch; margin:-12px -16px -12px 0; gap:0; flex-shrink:0; }
+  .list-item-actions > *{ display:flex; align-items:stretch; }
+  .list-item-actions button{ width:56px !important; height:100% !important; border-radius:0 !important; border:none !important; border-left:var(--border-width) solid var(--border-default) !important; }
+
+  .fab-position{ position:absolute; bottom:20px; left:50%; transform:translateX(-50%); z-index:6; }
+  .onboarding-guide{ background:var(--color-primary-tint); border:var(--border-width) solid color-mix(in srgb,var(--color-primary) 30%,transparent); padding:16px; margin-top:16px; margin-bottom:20px; border-radius:var(--radius-md); line-height:1.6; }
+  .onboarding-guide h3{ margin:0 0 10px; color:var(--color-primary); font-size:1rem; }
+  .onboarding-guide ol{ margin:0; padding-left:20px; }
+  .onboarding-guide li{ margin:6px 0; color:var(--text-muted); }
+  .draft-resume-banner{ background:var(--color-primary-tint); border:var(--border-width) solid color-mix(in srgb,var(--color-primary) 30%,transparent); padding:12px 16px; margin-bottom:16px; border-radius:var(--radius-md); }
+  .draft-resume-button{ background:transparent; border:none; color:var(--color-primary); cursor:pointer; font-size:15px; font-weight:600; display:flex; align-items:center; gap:8px; padding:0; width:100%; text-align:left; font-family:inherit; }
+
+  .score-table-add-btn{ background:transparent; border:1.5px dashed var(--border-default); border-radius:var(--radius-md); padding:12px 24px; color:var(--color-primary); cursor:pointer; width:100%; display:flex; align-items:center; justify-content:center; }
+  .score-table-add-btn:hover{ background:var(--color-primary-tint); }
+  .score-actions{ display:flex; gap:8px; margin-top:16px; }
+  .modal-actions{ display:flex; flex-wrap:wrap; justify-content:flex-end; gap:8px; margin-top:20px; padding-top:16px; border-top:var(--border-width) solid var(--border-subtle); }
+  .modal-row{ display:flex; align-items:center; gap:10px; padding:8px 0; font-size:15px; }
+  .modal-row input[type=checkbox]{ accent-color:var(--color-primary); width:16px; height:16px; }
+  .modal-body-text{ font-size:15px; margin-bottom:8px; }
+  .detail-row{ display:flex; justify-content:space-between; gap:12px; padding:10px 0; border-bottom:var(--border-width) solid var(--border-subtle); font-size:14px; }
+  .detail-row:last-of-type{ border-bottom:none; }
+  .detail-label{ color:var(--text-muted); }
+  .detail-value{ font-weight:var(--weight-medium); color:var(--text-heading); }
+  .modal-body-list{ margin:8px 0 8px 20px; font-size:14px; }
+
+  .stats-row{ cursor:pointer; gap:12px; }
+  .stats-row:hover{ background:var(--color-primary-tint); }
+  .stats-row-info{ display:flex; flex-direction:column; gap:2px; min-width:0; flex:1; }
+  .stats-row-name{ font-weight:500; font-size:15px; }
+  .stats-row-record{ font-size:12px; color:var(--text-muted); }
+  .stats-row-bar-wrap{ flex:1; height:8px; background:var(--surface-sunken); border-radius:var(--radius-sm); overflow:hidden; min-width:60px; }
+  .stats-row-bar{ height:100%; background:var(--color-primary); border-radius:var(--radius-sm); }
+  .stats-row-pct{ font-weight:600; font-size:14px; color:var(--color-primary); min-width:36px; text-align:right; }
+  .stats-elo{ font-weight:700; font-size:16px; color:var(--color-primary); min-width:44px; text-align:right; font-family:var(--font-score); }
+  .stats-elo-badge{ display:inline-flex; align-items:center; justify-content:center; background:var(--color-primary-tint); color:var(--color-primary); font-weight:700; font-size:14px; padding:2px 10px; border-radius:var(--radius-pill); margin-left:auto; font-family:var(--font-score); }
+  .stats-detail-header{ display:flex; align-items:center; gap:8px; margin-bottom:16px; }
+  .stats-detail-title{ font-size:20px; font-weight:600; }
+  .stats-detail-overall{ display:flex; align-items:baseline; gap:8px; margin-bottom:20px; padding:12px 16px; background:var(--surface-sunken); border-radius:var(--radius-md); }
+  .stats-detail-record{ font-size:18px; font-weight:600; }
+  .stats-detail-pct{ font-size:14px; color:var(--text-muted); }
+  .stats-h2h-row{ display:flex; align-items:center; gap:12px; padding:8px 0; border-bottom:var(--border-width) solid var(--border-subtle); }
+  .stats-h2h-row:last-child{ border-bottom:none; }
+  .stats-h2h-name{ font-size:14px; font-weight:500; }
+  .stats-h2h-record{ font-size:13px; font-weight:600; min-width:48px; text-align:right; font-family:var(--font-score); }
+
+  .history-filter{ display:flex; align-items:center; gap:12px; margin-bottom:16px; padding:12px; background:var(--surface-sunken); border-radius:var(--radius-sm); }
+  .history-filter label{ font-weight:500; font-size:14px; }
+
+  .import-zone{ display:flex; flex-direction:column; align-items:center; gap:16px; padding:48px 24px; border:2px dashed var(--border-default); border-radius:var(--radius-md); text-align:center; cursor:pointer; }
+  .import-zone:hover{ border-color:var(--color-primary); background:var(--color-primary-tint); }
+  .import-zone-text{ font-size:15px; color:var(--text-muted); }
+  .import-preview,.import-result{ background:var(--surface-sunken); border-radius:var(--radius-md); padding:16px; margin-bottom:16px; }
+  .import-preview-row{ display:flex; justify-content:space-between; padding:4px 0; font-size:15px; }
+  .import-preview-label{ color:var(--text-muted); }
+  .import-preview-value{ font-weight:600; }
+  .import-result-line{ font-size:15px; padding:4px 0; display:flex; align-items:center; gap:6px; }
+  .import-success{ color:var(--color-success); font-weight:600; }
+  .import-warn{ color:var(--color-warning); font-weight:600; }
+  .import-error{ color:var(--color-danger); font-weight:600; }
+  .import-failed-id{ font-size:12px; padding-left:24px; color:var(--text-muted); font-family:var(--font-mono); }
+
+  .sync-conflict-container{ display:flex; gap:12px; margin:16px 0; }
+  .sync-card{ flex:1; display:flex; flex-direction:column; gap:4px; padding:12px 16px; border-radius:var(--radius-lg); background:var(--surface-card); border:var(--border-width) solid var(--border-subtle); box-shadow:var(--shadow-sm); }
+  .sync-card-title{ font-weight:600; font-size:.9rem; margin-bottom:4px; }
+  .sync-card-stat{ font-size:.85rem; color:var(--text-muted); }
+  .sync-actions{ display:flex; gap:8px; margin-top:16px; flex-wrap:wrap; }
+
+  .theme-picker-label{ font-size:13px; font-weight:600; color:var(--text-muted); text-transform:uppercase; letter-spacing:var(--tracking-wide); margin:12px 0 8px; }
+  .theme-picker-label:first-of-type{ margin-top:0; }
+  .theme-picker-row{ display:flex; gap:6px; flex-wrap:wrap; }
+  .theme-chip{ border:var(--border-width) solid var(--border-default); background:transparent; color:var(--text-body); border-radius:var(--radius-pill); padding:4px 10px; font-size:13px; cursor:pointer; text-transform:capitalize; font-family:inherit; }
+  .theme-chip--active{ border:2px solid var(--color-primary); padding:3px 9px; }
+  .accent-swatch{ width:26px; height:26px; border-radius:var(--radius-pill); border:var(--border-width) solid var(--border-default); cursor:pointer; padding:0; }
+  .accent-swatch--active{ border:2px solid var(--text-heading); }
+
+  .burger-overlay{ position:absolute; inset:0; background:var(--scrim); z-index:20; }
+  .burger-menu{ position:absolute; top:0; right:0; bottom:0; width:230px; background:var(--surface-app); z-index:21; display:flex; flex-direction:column; padding:12px 0; box-shadow:var(--shadow-lg); }
+  .burger-close{ align-self:flex-end; margin-right:12px; margin-bottom:8px; }
+  .burger-item{ display:flex; align-items:center; gap:14px; padding:14px 24px; border:none; background:transparent; font-size:16px; color:var(--text-body); cursor:pointer; text-align:left; width:100%; font-family:inherit; }
+  .burger-item:hover{ background:var(--surface-hover); }
+
+  /* Standings grid — a two-column card layout so the whole table fits at
+     any headcount without scrolling. */
+  .gs-grid{ display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+  .gs-card{ display:flex; flex-direction:column; gap:2px; padding:10px 12px; background:var(--surface-card); border:var(--border-width) solid var(--border-subtle); border-radius:var(--radius-md); }
+  .gs-card--lead{ border-color:var(--color-primary-border); }
+  .gs-card--lead .gs-tot{ color:var(--color-primary); }
+  .gs-top{ display:flex; align-items:baseline; gap:6px; }
+  .gs-pos{ font-family:var(--font-score); font-size:11px; font-weight:700; color:var(--text-faint); }
+  .gs-name{ font-size:14px; font-weight:500; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .gs-bot{ display:flex; align-items:baseline; justify-content:space-between; }
+  .gs-tot{ font-family:var(--font-score); font-size:26px; font-weight:700; line-height:1.1; color:var(--text-heading); }
+  .gs-delta{ font-family:var(--font-score); font-size:12px; color:var(--text-muted); }
+
+  .seg{ display:flex; background:var(--surface-sunken); border-radius:var(--radius-md); padding:3px; margin-bottom:12px; }
+  .seg button{ flex:1; border:none; background:transparent; padding:8px 12px; font:inherit; font-size:14px; font-weight:600; color:var(--text-muted); border-radius:var(--radius-sm); cursor:pointer; }
+  .seg button.on{ background:var(--surface-card); color:var(--text-heading); box-shadow:var(--shadow-sm); }
+  .lead-hint{ font-size:12px; color:var(--text-muted); margin-bottom:10px; }
+
+  .rank-list{ display:flex; flex-direction:column; gap:6px; }
+  .rank-row{ display:flex; align-items:center; gap:12px; padding:10px 14px; background:var(--surface-card); border:var(--border-width) solid var(--border-subtle); border-radius:var(--radius-md); }
+  .rank-row--lead{ border-color:var(--color-primary-border); }
+  .rank-row--lead .rank-total{ color:var(--color-primary); }
+  .rank-pos{ width:18px; font-family:var(--font-score); font-size:13px; font-weight:700; color:var(--text-faint); }
+  .rank-name{ flex:1; font-size:15px; font-weight:500; min-width:0; }
+  .rank-total{ font-family:var(--font-score); font-size:24px; font-weight:700; line-height:1; color:var(--text-heading); }
+  .rank-delta{ width:36px; text-align:right; font-family:var(--font-score); font-size:12px; color:var(--text-muted); }
+
+  .bottom-bar{ position:absolute; left:0; right:0; bottom:0; padding:12px 16px 16px; background:var(--surface-app); border-top:var(--border-width) solid var(--border-default); z-index:6; }
+  .sheet{ position:absolute; left:0; right:0; bottom:0; z-index:22; max-height:80%; display:flex; flex-direction:column; gap:10px; padding:12px 16px 16px; background:var(--surface-app); border-top:var(--border-width) solid var(--border-default); border-radius:var(--radius-lg) var(--radius-lg) 0 0; box-shadow:var(--shadow-lg); }
+  .sheet-grip{ width:36px; height:4px; border-radius:2px; background:var(--border-default); margin:0 auto 2px; }
+  .sheet-title{ font-size:16px; font-weight:600; color:var(--text-heading); }
+  .sheet-rows{ display:flex; flex-direction:column; gap:8px; overflow-y:auto; }
+  .sheet-row{ display:flex; align-items:center; gap:12px; }
+  .sheet-row-name{ flex:1; font-size:15px; }
+  .sheet-row-tot{ font-family:var(--font-score); font-size:13px; color:var(--text-muted); }
+
+  /* No overflow:hidden here — .hist-cells wraps to a variable number of
+     lines and must be free to grow the card, not get clipped by it. */
+  .hist-round{ background:var(--surface-card); border:var(--border-width) solid var(--border-subtle); border-radius:var(--radius-md); margin-bottom:8px; }
+  .hist-round-head{ display:flex; align-items:center; justify-content:space-between; padding:8px 14px; background:var(--surface-sunken); border-radius:var(--radius-md) var(--radius-md) 0 0; font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:var(--tracking-wide); color:var(--text-muted); }
+  .hist-cells{ display:flex; flex-wrap:wrap; gap:6px; padding:10px 14px; }
+  .hist-cell{ display:flex; align-items:baseline; gap:6px; background:var(--surface-sunken); border-radius:var(--radius-sm); padding:5px 9px; font-size:13px; }
+  .hist-cell b{ font-family:var(--font-score); font-weight:700; color:var(--text-heading); }
+
+  .sg-title h1{ font-size:40px; font-weight:700; margin:0 0 8px; letter-spacing:-.02em; color:#1e2030; }
+  .sg-title p{ font-size:16px; color:#4a4d63; margin:0; max-width:760px; line-height:1.5; text-wrap:pretty; }
+  .sg-badge{ display:inline-block; background:#8839ef; color:#fff; font-size:12px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; padding:4px 10px; border-radius:999px; margin-bottom:20px; }
+  .sg-section-head{ margin:64px 0 24px; }
+  .sg-section-head h2{ font-size:24px; font-weight:700; color:#1e2030; margin:0 0 4px; letter-spacing:-.01em; }
+  .sg-section-head p{ font-size:14px; color:#565975; margin:0; max-width:680px; line-height:1.5; text-wrap:pretty; }
+  .sg-grid{ display:flex; flex-wrap:wrap; gap:36px 32px; align-items:flex-start; }
+  .sg-item{ display:flex; flex-direction:column; gap:12px; }
+  .sg-caption b{ display:block; font-size:14px; font-weight:600; color:#1e2030; }
+  .sg-caption span{ display:block; font-size:12.5px; color:#6b6e88; margin-top:2px; max-width:390px; }
+</style>
+</helmet>
+<div class="sg-root" data-lang="{{ lang }}">
+  <div class="sg-title">
+    <span class="sg-badge">Ludo Design System · Scoreo</span>
+    <h1>Scoreo — screen gallery</h1>
+    <p><span class="l-en">Every Scoreo screen composed from the design system's own components — Button, Input, Table and Modal are mounted from the DS bundle; the screens the system did not yet define are built on its tokens. Latte flavor, Mauve accent. Flip flavor, accent and language in Tweaks.</span><span class="l-fr">Chaque écran de Scoreo composé avec les composants du design system — Bouton, Champ, Tableau et Modale viennent du bundle ; les écrans que le système ne définissait pas encore sont bâtis sur ses tokens. Palette Latte, accent Mauve. Change palette, accent et langue dans les Réglages.</span></p>
+  </div>
+
+  <!-- ===== 1 · Home ===== -->
+  <div class="scoreo" data-theme="{{ flavor }}" data-accent="{{ accent }}">
+    <div class="sg-section-head">
+      <h2>1 · Home &amp; players</h2>
+      <p><span class="l-en">Player roster with inline add, multi-select for a match, first-launch onboarding, and the resume-draft banner — both banners now carry the accent tint.</span><span class="l-fr">Liste des joueurs avec ajout en ligne, multi-sélection, guide de premier lancement et bannière de reprise — les deux bannières portent la teinte d'accent.</span></p>
+    </div>
+    <div class="sg-grid">
+      <div class="sg-item">
+        <div class="sg-caption"><b>Home · first launch</b><span class="l-en">Empty roster with the getting-started guide.</span><span class="l-fr">Liste vide avec le guide de démarrage.</span></div>
+        <div class="device" data-screen-label="Home · first launch">
+          <div class="app-header">
+            <span style="width:44px"></span>
+            <span class="app-title">Scoreo</span>
+            <x-import component-from-global-scope="LudoDesignSystem_3f7560.Button" variant="ghost" size="md" icon-only="{{ true }}" hint-size="44px,44px"><svg class="ic" viewBox="0 0 24 24"><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="18" y2="18"/></svg></x-import>
+          </div>
+          <div class="app-content">
+            <div class="form-row">
+              <x-import component-from-global-scope="LudoDesignSystem_3f7560.Input" placeholder="{{ t.playerName }}" style="flex:1" hint-size="100%,44px"></x-import>
+              <x-import component-from-global-scope="LudoDesignSystem_3f7560.Button" variant="primary" size="md" hint-size="auto,44px"><span class="l-en">Add</span><span class="l-fr">Ajouter</span></x-import>
+            </div>
+            <div class="onboarding-guide">
+              <h3><span class="l-en">Getting started</span><span class="l-fr">Pour commencer</span></h3>
+              <ol>
+                <li><span class="l-en">Add players above</span><span class="l-fr">Ajoute des joueurs ci-dessus</span></li>
+                <li><span class="l-en">Create a game type from the menu</span><span class="l-fr">Crée un type de jeu depuis le menu</span></li>
+                <li><span class="l-en">Select 2 or more players and start</span><span class="l-fr">Sélectionne 2 joueurs ou plus et démarre</span></li>
+              </ol>
+            </div>
+            <div class="empty"><span class="l-en">No players yet. Add one above.</span><span class="l-fr">Aucun joueur. Ajoutes-en un.</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="sg-item">
+        <div class="sg-caption"><b>Home · roster</b><span class="l-en">Players with W/L, two selected, resume banner, pill FAB.</span><span class="l-fr">Joueurs avec V/D, deux sélectionnés, bannière de reprise, FAB pilule.</span></div>
+        <div class="device" data-screen-label="Home · roster">
+          <div class="app-header">
+            <span style="width:44px"></span>
+            <span class="app-title">Scoreo</span>
+            <x-import component-from-global-scope="LudoDesignSystem_3f7560.Button" variant="ghost" size="md" icon-only="{{ true }}" hint-size="44px,44px"><svg class="ic" viewBox="0 0 24 24"><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="18" y2="18"/></svg></x-import>
+          </div>
+          <div class="app-content">
+            <div class="draft-resume-banner">
+              <button class="draft-resume-button"><svg class="ic ic--sm" viewBox="0 0 24 24"><polygon points="6 3 20 12 6 21 6 3"/></svg><span class="l-en">Resume match in progress</span><span class="l-fr">Reprendre la partie en cours</span></button>
+            </div>
+            <div class="form-row">
+              <x-import component-from-global-scope="LudoDesignSystem_3f7560.Input" placeholder="{{ t.playerName }}" style="flex:1" hint-size="100%,44px"></x-import>
+              <x-import component-from-global-scope="LudoDesignSystem_3f7560.Button" variant="primary" size="md" hint-size="auto,44px"><span class="l-en">Add</span><span class="l-fr">Ajouter</span></x-import>
+            </div>
+            <div class="list-container list-container--spaced">
+              <div class="list-item-row">
+                <div class="list-item-label list-item-label--selectable list-item-label--selected"><span class="list-item-select-picto">●</span><div><span class="list-item-name">Camille</span><span class="list-item-subtitle">12W 5L</span></div></div>
+                <div class="list-item-actions">
+                  <x-import component-from-global-scope="LudoDesignSystem_3f7560.Button" variant="ghost" size="sm" icon-only="{{ true }}" hint-size="36px,36px"><svg class="ic ic--sm" viewBox="0 0 24 24"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg></x-import>
+                  <x-import component-from-global-scope="LudoDesignSystem_3f7560.Button" variant="ghost" size="sm" icon-only="{{ true }}" dc-props="{{ dangerGhost }}" hint-size="36px,36px"><svg class="ic ic--sm" viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></x-import>
+                </div>
+              </div>
+              <div class="list-item-row">
+                <div class="list-item-label list-item-label--selectable"><span class="list-item-select-picto">○</span><div><span class="list-item-name">Théo</span><span class="list-item-subtitle">9W 8L</span></div></div>
+                <div class="list-item-actions">
+                  <x-import component-from-global-scope="LudoDesignSystem_3f7560.Button" variant="ghost" size="sm" icon-only="{{ true }}" hint-size="36px,36px"><svg class="ic ic--sm" viewBox="0 0 24 24"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg></x-import>
+                  <x-import component-from-global-scope="LudoDesignSystem_3f7560.Button" variant="ghost" size="sm" icon-only="{{ true }}" dc-props="{{ dangerGhost }}" hint-size="36px,36px"><svg class="ic ic--sm" viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></x-import>
+                </div>
+              </div>
+              <div class="list-item-row">
+                <div class="list-item-label list-item-label--selectable list-item-label--selected"><span class="list-item-select-picto">●</span><div><span class="list-item-name">Léa</span><span class="list-item-subtitle">7W 4L</span></div></div>
+                <div class="list-item-actions">
+                  <x-import component-from-global-scope="LudoDesignSystem_3f7560.Button" variant="ghost" size="sm" icon-only="{{ true }}" hint-size="36px,36px"><svg class="ic ic--sm" viewBox="0 0 24 24"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg></x-import>
+                  <x-import component-from-global-scope="LudoDesignSystem_3f7560.Button" variant="ghost" size="sm" icon-only="{{ true }}" dc-props="{{ dangerGhost }}" hint-size="36px,36px"><svg class="ic ic--sm" viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></x-import>
+                </div>
+              </div>
+              <div class="list-item-row">
+                <div class="list-item-label list-item-label--selectable"><span class="list-item-select-picto">○</span><div><span class="list-item-name">Malik</span><span class="list-item-subtitle">4W 6L</span></div></div>
+                <div class="list-item-actions">
+                  <x-import component-from-global-scope="LudoDesignSystem_3f7560.Button" variant="ghost" size="sm" icon-only="{{ true }}" hint-size="36px,36px"><svg class="ic ic--sm" viewBox="0 0 24 24"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg></x-import>
+                  <x-import component-from-global-scope="LudoDesignSystem_3f7560.Button" variant="ghost" size="sm" icon-only="{{ true }}" dc-props="{{ dangerGhost }}" hint-size="36px,36px"><svg class="ic ic--sm" viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></x-import>
+                </div>
+              </div>
+            </div>
+            <div style="height:72px"></div>
+          </div>
+          <div class="fab-position">
+            <x-import component-from-global-scope="LudoDesignSystem_3f7560.Button" variant="primary" size="lg" dc-props="{{ fabBtn }}" hint-size="auto,52px"><svg class="ic ic--sm" viewBox="0 0 24 24"><polygon points="6 3 20 12 6 21 6 3"/></svg><span class="l-en">New match</span><span class="l-fr">Nouvelle partie</span></x-import>
+          </div>
+        </div>
+      </div>
+
+      <div class="sg-item">
+        <div class="sg-caption"><b>Home · select a game</b><span class="l-en">Match-start dialog — the DS Modal, scoped inside the phone.</span><span class="l-fr">Dialogue de démarrage — la Modale du DS, cadrée dans le téléphone.</span></div>
+        <div class="device" data-screen-label="Home · select a game">
+          <div class="app-header">
+            <span style="width:44px"></span>
+            <span class="app-title">Scoreo</span>
+            <x-import component-from-global-scope="LudoDesignSystem_3f7560.Button" variant="ghost" size="md" icon-only="{{ true }}" hint-size="44px,44px"><svg class="ic" viewBox="0 0 24 24"><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="18" y2="18"/></svg></x-import>
+          </div>
+          <div class="app-content">
+            <div class="form-row">
+              <x-import component-from-global-scope="LudoDesignSystem_3f7560.Input" placeholder="{{ t.playerName }}" style="flex:1" hint-size="100%,44px"></x-import>
+              <x-import component-from-global-scope="LudoDesignSystem_3f7560.Button" variant="primary" size="md" hint-size="auto,44px"><span class="l-en">Add</span><span class="l-fr">Ajouter</span></x-import>
+            </div>
+            <div class="list-container list-container--spaced">
+              <div class="list-item-row"><div class="list-item-label list-item-label--selectable list-item-label--selected"><span class="list-item-select-picto">●</span><div><span class="list-item-name">Camille</span><span class="list-item-subtitle">12W 5L</span></div></div></div>
+              <div class="list-item-row"><div class="list-item-label list-item-label--selectable list-item-label--selected"><span class="list-item-select-picto">●</span><div><span class="list-item-name">Léa</span><span class="list-item-subtitle">7W 4L</span></div></div></div>
+            </div>
+          </div>
+          <x-import component-from-global-scope="LudoDesignSystem_3f7560.Modal" open="{{ true }}" width="340px" title="{{ t.selectGame }}" hint-size="100%,100%">
+            <select class="select"><option>Belote</option></select>
+            <div style="display:flex;justify-content:center;margin-top:12px">
+              <x-import component-from-global-scope="LudoDesignSystem_3f7560.Button" variant="secondary" size="md" hint-size="auto,44px"><svg class="ic" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="M12 5v14"/></svg><span class="l-en">Add new game</span><span class="l-fr">Nouveau jeu</span></x-import>
+            </div>
+            <div class="modal-actions">
+              <x-import component-from-global-scope="LudoDesignSystem_3f7560.Button" variant="secondary" size="md" dc-props="{{ flexBtn }}" hint-size="auto,44px"><span class="l-en">Cancel</span><span class="l-fr">Annuler</span></x-import>
+              <x-import component-from-global-scope="LudoDesignSystem_3f7560.Button" variant="primary" size="md" dc-props="{{ flexBtn }}" hint-size="auto,44px"><span class="l-en">Start match</span><span class="l-fr">Démarrer</span></x-import>
+            </div>
+          </x-import>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== 2 · Score entry ===== -->
+  <div class="scoreo" data-theme="{{ flavor }}" data-accent="{{ accent }}">
+    <div class="sg-section-head">
+      <h2>2 · Score entry</h2>
+      <p><span class="l-en">A two-column standings grid so the whole table's state fits in one glance, no matter the headcount. Entering a round opens a focused sheet; history is a wrapping list of round cards, editable in place via DS Inputs.</span><span class="l-fr">Une grille de classement à deux colonnes où tient l'état de toute la table, quel que soit le nombre de joueurs. Saisir un tour ouvre une feuille dédiée ; l'historique est une liste de tours qui passe à la ligne, modifiable sur place via les Champs du DS.</span></p>
+    </div>
+    <div class="sg-grid">
+      <div class="sg-item">
+        <div class="sg-caption"><b><span class="l-en">Standings</span><span class="l-fr">Classement</span></b><span class="l-en">8 players, no scroll — rank and delta at a glance.</span><span class="l-fr">8 joueurs, sans défilement — rang et delta d'un coup d'œil.</span></div>
+        <div class="device" data-screen-label="Score entry · Standings">
+          <div class="app-header">
+            <x-import component-from-global-scope="LudoDesignSystem_3f7560.Button" variant="ghost" size="md" icon-only="{{ true }}" hint-size="44px,44px"><svg class="ic" viewBox="0 0 24 24"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg></x-import>
+            <span class="app-title">Skyjo</span>
+            <x-import component-from-global-scope="LudoDesignSystem_3f7560.Button" variant="ghost" size="md" icon-only="{{ true }}" hint-size="44px,44px"><svg class="ic" viewBox="0 0 24 24"><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="18" y2="18"/></svg></x-import>
+          </div>
+          <div class="app-content">
+            <div class="seg">
+              <button class="on"><span class="l-en">Standings</span><span class="l-fr">Classement</span></button>
+              <button><span class="l-en">History</span><span class="l-fr">Historique</span></button>
+            </div>
+            <div class="lead-hint"><span class="l-en">After 3 rounds · lowest score leads</span><span class="l-fr">Après 3 tours · le plus bas mène</span></div>
+            <div class="gs-grid">
+              <div class="gs-card gs-card--lead"><div class="gs-top"><span class="gs-pos">1</span><span class="gs-name">Léa</span></div><div class="gs-bot"><span class="gs-tot">16</span><span class="gs-delta">+4</span></div></div>
+              <div class="gs-card"><div class="gs-top"><span class="gs-pos">2</span><span class="gs-name">Camille</span></div><div class="gs-bot"><span class="gs-tot">26</span><span class="gs-delta">+3</span></div></div>
+              <div class="gs-card"><div class="gs-top"><span class="gs-pos">3</span><span class="gs-name">Théo</span></div><div class="gs-bot"><span class="gs-tot">38</span><span class="gs-delta">+11</span></div></div>
+              <div class="gs-card"><div class="gs-top"><span class="gs-pos">4</span><span class="gs-name">Malik</span></div><div class="gs-bot"><span class="gs-tot">41</span><span class="gs-delta">+9</span></div></div>
+              <div class="gs-card"><div class="gs-top"><span class="gs-pos">5</span><span class="gs-name">Jonas</span></div><div class="gs-bot"><span class="gs-tot">47</span><span class="gs-delta">+14</span></div></div>
+              <div class="gs-card"><div class="gs-top"><span class="gs-pos">6</span><span class="gs-name">Inès</span></div><div class="gs-bot"><span class="gs-tot">52</span><span class="gs-delta">+6</span></div></div>
+              <div class="gs-card"><div class="gs-top"><span class="gs-pos">7</span><span class="gs-name">Hugo</span></div><div class="gs-bot"><span class="gs-tot">58</span><span class="gs-delta">+12</span></div></div>
+              <div class="gs-card"><div class="gs-top"><span class="gs-pos">8</span><span class="gs-name">Sofia</span></div><div class="gs-bot"><span class="gs-tot">63</span><span class="gs-delta">+8</span></div></div>
+            </div>
+            <div style="height:76px"></div>
+          </div>
+          <div class="bottom-bar" style="display:flex;flex-direction:column;gap:8px">
+            <x-import component-from-global-scope="LudoDesignSystem_3f7560.Button" variant="primary" size="lg" dc-props="{{ fullBtn }}" hint-size="100%,52px"><svg class="ic ic--sm" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="M12 5v14"/></svg><span class="l-en">Enter round 4</span><span class="l-fr">Saisir le tour 4</span></x-import>
+            <div style="display:flex;gap:8px">
+              <x-import component-from-global-scope="LudoDesignSystem_3f7560.Button" variant="secondary" size="md" dc-props="{{ flexBtn }}" hint-size="auto,44px"><span class="l-en">Cancel match</span><span class="l-fr">Annuler la partie</span></x-import>
+              <x-import component-from-global-scope="LudoDesignSystem_3f7560.Button" variant="secondary" size="md" dc-props="{{ flexBtn }}" hint-size="auto,44px"><span class="l-en">Finish match</span><span class="l-fr">Terminer la partie</span></x-import>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="sg-item">
+        <div class="sg-caption"><b><span class="l-en">Round entry sheet</span><span class="l-fr">Feuille de saisie</span></b><span class="l-en">One stepper per player, running total beside each name.</span><span class="l-fr">Un stepper par joueur, total courant à côté du nom.</span></div>
+        <div class="device" data-screen-label="Score entry · Round sheet">
+          <div class="app-header">
+            <x-import component-from-global-scope="LudoDesignSystem_3f7560.Button" variant="ghost" size="md" icon-only="{{ true }}" hint-size="44px,44px"><svg class="ic" viewBox="0 0 24 24"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg></x-import>
+            <span class="app-title">Skyjo</span>
+            <x-import component-from-global-scope="LudoDesignSystem_3f7560.Button" variant="ghost" size="md" icon-only="{{ true }}" hint-size="44px,44px"><svg class="ic" viewBox="0 0 24 24"><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="18" y2="18"/></svg></x-import>
+          </div>
+          <div class="app-content">
+            <div class="gs-grid">
+              <div class="gs-card gs-card--lead"><div class="gs-top"><span class="gs-pos">1</span><span class="gs-name">Léa</span></div><div class="gs-bot"><span class="gs-tot">16</span></div></div>
+              <div class="gs-card"><div class="gs-top"><span class="gs-pos">2</span><span class="gs-name">Camille</span></div><div class="gs-bot"><span class="gs-tot">26</span></div></div>
+              <div class="gs-card"><div class="gs-top"><span class="gs-pos">3</span><span class="gs-name">Théo</span></div><div class="gs-bot"><span class="gs-tot">38</span></div></div>
+              <div class="gs-card"><div class="gs-top"><span class="gs-pos">4</span><span class="gs-name">Malik</span></div><div class="gs-bot"><span class="gs-tot">41</span></div></div>
+            </div>
+          </div>
+          <div class="burger-overlay"></div>
+          <div class="sheet">
+            <div class="sheet-grip"></div>
+            <div class="sheet-title"><span class="l-en">Round 4</span><span class="l-fr">Tour 4</span></div>
+            <div class="sheet-rows">
+              <div class="sheet-row"><span class="sheet-row-name">Léa <span class="sheet-row-tot">· 16</span></span><x-import component-from-global-scope="LudoDesignSystem_3f7560.Input" type="number" size="sm" default-value="0" hint-size="120px,36px"></x-import></div>
+              <div class="sheet-row"><span class="sheet-row-name">Camille <span class="sheet-row-tot">· 26</span></span><x-import component-from-global-scope="LudoDesignSystem_3f7560.Input" type="number" size="sm" default-value="0" hint-size="120px,36px"></x-import></div>
+              <div class="sheet-row"><span class="sheet-row-name">Théo <span class="sheet-row-tot">· 38</span></span><x-import component-from-global-scope="LudoDesignSystem_3f7560.Input" type="number" size="sm" default-value="0" hint-size="120px,36px"></x-import></div>
+              <div class="sheet-row"><span class="sheet-row-name">Malik <span class="sheet-row-tot">· 41</span></span><x-import component-from-global-scope="LudoDesignSystem_3f7560.Input" type="number" size="sm" default-value="0" hint-size="120px,36px"></x-import></div>
+              <div class="sheet-row"><span class="sheet-row-name">Jonas <span class="sheet-row-tot">· 47</span></span><x-import component-from-global-scope="LudoDesignSystem_3f7560.Input" type="number" size="sm" default-value="0" hint-size="120px,36px"></x-import></div>
+            </div>
+            <div style="display:flex;gap:8px">
+              <x-import component-from-global-scope="LudoDesignSystem_3f7560.Button" variant="secondary" size="md" dc-props="{{ flexBtn }}" hint-size="auto,44px"><span class="l-en">Cancel</span><span class="l-fr">Annuler</span></x-import>
+              <x-import component-from-global-scope="LudoDesignSystem_3f7560.Button" variant="primary" size="md" dc-props="{{ flexBtn }}" hint-size="auto,44px"><span class="l-en">Save round</span><span class="l-fr">Valider le tour</span></x-import>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="sg-item">
+        <div class="sg-caption"><b><span class="l-en">History</span><span class="l-fr">Historique</span></b><span class="l-en">One card per round, editable in place — wraps instead of scrolling sideways.</span><span class="l-fr">Une carte par tour, modifiable sur place — passe à la ligne au lieu de défiler.</span></div>
+        <div class="device" data-screen-label="Score entry · History">
+          <div class="app-header">
+            <x-import component-from-global-scope="LudoDesignSystem_3f7560.Button" variant="ghost" size="md" icon-only="{{ true }}" hint-size="44px,44px"><svg class="ic" viewBox="0 0 24 24"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg></x-import>
+            <span class="app-title">Skyjo</span>
+            <x-import component-from-global-scope="LudoDesignSystem_3f7560.Button" variant="ghost" size="md" icon-only="{{ true }}" hint-size="44px,44px"><svg class="ic" viewBox="0 0 24 24"><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="18" y2="18"/></svg></x-import>
+          </div>
+          <div class="app-content">
+            <div class="seg">
+              <button><span class="l-en">Standings</span><span class="l-fr">Classement</span></button>
+              <button class="on"><span class="l-en">History</span><span class="l-fr">Historique</span></button>
+            </div>
+            <sc-for list="{{ historyRounds }}" as="round" hint-placeholder-count="3">
+              <div class="hist-round">
+                <div class="hist-round-head"><span>{{ round.label }}</span></div>
+                <div class="hist-cells">
+                  <sc-for list="{{ round.cells }}" as="cell" hint-placeholder-count="8">
+                    <span class="hist-cell"><span>{{ cell.n }}</span><span>{{ cell.field }}</span></span>
+                  </sc-for>
+                </div>
+              </div>
+            </sc-for>
+            <div style="margin-top:4px;display:flex;justify-content:center">
+              <x-import component-from-global-scope="LudoDesignSystem_3f7560.Button" variant="secondary" size="sm" hint-size="auto,36px"><svg class="ic ic--sm" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="M12 5v14"/></svg><span class="l-en">Add round</span><span class="l-fr">Ajouter un tour</span></x-import>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="sg-item">
+        <div class="sg-caption"><b><span class="l-en">Final decision</span><span class="l-fr">Décision finale</span></b><span class="l-en">Manual tie-break when totals are level, same selectable-row pattern as elsewhere.</span><span class="l-fr">Départage manuel en cas d'égalité, même style de ligne sélectionnable qu'ailleurs.</span></div>
+        <div class="device" data-screen-label="Score entry · Final decision">
+          <div class="app-header">
+            <x-import component-from-global-scope="LudoDesignSystem_3f7560.Button" variant="ghost" size="md" icon-only="{{ true }}" hint-size="44px,44px"><svg class="ic" viewBox="0 0 24 24"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg></x-import>
+            <span class="app-title">Belote</span>
+            <x-import component-from-global-scope="LudoDesignSystem_3f7560.Button" variant="ghost" size="md" icon-only="{{ true }}" hint-size="44px,44px"><svg class="ic" viewBox="0 0 24 24"><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="18" y2="18"/></svg></x-import>
+          </div>
+          <div class="app-content">
+            <div class="gs-grid">
+              <div class="gs-card gs-card--lead"><div class="gs-top"><span class="gs-pos">1</span><span class="gs-name">Camille</span></div><div class="gs-bot"><span class="gs-tot">101</span></div></div>
+              <div class="gs-card gs-card--lead"><div class="gs-top"><span class="gs-pos">1</span><span class="gs-name">Malik</span></div><div class="gs-bot"><span class="gs-tot">101</span></div></div>
+            </div>
+          </div>
+          <x-import component-from-global-scope="LudoDesignSystem_3f7560.Modal" open="{{ true }}" width="340px" title="{{ t.finalDecision }}" hint-size="100%,100%">
+            <div class="list-item-row" style="padding:0"><div class="list-item-label list-item-label--selectable list-item-label--selected" style="width:100%;padding:12px 16px;margin:0"><span class="list-item-select-picto">●</span><span class="list-item-name">Camille</span></div></div>
+            <div class="list-item-row" style="padding:0;margin-top:8px"><div class="list-item-label list-item-label--selectable" style="width:100%;padding:12px 16px;margin:0"><span class="list-item-select-picto">○</span><span class="list-item-name">Malik</span></div></div>
+            <div class="modal-actions">
+              <x-import component-from-global-scope="LudoDesignSystem_3f7560.Button" variant="secondary" size="md" dc-props="{{ flexBtn }}" hint-size="auto,44px"><span class="l-en">Cancel</span><span class="l-fr">Annuler</span></x-import>
+              <x-import component-from-global-scope="LudoDesignSystem_3f7560.Button" variant="secondary" size="md" dc-props="{{ flexBtn }}" hint-size="auto,44px"><span class="l-en">Keep tie</span><span class="l-fr">Garder l'égalité</span></x-import>
+              <x-import component-from-global-scope="LudoDesignSystem_3f7560.Button" variant="primary" size="md" dc-props="{{ flexBtn }}" hint-size="auto,44px"><span class="l-en">Confirm</span><span class="l-fr">Confirmer</span></x-import>
+            </div>
+          </x-import>
+        </div>
+      </div>
+
+      <div class="sg-item">
+        <div class="sg-caption"><b><span class="l-en">Discard</span><span class="l-fr">Effacer</span></b><span class="l-en">One plain-language confirmation, per the DS voice.</span><span class="l-fr">Une confirmation en clair, selon la voix du DS.</span></div>
+        <div class="device" data-screen-label="Score entry · Discard">
+          <div class="app-header">
+            <x-import component-from-global-scope="LudoDesignSystem_3f7560.Button" variant="ghost" size="md" icon-only="{{ true }}" hint-size="44px,44px"><svg class="ic" viewBox="0 0 24 24"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg></x-import>
+            <span class="app-title">Skyjo</span>
+            <x-import component-from-global-scope="LudoDesignSystem_3f7560.Button" variant="ghost" size="md" icon-only="{{ true }}" hint-size="44px,44px"><svg class="ic" viewBox="0 0 24 24"><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="18" y2="18"/></svg></x-import>
+          </div>
+          <div class="app-content">
+            <div class="gs-grid">
+              <div class="gs-card gs-card--lead"><div class="gs-top"><span class="gs-pos">1</span><span class="gs-name">Léa</span></div><div class="gs-bot"><span class="gs-tot">16</span></div></div>
+              <div class="gs-card"><div class="gs-top"><span class="gs-pos">2</span><span class="gs-name">Camille</span></div><div class="gs-bot"><span class="gs-tot">26</span></div></div>
+              <div class="gs-card"><div class="gs-top"><span class="gs-pos">3</span><span class="gs-name">Théo</span></div><div class="gs-bot"><span class="gs-tot">38</span></div></div>
+            </div>
+          </div>
+          <x-import component-from-global-scope="LudoDesignSystem_3f7560.Modal" open="{{ true }}" width="340px" title="{{ t.discard }}" hint-size="100%,100%">
+            <p class="modal-body-text"><span class="l-en">All entered scores will be lost.</span><span class="l-fr">Tous les scores saisis seront perdus.</span></p>
+            <div class="modal-actions">
+              <x-import component-from-global-scope="LudoDesignSystem_3f7560.Button" variant="secondary" size="md" dc-props="{{ flexBtn }}" hint-size="auto,44px"><span class="l-en">Cancel</span><span class="l-fr">Annuler</span></x-import>
+              <x-import component-from-global-scope="LudoDesignSystem_3f7560.Button" variant="danger" size="md" dc-props="{{ flexBtn }}" hint-size="auto,44px"><span class="l-en">Discard</span><span class="l-fr">Effacer</span></x-import>
+            </div>
+          </x-import>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== 3 · Stats ===== -->
+  <div class="scoreo" data-theme="{{ flavor }}" data-accent="{{ accent }}">
+    <div class="sg-section-head">
+      <h2>3 · Stats</h2>
+      <p><span class="l-en">Per-game tabs, an ELO leaderboard with win-rate bars, and player detail with head-to-head records. New territory for the design system — built on its tokens only.</span><span class="l-fr">Onglets par jeu, classement ELO avec barres de victoires, et détail joueur avec le face-à-face. Terrain neuf pour le design system — bâti sur ses seuls tokens.</span></p>
+    </div>
+    <div class="sg-grid">
+      <div class="sg-item">
+        <div class="sg-caption"><b>Stats · leaderboard</b><span class="l-en">ELO ranking, filterable by game.</span><span class="l-fr">Classement ELO, filtrable par jeu.</span></div>
+        <div class="device" data-screen-label="Stats · leaderboard">
+          <div class="app-header">
+            <x-import component-from-global-scope="LudoDesignSystem_3f7560.Button" variant="ghost" size="md" icon-only="{{ true }}" hint-size="44px,44px"><svg class="ic" viewBox="0 0 24 24"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg></x-import>
+            <span class="app-title">Stats</span>
+            <x-import component-from-global-scope="LudoDesignSystem_3f7560.Button" variant="ghost" size="md" icon-only="{{ true }}" hint-size="44px,44px"><svg class="ic" viewBox="0 0 24 24"><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="18" y2="18"/></svg></x-import>
+          </div>
+          <div class="app-content">
+            <div class="tab-bar">
+              <button class="tab-btn active"><span class="l-en">All</span><span class="l-fr">Tous</span></button>
+              <button class="tab-btn">Belote</button>
+              <button class="tab-btn">Skyjo</button>
+              <button class="tab-btn">Uno</button>
+            </div>
+            <div class="list-container">
+              <div class="card stats-row"><div class="stats-row-info"><span class="stats-row-name">Camille</span><span class="stats-row-record">12W 5L</span></div><span class="stats-elo">1284</span><div class="stats-row-bar-wrap"><div class="stats-row-bar" style="width:70%"></div></div><span class="stats-row-pct">70%</span></div>
+              <div class="card stats-row"><div class="stats-row-info"><span class="stats-row-name">Léa</span><span class="stats-row-record">7W 4L</span></div><span class="stats-elo">1152</span><div class="stats-row-bar-wrap"><div class="stats-row-bar" style="width:63%"></div></div><span class="stats-row-pct">63%</span></div>
+              <div class="card stats-row"><div class="stats-row-info"><span class="stats-row-name">Théo</span><span class="stats-row-record">9W 8L</span></div><span class="stats-elo">1176</span><div class="stats-row-bar-wrap"><div class="stats-row-bar" style="width:53%"></div></div><span class="stats-row-pct">53%</span></div>
+              <div class="card stats-row"><div class="stats-row-info"><span class="stats-row-name">Malik</span><span class="stats-row-record">4W 6L</span></div><span class="stats-elo">1044</span><div class="stats-row-bar-wrap"><div class="stats-row-bar" style="width:40%"></div></div><span class="stats-row-pct">40%</span></div>
+              <div class="card stats-row"><div class="stats-row-info"><span class="stats-row-name">Jonas</span><span class="stats-row-record">3W 7L</span></div><span class="stats-elo">1002</span><div class="stats-row-bar-wrap"><div class="stats-row-bar" style="width:30%"></div></div><span class="stats-row-pct">30%</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="sg-item">
+        <div class="sg-caption"><b>Stats · player detail</b><span class="l-en">Overall record plus head-to-head.</span><span class="l-fr">Bilan global et face-à-face.</span></div>
+        <div class="device" data-screen-label="Stats · player detail">
+          <div class="app-header">
+            <x-import component-from-global-scope="LudoDesignSystem_3f7560.Button" variant="ghost" size="md" icon-only="{{ true }}" hint-size="44px,44px"><svg class="ic" viewBox="0 0 24 24"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg></x-import>
+            <span class="app-title">Stats</span>
+            <x-import component-from-global-scope="LudoDesignSystem_3f7560.Button" variant="ghost" size="md" icon-only="{{ true }}" hint-size="44px,44px"><svg class="ic" viewBox="0 0 24 24"><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="18" y2="18"/></svg></x-import>
+          </div>
+          <div class="app-content">
+            <div class="stats-detail-header"><div class="stats-detail-title">Camille</div><span class="stats-elo-badge">1284</span></div>
+            <div class="stats-detail-overall"><span class="stats-detail-record">12W / 5L</span><span class="stats-detail-pct">(70%)</span></div>
+            <div class="section-label"><span class="l-en">Head-to-head</span><span class="l-fr">Face à face</span></div>
+            <div class="stats-h2h-row"><div class="stats-row-info"><span class="stats-h2h-name">Théo</span></div><div class="stats-row-bar-wrap"><div class="stats-row-bar" style="width:71%"></div></div><span class="stats-h2h-record">5 - 2</span></div>
+            <div class="stats-h2h-row"><div class="stats-row-info"><span class="stats-h2h-name">Léa</span></div><div class="stats-row-bar-wrap"><div class="stats-row-bar" style="width:75%"></div></div><span class="stats-h2h-record">3 - 1</span></div>
+            <div class="stats-h2h-row"><div class="stats-row-info"><span class="stats-h2h-name">Malik</span></div><div class="stats-row-bar-wrap"><div class="stats-row-bar" style="width:67%"></div></div><span class="stats-h2h-record">4 - 2</span></div>
+            <div class="stats-h2h-row"><div class="stats-row-info"><span class="stats-h2h-name">Jonas</span></div><div class="stats-row-bar-wrap"><div class="stats-row-bar" style="width:100%"></div></div><span class="stats-h2h-record">2 - 0</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="sg-item">
+        <div class="sg-caption"><b>Stats · empty</b><span class="l-en">Before any match is played.</span><span class="l-fr">Avant toute partie jouée.</span></div>
+        <div class="device" data-screen-label="Stats · empty">
+          <div class="app-header">
+            <x-import component-from-global-scope="LudoDesignSystem_3f7560.Button" variant="ghost" size="md" icon-only="{{ true }}" hint-size="44px,44px"><svg class="ic" viewBox="0 0 24 24"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg></x-import>
+            <span class="app-title">Stats</span>
+            <x-import component-from-global-scope="LudoDesignSystem_3f7560.Button" variant="ghost" size="md" icon-only="{{ true }}" hint-size="44px,44px"><svg class="ic" viewBox="0 0 24 24"><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="18" y2="18"/></svg></x-import>
+          </div>
+          <div class="app-content">
+            <div class="tab-bar"><button class="tab-btn active"><span class="l-en">All</span><span class="l-fr">Tous</span></button></div>
+            <div class="empty"><span class="l-en">No stats yet — play a few matches first.</span><span class="l-fr">Aucune stat — joue quelques parties d'abord.</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== 4 · History ===== -->
+  <div class="scoreo" data-theme="{{ flavor }}" data-accent="{{ accent }}">
+    <div class="sg-section-head">
+      <h2>4 · History</h2>
+      <p><span class="l-en">Past matches with a per-game filter, score summaries and dates, edit / delete actions, and the delete confirmation.</span><span class="l-fr">Parties passées avec filtre par jeu, résumés de scores et dates, actions modifier / supprimer, et la confirmation de suppression.</span></p>
+    </div>
+    <div class="sg-grid">
+      <div class="sg-item">
+        <div class="sg-caption"><b>History · matches</b><span class="l-en">Filtered list with summaries and dates.</span><span class="l-fr">Liste filtrée avec résumés et dates.</span></div>
+        <div class="device" data-screen-label="History · matches">
+          <div class="app-header">
+            <x-import component-from-global-scope="LudoDesignSystem_3f7560.Button" variant="ghost" size="md" icon-only="{{ true }}" hint-size="44px,44px"><svg class="ic" viewBox="0 0 24 24"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg></x-import>
+            <span class="app-title"><span class="l-en">History</span><span class="l-fr">Historique</span></span>
+            <x-import component-from-global-scope="LudoDesignSystem_3f7560.Button" variant="ghost" size="md" icon-only="{{ true }}" hint-size="44px,44px"><svg class="ic" viewBox="0 0 24 24"><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="18" y2="18"/></svg></x-import>
+          </div>
+          <div class="app-content">
+            <div class="history-filter"><label><span class="l-en">Filter by game</span><span class="l-fr">Filtrer par jeu</span></label><select class="filter-select"><option>All games</option></select></div>
+            <div class="list-container">
+              <div class="list-item-row">
+                <div class="list-item-label"><div><span class="list-item-name">Belote</span><span class="list-item-players"><strong>Camille 101</strong> · Malik 92</span><span class="list-item-date">12 Jul 2026</span></div></div>
+                <div class="list-item-actions">
+                  <x-import component-from-global-scope="LudoDesignSystem_3f7560.Button" variant="ghost" size="sm" icon-only="{{ true }}" hint-size="36px,36px"><svg class="ic ic--sm" viewBox="0 0 24 24"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg></x-import>
+                  <x-import component-from-global-scope="LudoDesignSystem_3f7560.Button" variant="ghost" size="sm" icon-only="{{ true }}" dc-props="{{ dangerGhost }}" hint-size="36px,36px"><svg class="ic ic--sm" viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></x-import>
+                </div>
+              </div>
+              <div class="list-item-row">
+                <div class="list-item-label"><div><span class="list-item-name">Skyjo</span><span class="list-item-players"><strong>Léa 16</strong> · Camille 26 · Théo 38</span><span class="list-item-date">10 Jul 2026</span></div></div>
+                <div class="list-item-actions">
+                  <x-import component-from-global-scope="LudoDesignSystem_3f7560.Button" variant="ghost" size="sm" icon-only="{{ true }}" hint-size="36px,36px"><svg class="ic ic--sm" viewBox="0 0 24 24"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg></x-import>
+                  <x-import component-from-global-scope="LudoDesignSystem_3f7560.Button" variant="ghost" size="sm" icon-only="{{ true }}" dc-props="{{ dangerGhost }}" hint-size="36px,36px"><svg class="ic ic--sm" viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></x-import>
+                </div>
+              </div>
+              <div class="list-item-row">
+                <div class="list-item-label"><div><span class="list-item-name">Uno</span><span class="list-item-players"><strong>Théo 0</strong> · Jonas 240</span><span class="list-item-date">8 Jul 2026</span></div></div>
+                <div class="list-item-actions">
+                  <x-import component-from-global-scope="LudoDesignSystem_3f7560.Button" variant="ghost" size="sm" icon-only="{{ true }}" hint-size="36px,36px"><svg class="ic ic--sm" viewBox="0 0 24 24"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg></x-import>
+                  <x-import component-from-global-scope="LudoDesignSystem_3f7560.Button" variant="ghost" size="sm" icon-only="{{ true }}" dc-props="{{ dangerGhost }}" hint-size="36px,36px"><svg class="ic ic--sm" viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></x-import>
+                </div>
+              </div>
+              <div class="list-item-row">
+                <div class="list-item-label"><div><span class="list-item-name">Belote</span><span class="list-item-players"><strong>Léa 152</strong> · Théo 148</span><span class="list-item-date">5 Jul 2026</span></div></div>
+                <div class="list-item-actions">
+                  <x-import component-from-global-scope="LudoDesignSystem_3f7560.Button" variant="ghost" size="sm" icon-only="{{ true }}" hint-size="36px,36px"><svg class="ic ic--sm" viewBox="0 0 24 24"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg></x-import>
+                  <x-import component-from-global-scope="LudoDesignSystem_3f7560.Button" variant="ghost" size="sm" icon-only="{{ true }}" dc-props="{{ dangerGhost }}" hint-size="36px,36px"><svg class="ic ic--sm" viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></x-import>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="sg-item">
+        <div class="sg-caption"><b>History · delete match</b><span class="l-en">Confirmation listing what will be removed.</span><span class="l-fr">Confirmation listant ce qui sera supprimé.</span></div>
+        <div class="device" data-screen-label="History · delete match">
+          <div class="app-header">
+            <x-import component-from-global-scope="LudoDesignSystem_3f7560.Button" variant="ghost" size="md" icon-only="{{ true }}" hint-size="44px,44px"><svg class="ic" viewBox="0 0 24 24"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg></x-import>
+            <span class="app-title"><span class="l-en">History</span><span class="l-fr">Historique</span></span>
+            <x-import component-from-global-scope="LudoDesignSystem_3f7560.Button" variant="ghost" size="md" icon-only="{{ true }}" hint-size="44px,44px"><svg class="ic" viewBox="0 0 24 24"><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="18" y2="18"/></svg></x-import>
+          </div>
+          <div class="app-content">
+            <div class="history-filter"><label><span class="l-en">Filter by game</span><span class="l-fr">Filtrer par jeu</span></label><select class="filter-select"><option>All games</option></select></div>
+            <div class="list-container">
+              <div class="list-item-row"><div class="list-item-label"><div><span class="list-item-name">Belote</span><span class="list-item-players"><strong>Camille 101</strong> · Malik 92</span><span class="list-item-date">12 Jul 2026</span></div></div></div>
+            </div>
+          </div>
+          <x-import component-from-global-scope="LudoDesignSystem_3f7560.Modal" open="{{ true }}" width="340px" title="{{ t.deleteMatch }}" hint-size="100%,100%">
+            <p class="modal-body-text">Belote · 12 Jul 2026</p>
+            <ul class="modal-body-list"><li>Camille: 101</li><li>Malik: 92</li></ul>
+            <p class="modal-body-text"><span class="l-en">This match will be lost.</span><span class="l-fr">Cette partie sera perdue.</span></p>
+            <div class="modal-actions">
+              <x-import component-from-global-scope="LudoDesignSystem_3f7560.Button" variant="secondary" size="md" dc-props="{{ flexBtn }}" hint-size="auto,44px"><span class="l-en">Cancel</span><span class="l-fr">Annuler</span></x-import>
+              <x-import component-from-global-scope="LudoDesignSystem_3f7560.Button" variant="danger" size="md" dc-props="{{ flexBtn }}" hint-size="auto,44px"><span class="l-en">Delete</span><span class="l-fr">Supprimer</span></x-import>
+            </div>
+          </x-import>
+        </div>
+      </div>
+
+      <div class="sg-item">
+        <div class="sg-caption"><b>History · empty</b><span class="l-en">No matches recorded yet.</span><span class="l-fr">Aucune partie enregistrée.</span></div>
+        <div class="device" data-screen-label="History · empty">
+          <div class="app-header">
+            <x-import component-from-global-scope="LudoDesignSystem_3f7560.Button" variant="ghost" size="md" icon-only="{{ true }}" hint-size="44px,44px"><svg class="ic" viewBox="0 0 24 24"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg></x-import>
+            <span class="app-title"><span class="l-en">History</span><span class="l-fr">Historique</span></span>
+            <x-import component-from-global-scope="LudoDesignSystem_3f7560.Button" variant="ghost" size="md" icon-only="{{ true }}" hint-size="44px,44px"><svg class="ic" viewBox="0 0 24 24"><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="18" y2="18"/></svg></x-import>
+          </div>
+          <div class="app-content">
+            <div class="history-filter"><label><span class="l-en">Filter by game</span><span class="l-fr">Filtrer par jeu</span></label><select class="filter-select"><option>All games</option></select></div>
+            <div class="empty"><span class="l-en">No matches yet.</span><span class="l-fr">Aucune partie.</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== 5 · Games ===== -->
+  <div class="scoreo" data-theme="{{ flavor }}" data-accent="{{ accent }}">
+    <div class="sg-section-head">
+      <h2>5 · Games</h2>
+      <p><span class="l-en">Manage game types — the add form with win condition and tie-break rule, the list, and the edit / detail dialogs.</span><span class="l-fr">Gérer les types de jeu — le formulaire avec condition de victoire et règle de départage, la liste, et les dialogues de détail / édition.</span></p>
+    </div>
+    <div class="sg-grid">
+      <div class="sg-item">
+        <div class="sg-caption"><b>Games · manage</b><span class="l-en">Add form, then the list of game types.</span><span class="l-fr">Formulaire d'ajout, puis la liste des jeux.</span></div>
+        <div class="device" data-screen-label="Games · manage">
+          <div class="app-header">
+            <x-import component-from-global-scope="LudoDesignSystem_3f7560.Button" variant="ghost" size="md" icon-only="{{ true }}" hint-size="44px,44px"><svg class="ic" viewBox="0 0 24 24"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg></x-import>
+            <span class="app-title"><span class="l-en">Games</span><span class="l-fr">Jeux</span></span>
+            <x-import component-from-global-scope="LudoDesignSystem_3f7560.Button" variant="ghost" size="md" icon-only="{{ true }}" hint-size="44px,44px"><svg class="ic" viewBox="0 0 24 24"><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="18" y2="18"/></svg></x-import>
+          </div>
+          <div class="app-content">
+            <x-import component-from-global-scope="LudoDesignSystem_3f7560.Input" label="{{ t.gameName }}" placeholder="{{ t.gameNamePh }}" hint-size="100%,66px"></x-import>
+            <div class="section-label"><span class="l-en">Win condition</span><span class="l-fr">Condition de victoire</span></div>
+            <select class="select"><option>Highest score</option></select>
+            <div class="section-label"><span class="l-en">Tie-break rule</span><span class="l-fr">Règle de départage</span></div>
+            <select class="select"><option>None</option></select>
+            <div style="margin-top:16px">
+              <x-import component-from-global-scope="LudoDesignSystem_3f7560.Button" variant="primary" size="md" dc-props="{{ fullBtn }}" hint-size="100%,44px"><span class="l-en">Add game type</span><span class="l-fr">Ajouter le jeu</span></x-import>
+            </div>
+            <div class="list-container list-container--spaced">
+              <div class="list-item-row">
+                <div class="list-item-label"><div><span class="list-item-name">Belote</span><span class="list-item-subtitle">Highest score</span></div></div>
+                <div class="list-item-actions">
+                  <x-import component-from-global-scope="LudoDesignSystem_3f7560.Button" variant="ghost" size="sm" icon-only="{{ true }}" hint-size="36px,36px"><svg class="ic ic--sm" viewBox="0 0 24 24"><path d="M2.06 12.35a1 1 0 0 1 0-.7 10.75 10.75 0 0 1 19.88 0 1 1 0 0 1 0 .7 10.75 10.75 0 0 1-19.88 0"/><circle cx="12" cy="12" r="3"/></svg></x-import>
+                  <x-import component-from-global-scope="LudoDesignSystem_3f7560.Button" variant="ghost" size="sm" icon-only="{{ true }}" hint-size="36px,36px"><svg class="ic ic--sm" viewBox="0 0 24 24"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg></x-import>
+                  <x-import component-from-global-scope="LudoDesignSystem_3f7560.Button" variant="ghost" size="sm" icon-only="{{ true }}" dc-props="{{ dangerGhost }}" hint-size="36px,36px"><svg class="ic ic--sm" viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></x-import>
+                </div>
+              </div>
+              <div class="list-item-row">
+                <div class="list-item-label"><div><span class="list-item-name">Skyjo</span><span class="list-item-subtitle">Lowest score</span></div></div>
+                <div class="list-item-actions">
+                  <x-import component-from-global-scope="LudoDesignSystem_3f7560.Button" variant="ghost" size="sm" icon-only="{{ true }}" hint-size="36px,36px"><svg class="ic ic--sm" viewBox="0 0 24 24"><path d="M2.06 12.35a1 1 0 0 1 0-.7 10.75 10.75 0 0 1 19.88 0 1 1 0 0 1 0 .7 10.75 10.75 0 0 1-19.88 0"/><circle cx="12" cy="12" r="3"/></svg></x-import>
+                  <x-import component-from-global-scope="LudoDesignSystem_3f7560.Button" variant="ghost" size="sm" icon-only="{{ true }}" hint-size="36px,36px"><svg class="ic ic--sm" viewBox="0 0 24 24"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg></x-import>
+                  <x-import component-from-global-scope="LudoDesignSystem_3f7560.Button" variant="ghost" size="sm" icon-only="{{ true }}" dc-props="{{ dangerGhost }}" hint-size="36px,36px"><svg class="ic ic--sm" viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></x-import>
+                </div>
+              </div>
+              <div class="list-item-row">
+                <div class="list-item-label"><div><span class="list-item-name">Uno</span><span class="list-item-subtitle">Lowest score</span></div></div>
+                <div class="list-item-actions">
+                  <x-import component-from-global-scope="LudoDesignSystem_3f7560.Button" variant="ghost" size="sm" icon-only="{{ true }}" hint-size="36px,36px"><svg class="ic ic--sm" viewBox="0 0 24 24"><path d="M2.06 12.35a1 1 0 0 1 0-.7 10.75 10.75 0 0 1 19.88 0 1 1 0 0 1 0 .7 10.75 10.75 0 0 1-19.88 0"/><circle cx="12" cy="12" r="3"/></svg></x-import>
+                  <x-import component-from-global-scope="LudoDesignSystem_3f7560.Button" variant="ghost" size="sm" icon-only="{{ true }}" hint-size="36px,36px"><svg class="ic ic--sm" viewBox="0 0 24 24"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg></x-import>
+                  <x-import component-from-global-scope="LudoDesignSystem_3f7560.Button" variant="ghost" size="sm" icon-only="{{ true }}" dc-props="{{ dangerGhost }}" hint-size="36px,36px"><svg class="ic ic--sm" viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></x-import>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="sg-item">
+        <div class="sg-caption"><b>Games · edit</b><span class="l-en">Secondary-score tie-break reveals its condition and question.</span><span class="l-fr">Le départage au score secondaire révèle sa condition et sa question.</span></div>
+        <div class="device" data-screen-label="Games · edit">
+          <div class="app-header">
+            <x-import component-from-global-scope="LudoDesignSystem_3f7560.Button" variant="ghost" size="md" icon-only="{{ true }}" hint-size="44px,44px"><svg class="ic" viewBox="0 0 24 24"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg></x-import>
+            <span class="app-title"><span class="l-en">Games</span><span class="l-fr">Jeux</span></span>
+            <x-import component-from-global-scope="LudoDesignSystem_3f7560.Button" variant="ghost" size="md" icon-only="{{ true }}" hint-size="44px,44px"><svg class="ic" viewBox="0 0 24 24"><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="18" y2="18"/></svg></x-import>
+          </div>
+          <div class="app-content">
+            <div class="list-container">
+              <div class="list-item-row"><div class="list-item-label"><div><span class="list-item-name">Belote</span><span class="list-item-subtitle">Highest score</span></div></div></div>
+            </div>
+          </div>
+          <x-import component-from-global-scope="LudoDesignSystem_3f7560.Modal" open="{{ true }}" width="340px" title="{{ t.editBelote }}" hint-size="100%,100%">
+            <div class="section-label" style="margin-top:0"><span class="l-en">Win condition</span><span class="l-fr">Condition de victoire</span></div>
+            <select class="select"><option>Highest score</option></select>
+            <div class="section-label"><span class="l-en">Tie-break rule</span><span class="l-fr">Règle de départage</span></div>
+            <select class="select"><option>Secondary score</option></select>
+            <div class="section-label"><span class="l-en">Tie-break condition</span><span class="l-fr">Condition de départage</span></div>
+            <select class="select"><option>Highest score</option></select>
+            <div style="margin-top:16px">
+              <x-import component-from-global-scope="LudoDesignSystem_3f7560.Input" label="{{ t.tieQuestion }}" default-value="Belote bid" hint-size="100%,66px"></x-import>
+            </div>
+            <div class="modal-actions">
+              <x-import component-from-global-scope="LudoDesignSystem_3f7560.Button" variant="secondary" size="md" dc-props="{{ flexBtn }}" hint-size="auto,44px"><span class="l-en">Cancel</span><span class="l-fr">Annuler</span></x-import>
+              <x-import component-from-global-scope="LudoDesignSystem_3f7560.Button" variant="primary" size="md" dc-props="{{ flexBtn }}" hint-size="auto,44px"><span class="l-en">Save</span><span class="l-fr">Enregistrer</span></x-import>
+            </div>
+          </x-import>
+        </div>
+      </div>
+
+      <div class="sg-item">
+        <div class="sg-caption"><b>Games · detail</b><span class="l-en">Read-only view with Back / Edit / Archive.</span><span class="l-fr">Vue en lecture seule avec Retour / Modifier / Archiver.</span></div>
+        <div class="device" data-screen-label="Games · detail">
+          <div class="app-header">
+            <x-import component-from-global-scope="LudoDesignSystem_3f7560.Button" variant="ghost" size="md" icon-only="{{ true }}" hint-size="44px,44px"><svg class="ic" viewBox="0 0 24 24"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg></x-import>
+            <span class="app-title"><span class="l-en">Games</span><span class="l-fr">Jeux</span></span>
+            <x-import component-from-global-scope="LudoDesignSystem_3f7560.Button" variant="ghost" size="md" icon-only="{{ true }}" hint-size="44px,44px"><svg class="ic" viewBox="0 0 24 24"><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="18" y2="18"/></svg></x-import>
+          </div>
+          <div class="app-content">
+            <div class="list-container">
+              <div class="list-item-row"><div class="list-item-label"><div><span class="list-item-name">Skyjo</span><span class="list-item-subtitle">Lowest score</span></div></div></div>
+            </div>
+          </div>
+          <x-import component-from-global-scope="LudoDesignSystem_3f7560.Modal" open="{{ true }}" width="340px" title="Skyjo" hint-size="100%,100%">
+            <div class="detail-row"><span class="detail-label"><span class="l-en">Win condition</span><span class="l-fr">Condition de victoire</span></span><span class="detail-value">Lowest score</span></div>
+            <div class="detail-row"><span class="detail-label"><span class="l-en">Tie-break</span><span class="l-fr">Départage</span></span><span class="detail-value">Manual selection</span></div>
+            <div class="modal-actions">
+              <x-import component-from-global-scope="LudoDesignSystem_3f7560.Button" variant="secondary" size="md" dc-props="{{ flexBtn }}" hint-size="auto,44px"><span class="l-en">Back</span><span class="l-fr">Retour</span></x-import>
+              <x-import component-from-global-scope="LudoDesignSystem_3f7560.Button" variant="primary" size="md" dc-props="{{ flexBtn }}" hint-size="auto,44px"><span class="l-en">Edit</span><span class="l-fr">Modifier</span></x-import>
+              <x-import component-from-global-scope="LudoDesignSystem_3f7560.Button" variant="danger" size="md" dc-props="{{ flexBtn }}" hint-size="auto,44px"><span class="l-en">Archive</span><span class="l-fr">Archiver</span></x-import>
+            </div>
+          </x-import>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== 6 · Import ===== -->
+  <div class="scoreo" data-theme="{{ flavor }}" data-accent="{{ accent }}">
+    <div class="sg-section-head">
+      <h2>6 · Import</h2>
+      <p><span class="l-en">JSON import — the file drop zone, a preview of what will be added, and the result summary with imported / skipped / failed counts.</span><span class="l-fr">Import JSON — la zone de dépôt, un aperçu de ce qui sera ajouté, et le résumé avec importés / ignorés / échoués.</span></p>
+    </div>
+    <div class="sg-grid">
+      <div class="sg-item">
+        <div class="sg-caption"><b>Import · pick a file</b><span class="l-en">Dashed drop zone.</span><span class="l-fr">Zone de dépôt en pointillés.</span></div>
+        <div class="device" data-screen-label="Import · pick a file">
+          <div class="app-header">
+            <x-import component-from-global-scope="LudoDesignSystem_3f7560.Button" variant="ghost" size="md" icon-only="{{ true }}" hint-size="44px,44px"><svg class="ic" viewBox="0 0 24 24"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg></x-import>
+            <span class="app-title"><span class="l-en">Import</span><span class="l-fr">Importer</span></span>
+            <x-import component-from-global-scope="LudoDesignSystem_3f7560.Button" variant="ghost" size="md" icon-only="{{ true }}" hint-size="44px,44px"><svg class="ic" viewBox="0 0 24 24"><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="18" y2="18"/></svg></x-import>
+          </div>
+          <div class="app-content">
+            <div class="import-zone">
+              <svg class="ic ic--lg" style="color:var(--color-primary)" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>
+              <span class="import-zone-text"><span class="l-en">Choose a JSON file to import</span><span class="l-fr">Choisis un fichier JSON à importer</span></span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="sg-item">
+        <div class="sg-caption"><b>Import · preview</b><span class="l-en">What the file will add before committing.</span><span class="l-fr">Ce que le fichier ajoutera avant de valider.</span></div>
+        <div class="device" data-screen-label="Import · preview">
+          <div class="app-header">
+            <x-import component-from-global-scope="LudoDesignSystem_3f7560.Button" variant="ghost" size="md" icon-only="{{ true }}" hint-size="44px,44px"><svg class="ic" viewBox="0 0 24 24"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg></x-import>
+            <span class="app-title"><span class="l-en">Import</span><span class="l-fr">Importer</span></span>
+            <x-import component-from-global-scope="LudoDesignSystem_3f7560.Button" variant="ghost" size="md" icon-only="{{ true }}" hint-size="44px,44px"><svg class="ic" viewBox="0 0 24 24"><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="18" y2="18"/></svg></x-import>
+          </div>
+          <div class="app-content">
+            <div class="import-preview">
+              <div class="import-preview-row"><span class="import-preview-label"><span class="l-en">Game</span><span class="l-fr">Jeu</span></span><span class="import-preview-value">Belote</span></div>
+              <div class="import-preview-row"><span class="import-preview-label"><span class="l-en">Matches to import</span><span class="l-fr">Parties à importer</span></span><span class="import-preview-value">18</span></div>
+            </div>
+            <x-import component-from-global-scope="LudoDesignSystem_3f7560.Button" variant="primary" size="md" dc-props="{{ fullBtn }}" hint-size="100%,44px"><span class="l-en">Import</span><span class="l-fr">Importer</span></x-import>
+          </div>
+        </div>
+      </div>
+
+      <div class="sg-item">
+        <div class="sg-caption"><b>Import · result</b><span class="l-en">Imported / skipped / failed breakdown.</span><span class="l-fr">Répartition importés / ignorés / échoués.</span></div>
+        <div class="device" data-screen-label="Import · result">
+          <div class="app-header">
+            <x-import component-from-global-scope="LudoDesignSystem_3f7560.Button" variant="ghost" size="md" icon-only="{{ true }}" hint-size="44px,44px"><svg class="ic" viewBox="0 0 24 24"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg></x-import>
+            <span class="app-title"><span class="l-en">Import</span><span class="l-fr">Importer</span></span>
+            <x-import component-from-global-scope="LudoDesignSystem_3f7560.Button" variant="ghost" size="md" icon-only="{{ true }}" hint-size="44px,44px"><svg class="ic" viewBox="0 0 24 24"><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="18" y2="18"/></svg></x-import>
+          </div>
+          <div class="app-content">
+            <div class="import-result">
+              <div class="import-result-line import-success"><svg class="ic ic--sm" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/></svg><span class="l-en">15 imported</span><span class="l-fr">15 importés</span></div>
+              <div class="import-result-line import-warn"><svg class="ic ic--sm" viewBox="0 0 24 24"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg><span class="l-en">2 skipped — duplicate IDs</span><span class="l-fr">2 ignorés — IDs en double</span></div>
+              <div class="import-result-line import-error"><svg class="ic ic--sm" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></svg><span class="l-en">1 failed</span><span class="l-fr">1 échoué</span></div>
+              <div class="import-failed-id">m_8fa1c2e0</div>
+            </div>
+            <x-import component-from-global-scope="LudoDesignSystem_3f7560.Button" variant="primary" size="md" dc-props="{{ fullBtn }}" hint-size="100%,44px"><span class="l-en">Done</span><span class="l-fr">Terminé</span></x-import>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== 7 · Sync ===== -->
+  <div class="scoreo" data-theme="{{ flavor }}" data-accent="{{ accent }}">
+    <div class="sg-section-head">
+      <h2>7 · Sync</h2>
+      <p><span class="l-en">Google Drive backup — disconnected, the conflict view comparing two data versions side by side, and the resolved state.</span><span class="l-fr">Sauvegarde Google Drive — déconnecté, la vue de conflit comparant deux versions côte à côte, et l'état résolu.</span></p>
+    </div>
+    <div class="sg-grid">
+      <div class="sg-item">
+        <div class="sg-caption"><b>Sync · disconnected</b><span class="l-en">Not yet linked to Google Drive.</span><span class="l-fr">Pas encore lié à Google Drive.</span></div>
+        <div class="device" data-screen-label="Sync · disconnected">
+          <div class="app-header">
+            <x-import component-from-global-scope="LudoDesignSystem_3f7560.Button" variant="ghost" size="md" icon-only="{{ true }}" hint-size="44px,44px"><svg class="ic" viewBox="0 0 24 24"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg></x-import>
+            <span class="app-title"><span class="l-en">Sync</span><span class="l-fr">Synchro</span></span>
+            <x-import component-from-global-scope="LudoDesignSystem_3f7560.Button" variant="ghost" size="md" icon-only="{{ true }}" hint-size="44px,44px"><svg class="ic" viewBox="0 0 24 24"><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="18" y2="18"/></svg></x-import>
+          </div>
+          <div class="app-content">
+            <div class="empty">
+              <svg class="ic ic--lg" style="color:var(--color-primary)" viewBox="0 0 24 24"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/></svg>
+              <div class="section-label"><span class="l-en">Cloud sync</span><span class="l-fr">Synchro cloud</span></div>
+              <div><span class="l-en">Sync your data with Google Drive</span><span class="l-fr">Synchronise tes données avec Google Drive</span></div>
+              <div style="margin-top:16px;display:flex;justify-content:center">
+                <x-import component-from-global-scope="LudoDesignSystem_3f7560.Button" variant="primary" size="md" hint-size="auto,44px"><span class="l-en">Connect with Google</span><span class="l-fr">Connexion Google</span></x-import>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="sg-item">
+        <div class="sg-caption"><b>Sync · conflict</b><span class="l-en">Local vs remote — choose which to keep.</span><span class="l-fr">Local vs distant — choisir lequel garder.</span></div>
+        <div class="device" data-screen-label="Sync · conflict">
+          <div class="app-header">
+            <x-import component-from-global-scope="LudoDesignSystem_3f7560.Button" variant="ghost" size="md" icon-only="{{ true }}" hint-size="44px,44px"><svg class="ic" viewBox="0 0 24 24"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg></x-import>
+            <span class="app-title"><span class="l-en">Sync</span><span class="l-fr">Synchro</span></span>
+            <x-import component-from-global-scope="LudoDesignSystem_3f7560.Button" variant="ghost" size="md" icon-only="{{ true }}" hint-size="44px,44px"><svg class="ic" viewBox="0 0 24 24"><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="18" y2="18"/></svg></x-import>
+          </div>
+          <div class="app-content">
+            <div class="section-label" style="margin-top:0"><span class="l-en">Sync conflict</span><span class="l-fr">Conflit de synchro</span></div>
+            <div style="font-size:14px;color:var(--text-muted);margin-bottom:8px"><span class="l-en">Two versions of your data differ. Choose which one to keep.</span><span class="l-fr">Deux versions de tes données diffèrent. Choisis laquelle garder.</span></div>
+            <div class="sync-conflict-container">
+              <div class="sync-card"><div class="sync-card-title"><span class="l-en">Local</span><span class="l-fr">Local</span> · 13 Jul</div><div class="sync-card-stat">5 <span class="l-en">players</span><span class="l-fr">joueurs</span></div><div class="sync-card-stat">4 <span class="l-en">games</span><span class="l-fr">jeux</span></div><div class="sync-card-stat">23 <span class="l-en">matches</span><span class="l-fr">parties</span></div></div>
+              <div class="sync-card"><div class="sync-card-title"><span class="l-en">Remote</span><span class="l-fr">Distant</span> · 11 Jul</div><div class="sync-card-stat">5 <span class="l-en">players</span><span class="l-fr">joueurs</span></div><div class="sync-card-stat">3 <span class="l-en">games</span><span class="l-fr">jeux</span></div><div class="sync-card-stat">19 <span class="l-en">matches</span><span class="l-fr">parties</span></div></div>
+            </div>
+            <div class="sync-actions">
+              <x-import component-from-global-scope="LudoDesignSystem_3f7560.Button" variant="primary" size="md" dc-props="{{ flexBtn }}" hint-size="auto,44px"><span class="l-en">Keep local</span><span class="l-fr">Garder local</span></x-import>
+              <x-import component-from-global-scope="LudoDesignSystem_3f7560.Button" variant="secondary" size="md" dc-props="{{ flexBtn }}" hint-size="auto,44px"><span class="l-en">Keep remote</span><span class="l-fr">Garder distant</span></x-import>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="sg-item">
+        <div class="sg-caption"><b>Sync · complete</b><span class="l-en">After a successful sync.</span><span class="l-fr">Après une synchro réussie.</span></div>
+        <div class="device" data-screen-label="Sync · complete">
+          <div class="app-header">
+            <x-import component-from-global-scope="LudoDesignSystem_3f7560.Button" variant="ghost" size="md" icon-only="{{ true }}" hint-size="44px,44px"><svg class="ic" viewBox="0 0 24 24"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg></x-import>
+            <span class="app-title"><span class="l-en">Sync</span><span class="l-fr">Synchro</span></span>
+            <x-import component-from-global-scope="LudoDesignSystem_3f7560.Button" variant="ghost" size="md" icon-only="{{ true }}" hint-size="44px,44px"><svg class="ic" viewBox="0 0 24 24"><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="18" y2="18"/></svg></x-import>
+          </div>
+          <div class="app-content">
+            <div class="empty">
+              <svg class="ic ic--lg" style="color:var(--color-success)" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/></svg>
+              <div class="section-label"><span class="l-en">Sync complete</span><span class="l-fr">Synchro terminée</span></div>
+              <div>3 <span class="l-en">pushed</span><span class="l-fr">envoyés</span> · 1 <span class="l-en">pulled</span><span class="l-fr">reçu</span></div>
+              <div style="margin-top:16px;display:flex;justify-content:center">
+                <x-import component-from-global-scope="LudoDesignSystem_3f7560.Button" variant="secondary" size="md" hint-size="auto,44px"><span class="l-en">Disconnect</span><span class="l-fr">Déconnexion</span></x-import>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== 8 · Theme & navigation ===== -->
+  <div class="scoreo" data-theme="{{ flavor }}" data-accent="{{ accent }}">
+    <div class="sg-section-head">
+      <h2>8 · Theme &amp; navigation</h2>
+      <p><span class="l-en">The chrome that frames every screen — burger menu and header — plus the theme picker (4 Catppuccin flavors × 14 accents) and the four flavors side by side.</span><span class="l-fr">Le cadre commun à tous les écrans — menu et en-tête — plus le sélecteur de thème (4 palettes Catppuccin × 14 accents) et les quatre palettes côte à côte.</span></p>
+    </div>
+    <div class="sg-grid">
+      <div class="sg-item">
+        <div class="sg-caption"><b>Navigation · menu</b><span class="l-en">Slide-in menu opened from the header.</span><span class="l-fr">Menu latéral ouvert depuis l'en-tête.</span></div>
+        <div class="device" data-screen-label="Navigation · menu">
+          <div class="app-header">
+            <span style="width:44px"></span>
+            <span class="app-title">Scoreo</span>
+            <x-import component-from-global-scope="LudoDesignSystem_3f7560.Button" variant="ghost" size="md" icon-only="{{ true }}" hint-size="44px,44px"><svg class="ic" viewBox="0 0 24 24"><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="18" y2="18"/></svg></x-import>
+          </div>
+          <div class="app-content">
+            <div class="list-container">
+              <div class="list-item-row"><div class="list-item-label"><div><span class="list-item-name">Camille</span><span class="list-item-subtitle">12W 5L</span></div></div></div>
+              <div class="list-item-row"><div class="list-item-label"><div><span class="list-item-name">Théo</span><span class="list-item-subtitle">9W 8L</span></div></div></div>
+            </div>
+          </div>
+          <div class="burger-overlay"></div>
+          <div class="burger-menu">
+            <div class="burger-close">
+              <x-import component-from-global-scope="LudoDesignSystem_3f7560.Button" variant="ghost" size="md" icon-only="{{ true }}" hint-size="44px,44px"><svg class="ic" viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></x-import>
+            </div>
+            <button class="burger-item"><svg class="ic" viewBox="0 0 24 24"><path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8"/><path d="M3 10a2 2 0 0 1 .709-1.528l7-5.999a2 2 0 0 1 2.582 0l7 5.999A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg><span class="l-en">Home</span><span class="l-fr">Accueil</span></button>
+            <button class="burger-item"><svg class="ic" viewBox="0 0 24 24"><path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg><span>Stats</span></button>
+            <button class="burger-item"><svg class="ic" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg><span class="l-en">History</span><span class="l-fr">Historique</span></button>
+            <button class="burger-item"><svg class="ic" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.2" fill="currentColor" stroke="none"/><circle cx="15.5" cy="15.5" r="1.2" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.2" fill="currentColor" stroke="none"/></svg><span class="l-en">Games</span><span class="l-fr">Jeux</span></button>
+            <button class="burger-item"><svg class="ic" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg><span class="l-en">Import</span><span class="l-fr">Importer</span></button>
+            <button class="burger-item"><svg class="ic" viewBox="0 0 24 24"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/></svg><span class="l-en">Sync</span><span class="l-fr">Synchro</span></button>
+            <button class="burger-item"><svg class="ic" viewBox="0 0 24 24"><circle cx="13.5" cy="6.5" r=".5" fill="currentColor"/><circle cx="17.5" cy="10.5" r=".5" fill="currentColor"/><circle cx="8.5" cy="7.5" r=".5" fill="currentColor"/><circle cx="6.5" cy="12.5" r=".5" fill="currentColor"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/></svg><span class="l-en">Theme</span><span class="l-fr">Thème</span></button>
+          </div>
+        </div>
+      </div>
+
+      <div class="sg-item">
+        <div class="sg-caption"><b>Theme picker</b><span class="l-en">4 flavors × 14 accents, opened from the menu.</span><span class="l-fr">4 palettes × 14 accents, depuis le menu.</span></div>
+        <div class="device" data-screen-label="Theme picker">
+          <div class="app-header">
+            <span style="width:44px"></span>
+            <span class="app-title">Scoreo</span>
+            <x-import component-from-global-scope="LudoDesignSystem_3f7560.Button" variant="ghost" size="md" icon-only="{{ true }}" hint-size="44px,44px"><svg class="ic" viewBox="0 0 24 24"><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="18" y2="18"/></svg></x-import>
+          </div>
+          <div class="app-content"></div>
+          <x-import component-from-global-scope="LudoDesignSystem_3f7560.Modal" open="{{ true }}" width="340px" title="{{ t.theme }}" hint-size="100%,100%">
+            <div class="theme-picker-label"><span class="l-en">Flavor</span><span class="l-fr">Palette</span></div>
+            <div class="theme-picker-row">
+              <button class="theme-chip theme-chip--active">Latte</button>
+              <button class="theme-chip">Frappé</button>
+              <button class="theme-chip">Macchiato</button>
+              <button class="theme-chip">Mocha</button>
+            </div>
+            <div class="theme-picker-label">Accent</div>
+            <div class="theme-picker-row">
+              <button class="accent-swatch" style="background:var(--ctp-rosewater)"></button>
+              <button class="accent-swatch" style="background:var(--ctp-flamingo)"></button>
+              <button class="accent-swatch" style="background:var(--ctp-pink)"></button>
+              <button class="accent-swatch accent-swatch--active" style="background:var(--ctp-mauve)"></button>
+              <button class="accent-swatch" style="background:var(--ctp-red)"></button>
+              <button class="accent-swatch" style="background:var(--ctp-maroon)"></button>
+              <button class="accent-swatch" style="background:var(--ctp-peach)"></button>
+              <button class="accent-swatch" style="background:var(--ctp-yellow)"></button>
+              <button class="accent-swatch" style="background:var(--ctp-green)"></button>
+              <button class="accent-swatch" style="background:var(--ctp-teal)"></button>
+              <button class="accent-swatch" style="background:var(--ctp-sky)"></button>
+              <button class="accent-swatch" style="background:var(--ctp-sapphire)"></button>
+              <button class="accent-swatch" style="background:var(--ctp-blue)"></button>
+              <button class="accent-swatch" style="background:var(--ctp-lavender)"></button>
+            </div>
+            <div class="modal-actions">
+              <x-import component-from-global-scope="LudoDesignSystem_3f7560.Button" variant="secondary" size="md" dc-props="{{ flexBtn }}" hint-size="auto,44px"><span class="l-en">Close</span><span class="l-fr">Fermer</span></x-import>
+            </div>
+          </x-import>
+        </div>
+      </div>
+
+      <div class="sg-item">
+        <div class="sg-caption"><b>The four flavors</b><span class="l-en">Same markup, retinted by data-theme.</span><span class="l-fr">Même markup, recoloré par data-theme.</span></div>
+        <div style="display:flex;gap:14px;flex-wrap:wrap;width:390px">
+          <div data-theme="latte" data-accent="{{ accent }}" style="width:182px;background:var(--surface-app);border:1px solid var(--border-default);border-radius:16px;padding:14px;color:var(--text-body)">
+            <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);margin-bottom:10px">Latte</div>
+            <div class="card stats-row" style="margin-bottom:6px"><span class="stats-row-name">Camille</span><span class="stats-elo">1284</span></div>
+            <div class="card stats-row"><span class="stats-row-name">Théo</span><span class="stats-elo">1176</span></div>
+          </div>
+          <div data-theme="frappe" data-accent="{{ accent }}" style="width:182px;background:var(--surface-app);border:1px solid var(--border-default);border-radius:16px;padding:14px;color:var(--text-body)">
+            <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);margin-bottom:10px">Frappé</div>
+            <div class="card stats-row" style="margin-bottom:6px"><span class="stats-row-name">Camille</span><span class="stats-elo">1284</span></div>
+            <div class="card stats-row"><span class="stats-row-name">Théo</span><span class="stats-elo">1176</span></div>
+          </div>
+          <div data-theme="macchiato" data-accent="{{ accent }}" style="width:182px;background:var(--surface-app);border:1px solid var(--border-default);border-radius:16px;padding:14px;color:var(--text-body)">
+            <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);margin-bottom:10px">Macchiato</div>
+            <div class="card stats-row" style="margin-bottom:6px"><span class="stats-row-name">Camille</span><span class="stats-elo">1284</span></div>
+            <div class="card stats-row"><span class="stats-row-name">Théo</span><span class="stats-elo">1176</span></div>
+          </div>
+          <div data-theme="mocha" data-accent="{{ accent }}" style="width:182px;background:var(--surface-app);border:1px solid var(--border-default);border-radius:16px;padding:14px;color:var(--text-body)">
+            <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);margin-bottom:10px">Mocha</div>
+            <div class="card stats-row" style="margin-bottom:6px"><span class="stats-row-name">Camille</span><span class="stats-elo">1284</span></div>
+            <div class="card stats-row"><span class="stats-row-name">Théo</span><span class="stats-elo">1176</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1400,&quot;height&quot;:900},&quot;flavor&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;latte&quot;,&quot;frappe&quot;,&quot;macchiato&quot;,&quot;mocha&quot;],&quot;default&quot;:&quot;latte&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Theme&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;rosewater&quot;,&quot;flamingo&quot;,&quot;pink&quot;,&quot;mauve&quot;,&quot;red&quot;,&quot;maroon&quot;,&quot;peach&quot;,&quot;yellow&quot;,&quot;green&quot;,&quot;teal&quot;,&quot;sky&quot;,&quot;sapphire&quot;,&quot;blue&quot;,&quot;lavender&quot;],&quot;default&quot;:&quot;mauve&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Theme&quot;},&quot;lang&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;en&quot;,&quot;fr&quot;],&quot;default&quot;:&quot;en&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Content&quot;}}">
+const STRINGS = {
+  en: {
+    playerName: 'Player name', gameName: 'Game name', gameNamePh: 'e.g. Belote',
+    tieQuestion: 'Tie-break question', selectGame: 'Select a game',
+    finalDecision: 'Final decision', discard: 'Discard scores?',
+    deleteMatch: 'Delete match?', editBelote: 'Edit Belote', theme: 'Theme',
+    winCondition: 'Win condition', tieBreak: 'Tie-break',
+  },
+  fr: {
+    playerName: 'Nom du joueur', gameName: 'Nom du jeu', gameNamePh: 'ex. Belote',
+    tieQuestion: 'Question de départage', selectGame: 'Choisir un jeu',
+    finalDecision: 'Décision finale', discard: 'Effacer les scores ?',
+    deleteMatch: 'Supprimer la partie ?', editBelote: 'Modifier Belote', theme: 'Thème',
+    winCondition: 'Condition de victoire', tieBreak: 'Départage',
+  },
+};
+
+class Component extends DCLogic {
+  componentDidMount() {
+    // The DS bundle loads from <helmet>; re-render once it is on window so
+    // the Table render callbacks can mount real DS Inputs.
+    if (!window.LudoDesignSystem_3f7560) {
+      this._poll = setInterval(() => {
+        if (window.LudoDesignSystem_3f7560) { clearInterval(this._poll); this.forceUpdate(); }
+      }, 60);
+    }
+  }
+  componentWillUnmount() { if (this._poll) clearInterval(this._poll); }
+
+  // History table: players as columns, rounds as rows, every cell editable.
+  // Totals are deliberately absent — the standings grid above owns those.
+  board(players, rounds) {
+    const DS = window.LudoDesignSystem_3f7560 || {};
+    const columns = [{
+      key: 'round',
+      header: '',
+      align: 'left',
+      render: (row) => React.createElement(
+        'span',
+        { style: { fontSize: 'var(--text-xs)', textTransform: 'uppercase', letterSpacing: 'var(--tracking-wide)', color: 'var(--text-muted)', whiteSpace: 'nowrap' } },
+        row.label
+      ),
+    }].concat(players.map((p) => ({
+      key: p.key,
+      header: p.name,
+      align: 'center',
+      render: (row) => DS.Input
+        ? React.createElement(DS.Input, {
+            type: 'number', stepper: false, size: 'sm',
+            defaultValue: row[p.key],
+            // Native spinner arrows eat the width of a 2-digit value in a
+            // narrow history cell — suppress them directly inline (a class
+            // selector lost to the DS Input's own specificity) and widen
+            // the cell for headroom regardless.
+            style: {
+              width: '60px', margin: '0 auto',
+              MozAppearance: 'textfield', WebkitAppearance: 'none', appearance: 'none',
+            },
+            className: 'no-spin',
+          })
+        : row[p.key],
+    })));
+    return { columns, rows: rounds };
+  }
+
+  renderVals() {
+    const lang = this.props.lang ?? 'en';
+    const t = STRINGS[lang] || STRINGS.en;
+
+    const rl = lang === 'fr' ? 'Tour' : 'Round';
+    const skyjo = this.board(
+      [
+        { key: 'lea', name: 'Léa' },
+        { key: 'camille', name: 'Camille' },
+        { key: 'theo', name: 'Théo' },
+        { key: 'malik', name: 'Malik' },
+        { key: 'jonas', name: 'Jonas' },
+        { key: 'ines', name: 'Inès' },
+        { key: 'hugo', name: 'Hugo' },
+        { key: 'sofia', name: 'Sofia' },
+      ],
+      [
+        { key: 'r3', label: rl + ' 3', lea: 4, camille: 3, theo: 11, malik: 9, jonas: 14, ines: 6, hugo: 12, sofia: 8 },
+        { key: 'r2', label: rl + ' 2', lea: 7, camille: 8, theo: 22, malik: 17, jonas: 19, ines: 28, hugo: 31, sofia: 35 },
+        { key: 'r1', label: rl + ' 1', lea: 5, camille: 15, theo: 5, malik: 15, jonas: 14, ines: 18, hugo: 15, sofia: 20 },
+      ]
+    );
+
+    // Round-card view for History: wraps instead of scrolling sideways, so
+    // it never runs off the device regardless of player count.
+    const historyRounds = [
+      { key: 'r3', label: rl + ' 3', cells: [{n:'Léa',v:4},{n:'Camille',v:3},{n:'Théo',v:11},{n:'Malik',v:9},{n:'Jonas',v:14},{n:'Inès',v:6},{n:'Hugo',v:12},{n:'Sofia',v:8}] },
+      { key: 'r2', label: rl + ' 2', cells: [{n:'Léa',v:7},{n:'Camille',v:8},{n:'Théo',v:22},{n:'Malik',v:17},{n:'Jonas',v:19},{n:'Inès',v:28},{n:'Hugo',v:31},{n:'Sofia',v:35}] },
+      { key: 'r1', label: rl + ' 1', cells: [{n:'Léa',v:5},{n:'Camille',v:15},{n:'Théo',v:5},{n:'Malik',v:15},{n:'Jonas',v:14},{n:'Inès',v:18},{n:'Hugo',v:15},{n:'Sofia',v:20}] },
+    ].map((round) => ({
+      ...round,
+      cells: round.cells.map((c) => ({
+        ...c,
+        field: window.LudoDesignSystem_3f7560 && window.LudoDesignSystem_3f7560.Input
+          ? React.createElement(window.LudoDesignSystem_3f7560.Input, {
+              type: 'number', stepper: false, size: 'sm', defaultValue: c.v,
+              style: { width: '52px' }, className: 'no-spin',
+            })
+          : c.v,
+      })),
+    }));
+
+    return {
+      flavor: this.props.flavor ?? 'latte',
+      accent: this.props.accent ?? 'mauve',
+      lang, t, skyjo, historyRounds,
+      // Extra props spread onto DS Buttons that need layout tweaks.
+      fullBtn: { style: { width: '100%' } },
+      flexBtn: { style: { flex: '1 1 auto', minWidth: 0, padding: '0 12px' } },
+      dangerGhost: { style: { color: 'var(--color-danger)' } },
+      fabBtn: {
+        style: {
+          borderRadius: 'var(--radius-pill)',
+          boxShadow: '0 8px 20px -6px color-mix(in srgb, var(--color-primary) 60%, transparent)',
+        },
+      },
+    };
+  }
+}
+</script>
+</body>
+</html>
