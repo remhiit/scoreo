@@ -95,6 +95,11 @@ export function countRoundsPlayed(rounds: Record<string, string>[]): number {
   return rounds.filter((round) => Object.values(round).some((v) => v.trim() !== '')).length
 }
 
+/** The round the entry sheet should fill next: the first not-yet-played round, or a new one past the end. */
+export function nextRoundNumber(rounds: Record<string, string>[]): number {
+  return countRoundsPlayed(rounds) + 1
+}
+
 export function leadHintLabel(gameType: GameType, roundsPlayed: number): string {
   const direction = gameType.winCondition === 'LOWEST_SCORE' ? 'lowest score leads' : 'highest score leads'
   if (roundsPlayed === 0) return `No rounds played yet · ${direction}`
@@ -146,6 +151,10 @@ export type ScoreDetailAction =
   | { type: 'toggleManualSelectionWinner'; playerId: string }
   | { type: 'manualWinnersEmptyError' }
   | { type: 'dismissTieBreak' }
+  | { type: 'openRoundSheet' }
+  | { type: 'closeRoundSheet' }
+  | { type: 'updateRoundSheetInput'; playerId: string; value: number }
+  | { type: 'submitRoundSheet' }
 
 export function scoreDetailReducer(state: ScoreDetailState, action: ScoreDetailAction): ScoreDetailState {
   switch (action.type) {
@@ -233,6 +242,30 @@ export function scoreDetailReducer(state: ScoreDetailState, action: ScoreDetailA
       return { ...state, error: 'Select at least one winner' }
     case 'dismissTieBreak':
       return { ...state, showSecondaryScoreDialog: false, showManualSelectionDialog: false, error: undefined }
+    case 'openRoundSheet':
+      return {
+        ...state,
+        showRoundSheet: true,
+        roundSheetInputs: Object.fromEntries(state.players.map((p) => [p.id, 0])),
+        error: undefined,
+      }
+    case 'closeRoundSheet':
+      return { ...state, showRoundSheet: false, roundSheetInputs: {} }
+    case 'updateRoundSheetInput':
+      return {
+        ...state,
+        roundSheetInputs: { ...state.roundSheetInputs, [action.playerId]: action.value },
+      }
+    case 'submitRoundSheet': {
+      const round = Object.fromEntries(
+        state.players.map((p) => [p.id, String(state.roundSheetInputs[p.id] ?? 0)]),
+      )
+      const rounds = state.rounds.slice()
+      const index = countRoundsPlayed(rounds)
+      if (index < rounds.length) rounds[index] = round
+      else rounds.push(round)
+      return { ...state, rounds, showRoundSheet: false, roundSheetInputs: {}, error: undefined }
+    }
   }
 }
 
@@ -391,6 +424,8 @@ function freshState(gameType: GameType, players: Player[]): ScoreDetailState {
     collectedSecondaryScores: [],
     editingMatchId: undefined,
     showCancelConfirm: false,
+    showRoundSheet: false,
+    roundSheetInputs: {},
   }
 }
 

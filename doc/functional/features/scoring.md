@@ -11,8 +11,8 @@
 | Component | Details |
 |-----------|---------|
 | **Reducer** | `scoreDetailReducer` — `src/ui/scoredetail/scoreDetailReducer.ts` |
-| **Action** | `ScoreDetailAction`: `setViewMode`, `updateScore`, `addRound`, `removeRound`, `cancelImmediate`, `showCancelConfirm`, `confirmCancel`, `dismissCancelConfirm`, `validationFailed`, `openWinnerModal`, `openManualSelectionDialog`, `openSecondaryScoreDialog`, `saved`, `saveFailed`, `dismissModal`, `toggleModalWinner`, `confirmWinnersEmptyError`, `updateSecondaryScoreInput`, `secondaryScoreInvalid`, `secondaryScoreEscalate`, `toggleManualSelectionWinner`, `manualWinnersEmptyError`, `dismissTieBreak` |
-| **State** | `ScoreDetailState`: `gameType`, `players`, `rounds`, `viewMode`, `showWinnerModal`, `modalWinners`, `showSecondaryScoreDialog`, `tiedPlayerIds`, `secondaryScoreInputs`, `showManualSelectionDialog`, `manualSelectionWinners`, `collectedSecondaryScores`, `error`, `saved`, `cancelled`, `editingMatchId`, `showCancelConfirm` |
+| **Action** | `ScoreDetailAction`: `setViewMode`, `updateScore`, `addRound`, `removeRound`, `cancelImmediate`, `showCancelConfirm`, `confirmCancel`, `dismissCancelConfirm`, `validationFailed`, `openWinnerModal`, `openManualSelectionDialog`, `openSecondaryScoreDialog`, `saved`, `saveFailed`, `dismissModal`, `toggleModalWinner`, `confirmWinnersEmptyError`, `updateSecondaryScoreInput`, `secondaryScoreInvalid`, `secondaryScoreEscalate`, `toggleManualSelectionWinner`, `manualWinnersEmptyError`, `dismissTieBreak`, `openRoundSheet`, `closeRoundSheet`, `updateRoundSheetInput`, `submitRoundSheet` |
+| **State** | `ScoreDetailState`: `gameType`, `players`, `rounds`, `viewMode`, `showWinnerModal`, `modalWinners`, `showSecondaryScoreDialog`, `tiedPlayerIds`, `secondaryScoreInputs`, `showManualSelectionDialog`, `manualSelectionWinners`, `collectedSecondaryScores`, `error`, `saved`, `cancelled`, `editingMatchId`, `showCancelConfirm`, `showRoundSheet`, `roundSheetInputs` |
 
 Screen: `src/ui/scoredetail/ScoreDetailScreen.tsx`. See `doc/reference.md` for the full reducer table.
 
@@ -58,14 +58,26 @@ A 2-column card grid (`.gs-grid`), one `.gs-card` per player, holding any headco
 | **18**   | **17**   | totals |
 | ✕        | ✕        | delete round |
 
-- Editable score cells with numeric input
+- Editable score cells with numeric input (for already-entered rounds; unchanged by the round entry sheet below)
 - **✕** button on each round row to remove it
-- **＋ Add round** button at the bottom
+- **＋ Add round** button at the bottom (legacy inline path — still functional, targets the same not-yet-played round as the sheet)
+
+### Round entry sheet
+
+The primary way to enter a new round. A full-width primary button in the bottom bar reads "Enter round N" (N = `nextRoundNumber(rounds)`, the first not-yet-played round + 1). Tapping it opens `RoundEntrySheet` (`src/ui/scoredetail/RoundEntrySheet.tsx`), a bottom sheet (`.sheet`) over a dimming scrim (`.sheet-scrim`):
+
+- Title "Round N".
+- One `.sheet-row` per player: name, current total (`.sheet-row-tot`, computed before this round), and a `LudoNumberInput` stepper defaulted to 0.
+- Rows scroll internally (`.sheet-rows`, `overflow-y: auto`); the sheet is capped at 80% of the viewport height, so the title and footer buttons stay visible.
+- Footer: **Cancel** (secondary — closes the sheet, `roundSheetInputs` discarded, `rounds` untouched) and **Save round** (primary — writes the round into `rounds` and closes).
+
+State (`showRoundSheet`, `roundSheetInputs`) lives in `ScoreDetailState`; `submitRoundSheet` fills the first not-yet-played round (or appends one if all existing rounds are already played) and triggers the same `saveDraft` autosave as a direct cell edit. Standings update immediately since both views read the same `rounds` state.
 
 ### Bottom bar
 
-- **Finish match** to save (also auto-saves to localStorage as MatchDraft after each score update)
-- **Cancel match**
+- Full-width primary **Enter round N** button (opens the round entry sheet above).
+- **Finish match** to save (also auto-saves to localStorage as MatchDraft after each score update).
+- **Cancel match**.
 - Pinned to the bottom of the screen (`.bottom-bar`), visible from both the Standings and History views.
 - For `MANUAL` win condition: modal appears listing each player's total as a selectable row (○/●) to select winner(s)
 
@@ -131,6 +143,26 @@ When I click "＋ Add round"
 Then a second empty round appears
 When I click "✕" on the second round
 Then I'm back to 1 round
+```
+
+### Enter a round via the round entry sheet
+```
+Given a game with players Alice and Bob, no round played yet
+When I click "Enter round 1" in the bottom bar
+Then the round entry sheet opens, showing Alice and Bob each at 0
+When I enter "10" for Alice and "4" for Bob
+And I click "Save round"
+Then the sheet closes, round 1 is saved with Alice=10, Bob=4
+And the Standings view reflects the new totals immediately
+And the bottom bar now reads "Enter round 2"
+```
+
+### Cancel the round entry sheet
+```
+Given the round entry sheet is open with some values entered
+When I click "Cancel" (or tap the dimming scrim)
+Then the sheet closes
+And no round is added or modified
 ```
 
 ### Manual winner selection
@@ -212,6 +244,20 @@ Given a MatchDraft exists
 When I'm on Home and I decide not to resume
 Then I can ignore the banner and start a new match
 And the previous MatchDraft will be overwritten by the new match's data
+```
+
+## Mockup (Round entry sheet)
+
+```
+┌─────────────────────────────┐
+│  ...standings behind scrim... │
+├─────────────────────────────┤
+│           ▬▬▬                │
+│  Round 4                    │
+│  Alice · 16          [ 0 ]  │
+│  Bob   · 26          [ 0 ]  │
+│  [Cancel]      [Save round] │
+└─────────────────────────────┘
 ```
 
 ## Mockup (History view)

@@ -128,6 +128,61 @@ describe('ScoreDetailScreen', () => {
     expect(scoreInputs()).toHaveLength(2)
   })
 
+  it('opens the round entry sheet from the bottom bar, showing every player at 0 next to their total', () => {
+    renderScreen(gameType())
+
+    fireEvent.click(screen.getByText('Enter round 1'))
+
+    const sheet = screen.getByRole('dialog', { name: 'Round 1' })
+    expect(within(sheet).getByText('Alice', { exact: false })).toBeInTheDocument()
+    expect(within(sheet).getAllByRole('spinbutton').map((el) => (el as HTMLInputElement).value)).toEqual(['0', '0'])
+  })
+
+  it('validating the sheet adds the round and updates the standings immediately', () => {
+    renderScreen(gameType())
+
+    fireEvent.click(screen.getByText('Enter round 1'))
+    const sheet = screen.getByRole('dialog', { name: 'Round 1' })
+    const [aliceInput, bobInput] = within(sheet).getAllByRole('spinbutton')
+    fireEvent.change(aliceInput, { target: { value: '10' } })
+    fireEvent.change(bobInput, { target: { value: '4' } })
+    fireEvent.click(within(sheet).getByText('Save round'))
+
+    expect(screen.queryByText('Round 1')).not.toBeInTheDocument()
+    const cards = document.querySelectorAll('.gs-card')
+    expect(within(cards[0] as HTMLElement).getByText('Alice')).toBeInTheDocument()
+    expect(within(cards[0] as HTMLElement).getByText('10')).toBeInTheDocument()
+    expect(screen.getByText('Enter round 2')).toBeInTheDocument()
+  })
+
+  it('cancelling the sheet closes it without writing any round', () => {
+    renderScreen(gameType())
+
+    fireEvent.click(screen.getByText('Enter round 1'))
+    const sheet = screen.getByRole('dialog', { name: 'Round 1' })
+    const [aliceInput] = within(sheet).getAllByRole('spinbutton')
+    fireEvent.change(aliceInput, { target: { value: '10' } })
+    fireEvent.click(within(sheet).getByText('Cancel'))
+
+    expect(screen.queryByText('Round 1')).not.toBeInTheDocument()
+    expect(screen.getByText('Enter round 1')).toBeInTheDocument()
+    switchToHistory()
+    expect(scoreInputs()[0]).toHaveValue(null)
+  })
+
+  it('validating a round via the sheet saves a draft to the repository', () => {
+    const draftRepo = new InMemoryMatchDraftRepository()
+    renderScreen(gameType(), { matchDraftRepository: draftRepo })
+
+    fireEvent.click(screen.getByText('Enter round 1'))
+    const sheet = screen.getByRole('dialog', { name: 'Round 1' })
+    const [aliceInput] = within(sheet).getAllByRole('spinbutton')
+    fireEvent.change(aliceInput, { target: { value: '7' } })
+    fireEvent.click(within(sheet).getByText('Save round'))
+
+    expect(draftRepo.load()?.rounds[0].alice).toBe('7')
+  })
+
   it('shows an error for a non-integer score and does not save', () => {
     // A real <input type="number"> rejects letters outright (jsdom included), so
     // "abc" can never reach state through the DOM — a decimal is the realistic

@@ -14,6 +14,7 @@ import {
   computeTotals,
   countRoundsPlayed,
   leadHintLabel,
+  nextRoundNumber,
   resetState,
   saveDraft,
   scoreDetailReducer,
@@ -94,6 +95,24 @@ class Harness {
   removeRound(index: number) {
     const before = this.state.rounds
     this.state = scoreDetailReducer(this.state, { type: 'removeRound', index })
+    this.afterRoundsChange(before)
+  }
+
+  openRoundSheet() {
+    this.state = scoreDetailReducer(this.state, { type: 'openRoundSheet' })
+  }
+
+  closeRoundSheet() {
+    this.state = scoreDetailReducer(this.state, { type: 'closeRoundSheet' })
+  }
+
+  updateRoundSheetInput(playerId: string, value: number) {
+    this.state = scoreDetailReducer(this.state, { type: 'updateRoundSheetInput', playerId, value })
+  }
+
+  submitRoundSheet() {
+    const before = this.state.rounds
+    this.state = scoreDetailReducer(this.state, { type: 'submitRoundSheet' })
     this.afterRoundsChange(before)
   }
 
@@ -249,6 +268,74 @@ describe('scoreDetailReducer', () => {
     const { harness } = buildHarness()
     harness.removeRound(99)
     expect(harness.state.rounds).toHaveLength(1)
+  })
+
+  it('openRoundSheet shows the sheet with every player defaulted to 0', () => {
+    const { harness } = buildHarness()
+    harness.openRoundSheet()
+    expect(harness.state.showRoundSheet).toBe(true)
+    expect(harness.state.roundSheetInputs).toEqual({ alice: 0, bob: 0 })
+  })
+
+  it('updateRoundSheetInput updates a single player entry', () => {
+    const { harness } = buildHarness()
+    harness.openRoundSheet()
+    harness.updateRoundSheetInput('alice', 10)
+    expect(harness.state.roundSheetInputs).toEqual({ alice: 10, bob: 0 })
+  })
+
+  it('closeRoundSheet hides the sheet without touching rounds', () => {
+    const { harness } = buildHarness()
+    harness.openRoundSheet()
+    harness.updateRoundSheetInput('alice', 10)
+    harness.closeRoundSheet()
+    expect(harness.state.showRoundSheet).toBe(false)
+    expect(harness.state.rounds).toEqual([{}])
+  })
+
+  it('submitRoundSheet fills the not-yet-played round and closes the sheet', () => {
+    const { harness } = buildHarness()
+    harness.openRoundSheet()
+    harness.updateRoundSheetInput('alice', 10)
+    harness.updateRoundSheetInput('bob', 5)
+    harness.submitRoundSheet()
+    expect(harness.state.showRoundSheet).toBe(false)
+    expect(harness.state.rounds).toEqual([{ alice: '10', bob: '5' }])
+  })
+
+  it('submitRoundSheet appends a new round once all existing rounds are played', () => {
+    const { harness } = buildHarness()
+    harness.openRoundSheet()
+    harness.updateRoundSheetInput('alice', 10)
+    harness.updateRoundSheetInput('bob', 5)
+    harness.submitRoundSheet()
+
+    harness.openRoundSheet()
+    harness.updateRoundSheetInput('alice', 3)
+    harness.updateRoundSheetInput('bob', 7)
+    harness.submitRoundSheet()
+
+    expect(harness.state.rounds).toEqual([
+      { alice: '10', bob: '5' },
+      { alice: '3', bob: '7' },
+    ])
+  })
+
+  it('submitRoundSheet saves a draft to the repository', () => {
+    const draftRepo = new InMemoryMatchDraftRepository()
+    const { harness } = buildHarness()
+    harness.deps.matchDraftRepository = draftRepo
+    harness.openRoundSheet()
+    harness.updateRoundSheetInput('alice', 10)
+    harness.submitRoundSheet()
+
+    expect(draftRepo.load()?.rounds).toEqual([{ alice: '10', bob: '0' }])
+  })
+
+  it('nextRoundNumber counts the not-yet-played round as the round to enter', () => {
+    expect(nextRoundNumber([{}])).toBe(1)
+    expect(nextRoundNumber([{ alice: '10' }])).toBe(2)
+    expect(nextRoundNumber([{ alice: '10' }, {}])).toBe(2)
   })
 
   it('updateScore stores the value and clears the error', () => {
