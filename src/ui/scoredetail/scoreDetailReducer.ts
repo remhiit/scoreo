@@ -4,7 +4,7 @@ import type { Player } from '../../domain/model/player'
 import type { PlayerScore } from '../../domain/model/playerScore'
 import type { MatchDraftRepository } from '../../domain/port/matchDraftRepository'
 import type { CreateMatchUseCase } from '../../application/createMatchUseCase'
-import type { ScoreDetailMode, ScoreDetailState } from './scoreDetailTypes'
+import type { ScoreDetailMode, ScoreDetailState, ScoreDetailViewMode } from './scoreDetailTypes'
 
 export interface ScoreDetailDeps {
   createMatch: CreateMatchUseCase
@@ -37,6 +37,71 @@ function playerScoresFromTotals(state: ScoreDetailState): PlayerScore[] {
   return state.players.map((p) => ({ playerId: p.id, score: totals.get(p.id) ?? 0 }))
 }
 
+export interface StandingRow {
+  playerId: string
+  playerName: string
+  rank: number
+  total: number
+  delta: number
+  isLead: boolean
+}
+
+function lastRoundDeltas(players: Player[], rounds: Record<string, string>[]): Map<string, number> {
+  const deltas = new Map<string, number>()
+  const lastRound = rounds[rounds.length - 1]
+  for (const player of players) {
+    const raw = lastRound?.[player.id]
+    const parsed = raw !== undefined ? toIntOrNull(raw.trim()) : null
+    deltas.set(player.id, parsed ?? 0)
+  }
+  return deltas
+}
+
+/** Ranks players by gameType.winCondition (LOWEST_SCORE ascending, otherwise descending); tied totals share a rank. */
+export function computeStandings(
+  gameType: GameType,
+  players: Player[],
+  rounds: Record<string, string>[],
+): StandingRow[] {
+  const totals = computeTotals(players, rounds)
+  const deltas = lastRoundDeltas(players, rounds)
+  const ascending = gameType.winCondition === 'LOWEST_SCORE'
+  const sorted = [...players].sort((a, b) => {
+    const diff = (totals.get(a.id) ?? 0) - (totals.get(b.id) ?? 0)
+    return ascending ? diff : -diff
+  })
+
+  const rows: StandingRow[] = []
+  let rank = 0
+  let previousTotal: number | undefined
+  sorted.forEach((player, index) => {
+    const total = totals.get(player.id) ?? 0
+    if (previousTotal === undefined || total !== previousTotal) rank = index + 1
+    previousTotal = total
+    rows.push({
+      playerId: player.id,
+      playerName: player.name,
+      rank,
+      total,
+      delta: deltas.get(player.id) ?? 0,
+      isLead: rank === 1,
+    })
+  })
+  return rows
+}
+
+/** A round only counts as "played" once at least one player has a non-empty cell in it. */
+export function countRoundsPlayed(rounds: Record<string, string>[]): number {
+  return rounds.filter((round) => Object.values(round).some((v) => v.trim() !== '')).length
+}
+
+export function leadHintLabel(gameType: GameType, roundsPlayed: number): string {
+  const direction = gameType.winCondition === 'LOWEST_SCORE' ? 'lowest score leads' : 'highest score leads'
+  if (roundsPlayed === 0) return `No rounds played yet · ${direction}`
+  const roundWord = roundsPlayed === 1 ? 'round' : 'rounds'
+  return `After ${roundsPlayed} ${roundWord} · ${direction}`
+}
+
 function hasUnsavedScores(rounds: Record<string, string>[]): boolean {
   return rounds.some((round) => Object.values(round).some((v) => v.trim() !== ''))
 }
@@ -58,6 +123,7 @@ function validateRounds(state: ScoreDetailState): { ok: true } | { ok: false; er
 }
 
 export type ScoreDetailAction =
+  | { type: 'setViewMode'; mode: ScoreDetailViewMode }
   | { type: 'updateScore'; roundIndex: number; playerId: string; value: string }
   | { type: 'addRound' }
   | { type: 'removeRound'; index: number }
@@ -83,6 +149,8 @@ export type ScoreDetailAction =
 
 export function scoreDetailReducer(state: ScoreDetailState, action: ScoreDetailAction): ScoreDetailState {
   switch (action.type) {
+    case 'setViewMode':
+      return { ...state, viewMode: action.mode }
     case 'updateScore': {
       const rounds = state.rounds.slice()
       rounds[action.roundIndex] = { ...rounds[action.roundIndex], [action.playerId]: action.value }
@@ -309,6 +377,7 @@ function freshState(gameType: GameType, players: Player[]): ScoreDetailState {
     gameType,
     players,
     rounds: [{}],
+    viewMode: 'standings',
     showWinnerModal: false,
     modalWinners: new Set(),
     error: undefined,

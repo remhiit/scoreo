@@ -29,6 +29,7 @@ test('resumes a draft match from the Home banner after leaving ScoreDetail witho
 
   await page.getByText('Resume match in progress').click()
 
+  await page.getByRole('button', { name: 'History' }).click()
   const headerTexts = await page.locator('table.score-table th.score-table-header').allTextContents()
   expect(headerTexts).toEqual(expect.arrayContaining([playerA, playerB]))
 

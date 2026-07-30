@@ -55,9 +55,52 @@ function scoreInputs() {
   return screen.getAllByRole('spinbutton') as HTMLInputElement[]
 }
 
+/** Score entry lives under the History tab (the Standings view is a read-only ranking) — switch to it first. */
+function switchToHistory() {
+  fireEvent.click(screen.getByText('History'))
+}
+
 describe('ScoreDetailScreen', () => {
+  it('defaults to the Standings view, showing a rank card per player', () => {
+    renderScreen(gameType())
+
+    expect(screen.getByText('Standings').closest('button')).toHaveClass('on')
+    expect(screen.queryByRole('spinbutton')).not.toBeInTheDocument()
+    expect(screen.getByText('Alice', { selector: '.gs-name' })).toBeInTheDocument()
+    expect(screen.getByText('Bob', { selector: '.gs-name' })).toBeInTheDocument()
+  })
+
+  it('switching to History reveals the editable score table', () => {
+    renderScreen(gameType())
+
+    switchToHistory()
+
+    expect(screen.getByText('History').closest('button')).toHaveClass('on')
+    expect(screen.getByText('Alice', { selector: '.score-table-header' })).toBeInTheDocument()
+    expect(scoreInputs()).toHaveLength(2)
+  })
+
+  it('reflects entered scores back in the Standings view, leading card first', () => {
+    renderScreen(gameType())
+    switchToHistory()
+
+    const [aliceInput, bobInput] = scoreInputs()
+    fireEvent.change(aliceInput, { target: { value: '10' } })
+    fireEvent.change(bobInput, { target: { value: '4' } })
+
+    fireEvent.click(screen.getByText('Standings'))
+
+    const cards = document.querySelectorAll('.gs-card')
+    expect(cards).toHaveLength(2)
+    expect(cards[0]).toHaveClass('gs-card--lead')
+    expect(within(cards[0] as HTMLElement).getByText('Alice')).toBeInTheDocument()
+    expect(within(cards[0] as HTMLElement).getByText('10')).toBeInTheDocument()
+    expect(within(cards[0] as HTMLElement).getByText('+10')).toBeInTheDocument()
+  })
+
   it('renders player headers and finishes a match with no tie', () => {
     const { matchRepo, onSaved } = renderScreen(gameType())
+    switchToHistory()
 
     expect(screen.getByText('Alice', { selector: '.score-table-header' })).toBeInTheDocument()
     expect(screen.getByText('Bob', { selector: '.score-table-header' })).toBeInTheDocument()
@@ -73,6 +116,7 @@ describe('ScoreDetailScreen', () => {
 
   it('adds and removes rounds', () => {
     renderScreen(gameType())
+    switchToHistory()
 
     expect(screen.queryByTitle('Remove round')).not.toBeInTheDocument()
 
@@ -89,6 +133,7 @@ describe('ScoreDetailScreen', () => {
     // "abc" can never reach state through the DOM — a decimal is the realistic
     // way a user reaches the "expected a number" validation via this input.
     const { matchRepo, onSaved } = renderScreen(gameType())
+    switchToHistory()
 
     const [aliceInput] = scoreInputs()
     fireEvent.change(aliceInput, { target: { value: '1.5' } })
@@ -101,6 +146,7 @@ describe('ScoreDetailScreen', () => {
 
   it('MANUAL winCondition opens the winner selection modal', () => {
     const { matchRepo, onSaved } = renderScreen(gameType('MANUAL'))
+    switchToHistory()
 
     const [aliceInput, bobInput] = scoreInputs()
     fireEvent.change(aliceInput, { target: { value: '10' } })
@@ -120,6 +166,7 @@ describe('ScoreDetailScreen', () => {
 
   it('a tie with SECONDARY_SCORE opens the secondary score dialog and resolves it', () => {
     const { matchRepo, onSaved } = renderScreen(gameType('HIGHEST_SCORE', 'SECONDARY_SCORE'))
+    switchToHistory()
 
     const [aliceInput, bobInput] = scoreInputs()
     fireEvent.change(aliceInput, { target: { value: '10' } })
@@ -140,6 +187,7 @@ describe('ScoreDetailScreen', () => {
 
   it('a persisting secondary tie escalates to manual selection', () => {
     const { matchRepo } = renderScreen(gameType('HIGHEST_SCORE', 'SECONDARY_SCORE'))
+    switchToHistory()
 
     const [aliceInput, bobInput] = scoreInputs()
     fireEvent.change(aliceInput, { target: { value: '10' } })
@@ -161,6 +209,7 @@ describe('ScoreDetailScreen', () => {
 
   it('manual selection dialog selects a winner via a selectable row, not a checkbox', () => {
     const { matchRepo } = renderScreen(gameType('HIGHEST_SCORE', 'MANUAL_SELECTION'))
+    switchToHistory()
 
     const [aliceInput, bobInput] = scoreInputs()
     fireEvent.change(aliceInput, { target: { value: '10' } })
@@ -177,6 +226,7 @@ describe('ScoreDetailScreen', () => {
 
   it('cancelling with entered scores shows a confirmation, discard clears and calls onCancel', () => {
     const { onCancel } = renderScreen(gameType())
+    switchToHistory()
 
     const [aliceInput] = scoreInputs()
     fireEvent.change(aliceInput, { target: { value: '10' } })
@@ -200,6 +250,7 @@ describe('ScoreDetailScreen', () => {
   it('auto-saves a draft after a score update and restores it on next mount', () => {
     const draftRepo = new InMemoryMatchDraftRepository()
     const first = renderScreen(gameType(), { matchDraftRepository: draftRepo })
+    switchToHistory()
 
     const [aliceInput] = scoreInputs()
     fireEvent.change(aliceInput, { target: { value: '42' } })
@@ -208,6 +259,7 @@ describe('ScoreDetailScreen', () => {
     first.unmount()
 
     renderScreen(gameType(), { matchDraftRepository: draftRepo })
+    switchToHistory()
     expect(scoreInputs()[0]).toHaveValue(42)
   })
 })

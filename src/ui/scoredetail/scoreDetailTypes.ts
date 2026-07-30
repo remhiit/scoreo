@@ -17,11 +17,14 @@ export type ScoreDetailMode =
       gameTypeRepository: GameTypeRepository
     }
 
+export type ScoreDetailViewMode = 'standings' | 'history'
+
 export interface ScoreDetailState {
   gameType: GameType
   players: Player[]
   /** One entry per round: playerId -> score string (as typed by the user). */
   rounds: Record<string, string>[]
+  viewMode: ScoreDetailViewMode
   showWinnerModal: boolean
   modalWinners: Set<string>
   error: string | undefined

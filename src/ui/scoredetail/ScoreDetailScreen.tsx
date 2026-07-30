@@ -6,7 +6,10 @@ import { LudoButton } from '../shared/LudoButton'
 import { LudoModal } from '../shared/LudoModal'
 import { ManualSelectionDialog } from './ManualSelectionDialog'
 import {
+  computeStandings,
   computeTotals,
+  countRoundsPlayed,
+  leadHintLabel,
   saveDraft,
   scoreDetailReducer,
   submitCancelMatch,
@@ -20,6 +23,10 @@ import {
 } from './scoreDetailReducer'
 import { SecondaryScoreDialog } from './SecondaryScoreDialog'
 import type { ScoreDetailState } from './scoreDetailTypes'
+
+function formatDelta(delta: number): string {
+  return delta > 0 ? `+${delta}` : `${delta}`
+}
 
 export interface ScoreDetailScreenProps extends ScoreDetailDeps {
   initialState: ScoreDetailState
@@ -52,68 +59,109 @@ export function ScoreDetailScreen({ initialState, onSaved, onCancel, ...deps }: 
 
   const totals = computeTotals(state.players, state.rounds)
   const tiedPlayers = state.players.filter((p) => state.tiedPlayerIds.includes(p.id))
+  const standings = computeStandings(state.gameType, state.players, state.rounds)
+  const leadHint = leadHintLabel(state.gameType, countRoundsPlayed(state.rounds))
 
   return (
     <>
-      <table className="score-table">
-        <tbody>
-          <tr>
-            {state.players.map((player) => (
-              <th key={player.id} className="score-table-cell score-table-header">
-                {player.name}
-              </th>
-            ))}
-            {state.rounds.length > 1 && <th className="score-table-cell score-table-action" />}
-          </tr>
-          <tr>
-            {state.players.map((player) => (
-              <td key={player.id} className="score-table-cell score-table-total">
-                {totals.get(player.id) ?? 0}
-              </td>
-            ))}
-            {state.rounds.length > 1 && <td className="score-table-cell score-table-action" />}
-          </tr>
-          {state.rounds.map((round, roundIndex) => (
-            <tr key={roundIndex} className="score-table-round">
-              {state.players.map((player) => (
-                <td key={player.id} className="score-table-cell">
-                  <input
-                    type="number"
-                    className="ludo-input ludo-input--sm ludo-input--stepper-field ludo-input--mono"
-                    inputMode="numeric"
-                    value={round[player.id] ?? ''}
-                    onChange={(e) =>
-                      dispatch({ type: 'updateScore', roundIndex, playerId: player.id, value: e.target.value })
-                    }
-                  />
-                </td>
-              ))}
-              {state.rounds.length > 1 && (
-                <td className="score-table-cell score-table-action">
-                  <button
-                    type="button"
-                    className="btn-icon btn-icon--danger"
-                    title="Remove round"
-                    onClick={() => dispatch({ type: 'removeRound', index: roundIndex })}
-                  >
-                    <X size={16} aria-hidden />
-                  </button>
-                </td>
-              )}
-            </tr>
-          ))}
-        </tbody>
-      </table>
-
-      <div className="score-table-add">
-        <button type="button" className="score-table-add-btn" onClick={() => dispatch({ type: 'addRound' })}>
-          ＋
+      <div className="seg">
+        <button
+          type="button"
+          className={state.viewMode === 'standings' ? 'on' : ''}
+          onClick={() => dispatch({ type: 'setViewMode', mode: 'standings' })}
+        >
+          Standings
+        </button>
+        <button
+          type="button"
+          className={state.viewMode === 'history' ? 'on' : ''}
+          onClick={() => dispatch({ type: 'setViewMode', mode: 'history' })}
+        >
+          History
         </button>
       </div>
 
+      {state.viewMode === 'standings' ? (
+        <>
+          <div className="lead-hint">{leadHint}</div>
+          <div className="gs-grid">
+            {standings.map((row) => (
+              <div key={row.playerId} className={row.isLead ? 'gs-card gs-card--lead' : 'gs-card'}>
+                <div className="gs-top">
+                  <span className="gs-pos">{row.rank}</span>
+                  <span className="gs-name">{row.playerName}</span>
+                </div>
+                <div className="gs-bot">
+                  <span className="gs-tot">{row.total}</span>
+                  <span className="gs-delta">{formatDelta(row.delta)}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </>
+      ) : (
+        <>
+          <table className="score-table">
+            <tbody>
+              <tr>
+                {state.players.map((player) => (
+                  <th key={player.id} className="score-table-cell score-table-header">
+                    {player.name}
+                  </th>
+                ))}
+                {state.rounds.length > 1 && <th className="score-table-cell score-table-action" />}
+              </tr>
+              <tr>
+                {state.players.map((player) => (
+                  <td key={player.id} className="score-table-cell score-table-total">
+                    {totals.get(player.id) ?? 0}
+                  </td>
+                ))}
+                {state.rounds.length > 1 && <td className="score-table-cell score-table-action" />}
+              </tr>
+              {state.rounds.map((round, roundIndex) => (
+                <tr key={roundIndex} className="score-table-round">
+                  {state.players.map((player) => (
+                    <td key={player.id} className="score-table-cell">
+                      <input
+                        type="number"
+                        className="ludo-input ludo-input--sm ludo-input--stepper-field ludo-input--mono"
+                        inputMode="numeric"
+                        value={round[player.id] ?? ''}
+                        onChange={(e) =>
+                          dispatch({ type: 'updateScore', roundIndex, playerId: player.id, value: e.target.value })
+                        }
+                      />
+                    </td>
+                  ))}
+                  {state.rounds.length > 1 && (
+                    <td className="score-table-cell score-table-action">
+                      <button
+                        type="button"
+                        className="btn-icon btn-icon--danger"
+                        title="Remove round"
+                        onClick={() => dispatch({ type: 'removeRound', index: roundIndex })}
+                      >
+                        <X size={16} aria-hidden />
+                      </button>
+                    </td>
+                  )}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+
+          <div className="score-table-add">
+            <button type="button" className="score-table-add-btn" onClick={() => dispatch({ type: 'addRound' })}>
+              ＋
+            </button>
+          </div>
+        </>
+      )}
+
       {state.error && <div className="error-msg">{state.error}</div>}
 
-      <div className="score-actions">
+      <div className="bottom-bar">
         <LudoButton text="Finish match" variant="primary" onClick={() => dispatch(submitTerminate(state, deps))} />
         <LudoButton
           text="Cancel"
