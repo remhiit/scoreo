@@ -11,8 +11,8 @@
 | Component | Details |
 |-----------|---------|
 | **Reducer** | `scoreDetailReducer` — `src/ui/scoredetail/scoreDetailReducer.ts` |
-| **Action** | `ScoreDetailAction`: `updateScore`, `addRound`, `removeRound`, `cancelImmediate`, `showCancelConfirm`, `confirmCancel`, `dismissCancelConfirm`, `validationFailed`, `openWinnerModal`, `openManualSelectionDialog`, `openSecondaryScoreDialog`, `saved`, `saveFailed`, `dismissModal`, `toggleModalWinner`, `confirmWinnersEmptyError`, `updateSecondaryScoreInput`, `secondaryScoreInvalid`, `secondaryScoreEscalate`, `toggleManualSelectionWinner`, `manualWinnersEmptyError`, `dismissTieBreak` |
-| **State** | `ScoreDetailState`: `gameType`, `players`, `rounds`, `showWinnerModal`, `modalWinners`, `showSecondaryScoreDialog`, `tiedPlayerIds`, `secondaryScoreInputs`, `showManualSelectionDialog`, `manualSelectionWinners`, `collectedSecondaryScores`, `error`, `saved`, `cancelled`, `editingMatchId`, `showCancelConfirm` |
+| **Action** | `ScoreDetailAction`: `setViewMode`, `updateScore`, `addRound`, `removeRound`, `cancelImmediate`, `showCancelConfirm`, `confirmCancel`, `dismissCancelConfirm`, `validationFailed`, `openWinnerModal`, `openManualSelectionDialog`, `openSecondaryScoreDialog`, `saved`, `saveFailed`, `dismissModal`, `toggleModalWinner`, `confirmWinnersEmptyError`, `updateSecondaryScoreInput`, `secondaryScoreInvalid`, `secondaryScoreEscalate`, `toggleManualSelectionWinner`, `manualWinnersEmptyError`, `dismissTieBreak` |
+| **State** | `ScoreDetailState`: `gameType`, `players`, `rounds`, `viewMode`, `showWinnerModal`, `modalWinners`, `showSecondaryScoreDialog`, `tiedPlayerIds`, `secondaryScoreInputs`, `showManualSelectionDialog`, `manualSelectionWinners`, `collectedSecondaryScores`, `error`, `saved`, `cancelled`, `editingMatchId`, `showCancelConfirm` |
 
 Screen: `src/ui/scoredetail/ScoreDetailScreen.tsx`. See `doc/reference.md` for the full reducer table.
 
@@ -25,7 +25,31 @@ Screen: `src/ui/scoredetail/ScoreDetailScreen.tsx`. See `doc/reference.md` for t
   - If editing: returns to History
 - Cancel button: Opens cancel confirmation modal if scores are entered; closes screen without saving otherwise
 
-### Main grid: columns = players, rows = rounds + totals row.
+### View switch: Standings / History
+
+A segmented control (`Standings` / `History`) sits above the content. `viewMode` defaults to `standings`. Round entry (adding/removing rounds, editing a cell) only happens in the **History** tab — switching tabs doesn't lose any entered scores, since both views read the same `rounds` state.
+
+### Standings view (default)
+
+A 2-column card grid (`.gs-grid`), one `.gs-card` per player, holding any headcount (tested up to 8 players) without horizontal scrolling:
+
+```
+┌─────────────┬─────────────┐
+│ 1  Alice    │ 2  Bob      │
+│ 18       +8 │ 17       +5 │
+├─────────────┼─────────────┤
+│ 3  Carl     │ 4  Dana     │
+│ 12       +2 │  9       +1 │
+└─────────────┴─────────────┘
+```
+
+- A hint line above the grid states how many rounds have been played and the win direction (e.g. "After 3 rounds · highest score leads").
+- Cards are ranked by `gameType.winCondition` (`HIGHEST_SCORE` descending, `LOWEST_SCORE` ascending); players tied on total share the same rank.
+- The card's bottom-right number is the delta: the score entered in the **last** round only (not the cumulative total).
+- The leading card(s) — rank 1, possibly several on a tie — get an accented border/total (`.gs-card--lead`).
+- This view is read-only: no inputs, no add/remove-round controls.
+
+### History view: columns = players, rows = rounds + totals row.
 
 | Player 1 | Player 2 | ... |
 |----------|----------|-----|
@@ -37,7 +61,12 @@ Screen: `src/ui/scoredetail/ScoreDetailScreen.tsx`. See `doc/reference.md` for t
 - Editable score cells with numeric input
 - **✕** button on each round row to remove it
 - **＋ Add round** button at the bottom
+
+### Bottom bar
+
 - **Finish match** to save (also auto-saves to localStorage as MatchDraft after each score update)
+- **Cancel match**
+- Pinned to the bottom of the screen (`.bottom-bar`), visible from both the Standings and History views.
 - For `MANUAL` win condition: modal appears listing each player's total as a selectable row (○/●) to select winner(s)
 
 ### Cancel confirmation
@@ -185,7 +214,7 @@ Then I can ignore the banner and start a new match
 And the previous MatchDraft will be overwritten by the new match's data
 ```
 
-## Mockup
+## Mockup (History view)
 
 ```
 ┌─────────────────────────────┐

@@ -14,6 +14,7 @@ export async function editMatchScore(
   playerName: string,
   newScore: number,
 ): Promise<void> {
+  await page.getByRole('button', { name: 'History' }).click()
   const headerTexts = await page.locator('table.score-table th.score-table-header').allTextContents()
   const columnIndex = headerTexts.indexOf(playerName)
   const round = page.locator('table.score-table tbody tr.score-table-round').nth(roundIndex)

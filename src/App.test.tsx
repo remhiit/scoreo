@@ -83,8 +83,10 @@ describe('App', () => {
     // v1->v2 migration regenerates it on first read — only the shape and
     // gameTypeId/playerIds are asserted here.
     expect(window.location.hash).toMatch(/^#\/score\/gt1\/p1,p2\/[0-9a-f-]{36}$/)
-    expect(screen.getByText('Alice', { selector: '.score-table-header' })).toBeInTheDocument()
     expect(screen.getByText('Finish match')).toBeInTheDocument()
+
+    fireEvent.click(screen.getByText('History', { selector: '.seg button' }))
+    expect(screen.getByText('Alice', { selector: '.score-table-header' })).toBeInTheDocument()
   })
 
   it('clicking the title navigates Home from any screen', () => {

@@ -10,7 +10,10 @@ import { InMemoryMatchRepository } from '../../infrastructure/testing/inMemoryMa
 import { InMemoryPlayerRepository } from '../../infrastructure/testing/inMemoryPlayerRepository'
 import {
   buildInitialState,
+  computeStandings,
   computeTotals,
+  countRoundsPlayed,
+  leadHintLabel,
   resetState,
   saveDraft,
   scoreDetailReducer,
@@ -146,6 +149,10 @@ class Harness {
     this.state = scoreDetailReducer(this.state, { type: 'dismissTieBreak' })
   }
 
+  setViewMode(mode: ScoreDetailState['viewMode']) {
+    this.state = scoreDetailReducer(this.state, { type: 'setViewMode', mode })
+  }
+
   reset() {
     this.state = resetState(this.state.gameType, this.state.players, this.deps)
   }
@@ -195,6 +202,19 @@ describe('scoreDetailReducer', () => {
     expect(harness.state.showWinnerModal).toBe(false)
     expect(harness.state.error).toBeUndefined()
     expect(harness.state.saved).toBe(false)
+  })
+
+  it('initial state defaults to the standings view', () => {
+    const { harness } = buildHarness()
+    expect(harness.state.viewMode).toBe('standings')
+  })
+
+  it('setViewMode switches between standings and history', () => {
+    const { harness } = buildHarness()
+    harness.setViewMode('history')
+    expect(harness.state.viewMode).toBe('history')
+    harness.setViewMode('standings')
+    expect(harness.state.viewMode).toBe('standings')
   })
 
   it('addRound appends an empty round', () => {
@@ -1008,5 +1028,97 @@ describe('scoreDetailReducer', () => {
     expect(harness.state.showCancelConfirm).toBe(false)
     expect(harness.state.cancelled).toBe(true)
     expect(draftRepo.load()).toBeUndefined()
+  })
+})
+
+describe('computeStandings', () => {
+  const charlie = player('charlie', 'Charlie')
+
+  it('ranks players by descending total for HIGHEST_SCORE', () => {
+    const gt = gameType('gt1', 'TestGame', 'HIGHEST_SCORE')
+    const rows = computeStandings(gt, [alice, bob, charlie], [{ alice: '10', bob: '30', charlie: '20' }])
+
+    expect(rows.map((r) => r.playerId)).toEqual(['bob', 'charlie', 'alice'])
+    expect(rows.map((r) => r.rank)).toEqual([1, 2, 3])
+  })
+
+  it('ranks players by ascending total for LOWEST_SCORE', () => {
+    const gt = gameType('gt1', 'TestGame', 'LOWEST_SCORE')
+    const rows = computeStandings(gt, [alice, bob, charlie], [{ alice: '10', bob: '30', charlie: '20' }])
+
+    expect(rows.map((r) => r.playerId)).toEqual(['alice', 'charlie', 'bob'])
+    expect(rows.map((r) => r.rank)).toEqual([1, 2, 3])
+  })
+
+  it('tied totals share the same rank and the next rank skips accordingly', () => {
+    const gt = gameType('gt1', 'TestGame', 'HIGHEST_SCORE')
+    const rows = computeStandings(gt, [alice, bob, charlie], [{ alice: '20', bob: '20', charlie: '10' }])
+
+    const byId = new Map(rows.map((r) => [r.playerId, r]))
+    expect(byId.get('alice')?.rank).toBe(1)
+    expect(byId.get('bob')?.rank).toBe(1)
+    expect(byId.get('charlie')?.rank).toBe(3)
+  })
+
+  it('marks every rank-1 row as lead, even when tied for first', () => {
+    const gt = gameType('gt1', 'TestGame', 'HIGHEST_SCORE')
+    const rows = computeStandings(gt, [alice, bob, charlie], [{ alice: '20', bob: '20', charlie: '10' }])
+
+    const byId = new Map(rows.map((r) => [r.playerId, r]))
+    expect(byId.get('alice')?.isLead).toBe(true)
+    expect(byId.get('bob')?.isLead).toBe(true)
+    expect(byId.get('charlie')?.isLead).toBe(false)
+  })
+
+  it('delta reflects only the last round entered, not the cumulative total', () => {
+    const gt = gameType('gt1', 'TestGame', 'HIGHEST_SCORE')
+    const rows = computeStandings(
+      gt,
+      [alice, bob],
+      [
+        { alice: '10', bob: '5' },
+        { alice: '3', bob: '7' },
+      ],
+    )
+
+    const byId = new Map(rows.map((r) => [r.playerId, r]))
+    expect(byId.get('alice')?.total).toBe(13)
+    expect(byId.get('alice')?.delta).toBe(3)
+    expect(byId.get('bob')?.total).toBe(12)
+    expect(byId.get('bob')?.delta).toBe(7)
+  })
+
+  it('treats an empty cell in the last round as a zero delta', () => {
+    const gt = gameType('gt1', 'TestGame', 'HIGHEST_SCORE')
+    const rows = computeStandings(gt, [alice, bob], [{ alice: '10', bob: '5' }, {}])
+
+    const byId = new Map(rows.map((r) => [r.playerId, r]))
+    expect(byId.get('alice')?.delta).toBe(0)
+    expect(byId.get('bob')?.delta).toBe(0)
+  })
+})
+
+describe('countRoundsPlayed', () => {
+  it('counts only rounds with at least one non-empty cell', () => {
+    expect(countRoundsPlayed([{ alice: '10' }, {}, { bob: '' }])).toBe(1)
+    expect(countRoundsPlayed([{ alice: '10' }, { bob: '5' }])).toBe(2)
+    expect(countRoundsPlayed([{}])).toBe(0)
+  })
+})
+
+describe('leadHintLabel', () => {
+  it('describes the win direction and the number of rounds played', () => {
+    expect(leadHintLabel(gameType('gt1', 'TestGame', 'LOWEST_SCORE'), 3)).toBe(
+      'After 3 rounds · lowest score leads',
+    )
+    expect(leadHintLabel(gameType('gt1', 'TestGame', 'HIGHEST_SCORE'), 1)).toBe(
+      'After 1 round · highest score leads',
+    )
+  })
+
+  it('has a distinct message when no round has been played yet', () => {
+    expect(leadHintLabel(gameType('gt1', 'TestGame', 'HIGHEST_SCORE'), 0)).toBe(
+      'No rounds played yet · highest score leads',
+    )
   })
 })
