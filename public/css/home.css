@@ -106,17 +106,17 @@
 /* ── Onboarding guide ── */
 
 .onboarding-guide {
-    background: color-mix(in srgb, var(--color-info) 10%, var(--surface-app));
-    border-left: 4px solid var(--color-info);
+    background: var(--color-primary-tint);
+    border: var(--border-width) solid color-mix(in srgb, var(--color-primary) 30%, transparent);
     padding: 16px;
     margin-bottom: 20px;
-    border-radius: 4px;
+    border-radius: var(--radius-md);
     line-height: 1.6;
 }
 
 .onboarding-guide h3 {
     margin: 0 0 10px;
-    color: var(--color-info);
+    color: var(--color-primary);
     font-size: 1rem;
 }
 
@@ -133,18 +133,18 @@
 /* ── Draft resume banner ── */
 
 .draft-resume-banner {
-    background: color-mix(in srgb, var(--color-info) 10%, var(--surface-app));
-    border-left: 4px solid var(--color-info);
+    background: var(--color-primary-tint);
+    border: var(--border-width) solid color-mix(in srgb, var(--color-primary) 30%, transparent);
     padding: 12px 16px;
     margin-bottom: 16px;
-    border-radius: 4px;
+    border-radius: var(--radius-md);
     animation: slideDown 0.3s ease-out;
 }
 
 .draft-resume-button {
     background: transparent;
     border: none;
-    color: var(--color-info);
+    color: var(--color-primary);
     cursor: pointer;
     font-size: 15px;
     font-weight: 600;
