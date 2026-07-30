@@ -86,7 +86,7 @@ describe('App', () => {
     expect(screen.getByText('Finish match')).toBeInTheDocument()
 
     fireEvent.click(screen.getByText('History', { selector: '.seg button' }))
-    expect(screen.getByText('Alice', { selector: '.score-table-header' })).toBeInTheDocument()
+    expect(document.querySelector('.hist-cell')).toHaveTextContent('Alice')
   })
 
   it('clicking the title navigates Home from any screen', () => {

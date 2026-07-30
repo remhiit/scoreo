@@ -49,18 +49,24 @@ A 2-column card grid (`.gs-grid`), one `.gs-card` per player, holding any headco
 - The leading card(s) — rank 1, possibly several on a tie — get an accented border/total (`.gs-card--lead`).
 - This view is read-only: no inputs, no add/remove-round controls.
 
-### History view: columns = players, rows = rounds + totals row.
+### History view: one card per round (`RoundHistoryList`, `src/ui/scoredetail/RoundHistoryList.tsx`)
 
-| Player 1 | Player 2 | ... |
-|----------|----------|-----|
-| `[10]`   | `[5]`    | round 1 |
-| `[8]`    | `[12]`   | round 2 |
-| **18**   | **17**   | totals |
-| ✕        | ✕        | delete round |
+Each round is a `.hist-round` card, not a table row — this is what lets any player count (tested up to 8) fit without horizontal scrolling:
 
-- Editable score cells with numeric input (for already-entered rounds; unchanged by the round entry sheet below)
-- **✕** button on each round row to remove it
-- **＋ Add round** button at the bottom (legacy inline path — still functional, targets the same not-yet-played round as the sheet)
+```
+┌ Round 1 ──────────────── ✕ ┐
+│ [Alice 10] [Bob 5]          │
+└──────────────────────────────┘
+┌ Round 2 ──────────────── ✕ ┐
+│ [Alice 8] [Bob 12]          │
+└──────────────────────────────┘
+        [ Add round ]
+```
+
+- `.hist-cells` is a `flex-wrap` list of `.hist-cell` pills (player name + editable numeric field); cells wrap onto more lines instead of the card scrolling sideways, and `.hist-round` never clips (`overflow` left at its default so it can grow with the wrapped cells).
+- Editable score cells with numeric input (for already-entered rounds; unchanged by the round entry sheet below). Native spinner arrows are suppressed on these fields (`.ludo-input--stepper-field`: `appearance: none`, `-moz-appearance: textfield`, `::-webkit-inner/outer-spin-button` neutralized) so a two-digit score isn't clipped in the narrow cell.
+- **✕** button in the card's `.hist-round-head` removes that round; hidden while only one round remains, same as before.
+- **"Add round"** button below the list opens the round entry sheet (`openRoundSheet`) — the same sheet as the bottom bar's "Enter round N" button, not a direct empty-round insert.
 
 ### Round entry sheet
 
@@ -265,16 +271,13 @@ And the previous MatchDraft will be overwritten by the new match's data
 ```
 ┌─────────────────────────────┐
 │  Score Detail               │
-│  ┌──────┬──────┬──────┐     │
-│  │Alice │ Bob  │Total │     │
-│  ├──────┼──────┼──────┤     │
-│  │ [10] │ [5]  │  15  │ ✕  │
-│  ├──────┼──────┼──────┤     │
-│  │ [8]  │ [12] │  20  │ ✕  │
-│  ├──────┼──────┼──────┤     │
-│  │  18  │  17  │  35  │     │
-│  └──────┴──────┴──────┘     │
-│  [ ＋ Add round ]            │
+│ ┌ Round 1 ──────────── ✕ ┐  │
+│ │ [Alice 10] [Bob 5]      │  │
+│ └──────────────────────────┘  │
+│ ┌ Round 2 ──────────── ✕ ┐  │
+│ │ [Alice 8] [Bob 12]      │  │
+│ └──────────────────────────┘  │
+│        [ Add round ]         │
 │  [Finish match]  [Cancel]   │
 └─────────────────────────────┘
 ```
