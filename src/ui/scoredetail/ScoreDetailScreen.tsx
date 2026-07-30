@@ -1,4 +1,3 @@
-import { X } from 'lucide-react'
 import { useEffect, useReducer, useRef } from 'react'
 import { ListContainer } from '../shared/ListContainer'
 import { ListItemRow } from '../shared/ListItemRow'
@@ -6,6 +5,7 @@ import { LudoButton } from '../shared/LudoButton'
 import { LudoModal } from '../shared/LudoModal'
 import { ManualSelectionDialog } from './ManualSelectionDialog'
 import { RoundEntrySheet } from './RoundEntrySheet'
+import { RoundHistoryList } from './RoundHistoryList'
 import {
   computeStandings,
   computeTotals,
@@ -102,63 +102,13 @@ export function ScoreDetailScreen({ initialState, onSaved, onCancel, ...deps }: 
           </div>
         </>
       ) : (
-        <>
-          <table className="score-table">
-            <tbody>
-              <tr>
-                {state.players.map((player) => (
-                  <th key={player.id} className="score-table-cell score-table-header">
-                    {player.name}
-                  </th>
-                ))}
-                {state.rounds.length > 1 && <th className="score-table-cell score-table-action" />}
-              </tr>
-              <tr>
-                {state.players.map((player) => (
-                  <td key={player.id} className="score-table-cell score-table-total">
-                    {totals.get(player.id) ?? 0}
-                  </td>
-                ))}
-                {state.rounds.length > 1 && <td className="score-table-cell score-table-action" />}
-              </tr>
-              {state.rounds.map((round, roundIndex) => (
-                <tr key={roundIndex} className="score-table-round">
-                  {state.players.map((player) => (
-                    <td key={player.id} className="score-table-cell">
-                      <input
-                        type="number"
-                        className="ludo-input ludo-input--sm ludo-input--stepper-field ludo-input--mono"
-                        inputMode="numeric"
-                        value={round[player.id] ?? ''}
-                        onChange={(e) =>
-                          dispatch({ type: 'updateScore', roundIndex, playerId: player.id, value: e.target.value })
-                        }
-                      />
-                    </td>
-                  ))}
-                  {state.rounds.length > 1 && (
-                    <td className="score-table-cell score-table-action">
-                      <button
-                        type="button"
-                        className="btn-icon btn-icon--danger"
-                        title="Remove round"
-                        onClick={() => dispatch({ type: 'removeRound', index: roundIndex })}
-                      >
-                        <X size={16} aria-hidden />
-                      </button>
-                    </td>
-                  )}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-
-          <div className="score-table-add">
-            <button type="button" className="score-table-add-btn" onClick={() => dispatch({ type: 'addRound' })}>
-              ＋
-            </button>
-          </div>
-        </>
+        <RoundHistoryList
+          rounds={state.rounds}
+          players={state.players}
+          onChangeScore={(roundIndex, playerId, value) => dispatch({ type: 'updateScore', roundIndex, playerId, value })}
+          onRemoveRound={(index) => dispatch({ type: 'removeRound', index })}
+          onAddRound={() => dispatch({ type: 'openRoundSheet' })}
+        />
       )}
 
       {state.error && <div className="error-msg">{state.error}</div>}

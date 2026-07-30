@@ -30,11 +30,7 @@ test('resumes a draft match from the Home banner after leaving ScoreDetail witho
   await page.getByText('Resume match in progress').click()
 
   await page.getByRole('button', { name: 'History' }).click()
-  const headerTexts = await page.locator('table.score-table th.score-table-header').allTextContents()
-  expect(headerTexts).toEqual(expect.arrayContaining([playerA, playerB]))
-
-  const round = page.locator('table.score-table tbody tr.score-table-round').first()
-  const inputs = round.getByRole('spinbutton')
-  await expect(inputs.nth(headerTexts.indexOf(playerA))).toHaveValue('7')
-  await expect(inputs.nth(headerTexts.indexOf(playerB))).toHaveValue('3')
+  const round = page.locator('.hist-round').first()
+  await expect(round.locator('.hist-cell', { hasText: playerA }).getByRole('spinbutton')).toHaveValue('7')
+  await expect(round.locator('.hist-cell', { hasText: playerB }).getByRole('spinbutton')).toHaveValue('3')
 })

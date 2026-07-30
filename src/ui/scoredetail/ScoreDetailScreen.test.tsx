@@ -70,13 +70,14 @@ describe('ScoreDetailScreen', () => {
     expect(screen.getByText('Bob', { selector: '.gs-name' })).toBeInTheDocument()
   })
 
-  it('switching to History reveals the editable score table', () => {
+  it('switching to History reveals one editable round card per round', () => {
     renderScreen(gameType())
 
     switchToHistory()
 
     expect(screen.getByText('History').closest('button')).toHaveClass('on')
-    expect(screen.getByText('Alice', { selector: '.score-table-header' })).toBeInTheDocument()
+    expect(document.querySelectorAll('.hist-round')).toHaveLength(1)
+    expect(within(document.querySelector('.hist-cell') as HTMLElement).getByText('Alice')).toBeInTheDocument()
     expect(scoreInputs()).toHaveLength(2)
   })
 
@@ -102,8 +103,9 @@ describe('ScoreDetailScreen', () => {
     const { matchRepo, onSaved } = renderScreen(gameType())
     switchToHistory()
 
-    expect(screen.getByText('Alice', { selector: '.score-table-header' })).toBeInTheDocument()
-    expect(screen.getByText('Bob', { selector: '.score-table-header' })).toBeInTheDocument()
+    const cells = document.querySelectorAll('.hist-cell')
+    expect(within(cells[0] as HTMLElement).getByText('Alice')).toBeInTheDocument()
+    expect(within(cells[1] as HTMLElement).getByText('Bob')).toBeInTheDocument()
 
     const [aliceInput, bobInput] = scoreInputs()
     fireEvent.change(aliceInput, { target: { value: '10' } })
@@ -114,18 +116,36 @@ describe('ScoreDetailScreen', () => {
     expect(onSaved).toHaveBeenCalledTimes(1)
   })
 
-  it('adds and removes rounds', () => {
+  it('the "Add round" button under History opens the round entry sheet, and cards can be removed', () => {
     renderScreen(gameType())
     switchToHistory()
 
     expect(screen.queryByTitle('Remove round')).not.toBeInTheDocument()
 
-    fireEvent.click(screen.getByText('＋'))
+    // First submission fills the still-empty round 1; a second is needed to append round 2.
+    fireEvent.click(screen.getByText('Add round'))
+    let sheet = screen.getByRole('dialog', { name: 'Round 1' })
+    let [aliceInput, bobInput] = within(sheet).getAllByRole('spinbutton')
+    fireEvent.change(aliceInput, { target: { value: '10' } })
+    fireEvent.change(bobInput, { target: { value: '4' } })
+    fireEvent.click(within(sheet).getByText('Save round'))
+
+    expect(document.querySelectorAll('.hist-round')).toHaveLength(1)
+
+    fireEvent.click(screen.getByText('Add round'))
+    sheet = screen.getByRole('dialog', { name: 'Round 2' })
+    ;[aliceInput, bobInput] = within(sheet).getAllByRole('spinbutton')
+    fireEvent.change(aliceInput, { target: { value: '5' } })
+    fireEvent.change(bobInput, { target: { value: '2' } })
+    fireEvent.click(within(sheet).getByText('Save round'))
+
     expect(scoreInputs()).toHaveLength(4)
     expect(screen.getAllByTitle('Remove round')).toHaveLength(2)
 
     fireEvent.click(screen.getAllByTitle('Remove round')[0])
+    expect(document.querySelectorAll('.hist-round')).toHaveLength(1)
     expect(scoreInputs()).toHaveLength(2)
+    expect(screen.queryByTitle('Remove round')).not.toBeInTheDocument()
   })
 
   it('opens the round entry sheet from the bottom bar, showing every player at 0 next to their total', () => {
