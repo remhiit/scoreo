@@ -26,3 +26,47 @@ jobs:
           else
             gh pr merge "$NUMBER" --repo "$REPO" --disable-auto
           fi
+
+      # `gh pr merge --auto` only enables auto-merge; the actual squash-merge
+      # completes later, asynchronously, once required checks pass. That
+      # completion is attributed to the GITHUB_TOKEN identity, and GitHub
+      # never spawns a new workflow run for events triggered by the
+      # GITHUB_TOKEN — so pull_request.closed never reaches
+      # close-linked-issues.yml for these merges (see #208/#212). Waiting
+      # for the merge here, in the same job, sidesteps that limit entirely.
+      - name: Wait for the auto-merge to complete
+        if: github.event.action == 'labeled'
+        id: wait
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          for i in $(seq 1 60); do
+            state=$(gh pr view "$NUMBER" --repo "$REPO" --json state -q .state)
+            if [ "$state" = "MERGED" ]; then
+              echo "merged=true" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+            sleep 20
+          done
+          echo "merged=false" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout
+        if: github.event.action == 'labeled' && steps.wait.outputs.merged == 'true'
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        if: github.event.action == 'labeled' && steps.wait.outputs.merged == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Close issues referenced by the merged PR's closing keywords
+        if: github.event.action == 'labeled' && steps.wait.outputs.merged == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO_OWNER: remhiit
+          REPO_NAME: scoreo
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: node scripts/close-linked-issues.mjs

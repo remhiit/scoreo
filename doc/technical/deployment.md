@@ -147,9 +147,11 @@ The routine shell (name, prompt, `create_new_session_on_fire: true`) was created
 
 ## Auto-Merge
 
-**File**: `.github/workflows/auto-merge-sync.yml`
+**Files**: `.github/workflows/auto-merge-sync.yml` + `scripts/close-linked-issues.mjs`
 
 Zero-LLM Action, triggered on `pull_request.labeled`/`unlabeled` filtered to the `auto` label: on add, calls `gh pr merge --auto --squash` to enable GitHub's native auto-merge (waits for required checks — including `claude/review` — then squash-merges on its own); on remove, calls `gh pr merge --disable-auto`. The disable path matters: once native auto-merge is enabled, GitHub doesn't automatically turn it off just because a label changed — R4 escalating to `needs-human` at `attempt-3` removes `auto`, and this Action is what actually stops the pending merge from going through once checks eventually pass.
+
+On the `labeled` (add) path, the job then waits in place (polling `gh pr view --json state`, ~20s interval, ~20 min ceiling) for that auto-merge to actually complete, then closes any issues referenced by closing keywords in the PR's body directly in this same job — invoking `scripts/close-linked-issues.mjs` with `PR_NUMBER` set instead of relying on `GITHUB_EVENT_PATH`. This exists because a merge completed by GitHub's native auto-merge is attributed to the `GITHUB_TOKEN` identity, and GitHub never spawns a new workflow run for an event triggered by the `GITHUB_TOKEN` — so `pull_request.closed` never reaches `close-linked-issues.yml` for these merges (confirmed on #208/#212, see `doc/technical/automation-plan.md` Phase 5). Acting within the same job sidesteps that limit entirely, since no new `workflow_run` is needed. If the poll times out without a merge, the job exits cleanly — nothing to close.
 
 `auto` is applied by R2 (`implement-task`) at PR-open time when the issue's risk was assessed **Faible** and the diff still matches that — never by R1, never predicted before the diff exists.
 
@@ -161,7 +163,9 @@ Zero-LLM Action, triggered on `pull_request.labeled`/`unlabeled` filtered to the
 
 Zero-LLM Action, triggered on `pull_request.closed` filtered to `github.event.pull_request.merged == true`. Parses the merged PR's body for closing keywords (`close`/`closes`/`closed`, `fix`/`fixes`/`fixed`, `resolve`/`resolves`/`resolved`, case-insensitive, followed by one or more `#N` references) and explicitly closes each referenced issue in this repo via the REST API (`PATCH /issues/{n}` with `state: closed`, `state_reason: completed`) — using its own `GITHUB_TOKEN`, scoped `issues: write` in this workflow's `permissions:` block. Cross-repo references (`owner/repo#N`) are ignored; issues already closed are skipped.
 
-Exists because GitHub's own "Closes #N" auto-close was observed to silently not fire for PRs merged through `auto-merge-sync.yml`'s native auto-merge (`gh pr merge --auto --squash` only *enables* auto-merge — the actual squash-merge happens later, asynchronously, once checks pass, outside that job's execution) — see `doc/technical/automation-plan.md` Phase 5, incidents #128 and #139. This job makes issue-closing independent of that path and of the repo-wide "Workflow permissions" setting, which no tool available in a Claude Code session here can read.
+Exists because GitHub's own "Closes #N" auto-close was observed to silently not fire for PRs merged through `auto-merge-sync.yml`'s native auto-merge — see `doc/technical/automation-plan.md` Phase 5, incidents #128 and #139. This workflow remains the safety net for **manually-merged** PRs (by Rémi, via the UI), which aren't affected by the `GITHUB_TOKEN` recursive-trigger limit described under Auto-Merge above; the bot-merged path is now handled directly inside `auto-merge-sync.yml` itself (#223), since this workflow's own `pull_request.closed` trigger can't fire for those merges either.
+
+The `scripts/close-linked-issues.mjs` module is shared between the two workflows: `resolvePullRequest()` fetches the PR by number from the API when `PR_NUMBER` is set (used by `auto-merge-sync.yml`), and falls back to reading the `pull_request.closed` event payload from `GITHUB_EVENT_PATH` otherwise (used by this workflow).
 
 ---
 

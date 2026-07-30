@@ -5,10 +5,21 @@
 // keyword parsing ("Closes #N") should apply regardless, but in practice this
 // repo observed linked issues staying open after such auto-merges (#120, #122,
 // #114 — see doc/technical/automation-plan.md Phase 5, #139), while a manually
-// merged PR (#121) closed its linked issue normally. Rather than depend on a
-// repo-wide "Workflow permissions" setting no available tool can read here,
-// this job parses the merged PR's body for closing keywords itself and closes
-// the referenced issues explicitly, with its own `issues: write` token.
+// merged PR (#121) closed its linked issue normally. This script parses the
+// merged PR's body for closing keywords itself and closes the referenced
+// issues explicitly, with its own `issues: write` token.
+//
+// Two invocation modes:
+// - `PR_NUMBER` env var set: fetch that PR directly from the API (used by
+//   `auto-merge-sync.yml`, which polls for its own bot-enabled auto-merge to
+//   complete and then closes issues in the same job run — this path exists
+//   because GitHub never spawns a new workflow run for events triggered by
+//   the GITHUB_TOKEN, so `pull_request.closed` never reaches this script's
+//   own dedicated trigger for those merges — see #208/#212, automation-plan.md
+//   Phase 5).
+// - Otherwise: read the `pull_request.closed` event payload from
+//   `GITHUB_EVENT_PATH` (used by `close-linked-issues.yml`, the safety net for
+//   manually-merged PRs, which aren't affected by that GITHUB_TOKEN limit).
 import { readFileSync } from 'node:fs'
 import { pathToFileURL } from 'node:url'
 
@@ -60,9 +71,21 @@ async function closeIssue(issueNumber) {
   }
 }
 
-async function main() {
+export async function resolvePullRequest() {
+  const prNumber = process.env.PR_NUMBER
+  if (prNumber) {
+    const res = await fetch(`${API_ROOT}/pulls/${prNumber}`, { headers })
+    if (!res.ok) {
+      throw new Error(`PR #${prNumber}: introuvable (${res.status})`)
+    }
+    return res.json()
+  }
   const payload = JSON.parse(readFileSync(process.env.GITHUB_EVENT_PATH, 'utf-8'))
-  const pr = payload.pull_request
+  return payload.pull_request
+}
+
+async function main() {
+  const pr = await resolvePullRequest()
   const issueNumbers = extractClosedIssueNumbers(pr.body)
   if (issueNumbers.length === 0) {
     console.log(`PR #${pr.number}: aucune référence de fermeture dans le corps.`)
