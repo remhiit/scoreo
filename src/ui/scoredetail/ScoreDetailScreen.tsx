@@ -5,11 +5,13 @@ import { ListItemRow } from '../shared/ListItemRow'
 import { LudoButton } from '../shared/LudoButton'
 import { LudoModal } from '../shared/LudoModal'
 import { ManualSelectionDialog } from './ManualSelectionDialog'
+import { RoundEntrySheet } from './RoundEntrySheet'
 import {
   computeStandings,
   computeTotals,
   countRoundsPlayed,
   leadHintLabel,
+  nextRoundNumber,
   saveDraft,
   scoreDetailReducer,
   submitCancelMatch,
@@ -162,13 +164,31 @@ export function ScoreDetailScreen({ initialState, onSaved, onCancel, ...deps }: 
       {state.error && <div className="error-msg">{state.error}</div>}
 
       <div className="bottom-bar">
-        <LudoButton text="Finish match" variant="primary" onClick={() => dispatch(submitTerminate(state, deps))} />
         <LudoButton
-          text="Cancel"
-          variant="secondary"
-          onClick={() => dispatch(submitCancelMatch(state, deps))}
+          text={`Enter round ${nextRoundNumber(state.rounds)}`}
+          variant="primary"
+          onClick={() => dispatch({ type: 'openRoundSheet' })}
         />
+        <div className="bottom-bar-row">
+          <LudoButton text="Finish match" variant="primary" onClick={() => dispatch(submitTerminate(state, deps))} />
+          <LudoButton
+            text="Cancel"
+            variant="secondary"
+            onClick={() => dispatch(submitCancelMatch(state, deps))}
+          />
+        </div>
       </div>
+
+      <RoundEntrySheet
+        open={state.showRoundSheet}
+        roundNumber={nextRoundNumber(state.rounds)}
+        players={state.players}
+        totals={totals}
+        inputs={state.roundSheetInputs}
+        onChange={(playerId, value) => dispatch({ type: 'updateRoundSheetInput', playerId, value })}
+        onCancel={() => dispatch({ type: 'closeRoundSheet' })}
+        onSubmit={() => dispatch({ type: 'submitRoundSheet' })}
+      />
 
       <LudoModal
         open={state.showWinnerModal}

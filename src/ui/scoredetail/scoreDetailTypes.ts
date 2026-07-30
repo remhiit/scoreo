@@ -41,4 +41,7 @@ export interface ScoreDetailState {
   editingMatchId: string | undefined
   // Cancel confirm
   showCancelConfirm: boolean
+  // Round entry sheet
+  showRoundSheet: boolean
+  roundSheetInputs: Record<string, number>
 }
