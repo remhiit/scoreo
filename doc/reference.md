@@ -161,6 +161,8 @@ Files (`public/css/`): `tokens/*.css` (Catppuccin design tokens, see Styling in 
 
 Key classes: `.btn-icon`, `.btn-icon--danger`, `.modal-body`, `.modal-row`, `.modal-title`, `.detail-row`, `.detail-label`, `.detail-value`, `.splash`, `.splash-content`, `.spinner`, `.onboarding-guide`, `.fab-position`, `.list-container`, `.list-container--spaced`, `.list-item-row`, `.list-item-label`, `.list-item-label--selectable`, `.list-item-label--selected`, `.list-item-name`, `.list-item-subtitle`, `.list-item-actions`, `.list-item-select-picto`.
 
+`.select` (`theme.css`) and `.filter-select` (`history.css`, compact variant) restyle native `<select>` elements per the Ludo design system: `appearance: none` (+ `-webkit-appearance`) with a custom SVG chevron as a `background-image` data-URI, inset from the edge (`background-position`/`background-size`) rather than flush — native browser arrows are never shown. `.select` targets a 44px tap height; `.filter-select` is the 32px compact version used by History's filter dropdown.
+
 Sync classes (`sync.css`): `.sync-icon`, `.sync-status`, `.sync-conflict-container`, `.sync-card`, `.sync-card-title`, `.sync-card-stat`, `.sync-actions`.
 
 Theme picker classes (`theme-picker.css`): `.theme-picker-label`, `.theme-picker-row`, `.theme-chip`, `.theme-chip--active`, `.accent-swatch`, `.accent-swatch--active`.
