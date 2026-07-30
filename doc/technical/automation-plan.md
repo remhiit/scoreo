@@ -665,6 +665,37 @@ vraie PR référençant `Closes #N` merge après ce correctif — à confirmer
 sur la prochaine PR mergée (y compris celle de #139 elle-même, mergée
 manuellement vu son risque Élevé).
 
+**Incident (2026-07-29) — root cause confirmé, `close-linked-issues.yml`
+lui-même ne se déclenche jamais sur les auto-merges du bot (#208, #212) :**
+deux PR auto-mergées par `github-actions[bot]` (#219 Closes #208, #221
+Closes #212) ont laissé leurs issues liées ouvertes. Vérification dans
+l'historique des runs : `close-linked-issues.yml` n'a produit **aucun**
+run du tout pour ces deux merges, alors que tous les autres workflows
+(`ci.yml`, `review-status-sync.yml`, `project-sync.yml`) ont bien réagi à
+ces mêmes PR dans la même fenêtre — et que des dizaines d'autres issues se
+sont fermées normalement sur la même période. Root cause confirmé par la
+doc GitHub (concepts/security, `GITHUB_TOKEN`) : *« events triggered by the
+GITHUB_TOKEN will not create a new workflow run »*, pour éviter les
+déclenchements récursifs. `auto-merge-sync.yml` active l'auto-merge via
+`${{ github.token }}` ; le squash-merge réel, effectué plus tard par le
+service natif de GitHub, est attribué à cette même identité
+(`github-actions[bot]`) — l'événement `pull_request.closed` qui en
+résulte est donc supprimé pour tout déclenchement de nouveau workflow,
+y compris celui d'un workflow tiers avec son propre token
+(`close-linked-issues.yml`). Ce n'est donc pas un problème de permission
+mais une limite structurelle de GitHub Actions : aucun nouveau
+`workflow_run` ne peut naître d'un événement causé par le `GITHUB_TOKEN`.
+
+Correctif (#223) : `auto-merge-sync.yml` attend lui-même, dans le **même
+job**, que son propre auto-merge se réalise (poll `gh pr view --json
+state`, ~20s d'intervalle, ~20 min de plafond), puis ferme les issues
+liées directement dans ce job — en réutilisant `scripts/
+close-linked-issues.mjs` (étendu d'un mode d'invocation par numéro de PR
+explicite). Comme il s'agit du même run et non d'un nouveau `workflow_run`,
+la restriction ci-dessus ne s'applique pas. `close-linked-issues.yml`
+reste inchangé, toujours utile pour les merges manuels (non concernés par
+cette limite).
+
 ### Phase 6 — Observabilité
 
 R6 hebdo. C'est le rapport qui pilote l'élargissement de la liste blanche `auto`.
