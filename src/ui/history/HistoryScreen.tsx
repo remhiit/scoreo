@@ -77,18 +77,20 @@ export function HistoryScreen({
 
       <div className="history-filter">
         <label>Filter by game:</label>
-        <select
-          className="filter-select"
-          value={state.selectedGameTypeFilter ?? ''}
-          onChange={(e) => dispatch({ type: 'selectGameTypeFilter', gameTypeId: e.target.value || undefined })}
-        >
-          <option value="">All games</option>
-          {uniqueGameTypes(state.displays).map((gt) => (
-            <option key={gt.id} value={gt.id}>
-              {gt.name}
-            </option>
-          ))}
-        </select>
+        <div className="select-chevron select-chevron--compact">
+          <select
+            className="filter-select"
+            value={state.selectedGameTypeFilter ?? ''}
+            onChange={(e) => dispatch({ type: 'selectGameTypeFilter', gameTypeId: e.target.value || undefined })}
+          >
+            <option value="">All games</option>
+            {uniqueGameTypes(state.displays).map((gt) => (
+              <option key={gt.id} value={gt.id}>
+                {gt.name}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
 
       {filteredDisplays.length === 0 ? (

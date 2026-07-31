@@ -14,52 +14,58 @@ export function GameTypeFields({ state, dispatch }: GameTypeFieldsProps) {
   return (
     <>
       <div className="section-label">Win condition</div>
-      <select
-        className="select"
-        value={state.selectedWinCondition}
-        onChange={(e) =>
-          dispatch({ type: 'selectWinCondition', winCondition: e.target.value as GameTypeState['selectedWinCondition'] })
-        }
-      >
-        {WinConditionSchema.options.map((wc) => (
-          <option key={wc} value={wc}>
-            {winConditionLabel(wc)}
-          </option>
-        ))}
-      </select>
+      <div className="select-chevron">
+        <select
+          className="select"
+          value={state.selectedWinCondition}
+          onChange={(e) =>
+            dispatch({ type: 'selectWinCondition', winCondition: e.target.value as GameTypeState['selectedWinCondition'] })
+          }
+        >
+          {WinConditionSchema.options.map((wc) => (
+            <option key={wc} value={wc}>
+              {winConditionLabel(wc)}
+            </option>
+          ))}
+        </select>
+      </div>
 
       <div className="section-label">Tie-break rule</div>
-      <select
-        className="select"
-        value={state.selectedTieBreakRule}
-        onChange={(e) => dispatch({ type: 'updateTieBreakRule', rule: e.target.value as GameTypeState['selectedTieBreakRule'] })}
-      >
-        {TieBreakRuleSchema.options.map((rule) => (
-          <option key={rule} value={rule}>
-            {tieBreakRuleLabel(rule)}
-          </option>
-        ))}
-      </select>
+      <div className="select-chevron">
+        <select
+          className="select"
+          value={state.selectedTieBreakRule}
+          onChange={(e) => dispatch({ type: 'updateTieBreakRule', rule: e.target.value as GameTypeState['selectedTieBreakRule'] })}
+        >
+          {TieBreakRuleSchema.options.map((rule) => (
+            <option key={rule} value={rule}>
+              {tieBreakRuleLabel(rule)}
+            </option>
+          ))}
+        </select>
+      </div>
 
       {state.selectedTieBreakRule === 'SECONDARY_SCORE' && (
         <>
           <div className="section-label">Tie break condition:</div>
-          <select
-            className="select"
-            value={state.selectedTieBreakCondition}
-            onChange={(e) =>
-              dispatch({
-                type: 'updateTieBreakCondition',
-                condition: e.target.value as GameTypeState['selectedTieBreakCondition'],
-              })
-            }
-          >
-            {WinConditionSchema.options.map((cond) => (
-              <option key={cond} value={cond}>
-                {winConditionLabel(cond)}
-              </option>
-            ))}
-          </select>
+          <div className="select-chevron">
+            <select
+              className="select"
+              value={state.selectedTieBreakCondition}
+              onChange={(e) =>
+                dispatch({
+                  type: 'updateTieBreakCondition',
+                  condition: e.target.value as GameTypeState['selectedTieBreakCondition'],
+                })
+              }
+            >
+              {WinConditionSchema.options.map((cond) => (
+                <option key={cond} value={cond}>
+                  {winConditionLabel(cond)}
+                </option>
+              ))}
+            </select>
+          </div>
 
           <div className="section-label">Tie break question:</div>
           <div className="form-row">
