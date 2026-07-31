@@ -38,6 +38,8 @@ Screen: `src/ui/import/ImportScreen.tsx`. See `doc/reference.md` for the full re
    - Label: "Click to select a JSON file"
 2. **READY** — preview: game name + match count + **Execute** / **Reset** buttons
 3. **DONE** — result summary with per-match status (Imported ✅ / Skipped ⚠️ / Failed ❌)
+   - Each `.import-result-line` uses `display: flex; align-items: center; gap: 6px` so the Lucide icon lines up with the text
+   - Failed match IDs (`.import-failed-id`, `--font-mono`) render as siblings of the "Failed" line, not nested inside it, so each ID keeps its own `padding-left: 24px` indent when there are several
 4. **ERROR** — if file cannot be read (e.g. permission denied, abort):
    - Error message displayed in IDLE state
    - **Retry** button to select another file

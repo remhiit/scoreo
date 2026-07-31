@@ -88,6 +88,46 @@ export const withoutDateJson = `{
     ]
 }`
 
+export const withMultipleFailedDetailsJson = `{
+    "version": "1.1",
+    "game": "TestGame",
+    "games": [
+        {
+            "id": "m1",
+            "date": 1000000,
+            "ranking": [
+                {"name": "Alice", "score": 10, "rank": 1},
+                {"name": "Bob", "score": 5, "rank": 2}
+            ],
+            "details": [
+                {"scores": [{"name": "Alice", "score": 999}, {"name": "Bob", "score": 5}]}
+            ]
+        },
+        {
+            "id": "m2",
+            "date": 2000000,
+            "ranking": [
+                {"name": "Alice", "score": 10, "rank": 1},
+                {"name": "Bob", "score": 5, "rank": 2}
+            ],
+            "details": [
+                {"scores": [{"name": "Alice", "score": 999}, {"name": "Bob", "score": 5}]}
+            ]
+        },
+        {
+            "id": "m3",
+            "date": 3000000,
+            "ranking": [
+                {"name": "Alice", "score": 10, "rank": 1},
+                {"name": "Bob", "score": 5, "rank": 2}
+            ],
+            "details": [
+                {"scores": [{"name": "Alice", "score": 999}, {"name": "Bob", "score": 5}]}
+            ]
+        }
+    ]
+}`
+
 export const invalidJson = '{not valid json}'
 
 export const emptyGamesJson = `{

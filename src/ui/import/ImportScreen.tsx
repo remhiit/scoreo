@@ -86,14 +86,16 @@ export function ImportScreen({ importUseCase, onDone }: ImportScreenProps) {
           </div>
         )}
         {state.result.failed.length > 0 && (
-          <div className="import-result-line import-error">
-            <XCircle size={18} aria-hidden /> {state.result.failed.length} failed
+          <>
+            <div className="import-result-line import-error">
+              <XCircle size={18} aria-hidden /> {state.result.failed.length} failed
+            </div>
             {state.result.failed.map((id) => (
               <div key={id} className="import-failed-id">
                 {id}
               </div>
             ))}
-          </div>
+          </>
         )}
       </div>
       <LudoButton text="Done" variant="primary" className="ludo-btn--full" onClick={handleDone} />

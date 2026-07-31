@@ -1,7 +1,7 @@
 import { fireEvent, render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import { ImportMatchesUseCase } from '../../application/importMatchesUseCase'
-import { invalidJson, validJson } from '../../application/testImportData'
+import { invalidJson, validJson, withMultipleFailedDetailsJson } from '../../application/testImportData'
 import { InMemoryGameTypeRepository } from '../../infrastructure/testing/inMemoryGameTypeRepository'
 import { InMemoryMatchRepository } from '../../infrastructure/testing/inMemoryMatchRepository'
 import { InMemoryPlayerRepository } from '../../infrastructure/testing/inMemoryPlayerRepository'
@@ -49,6 +49,23 @@ describe('ImportScreen', () => {
 
     expect(await screen.findByText(/^Invalid file:/)).toBeInTheDocument()
     expect(screen.getByText('Select a JSON file to import')).toBeInTheDocument()
+  })
+
+  it('shows failed ids as siblings of the error line, not nested inside it', async () => {
+    render(<ImportScreen importUseCase={buildUseCase()} onDone={() => {}} />)
+
+    selectFile(withMultipleFailedDetailsJson)
+    fireEvent.click(await screen.findByText('Import'))
+
+    expect(await screen.findByText('3 failed')).toBeInTheDocument()
+    const errorLine = screen.getByText('3 failed').closest('.import-result-line')
+    expect(errorLine?.querySelector('.import-failed-id')).toBeNull()
+
+    for (const id of ['m1', 'm2', 'm3']) {
+      const idEl = screen.getByText(id)
+      expect(idEl).toHaveClass('import-failed-id')
+      expect(idEl.parentElement).not.toBe(errorLine)
+    }
   })
 
   it('calls onDone and resets after Done is clicked', async () => {

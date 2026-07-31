@@ -97,18 +97,18 @@ export function SyncScreen({ syncUseCase }: SyncScreenProps) {
                 <div className="sync-card-title">
                   Local version{state.conflict.localSnapshot.dateLabel ? ` (${state.conflict.localSnapshot.dateLabel})` : ''}
                 </div>
-                <div className="sync-card-stat">• {state.conflict.localSnapshot.playerCount} players</div>
-                <div className="sync-card-stat">• {state.conflict.localSnapshot.gameTypeCount} game types</div>
-                <div className="sync-card-stat">• {state.conflict.localSnapshot.matchCount} matches</div>
+                <div className="sync-card-stat">{state.conflict.localSnapshot.playerCount} players</div>
+                <div className="sync-card-stat">{state.conflict.localSnapshot.gameTypeCount} game types</div>
+                <div className="sync-card-stat">{state.conflict.localSnapshot.matchCount} matches</div>
               </div>
               <div className="sync-card">
                 <div className="sync-card-title">
                   Remote version
                   {state.conflict.remoteSnapshot.dateLabel ? ` (${state.conflict.remoteSnapshot.dateLabel})` : ''}
                 </div>
-                <div className="sync-card-stat">• {state.conflict.remoteSnapshot.playerCount} players</div>
-                <div className="sync-card-stat">• {state.conflict.remoteSnapshot.gameTypeCount} game types</div>
-                <div className="sync-card-stat">• {state.conflict.remoteSnapshot.matchCount} matches</div>
+                <div className="sync-card-stat">{state.conflict.remoteSnapshot.playerCount} players</div>
+                <div className="sync-card-stat">{state.conflict.remoteSnapshot.gameTypeCount} game types</div>
+                <div className="sync-card-stat">{state.conflict.remoteSnapshot.matchCount} matches</div>
               </div>
             </div>
 
