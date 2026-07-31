@@ -48,7 +48,7 @@ Triggered after each connection:
 
 ## Conflict resolution
 
-The user sees both versions (local and remote) with counts and dates. Choice:
+The user sees both versions (local and remote) with counts and dates, one `.sync-card` each — a real card (`--surface-card` background, `--border-subtle` border, `--shadow-sm`), not a sunken zone. `.sync-conflict-container` always lays the two cards out side by side (`flex-direction: row`), including on mobile, since stacking them would defeat the local/remote comparison. Choice:
 - **Keep local** → local data overwrites Drive
 - **Keep remote** → remote data overwrites local. This is a real replacement, not a merge: local players/game types/matches absent from the remote data set are deleted (`syncUseCase.writeRemoteToLocal` calls each repository's `deleteAll()` before `saveAll()`). A "Local empty" auto-sync pull (see above) goes through the same path. This is deliberately different from **Import** (see `doc/functional/features/import.md`), which always merges and never deletes existing local data.
   - If the write fails partway through (e.g. localStorage quota exceeded), `writeRemoteToLocal` restores the pre-call local state from an in-memory snapshot taken before the first `deleteAll()`, then rethrows the original error so the UI can display it — the user never ends up with a half-written local state (see #150).

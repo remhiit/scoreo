@@ -62,7 +62,7 @@ describe('SyncScreen', () => {
     })
 
     expect(await screen.findByText('Sync conflict')).toBeInTheDocument()
-    expect(screen.getAllByText('• 1 players', { exact: false })).toHaveLength(2)
+    expect(screen.getAllByText('1 players', { exact: false })).toHaveLength(2)
 
     await act(async () => {
       fireEvent.click(screen.getByText('Keep local'))
