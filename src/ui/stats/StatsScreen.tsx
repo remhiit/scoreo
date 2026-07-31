@@ -4,6 +4,7 @@ import type { GetGameTypesUseCase } from '../../application/getGameTypesUseCase'
 import type { GetHeadToHeadUseCase, PlayerDetail } from '../../application/getHeadToHeadUseCase'
 import { loadStats, statsReducer } from './statsReducer'
 import { initialStatsState, selectedPlayer } from './statsTypes'
+import { ListContainer } from '../shared/ListContainer'
 
 export interface StatsScreenProps {
   getHeadToHead: GetHeadToHeadUseCase
@@ -98,7 +99,7 @@ function LeaderboardView({ leaderboard, onSelectPlayer }: LeaderboardViewProps) 
   }
 
   return (
-    <>
+    <ListContainer>
       {leaderboard.map((detail) => {
         const rowPct = pct(detail.wins, detail.losses)
         return (
@@ -117,7 +118,7 @@ function LeaderboardView({ leaderboard, onSelectPlayer }: LeaderboardViewProps) 
           </div>
         )
       })}
-    </>
+    </ListContainer>
   )
 }
 

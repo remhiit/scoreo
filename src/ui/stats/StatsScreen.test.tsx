@@ -74,6 +74,12 @@ describe('StatsScreen', () => {
     expect(screen.getByText('Type B')).toBeInTheDocument()
   })
 
+  it('wraps the leaderboard rows in a list-container', () => {
+    renderStats()
+
+    expect(screen.getByText('Alice').closest('.list-container')).not.toBeNull()
+  })
+
   it('filtering by game type narrows the leaderboard to that game', () => {
     renderStats()
 
