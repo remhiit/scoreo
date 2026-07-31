@@ -6,8 +6,8 @@
     color: var(--text-muted);
     text-transform: uppercase;
     letter-spacing: 0.02em;
-    margin-top: 12px;
-    margin-bottom: 8px;
+    margin-top: var(--space-3);
+    margin-bottom: var(--space-2);
 }
 
 .theme-picker-label:first-of-type { margin-top: 0; }
@@ -22,8 +22,8 @@
     border: 1px solid var(--border-default);
     background: transparent;
     color: var(--text-body);
-    border-radius: 999px;
-    padding: 4px 10px;
+    border-radius: var(--radius-pill);
+    padding: var(--space-1) 10px;
     font-size: 13px;
     cursor: pointer;
     text-transform: capitalize;
@@ -38,7 +38,7 @@
 .accent-swatch {
     width: 26px;
     height: 26px;
-    border-radius: 999px;
+    border-radius: var(--radius-pill);
     border: 1px solid var(--border-default);
     cursor: pointer;
     padding: 0;
