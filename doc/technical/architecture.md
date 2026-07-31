@@ -97,6 +97,8 @@ Uses CSS custom properties (design tokens), a fixed top header bar, and minimal 
 
 Flavor and accent are switched by setting `data-theme`/`data-accent` attributes on `<html>` (see `src/ui/theme/themeManager.ts`).
 
+`theme.css` never redefines the font stack itself — it references `var(--font-body)`/`var(--font-ui)` from `typography.css`, so the type scale stays the single source of truth.
+
 Every screen references the semantic tokens directly — the shared `Ludo*` components (`src/ui/shared/LudoButton.tsx`, `LudoTextInput.tsx`, `LudoTable.tsx`, `LudoModal.tsx`) and each screen's own CSS all read `--color-primary`, `--surface-card`, `--text-body`, etc. `theme.css` holds only the splash screen, a couple of shared layout classes (`.card`, `.form-row`, `.select`, `.error-msg`, `.empty`, `.section-label`), and the one non-color layout constant that's still a plain custom property, `--header-height`.
 
 ## PWA (Progressive Web App)
