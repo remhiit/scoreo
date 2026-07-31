@@ -26,14 +26,14 @@ export function RoundHistoryList({ rounds, players, onChangeScore, onRemoveRound
           <div className="hist-round-head">
             <span>Round {roundIndex + 1}</span>
             {canRemove && (
-              <button
-                type="button"
-                className="btn-icon btn-icon--danger"
+              <LudoButton
+                text={<X size={16} aria-hidden />}
+                variant="danger"
+                size="sm"
+                iconOnly
                 title="Remove round"
                 onClick={() => onRemoveRound(roundIndex)}
-              >
-                <X size={16} aria-hidden />
-              </button>
+              />
             )}
           </div>
           <div className="hist-cells">
