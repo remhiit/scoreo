@@ -55,21 +55,23 @@ export function GameSelectModal({
       {gameTypes.length === 0 ? (
         <div className="empty-inline">No game types yet. Add one.</div>
       ) : (
-        <select
-          className="select"
-          value={selectedGameType?.id ?? ''}
-          onChange={(e) => {
-            const gt = gameTypes.find((g) => g.id === e.target.value)
-            if (gt) onSelectGameType(gt)
-          }}
-        >
-          <option value="">— Select a game —</option>
-          {gameTypes.map((gt) => (
-            <option key={gt.id} value={gt.id}>
-              {gt.name}
-            </option>
-          ))}
-        </select>
+        <div className="select-chevron">
+          <select
+            className="select"
+            value={selectedGameType?.id ?? ''}
+            onChange={(e) => {
+              const gt = gameTypes.find((g) => g.id === e.target.value)
+              if (gt) onSelectGameType(gt)
+            }}
+          >
+            <option value="">— Select a game —</option>
+            {gameTypes.map((gt) => (
+              <option key={gt.id} value={gt.id}>
+                {gt.name}
+              </option>
+            ))}
+          </select>
+        </div>
       )}
 
       <div className="modal-row">
@@ -93,17 +95,19 @@ export function GameSelectModal({
               if (inlineGameName.trim() !== '') onAddInlineGameType()
             }}
           />
-          <select
-            className="select"
-            value={inlineGameWinCondition}
-            onChange={(e) => onChangeInlineGameWinCondition(e.target.value as WinCondition)}
-          >
-            {(['HIGHEST_SCORE', 'LOWEST_SCORE', 'MANUAL'] as WinCondition[]).map((wc) => (
-              <option key={wc} value={wc}>
-                {winConditionLabel(wc)}
-              </option>
-            ))}
-          </select>
+          <div className="select-chevron">
+            <select
+              className="select"
+              value={inlineGameWinCondition}
+              onChange={(e) => onChangeInlineGameWinCondition(e.target.value as WinCondition)}
+            >
+              {(['HIGHEST_SCORE', 'LOWEST_SCORE', 'MANUAL'] as WinCondition[]).map((wc) => (
+                <option key={wc} value={wc}>
+                  {winConditionLabel(wc)}
+                </option>
+              ))}
+            </select>
+          </div>
           {inlineGameError && <div className="error-msg">{inlineGameError}</div>}
           <LudoButton
             text="Add game"
