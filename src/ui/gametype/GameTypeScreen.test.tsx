@@ -67,11 +67,29 @@ describe('GameTypeScreen', () => {
 
     fireEvent.click(screen.getByLabelText('View details'))
     expect(screen.getByRole('dialog')).toBeInTheDocument()
-    expect(screen.getByText('Win condition:')).toBeInTheDocument()
+    expect(within(screen.getByRole('dialog')).getByText('Win condition')).toBeInTheDocument()
 
     fireEvent.click(within(screen.getByRole('dialog')).getByText('Edit'))
 
     expect(screen.getByText('Edit Belote')).toBeInTheDocument()
+  })
+
+  it('shows detail rows without trailing colons, including tie-break condition and question', () => {
+    renderScreen()
+    fireEvent.change(nameInput(), { target: { value: 'Tarot' } })
+    fireEvent.change(screen.getByDisplayValue('No tie-break'), { target: { value: 'SECONDARY_SCORE' } })
+    fireEvent.change(screen.getByPlaceholderText('e.g. Number of cards'), { target: { value: 'Number of cards' } })
+    fireEvent.click(screen.getByText('Add game type'))
+
+    fireEvent.click(screen.getByLabelText('View details'))
+    const dialog = screen.getByRole('dialog')
+
+    expect(within(dialog).getByText('Win condition')).toBeInTheDocument()
+    expect(within(dialog).getByText('Tie break')).toBeInTheDocument()
+    expect(within(dialog).getByText('Tie break condition')).toBeInTheDocument()
+    expect(within(dialog).getByText('Tie break question')).toBeInTheDocument()
+    expect(within(dialog).getByText('Number of cards')).toBeInTheDocument()
+    expect(within(dialog).queryByText(/:$/)).not.toBeInTheDocument()
   })
 
   it('edits a game type via the Edit action and saves the new tie-break rule', () => {

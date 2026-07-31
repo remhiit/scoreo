@@ -1,0 +1,23 @@
+/* ── Game detail view ── */
+
+.detail-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 0;
+    border-bottom: var(--border-width) solid var(--border-subtle);
+    font-size: 14px;
+}
+
+.detail-row:last-of-type {
+    border-bottom: none;
+}
+
+.detail-label {
+    color: var(--text-muted);
+}
+
+.detail-value {
+    font-weight: var(--weight-medium);
+    color: var(--text-heading);
+}

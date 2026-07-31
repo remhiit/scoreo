@@ -83,26 +83,6 @@
     padding: 8px 0 12px;
 }
 
-/* ── Game detail view ── */
-
-.detail-row {
-    display: flex;
-    gap: 8px;
-    padding: 8px 0;
-    align-items: center;
-}
-
-.detail-label {
-    color: var(--text-muted);
-    font-size: 14px;
-    min-width: 140px;
-}
-
-.detail-value {
-    font-size: 14px;
-    font-weight: 500;
-}
-
 /* ── Onboarding guide ── */
 
 .onboarding-guide {
