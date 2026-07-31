@@ -157,11 +157,13 @@ Notable coverage that goes beyond a 1:1 port of business logic:
 
 ## CSS
 
-Files (`public/css/`): `tokens/*.css` (Catppuccin design tokens, see Styling in `doc/technical/architecture.md`), `theme.css`, `layout.css`, `home.css`, `scoring.css`, `history.css`, `stats.css`, `import.css`, `sync.css`, `theme-picker.css`, `components.css`, `styles.css` (entry point, `@import`s the rest).
+Files (`public/css/`): `tokens/*.css` (Catppuccin design tokens, see Styling in `doc/technical/architecture.md`), `theme.css`, `layout.css`, `home.css`, `games.css`, `scoring.css`, `history.css`, `stats.css`, `import.css`, `sync.css`, `theme-picker.css`, `components.css`, `styles.css` (entry point, `@import`s the rest).
 
 Key classes: `.btn-icon`, `.btn-icon--danger`, `.modal-body`, `.modal-row`, `.modal-title`, `.detail-row`, `.detail-label`, `.detail-value`, `.splash`, `.splash-content`, `.spinner`, `.onboarding-guide`, `.fab-position`, `.list-container`, `.list-container--spaced`, `.list-item-row`, `.list-item-label`, `.list-item-label--selectable`, `.list-item-label--selected`, `.list-item-name`, `.list-item-subtitle`, `.list-item-actions`, `.list-item-select-picto`.
 
 `.select` (`theme.css`) and `.filter-select` (`history.css`, compact variant) restyle native `<select>` elements per the Ludo design system: `appearance: none` (+ `-webkit-appearance`) with a custom SVG chevron as a `background-image` data-URI, inset from the edge (`background-position`/`background-size`) rather than flush — native browser arrows are never shown. `.select` targets a 44px tap height; `.filter-select` is the 32px compact version used by History's filter dropdown.
+
+Games detail classes (`games.css`): `.detail-row`, `.detail-label`, `.detail-value` — key/value row, justified to both edges, separated by a `border-bottom` (last row has none), labels without a trailing colon.
 
 Sync classes (`sync.css`): `.sync-icon`, `.sync-status`, `.sync-conflict-container`, `.sync-card`, `.sync-card-title`, `.sync-card-stat`, `.sync-actions`.
 

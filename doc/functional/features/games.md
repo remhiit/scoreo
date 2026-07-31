@@ -47,6 +47,7 @@ Screen: `src/ui/gametype/GameTypeScreen.tsx`. See `doc/reference.md` for the ful
 
 ### Detail view
 - Shows: game name, win condition, tie-break rule, tie-break condition/label (if SECONDARY_SCORE)
+- Each detail is a key/value row (`.detail-row`) justified to both edges, labels without a trailing colon, separated by a thin `border-bottom` (the last row has none)
 - Back button → returns to list
 - Edit button → switches to form mode with fields pre-filled
 - Archive button (🗑 red) → opens archive confirmation modal

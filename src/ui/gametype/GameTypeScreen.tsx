@@ -140,22 +140,22 @@ export function GameTypeScreen({
         {selectedGameType && (
           <>
             <div className="detail-row">
-              <span className="detail-label">Win condition:</span>
+              <span className="detail-label">Win condition</span>
               <span className="detail-value">{winConditionLabel(selectedGameType.winCondition)}</span>
             </div>
             <div className="detail-row">
-              <span className="detail-label">Tie break:</span>
+              <span className="detail-label">Tie break</span>
               <span className="detail-value">{tieBreakRuleLabel(selectedGameType.tieBreakRule)}</span>
             </div>
             {selectedGameType.tieBreakRule === 'SECONDARY_SCORE' && (
               <>
                 <div className="detail-row">
-                  <span className="detail-label">Tie break condition:</span>
+                  <span className="detail-label">Tie break condition</span>
                   <span className="detail-value">{winConditionLabel(selectedGameType.tieBreakCondition)}</span>
                 </div>
                 {selectedGameType.tieBreakLabel && (
                   <div className="detail-row">
-                    <span className="detail-label">Tie break question:</span>
+                    <span className="detail-label">Tie break question</span>
                     <span className="detail-value">{selectedGameType.tieBreakLabel}</span>
                   </div>
                 )}
