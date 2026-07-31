@@ -210,26 +210,3 @@
     border-radius: 0;
     border-left: var(--border-width) solid var(--border-default);
 }
-
-/* ── Boutons icône (réutilisables partout hors listes) ── */
-
-.btn-icon {
-    background: transparent;
-    border: none;
-    cursor: pointer;
-    padding: 6px var(--space-2);
-    border-radius: 50%;
-    font-size: var(--text-md);
-    line-height: 1;
-    color: var(--text-muted);
-    transition: background 0.15s, color 0.15s; /* 150ms: no exact --duration-* match */
-}
-
-.btn-icon:hover {
-    background: var(--color-primary-tint);
-}
-
-.btn-icon--danger:hover {
-    background: color-mix(in srgb, var(--color-danger) 15%, var(--surface-card));
-    color: var(--color-danger);
-}

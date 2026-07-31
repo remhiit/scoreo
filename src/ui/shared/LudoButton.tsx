@@ -10,6 +10,7 @@ export interface LudoButtonProps {
   iconOnly?: boolean
   disabled?: boolean
   ariaLabel?: string
+  title?: string
   /** Escape hatch for layout-only overrides (e.g. align-self inside a flex panel) — never for restyling variants/colors. */
   className?: string
   onClick: () => void
@@ -27,6 +28,7 @@ export function LudoButton({
   iconOnly = false,
   disabled = false,
   ariaLabel,
+  title,
   className,
   onClick,
 }: LudoButtonProps) {
@@ -40,6 +42,7 @@ export function LudoButton({
       className={classes.join(' ')}
       disabled={disabled}
       aria-label={ariaLabel}
+      title={title}
       onClick={() => {
         if (!disabled) onClick()
       }}

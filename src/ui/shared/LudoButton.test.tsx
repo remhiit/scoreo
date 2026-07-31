@@ -33,4 +33,9 @@ describe('LudoButton', () => {
     render(<LudoButton text="+" ariaLabel="Increase" onClick={() => {}} />)
     expect(screen.getByRole('button', { name: 'Increase' })).toBeInTheDocument()
   })
+
+  it('sets a title attribute when provided', () => {
+    render(<LudoButton text="X" title="Remove round" onClick={() => {}} />)
+    expect(screen.getByTitle('Remove round')).toBeInTheDocument()
+  })
 })
