@@ -24,9 +24,9 @@
 .ludo-btn:active:not(:disabled) { transform: scale(0.97); }
 .ludo-btn:disabled { cursor: not-allowed; opacity: 0.45; }
 
-.ludo-btn--sm { height: 36px; padding: 0 12px; font-size: var(--text-sm); gap: 6px; }
-.ludo-btn--md { height: var(--tap-target); padding: 0 18px; font-size: var(--text-md); gap: 8px; }
-.ludo-btn--lg { height: 52px; padding: 0 24px; font-size: var(--text-lg); gap: 10px; }
+.ludo-btn--sm { height: 36px; padding: 0 var(--space-3); font-size: var(--text-sm); gap: 6px; }
+.ludo-btn--md { height: var(--tap-target); padding: 0 18px; font-size: var(--text-md); gap: var(--space-2); }
+.ludo-btn--lg { height: 52px; padding: 0 var(--space-6); font-size: var(--text-lg); gap: 10px; }
 
 .ludo-btn--icon { padding: 0; border-radius: var(--radius-pill); }
 .ludo-btn--icon.ludo-btn--sm { width: 36px; }
@@ -85,7 +85,7 @@
 .ludo-input--stepper-field {
   width: 72px;
   text-align: center;
-  padding: 0 4px;
+  padding: 0 var(--space-1);
   appearance: none;
   -moz-appearance: textfield;
 }
@@ -116,7 +116,7 @@
   overflow: hidden;
 }
 .ludo-table th {
-  padding: 12px 14px;
+  padding: var(--space-3) 14px;
   text-align: right;
   color: var(--text-muted);
   font-weight: var(--weight-semibold);
@@ -127,7 +127,7 @@
   border-bottom: var(--border-width) solid var(--border-subtle);
 }
 .ludo-table td {
-  padding: 12px 14px;
+  padding: var(--space-3) 14px;
   text-align: right;
   color: var(--text-body);
   font-variant-numeric: tabular-nums;
@@ -137,14 +137,14 @@
 .ludo-table td:first-child { text-align: left; }
 
 .ludo-table--dense th,
-.ludo-table--dense td { padding: 8px 10px; }
+.ludo-table--dense td { padding: var(--space-2) 10px; }
 
 .ludo-table--striped tbody tr:nth-child(even) { background: var(--surface-sunken); }
 
 .ludo-table--no-footer tbody tr:last-child td { border-bottom: none; }
 
 .ludo-table tfoot td {
-  padding: 12px 14px;
+  padding: var(--space-3) 14px;
   text-align: right;
   font-weight: var(--weight-bold);
   font-variant-numeric: tabular-nums;
@@ -152,7 +152,7 @@
   background: var(--surface-raised);
   border-top: var(--border-width) solid var(--border-default);
 }
-.ludo-table--dense tfoot td { padding: 8px 10px; }
+.ludo-table--dense tfoot td { padding: var(--space-2) 10px; }
 .ludo-table tfoot td:first-child { text-align: left; }
 
 /* ---------- Modal (LudoModal, ui/shared/Modal.kt) ---------- */

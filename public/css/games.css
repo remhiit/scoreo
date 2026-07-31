@@ -3,10 +3,10 @@
 .detail-row {
     display: flex;
     justify-content: space-between;
-    gap: 12px;
+    gap: var(--space-3);
     padding: 10px 0;
     border-bottom: var(--border-width) solid var(--border-subtle);
-    font-size: 14px;
+    font-size: var(--text-sm);
 }
 
 .detail-row:last-of-type {

@@ -112,6 +112,19 @@ jobs:
       - name: Check doc/ relative links
         run: node scripts/check-doc-links.mjs
 
+  design-tokens:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Check public/css/ design token adherence
+        run: node scripts/check-design-tokens.mjs
+
   lighthouse:
     runs-on: ubuntu-latest
     steps:
