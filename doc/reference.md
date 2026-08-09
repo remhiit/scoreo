@@ -42,6 +42,7 @@ Notable design choices:
 | `GetHeadToHeadUseCase` | `invoke(gameTypeId?: string)` | `PlayerDetail[]` (sorted by ELO desc, ≥1 match only) |
 | `GetTrophiesUseCase` | `invoke(gameTypeId?: string)` | `Trophy[]` — not persisted, recomputed every call; see Hall of Fame in `doc/functional/features/hall-of-fame.md` |
 | `EloCalculator` | `compute(matches, gameTypes: Map<string, GameType>)` | `Map<string, number>` |
+| `EloCalculator` | `computeHistory(matches, gameTypes: Map<string, GameType>)` | `EloSnapshot[]` (`{ matchId, date, ratings: Map<string, number> }`, one per considered match, ordered by date ascending — ratings after that match) |
 | `FindGameTypeByIdUseCase` | `invoke(id: string)` | `GameType \| undefined` |
 | `GetGameTypesUseCase` | `invoke(includeInactive = false)` | `GameType[]` |
 | `GetMatchesUseCase` | `invoke()` | `Match[]` |
