@@ -31,6 +31,10 @@ describe('parseHash', () => {
     expect(parseHash('sync')).toEqual({ type: 'Sync' })
   })
 
+  it('hall-of-fame route returns HallOfFame', () => {
+    expect(parseHash('hall-of-fame')).toEqual({ type: 'HallOfFame' })
+  })
+
   it('scoreDetail new match, single player', () => {
     const detail = parseHash('score/gt1/alice') as Extract<Screen, { type: 'ScoreDetail' }>
     expect(detail.gameTypeId).toBe('gt1')
@@ -94,6 +98,10 @@ describe('screenToHash', () => {
     expect(screenToHash({ type: 'Sync' })).toBe('#/sync')
   })
 
+  it('HallOfFame produces correct hash', () => {
+    expect(screenToHash({ type: 'HallOfFame' })).toBe('#/hall-of-fame')
+  })
+
   it('scoreDetail new match, single player', () => {
     expect(screenToHash(scoreDetailScreen('gt1', ['alice']))).toBe('#/score/gt1/alice')
   })
@@ -140,6 +148,7 @@ describe('roundtrip (screenToHash -> parseHash)', () => {
       { type: 'Import' },
       { type: 'Games' },
       { type: 'Sync' },
+      { type: 'HallOfFame' },
       scoreDetailScreen('gt1', ['p1']),
       scoreDetailScreen('gt2', ['p1', 'p2', 'p3'], 'm123'),
     ]

@@ -127,6 +127,22 @@ describe('App', () => {
     expect(screen.getByText('Alice', { selector: '.list-item-name' })).toBeInTheDocument()
   })
 
+  it('Hall of Fame: burger menu navigates and shows the trophy cards', () => {
+    seedStatsData()
+    render(<App />)
+    fireEvent.click(screen.getByLabelText('Menu'))
+    fireEvent.click(screen.getByText('Hall of Fame'))
+
+    expect(screen.getByText('The Invincible')).toBeInTheDocument()
+    expect(screen.getByText('Current Streak')).toBeInTheDocument()
+    expect(screen.getByText('Streak Breaker')).toBeInTheDocument()
+    expect(screen.getAllByText('Alice').length).toBeGreaterThan(0)
+
+    fireEvent.click(screen.getByLabelText('Back'))
+    expect(screen.getByText('Scoreo')).toBeInTheDocument()
+    expect(screen.queryByLabelText('Back')).not.toBeInTheDocument()
+  })
+
   it('opens the theme picker from the burger menu', () => {
     render(<App />)
     fireEvent.click(screen.getByLabelText('Menu'))

@@ -15,6 +15,7 @@ Each screen owns a pure `(state, action) => state` reducer, colocated with its s
 | Stats | `src/ui/stats/statsReducer.ts` | `StatsAction` | `selectPlayer`, `backToLeaderboard`, `selectGameType`, `loaded` | `src/ui/stats/statsTypes.ts` (`StatsState`, `selectedPlayer()` helper) |
 | History | `src/ui/history/historyReducer.ts` | `HistoryAction` | `loaded`, `showDeleteConfirm`, `deleteFailed`, `dismissDeleteConfirm`, `selectGameTypeFilter` | `src/ui/history/historyTypes.ts` (`HistoryState`, `MatchDisplay`) |
 | Sync | `src/ui/sync/syncReducer.ts` | `SyncAction` | `restoringSession`, `restoreFinished`, `loginStarted`, `loginFailed`, `connected`, `synced`, `conflictDetected`, `syncFailed`, `loggedOut`, `resolvingConflict`, `conflictResolved`, `conflictResolveFailed`, `dismissError` | `src/ui/sync/syncTypes.ts` (`SyncState`, `phase: SyncPhase` — `Disconnected \| Restoring \| Connecting \| Detecting \| Syncing \| Resolved \| Conflict`) |
+| Hall of Fame | `src/ui/halloffame/hallOfFameReducer.ts` | `HallOfFameAction` | `selectGameType`, `loaded` | `src/ui/halloffame/hallOfFameTypes.ts` (`HallOfFameState`) |
 
 Notable design choices:
 - **Home/players**: UI-only state that was never captured by a reducer lives in plain `useState`, split across `HomeScreen.tsx` and two stateful container subcomponents rather than centralized in one file. `HomeScreen.tsx` (~155 lines) owns only player selection (multi-select) and the reducer/use-case wiring, and passes those down as props/callbacks to purely presentational subcomponents (`AddPlayerField.tsx`, `PlayerListSection.tsx`). The game-selection modal (selected game type, inline add-game-type form) is owned by `GameSelectModalContainer.tsx`, which wraps the presentational `GameSelectModal.tsx` and exposes an imperative `open()` handle via `forwardRef`/`useImperativeHandle` — `HomeScreen.tsx` triggers it from the "New Match" button without holding any of that state itself. The delete/rename/cleanup confirmation flow (including the anonymize checkbox and its reset-on-target-change logic) is owned by `PlayerActionModals.tsx`, which wraps `DeletePlayerModal.tsx`, `RenamePlayerModal.tsx`, and `CleanupConfirmModal.tsx` and receives `state`/`dispatch` plus the relevant use cases as props. `cleanupCandidates` (inactive players with no recorded match, from `CleanupInactivePlayersUseCase.preview()`) and `showCleanupConfirm` are recomputed by every `loadPlayers()` call, alongside `players`/`stats`, so the "Clean up (N)" button and its confirmation modal always reflect the current preview.
@@ -39,6 +40,7 @@ Notable design choices:
 | `GetPlayersUseCase` | `invoke(includeInactive = false)` | `Player[]` |
 | `GetPlayerStatsUseCase` | `invoke()` | `Map<string, PlayerStats>` |
 | `GetHeadToHeadUseCase` | `invoke(gameTypeId?: string)` | `PlayerDetail[]` (sorted by ELO desc, ≥1 match only) |
+| `GetTrophiesUseCase` | `invoke(gameTypeId?: string)` | `Trophy[]` — not persisted, recomputed every call; see Hall of Fame in `doc/functional/features/hall-of-fame.md` |
 | `EloCalculator` | `compute(matches, gameTypes: Map<string, GameType>)` | `Map<string, number>` |
 | `FindGameTypeByIdUseCase` | `invoke(id: string)` | `GameType \| undefined` |
 | `GetGameTypesUseCase` | `invoke(includeInactive = false)` | `GameType[]` |
@@ -65,6 +67,8 @@ Notable design choices:
 | `WinCondition` | union `'HIGHEST_SCORE' \| 'LOWEST_SCORE' \| 'MANUAL'` + `winConditionLabel()` | `enums.ts` |
 | `TieBreakRule` | union `'NONE' \| 'MANUAL_SELECTION' \| 'SECONDARY_SCORE'` + `tieBreakRuleLabel()` | `enums.ts` |
 | `ValidationError` / `NotFoundError` | real `Error` subclasses (`kind: 'Validation' \| 'NotFound'`), union type `DomainError` | `errors.ts` |
+| `Trophy` | `id`, `title`, `description`, `holders: TrophyHolder[]` — not persisted, no zod schema | `trophy.ts` |
+| `TrophyHolder` | `playerId`, `name`, `value: number`, `detail?: string` | `trophy.ts` |
 
 ## Ports (Repository Interfaces)
 
@@ -106,7 +110,7 @@ Notable design choices:
 
 ## Navigation
 
-`src/ui/navigation/screen.ts` — discriminated union `Screen`: `Home | History | Import | Stats | Games | Sync | { type: 'ScoreDetail', gameTypeId, playerIds, matchId? }` (`matchId` absent = create mode, present = edit mode). `src/ui/navigation/hash.ts` exports pure `parseHash(hash)`/`screenToHash(screen)` functions (both imported by `useHashRouter.ts` and by their own test file — a single implementation is under test, unlike a duplicated-in-the-test-file approach). `src/ui/navigation/useHashRouter.ts` is a hook syncing a `Screen` with `window.location.hash` via `pushState`/`popstate`.
+`src/ui/navigation/screen.ts` — discriminated union `Screen`: `Home | History | Import | Stats | Games | Sync | HallOfFame | { type: 'ScoreDetail', gameTypeId, playerIds, matchId? }` (`matchId` absent = create mode, present = edit mode). `src/ui/navigation/hash.ts` exports pure `parseHash(hash)`/`screenToHash(screen)` functions (both imported by `useHashRouter.ts` and by their own test file — a single implementation is under test, unlike a duplicated-in-the-test-file approach). `src/ui/navigation/useHashRouter.ts` is a hook syncing a `Screen` with `window.location.hash` via `pushState`/`popstate`.
 
 | Screen | Parameters | Destination |
 |---|---|---|
@@ -116,6 +120,7 @@ Notable design choices:
 | `Stats` | — | `StatsScreen` — ELO leaderboard, head-to-head. Contextual back clears the player selection when set, else navigates Home |
 | `Games` | — | `GameTypeScreen` — game type management: create, edit, archive with confirmation |
 | `Sync` | — | `SyncScreen` — Google Drive cloud backup, only reachable when `services.syncUseCase` is defined |
+| `HallOfFame` | — | `HallOfFameScreen` — playful streak trophies, one card per trophy, per-game-type filter (same mechanic as Stats) |
 | `ScoreDetail` | `gameTypeId`, `playerIds`, `matchId?` | `ScoreDetailScreen` — round entry, create or edit mode via `ScoreDetailMode`. gameType/players/mode resolution and the screen's `initialState` are built ad hoc in `App.tsx`'s `ScoreDetailRoute` via `useMemo` keyed on the route params |
 
 ## Shared Components
@@ -133,7 +138,7 @@ Notable design choices:
 
 ## Tests
 
-69 test files, 754 tests, all colocated `*.test.ts(x)` next to the file they cover, running under Vitest + `jsdom` (no real browser needed for any of them, including the Google Drive/OAuth and theme tests that historically required one).
+72 test files, 794 tests, all colocated `*.test.ts(x)` next to the file they cover, running under Vitest + `jsdom` (no real browser needed for any of them, including the Google Drive/OAuth and theme tests that historically required one).
 
 Notable coverage that goes beyond a 1:1 port of business logic:
 - **Component tests** (`*Screen.test.tsx`) for every screen, on top of each reducer's own pure-function tests.
@@ -157,7 +162,9 @@ Notable coverage that goes beyond a 1:1 port of business logic:
 
 ## CSS
 
-Files (`public/css/`): `tokens/*.css` (Catppuccin design tokens, see Styling in `doc/technical/architecture.md`), `theme.css`, `layout.css`, `home.css`, `games.css`, `scoring.css`, `history.css`, `stats.css`, `import.css`, `sync.css`, `theme-picker.css`, `components.css`, `styles.css` (entry point, `@import`s the rest).
+Files (`public/css/`): `tokens/*.css` (Catppuccin design tokens, see Styling in `doc/technical/architecture.md`), `theme.css`, `layout.css`, `home.css`, `games.css`, `scoring.css`, `history.css`, `stats.css`, `halloffame.css`, `import.css`, `sync.css`, `theme-picker.css`, `components.css`, `styles.css` (entry point, `@import`s the rest).
+
+Hall of Fame classes (`halloffame.css`): `.trophy-list`, `.trophy-card` (extends the shared `.card`, `display: block`), `.trophy-card-title`, `.trophy-card-description`, `.trophy-card-empty`, `.trophy-holders`, `.trophy-holder`, `.trophy-holder-info`, `.trophy-holder-name`, `.trophy-holder-detail`, `.trophy-holder-value` (`--font-score`, tabular figures like Stats' ELO figures).
 
 Key classes: `.modal-body`, `.modal-row`, `.modal-title`, `.detail-row`, `.detail-label`, `.detail-value`, `.splash`, `.splash-content`, `.spinner`, `.onboarding-guide`, `.fab-position`, `.list-container`, `.list-container--spaced`, `.list-item-row`, `.list-item-label`, `.list-item-label--selectable`, `.list-item-label--selected`, `.list-item-name`, `.list-item-subtitle`, `.list-item-actions`, `.list-item-select-picto`.
 
@@ -176,7 +183,7 @@ Theme: Catppuccin tokens (`tokens/colors-*.css` + `tokens/semantic.css`), 4 flav
 `src/App.tsx` (`AppShell`) dispatches by `useHashRouter().current` and wraps content in `ServicesProvider`/`ThemeProvider`. `AppShell` also calls `useAutoSync(services.autoSyncCoordinator)` unconditionally at the top of the component, starting/stopping the debounced Drive push coordinator alongside the component's lifecycle (no-op when `autoSyncCoordinator` is `undefined`). The header, contextual back button, and burger menu are the app's chrome:
 
 - **Header**: back button hidden on Home; for `ScoreDetail` goes to `History` if `matchId` is set else `Home`; for `Stats` clears the player selection instead of navigating while a player is selected, else goes `Home`; all other screens go `Home`. The title text is clickable and navigates `Home` unless already there.
-- **Burger menu**: Home/Stats/History/Import/Games, + Sync only when `services.syncUseCase` is defined, + a non-navigating "🎨 Theme" item opening `ThemePickerDialog`.
+- **Burger menu**: Home/Stats/Hall of Fame/History/Import/Games, + Sync only when `services.syncUseCase` is defined, + a non-navigating "🎨 Theme" item opening `ThemePickerDialog`.
 - **Stats back-override wiring**: `StatsScreen` accepts an `onBackOverrideChange: (override: (() => void) | null) => void` prop and calls it (from a `useEffect` on `selectedPlayerId`) with a clear-selection callback when a player is selected, or `null` otherwise. `AppShell` stores the latest value in `statsBackOverride` state (reset on every screen change) and uses it in place of the default `Home` navigation when set.
 
 ## localStorage Keys
