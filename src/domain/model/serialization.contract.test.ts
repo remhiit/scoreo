@@ -59,6 +59,7 @@ describe('serialization contract (backward compatibility)', () => {
       ],
       manualWinners: [],
       secondaryPlayerScores: [],
+      rounds: [],
     }
     expect(roundTrip(MatchSchema, original)).toEqual(original)
   })
@@ -74,8 +75,46 @@ describe('serialization contract (backward compatibility)', () => {
       ],
       manualWinners: ['p1'],
       secondaryPlayerScores: [],
+      rounds: [],
     }
     expect(roundTrip(MatchSchema, original)).toEqual(original)
+  })
+
+  it('Match with rounds serialization round-trip', () => {
+    const original = {
+      id: 'm4',
+      date: 4000000,
+      gameTypeId: 'gt1',
+      playerScores: [
+        { playerId: 'p1', score: 13 },
+        { playerId: 'p2', score: 12 },
+      ],
+      manualWinners: [],
+      secondaryPlayerScores: [],
+      rounds: [
+        [
+          { playerId: 'p1', score: 10 },
+          { playerId: 'p2', score: 5 },
+        ],
+        [
+          { playerId: 'p1', score: 3 },
+          { playerId: 'p2', score: 7 },
+        ],
+      ],
+    }
+    expect(roundTrip(MatchSchema, original)).toEqual(original)
+  })
+
+  it('Match without rounds defaults to empty array (backward compat)', () => {
+    const decoded = MatchSchema.parse({
+      id: 'm1',
+      date: 1000000,
+      gameTypeId: 'gt1',
+      playerScores: [{ playerId: 'p1', score: 10 }],
+      manualWinners: [],
+      secondaryPlayerScores: [],
+    })
+    expect(decoded.rounds).toEqual([])
   })
 
   it('Match ignores unknown fields (backward compat)', () => {
@@ -205,6 +244,7 @@ describe('serialization contract (backward compatibility)', () => {
         { playerId: 'p1', score: 50 },
         { playerId: 'p2', score: 75 },
       ],
+      rounds: [],
     }
     expect(roundTrip(MatchSchema, original)).toEqual(original)
   })

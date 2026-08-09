@@ -13,6 +13,7 @@ describe('UpdateMatchUseCase', () => {
       playerScores: [{ playerId: 'p1', score: 10 }],
       manualWinners: [],
       secondaryPlayerScores: [],
+      rounds: [],
     }
     repo.save(original)
 
@@ -31,6 +32,7 @@ describe('UpdateMatchUseCase', () => {
       playerScores: [],
       manualWinners: [],
       secondaryPlayerScores: [],
+      rounds: [],
     }
     repo.save(original)
 
@@ -49,6 +51,7 @@ describe('UpdateMatchUseCase', () => {
       playerScores: [{ playerId: 'p1', score: 10 }],
       manualWinners: [],
       secondaryPlayerScores: [],
+      rounds: [],
     }
     repo.save(original)
 

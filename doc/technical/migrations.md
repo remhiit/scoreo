@@ -220,13 +220,35 @@ to a pre-Catppuccin build would still find a valid (if stale) value.
 
 ---
 
+## `Match.rounds` — conservation du détail des manches jouées (issue #249)
+
+**Contexte :** `MatchDraft.rounds` (le détail par manche saisi pendant une partie) était jeté à la validation du match : `Match` ne conservait que le score final par joueur (`playerScores`). Toute statistique ou tout trophée reposant sur le déroulé d'une partie (meilleure manche, remontée au classement, nombre de manches) était donc impossible à calculer, et la donnée des parties déjà jouées était définitivement perdue une fois le match enregistré.
+
+**Changement :** `Match` (`src/domain/model/match.ts` / `match.schema.ts`) ajoute le champ `rounds: PlayerScore[][]` — une entrée par manche jouée, chaque entrée listant le score de cette manche pour chaque participant. `CreateMatchUseCase.invoke()` accepte `rounds` en option et le persiste ; `ScoreDetailScreen`/`scoreDetailReducer` convertissent les manches saisies (`state.rounds`, en `Record<string, string>[]`) en `PlayerScore[][]` à la sauvegarde (création comme édition depuis History), en ignorant la manche finale non encore jouée.
+
+**Ancien format :**
+```json
+{ "id": "...", "date": 1700000000000, "gameTypeId": "...", "playerScores": [...], "manualWinners": [], "secondaryPlayerScores": [] }
+```
+
+**Nouveau format :**
+```json
+{ "id": "...", "date": 1700000000000, "gameTypeId": "...", "playerScores": [...], "manualWinners": [], "secondaryPlayerScores": [], "rounds": [[{ "playerId": "p1", "score": 10 }, { "playerId": "p2", "score": 5 }]] }
+```
+
+**Compatibilité ascendante :** `MatchSchema` déclare `rounds` avec `.default([])` — un `Match` sérialisé avant ce changement se décode sans erreur avec `rounds: []`. Les matchs importés via `schemas/import/` gardent également `rounds: []` (le format d'import ne transporte pas le détail des manches). Aucun backfill des matchs déjà enregistrés : la donnée n'existe plus, elle ne peut pas être reconstruite.
+
+**Hors scope :** ce changement ne fait que stocker la donnée — aucune exploitation (affichage enrichi, statistiques, trophées niveau manche) n'est ajoutée par cette issue.
+
+---
+
 ## Note technique : moteur de sérialisation (zod)
 
 **Contexte historique :** le projet était initialement écrit en Kotlin/JS avec `kotlinx.serialization` (`Json { ignoreUnknownKeys = true }` + valeurs par défaut sur les data class). La réécriture complète vers React/TypeScript (achevée) a changé le moteur de (dé)sérialisation sans jamais changer le format JSON stocké dans `localStorage` — mêmes clés, mêmes champs, mêmes valeurs par défaut, à chaque étape.
 
 Le moteur actuel : schémas [zod](https://zod.dev) avec `.default()` par champ (`src/domain/model/*.schema.ts`), qui strip nativement les clés inconnues à la validation (comportement équivalent à l'ancien `ignoreUnknownKeys`).
 
-27 tests de contrat backward-compat dans `src/domain/model/serialization.contract.test.ts` : chaque cas vérifie qu'un JSON dans un ancien format (sans les champs ajoutés depuis) se décode toujours avec les mêmes valeurs par défaut.
+29 tests de contrat backward-compat dans `src/domain/model/serialization.contract.test.ts` : chaque cas vérifie qu'un JSON dans un ancien format (sans les champs ajoutés depuis) se décode toujours avec les mêmes valeurs par défaut.
 
 ## Test de migration croisée
 
