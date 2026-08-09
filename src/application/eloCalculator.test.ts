@@ -377,4 +377,97 @@ describe('EloCalculator', () => {
     const championElo = result.get('champion') ?? 1200
     expect(championElo).toBeGreaterThan(1270)
   })
+
+  describe('computeHistory', () => {
+    it('empty match list returns empty history', () => {
+      const result = calculator.computeHistory([], new Map())
+      expect(result).toEqual([])
+    })
+
+    it('single match produces one snapshot matching compute()', () => {
+      const gt = gameType()
+      const m = match('m1', 1000, 'g1', [
+        { playerId: 'p1', score: 10 },
+        { playerId: 'p2', score: 5 },
+      ])
+      const history = calculator.computeHistory([m], new Map([['g1', gt]]))
+      const final = calculator.compute([m], new Map([['g1', gt]]))
+      expect(history).toHaveLength(1)
+      expect(history[0].matchId).toBe('m1')
+      expect(history[0].date).toBe(1000)
+      expect(history[0].ratings).toEqual(final)
+    })
+
+    it('ignored matches (unknown game type, no winner, single participant) produce no snapshot', () => {
+      const gt = gameType({ winCondition: 'MANUAL' })
+      const matches = [
+        match('m1', 1000, 'unknown', [
+          { playerId: 'p1', score: 10 },
+          { playerId: 'p2', score: 5 },
+        ]),
+        match('m2', 2000, 'g1', [{ playerId: 'p1', score: 10 }]),
+        match('m3', 3000, 'g1', [
+          { playerId: 'p1', score: 10 },
+          { playerId: 'p2', score: 10 },
+        ]),
+      ]
+      const history = calculator.computeHistory(matches, new Map([['g1', gt]]))
+      expect(history).toEqual([])
+    })
+
+    it('snapshots are ordered by date ascending regardless of input order', () => {
+      const gt = gameType()
+      const match1 = match('m1', 3000, 'g1', [
+        { playerId: 'p1', score: 10 },
+        { playerId: 'p2', score: 5 },
+      ])
+      const match2 = match('m2', 1000, 'g1', [
+        { playerId: 'p1', score: 10 },
+        { playerId: 'p2', score: 5 },
+      ])
+      const history = calculator.computeHistory([match1, match2], new Map([['g1', gt]]))
+      expect(history.map((s) => s.matchId)).toEqual(['m2', 'm1'])
+      expect(history[0].date).toBeLessThan(history[1].date)
+    })
+
+    it('last snapshot ratings equal compute() result on a multi-match chain', () => {
+      const gt = gameType()
+      const matches = [
+        match('m1', 1000, 'g1', [
+          { playerId: 'p1', score: 10 },
+          { playerId: 'p2', score: 5 },
+        ]),
+        match('m2', 2000, 'g1', [
+          { playerId: 'p2', score: 10 },
+          { playerId: 'p1', score: 5 },
+        ]),
+        match('m3', 3000, 'g1', [
+          { playerId: 'p1', score: 10 },
+          { playerId: 'p3', score: 5 },
+        ]),
+      ]
+      const gameTypes = new Map([['g1', gt]])
+      const history = calculator.computeHistory(matches, gameTypes)
+      const final = calculator.compute(matches, gameTypes)
+      expect(history).toHaveLength(3)
+      expect(history[history.length - 1].ratings).toEqual(final)
+    })
+
+    it('player absent from early matches only appears in ratings from their first participation', () => {
+      const gt = gameType()
+      const matches = [
+        match('m1', 1000, 'g1', [
+          { playerId: 'p1', score: 10 },
+          { playerId: 'p2', score: 5 },
+        ]),
+        match('m2', 2000, 'g1', [
+          { playerId: 'p1', score: 10 },
+          { playerId: 'p3', score: 5 },
+        ]),
+      ]
+      const history = calculator.computeHistory(matches, new Map([['g1', gt]]))
+      expect(history[0].ratings.has('p3')).toBe(false)
+      expect(history[1].ratings.has('p3')).toBe(true)
+    })
+  })
 })

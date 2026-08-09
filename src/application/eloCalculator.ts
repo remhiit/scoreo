@@ -4,10 +4,22 @@ import { getWinners, type Match } from '../domain/model/match'
 const K = 32
 const DEFAULT_RATING = 1200
 
+export interface EloSnapshot {
+  matchId: string
+  date: number
+  ratings: Map<string, number>
+}
+
 export class EloCalculator {
   compute(matches: Match[], gameTypes: Map<string, GameType>): Map<string, number> {
+    const history = this.computeHistory(matches, gameTypes)
+    return history.length > 0 ? history[history.length - 1].ratings : new Map()
+  }
+
+  computeHistory(matches: Match[], gameTypes: Map<string, GameType>): EloSnapshot[] {
     const elo = new Map<string, number>()
     const sorted = [...matches].sort((a, b) => a.date - b.date)
+    const history: EloSnapshot[] = []
 
     for (const match of sorted) {
       const gt = gameTypes.get(match.gameTypeId)
@@ -34,8 +46,10 @@ export class EloCalculator {
       for (const [pid, d] of deltas) {
         elo.set(pid, (preElo.get(pid) ?? DEFAULT_RATING) + d)
       }
+
+      history.push({ matchId: match.id, date: match.date, ratings: new Map(elo) })
     }
 
-    return elo
+    return history
   }
 }

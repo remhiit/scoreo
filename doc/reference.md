@@ -40,6 +40,7 @@ Notable design choices:
 | `GetPlayerStatsUseCase` | `invoke()` | `Map<string, PlayerStats>` |
 | `GetHeadToHeadUseCase` | `invoke(gameTypeId?: string)` | `PlayerDetail[]` (sorted by ELO desc, ≥1 match only) |
 | `EloCalculator` | `compute(matches, gameTypes: Map<string, GameType>)` | `Map<string, number>` |
+| `EloCalculator` | `computeHistory(matches, gameTypes: Map<string, GameType>)` | `EloSnapshot[]` (`{ matchId, date, ratings: Map<string, number> }`, one per considered match, ordered by date ascending — ratings after that match) |
 | `FindGameTypeByIdUseCase` | `invoke(id: string)` | `GameType \| undefined` |
 | `GetGameTypesUseCase` | `invoke(includeInactive = false)` | `GameType[]` |
 | `GetMatchesUseCase` | `invoke()` | `Match[]` |
