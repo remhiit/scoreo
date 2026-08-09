@@ -1,0 +1,70 @@
+/* ── Hall of Fame screen ── */
+
+.trophy-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+}
+
+.trophy-card {
+    display: block;
+}
+
+.trophy-card-title {
+    font-size: var(--text-md);
+    font-weight: 600;
+    color: var(--text-heading);
+}
+
+.trophy-card-description {
+    font-size: var(--text-sm);
+    color: var(--text-muted);
+    margin-bottom: var(--space-3);
+}
+
+.trophy-card-empty {
+    padding: var(--space-4) 0;
+}
+
+.trophy-holders {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+}
+
+.trophy-holder {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+    padding: var(--space-2) 0;
+    border-bottom: var(--border-width) solid var(--border-subtle);
+}
+
+.trophy-holder:last-child { border-bottom: none; }
+
+.trophy-holder-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+.trophy-holder-name {
+    font-weight: 500;
+    font-size: 15px;
+}
+
+.trophy-holder-detail {
+    font-size: var(--text-xs);
+    color: var(--text-muted);
+}
+
+.trophy-holder-value {
+    font-family: var(--font-score);
+    font-weight: 700;
+    font-size: var(--text-md);
+    color: var(--color-primary);
+    min-width: 32px;
+    text-align: right;
+}

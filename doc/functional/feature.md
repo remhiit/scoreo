@@ -10,6 +10,7 @@
 | 6 | **Import** | JSON import with preview, match-by-match execution, auto-creation of unknown entities | [`features/import.md`](features/import.md) |
 | 7 | **Google Sync** | Cloud backup/restore via Google Drive App Data Folder, OAuth Token Model, conflict detection | [`features/sync.md`](features/sync.md) |
 | 8 | **Theme** | Catppuccin: 4 flavors + swappable accent, picker in burger menu, auto browser detection, localStorage persistence | [`features/theme.md`](features/theme.md) |
+| 9 | **Hall of Fame** | Playful trophies (streak records), recomputed on every visit, per-game-type filter | [`features/hall-of-fame.md`](features/hall-of-fame.md) |
 
 ## User Flow
 
@@ -46,7 +47,7 @@ Back button destinations:
 | Screen | Condition | Destination |
 |--------|-----------|-------------|
 | `Home` | — | hidden |
-| `History`, `Import`, `Games`, `Sync` | — | Home |
+| `History`, `Import`, `Games`, `Sync`, `HallOfFame` | — | Home |
 | `Stats` | leaderboard visible | Home |
 | `Stats` | player detail visible | leaderboard (clears selected player, no navigation) |
 | `ScoreDetail` | new match (`matchId == null`) | Home |
@@ -63,6 +64,7 @@ Burger menu items:
 | 📋 | History | HistoryScreen |
 | 📥 | Import | ImportScreen |
 | 🎮 | Games | GameTypeScreen |
+| 🏆 | Hall of Fame | HallOfFameScreen |
 | ☁ | Sync | SyncScreen (visible only if `CloudSyncRepository` is configured) |
 | 🎨 | Theme | Opens `ThemePickerDialog` (flavor + accent, no navigation) |
 
@@ -76,6 +78,7 @@ Screens:
 | `Screen.Stats` | `/stats` | Leaderboard ELO, head-to-head, per-game filter |
 | `Screen.Games` | `/games` | Manage game types |
 | `Screen.Sync` | `/sync` | Google Drive cloud sync |
+| `Screen.HallOfFame` | `/hall-of-fame` | Playful streak trophies, per-game-type filter |
 | `Screen.ScoreDetail` | `/score/:gameType/:players` | Multi-round score entry |
 
 ## Technical notes

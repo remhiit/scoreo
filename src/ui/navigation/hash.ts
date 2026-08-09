@@ -20,6 +20,8 @@ export function parseHash(hash: string): Screen {
       return { type: 'Games' }
     case 'sync':
       return { type: 'Sync' }
+    case 'hall-of-fame':
+      return { type: 'HallOfFame' }
     case 'score':
       if (parts.length >= 3) {
         const gameTypeId = parts[1]
@@ -49,6 +51,8 @@ export function screenToHash(screen: Screen): string {
       return '#/games'
     case 'Sync':
       return '#/sync'
+    case 'HallOfFame':
+      return '#/hall-of-fame'
     case 'ScoreDetail': {
       const route = `#/score/${screen.gameTypeId}/${screen.playerIds.join(',')}`
       return screen.matchId !== undefined ? `${route}/${screen.matchId}` : route

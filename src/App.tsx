@@ -7,6 +7,7 @@ import {
   Home,
   Menu,
   Palette,
+  Trophy,
   Upload,
   X,
   type LucideIcon,
@@ -25,6 +26,7 @@ import { GetHeadToHeadUseCase } from './application/getHeadToHeadUseCase'
 import { GetMatchesUseCase } from './application/getMatchesUseCase'
 import { GetPlayerStatsUseCase } from './application/getPlayerStatsUseCase'
 import { GetPlayersUseCase } from './application/getPlayersUseCase'
+import { GetTrophiesUseCase } from './application/getTrophiesUseCase'
 import { ImportMatchesUseCase } from './application/importMatchesUseCase'
 import { RenamePlayerUseCase } from './application/renamePlayerUseCase'
 import { UpdateGameTypeUseCase } from './application/updateGameTypeUseCase'
@@ -33,11 +35,13 @@ import type { WinCondition } from './domain/model/enums'
 import type { Services } from './services/createServices'
 import { ServicesProvider, useServices } from './services/ServicesContext'
 import { GameTypeScreen } from './ui/gametype/GameTypeScreen'
+import { HallOfFameScreen } from './ui/halloffame/HallOfFameScreen'
 import { HistoryScreen } from './ui/history/HistoryScreen'
 import { HomeScreen } from './ui/home/HomeScreen'
 import { ImportScreen } from './ui/import/ImportScreen'
 import {
   GAMES_SCREEN,
+  HALL_OF_FAME_SCREEN,
   HISTORY_SCREEN,
   HOME_SCREEN,
   IMPORT_SCREEN,
@@ -71,6 +75,8 @@ function screenTitle(screen: Screen): string {
       return 'Games'
     case 'Sync':
       return 'Sync'
+    case 'HallOfFame':
+      return 'Hall of Fame'
     case 'ScoreDetail':
       return screen.matchId !== undefined ? 'Edit match' : 'Score Detail'
   }
@@ -195,6 +201,10 @@ function AppShell() {
     () => new GetPlayerStatsUseCase(services.matchRepository, services.gameTypeRepository),
     [services],
   )
+  const getTrophies = useMemo(
+    () => new GetTrophiesUseCase(services.matchRepository, services.gameTypeRepository, services.playerRepository),
+    [services],
+  )
   const deletePlayer = useMemo(() => new DeletePlayerUseCase(services.playerRepository), [services])
   const renamePlayerUseCase = useMemo(() => new RenamePlayerUseCase(services.playerRepository), [services])
   const cleanupInactivePlayers = useMemo(
@@ -296,6 +306,7 @@ function AppShell() {
           />
         )}
         {current.type === 'Import' && <ImportScreen importUseCase={importUseCase} onDone={handleImportDone} />}
+        {current.type === 'HallOfFame' && <HallOfFameScreen getTrophies={getTrophies} getGameTypes={getGameTypes} />}
         {current.type === 'Games' && (
           <GameTypeScreen
             addGameType={addGameType}
@@ -350,6 +361,14 @@ function AppShell() {
               onClick={() => {
                 setBurgerOpen(false)
                 navigate(STATS_SCREEN)
+              }}
+            />
+            <BurgerItem
+              icon={Trophy}
+              label="Hall of Fame"
+              onClick={() => {
+                setBurgerOpen(false)
+                navigate(HALL_OF_FAME_SCREEN)
               }}
             />
             <BurgerItem
