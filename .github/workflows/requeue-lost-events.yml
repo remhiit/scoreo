@@ -29,5 +29,8 @@ jobs:
       - name: Requeue orphaned ready/needs-review/needs-fix labels
         run: node scripts/requeue-lost-events.mjs
 
+      - name: Catch up issues left open by auto-merged PRs
+        run: node scripts/sweep-merged-prs.mjs
+
       - name: Dispatch next queued issue to ready
         run: node scripts/dispatch-ready.mjs

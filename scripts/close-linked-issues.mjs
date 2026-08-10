@@ -47,7 +47,7 @@ export function extractClosedIssueNumbers(body) {
   return [...numbers]
 }
 
-async function closeIssue(issueNumber) {
+export async function closeIssue(issueNumber) {
   const getRes = await fetch(`${API_ROOT}/issues/${issueNumber}`, { headers })
   if (!getRes.ok) {
     console.log(`#${issueNumber}: introuvable (${getRes.status}), ignoré`)
