@@ -5,11 +5,14 @@ import type { GameTypeRepository } from '../domain/port/gameTypeRepository'
 import type { MatchRepository } from '../domain/port/matchRepository'
 import type { PlayerRepository } from '../domain/port/playerRepository'
 import type { Trophy, TrophyHolder } from '../domain/model/trophy'
+import { EloCalculator, type EloSnapshot } from './eloCalculator'
 
 /** B3 — The Regular is only awarded among players with at least this many matches played. */
 export const REGULAR_MIN_MATCHES = 10
 /** E1 — Nemesis only considers pairs who have met at least this many times. */
 export const NEMESIS_MIN_MEETINGS = 5
+
+const DAY_MS = 24 * 60 * 60 * 1000
 
 interface StreakBreak {
   winnerId: string
@@ -171,6 +174,79 @@ function nemesisHolders(matches: Match[], gameTypes: Map<string, GameType>, name
     .sort((a, b) => a.name.localeCompare(b.name) || (a.detail ?? '').localeCompare(b.detail ?? ''))
 }
 
+function formatEloDate(epochMs: number): string {
+  const date = new Date(epochMs)
+  const day = date.getDate()
+  const month = date.toLocaleString('en-US', { month: 'short' })
+  const year = date.getFullYear()
+  return `${day} ${month} ${year}`
+}
+
+/** C1 — the highest rating each player has ever reached, with the date it happened. */
+function eloPeakHolders(history: EloSnapshot[], names: Map<string, string>): TrophyHolder[] {
+  const peaks = new Map<string, { value: number; date: number }>()
+  for (const snapshot of history) {
+    for (const [playerId, rating] of snapshot.ratings) {
+      const peak = peaks.get(playerId)
+      if (!peak || rating > peak.value) {
+        peaks.set(playerId, { value: rating, date: snapshot.date })
+      }
+    }
+  }
+
+  let max = -Infinity
+  for (const peak of peaks.values()) {
+    if (peak.value > max) max = peak.value
+  }
+  if (peaks.size === 0) return []
+
+  const holders: TrophyHolder[] = []
+  for (const [playerId, peak] of peaks) {
+    if (peak.value === max) {
+      holders.push({ playerId, name: names.get(playerId) ?? playerId, value: peak.value, detail: formatEloDate(peak.date) })
+    }
+  }
+  return holders.sort((a, b) => a.name.localeCompare(b.name) || a.playerId.localeCompare(b.playerId))
+}
+
+/**
+ * C3 — cumulated time spent leading the ELO ranking, in days. Between two
+ * consecutive snapshots, the leader of the earlier one capitalizes the gap;
+ * the leader of the last snapshot capitalizes up to `now`.
+ */
+function kingOfTheHillHolders(history: EloSnapshot[], names: Map<string, string>, now: number): TrophyHolder[] {
+  const msAtTop = new Map<string, number>()
+
+  function creditLeaders(ratings: Map<string, number>, from: number, to: number) {
+    if (ratings.size === 0 || to <= from) return
+    let max = -Infinity
+    for (const rating of ratings.values()) {
+      if (rating > max) max = rating
+    }
+    const gapMs = to - from
+    for (const [playerId, rating] of ratings) {
+      if (rating === max) {
+        msAtTop.set(playerId, (msAtTop.get(playerId) ?? 0) + gapMs)
+      }
+    }
+  }
+
+  for (let i = 0; i < history.length - 1; i++) {
+    creditLeaders(history[i].ratings, history[i].date, history[i + 1].date)
+  }
+  if (history.length > 0) {
+    const last = history[history.length - 1]
+    creditLeaders(last.ratings, last.date, now)
+  }
+
+  const days = new Map<string, number>()
+  for (const [playerId, ms] of msAtTop) {
+    days.set(playerId, Math.round(ms / DAY_MS))
+  }
+
+  return topHolders(days, names)
+}
+
 function isSameLocalMonth(epochMs: number, reference: Date): boolean {
   const d = new Date(epochMs)
   return d.getFullYear() === reference.getFullYear() && d.getMonth() === reference.getMonth()
@@ -186,6 +262,7 @@ export class GetTrophiesUseCase {
     private readonly matchRepository: MatchRepository,
     private readonly gameTypeRepository: GameTypeRepository,
     private readonly playerRepository: PlayerRepository,
+    private readonly eloCalculator: EloCalculator = new EloCalculator(),
   ) {}
 
   invoke(gameTypeId?: string): Trophy[] {
@@ -257,6 +334,8 @@ export class GetTrophiesUseCase {
       }
     }
 
+    const eloHistory = this.eloCalculator.computeHistory(matches, gameTypes)
+
     const maxBreak = streakBreaks.reduce((max, b) => Math.max(max, b.streakLength), 0)
     const streakBreakerHolders: TrophyHolder[] =
       maxBreak <= 0
@@ -301,6 +380,20 @@ export class GetTrophiesUseCase {
         title: 'The Regular',
         description: `Best win ratio, among players with at least ${REGULAR_MIN_MATCHES} matches`,
         holders: bestRatioHolders(matchesPlayed, totalWins, names),
+      },
+      {
+        id: 'c1',
+        title: 'The Peak',
+        description: 'Highest ELO rating ever reached',
+        holders: eloPeakHolders(eloHistory, names),
+        unit: 'ELO',
+      },
+      {
+        id: 'c3',
+        title: 'King of the Hill',
+        description: 'Cumulated time spent leading the ELO ranking',
+        holders: kingOfTheHillHolders(eloHistory, names, now.getTime()),
+        unit: 'days',
       },
       {
         id: 'd1',

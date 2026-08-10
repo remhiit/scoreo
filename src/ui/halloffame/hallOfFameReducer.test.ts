@@ -59,7 +59,7 @@ describe('hallOfFameReducer', () => {
 
     const { trophies, gameTypes } = loadHallOfFame(getTrophies, getGameTypes, undefined)
 
-    expect(trophies).toHaveLength(8)
+    expect(trophies).toHaveLength(10)
     expect(gameTypes).toHaveLength(1)
   })
 

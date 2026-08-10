@@ -14,4 +14,6 @@ export interface Trophy {
   title: string
   description: string
   holders: TrophyHolder[]
+  /** Optional display unit for each holder's value, e.g. "ELO" or "days". */
+  unit?: string
 }

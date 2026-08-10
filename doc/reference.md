@@ -68,7 +68,7 @@ Notable design choices:
 | `WinCondition` | union `'HIGHEST_SCORE' \| 'LOWEST_SCORE' \| 'MANUAL'` + `winConditionLabel()` | `enums.ts` |
 | `TieBreakRule` | union `'NONE' \| 'MANUAL_SELECTION' \| 'SECONDARY_SCORE'` + `tieBreakRuleLabel()` | `enums.ts` |
 | `ValidationError` / `NotFoundError` | real `Error` subclasses (`kind: 'Validation' \| 'NotFound'`), union type `DomainError` | `errors.ts` |
-| `Trophy` | `id`, `title`, `description`, `holders: TrophyHolder[]` — not persisted, no zod schema | `trophy.ts` |
+| `Trophy` | `id`, `title`, `description`, `holders: TrophyHolder[]`, `unit?: string` — not persisted, no zod schema | `trophy.ts` |
 | `TrophyHolder` | `playerId`, `name`, `value: number`, `detail?: string` | `trophy.ts` |
 
 ## Ports (Repository Interfaces)
