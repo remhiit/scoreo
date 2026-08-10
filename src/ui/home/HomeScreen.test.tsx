@@ -12,6 +12,7 @@ import { InMemoryGameTypeRepository } from '../../infrastructure/testing/inMemor
 import { InMemoryMatchDraftRepository } from '../../infrastructure/testing/inMemoryMatchDraftRepository'
 import { InMemoryMatchRepository } from '../../infrastructure/testing/inMemoryMatchRepository'
 import { InMemoryPlayerRepository } from '../../infrastructure/testing/inMemoryPlayerRepository'
+import i18n from '../../i18n/i18n'
 import { HomeScreen, type HomeScreenProps } from './HomeScreen'
 
 function buildProps(overrides: Partial<HomeScreenProps> = {}) {
@@ -281,5 +282,19 @@ describe('HomeScreen', () => {
     fireEvent.click(screen.getByText('Resume match in progress'))
 
     expect(onResumeDraft).toHaveBeenCalledWith('gt1', ['p1', 'p2'])
+  })
+
+  it('updates displayed labels immediately when the language changes', async () => {
+    const { props } = buildProps()
+    render(<HomeScreen {...props} />)
+
+    expect(screen.getByText('No players yet. Add one above.')).toBeInTheDocument()
+
+    await i18n.changeLanguage('fr')
+
+    expect(screen.getByText("Aucun joueur pour l'instant. Ajoutez-en un ci-dessus.")).toBeInTheDocument()
+    expect(screen.queryByText('No players yet. Add one above.')).not.toBeInTheDocument()
+
+    await i18n.changeLanguage('en')
   })
 })

@@ -70,6 +70,7 @@ Two separate suites, run by different `pnpm` scripts and CI jobs:
 - **`src/application/`** — use cases (business logic, framework-agnostic)
 - **`src/infrastructure/`** — `localStorage/` (adapters), `google/` (Drive sync, OAuth, config), `migration/` (Match v1→v2), `testing/` (in-memory fakes + mocks for tests)
 - **`src/services/`** — root DI context
+- **`src/i18n/`** — `i18n.ts` (init + language detection/persistence), `locales/{en,fr}.json` (dictionaries) — see "i18n" below
 - **`src/ui/`** — one folder per screen (`<screen>Reducer.ts` + test, `<screen>Types.ts`, `<Screen>.tsx` + test), plus `shared/` (components), `theme/`, `navigation/`
 
 Run `find src -type d` for the exhaustive package list.
@@ -187,3 +188,13 @@ This applies to: `Player`, `GameType`, `Match`, `PlayerScore`, `WinCondition`.
 ### Theme
 
 `ThemeProvider` (`src/ui/theme/ThemeContext.tsx`) is a React Context so the burger menu's theme picker and the rest of the app share the same live flavor/accent state; the context itself lives in `src/ui/theme/themeContext.ts` and the `useTheme()` hook in `src/ui/theme/useTheme.ts` (split out so each file only exports one thing — React Fast Refresh needs that to keep component state across edits). The pure logic (`readInitialFlavor`/`readInitialAccent`/`applyTheme`) lives in `src/ui/theme/themeManager.ts` and is directly unit-tested. CSS token files (`colors-{latte,frappe,macchiato,mocha}.css`, `semantic.css`, etc.) live in `public/css/tokens/`, native `@import` chain.
+
+### i18n (internationalization)
+
+`react-i18next` + `i18next`, initialized once in `src/i18n/i18n.ts` and imported before the first render in `src/main.tsx` (`i18next.use(initReactI18next).init({...})`) — the global `i18next` singleton is what `useTranslation()` reads by default, so no `<I18nextProvider>` wrapper is needed anywhere in the tree.
+
+- **Dictionaries**: flat-ish nested JSON, one file per language — `src/i18n/locales/en.json` (reference/fallback, mirrors the text that used to be hardcoded in JSX) and `locales/fr.json` (full translation). Both share the same key shape, grouped by a `common` namespace (`cancel`/`close`/`delete`/`confirm` — reused across several modals) and one namespace per screen/component (`menu`, `languagePicker`, `home`). `resolveJsonModule` is enabled in `tsconfig.app.json` so these import as typed objects.
+- **Persistence**: `detectInitialLanguage()` (`src/i18n/i18n.ts`) reads `localStorage.scoreo_lang` first, then falls back to the browser's language (`navigator.language`, two-letter prefix) if supported, else `en`. A `i18next.on('languageChanged', ...)` listener writes `scoreo_lang` on every change — components never touch `localStorage` directly, they just call `i18n.changeLanguage(lang)`.
+- **Pattern**: every component with visible text calls `const { t } = useTranslation()` and renders `t('namespace.key')`; interpolated values use `t('home.playersSelected', { count })` against a `{{count}}` placeholder in the dictionary. A non-component call site (`GameSelectModalContainer.tsx`'s `domainErrorMessage()`, a plain function) imports the `i18next` default export directly and calls `i18next.t(...)` instead of the hook, since hooks are unavailable outside a component.
+- **Language picker**: `LanguagePickerDialog` (`src/ui/shared/LanguagePickerDialog.tsx`), modeled on `ThemePickerDialog` — reuses its `.theme-picker-row`/`.theme-chip` CSS — opened from the burger menu's "🌐 Language" item (`src/App.tsx`). Picking a language calls `i18n.changeLanguage()`; `useTranslation()`'s internal subscription re-renders every mounted component using `t()` immediately, no page reload.
+- **Scope**: only the Home screen (`src/ui/home/*.tsx`) and the burger menu itself are migrated so far — reducers/use cases/domain error messages stay framework-agnostic and untranslated (e.g. `ValidationError` messages from `application/`), and every other screen still has hardcoded English text pending its own follow-up migration issue.

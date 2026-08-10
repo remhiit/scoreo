@@ -40,7 +40,7 @@ Top header bar (all screens):
 |---------|--------|
 | ← Back | Returns to previous screen (hidden on Home). Contextual — see table below |
 | Title | Current screen name (clickable → Home, except when already on Home) |
-| ☰ Burger | Opens side menu (includes "🎨 Theme" — flavor + accent picker) |
+| ☰ Burger | Opens side menu (includes "🎨 Theme" — flavor + accent picker, and "🌐 Language" — EN/FR picker) |
 
 Back button destinations:
 
@@ -67,6 +67,7 @@ Burger menu items:
 | 🏆 | Hall of Fame | HallOfFameScreen |
 | ☁ | Sync | SyncScreen (visible only if `CloudSyncRepository` is configured) |
 | 🎨 | Theme | Opens `ThemePickerDialog` (flavor + accent, no navigation) |
+| 🌐 | Language | Opens `LanguagePickerDialog` (EN/FR, no navigation) |
 
 Screens:
 

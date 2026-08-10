@@ -1,0 +1,54 @@
+{
+  "common": {
+    "cancel": "Annuler",
+    "close": "Fermer",
+    "delete": "Supprimer",
+    "confirm": "Confirmer"
+  },
+  "menu": {
+    "home": "Accueil",
+    "stats": "Statistiques",
+    "hallOfFame": "Temple de la renommée",
+    "history": "Historique",
+    "import": "Importer",
+    "games": "Jeux",
+    "sync": "Synchro",
+    "theme": "Thème",
+    "language": "Langue"
+  },
+  "languagePicker": {
+    "title": "Langue",
+    "english": "Anglais",
+    "french": "Français"
+  },
+  "home": {
+    "resumeMatch": "Reprendre la partie en cours",
+    "playerNamePlaceholder": "Nom du joueur",
+    "add": "Ajouter",
+    "gettingStarted": "Pour commencer",
+    "onboardingStep1": "Ajoutez des joueurs ci-dessus",
+    "onboardingStep2": "Créez un type de jeu (depuis le menu)",
+    "onboardingStep3": "Sélectionnez ≥2 joueurs et cliquez sur « Nouvelle partie »",
+    "noPlayersYet": "Aucun joueur pour l'instant. Ajoutez-en un ci-dessus.",
+    "playersSelected": "{{count}}/2 joueurs sélectionnés",
+    "cleanUp": "Nettoyer ({{count}})",
+    "newMatch": "Nouvelle partie",
+    "selectGameTitle": "Choisir un jeu",
+    "noGameTypesYet": "Aucun type de jeu pour l'instant. Ajoutez-en un.",
+    "selectGamePlaceholder": "— Choisir un jeu —",
+    "addNewGame": "Ajouter un nouveau jeu",
+    "gameNamePlaceholder": "Nom du jeu",
+    "addGame": "Ajouter le jeu",
+    "startMatch": "Lancer la partie",
+    "pleaseSelectGame": "Veuillez choisir un jeu",
+    "failedToCreateGameType": "Échec de la création du type de jeu : {{message}}",
+    "deleteTitle": "Supprimer {{name}} ?",
+    "matchesPreserved": "Les parties seront conservées.",
+    "eraseNameFromHistory": "Effacer le nom de l'historique",
+    "renameTitle": "Renommer {{name}}",
+    "cleanupTitle": "Nettoyer {{count}} joueur(s) inactif(s) ?",
+    "cleanupBody": "Ceci supprime définitivement les joueurs sans partie enregistrée. Cette action est irréversible.",
+    "unnamedPlayer": "(joueur sans nom)",
+    "deletePermanently": "Supprimer définitivement"
+  }
+}

@@ -1,4 +1,5 @@
 import { Sparkles } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import type { PlayerStats } from '../../application/getPlayerStatsUseCase'
 import type { Player } from '../../domain/model/player'
 import { ListContainer } from '../shared/ListContainer'
@@ -26,10 +27,12 @@ export function PlayerListSection({
   cleanupCandidatesCount,
   onShowCleanupConfirm,
 }: PlayerListSectionProps) {
+  const { t } = useTranslation()
+
   return (
     <>
       {players.length === 0 ? (
-        <div className="empty">No players yet. Add one above.</div>
+        <div className="empty">{t('home.noPlayersYet')}</div>
       ) : (
         <ListContainer>
           {players.map((player) => {
@@ -53,14 +56,16 @@ export function PlayerListSection({
       )}
 
       {players.length > 0 && selectedPlayers.size < 2 && (
-        <div className="selection-hint">{selectedPlayers.size}/2 players selected</div>
+        <div className="selection-hint">
+          {t('home.playersSelected', { count: selectedPlayers.size })}
+        </div>
       )}
 
       {cleanupCandidatesCount > 0 && (
         <LudoButton
           text={
             <>
-              <Sparkles size={16} aria-hidden /> Clean up ({cleanupCandidatesCount})
+              <Sparkles size={16} aria-hidden /> {t('home.cleanUp', { count: cleanupCandidatesCount })}
             </>
           }
           variant="secondary"
