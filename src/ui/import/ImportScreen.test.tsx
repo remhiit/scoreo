@@ -5,6 +5,7 @@ import { invalidJson, validJson, withMultipleFailedDetailsJson } from '../../app
 import { InMemoryGameTypeRepository } from '../../infrastructure/testing/inMemoryGameTypeRepository'
 import { InMemoryMatchRepository } from '../../infrastructure/testing/inMemoryMatchRepository'
 import { InMemoryPlayerRepository } from '../../infrastructure/testing/inMemoryPlayerRepository'
+import i18n from '../../i18n/i18n'
 import { ImportScreen } from './ImportScreen'
 
 function buildUseCase() {
@@ -78,5 +79,18 @@ describe('ImportScreen', () => {
 
     expect(onDone).toHaveBeenCalledTimes(1)
     expect(screen.getByText('Select a JSON file to import')).toBeInTheDocument()
+  })
+
+  it('updates displayed labels immediately when the language changes', async () => {
+    render(<ImportScreen importUseCase={buildUseCase()} onDone={() => {}} />)
+
+    expect(screen.getByText('Select a JSON file to import')).toBeInTheDocument()
+
+    await i18n.changeLanguage('fr')
+
+    expect(screen.getByText('Sélectionnez un fichier JSON à importer')).toBeInTheDocument()
+    expect(screen.queryByText('Select a JSON file to import')).not.toBeInTheDocument()
+
+    await i18n.changeLanguage('en')
   })
 })
