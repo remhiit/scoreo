@@ -42,6 +42,16 @@
     "archiveBody": "It will no longer appear in game selection.",
     "saveChanges": "Save changes"
   },
+  "history": {
+    "filterByGame": "Filter by game:",
+    "allGames": "All games",
+    "noMatchesYet": "No matches yet.",
+    "noMatchesForGame": "No matches for {{gameName}}",
+    "unknownGame": "Unknown game",
+    "unknown": "Unknown",
+    "deleteTitle": "Delete match?",
+    "matchDataWillBeLost": "Match data will be lost."
+  },
   "home": {
     "resumeMatch": "Resume match in progress",
     "playerNamePlaceholder": "Player name",

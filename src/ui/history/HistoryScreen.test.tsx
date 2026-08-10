@@ -7,6 +7,7 @@ import { DeleteMatchUseCase } from '../../application/deleteMatchUseCase'
 import { GetGameTypesUseCase } from '../../application/getGameTypesUseCase'
 import { GetMatchesUseCase } from '../../application/getMatchesUseCase'
 import { GetPlayersUseCase } from '../../application/getPlayersUseCase'
+import i18n from '../../i18n/i18n'
 import { InMemoryGameTypeRepository } from '../../infrastructure/testing/inMemoryGameTypeRepository'
 import { InMemoryMatchRepository } from '../../infrastructure/testing/inMemoryMatchRepository'
 import { InMemoryPlayerRepository } from '../../infrastructure/testing/inMemoryPlayerRepository'
@@ -155,5 +156,30 @@ describe('HistoryScreen', () => {
     renderHistory()
 
     expect(screen.queryAllByTitle('Edit')).toHaveLength(0)
+  })
+
+  it('updates displayed labels immediately when the language changes', async () => {
+    renderHistory()
+
+    expect(screen.getByText('Filter by game:')).toBeInTheDocument()
+    expect(screen.getByText('All games')).toBeInTheDocument()
+
+    await i18n.changeLanguage('fr')
+
+    expect(screen.getByText('Filtrer par jeu :')).toBeInTheDocument()
+    expect(screen.getByText('Tous les jeux')).toBeInTheDocument()
+    expect(screen.queryByText('Filter by game:')).not.toBeInTheDocument()
+
+    await i18n.changeLanguage('en')
+  })
+
+  it('translates the delete confirmation modal', () => {
+    renderHistory()
+
+    fireEvent.click(screen.getAllByLabelText('Delete')[0])
+
+    expect(screen.getByText('Delete match?')).toBeInTheDocument()
+    expect(screen.getByText('Match data will be lost.')).toBeInTheDocument()
+    expect(screen.getByText('Cancel', { selector: 'button' })).toBeInTheDocument()
   })
 })
