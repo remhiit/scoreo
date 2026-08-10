@@ -121,7 +121,7 @@ Notable design choices:
 | `Stats` | — | `StatsScreen` — ELO leaderboard, head-to-head. Contextual back clears the player selection when set, else navigates Home |
 | `Games` | — | `GameTypeScreen` — game type management: create, edit, archive with confirmation |
 | `Sync` | — | `SyncScreen` — Google Drive cloud backup, only reachable when `services.syncUseCase` is defined |
-| `HallOfFame` | — | `HallOfFameScreen` — playful streak trophies, one card per trophy, per-game-type filter (same mechanic as Stats) |
+| `HallOfFame` | — | `HallOfFameScreen` — playful trophies (streaks, volume, records, rivalry, monthly), one card per trophy, per-game-type filter (same mechanic as Stats) |
 | `ScoreDetail` | `gameTypeId`, `playerIds`, `matchId?` | `ScoreDetailScreen` — round entry, create or edit mode via `ScoreDetailMode`. gameType/players/mode resolution and the screen's `initialState` are built ad hoc in `App.tsx`'s `ScoreDetailRoute` via `useMemo` keyed on the route params |
 
 ## Shared Components

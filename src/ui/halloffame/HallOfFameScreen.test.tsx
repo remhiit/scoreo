@@ -53,9 +53,16 @@ describe('HallOfFameScreen', () => {
     expect(screen.getByText('The Invincible')).toBeInTheDocument()
     expect(screen.getByText('Current Streak')).toBeInTheDocument()
     expect(screen.getByText('Streak Breaker')).toBeInTheDocument()
+    expect(screen.getByText('The Collector')).toBeInTheDocument()
+    expect(screen.getByText('The Regular')).toBeInTheDocument()
+    expect(screen.getByText('Game Record')).toBeInTheDocument()
+    expect(screen.getByText('Nemesis')).toBeInTheDocument()
+    expect(screen.getByText('Player of the Month')).toBeInTheDocument()
     expect(screen.getByText('Longest winning streak of all time')).toBeInTheDocument()
-    expect(screen.getByText('Alice')).toBeInTheDocument() // The Invincible: Alice's 2-win streak
-    expect(screen.getAllByText('Bob')).toHaveLength(2) // Current Streak + Streak Breaker holder
+    // Alice: The Invincible (2-win streak) + The Collector (2 wins) + Game Record (Chess, 10).
+    expect(screen.getAllByText('Alice')).toHaveLength(3)
+    // Bob: Current Streak + Streak Breaker holder + Game Record (Darts, 10).
+    expect(screen.getAllByText('Bob')).toHaveLength(3)
   })
 
   it('shows an explicit empty state when a trophy has no holders', () => {
@@ -67,19 +74,19 @@ describe('HallOfFameScreen', () => {
     const getGameTypes = new GetGameTypesUseCase(new InMemoryGameTypeRepository())
     render(<HallOfFameScreen getTrophies={getTrophies} getGameTypes={getGameTypes} />)
 
-    expect(screen.getAllByText('No record yet.')).toHaveLength(3)
+    expect(screen.getAllByText('No record yet.')).toHaveLength(8)
   })
 
   it('filters trophies by game type', () => {
     renderHallOfFame()
 
-    expect(screen.getByText('Chess')).toBeInTheDocument()
-    expect(screen.getByText('Darts')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Chess' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Darts' })).toBeInTheDocument()
 
-    fireEvent.click(screen.getByText('Darts'))
+    fireEvent.click(screen.getByRole('button', { name: 'Darts' }))
 
-    // On gt2 only, Bob's the one with the (single-match) streak.
-    expect(screen.getAllByText('Bob')).toHaveLength(2)
+    // On gt2 only, Bob holds The Invincible, Current Streak, The Collector, and Game Record.
+    expect(screen.getAllByText('Bob')).toHaveLength(4)
   })
 
   it('defaults to the "All" filter', () => {
