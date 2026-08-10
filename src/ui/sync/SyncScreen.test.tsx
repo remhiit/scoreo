@@ -6,6 +6,7 @@ import { InMemoryCloudSyncRepository } from '../../infrastructure/testing/inMemo
 import { InMemoryGameTypeRepository } from '../../infrastructure/testing/inMemoryGameTypeRepository'
 import { InMemoryMatchRepository } from '../../infrastructure/testing/inMemoryMatchRepository'
 import { InMemoryPlayerRepository } from '../../infrastructure/testing/inMemoryPlayerRepository'
+import i18n from '../../i18n/i18n'
 import { SyncScreen } from './SyncScreen'
 
 function buildUseCase(cloudRepo = new InMemoryCloudSyncRepository(), playerRepo = new InMemoryPlayerRepository()) {
@@ -62,7 +63,7 @@ describe('SyncScreen', () => {
     })
 
     expect(await screen.findByText('Sync conflict')).toBeInTheDocument()
-    expect(screen.getAllByText('1 players', { exact: false })).toHaveLength(2)
+    expect(screen.getAllByText('1 player', { exact: false })).toHaveLength(2)
 
     await act(async () => {
       fireEvent.click(screen.getByText('Keep local'))
@@ -139,5 +140,48 @@ describe('SyncScreen', () => {
 
     expect(screen.getByText('Restoring session...')).toBeInTheDocument()
     expect(screen.queryByText('Connect with Google')).not.toBeInTheDocument()
+  })
+
+  it('updates displayed labels immediately when the language changes', async () => {
+    const { syncUseCase } = buildUseCase()
+    render(<SyncScreen syncUseCase={syncUseCase} />)
+
+    expect(await screen.findByText('Cloud Sync')).toBeInTheDocument()
+
+    await i18n.changeLanguage('fr')
+
+    expect(screen.getByText('Synchro cloud')).toBeInTheDocument()
+    expect(screen.getByText('Se connecter avec Google')).toBeInTheDocument()
+    expect(screen.queryByText('Cloud Sync')).not.toBeInTheDocument()
+
+    await i18n.changeLanguage('en')
+  })
+
+  it('updates the conflict view immediately when the language changes', async () => {
+    const cloudRepo = new InMemoryCloudSyncRepository()
+    const playerRepo = new InMemoryPlayerRepository()
+    playerRepo.save({ id: 'p1', name: 'Alice', active: true })
+    cloudRepo.storedData = {
+      players: [{ id: 'p2', name: 'Bob', active: true }],
+      gameTypes: [],
+      matches: [],
+      lastModified: 1000,
+    }
+    const { syncUseCase } = buildUseCase(cloudRepo, playerRepo)
+    render(<SyncScreen syncUseCase={syncUseCase} />)
+
+    await screen.findByText('Connect with Google')
+    await act(async () => {
+      fireEvent.click(screen.getByText('Connect with Google'))
+    })
+    await screen.findByText('Sync conflict')
+
+    await i18n.changeLanguage('fr')
+
+    expect(screen.getByText('Conflit de synchro')).toBeInTheDocument()
+    expect(screen.getByText('Garder la version locale')).toBeInTheDocument()
+    expect(screen.queryByText('Sync conflict')).not.toBeInTheDocument()
+
+    await i18n.changeLanguage('en')
   })
 })
