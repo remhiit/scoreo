@@ -88,6 +88,9 @@
     "headToHead": "Face-à-face",
     "noHeadToHead": "Aucune donnée de face-à-face pour l'instant."
   },
+  "hallOfFame": {
+    "noRecordYet": "Aucun record pour l'instant."
+  },
   "scoreDetail": {
     "standings": "Classement",
     "history": "Historique",

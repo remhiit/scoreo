@@ -1,4 +1,5 @@
 import { useEffect, useReducer } from 'react'
+import { useTranslation } from 'react-i18next'
 import type { GameType } from '../../domain/model/gameType'
 import type { Trophy } from '../../domain/model/trophy'
 import type { GetGameTypesUseCase } from '../../application/getGameTypesUseCase'
@@ -43,6 +44,7 @@ interface GameTypeTabsProps {
 }
 
 function GameTypeTabs({ gameTypes, selectedGameTypeId, onSelect }: GameTypeTabsProps) {
+  const { t } = useTranslation()
   return (
     <div className="tab-bar">
       <button
@@ -50,7 +52,7 @@ function GameTypeTabs({ gameTypes, selectedGameTypeId, onSelect }: GameTypeTabsP
         className={selectedGameTypeId === undefined ? 'tab-btn active' : 'tab-btn'}
         onClick={() => onSelect(undefined)}
       >
-        All
+        {t('stats.all')}
       </button>
       {gameTypes.map((gt) => (
         <button
@@ -67,12 +69,13 @@ function GameTypeTabs({ gameTypes, selectedGameTypeId, onSelect }: GameTypeTabsP
 }
 
 function TrophyCard({ trophy }: { trophy: Trophy }) {
+  const { t } = useTranslation()
   return (
     <div className="card trophy-card">
       <div className="trophy-card-title">{trophy.title}</div>
       <div className="trophy-card-description">{trophy.description}</div>
       {trophy.holders.length === 0 ? (
-        <div className="empty trophy-card-empty">No record yet.</div>
+        <div className="empty trophy-card-empty">{t('hallOfFame.noRecordYet')}</div>
       ) : (
         <div className="trophy-holders">
           {trophy.holders.map((holder) => (

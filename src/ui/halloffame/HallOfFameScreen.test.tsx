@@ -8,6 +8,7 @@ import { GetTrophiesUseCase } from '../../application/getTrophiesUseCase'
 import { InMemoryGameTypeRepository } from '../../infrastructure/testing/inMemoryGameTypeRepository'
 import { InMemoryMatchRepository } from '../../infrastructure/testing/inMemoryMatchRepository'
 import { InMemoryPlayerRepository } from '../../infrastructure/testing/inMemoryPlayerRepository'
+import i18n from '../../i18n/i18n'
 import { HallOfFameScreen } from './HallOfFameScreen'
 
 function player(id: string, name: string): Player {
@@ -95,5 +96,27 @@ describe('HallOfFameScreen', () => {
     renderHallOfFame()
 
     expect(screen.getByText('All').className).toContain('active')
+  })
+
+  it('updates the tab label and empty state immediately when the language changes', async () => {
+    const getTrophies = new GetTrophiesUseCase(
+      new InMemoryMatchRepository(),
+      new InMemoryGameTypeRepository(),
+      new InMemoryPlayerRepository(),
+    )
+    const getGameTypes = new GetGameTypesUseCase(new InMemoryGameTypeRepository())
+    render(<HallOfFameScreen getTrophies={getTrophies} getGameTypes={getGameTypes} />)
+
+    expect(screen.getByText('All')).toBeInTheDocument()
+    expect(screen.getAllByText('No record yet.').length).toBeGreaterThan(0)
+
+    await i18n.changeLanguage('fr')
+
+    expect(screen.getByText('Tous')).toBeInTheDocument()
+    expect(screen.queryByText('All')).not.toBeInTheDocument()
+    expect(screen.getAllByText('Aucun record pour l\'instant.').length).toBeGreaterThan(0)
+    expect(screen.queryByText('No record yet.')).not.toBeInTheDocument()
+
+    await i18n.changeLanguage('en')
   })
 })
