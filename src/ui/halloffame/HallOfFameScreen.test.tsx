@@ -55,12 +55,14 @@ describe('HallOfFameScreen', () => {
     expect(screen.getByText('Streak Breaker')).toBeInTheDocument()
     expect(screen.getByText('The Collector')).toBeInTheDocument()
     expect(screen.getByText('The Regular')).toBeInTheDocument()
+    expect(screen.getByText('The Peak')).toBeInTheDocument()
+    expect(screen.getByText('King of the Hill')).toBeInTheDocument()
     expect(screen.getByText('Game Record')).toBeInTheDocument()
     expect(screen.getByText('Nemesis')).toBeInTheDocument()
     expect(screen.getByText('Player of the Month')).toBeInTheDocument()
     expect(screen.getByText('Longest winning streak of all time')).toBeInTheDocument()
-    // Alice: The Invincible (2-win streak) + The Collector (2 wins) + Game Record (Chess, 10).
-    expect(screen.getAllByText('Alice')).toHaveLength(3)
+    // Alice: The Invincible (2-win streak) + The Collector (2 wins) + The Peak + King of the Hill + Game Record (Chess, 10).
+    expect(screen.getAllByText('Alice')).toHaveLength(5)
     // Bob: Current Streak + Streak Breaker holder + Game Record (Darts, 10).
     expect(screen.getAllByText('Bob')).toHaveLength(3)
   })
@@ -74,7 +76,7 @@ describe('HallOfFameScreen', () => {
     const getGameTypes = new GetGameTypesUseCase(new InMemoryGameTypeRepository())
     render(<HallOfFameScreen getTrophies={getTrophies} getGameTypes={getGameTypes} />)
 
-    expect(screen.getAllByText('No record yet.')).toHaveLength(8)
+    expect(screen.getAllByText('No record yet.')).toHaveLength(10)
   })
 
   it('filters trophies by game type', () => {
@@ -85,8 +87,8 @@ describe('HallOfFameScreen', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Darts' }))
 
-    // On gt2 only, Bob holds The Invincible, Current Streak, The Collector, and Game Record.
-    expect(screen.getAllByText('Bob')).toHaveLength(4)
+    // On gt2 only, Bob holds The Invincible, Current Streak, The Collector, The Peak, King of the Hill, and Game Record.
+    expect(screen.getAllByText('Bob')).toHaveLength(6)
   })
 
   it('defaults to the "All" filter', () => {

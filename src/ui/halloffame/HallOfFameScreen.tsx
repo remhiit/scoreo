@@ -81,7 +81,10 @@ function TrophyCard({ trophy }: { trophy: Trophy }) {
                 <span className="trophy-holder-name">{holder.name}</span>
                 {holder.detail && <span className="trophy-holder-detail">{holder.detail}</span>}
               </div>
-              <span className="trophy-holder-value">{holder.value}</span>
+              <span className="trophy-holder-value">
+                {holder.value}
+                {trophy.unit ? ` ${trophy.unit}` : ''}
+              </span>
             </div>
           ))}
         </div>

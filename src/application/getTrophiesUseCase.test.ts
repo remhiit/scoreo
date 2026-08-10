@@ -5,7 +5,18 @@ import type { Player } from '../domain/model/player'
 import { InMemoryGameTypeRepository } from '../infrastructure/testing/inMemoryGameTypeRepository'
 import { InMemoryMatchRepository } from '../infrastructure/testing/inMemoryMatchRepository'
 import { InMemoryPlayerRepository } from '../infrastructure/testing/inMemoryPlayerRepository'
+import { EloCalculator, type EloSnapshot } from './eloCalculator'
 import { GetTrophiesUseCase, NEMESIS_MIN_MEETINGS, REGULAR_MIN_MATCHES } from './getTrophiesUseCase'
+
+class FakeEloCalculator extends EloCalculator {
+  constructor(private readonly snapshots: EloSnapshot[]) {
+    super()
+  }
+
+  override computeHistory(): EloSnapshot[] {
+    return this.snapshots
+  }
+}
 
 function player(id: string, name: string, active = true): Player {
   return { id, name, active }
@@ -37,8 +48,9 @@ function buildUseCase(
   matchRepo = new InMemoryMatchRepository(),
   gameTypeRepo = new InMemoryGameTypeRepository(),
   playerRepo = new InMemoryPlayerRepository(),
+  eloCalculator: EloCalculator = new EloCalculator(),
 ) {
-  return new GetTrophiesUseCase(matchRepo, gameTypeRepo, playerRepo)
+  return new GetTrophiesUseCase(matchRepo, gameTypeRepo, playerRepo, eloCalculator)
 }
 
 function trophy(trophies: ReturnType<GetTrophiesUseCase['invoke']>, id: string) {
@@ -51,8 +63,8 @@ describe('GetTrophiesUseCase', () => {
   it('returns all trophies with empty holders when there are no matches', () => {
     const trophies = buildUseCase().invoke()
 
-    expect(trophies).toHaveLength(8)
-    expect(trophies.map((t) => t.id)).toEqual(['a1', 'a2', 'a4', 'b2', 'b3', 'd1', 'e1', 'f2'])
+    expect(trophies).toHaveLength(10)
+    expect(trophies.map((t) => t.id)).toEqual(['a1', 'a2', 'a4', 'b2', 'b3', 'c1', 'c3', 'd1', 'e1', 'f2'])
     for (const t of trophies) {
       expect(t.holders).toEqual([])
     }
@@ -357,6 +369,121 @@ describe('GetTrophiesUseCase', () => {
       const holders = trophy(buildUseCase(matchRepo, gameTypeRepo, playerRepo).invoke(), 'b3').holders
 
       expect(holders).toEqual([])
+    })
+  })
+
+  describe('C1 — The Peak', () => {
+    it('crowns the highest ELO ever reached, which can exceed the current rating', () => {
+      const playerRepo = new InMemoryPlayerRepository()
+      playerRepo.save(player('p1', 'Alice'))
+      playerRepo.save(player('p2', 'Bob'))
+      const gameTypeRepo = new InMemoryGameTypeRepository()
+      gameTypeRepo.save(gameType('gt1', 'Test'))
+      const matchRepo = new InMemoryMatchRepository()
+      // Alice climbs to her peak (1231) on m2, then loses m3, ending at 1212 — below her peak.
+      matchRepo.save(match('m1', new Date(2026, 0, 10).getTime(), 'gt1', [{ playerId: 'p1', score: 10 }, { playerId: 'p2', score: 5 }]))
+      matchRepo.save(match('m2', new Date(2026, 0, 15).getTime(), 'gt1', [{ playerId: 'p1', score: 10 }, { playerId: 'p2', score: 5 }]))
+      matchRepo.save(match('m3', new Date(2026, 0, 20).getTime(), 'gt1', [{ playerId: 'p2', score: 10 }, { playerId: 'p1', score: 5 }]))
+
+      const holders = trophy(buildUseCase(matchRepo, gameTypeRepo, playerRepo).invoke(), 'c1').holders
+
+      expect(holders).toEqual([{ playerId: 'p1', name: 'Alice', value: 1231, detail: '15 Jan 2026' }])
+    })
+
+    it('uses the single match rating when there is only one match', () => {
+      const playerRepo = new InMemoryPlayerRepository()
+      playerRepo.save(player('p1', 'Alice'))
+      playerRepo.save(player('p2', 'Bob'))
+      const gameTypeRepo = new InMemoryGameTypeRepository()
+      gameTypeRepo.save(gameType('gt1', 'Test'))
+      const matchRepo = new InMemoryMatchRepository()
+      matchRepo.save(match('m1', new Date(2026, 0, 10).getTime(), 'gt1', [{ playerId: 'p1', score: 10 }, { playerId: 'p2', score: 5 }]))
+
+      const holders = trophy(buildUseCase(matchRepo, gameTypeRepo, playerRepo).invoke(), 'c1').holders
+
+      expect(holders).toEqual([{ playerId: 'p1', name: 'Alice', value: 1216, detail: '10 Jan 2026' }])
+    })
+
+    it('recomputes the ELO history only from the selected game type matches', () => {
+      const playerRepo = new InMemoryPlayerRepository()
+      playerRepo.save(player('p1', 'Alice'))
+      playerRepo.save(player('p2', 'Bob'))
+      const gameTypeRepo = new InMemoryGameTypeRepository()
+      gameTypeRepo.save(gameType('gt1', 'Chess'))
+      gameTypeRepo.save(gameType('gt2', 'Darts'))
+      const matchRepo = new InMemoryMatchRepository()
+      matchRepo.save(match('m1', new Date(2026, 0, 10).getTime(), 'gt1', [{ playerId: 'p1', score: 10 }, { playerId: 'p2', score: 5 }]))
+      matchRepo.save(match('m2', new Date(2026, 0, 20).getTime(), 'gt2', [{ playerId: 'p2', score: 10 }, { playerId: 'p1', score: 5 }]))
+
+      const useCase = buildUseCase(matchRepo, gameTypeRepo, playerRepo)
+
+      expect(trophy(useCase.invoke('gt1'), 'c1').holders).toEqual([{ playerId: 'p1', name: 'Alice', value: 1216, detail: '10 Jan 2026' }])
+      expect(trophy(useCase.invoke('gt2'), 'c1').holders).toEqual([{ playerId: 'p2', name: 'Bob', value: 1216, detail: '20 Jan 2026' }])
+    })
+  })
+
+  describe('C3 — King of the Hill', () => {
+    afterEach(() => {
+      vi.useRealTimers()
+    })
+
+    it('credits the earlier leader for the gap between snapshots, and the new leader up to today', () => {
+      vi.useFakeTimers()
+      vi.setSystemTime(new Date(2026, 0, 31))
+
+      const playerRepo = new InMemoryPlayerRepository()
+      playerRepo.save(player('p1', 'Alice'))
+      playerRepo.save(player('p2', 'Bob'))
+      const snapshots: EloSnapshot[] = [
+        { matchId: 'm1', date: new Date(2026, 0, 1).getTime(), ratings: new Map([['p1', 1300], ['p2', 1200]]) },
+        { matchId: 'm2', date: new Date(2026, 0, 11).getTime(), ratings: new Map([['p1', 1150], ['p2', 1200]]) },
+      ]
+
+      const useCase = buildUseCase(new InMemoryMatchRepository(), new InMemoryGameTypeRepository(), playerRepo, new FakeEloCalculator(snapshots))
+
+      // Alice led from Jan 1 to Jan 11 (10 days), then Bob took over and leads up to "today" (Jan 31, 20 days).
+      const holders = trophy(useCase.invoke(), 'c3').holders
+
+      expect(holders).toEqual([{ playerId: 'p2', name: 'Bob', value: 20 }])
+    })
+
+    it('splits credit between every tied leader at a snapshot', () => {
+      vi.useFakeTimers()
+      vi.setSystemTime(new Date(2026, 0, 7))
+
+      const playerRepo = new InMemoryPlayerRepository()
+      playerRepo.save(player('p1', 'Alice'))
+      playerRepo.save(player('p2', 'Bob'))
+      playerRepo.save(player('p3', 'Charlie'))
+      const snapshots: EloSnapshot[] = [
+        { matchId: 'm1', date: new Date(2026, 0, 1).getTime(), ratings: new Map([['p1', 1220], ['p2', 1220], ['p3', 1150]]) },
+      ]
+
+      const useCase = buildUseCase(new InMemoryMatchRepository(), new InMemoryGameTypeRepository(), playerRepo, new FakeEloCalculator(snapshots))
+
+      const holders = trophy(useCase.invoke(), 'c3').holders
+
+      expect(holders).toEqual([
+        { playerId: 'p1', name: 'Alice', value: 6 },
+        { playerId: 'p2', name: 'Bob', value: 6 },
+      ])
+    })
+
+    it('credits the sole leader up to today when there is only one match', () => {
+      vi.useFakeTimers()
+      vi.setSystemTime(new Date(2026, 0, 16))
+
+      const playerRepo = new InMemoryPlayerRepository()
+      playerRepo.save(player('p1', 'Alice'))
+      playerRepo.save(player('p2', 'Bob'))
+      const gameTypeRepo = new InMemoryGameTypeRepository()
+      gameTypeRepo.save(gameType('gt1', 'Test'))
+      const matchRepo = new InMemoryMatchRepository()
+      matchRepo.save(match('m1', new Date(2026, 0, 1).getTime(), 'gt1', [{ playerId: 'p1', score: 10 }, { playerId: 'p2', score: 5 }]))
+
+      const holders = trophy(buildUseCase(matchRepo, gameTypeRepo, playerRepo).invoke(), 'c3').holders
+
+      expect(holders).toEqual([{ playerId: 'p1', name: 'Alice', value: 15 }])
     })
   })
 
