@@ -93,6 +93,7 @@ describe('InMemoryRepository fakes', () => {
       playerScores: [{ playerId: 'p1', score: 10 }],
       manualWinners: [],
       secondaryPlayerScores: [],
+      rounds: [],
     }
 
     repo.save(match)
@@ -112,6 +113,7 @@ describe('InMemoryRepository fakes', () => {
       playerScores: [{ playerId: 'p1', score: 10 }],
       manualWinners: [],
       secondaryPlayerScores: [],
+      rounds: [],
     })
     repo.save({
       id: 'm2',
@@ -120,6 +122,7 @@ describe('InMemoryRepository fakes', () => {
       playerScores: [{ playerId: 'p2', score: 20 }],
       manualWinners: [],
       secondaryPlayerScores: [],
+      rounds: [],
     })
 
     expect(repo.getAll()).toHaveLength(2)
@@ -158,6 +161,7 @@ describe('InMemoryRepository fakes', () => {
       playerScores: [{ playerId: 'p1', score: 10 }],
       manualWinners: [],
       secondaryPlayerScores: [],
+      rounds: [],
     })
     const found = repo.findById('m1')
     expect(found).toBeDefined()
@@ -216,6 +220,7 @@ describe('InMemoryRepository fakes', () => {
       playerScores: [{ playerId: 'p1', score: 10 }],
       manualWinners: [],
       secondaryPlayerScores: [],
+      rounds: [],
     })
 
     repo.deleteAll()

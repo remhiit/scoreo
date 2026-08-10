@@ -31,7 +31,7 @@ Notable design choices:
 | `AddPlayerUseCase` | `invoke(name: string)` | `Player` |
 | `AddGameTypeUseCase` | `invoke(name, winCondition, options?: AddGameTypeOptions)` — options: `tieBreakRule`, `tieBreakCondition`, `tieBreakLabel` | `GameType` |
 | `ArchiveGameTypeUseCase` | `invoke(gameTypeId: string)` | `void` |
-| `CreateMatchUseCase` | `invoke(gameTypeId, playerScores, date, options?: CreateMatchOptions)` — options: `manualWinners`, `secondaryPlayerScores` | `Result<Match, DomainError>` |
+| `CreateMatchUseCase` | `invoke(gameTypeId, playerScores, date, options?: CreateMatchOptions)` — options: `manualWinners`, `secondaryPlayerScores`, `rounds` | `Result<Match, DomainError>` |
 | `UpdateMatchUseCase` | `invoke(match: Match)` | `void` |
 | `DeleteMatchUseCase` | `invoke(matchId: string)` | `void` |
 | `DeletePlayerUseCase` | `invoke(id: string, anonymize = false)` | `void` |
@@ -62,7 +62,7 @@ Notable design choices:
 |---|---|---|
 | `Player` | `id: string`, `name: string`, `active: boolean` (default `true`) | `player.ts` / `player.schema.ts` |
 | `GameType` | `id`, `name`, `winCondition: WinCondition`, `tieBreakRule: TieBreakRule` (default `'NONE'`), `tieBreakCondition: WinCondition` (default `'HIGHEST_SCORE'`), `tieBreakLabel: string \| null` (default `null`), `active: boolean` (default `true`) | `gameType.ts` / `gameType.schema.ts` — also exports `computeWinners(gameType, playerScores, condition?)` |
-| `Match` | `id`, `date: number` (epoch ms), `gameTypeId`, `playerScores: PlayerScore[]`, `manualWinners: string[]` (default `[]`), `secondaryPlayerScores: PlayerScore[]` (default `[]`) | `match.ts` / `match.schema.ts` — also exports `isTieBreakIndeterminate(match, gameType)` |
+| `Match` | `id`, `date: number` (epoch ms), `gameTypeId`, `playerScores: PlayerScore[]`, `manualWinners: string[]` (default `[]`), `secondaryPlayerScores: PlayerScore[]` (default `[]`), `rounds: PlayerScore[][]` (default `[]` — one entry per round played, each listing every participant's score for that round; empty for matches saved before this was tracked, or imported without round detail) | `match.ts` / `match.schema.ts` — also exports `isTieBreakIndeterminate(match, gameType)` |
 | `MatchDraft` | `gameTypeId`, `playerIds: string[]`, `rounds: Record<string, string>[]`, `updatedAt: number` | `matchDraft.ts` / `matchDraft.schema.ts` |
 | `PlayerScore` | `playerId: string`, `score: number` | `playerScore.ts` / `playerScore.schema.ts` |
 | `WinCondition` | union `'HIGHEST_SCORE' \| 'LOWEST_SCORE' \| 'MANUAL'` + `winConditionLabel()` | `enums.ts` |

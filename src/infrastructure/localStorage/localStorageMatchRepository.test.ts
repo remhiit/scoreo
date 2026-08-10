@@ -16,6 +16,7 @@ describe('LocalStorageMatchRepository', () => {
       playerScores: [{ playerId: 'p1', score: 10 }],
       manualWinners: [],
       secondaryPlayerScores: [],
+      rounds: [],
     })
 
     expect(repo.getAll()).toHaveLength(1)
@@ -31,6 +32,7 @@ describe('LocalStorageMatchRepository', () => {
       playerScores: [{ playerId: 'p1', score: 10 }],
       manualWinners: [],
       secondaryPlayerScores: [],
+      rounds: [],
     }
     repo.save(match)
     repo.save({ ...match, date: 2000 })
@@ -41,8 +43,8 @@ describe('LocalStorageMatchRepository', () => {
 
   it('delete removes the match', () => {
     const repo = new LocalStorageMatchRepository()
-    repo.save({ id: 'm1', date: 1000, gameTypeId: 'gt1', playerScores: [], manualWinners: [], secondaryPlayerScores: [] })
-    repo.save({ id: 'm2', date: 2000, gameTypeId: 'gt1', playerScores: [], manualWinners: [], secondaryPlayerScores: [] })
+    repo.save({ id: 'm1', date: 1000, gameTypeId: 'gt1', playerScores: [], manualWinners: [], secondaryPlayerScores: [], rounds: [] })
+    repo.save({ id: 'm2', date: 2000, gameTypeId: 'gt1', playerScores: [], manualWinners: [], secondaryPlayerScores: [], rounds: [] })
 
     repo.delete('m1')
 
@@ -90,8 +92,8 @@ describe('LocalStorageMatchRepository', () => {
 
   it('deleteAll clears every stored match', () => {
     const repo = new LocalStorageMatchRepository()
-    repo.save({ id: 'm1', date: 1000, gameTypeId: 'gt1', playerScores: [], manualWinners: [], secondaryPlayerScores: [] })
-    repo.save({ id: 'm2', date: 2000, gameTypeId: 'gt1', playerScores: [], manualWinners: [], secondaryPlayerScores: [] })
+    repo.save({ id: 'm1', date: 1000, gameTypeId: 'gt1', playerScores: [], manualWinners: [], secondaryPlayerScores: [], rounds: [] })
+    repo.save({ id: 'm2', date: 2000, gameTypeId: 'gt1', playerScores: [], manualWinners: [], secondaryPlayerScores: [], rounds: [] })
 
     repo.deleteAll()
 
@@ -121,7 +123,7 @@ describe('LocalStorageMatchRepository', () => {
     const listener = vi.fn()
     notifier.subscribe(listener)
     const repo = new LocalStorageMatchRepository(notifier)
-    const match = { id: 'm1', date: 1000, gameTypeId: 'gt1', playerScores: [], manualWinners: [], secondaryPlayerScores: [] }
+    const match = { id: 'm1', date: 1000, gameTypeId: 'gt1', playerScores: [], manualWinners: [], secondaryPlayerScores: [], rounds: [] }
 
     repo.save(match)
     expect(listener).toHaveBeenCalledTimes(1)

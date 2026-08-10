@@ -9,6 +9,8 @@ export interface Match {
   playerScores: PlayerScore[]
   manualWinners: string[]
   secondaryPlayerScores: PlayerScore[]
+  /** One entry per round played, each listing every participant's score for that round. Empty for matches saved before this was tracked, or imported without round detail. */
+  rounds: PlayerScore[][]
 }
 
 /**

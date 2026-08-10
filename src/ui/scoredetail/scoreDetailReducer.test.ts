@@ -503,6 +503,44 @@ describe('scoreDetailReducer', () => {
     expect(match.playerScores.find((s) => s.playerId === 'bob')?.score).toBe(12)
   })
 
+  it('saveMatch persists the per-round detail, consistent with the final playerScores', () => {
+    const { harness, matchRepo } = buildHarness()
+    harness.updateScore(0, 'alice', '10')
+    harness.updateScore(0, 'bob', '5')
+    harness.addRound()
+    harness.updateScore(1, 'alice', '3')
+    harness.updateScore(1, 'bob', '7')
+    harness.terminate()
+    const match = matchRepo.getAll()[0]
+    expect(match.rounds).toEqual([
+      [
+        { playerId: 'alice', score: 10 },
+        { playerId: 'bob', score: 5 },
+      ],
+      [
+        { playerId: 'alice', score: 3 },
+        { playerId: 'bob', score: 7 },
+      ],
+    ])
+    for (const playerScore of match.playerScores) {
+      const roundsSum = match.rounds.reduce(
+        (sum, round) => sum + (round.find((s) => s.playerId === playerScore.playerId)?.score ?? 0),
+        0,
+      )
+      expect(roundsSum).toBe(playerScore.score)
+    }
+  })
+
+  it('saveMatch does not persist the trailing not-yet-played round', () => {
+    const { harness, matchRepo } = buildHarness()
+    harness.updateScore(0, 'alice', '10')
+    harness.updateScore(0, 'bob', '5')
+    harness.addRound()
+    harness.terminate()
+    const match = matchRepo.getAll()[0]
+    expect(match.rounds).toHaveLength(1)
+  })
+
   it('terminate with a tie and the NONE rule saves the match with all tied players as winners', () => {
     const { harness, matchRepo } = buildHarnessWithGameType(
       gameType('gt1', 'TestGame', 'HIGHEST_SCORE', 'NONE'),
@@ -712,6 +750,7 @@ describe('scoreDetailReducer', () => {
       ],
       manualWinners: [],
       secondaryPlayerScores: [],
+      rounds: [],
     }
     matchRepo.save(match)
 
@@ -749,6 +788,7 @@ describe('scoreDetailReducer', () => {
       ],
       manualWinners: [],
       secondaryPlayerScores: [],
+      rounds: [],
     }
     matchRepo.save(match)
 
@@ -785,6 +825,7 @@ describe('scoreDetailReducer', () => {
       ],
       manualWinners: [],
       secondaryPlayerScores: [],
+      rounds: [],
     })
 
     const mode: ScoreDetailMode = {
@@ -807,6 +848,50 @@ describe('scoreDetailReducer', () => {
     expect(updated?.playerScores.find((s) => s.playerId === 'bob')?.score).toBe(10)
   })
 
+  it('terminate persists the edited rounds detail in edit mode', () => {
+    const gt = gameType('gt1', 'TestGame')
+    const gameTypeRepo = new InMemoryGameTypeRepository()
+    gameTypeRepo.save(gt)
+    const matchRepo = new InMemoryMatchRepository()
+    const playerRepo = new InMemoryPlayerRepository()
+    playerRepo.save(alice)
+    playerRepo.save(bob)
+    matchRepo.save({
+      id: 'm1',
+      gameTypeId: gt.id,
+      date: 1000,
+      playerScores: [
+        { playerId: 'alice', score: 10 },
+        { playerId: 'bob', score: 5 },
+      ],
+      manualWinners: [],
+      secondaryPlayerScores: [],
+      rounds: [],
+    })
+
+    const mode: ScoreDetailMode = {
+      type: 'Edit',
+      matchId: 'm1',
+      updateMatchUseCase: new UpdateMatchUseCase(matchRepo),
+      matchRepository: matchRepo,
+      playerRepository: playerRepo,
+      gameTypeRepository: gameTypeRepo,
+    }
+    const harness = new Harness(gt, [alice, bob], matchRepo, gameTypeRepo, mode)
+
+    harness.updateScore(0, 'alice', '15')
+    harness.updateScore(0, 'bob', '10')
+    harness.terminate()
+
+    const updated = matchRepo.findById('m1')
+    expect(updated?.rounds).toEqual([
+      [
+        { playerId: 'alice', score: 15 },
+        { playerId: 'bob', score: 10 },
+      ],
+    ])
+  })
+
   it('edit mode preserves the match id', () => {
     const gt = gameType('gt1', 'TestGame')
     const gameTypeRepo = new InMemoryGameTypeRepository()
@@ -825,6 +910,7 @@ describe('scoreDetailReducer', () => {
       ],
       manualWinners: [],
       secondaryPlayerScores: [],
+      rounds: [],
     })
 
     const mode: ScoreDetailMode = {
@@ -862,6 +948,7 @@ describe('scoreDetailReducer', () => {
       ],
       manualWinners: [],
       secondaryPlayerScores: [],
+      rounds: [],
     })
 
     const mode: ScoreDetailMode = {

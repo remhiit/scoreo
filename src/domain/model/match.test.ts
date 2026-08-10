@@ -28,6 +28,7 @@ function match(overrides: Partial<Match> = {}): Match {
     playerScores: [],
     manualWinners: [],
     secondaryPlayerScores: [],
+    rounds: [],
     ...overrides,
   }
 }
