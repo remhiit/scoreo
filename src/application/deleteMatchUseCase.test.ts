@@ -6,7 +6,7 @@ describe('DeleteMatchUseCase', () => {
   it('deletes an existing match', () => {
     const repo = new InMemoryMatchRepository()
     const useCase = new DeleteMatchUseCase(repo)
-    repo.save({ id: 'm1', gameTypeId: 'g1', date: 1000, playerScores: [], manualWinners: [], secondaryPlayerScores: [] })
+    repo.save({ id: 'm1', gameTypeId: 'g1', date: 1000, playerScores: [], manualWinners: [], secondaryPlayerScores: [], rounds: [] })
 
     useCase.invoke('m1')
 
@@ -25,8 +25,8 @@ describe('DeleteMatchUseCase', () => {
   it('does not affect other matches', () => {
     const repo = new InMemoryMatchRepository()
     const useCase = new DeleteMatchUseCase(repo)
-    repo.save({ id: 'm1', gameTypeId: 'g1', date: 1000, playerScores: [], manualWinners: [], secondaryPlayerScores: [] })
-    repo.save({ id: 'm2', gameTypeId: 'g1', date: 2000, playerScores: [], manualWinners: [], secondaryPlayerScores: [] })
+    repo.save({ id: 'm1', gameTypeId: 'g1', date: 1000, playerScores: [], manualWinners: [], secondaryPlayerScores: [], rounds: [] })
+    repo.save({ id: 'm2', gameTypeId: 'g1', date: 2000, playerScores: [], manualWinners: [], secondaryPlayerScores: [], rounds: [] })
 
     useCase.invoke('m1')
 

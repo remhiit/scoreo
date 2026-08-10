@@ -4,7 +4,7 @@
 
 | Use Case | Input | Output | Business Rule |
 |----------|-------|--------|---------------|
-| `CreateMatchUseCase` | `gameTypeId, playerScores, date, manualWinners, secondaryPlayerScores` | `Match` | Saves match; returns `Result<Match>` |
+| `CreateMatchUseCase` | `gameTypeId, playerScores, date, manualWinners, secondaryPlayerScores, rounds` | `Match` | Saves match; returns `Result<Match>` |
 
 ## MVI-style
 
@@ -119,7 +119,7 @@ When navigating to `ScoreDetailScreen` with a `matchId` parameter (from History)
 
 ### Data Reconstruction
 
-All matches are stored with `playerScores` (total score per player). When editing, rounds are reconstructed as 1 round containing these totals. User can then split into multiple rounds or edit the single-round total as desired.
+All matches are stored with `playerScores` (total score per player) and `rounds` (per-round detail, `PlayerScore[][]`, one entry per round played — empty for matches saved before this was tracked, or imported without round detail). When editing, the screen still reconstructs rounds as 1 round containing the `playerScores` totals (not the stored `rounds` detail — see `doc/technical/migrations.md` § `Match.rounds`). User can then split into multiple rounds or edit the single-round total as desired; on save, whatever rounds are present in the editor become the new `Match.rounds`.
 
 ### Workflow
 

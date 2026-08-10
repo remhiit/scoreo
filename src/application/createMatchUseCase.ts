@@ -9,6 +9,7 @@ import { newId } from './idGenerator'
 export interface CreateMatchOptions {
   manualWinners?: string[]
   secondaryPlayerScores?: PlayerScore[]
+  rounds?: PlayerScore[][]
 }
 
 export class CreateMatchUseCase {
@@ -25,6 +26,7 @@ export class CreateMatchUseCase {
   ): Result<Match, DomainError> {
     const manualWinners = options.manualWinners ?? []
     const secondaryPlayerScores = options.secondaryPlayerScores ?? []
+    const rounds = options.rounds ?? []
 
     const gameType = this.gameTypeRepository.findById(gameTypeId)
     if (!gameType) return err(new NotFoundError('GameType', gameTypeId))
@@ -58,6 +60,7 @@ export class CreateMatchUseCase {
       playerScores,
       manualWinners,
       secondaryPlayerScores,
+      rounds,
     }
     this.matchRepository.save(match)
     return ok(match)

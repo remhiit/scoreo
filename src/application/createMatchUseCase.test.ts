@@ -119,6 +119,45 @@ describe('CreateMatchUseCase', () => {
     expect(result.ok).toBe(false)
   })
 
+  it('stores rounds when provided', () => {
+    const { useCase, matchRepo } = setup('HIGHEST_SCORE')
+    const result = useCase.invoke(
+      'gt1',
+      [
+        { playerId: 'p1', score: 13 },
+        { playerId: 'p2', score: 12 },
+      ],
+      1767225600000,
+      {
+        rounds: [
+          [
+            { playerId: 'p1', score: 10 },
+            { playerId: 'p2', score: 5 },
+          ],
+          [
+            { playerId: 'p1', score: 3 },
+            { playerId: 'p2', score: 7 },
+          ],
+        ],
+      },
+    )
+    expect(result.ok).toBe(true)
+    expect(matchRepo.getAll()[0].rounds).toHaveLength(2)
+  })
+
+  it('defaults rounds to an empty array when not provided', () => {
+    const { useCase, matchRepo } = setup('HIGHEST_SCORE')
+    useCase.invoke(
+      'gt1',
+      [
+        { playerId: 'p1', score: 10 },
+        { playerId: 'p2', score: 5 },
+      ],
+      1767225600000,
+    )
+    expect(matchRepo.getAll()[0].rounds).toEqual([])
+  })
+
   it('passes when manualWinners empty with non-MANUAL win condition', () => {
     const { useCase, matchRepo } = setup('HIGHEST_SCORE')
     const result = useCase.invoke(

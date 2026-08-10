@@ -170,6 +170,7 @@ export class ImportMatchesUseCase {
           playerScores: scores,
           manualWinners,
           secondaryPlayerScores: [],
+          rounds: [],
         }
         this.matchRepository.save(match)
         imported++

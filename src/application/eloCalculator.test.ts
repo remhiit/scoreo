@@ -27,6 +27,7 @@ function match(id: string, date: number, gameTypeId: string, playerScores: Playe
     playerScores,
     manualWinners: [],
     secondaryPlayerScores: [],
+    rounds: [],
     ...overrides,
   }
 }

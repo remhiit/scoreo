@@ -8,4 +8,5 @@ export const MatchSchema = z.object({
   playerScores: z.array(PlayerScoreSchema),
   manualWinners: z.array(z.string()).default([]),
   secondaryPlayerScores: z.array(PlayerScoreSchema).default([]),
+  rounds: z.array(z.array(PlayerScoreSchema)).default([]),
 })
