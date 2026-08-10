@@ -5,6 +5,7 @@ import type { Match } from '../../domain/model/match'
 import type { Player } from '../../domain/model/player'
 import { GetGameTypesUseCase } from '../../application/getGameTypesUseCase'
 import { GetHeadToHeadUseCase } from '../../application/getHeadToHeadUseCase'
+import i18n from '../../i18n/i18n'
 import { InMemoryGameTypeRepository } from '../../infrastructure/testing/inMemoryGameTypeRepository'
 import { InMemoryMatchRepository } from '../../infrastructure/testing/inMemoryMatchRepository'
 import { InMemoryPlayerRepository } from '../../infrastructure/testing/inMemoryPlayerRepository'
@@ -125,5 +126,46 @@ describe('StatsScreen', () => {
     act(() => {
       overrides.at(-1)?.()
     })
+  })
+
+  it('updates the tab label immediately when the language changes', async () => {
+    renderStats()
+
+    expect(screen.getByText('All')).toBeInTheDocument()
+
+    await i18n.changeLanguage('fr')
+
+    expect(screen.getByText('Tous')).toBeInTheDocument()
+    expect(screen.queryByText('All')).not.toBeInTheDocument()
+
+    await i18n.changeLanguage('en')
+  })
+
+  it('updates the player detail view labels immediately when the language changes', async () => {
+    renderStats()
+
+    fireEvent.click(screen.getByText('Alice'))
+    expect(screen.getByText('Head-to-head')).toBeInTheDocument()
+
+    await i18n.changeLanguage('fr')
+
+    expect(screen.getByText('Face-à-face')).toBeInTheDocument()
+    expect(screen.queryByText('Head-to-head')).not.toBeInTheDocument()
+
+    await i18n.changeLanguage('en')
+  })
+
+  it('translates the empty states', async () => {
+    const getHeadToHead = new GetHeadToHeadUseCase(
+      new InMemoryMatchRepository(),
+      new InMemoryGameTypeRepository(),
+      new InMemoryPlayerRepository(),
+    )
+    const getGameTypes = new GetGameTypesUseCase(new InMemoryGameTypeRepository())
+    render(<StatsScreen getHeadToHead={getHeadToHead} getGameTypes={getGameTypes} />)
+
+    await i18n.changeLanguage('fr')
+    expect(screen.getByText("Aucune statistique pour l'instant — jouez quelques parties d'abord.")).toBeInTheDocument()
+    await i18n.changeLanguage('en')
   })
 })
