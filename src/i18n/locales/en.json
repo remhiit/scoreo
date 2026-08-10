@@ -82,6 +82,12 @@
     "unnamedPlayer": "(unnamed player)",
     "deletePermanently": "Delete permanently"
   },
+  "stats": {
+    "all": "All",
+    "noStatsYet": "No stats yet — play some matches first.",
+    "headToHead": "Head-to-head",
+    "noHeadToHead": "No head-to-head data yet."
+  },
   "scoreDetail": {
     "standings": "Standings",
     "history": "History",

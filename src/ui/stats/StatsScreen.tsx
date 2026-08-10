@@ -1,4 +1,5 @@
 import { useEffect, useReducer } from 'react'
+import { useTranslation } from 'react-i18next'
 import type { GameType } from '../../domain/model/gameType'
 import type { GetGameTypesUseCase } from '../../application/getGameTypesUseCase'
 import type { GetHeadToHeadUseCase, PlayerDetail } from '../../application/getHeadToHeadUseCase'
@@ -65,6 +66,7 @@ interface GameTypeTabsProps {
 }
 
 function GameTypeTabs({ gameTypes, selectedGameTypeId, onSelect }: GameTypeTabsProps) {
+  const { t } = useTranslation()
   return (
     <div className="tab-bar">
       <button
@@ -72,7 +74,7 @@ function GameTypeTabs({ gameTypes, selectedGameTypeId, onSelect }: GameTypeTabsP
         className={selectedGameTypeId === undefined ? 'tab-btn active' : 'tab-btn'}
         onClick={() => onSelect(undefined)}
       >
-        All
+        {t('stats.all')}
       </button>
       {gameTypes.map((gt) => (
         <button
@@ -94,8 +96,9 @@ interface LeaderboardViewProps {
 }
 
 function LeaderboardView({ leaderboard, onSelectPlayer }: LeaderboardViewProps) {
+  const { t } = useTranslation()
   if (leaderboard.length === 0) {
-    return <div className="empty">No stats yet — play some matches first.</div>
+    return <div className="empty">{t('stats.noStatsYet')}</div>
   }
 
   return (
@@ -123,6 +126,7 @@ function LeaderboardView({ leaderboard, onSelectPlayer }: LeaderboardViewProps) 
 }
 
 function PlayerDetailView({ detail }: { detail: PlayerDetail }) {
+  const { t } = useTranslation()
   const overallPct = pct(detail.wins, detail.losses)
 
   return (
@@ -140,10 +144,10 @@ function PlayerDetailView({ detail }: { detail: PlayerDetail }) {
       </div>
 
       {detail.headToHead.length === 0 ? (
-        <div className="empty">No head-to-head data yet.</div>
+        <div className="empty">{t('stats.noHeadToHead')}</div>
       ) : (
         <>
-          <div className="section-label">Head-to-head</div>
+          <div className="section-label">{t('stats.headToHead')}</div>
           {detail.headToHead.map((h2h) => {
             const hPct = pct(h2h.wins, h2h.losses)
             return (
