@@ -6,6 +6,7 @@ import { FindGameTypeByIdUseCase } from '../../application/findGameTypeByIdUseCa
 import { GetGameTypesUseCase } from '../../application/getGameTypesUseCase'
 import { UpdateGameTypeUseCase } from '../../application/updateGameTypeUseCase'
 import { InMemoryGameTypeRepository } from '../../infrastructure/testing/inMemoryGameTypeRepository'
+import i18n from '../../i18n/i18n'
 import { GameTypeScreen } from './GameTypeScreen'
 
 function renderScreen(repo = new InMemoryGameTypeRepository()) {
@@ -157,5 +158,19 @@ describe('GameTypeScreen', () => {
     )
 
     expect(screen.queryByText('Game Types')).not.toBeInTheDocument()
+  })
+
+  it('updates displayed labels immediately when the language changes', async () => {
+    renderScreen()
+
+    expect(screen.getByText('Game Types')).toBeInTheDocument()
+    expect(screen.getByText('No game types yet. Add one.')).toBeInTheDocument()
+
+    await i18n.changeLanguage('fr')
+
+    expect(screen.getByText('Types de jeu')).toBeInTheDocument()
+    expect(screen.getByText("Aucun type de jeu pour l'instant. Ajoutez-en un.")).toBeInTheDocument()
+
+    await i18n.changeLanguage('en')
   })
 })

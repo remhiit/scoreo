@@ -21,6 +21,27 @@
     "english": "Anglais",
     "french": "Français"
   },
+  "gametype": {
+    "title": "Types de jeu",
+    "winCondition": "Condition de victoire",
+    "tieBreakRule": "Règle de départage",
+    "tieBreak": "Départage",
+    "tieBreakConditionLabel": "Condition de départage :",
+    "tieBreakQuestionLabel": "Question de départage :",
+    "tieBreakCondition": "Condition de départage",
+    "tieBreakQuestion": "Question de départage",
+    "tieBreakLabelPlaceholder": "ex. Nombre de cartes",
+    "gameNamePlaceholder": "Nom du jeu",
+    "addGameType": "Ajouter un type de jeu",
+    "noGameTypesYet": "Aucun type de jeu pour l'instant. Ajoutez-en un.",
+    "back": "Retour",
+    "edit": "Modifier",
+    "editTitle": "Modifier {{name}}",
+    "archive": "Archiver",
+    "archiveTitle": "Archiver {{name}} ?",
+    "archiveBody": "Il n'apparaîtra plus dans la sélection de jeu.",
+    "saveChanges": "Enregistrer les modifications"
+  },
   "home": {
     "resumeMatch": "Reprendre la partie en cours",
     "playerNamePlaceholder": "Nom du joueur",

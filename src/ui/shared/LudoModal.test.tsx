@@ -1,5 +1,6 @@
 import { fireEvent, render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
+import i18n from '../../i18n/i18n'
 import { LudoModal } from './LudoModal'
 
 describe('LudoModal', () => {
@@ -66,5 +67,19 @@ describe('LudoModal', () => {
     )
     fireEvent.click(screen.getByRole('button', { name: 'Close' }))
     expect(onClose).toHaveBeenCalledTimes(1)
+  })
+
+  it('translates the close button aria-label when the language changes', async () => {
+    render(
+      <LudoModal open title="Confirm" onClose={() => {}}>
+        <p>content</p>
+      </LudoModal>,
+    )
+    expect(screen.getByRole('button', { name: 'Close' })).toBeInTheDocument()
+
+    await i18n.changeLanguage('fr')
+    expect(screen.getByRole('button', { name: 'Fermer' })).toBeInTheDocument()
+
+    await i18n.changeLanguage('en')
   })
 })

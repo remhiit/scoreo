@@ -21,6 +21,27 @@
     "english": "English",
     "french": "French"
   },
+  "gametype": {
+    "title": "Game Types",
+    "winCondition": "Win condition",
+    "tieBreakRule": "Tie-break rule",
+    "tieBreak": "Tie break",
+    "tieBreakConditionLabel": "Tie break condition:",
+    "tieBreakQuestionLabel": "Tie break question:",
+    "tieBreakCondition": "Tie break condition",
+    "tieBreakQuestion": "Tie break question",
+    "tieBreakLabelPlaceholder": "e.g. Number of cards",
+    "gameNamePlaceholder": "Game name",
+    "addGameType": "Add game type",
+    "noGameTypesYet": "No game types yet. Add one.",
+    "back": "Back",
+    "edit": "Edit",
+    "editTitle": "Edit {{name}}",
+    "archive": "Archive",
+    "archiveTitle": "Archive {{name}}?",
+    "archiveBody": "It will no longer appear in game selection.",
+    "saveChanges": "Save changes"
+  },
   "home": {
     "resumeMatch": "Resume match in progress",
     "playerNamePlaceholder": "Player name",
