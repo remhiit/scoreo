@@ -42,6 +42,16 @@
     "archiveBody": "Il n'apparaîtra plus dans la sélection de jeu.",
     "saveChanges": "Enregistrer les modifications"
   },
+  "history": {
+    "filterByGame": "Filtrer par jeu :",
+    "allGames": "Tous les jeux",
+    "noMatchesYet": "Aucune partie pour l'instant.",
+    "noMatchesForGame": "Aucune partie pour {{gameName}}",
+    "unknownGame": "Jeu inconnu",
+    "unknown": "Inconnu",
+    "deleteTitle": "Supprimer la partie ?",
+    "matchDataWillBeLost": "Les données de la partie seront perdues."
+  },
   "home": {
     "resumeMatch": "Reprendre la partie en cours",
     "playerNamePlaceholder": "Nom du joueur",
