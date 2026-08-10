@@ -5,6 +5,7 @@ import {
   Gamepad2,
   History,
   Home,
+  Languages,
   Menu,
   Palette,
   Trophy,
@@ -13,6 +14,7 @@ import {
   type LucideIcon,
 } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { AddGameTypeUseCase } from './application/addGameTypeUseCase'
 import { AddPlayerUseCase } from './application/addPlayerUseCase'
 import { ArchiveGameTypeUseCase } from './application/archiveGameTypeUseCase'
@@ -54,6 +56,7 @@ import { useHashRouter } from './ui/navigation/useHashRouter'
 import { buildInitialState } from './ui/scoredetail/scoreDetailReducer'
 import { ScoreDetailScreen } from './ui/scoredetail/ScoreDetailScreen'
 import type { ScoreDetailMode } from './ui/scoredetail/scoreDetailTypes'
+import { LanguagePickerDialog } from './ui/shared/LanguagePickerDialog'
 import { LudoButton } from './ui/shared/LudoButton'
 import { StatsScreen } from './ui/stats/StatsScreen'
 import { SyncScreen } from './ui/sync/SyncScreen'
@@ -163,11 +166,13 @@ function ScoreDetailRoute({ screen, services, onSaved, onCancel, onMissingGameTy
 }
 
 function AppShell() {
+  const { t } = useTranslation()
   const services = useServices()
   useAutoSync(services.autoSyncCoordinator)
   const { current, navigate } = useHashRouter()
   const [burgerOpen, setBurgerOpen] = useState(false)
   const [themePickerOpen, setThemePickerOpen] = useState(false)
+  const [languagePickerOpen, setLanguagePickerOpen] = useState(false)
   const [statsBackOverride, setStatsBackOverride] = useState<(() => void) | null>(null)
   const [prevScreenForStatsBack, setPrevScreenForStatsBack] = useState(current)
   if (prevScreenForStatsBack !== current) {
@@ -349,7 +354,7 @@ function AppShell() {
             />
             <BurgerItem
               icon={Home}
-              label="Home"
+              label={t('menu.home')}
               onClick={() => {
                 setBurgerOpen(false)
                 navigate(HOME_SCREEN)
@@ -357,7 +362,7 @@ function AppShell() {
             />
             <BurgerItem
               icon={BarChart3}
-              label="Stats"
+              label={t('menu.stats')}
               onClick={() => {
                 setBurgerOpen(false)
                 navigate(STATS_SCREEN)
@@ -365,7 +370,7 @@ function AppShell() {
             />
             <BurgerItem
               icon={Trophy}
-              label="Hall of Fame"
+              label={t('menu.hallOfFame')}
               onClick={() => {
                 setBurgerOpen(false)
                 navigate(HALL_OF_FAME_SCREEN)
@@ -373,7 +378,7 @@ function AppShell() {
             />
             <BurgerItem
               icon={History}
-              label="History"
+              label={t('menu.history')}
               onClick={() => {
                 setBurgerOpen(false)
                 navigate(HISTORY_SCREEN)
@@ -381,7 +386,7 @@ function AppShell() {
             />
             <BurgerItem
               icon={Upload}
-              label="Import"
+              label={t('menu.import')}
               onClick={() => {
                 setBurgerOpen(false)
                 navigate(IMPORT_SCREEN)
@@ -389,7 +394,7 @@ function AppShell() {
             />
             <BurgerItem
               icon={Gamepad2}
-              label="Games"
+              label={t('menu.games')}
               onClick={() => {
                 setBurgerOpen(false)
                 navigate(GAMES_SCREEN)
@@ -398,7 +403,7 @@ function AppShell() {
             {services.syncUseCase && (
               <BurgerItem
                 icon={Cloud}
-                label="Sync"
+                label={t('menu.sync')}
                 onClick={() => {
                   setBurgerOpen(false)
                   navigate(SYNC_SCREEN)
@@ -407,10 +412,18 @@ function AppShell() {
             )}
             <BurgerItem
               icon={Palette}
-              label="Theme"
+              label={t('menu.theme')}
               onClick={() => {
                 setBurgerOpen(false)
                 setThemePickerOpen(true)
+              }}
+            />
+            <BurgerItem
+              icon={Languages}
+              label={t('menu.language')}
+              onClick={() => {
+                setBurgerOpen(false)
+                setLanguagePickerOpen(true)
               }}
             />
           </div>
@@ -418,6 +431,7 @@ function AppShell() {
       )}
 
       {themePickerOpen && <ThemePickerDialog onClose={() => setThemePickerOpen(false)} />}
+      {languagePickerOpen && <LanguagePickerDialog onClose={() => setLanguagePickerOpen(false)} />}
     </>
   )
 }

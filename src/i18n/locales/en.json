@@ -1,0 +1,54 @@
+{
+  "common": {
+    "cancel": "Cancel",
+    "close": "Close",
+    "delete": "Delete",
+    "confirm": "Confirm"
+  },
+  "menu": {
+    "home": "Home",
+    "stats": "Stats",
+    "hallOfFame": "Hall of Fame",
+    "history": "History",
+    "import": "Import",
+    "games": "Games",
+    "sync": "Sync",
+    "theme": "Theme",
+    "language": "Language"
+  },
+  "languagePicker": {
+    "title": "Language",
+    "english": "English",
+    "french": "French"
+  },
+  "home": {
+    "resumeMatch": "Resume match in progress",
+    "playerNamePlaceholder": "Player name",
+    "add": "Add",
+    "gettingStarted": "Getting started",
+    "onboardingStep1": "Add players above",
+    "onboardingStep2": "Create a game type (from the menu)",
+    "onboardingStep3": "Select ≥2 players and click \"Start match\"",
+    "noPlayersYet": "No players yet. Add one above.",
+    "playersSelected": "{{count}}/2 players selected",
+    "cleanUp": "Clean up ({{count}})",
+    "newMatch": "New Match",
+    "selectGameTitle": "Select a game",
+    "noGameTypesYet": "No game types yet. Add one.",
+    "selectGamePlaceholder": "— Select a game —",
+    "addNewGame": "Add new game",
+    "gameNamePlaceholder": "Game name",
+    "addGame": "Add game",
+    "startMatch": "Start match",
+    "pleaseSelectGame": "Please select a game",
+    "failedToCreateGameType": "Failed to create game type: {{message}}",
+    "deleteTitle": "Delete {{name}}?",
+    "matchesPreserved": "Matches will be preserved.",
+    "eraseNameFromHistory": "Erase name from history",
+    "renameTitle": "Rename {{name}}",
+    "cleanupTitle": "Clean up {{count}} inactive player(s)?",
+    "cleanupBody": "This permanently deletes players with no recorded match. This cannot be undone.",
+    "unnamedPlayer": "(unnamed player)",
+    "deletePermanently": "Delete permanently"
+  }
+}

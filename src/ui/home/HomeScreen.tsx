@@ -1,5 +1,6 @@
 import { Play } from 'lucide-react'
 import { useReducer, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import type { AddPlayerUseCase } from '../../application/addPlayerUseCase'
 import type { CleanupInactivePlayersUseCase } from '../../application/cleanupInactivePlayersUseCase'
 import type { DeletePlayerUseCase } from '../../application/deletePlayerUseCase'
@@ -46,6 +47,7 @@ export function HomeScreen({
   onResumeDraft = () => {},
   getMatchCount = () => 0,
 }: HomeScreenProps) {
+  const { t } = useTranslation()
   const [state, dispatch] = useReducer(playerReducer, initialPlayerState, (init) => ({
     ...init,
     ...loadPlayers(getPlayers, getPlayerStats, cleanupInactivePlayers),
@@ -81,7 +83,7 @@ export function HomeScreen({
             <span>
               <Play size={16} aria-hidden />
             </span>
-            <span>Resume match in progress</span>
+            <span>{t('home.resumeMatch')}</span>
           </button>
         </div>
       )}
@@ -99,11 +101,11 @@ export function HomeScreen({
 
       {isFirstLaunch && (
         <div className="onboarding-guide">
-          <h3>Getting started</h3>
+          <h3>{t('home.gettingStarted')}</h3>
           <ol>
-            <li>Add players above</li>
-            <li>Create a game type (from the menu)</li>
-            <li>Select ≥2 players and click &quot;Start match&quot;</li>
+            <li>{t('home.onboardingStep1')}</li>
+            <li>{t('home.onboardingStep2')}</li>
+            <li>{t('home.onboardingStep3')}</li>
           </ol>
         </div>
       )}
@@ -123,7 +125,7 @@ export function HomeScreen({
         <LudoButton
           text={
             <>
-              <Play size={18} aria-hidden /> New Match
+              <Play size={18} aria-hidden /> {t('home.newMatch')}
             </>
           }
           variant="primary"

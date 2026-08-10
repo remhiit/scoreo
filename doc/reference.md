@@ -136,6 +136,7 @@ Notable design choices:
 | `LudoTextInput` | `value`, `onChange`, `label?`, `placeholder?`, `size?`, `disabled?`, `invalid?`, `autofocus?`, `onEnter?` | Controlled text field. |
 | `LudoNumberInput` | `value`, `onChange`, `min?`, `max?`, `step?`, `stepper?` (default `true`), `size?`, `disabled?` | Controlled number field, `-`/`+` stepper by default. |
 | `LudoModal` | `open`, `title?`, `onClose?`, `footer?`, `children` | Centered dialog with scrim; closes on scrim click or Escape. Used by every dialog in the app, including the theme picker. |
+| `LanguagePickerDialog` | `onClose` | EN/FR language picker, opened from the burger menu's "🌐 Language" item; modeled on `ThemePickerDialog`, reuses its `.theme-picker-row`/`.theme-chip` CSS. Calls `i18n.changeLanguage()`. |
 
 ## Tests
 
@@ -184,7 +185,7 @@ Theme: Catppuccin tokens (`tokens/colors-*.css` + `tokens/semantic.css`), 4 flav
 `src/App.tsx` (`AppShell`) dispatches by `useHashRouter().current` and wraps content in `ServicesProvider`/`ThemeProvider`. `AppShell` also calls `useAutoSync(services.autoSyncCoordinator)` unconditionally at the top of the component, starting/stopping the debounced Drive push coordinator alongside the component's lifecycle (no-op when `autoSyncCoordinator` is `undefined`). The header, contextual back button, and burger menu are the app's chrome:
 
 - **Header**: back button hidden on Home; for `ScoreDetail` goes to `History` if `matchId` is set else `Home`; for `Stats` clears the player selection instead of navigating while a player is selected, else goes `Home`; all other screens go `Home`. The title text is clickable and navigates `Home` unless already there.
-- **Burger menu**: Home/Stats/Hall of Fame/History/Import/Games, + Sync only when `services.syncUseCase` is defined, + a non-navigating "🎨 Theme" item opening `ThemePickerDialog`.
+- **Burger menu**: Home/Stats/Hall of Fame/History/Import/Games, + Sync only when `services.syncUseCase` is defined, + non-navigating "🎨 Theme" and "🌐 Language" items opening `ThemePickerDialog`/`LanguagePickerDialog`. Burger menu labels themselves go through `useTranslation()` — see "i18n" in `doc/technical/architecture.md`.
 - **Stats back-override wiring**: `StatsScreen` accepts an `onBackOverrideChange: (override: (() => void) | null) => void` prop and calls it (from a `useEffect` on `selectedPlayerId`) with a clear-selection callback when a player is selected, or `null` otherwise. `AppShell` stores the latest value in `statsBackOverride` state (reset on every screen change) and uses it in place of the default `Home` navigation when set.
 
 ## localStorage Keys

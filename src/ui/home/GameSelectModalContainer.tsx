@@ -1,7 +1,9 @@
 import { forwardRef, useImperativeHandle, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { NotFoundError, ValidationError } from '../../domain/model/errors'
 import type { WinCondition } from '../../domain/model/enums'
 import type { GameType } from '../../domain/model/gameType'
+import i18n from '../../i18n/i18n'
 import { GameSelectModal } from './GameSelectModal'
 
 export interface GameSelectModalHandle {
@@ -17,7 +19,7 @@ export interface GameSelectModalContainerProps {
 
 function domainErrorMessage(e: unknown): string {
   if (e instanceof ValidationError || e instanceof NotFoundError) return e.message
-  return `Failed to create game type: ${e instanceof Error ? e.message : ''}`
+  return i18n.t('home.failedToCreateGameType', { message: e instanceof Error ? e.message : '' })
 }
 
 export const GameSelectModalContainer = forwardRef<
@@ -27,6 +29,7 @@ export const GameSelectModalContainer = forwardRef<
   { getGameTypes, onAddGameType, onStartGame, selectedPlayerIds },
   ref,
 ) {
+  const { t } = useTranslation()
   const [open, setOpen] = useState(false)
   const [gameTypes, setGameTypes] = useState<GameType[]>(() => getGameTypes())
   const [selectedGameType, setSelectedGameType] = useState<GameType | undefined>(undefined)
@@ -76,7 +79,7 @@ export const GameSelectModalContainer = forwardRef<
       }}
       onStartMatch={() => {
         if (!selectedGameType) {
-          setError('Please select a game')
+          setError(t('home.pleaseSelectGame'))
           return
         }
         setOpen(false)

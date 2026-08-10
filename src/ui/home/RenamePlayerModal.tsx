@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { LudoButton } from '../shared/LudoButton'
 import { LudoModal } from '../shared/LudoModal'
 import { LudoTextInput } from '../shared/LudoTextInput'
@@ -21,15 +22,17 @@ export function RenamePlayerModal({
   onClose,
   onConfirmRename,
 }: RenamePlayerModalProps) {
+  const { t } = useTranslation()
+
   return (
     <LudoModal
       open={open}
-      title={`Rename ${playerName ?? ''}`}
+      title={t('home.renameTitle', { name: playerName ?? '' })}
       onClose={onClose}
       footer={
         <>
-          <LudoButton text="Cancel" variant="secondary" onClick={onClose} />
-          <LudoButton text="Confirm" variant="primary" onClick={onConfirmRename} />
+          <LudoButton text={t('common.cancel')} variant="secondary" onClick={onClose} />
+          <LudoButton text={t('common.confirm')} variant="primary" onClick={onConfirmRename} />
         </>
       }
     >

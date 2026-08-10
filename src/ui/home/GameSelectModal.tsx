@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import type { WinCondition } from '../../domain/model/enums'
 import { winConditionLabel } from '../../domain/model/enums'
 import type { GameType } from '../../domain/model/gameType'
@@ -40,20 +41,22 @@ export function GameSelectModal({
   inlineGameError,
   onAddInlineGameType,
 }: GameSelectModalProps) {
+  const { t } = useTranslation()
+
   return (
     <LudoModal
       open={open}
-      title="Select a game"
+      title={t('home.selectGameTitle')}
       onClose={onClose}
       footer={
         <>
-          <LudoButton text="Cancel" variant="secondary" onClick={onClose} />
-          <LudoButton text="Start match" variant="primary" onClick={onStartMatch} />
+          <LudoButton text={t('common.cancel')} variant="secondary" onClick={onClose} />
+          <LudoButton text={t('home.startMatch')} variant="primary" onClick={onStartMatch} />
         </>
       }
     >
       {gameTypes.length === 0 ? (
-        <div className="empty-inline">No game types yet. Add one.</div>
+        <div className="empty-inline">{t('home.noGameTypesYet')}</div>
       ) : (
         <div className="select-chevron">
           <select
@@ -64,7 +67,7 @@ export function GameSelectModal({
               if (gt) onSelectGameType(gt)
             }}
           >
-            <option value="">— Select a game —</option>
+            <option value="">{t('home.selectGamePlaceholder')}</option>
             {gameTypes.map((gt) => (
               <option key={gt.id} value={gt.id}>
                 {gt.name}
@@ -81,7 +84,7 @@ export function GameSelectModal({
           iconOnly
           onClick={onToggleAddGameForm}
         />
-        <span>Add new game</span>
+        <span>{t('home.addNewGame')}</span>
       </div>
 
       {showAddGameForm && (
@@ -89,7 +92,7 @@ export function GameSelectModal({
           <LudoTextInput
             value={inlineGameName}
             onChange={onChangeInlineGameName}
-            placeholder="Game name"
+            placeholder={t('home.gameNamePlaceholder')}
             invalid={inlineGameError !== undefined}
             onEnter={() => {
               if (inlineGameName.trim() !== '') onAddInlineGameType()
@@ -110,7 +113,7 @@ export function GameSelectModal({
           </div>
           {inlineGameError && <div className="error-msg">{inlineGameError}</div>}
           <LudoButton
-            text="Add game"
+            text={t('home.addGame')}
             variant="primary"
             className="ludo-btn--full"
             onClick={() => {

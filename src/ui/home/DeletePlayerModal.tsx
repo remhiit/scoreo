@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { LudoButton } from '../shared/LudoButton'
 import { LudoModal } from '../shared/LudoModal'
 
@@ -18,22 +19,24 @@ export function DeletePlayerModal({
   onClose,
   onConfirmDelete,
 }: DeletePlayerModalProps) {
+  const { t } = useTranslation()
+
   return (
     <LudoModal
       open={open}
-      title={`Delete ${playerName ?? '?'}?`}
+      title={t('home.deleteTitle', { name: playerName ?? '?' })}
       onClose={onClose}
       footer={
         <>
-          <LudoButton text="Cancel" variant="secondary" onClick={onClose} />
-          <LudoButton text="Delete" variant="danger" onClick={onConfirmDelete} />
+          <LudoButton text={t('common.cancel')} variant="secondary" onClick={onClose} />
+          <LudoButton text={t('common.delete')} variant="danger" onClick={onConfirmDelete} />
         </>
       }
     >
-      <div className="modal-body">Matches will be preserved.</div>
+      <div className="modal-body">{t('home.matchesPreserved')}</div>
       <div className="modal-row">
         <input type="checkbox" checked={anonymize} onChange={onToggleAnonymize} />
-        <span>Erase name from history</span>
+        <span>{t('home.eraseNameFromHistory')}</span>
       </div>
     </LudoModal>
   )
