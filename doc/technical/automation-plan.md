@@ -236,6 +236,12 @@ encore épuisé l'événement retombe dans le vide et le prochain passage
 horaire réessaie ; un item qui reste coincé des jours est le signal que R6
 doit remonter une routine cassée, pas un problème de quota.
 
+Le même workflow exécute ensuite `scripts/sweep-merged-prs.mjs` (rattrapage
+des issues laissées ouvertes par une PR auto-mergée dont la boucle
+d'attente de `auto-merge-sync.yml` a expiré — voir Phase 5, incident PR
+#264/#273), puis `scripts/dispatch-ready.mjs`, dans cet ordre précis pour
+que le déblocage d'une issue profite au dispatch du même run.
+
 ---
 
 ## 5. Labels (le bus d'événements)
@@ -696,6 +702,34 @@ la restriction ci-dessus ne s'applique pas. `close-linked-issues.yml`
 reste inchangé, toujours utile pour les merges manuels (non concernés par
 cette limite).
 
+**Incident (PR #264) — la boucle d'attente de `auto-merge-sync.yml` a
+expiré (#273) :** la branche de la PR #264 était en retard sur `main`,
+l'auto-merge natif a dû la mettre à jour, ce qui a relancé la CI et repoussé
+le merge réel 6 min après la fin des ~20 min de boucle. L'issue #252 est
+restée ouverte en `in-progress`, et le dispatcher (`MAX_IN_FLIGHT = 1`) a
+cessé de promouvoir la moindre issue en `ready` pendant ~1 h 30 — la boucle
+d'attente, bien que déjà généreuse, reste par construction une fenêtre
+finie face à un merge asynchrone dont la durée n'est pas bornée côté
+GitHub.
+
+Correctif (#273) : plutôt que de rallonger cette boucle (déplacerait juste
+le point de défaillance plus loin, cf. « Hors scope » de l'issue),
+`scripts/sweep-merged-prs.mjs` rattrape après coup, à chaque passage du
+balayeur horaire (`requeue-lost-events.yml`, **avant**
+`dispatch-ready.mjs` pour que le déblocage profite au dispatch du même
+run) : liste les PR récemment fermées (`GET /pulls?state=closed&sort=
+updated&direction=desc`), retient celles réellement mergées dans une
+fenêtre de rattrapage de `CATCHUP_WINDOW_DAYS` (7 jours), et ferme les
+issues encore ouvertes qu'elles référencent — en réutilisant
+`extractClosedIssueNumbers` et `closeIssue` (désormais exportée) de
+`scripts/close-linked-issues.mjs`, sans dupliquer le parsing des mots-clés
+de fermeture. Idempotent (une issue déjà fermée n'appelle jamais `PATCH`).
+La boucle synchrone de `auto-merge-sync.yml` reste en place pour le cas
+nominal (fermeture immédiate, pas d'attente jusqu'au prochain passage
+horaire) ; ce rattrapage la rend simplement non critique — son expiration
+n'est plus un point de défaillance unique, seulement un délai de rattrapage
+d'au plus une heure.
+
 ### Phase 6 — Observabilité
 
 R6 hebdo. C'est le rapport qui pilote l'élargissement de la liste blanche `auto`.
@@ -726,6 +760,7 @@ R6 hebdo. C'est le rapport qui pilote l'élargissement de la liste blanche `auto
 | Régression de backward-compat sur les schémas zod | Hors liste blanche `auto` : merge manuel obligatoire |
 | `pull_request_target` expose les secrets | Ne jamais y exécuter le code de la PR |
 | Événement de routine perdu par plafond de runs | Balayeur horaire (`requeue-lost-events.yml`) qui rejoue tout label déclencheur orphelin |
+| Boucle d'attente de `auto-merge-sync.yml` expirée avant la fin réelle du merge (#273) | `scripts/sweep-merged-prs.mjs`, exécuté par le même balayeur horaire, rattrape les issues encore ouvertes des PR mergées dans les 7 derniers jours |
 
 ## 9. Décisions ouvertes
 
