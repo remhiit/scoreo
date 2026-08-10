@@ -107,7 +107,7 @@ describe('ImportMatchesUseCase', () => {
 
     it('skips matches with duplicate IDs', () => {
       const matchRepo = new InMemoryMatchRepository()
-      matchRepo.save({ id: 'm1', date: 0, gameTypeId: '', playerScores: [], manualWinners: [], secondaryPlayerScores: [] })
+      matchRepo.save({ id: 'm1', date: 0, gameTypeId: '', playerScores: [], manualWinners: [], secondaryPlayerScores: [], rounds: [] })
       const result = useCase(undefined, undefined, matchRepo).execute(TestImportData.validJson)
       expect(result.ok).toBe(true)
       if (result.ok) {
@@ -149,7 +149,7 @@ describe('ImportMatchesUseCase', () => {
 
     it('with duplicate in first game still imports others', () => {
       const matchRepo = new InMemoryMatchRepository()
-      matchRepo.save({ id: 'm1', date: 0, gameTypeId: '', playerScores: [], manualWinners: [], secondaryPlayerScores: [] })
+      matchRepo.save({ id: 'm1', date: 0, gameTypeId: '', playerScores: [], manualWinners: [], secondaryPlayerScores: [], rounds: [] })
       const result = useCase(undefined, undefined, matchRepo).execute(TestImportData.multiGameJson)
       expect(result.ok).toBe(true)
       if (result.ok) {

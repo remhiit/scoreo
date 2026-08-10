@@ -37,6 +37,19 @@ function playerScoresFromTotals(state: ScoreDetailState): PlayerScore[] {
   return state.players.map((p) => ({ playerId: p.id, score: totals.get(p.id) ?? 0 }))
 }
 
+/** Converts the played rounds (skipping the trailing not-yet-played one) into Match.rounds' PlayerScore[][] shape. */
+function roundsForSave(state: ScoreDetailState): PlayerScore[][] {
+  return state.rounds
+    .filter((round) => Object.values(round).some((v) => v.trim() !== ''))
+    .map((round) =>
+      state.players.map((p) => {
+        const raw = round[p.id]
+        const parsed = raw !== undefined ? toIntOrNull(raw.trim()) : null
+        return { playerId: p.id, score: parsed ?? 0 }
+      }),
+    )
+}
+
 export interface StandingRow {
   playerId: string
   playerName: string
@@ -271,23 +284,25 @@ export function scoreDetailReducer(state: ScoreDetailState, action: ScoreDetailA
 
 function performSave(
   deps: ScoreDetailDeps,
-  gameType: GameType,
+  state: ScoreDetailState,
   playerScores: PlayerScore[],
   manualWinners: string[] = [],
   secondaryPlayerScores: PlayerScore[] = [],
 ): ScoreDetailAction {
+  const rounds = roundsForSave(state)
   try {
     if (deps.mode.type === 'Edit') {
       const original = deps.mode.matchRepository.findById(deps.mode.matchId)
       if (!original) return { type: 'saveFailed', error: 'Could not find original match to update' }
-      const updated: Match = { ...original, playerScores, manualWinners, secondaryPlayerScores }
+      const updated: Match = { ...original, playerScores, manualWinners, secondaryPlayerScores, rounds }
       deps.mode.updateMatchUseCase.invoke(updated)
       deps.matchDraftRepository?.clear()
       return { type: 'saved' }
     }
-    const result = deps.createMatch.invoke(gameType.id, playerScores, deps.currentDate(), {
+    const result = deps.createMatch.invoke(state.gameType.id, playerScores, deps.currentDate(), {
       manualWinners,
       secondaryPlayerScores,
+      rounds,
     })
     if (result.ok) {
       deps.matchDraftRepository?.clear()
@@ -312,10 +327,10 @@ export function submitTerminate(state: ScoreDetailState, deps: ScoreDetailDeps):
   const primaryWinners = computeWinners(state.gameType, playerScores)
 
   if (primaryWinners.length <= 1) {
-    return performSave(deps, state.gameType, playerScores, [])
+    return performSave(deps, state, playerScores, [])
   }
   if (state.gameType.tieBreakRule === 'NONE') {
-    return performSave(deps, state.gameType, playerScores, primaryWinners)
+    return performSave(deps, state, playerScores, primaryWinners)
   }
   if (state.gameType.tieBreakRule === 'MANUAL_SELECTION') {
     return { type: 'openManualSelectionDialog', tiedPlayerIds: primaryWinners }
@@ -325,7 +340,7 @@ export function submitTerminate(state: ScoreDetailState, deps: ScoreDetailDeps):
 
 export function submitConfirmWinners(state: ScoreDetailState, deps: ScoreDetailDeps): ScoreDetailAction {
   if (state.modalWinners.size === 0) return { type: 'confirmWinnersEmptyError' }
-  return performSave(deps, state.gameType, playerScoresFromTotals(state), [...state.modalWinners])
+  return performSave(deps, state, playerScoresFromTotals(state), [...state.modalWinners])
 }
 
 export function submitSecondaryScores(state: ScoreDetailState, deps: ScoreDetailDeps): ScoreDetailAction {
@@ -341,7 +356,7 @@ export function submitSecondaryScores(state: ScoreDetailState, deps: ScoreDetail
   const resolvedWinners = secondaryWinners.filter((id) => state.tiedPlayerIds.includes(id))
 
   if (resolvedWinners.length < state.tiedPlayerIds.length) {
-    return performSave(deps, state.gameType, playerScoresFromTotals(state), resolvedWinners, secondaryScores)
+    return performSave(deps, state, playerScoresFromTotals(state), resolvedWinners, secondaryScores)
   }
   return { type: 'secondaryScoreEscalate', collectedSecondaryScores: secondaryScores }
 }
@@ -350,7 +365,7 @@ export function submitConfirmManualWinners(state: ScoreDetailState, deps: ScoreD
   if (state.manualSelectionWinners.size === 0) return { type: 'manualWinnersEmptyError' }
   return performSave(
     deps,
-    state.gameType,
+    state,
     playerScoresFromTotals(state),
     [...state.manualSelectionWinners],
     state.collectedSecondaryScores,
@@ -360,7 +375,7 @@ export function submitConfirmManualWinners(state: ScoreDetailState, deps: ScoreD
 export function submitKeepTie(state: ScoreDetailState, deps: ScoreDetailDeps): ScoreDetailAction {
   return performSave(
     deps,
-    state.gameType,
+    state,
     playerScoresFromTotals(state),
     state.tiedPlayerIds,
     state.collectedSecondaryScores,

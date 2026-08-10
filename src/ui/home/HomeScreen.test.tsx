@@ -225,6 +225,7 @@ describe('HomeScreen', () => {
       playerScores: [{ playerId: 'p1', score: 10 }],
       manualWinners: [],
       secondaryPlayerScores: [],
+      rounds: [],
     })
     render(<HomeScreen {...props} />)
 
