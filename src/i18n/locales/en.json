@@ -88,6 +88,9 @@
     "headToHead": "Head-to-head",
     "noHeadToHead": "No head-to-head data yet."
   },
+  "hallOfFame": {
+    "noRecordYet": "No record yet."
+  },
   "scoreDetail": {
     "standings": "Standings",
     "history": "History",
