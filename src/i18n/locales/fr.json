@@ -81,5 +81,23 @@
     "cleanupBody": "Ceci supprime définitivement les joueurs sans partie enregistrée. Cette action est irréversible.",
     "unnamedPlayer": "(joueur sans nom)",
     "deletePermanently": "Supprimer définitivement"
+  },
+  "scoreDetail": {
+    "standings": "Classement",
+    "history": "Historique",
+    "enterRound": "Saisir la manche {{number}}",
+    "finishMatch": "Terminer la partie",
+    "selectWinners": "Sélectionner le(s) gagnant(s)",
+    "pointsSuffix": "{{points}} pts",
+    "discardScoresTitle": "Abandonner les scores ?",
+    "discardScoresBody": "Tous les scores saisis seront perdus.",
+    "discard": "Abandonner",
+    "finalDecision": "Décision finale",
+    "keepTie": "Garder l'égalité",
+    "round": "Manche {{number}}",
+    "saveRound": "Enregistrer la manche",
+    "removeRound": "Supprimer la manche",
+    "addRound": "Ajouter une manche",
+    "secondaryScore": "Score secondaire"
   }
 }

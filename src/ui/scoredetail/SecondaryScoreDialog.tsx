@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import type { GameType } from '../../domain/model/gameType'
 import type { Player } from '../../domain/model/player'
 import { LudoButton } from '../shared/LudoButton'
@@ -23,7 +24,8 @@ export function SecondaryScoreDialog({
   onSubmit,
   onDismiss,
 }: SecondaryScoreDialogProps) {
-  const title = gameType.tieBreakLabel ?? 'Secondary score'
+  const { t } = useTranslation()
+  const title = gameType.tieBreakLabel ?? t('scoreDetail.secondaryScore')
   return (
     <LudoModal
       open
@@ -31,8 +33,8 @@ export function SecondaryScoreDialog({
       onClose={onDismiss}
       footer={
         <>
-          <LudoButton text="Cancel" variant="secondary" onClick={onDismiss} />
-          <LudoButton text="Confirm" variant="primary" onClick={onSubmit} />
+          <LudoButton text={t('common.cancel')} variant="secondary" onClick={onDismiss} />
+          <LudoButton text={t('common.confirm')} variant="primary" onClick={onSubmit} />
         </>
       }
     >

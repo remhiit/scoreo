@@ -81,5 +81,23 @@
     "cleanupBody": "This permanently deletes players with no recorded match. This cannot be undone.",
     "unnamedPlayer": "(unnamed player)",
     "deletePermanently": "Delete permanently"
+  },
+  "scoreDetail": {
+    "standings": "Standings",
+    "history": "History",
+    "enterRound": "Enter round {{number}}",
+    "finishMatch": "Finish match",
+    "selectWinners": "Select winner(s)",
+    "pointsSuffix": "{{points}} pts",
+    "discardScoresTitle": "Discard scores?",
+    "discardScoresBody": "All entered scores will be lost.",
+    "discard": "Discard",
+    "finalDecision": "Final decision",
+    "keepTie": "Keep tie",
+    "round": "Round {{number}}",
+    "saveRound": "Save round",
+    "removeRound": "Remove round",
+    "addRound": "Add round",
+    "secondaryScore": "Secondary score"
   }
 }

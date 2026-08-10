@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import type { Player } from '../../domain/model/player'
 import { LudoButton } from '../shared/LudoButton'
 import { LudoNumberInput } from '../shared/LudoNumberInput'
@@ -28,14 +29,20 @@ export function RoundEntrySheet({
   onCancel,
   onSubmit,
 }: RoundEntrySheetProps) {
+  const { t } = useTranslation()
   if (!open) return null
 
   return (
     <>
       <div className="sheet-scrim" onClick={onCancel} />
-      <div className="sheet" role="dialog" aria-modal="true" aria-label={`Round ${roundNumber}`}>
+      <div
+        className="sheet"
+        role="dialog"
+        aria-modal="true"
+        aria-label={t('scoreDetail.round', { number: roundNumber })}
+      >
         <div className="sheet-grip" />
-        <div className="sheet-title">Round {roundNumber}</div>
+        <div className="sheet-title">{t('scoreDetail.round', { number: roundNumber })}</div>
         <div className="sheet-rows">
           {players.map((player) => (
             <div key={player.id} className="sheet-row">
@@ -51,8 +58,8 @@ export function RoundEntrySheet({
           ))}
         </div>
         <div className="sheet-actions">
-          <LudoButton text="Cancel" variant="secondary" onClick={onCancel} />
-          <LudoButton text="Save round" variant="primary" onClick={onSubmit} />
+          <LudoButton text={t('common.cancel')} variant="secondary" onClick={onCancel} />
+          <LudoButton text={t('scoreDetail.saveRound')} variant="primary" onClick={onSubmit} />
         </div>
       </div>
     </>

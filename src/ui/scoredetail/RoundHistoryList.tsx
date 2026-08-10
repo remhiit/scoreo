@@ -1,4 +1,5 @@
 import { X } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import type { Player } from '../../domain/model/player'
 import { LudoButton } from '../shared/LudoButton'
 
@@ -17,6 +18,7 @@ export interface RoundHistoryListProps {
  * the table it replaces.
  */
 export function RoundHistoryList({ rounds, players, onChangeScore, onRemoveRound, onAddRound }: RoundHistoryListProps) {
+  const { t } = useTranslation()
   const canRemove = rounds.length > 1
 
   return (
@@ -24,14 +26,14 @@ export function RoundHistoryList({ rounds, players, onChangeScore, onRemoveRound
       {rounds.map((round, roundIndex) => (
         <div key={roundIndex} className="hist-round">
           <div className="hist-round-head">
-            <span>Round {roundIndex + 1}</span>
+            <span>{t('scoreDetail.round', { number: roundIndex + 1 })}</span>
             {canRemove && (
               <LudoButton
                 text={<X size={16} aria-hidden />}
                 variant="danger"
                 size="sm"
                 iconOnly
-                title="Remove round"
+                title={t('scoreDetail.removeRound')}
                 onClick={() => onRemoveRound(roundIndex)}
               />
             )}
@@ -54,7 +56,7 @@ export function RoundHistoryList({ rounds, players, onChangeScore, onRemoveRound
       ))}
 
       <div className="hist-add">
-        <LudoButton text="Add round" variant="secondary" size="sm" onClick={onAddRound} />
+        <LudoButton text={t('scoreDetail.addRound')} variant="secondary" size="sm" onClick={onAddRound} />
       </div>
     </>
   )
