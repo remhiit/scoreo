@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from 'vitest'
 import type { GameType } from '../../domain/model/gameType'
 import type { Player } from '../../domain/model/player'
 import { CreateMatchUseCase } from '../../application/createMatchUseCase'
+import i18n from '../../i18n/i18n'
 import { InMemoryGameTypeRepository } from '../../infrastructure/testing/inMemoryGameTypeRepository'
 import { InMemoryMatchDraftRepository } from '../../infrastructure/testing/inMemoryMatchDraftRepository'
 import { InMemoryMatchRepository } from '../../infrastructure/testing/inMemoryMatchRepository'
@@ -336,5 +337,19 @@ describe('ScoreDetailScreen', () => {
     renderScreen(gameType(), { matchDraftRepository: draftRepo })
     switchToHistory()
     expect(scoreInputs()[0]).toHaveValue(42)
+  })
+
+  it('updates displayed labels immediately when the language changes', async () => {
+    renderScreen(gameType())
+
+    expect(screen.getByText('Standings')).toBeInTheDocument()
+    expect(screen.getByText('Finish match')).toBeInTheDocument()
+
+    await i18n.changeLanguage('fr')
+
+    expect(screen.getByText('Classement')).toBeInTheDocument()
+    expect(screen.getByText('Terminer la partie')).toBeInTheDocument()
+
+    await i18n.changeLanguage('en')
   })
 })

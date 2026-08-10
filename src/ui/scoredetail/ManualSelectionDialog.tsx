@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import type { Player } from '../../domain/model/player'
 import { ListContainer } from '../shared/ListContainer'
 import { ListItemRow } from '../shared/ListItemRow'
@@ -27,16 +28,17 @@ export function ManualSelectionDialog({
   onKeepTie,
   onDismiss,
 }: ManualSelectionDialogProps) {
+  const { t } = useTranslation()
   return (
     <LudoModal
       open
-      title="Final decision"
+      title={t('scoreDetail.finalDecision')}
       onClose={onDismiss}
       footer={
         <>
-          <LudoButton text="Cancel" variant="secondary" onClick={onDismiss} />
-          <LudoButton text="Keep tie" variant="secondary" onClick={onKeepTie} />
-          <LudoButton text="Confirm" variant="primary" onClick={onConfirm} />
+          <LudoButton text={t('common.cancel')} variant="secondary" onClick={onDismiss} />
+          <LudoButton text={t('scoreDetail.keepTie')} variant="secondary" onClick={onKeepTie} />
+          <LudoButton text={t('common.confirm')} variant="primary" onClick={onConfirm} />
         </>
       }
     >

@@ -1,4 +1,5 @@
 import { useEffect, useReducer, useRef } from 'react'
+import { useTranslation } from 'react-i18next'
 import { ListContainer } from '../shared/ListContainer'
 import { ListItemRow } from '../shared/ListItemRow'
 import { LudoButton } from '../shared/LudoButton'
@@ -37,6 +38,7 @@ export interface ScoreDetailScreenProps extends ScoreDetailDeps {
 }
 
 export function ScoreDetailScreen({ initialState, onSaved, onCancel, ...deps }: ScoreDetailScreenProps) {
+  const { t } = useTranslation()
   const [state, dispatch] = useReducer(scoreDetailReducer, initialState)
   const isFirstRoundsEffect = useRef(true)
 
@@ -72,14 +74,14 @@ export function ScoreDetailScreen({ initialState, onSaved, onCancel, ...deps }: 
           className={state.viewMode === 'standings' ? 'on' : ''}
           onClick={() => dispatch({ type: 'setViewMode', mode: 'standings' })}
         >
-          Standings
+          {t('scoreDetail.standings')}
         </button>
         <button
           type="button"
           className={state.viewMode === 'history' ? 'on' : ''}
           onClick={() => dispatch({ type: 'setViewMode', mode: 'history' })}
         >
-          History
+          {t('scoreDetail.history')}
         </button>
       </div>
 
@@ -115,14 +117,18 @@ export function ScoreDetailScreen({ initialState, onSaved, onCancel, ...deps }: 
 
       <div className="bottom-bar">
         <LudoButton
-          text={`Enter round ${nextRoundNumber(state.rounds)}`}
+          text={t('scoreDetail.enterRound', { number: nextRoundNumber(state.rounds) })}
           variant="primary"
           onClick={() => dispatch({ type: 'openRoundSheet' })}
         />
         <div className="bottom-bar-row">
-          <LudoButton text="Finish match" variant="primary" onClick={() => dispatch(submitTerminate(state, deps))} />
           <LudoButton
-            text="Cancel"
+            text={t('scoreDetail.finishMatch')}
+            variant="primary"
+            onClick={() => dispatch(submitTerminate(state, deps))}
+          />
+          <LudoButton
+            text={t('common.cancel')}
             variant="secondary"
             onClick={() => dispatch(submitCancelMatch(state, deps))}
           />
@@ -142,13 +148,17 @@ export function ScoreDetailScreen({ initialState, onSaved, onCancel, ...deps }: 
 
       <LudoModal
         open={state.showWinnerModal}
-        title="Select winner(s)"
+        title={t('scoreDetail.selectWinners')}
         onClose={() => dispatch({ type: 'dismissModal' })}
         footer={
           <>
-            <LudoButton text="Cancel" variant="secondary" onClick={() => dispatch({ type: 'dismissModal' })} />
             <LudoButton
-              text="Confirm"
+              text={t('common.cancel')}
+              variant="secondary"
+              onClick={() => dispatch({ type: 'dismissModal' })}
+            />
+            <LudoButton
+              text={t('common.confirm')}
               variant="primary"
               onClick={() => dispatch(submitConfirmWinners(state, deps))}
             />
@@ -160,7 +170,7 @@ export function ScoreDetailScreen({ initialState, onSaved, onCancel, ...deps }: 
             <ListItemRow
               key={player.id}
               label={player.name}
-              subtitle={`${totals.get(player.id) ?? 0} pts`}
+              subtitle={t('scoreDetail.pointsSuffix', { points: totals.get(player.id) ?? 0 })}
               isSelectable
               isSelected={state.modalWinners.has(player.id)}
               onSelect={() => dispatch({ type: 'toggleModalWinner', playerId: player.id })}
@@ -196,24 +206,20 @@ export function ScoreDetailScreen({ initialState, onSaved, onCancel, ...deps }: 
 
       <LudoModal
         open={state.showCancelConfirm}
-        title="Discard scores?"
+        title={t('scoreDetail.discardScoresTitle')}
         onClose={() => dispatch({ type: 'dismissCancelConfirm' })}
         footer={
           <>
             <LudoButton
-              text="Cancel"
+              text={t('common.cancel')}
               variant="secondary"
               onClick={() => dispatch({ type: 'dismissCancelConfirm' })}
             />
-            <LudoButton
-              text="Discard"
-              variant="danger"
-              onClick={() => dispatch(submitConfirmCancel(deps))}
-            />
+            <LudoButton text={t('scoreDetail.discard')} variant="danger" onClick={() => dispatch(submitConfirmCancel(deps))} />
           </>
         }
       >
-        <p>All entered scores will be lost.</p>
+        <p>{t('scoreDetail.discardScoresBody')}</p>
       </LudoModal>
     </>
   )
