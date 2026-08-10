@@ -1,4 +1,5 @@
 import type { SyncConflict, SyncResult, SyncUseCase } from '../../application/syncUseCase'
+import i18n from '../../i18n/i18n'
 import { initialSyncState, type SyncState } from './syncTypes'
 
 export type SyncAction =
@@ -70,7 +71,7 @@ async function runAutoSync(syncUseCase: SyncUseCase, dispatch: (action: SyncActi
       dispatch({ type: 'conflictDetected', conflict: outcome.conflict })
     }
   } catch (e) {
-    dispatch({ type: 'syncFailed', error: errorMessage(e) ?? 'Sync failed' })
+    dispatch({ type: 'syncFailed', error: errorMessage(e) ?? i18n.t('sync.syncFailed') })
   }
 }
 
@@ -101,7 +102,7 @@ export async function submitLogin(syncUseCase: SyncUseCase, dispatch: (action: S
     dispatch({ type: 'connected' })
     await runAutoSync(syncUseCase, dispatch)
   } catch (e) {
-    dispatch({ type: 'loginFailed', error: errorMessage(e) ?? 'Login failed' })
+    dispatch({ type: 'loginFailed', error: errorMessage(e) ?? i18n.t('sync.loginFailed') })
   }
 }
 
@@ -120,6 +121,6 @@ export async function submitResolveConflict(
     const result = await syncUseCase.resolveConflict(keepLocal)
     dispatch({ type: 'conflictResolved', result })
   } catch (e) {
-    dispatch({ type: 'conflictResolveFailed', error: errorMessage(e) ?? 'Sync failed' })
+    dispatch({ type: 'conflictResolveFailed', error: errorMessage(e) ?? i18n.t('sync.syncFailed') })
   }
 }

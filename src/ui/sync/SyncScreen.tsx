@@ -1,5 +1,6 @@
 import { CheckCircle2, Cloud, Loader2, WifiOff } from 'lucide-react'
 import { useEffect, useReducer, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import type { SyncUseCase } from '../../application/syncUseCase'
 import { LudoButton } from '../shared/LudoButton'
 import { submitLogin, submitLogout, submitResolveConflict, submitRestoreSession, syncReducer } from './syncReducer'
@@ -10,6 +11,7 @@ export interface SyncScreenProps {
 }
 
 export function SyncScreen({ syncUseCase }: SyncScreenProps) {
+  const { t } = useTranslation()
   const [state, dispatch] = useReducer(syncReducer, initialSyncState, (s) => ({ ...s, phase: 'Restoring' as const }))
   const [isOnline, setIsOnline] = useState(() => navigator.onLine)
 
@@ -34,7 +36,7 @@ export function SyncScreen({ syncUseCase }: SyncScreenProps) {
       {!isOnline && (
         <div className="error-msg">
           <span>
-            <WifiOff size={16} aria-hidden /> Offline — changes will sync when reconnected
+            <WifiOff size={16} aria-hidden /> {t('sync.offline')}
           </span>
         </div>
       )}
@@ -44,17 +46,17 @@ export function SyncScreen({ syncUseCase }: SyncScreenProps) {
           <span className="sync-icon">
             <Cloud size={32} aria-hidden />
           </span>
-          <div className="section-label">Cloud Sync</div>
-          <div>Sync your data with Google Drive</div>
+          <div className="section-label">{t('sync.cloudSync')}</div>
+          <div>{t('sync.syncYourData')}</div>
           {state.connected ? (
             <LudoButton
-              text="Disconnect"
+              text={t('sync.disconnect')}
               variant="secondary"
               onClick={() => void submitLogout(syncUseCase, dispatch)}
             />
           ) : (
             <LudoButton
-              text="Connect with Google"
+              text={t('sync.connectWithGoogle')}
               variant="primary"
               onClick={() => void submitLogin(syncUseCase, dispatch)}
             />
@@ -62,24 +64,22 @@ export function SyncScreen({ syncUseCase }: SyncScreenProps) {
         </div>
       )}
 
-      {state.phase === 'Restoring' && <LoadingView message="Restoring session..." />}
-      {state.phase === 'Connecting' && <LoadingView message="Connecting to Google..." />}
-      {state.phase === 'Detecting' && <LoadingView message="Checking sync status..." />}
-      {state.phase === 'Syncing' && <LoadingView message="Synchronising data..." />}
+      {state.phase === 'Restoring' && <LoadingView message={t('sync.restoringSession')} />}
+      {state.phase === 'Connecting' && <LoadingView message={t('sync.connectingToGoogle')} />}
+      {state.phase === 'Detecting' && <LoadingView message={t('sync.checkingSyncStatus')} />}
+      {state.phase === 'Syncing' && <LoadingView message={t('sync.synchronisingData')} />}
 
       {state.phase === 'Resolved' && (
         <div className="empty">
           <span className="sync-icon">
             <CheckCircle2 size={32} aria-hidden />
           </span>
-          <div className="section-label">Sync complete</div>
+          <div className="section-label">{t('sync.syncComplete')}</div>
           {state.result && (
-            <div>
-              {state.result.pushed} pushed, {state.result.pulled} pulled
-            </div>
+            <div>{t('sync.syncSummary', { pushed: state.result.pushed, pulled: state.result.pulled })}</div>
           )}
           <LudoButton
-            text="Disconnect"
+            text={t('sync.disconnect')}
             variant="secondary"
             onClick={() => void submitLogout(syncUseCase, dispatch)}
           />
@@ -89,50 +89,55 @@ export function SyncScreen({ syncUseCase }: SyncScreenProps) {
       {state.phase === 'Conflict' &&
         (state.conflict ? (
           <div style={{ padding: '16px 0' }}>
-            <div className="modal-title">Sync conflict</div>
-            <div className="modal-body">Two versions of your data differ. Choose which one to keep.</div>
+            <div className="modal-title">{t('sync.syncConflict')}</div>
+            <div className="modal-body">{t('sync.conflictBody')}</div>
 
             <div className="sync-conflict-container">
               <div className="sync-card">
                 <div className="sync-card-title">
-                  Local version{state.conflict.localSnapshot.dateLabel ? ` (${state.conflict.localSnapshot.dateLabel})` : ''}
+                  {t('sync.localVersion')}
+                  {state.conflict.localSnapshot.dateLabel ? ` (${state.conflict.localSnapshot.dateLabel})` : ''}
                 </div>
-                <div className="sync-card-stat">{state.conflict.localSnapshot.playerCount} players</div>
-                <div className="sync-card-stat">{state.conflict.localSnapshot.gameTypeCount} game types</div>
-                <div className="sync-card-stat">{state.conflict.localSnapshot.matchCount} matches</div>
+                <div className="sync-card-stat">{t('sync.players', { count: state.conflict.localSnapshot.playerCount })}</div>
+                <div className="sync-card-stat">
+                  {t('sync.gameTypes', { count: state.conflict.localSnapshot.gameTypeCount })}
+                </div>
+                <div className="sync-card-stat">{t('sync.matches', { count: state.conflict.localSnapshot.matchCount })}</div>
               </div>
               <div className="sync-card">
                 <div className="sync-card-title">
-                  Remote version
+                  {t('sync.remoteVersion')}
                   {state.conflict.remoteSnapshot.dateLabel ? ` (${state.conflict.remoteSnapshot.dateLabel})` : ''}
                 </div>
-                <div className="sync-card-stat">{state.conflict.remoteSnapshot.playerCount} players</div>
-                <div className="sync-card-stat">{state.conflict.remoteSnapshot.gameTypeCount} game types</div>
-                <div className="sync-card-stat">{state.conflict.remoteSnapshot.matchCount} matches</div>
+                <div className="sync-card-stat">{t('sync.players', { count: state.conflict.remoteSnapshot.playerCount })}</div>
+                <div className="sync-card-stat">
+                  {t('sync.gameTypes', { count: state.conflict.remoteSnapshot.gameTypeCount })}
+                </div>
+                <div className="sync-card-stat">{t('sync.matches', { count: state.conflict.remoteSnapshot.matchCount })}</div>
               </div>
             </div>
 
             <div className="sync-actions">
               <LudoButton
-                text="Keep local"
+                text={t('sync.keepLocal')}
                 variant="primary"
                 onClick={() => void submitResolveConflict(syncUseCase, dispatch, true)}
               />
               <LudoButton
-                text="Keep remote"
+                text={t('sync.keepRemote')}
                 variant="secondary"
                 onClick={() => void submitResolveConflict(syncUseCase, dispatch, false)}
               />
             </div>
           </div>
         ) : (
-          <div className="empty">No conflict data available</div>
+          <div className="empty">{t('sync.noConflictData')}</div>
         ))}
 
       {state.error && (
         <>
           <div className="error-msg">{state.error}</div>
-          <LudoButton text="Dismiss" variant="secondary" onClick={() => dispatch({ type: 'dismissError' })} />
+          <LudoButton text={t('sync.dismiss')} variant="secondary" onClick={() => dispatch({ type: 'dismissError' })} />
         </>
       )}
     </>
