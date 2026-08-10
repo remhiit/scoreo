@@ -1,4 +1,5 @@
 import { Fragment, useCallback, useEffect, useReducer } from 'react'
+import { useTranslation } from 'react-i18next'
 import type { DeleteMatchUseCase } from '../../application/deleteMatchUseCase'
 import type { GetGameTypesUseCase } from '../../application/getGameTypesUseCase'
 import type { GetMatchesUseCase } from '../../application/getMatchesUseCase'
@@ -39,6 +40,7 @@ export function HistoryScreen({
   deleteMatchUseCase,
   onEditMatch,
 }: HistoryScreenProps) {
+  const { t } = useTranslation()
   const [state, dispatch] = useReducer(historyReducer, initialHistoryState)
 
   const refresh = useCallback(() => {
@@ -64,9 +66,9 @@ export function HistoryScreen({
       : state.displays
 
   const emptyText = (() => {
-    if (state.selectedGameTypeFilter === undefined) return 'No matches yet.'
+    if (state.selectedGameTypeFilter === undefined) return t('history.noMatchesYet')
     const gameName = state.displays.find((d) => d.match.gameTypeId === state.selectedGameTypeFilter)?.gameType?.name
-    return gameName ? `No matches for ${gameName}` : 'No matches yet.'
+    return gameName ? t('history.noMatchesForGame', { gameName }) : t('history.noMatchesYet')
   })()
 
   const matchToDelete = state.displays.find((d) => d.match.id === state.deleteConfirmMatchId)
@@ -76,14 +78,14 @@ export function HistoryScreen({
       {state.error && <div className="error-msg">{state.error}</div>}
 
       <div className="history-filter">
-        <label>Filter by game:</label>
+        <label>{t('history.filterByGame')}</label>
         <div className="select-chevron select-chevron--compact">
           <select
             className="filter-select"
             value={state.selectedGameTypeFilter ?? ''}
             onChange={(e) => dispatch({ type: 'selectGameTypeFilter', gameTypeId: e.target.value || undefined })}
           >
-            <option value="">All games</option>
+            <option value="">{t('history.allGames')}</option>
             {uniqueGameTypes(state.displays).map((gt) => (
               <option key={gt.id} value={gt.id}>
                 {gt.name}
@@ -98,7 +100,7 @@ export function HistoryScreen({
       ) : (
         <ListContainer>
           {filteredDisplays.map((display) => {
-            const gameLabel = display.gameType?.name ?? 'Unknown game'
+            const gameLabel = display.gameType?.name ?? t('history.unknownGame')
             const gameType = display.gameType
             return (
               <ListItemRow
@@ -134,17 +136,17 @@ export function HistoryScreen({
 
       <LudoModal
         open={state.deleteConfirmMatchId !== undefined && matchToDelete !== undefined}
-        title="Delete match?"
+        title={t('history.deleteTitle')}
         onClose={() => dispatch({ type: 'dismissDeleteConfirm' })}
         footer={
           <>
             <LudoButton
-              text="Cancel"
+              text={t('common.cancel')}
               variant="secondary"
               onClick={() => dispatch({ type: 'dismissDeleteConfirm' })}
             />
             <LudoButton
-              text="Delete"
+              text={t('common.delete')}
               variant="danger"
               onClick={() => {
                 if (state.deleteConfirmMatchId !== undefined) handleDelete(state.deleteConfirmMatchId)
@@ -156,7 +158,7 @@ export function HistoryScreen({
         {matchToDelete && (
           <>
             <p>
-              {matchToDelete.gameType?.name ?? 'Unknown'} · {matchToDelete.dateFormatted}
+              {matchToDelete.gameType?.name ?? t('history.unknown')} · {matchToDelete.dateFormatted}
             </p>
             <ul>
               {matchToDelete.match.playerScores.map((ps) => (
@@ -165,7 +167,7 @@ export function HistoryScreen({
                 </li>
               ))}
             </ul>
-            <p>Match data will be lost.</p>
+            <p>{t('history.matchDataWillBeLost')}</p>
           </>
         )}
       </LudoModal>
