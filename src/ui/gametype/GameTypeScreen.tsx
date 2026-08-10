@@ -1,4 +1,5 @@
 import { useEffect, useReducer } from 'react'
+import { useTranslation } from 'react-i18next'
 import type { AddGameTypeUseCase } from '../../application/addGameTypeUseCase'
 import type { ArchiveGameTypeUseCase } from '../../application/archiveGameTypeUseCase'
 import type { FindGameTypeByIdUseCase } from '../../application/findGameTypeByIdUseCase'
@@ -37,6 +38,7 @@ export function GameTypeScreen({
   archiveGameType,
   showTitle = true,
 }: GameTypeScreenProps) {
+  const { t } = useTranslation()
   const [state, dispatch] = useReducer(gameTypeReducer, initialGameTypeState)
 
   useEffect(() => {
@@ -92,14 +94,14 @@ export function GameTypeScreen({
 
   return (
     <>
-      {showTitle && <h1>Game Types</h1>}
+      {showTitle && <h1>{t('gametype.title')}</h1>}
 
       <GameTypeForm state={state} dispatch={dispatch} onSubmit={handleAdd} />
 
       {state.error && <div className="error-msg">{state.error}</div>}
 
       {state.gameTypes.length === 0 ? (
-        <div className="empty">No game types yet. Add one.</div>
+        <div className="empty">{t('gametype.noGameTypesYet')}</div>
       ) : (
         <ListContainer className="list-container--spaced">
           {state.gameTypes.map((gameType) => (
@@ -121,14 +123,14 @@ export function GameTypeScreen({
         onClose={() => dispatch({ type: 'deselectGame' })}
         footer={
           <>
-            <LudoButton text="Back" variant="secondary" onClick={() => dispatch({ type: 'deselectGame' })} />
+            <LudoButton text={t('gametype.back')} variant="secondary" onClick={() => dispatch({ type: 'deselectGame' })} />
             <LudoButton
-              text="Edit"
+              text={t('gametype.edit')}
               variant="primary"
               onClick={() => selectedGameType && handleEdit(selectedGameType.id)}
             />
             <LudoButton
-              text="Archive"
+              text={t('gametype.archive')}
               variant="danger"
               onClick={() =>
                 selectedGameType && dispatch({ type: 'showArchiveConfirm', gameTypeId: selectedGameType.id })
@@ -140,22 +142,22 @@ export function GameTypeScreen({
         {selectedGameType && (
           <>
             <div className="detail-row">
-              <span className="detail-label">Win condition</span>
+              <span className="detail-label">{t('gametype.winCondition')}</span>
               <span className="detail-value">{winConditionLabel(selectedGameType.winCondition)}</span>
             </div>
             <div className="detail-row">
-              <span className="detail-label">Tie break</span>
+              <span className="detail-label">{t('gametype.tieBreak')}</span>
               <span className="detail-value">{tieBreakRuleLabel(selectedGameType.tieBreakRule)}</span>
             </div>
             {selectedGameType.tieBreakRule === 'SECONDARY_SCORE' && (
               <>
                 <div className="detail-row">
-                  <span className="detail-label">Tie break condition</span>
+                  <span className="detail-label">{t('gametype.tieBreakCondition')}</span>
                   <span className="detail-value">{winConditionLabel(selectedGameType.tieBreakCondition)}</span>
                 </div>
                 {selectedGameType.tieBreakLabel && (
                   <div className="detail-row">
-                    <span className="detail-label">Tie break question</span>
+                    <span className="detail-label">{t('gametype.tieBreakQuestion')}</span>
                     <span className="detail-value">{selectedGameType.tieBreakLabel}</span>
                   </div>
                 )}
@@ -167,12 +169,12 @@ export function GameTypeScreen({
 
       <LudoModal
         open={state.editingGameId !== undefined && editingGameType !== undefined}
-        title={editingGameType ? `Edit ${editingGameType.name}` : ''}
+        title={editingGameType ? t('gametype.editTitle', { name: editingGameType.name }) : ''}
         onClose={() => dispatch({ type: 'cancelEdit' })}
         footer={
           <>
-            <LudoButton text="Cancel" variant="secondary" onClick={() => dispatch({ type: 'cancelEdit' })} />
-            <LudoButton text="Save changes" variant="primary" onClick={handleUpdate} />
+            <LudoButton text={t('common.cancel')} variant="secondary" onClick={() => dispatch({ type: 'cancelEdit' })} />
+            <LudoButton text={t('gametype.saveChanges')} variant="primary" onClick={handleUpdate} />
           </>
         }
       >
@@ -181,20 +183,24 @@ export function GameTypeScreen({
 
       <LudoModal
         open={state.archiveConfirmGameTypeId !== undefined && archiveConfirmGameType !== undefined}
-        title={archiveConfirmGameType ? `Archive ${archiveConfirmGameType.name}?` : ''}
+        title={archiveConfirmGameType ? t('gametype.archiveTitle', { name: archiveConfirmGameType.name }) : ''}
         onClose={() => dispatch({ type: 'dismissArchiveConfirm' })}
         footer={
           <>
-            <LudoButton text="Cancel" variant="secondary" onClick={() => dispatch({ type: 'dismissArchiveConfirm' })} />
             <LudoButton
-              text="Archive"
+              text={t('common.cancel')}
+              variant="secondary"
+              onClick={() => dispatch({ type: 'dismissArchiveConfirm' })}
+            />
+            <LudoButton
+              text={t('gametype.archive')}
               variant="danger"
               onClick={() => state.archiveConfirmGameTypeId !== undefined && handleArchive(state.archiveConfirmGameTypeId)}
             />
           </>
         }
       >
-        It will no longer appear in game selection.
+        {t('gametype.archiveBody')}
       </LudoModal>
     </>
   )

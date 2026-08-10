@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import type { GameTypeAction } from './gameTypeReducer'
 import type { GameTypeState } from './gameTypeTypes'
 import { TieBreakRuleSchema, WinConditionSchema, tieBreakRuleLabel, winConditionLabel } from '../../domain/model/enums'
@@ -11,9 +12,11 @@ export interface GameTypeFieldsProps {
 
 /** Win condition / tie-break fields, shared by the add form and the edit modal. */
 export function GameTypeFields({ state, dispatch }: GameTypeFieldsProps) {
+  const { t } = useTranslation()
+
   return (
     <>
-      <div className="section-label">Win condition</div>
+      <div className="section-label">{t('gametype.winCondition')}</div>
       <div className="select-chevron">
         <select
           className="select"
@@ -30,7 +33,7 @@ export function GameTypeFields({ state, dispatch }: GameTypeFieldsProps) {
         </select>
       </div>
 
-      <div className="section-label">Tie-break rule</div>
+      <div className="section-label">{t('gametype.tieBreakRule')}</div>
       <div className="select-chevron">
         <select
           className="select"
@@ -47,7 +50,7 @@ export function GameTypeFields({ state, dispatch }: GameTypeFieldsProps) {
 
       {state.selectedTieBreakRule === 'SECONDARY_SCORE' && (
         <>
-          <div className="section-label">Tie break condition:</div>
+          <div className="section-label">{t('gametype.tieBreakConditionLabel')}</div>
           <div className="select-chevron">
             <select
               className="select"
@@ -67,12 +70,12 @@ export function GameTypeFields({ state, dispatch }: GameTypeFieldsProps) {
             </select>
           </div>
 
-          <div className="section-label">Tie break question:</div>
+          <div className="section-label">{t('gametype.tieBreakQuestionLabel')}</div>
           <div className="form-row">
             <LudoTextInput
               value={state.selectedTieBreakLabel ?? ''}
               onChange={(label) => dispatch({ type: 'updateTieBreakLabel', label })}
-              placeholder="e.g. Number of cards"
+              placeholder={t('gametype.tieBreakLabelPlaceholder')}
             />
           </div>
         </>
@@ -87,6 +90,8 @@ export interface GameTypeFormProps extends GameTypeFieldsProps {
 
 /** Add-game-type form. Hidden while editing (the edit modal reuses GameTypeFields instead). */
 export function GameTypeForm({ state, dispatch, onSubmit }: GameTypeFormProps) {
+  const { t } = useTranslation()
+
   if (state.editingGameId !== undefined) return null
 
   return (
@@ -95,7 +100,7 @@ export function GameTypeForm({ state, dispatch, onSubmit }: GameTypeFormProps) {
         <LudoTextInput
           value={state.inputName}
           onChange={(name) => dispatch({ type: 'updateName', name })}
-          placeholder="Game name"
+          placeholder={t('gametype.gameNamePlaceholder')}
           onEnter={onSubmit}
         />
       </div>
@@ -103,7 +108,7 @@ export function GameTypeForm({ state, dispatch, onSubmit }: GameTypeFormProps) {
       <GameTypeFields state={state} dispatch={dispatch} />
 
       <div style={{ display: 'flex', gap: '8px' }}>
-        <LudoButton text="Add game type" variant="primary" className="ludo-btn--full" onClick={onSubmit} />
+        <LudoButton text={t('gametype.addGameType')} variant="primary" className="ludo-btn--full" onClick={onSubmit} />
       </div>
     </>
   )

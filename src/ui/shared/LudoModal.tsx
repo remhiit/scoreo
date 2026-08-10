@@ -1,4 +1,5 @@
 import { useEffect, type ReactNode } from 'react'
+import { useTranslation } from 'react-i18next'
 
 export interface LudoModalProps {
   open: boolean
@@ -13,6 +14,8 @@ export interface LudoModalProps {
  * Closes on scrim click or Escape.
  */
 export function LudoModal({ open, title, onClose, footer, children }: LudoModalProps) {
+  const { t } = useTranslation()
+
   useEffect(() => {
     if (!open) return
     const listener = (e: KeyboardEvent) => {
@@ -37,7 +40,7 @@ export function LudoModal({ open, title, onClose, footer, children }: LudoModalP
           <div className="ludo-modal__header">
             <h2 className="ludo-modal__title">{title}</h2>
             {onClose && (
-              <button type="button" className="ludo-modal__close" aria-label="Close" onClick={onClose}>
+              <button type="button" className="ludo-modal__close" aria-label={t('common.close')} onClick={onClose}>
                 ×
               </button>
             )}
