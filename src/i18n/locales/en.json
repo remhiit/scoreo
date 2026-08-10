@@ -91,6 +91,21 @@
   "hallOfFame": {
     "noRecordYet": "No record yet."
   },
+  "import": {
+    "selectFile": "Select a JSON file to import",
+    "failedToReadFile": "Failed to read file",
+    "fileReadAborted": "File read was aborted",
+    "game": "Game:",
+    "matchesToImport": "Matches to import:",
+    "importButton": "Import",
+    "imported_one": "{{count}} imported",
+    "imported_other": "{{count}} imported",
+    "skipped_one": "{{count}} skipped (duplicate IDs)",
+    "skipped_other": "{{count}} skipped (duplicate IDs)",
+    "failed_one": "{{count}} failed",
+    "failed_other": "{{count}} failed",
+    "done": "Done"
+  },
   "scoreDetail": {
     "standings": "Standings",
     "history": "History",

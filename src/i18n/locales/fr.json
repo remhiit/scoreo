@@ -91,6 +91,21 @@
   "hallOfFame": {
     "noRecordYet": "Aucun record pour l'instant."
   },
+  "import": {
+    "selectFile": "Sélectionnez un fichier JSON à importer",
+    "failedToReadFile": "Échec de la lecture du fichier",
+    "fileReadAborted": "Lecture du fichier annulée",
+    "game": "Jeu :",
+    "matchesToImport": "Parties à importer :",
+    "importButton": "Importer",
+    "imported_one": "{{count}} partie importée",
+    "imported_other": "{{count}} parties importées",
+    "skipped_one": "{{count}} ignorée (ID en double)",
+    "skipped_other": "{{count}} ignorées (ID en double)",
+    "failed_one": "{{count}} échouée",
+    "failed_other": "{{count}} échouées",
+    "done": "Terminé"
+  },
   "scoreDetail": {
     "standings": "Classement",
     "history": "Historique",
