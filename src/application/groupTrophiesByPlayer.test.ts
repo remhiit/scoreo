@@ -1,12 +1,29 @@
 import { describe, expect, it } from 'vitest'
 import type { Trophy } from '../domain/model/trophy'
-import { groupTrophiesByPlayer } from './groupTrophiesByPlayer'
+import { groupTrophiesByPlayer, TROPHY_BADGE_ORDER } from './groupTrophiesByPlayer'
 
 function trophy(id: string, holderIds: string[], value = 1): Trophy {
   return { id, holders: holderIds.map((playerId) => ({ playerId, name: playerId, value })) }
 }
 
 describe('groupTrophiesByPlayer', () => {
+  it('places f3 (the acquired monthly record) right after the permanent records, before the rotating a2/f2', () => {
+    expect(TROPHY_BADGE_ORDER).toEqual(['a1', 'a4', 'b2', 'b3', 'c1', 'c3', 'd1', 'e1', 'f3', 'a2', 'f2'])
+  })
+
+  it('gives a player one badge per f3 holder entry, one per month won', () => {
+    const holders = [
+      { playerId: 'p1', name: 'p1', value: 2, period: { kind: 'month' as const, year: 2026, month: 6 } },
+      { playerId: 'p1', name: 'p1', value: 1, period: { kind: 'month' as const, year: 2026, month: 4 } },
+    ]
+    const trophies: Trophy[] = [{ id: 'f3', holders }]
+
+    const result = groupTrophiesByPlayer(trophies)
+
+    expect(result.get('p1')).toHaveLength(2)
+    expect(result.get('p1')?.map((b) => b.holder.period?.month)).toEqual([6, 4])
+  })
+
   it('groups a player holding several trophies, in badge display order', () => {
     const trophies = [trophy('f2', ['p1']), trophy('b2', ['p1']), trophy('a1', ['p1'])]
 

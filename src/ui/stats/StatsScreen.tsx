@@ -135,7 +135,7 @@ function LeaderboardView({ leaderboard, onSelectPlayer }: LeaderboardViewProps) 
 }
 
 function PlayerDetailView({ detail, badges }: { detail: PlayerDetail; badges: PlayerTrophyBadge[] }) {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const overallPct = pct(detail.wins, detail.losses)
 
   return (
@@ -183,10 +183,20 @@ function PlayerDetailView({ detail, badges }: { detail: PlayerDetail; badges: Pl
         <div className="stats-trophy-badges">
           {badges.map(({ trophy, holder }, index) => {
             const Icon = TROPHY_ICONS[trophy.id]
+            const title = t(`hallOfFame.trophies.${trophy.id}.title`)
+            const badgeTitle = holder.period
+              ? t('hallOfFame.badgePeriod', {
+                  title,
+                  period: new Date(holder.period.year, holder.period.month, 1).toLocaleDateString(i18n.language, {
+                    month: 'short',
+                    year: 'numeric',
+                  }),
+                })
+              : title
             return (
               <div key={`${trophy.id}-${index}`} className="stats-trophy-badge">
                 <Icon size={16} />
-                <span className="stats-trophy-badge-title">{t(`hallOfFame.trophies.${trophy.id}.title`)}</span>
+                <span className="stats-trophy-badge-title">{badgeTitle}</span>
                 <span className="stats-trophy-badge-value">
                   {holder.value}
                   {trophy.unit ? ` ${t(`hallOfFame.units.${trophy.unit}`)}` : ''}

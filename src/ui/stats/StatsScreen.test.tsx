@@ -231,6 +231,34 @@ describe('StatsScreen', () => {
     expect(screen.getByText('No trophies yet.')).toBeInTheDocument()
   })
 
+  it('shows one dated badge per month won, most recent first', () => {
+    const playerRepo = new InMemoryPlayerRepository()
+    playerRepo.save(player('p1', 'Alice'))
+    playerRepo.save(player('p2', 'Bob'))
+    const gameTypeRepo = new InMemoryGameTypeRepository()
+    gameTypeRepo.save(gameType('gt1', 'Type A'))
+    const matchRepo = new InMemoryMatchRepository()
+    matchRepo.save(match('m1', new Date(2020, 0, 15).getTime(), 'gt1', [
+      { playerId: 'p1', score: 10 },
+      { playerId: 'p2', score: 5 },
+    ]))
+    matchRepo.save(match('m2', new Date(2020, 2, 15).getTime(), 'gt1', [
+      { playerId: 'p1', score: 10 },
+      { playerId: 'p2', score: 5 },
+    ]))
+    const getHeadToHead = new GetHeadToHeadUseCase(matchRepo, gameTypeRepo, playerRepo)
+    const getGameTypes = new GetGameTypesUseCase(gameTypeRepo)
+    const getTrophies = new GetTrophiesUseCase(matchRepo, gameTypeRepo, playerRepo)
+    render(<StatsScreen getHeadToHead={getHeadToHead} getGameTypes={getGameTypes} getTrophies={getTrophies} />)
+
+    fireEvent.click(screen.getByText('Alice'))
+
+    const marchLabel = new Date(2020, 2, 1).toLocaleDateString('en', { month: 'short', year: 'numeric' })
+    const januaryLabel = new Date(2020, 0, 1).toLocaleDateString('en', { month: 'short', year: 'numeric' })
+    const titles = screen.getAllByText(/Monthly Champions —/).map((el) => el.textContent)
+    expect(titles).toEqual([`Monthly Champions — ${marchLabel}`, `Monthly Champions — ${januaryLabel}`])
+  })
+
   it('changing the game type tab changes which badges are shown', () => {
     const overrides: (() => void | null)[] = []
     renderStatsWithTrophies((override) => overrides.push(override as () => void))

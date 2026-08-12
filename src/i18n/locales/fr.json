@@ -94,6 +94,7 @@
   },
   "hallOfFame": {
     "noRecordYet": "Aucun record pour l'instant.",
+    "badgePeriod": "{{title}} — {{period}}",
     "trophies": {
       "a1": {
         "title": "L'Invincible",

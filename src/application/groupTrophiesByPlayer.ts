@@ -2,10 +2,11 @@ import type { Trophy, TrophyHolder } from '../domain/model/trophy'
 
 /**
  * Trophy ids in badge display order: permanent records first (A1, A4, B2,
- * B3, C1, C3, D1, E1), then rotating trophies (A2's current streak, F2's
- * player of the month).
+ * B3, C1, C3, D1, E1), then the monthly hall of fame (F3, an acquired
+ * record), then rotating trophies (A2's current streak, F2's player of the
+ * month).
  */
-export const TROPHY_BADGE_ORDER = ['a1', 'a4', 'b2', 'b3', 'c1', 'c3', 'd1', 'e1', 'a2', 'f2']
+export const TROPHY_BADGE_ORDER = ['a1', 'a4', 'b2', 'b3', 'c1', 'c3', 'd1', 'e1', 'f3', 'a2', 'f2']
 
 export interface PlayerTrophyBadge {
   trophy: Trophy
