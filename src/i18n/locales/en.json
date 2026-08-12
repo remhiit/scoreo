@@ -136,6 +136,10 @@
       "f2": {
         "title": "Player of the Month",
         "description": "Most wins this calendar month"
+      },
+      "f3": {
+        "title": "Monthly Champions",
+        "description": "Winner of each completed month"
       }
     },
     "units": {

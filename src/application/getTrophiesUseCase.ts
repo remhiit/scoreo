@@ -4,7 +4,7 @@ import type { GameType } from '../domain/model/gameType'
 import type { GameTypeRepository } from '../domain/port/gameTypeRepository'
 import type { MatchRepository } from '../domain/port/matchRepository'
 import type { PlayerRepository } from '../domain/port/playerRepository'
-import type { Trophy, TrophyHolder } from '../domain/model/trophy'
+import type { Trophy, TrophyHolder, TrophyPeriod } from '../domain/model/trophy'
 import { EloCalculator, type EloSnapshot } from './eloCalculator'
 
 /** B3 — The Regular is only awarded among players with at least this many matches played. */
@@ -249,6 +249,50 @@ function isSameLocalMonth(epochMs: number, reference: Date): boolean {
   return d.getFullYear() === reference.getFullYear() && d.getMonth() === reference.getMonth()
 }
 
+/** F3 — one holder per completed calendar month with at least one win; the current month is excluded (that's F2's job). */
+function monthlyChampionHolders(matches: Match[], gameTypes: Map<string, GameType>, names: Map<string, string>, now: Date): TrophyHolder[] {
+  const winsByMonth = new Map<string, Map<string, number>>()
+
+  for (const match of matches) {
+    const d = new Date(match.date)
+    if (isSameLocalMonth(match.date, now)) continue
+    const gameType = gameTypes.get(match.gameTypeId)
+    if (!gameType) continue
+
+    const key = `${d.getFullYear()}-${d.getMonth()}`
+    let wins = winsByMonth.get(key)
+    if (!wins) {
+      wins = new Map()
+      winsByMonth.set(key, wins)
+    }
+    for (const winnerId of getWinners(match, gameType)) {
+      wins.set(winnerId, (wins.get(winnerId) ?? 0) + 1)
+    }
+  }
+
+  const holders: TrophyHolder[] = []
+  for (const [key, wins] of winsByMonth) {
+    const [year, month] = key.split('-').map(Number)
+    let max = 0
+    for (const value of wins.values()) {
+      if (value > max) max = value
+    }
+    if (max <= 0) continue
+
+    for (const [playerId, value] of wins) {
+      if (value === max) {
+        holders.push({ playerId, name: names.get(playerId) ?? playerId, value, period: { kind: 'month', year, month } })
+      }
+    }
+  }
+
+  return holders.sort((a, b) => {
+    const pa = a.period as TrophyPeriod
+    const pb = b.period as TrophyPeriod
+    return pb.year - pa.year || pb.month - pa.month || a.name.localeCompare(b.name) || a.playerId.localeCompare(b.playerId)
+  })
+}
+
 /**
  * Renders playful "hall of fame" trophies, recomputed from scratch on every
  * call — nothing here is persisted. When gameTypeId is set, every trophy is
@@ -389,6 +433,10 @@ export class GetTrophiesUseCase {
       {
         id: 'f2',
         holders: topHolders(monthWins, names),
+      },
+      {
+        id: 'f3',
+        holders: monthlyChampionHolders(matches, gameTypes, names, now),
       },
     ]
   }

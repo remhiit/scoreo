@@ -1,5 +1,5 @@
 import { fireEvent, render, screen } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { GameType } from '../../domain/model/gameType'
 import type { Match } from '../../domain/model/match'
 import type { Player } from '../../domain/model/player'
@@ -61,9 +61,10 @@ describe('HallOfFameScreen', () => {
     expect(screen.getByText('Game Record')).toBeInTheDocument()
     expect(screen.getByText('Nemesis')).toBeInTheDocument()
     expect(screen.getByText('Player of the Month')).toBeInTheDocument()
+    expect(screen.getByText('Monthly Champions')).toBeInTheDocument()
     expect(screen.getByText('Longest winning streak of all time')).toBeInTheDocument()
-    // Alice: The Invincible (2-win streak) + The Collector (2 wins) + The Peak + King of the Hill + Game Record (Chess, 10).
-    expect(screen.getAllByText('Alice')).toHaveLength(5)
+    // Alice: The Invincible (2-win streak) + The Collector (2 wins) + The Peak + King of the Hill + Game Record (Chess, 10) + Monthly Champions.
+    expect(screen.getAllByText('Alice')).toHaveLength(6)
     // Bob: Current Streak + Streak Breaker holder + Game Record (Darts, 10).
     expect(screen.getAllByText('Bob')).toHaveLength(3)
   })
@@ -86,7 +87,7 @@ describe('HallOfFameScreen', () => {
     const getGameTypes = new GetGameTypesUseCase(new InMemoryGameTypeRepository())
     render(<HallOfFameScreen getTrophies={getTrophies} getGameTypes={getGameTypes} />)
 
-    expect(screen.getAllByText('No record yet.')).toHaveLength(10)
+    expect(screen.getAllByText('No record yet.')).toHaveLength(11)
   })
 
   it('filters trophies by game type', () => {
@@ -97,8 +98,8 @@ describe('HallOfFameScreen', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Darts' }))
 
-    // On gt2 only, Bob holds The Invincible, Current Streak, The Collector, The Peak, King of the Hill, and Game Record.
-    expect(screen.getAllByText('Bob')).toHaveLength(6)
+    // On gt2 only, Bob holds The Invincible, Current Streak, The Collector, The Peak, King of the Hill, Game Record, and Monthly Champions.
+    expect(screen.getAllByText('Bob')).toHaveLength(7)
   })
 
   it('defaults to the "All" filter', () => {
@@ -127,5 +128,62 @@ describe('HallOfFameScreen', () => {
     expect(screen.queryByText('No record yet.')).not.toBeInTheDocument()
 
     await i18n.changeLanguage('en')
+  })
+})
+
+describe('HallOfFameScreen — F3 Monthly Champions grouping', () => {
+  beforeEach(() => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date(2026, 7, 15))
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  it('groups f3 holders by month, most recent first, each under its own subtitle', () => {
+    const playerRepo = new InMemoryPlayerRepository()
+    playerRepo.save(player('p1', 'Alice'))
+    playerRepo.save(player('p2', 'Bob'))
+    const gameTypeRepo = new InMemoryGameTypeRepository()
+    gameTypeRepo.save(gameType('gt1', 'Chess'))
+    const matchRepo = new InMemoryMatchRepository()
+    // June 2026: Bob wins.
+    matchRepo.save(match('m1', new Date(2026, 5, 5).getTime(), 'gt1', [{ playerId: 'p2', score: 10 }, { playerId: 'p1', score: 5 }]))
+    // July 2026: Alice wins.
+    matchRepo.save(match('m2', new Date(2026, 6, 5).getTime(), 'gt1', [{ playerId: 'p1', score: 10 }, { playerId: 'p2', score: 5 }]))
+    const getTrophies = new GetTrophiesUseCase(matchRepo, gameTypeRepo, playerRepo)
+    const getGameTypes = new GetGameTypesUseCase(gameTypeRepo)
+
+    render(<HallOfFameScreen getTrophies={getTrophies} getGameTypes={getGameTypes} />)
+
+    const julySubtitle = screen.getByText('July 2026')
+    const juneSubtitle = screen.getByText('June 2026')
+    expect(julySubtitle).toBeInTheDocument()
+    expect(juneSubtitle).toBeInTheDocument()
+    // July (most recent) is rendered before June.
+    expect(julySubtitle.compareDocumentPosition(juneSubtitle) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  })
+
+  it('gives each month group a distinct React key, even for the same player winning twice', () => {
+    const playerRepo = new InMemoryPlayerRepository()
+    playerRepo.save(player('p1', 'Alice'))
+    playerRepo.save(player('p2', 'Bob'))
+    const gameTypeRepo = new InMemoryGameTypeRepository()
+    gameTypeRepo.save(gameType('gt1', 'Chess'))
+    const matchRepo = new InMemoryMatchRepository()
+    // June 2026: Alice wins.
+    matchRepo.save(match('m1', new Date(2026, 5, 5).getTime(), 'gt1', [{ playerId: 'p1', score: 10 }, { playerId: 'p2', score: 5 }]))
+    // July 2026: Alice wins again.
+    matchRepo.save(match('m2', new Date(2026, 6, 5).getTime(), 'gt1', [{ playerId: 'p1', score: 10 }, { playerId: 'p2', score: 5 }]))
+    const getTrophies = new GetTrophiesUseCase(matchRepo, gameTypeRepo, playerRepo)
+    const getGameTypes = new GetGameTypesUseCase(gameTypeRepo)
+
+    render(<HallOfFameScreen getTrophies={getTrophies} getGameTypes={getGameTypes} />)
+
+    expect(screen.getByText('June 2026')).toBeInTheDocument()
+    expect(screen.getByText('July 2026')).toBeInTheDocument()
+    // Alice appears once per month group, no React key collision hiding a row.
+    expect(screen.getAllByText('Alice').length).toBeGreaterThanOrEqual(2)
   })
 })

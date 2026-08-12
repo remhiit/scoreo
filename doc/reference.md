@@ -70,7 +70,8 @@ Notable design choices:
 | `TieBreakRule` | union `'NONE' \| 'MANUAL_SELECTION' \| 'SECONDARY_SCORE'` + `tieBreakRuleLabel()` | `enums.ts` |
 | `ValidationError` / `NotFoundError` | real `Error` subclasses (`kind: 'Validation' \| 'NotFound'`), union type `DomainError` | `errors.ts` |
 | `Trophy` | `id`, `holders: TrophyHolder[]`, `unit?: 'elo' \| 'days'` — not persisted, no zod schema; `title`/`description` live in i18n, resolved from `id` by the UI | `trophy.ts` |
-| `TrophyHolder` | `playerId`, `name`, `value: number`, `detail?: TrophyHolderDetail` — `string` for pure user data (D1/E1), or a `{ kind: 'ratio' \| 'streakBroken' \| 'date'; ... }` object resolved via i18n by the UI (B3/A4/C1) | `trophy.ts` |
+| `TrophyHolder` | `playerId`, `name`, `value: number`, `detail?: TrophyHolderDetail`, `period?: TrophyPeriod` — `detail` is `string` for pure user data (D1/E1), or a `{ kind: 'ratio' \| 'streakBroken' \| 'date'; ... }` object resolved via i18n by the UI (B3/A4/C1); `period` is orthogonal, set only by F3 | `trophy.ts` |
+| `TrophyPeriod` | `{ kind: 'month', year: number, month: number }` (month 0-11, local time) — not persisted, no zod schema; only `'month'` is implemented, `kind` leaves room for other granularities | `trophy.ts` |
 
 ## Ports (Repository Interfaces)
 
@@ -167,7 +168,7 @@ Notable coverage that goes beyond a 1:1 port of business logic:
 
 Files (`public/css/`): `tokens/*.css` (Catppuccin design tokens, see Styling in `doc/technical/architecture.md`), `theme.css`, `layout.css`, `home.css`, `games.css`, `scoring.css`, `history.css`, `stats.css`, `halloffame.css`, `import.css`, `sync.css`, `theme-picker.css`, `components.css`, `styles.css` (entry point, `@import`s the rest).
 
-Hall of Fame classes (`halloffame.css`): `.trophy-list`, `.trophy-card` (extends the shared `.card`, `display: block`), `.trophy-card-title`, `.trophy-card-description`, `.trophy-card-empty`, `.trophy-holders`, `.trophy-holder`, `.trophy-holder-info`, `.trophy-holder-name`, `.trophy-holder-detail`, `.trophy-holder-value` (`--font-score`, tabular figures like Stats' ELO figures).
+Hall of Fame classes (`halloffame.css`): `.trophy-list`, `.trophy-card` (extends the shared `.card`, `display: block`), `.trophy-card-title`, `.trophy-card-description`, `.trophy-card-empty`, `.trophy-holders`, `.trophy-holder`, `.trophy-holder-info`, `.trophy-holder-name`, `.trophy-holder-detail`, `.trophy-holder-value` (`--font-score`, tabular figures like Stats' ELO figures), `.trophy-holder-groups`, `.trophy-holder-group-title` (F3's per-month subtitle, wraps a `.trophy-holders` list per month).
 
 Stats trophy badge classes (`stats.css`): `.stats-trophy-badges` (flex-wrap row of pills), `.stats-trophy-badge` (icon + title + value pill, `--surface-sunken` background), `.stats-trophy-badge-title`, `.stats-trophy-badge-value` (`--font-score`). Icons come from `src/ui/stats/trophyIcons.ts` (`TROPHY_ICONS: Record<string, LucideIcon>`, keyed by trophy id) — presentation-only, kept out of `domain/`/`application/` per the `Trophy` model's own doc note.
 
