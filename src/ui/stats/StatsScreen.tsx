@@ -3,13 +3,17 @@ import { useTranslation } from 'react-i18next'
 import type { GameType } from '../../domain/model/gameType'
 import type { GetGameTypesUseCase } from '../../application/getGameTypesUseCase'
 import type { GetHeadToHeadUseCase, PlayerDetail } from '../../application/getHeadToHeadUseCase'
+import type { GetTrophiesUseCase } from '../../application/getTrophiesUseCase'
+import type { PlayerTrophyBadge } from '../../application/groupTrophiesByPlayer'
 import { loadStats, statsReducer } from './statsReducer'
 import { initialStatsState, selectedPlayer } from './statsTypes'
 import { ListContainer } from '../shared/ListContainer'
+import { TROPHY_ICONS } from './trophyIcons'
 
 export interface StatsScreenProps {
   getHeadToHead: GetHeadToHeadUseCase
   getGameTypes: GetGameTypesUseCase
+  getTrophies: GetTrophiesUseCase
   /**
    * Called whenever the player-detail selection changes, with a function to
    * clear it (or null when back to the leaderboard). The app header's back
@@ -25,12 +29,17 @@ function pct(wins: number, losses: number): number {
   return total === 0 ? 0 : Math.trunc((wins / total) * 100)
 }
 
-export function StatsScreen({ getHeadToHead, getGameTypes, onBackOverrideChange }: StatsScreenProps) {
+export function StatsScreen({ getHeadToHead, getGameTypes, getTrophies, onBackOverrideChange }: StatsScreenProps) {
   const [state, dispatch] = useReducer(statsReducer, initialStatsState)
 
   useEffect(() => {
-    const { leaderboard, gameTypes } = loadStats(getHeadToHead, getGameTypes, state.selectedGameTypeId)
-    dispatch({ type: 'loaded', leaderboard, gameTypes })
+    const { leaderboard, gameTypes, trophiesByPlayer } = loadStats(
+      getHeadToHead,
+      getGameTypes,
+      getTrophies,
+      state.selectedGameTypeId,
+    )
+    dispatch({ type: 'loaded', leaderboard, gameTypes, trophiesByPlayer })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.selectedGameTypeId])
 
@@ -41,7 +50,7 @@ export function StatsScreen({ getHeadToHead, getGameTypes, onBackOverrideChange 
   const detail = selectedPlayer(state)
 
   if (detail) {
-    return <PlayerDetailView detail={detail} />
+    return <PlayerDetailView detail={detail} badges={state.trophiesByPlayer.get(detail.playerId) ?? []} />
   }
 
   return (
@@ -125,7 +134,7 @@ function LeaderboardView({ leaderboard, onSelectPlayer }: LeaderboardViewProps) 
   )
 }
 
-function PlayerDetailView({ detail }: { detail: PlayerDetail }) {
+function PlayerDetailView({ detail, badges }: { detail: PlayerDetail; badges: PlayerTrophyBadge[] }) {
   const { t } = useTranslation()
   const overallPct = pct(detail.wins, detail.losses)
 
@@ -165,6 +174,27 @@ function PlayerDetailView({ detail }: { detail: PlayerDetail }) {
             )
           })}
         </>
+      )}
+
+      <div className="section-label">{t('stats.trophies')}</div>
+      {badges.length === 0 ? (
+        <div className="empty">{t('stats.noTrophies')}</div>
+      ) : (
+        <div className="stats-trophy-badges">
+          {badges.map(({ trophy, holder }, index) => {
+            const Icon = TROPHY_ICONS[trophy.id]
+            return (
+              <div key={`${trophy.id}-${index}`} className="stats-trophy-badge">
+                <Icon size={16} />
+                <span className="stats-trophy-badge-title">{t(`hallOfFame.trophies.${trophy.id}.title`)}</span>
+                <span className="stats-trophy-badge-value">
+                  {holder.value}
+                  {trophy.unit ? ` ${t(`hallOfFame.units.${trophy.unit}`)}` : ''}
+                </span>
+              </div>
+            )
+          })}
+        </div>
       )}
     </>
   )

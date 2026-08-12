@@ -5,6 +5,7 @@ import type { Match } from '../../domain/model/match'
 import type { Player } from '../../domain/model/player'
 import { GetGameTypesUseCase } from '../../application/getGameTypesUseCase'
 import { GetHeadToHeadUseCase } from '../../application/getHeadToHeadUseCase'
+import { GetTrophiesUseCase } from '../../application/getTrophiesUseCase'
 import i18n from '../../i18n/i18n'
 import { InMemoryGameTypeRepository } from '../../infrastructure/testing/inMemoryGameTypeRepository'
 import { InMemoryMatchRepository } from '../../infrastructure/testing/inMemoryMatchRepository'
@@ -49,7 +50,38 @@ function renderStats() {
   ]))
   const getHeadToHead = new GetHeadToHeadUseCase(matchRepo, gameTypeRepo, playerRepo)
   const getGameTypes = new GetGameTypesUseCase(gameTypeRepo)
-  return render(<StatsScreen getHeadToHead={getHeadToHead} getGameTypes={getGameTypes} />)
+  const getTrophies = new GetTrophiesUseCase(matchRepo, gameTypeRepo, playerRepo)
+  return render(<StatsScreen getHeadToHead={getHeadToHead} getGameTypes={getGameTypes} getTrophies={getTrophies} />)
+}
+
+/**
+ * Alice wins every match in Type A (undefeated: longest/current streak +
+ * most wins), Bob wins the lone Type B match — so the two tabs each hand
+ * their trophies to a different player, and "All" hands them all to Alice.
+ */
+function renderStatsWithTrophies(onBackOverrideChange?: (override: (() => void) | null) => void) {
+  const playerRepo = new InMemoryPlayerRepository()
+  playerRepo.save(player('p1', 'Alice'))
+  playerRepo.save(player('p2', 'Bob'))
+  const gameTypeRepo = new InMemoryGameTypeRepository()
+  gameTypeRepo.save(gameType('gt1', 'Type A'))
+  gameTypeRepo.save(gameType('gt2', 'Type B'))
+  const matchRepo = new InMemoryMatchRepository()
+  matchRepo.save(match('m1', 1000, 'gt1', [{ playerId: 'p1', score: 10 }, { playerId: 'p2', score: 5 }]))
+  matchRepo.save(match('m2', 2000, 'gt1', [{ playerId: 'p1', score: 10 }, { playerId: 'p2', score: 5 }]))
+  matchRepo.save(match('m3', 3000, 'gt1', [{ playerId: 'p1', score: 10 }, { playerId: 'p2', score: 5 }]))
+  matchRepo.save(match('m4', 4000, 'gt2', [{ playerId: 'p1', score: 3 }, { playerId: 'p2', score: 10 }]))
+  const getHeadToHead = new GetHeadToHeadUseCase(matchRepo, gameTypeRepo, playerRepo)
+  const getGameTypes = new GetGameTypesUseCase(gameTypeRepo)
+  const getTrophies = new GetTrophiesUseCase(matchRepo, gameTypeRepo, playerRepo)
+  return render(
+    <StatsScreen
+      getHeadToHead={getHeadToHead}
+      getGameTypes={getGameTypes}
+      getTrophies={getTrophies}
+      onBackOverrideChange={onBackOverrideChange}
+    />,
+  )
 }
 
 describe('StatsScreen', () => {
@@ -60,7 +92,12 @@ describe('StatsScreen', () => {
       new InMemoryPlayerRepository(),
     )
     const getGameTypes = new GetGameTypesUseCase(new InMemoryGameTypeRepository())
-    render(<StatsScreen getHeadToHead={getHeadToHead} getGameTypes={getGameTypes} />)
+    const getTrophies = new GetTrophiesUseCase(
+      new InMemoryMatchRepository(),
+      new InMemoryGameTypeRepository(),
+      new InMemoryPlayerRepository(),
+    )
+    render(<StatsScreen getHeadToHead={getHeadToHead} getGameTypes={getGameTypes} getTrophies={getTrophies} />)
 
     expect(screen.getByText('No stats yet — play some matches first.')).toBeInTheDocument()
   })
@@ -109,11 +146,13 @@ describe('StatsScreen', () => {
     matchRepo.save(match('m1', 1000, 'gt1', [{ playerId: 'p1', score: 10 }]))
     const getHeadToHead = new GetHeadToHeadUseCase(matchRepo, gameTypeRepo, playerRepo)
     const getGameTypes = new GetGameTypesUseCase(gameTypeRepo)
+    const getTrophies = new GetTrophiesUseCase(matchRepo, gameTypeRepo, playerRepo)
 
     render(
       <StatsScreen
         getHeadToHead={getHeadToHead}
         getGameTypes={getGameTypes}
+        getTrophies={getTrophies}
         onBackOverrideChange={(override) => overrides.push(override as () => void)}
       />,
     )
@@ -162,10 +201,51 @@ describe('StatsScreen', () => {
       new InMemoryPlayerRepository(),
     )
     const getGameTypes = new GetGameTypesUseCase(new InMemoryGameTypeRepository())
-    render(<StatsScreen getHeadToHead={getHeadToHead} getGameTypes={getGameTypes} />)
+    const getTrophies = new GetTrophiesUseCase(
+      new InMemoryMatchRepository(),
+      new InMemoryGameTypeRepository(),
+      new InMemoryPlayerRepository(),
+    )
+    render(<StatsScreen getHeadToHead={getHeadToHead} getGameTypes={getGameTypes} getTrophies={getTrophies} />)
 
     await i18n.changeLanguage('fr')
     expect(screen.getByText("Aucune statistique pour l'instant — jouez quelques parties d'abord.")).toBeInTheDocument()
     await i18n.changeLanguage('en')
+  })
+
+  it('shows several trophy badges for a player who holds them all', () => {
+    renderStatsWithTrophies()
+
+    fireEvent.click(screen.getByText('Alice'))
+
+    expect(screen.getByText('The Invincible')).toBeInTheDocument()
+    expect(screen.getByText('The Collector')).toBeInTheDocument()
+  })
+
+  it('shows the empty state for a player with no trophy', () => {
+    renderStatsWithTrophies()
+
+    fireEvent.click(screen.getByText('Type A'))
+    fireEvent.click(screen.getByText('Bob'))
+
+    expect(screen.getByText('No trophies yet.')).toBeInTheDocument()
+  })
+
+  it('changing the game type tab changes which badges are shown', () => {
+    const overrides: (() => void | null)[] = []
+    renderStatsWithTrophies((override) => overrides.push(override as () => void))
+
+    fireEvent.click(screen.getByText('Type A'))
+    fireEvent.click(screen.getByText('Bob'))
+    expect(screen.getByText('No trophies yet.')).toBeInTheDocument()
+
+    act(() => {
+      overrides.at(-1)?.()
+    })
+    fireEvent.click(screen.getByText('Type B'))
+    fireEvent.click(screen.getByText('Bob'))
+
+    expect(screen.getByText('The Collector')).toBeInTheDocument()
+    expect(screen.queryByText('No trophies yet.')).not.toBeInTheDocument()
   })
 })

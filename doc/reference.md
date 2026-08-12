@@ -20,7 +20,7 @@ Each screen owns a pure `(state, action) => state` reducer, colocated with its s
 Notable design choices:
 - **Home/players**: UI-only state that was never captured by a reducer lives in plain `useState`, split across `HomeScreen.tsx` and two stateful container subcomponents rather than centralized in one file. `HomeScreen.tsx` (~155 lines) owns only player selection (multi-select) and the reducer/use-case wiring, and passes those down as props/callbacks to purely presentational subcomponents (`AddPlayerField.tsx`, `PlayerListSection.tsx`). The game-selection modal (selected game type, inline add-game-type form) is owned by `GameSelectModalContainer.tsx`, which wraps the presentational `GameSelectModal.tsx` and exposes an imperative `open()` handle via `forwardRef`/`useImperativeHandle` — `HomeScreen.tsx` triggers it from the "New Match" button without holding any of that state itself. The delete/rename/cleanup confirmation flow (including the anonymize checkbox and its reset-on-target-change logic) is owned by `PlayerActionModals.tsx`, which wraps `DeletePlayerModal.tsx`, `RenamePlayerModal.tsx`, and `CleanupConfirmModal.tsx` and receives `state`/`dispatch` plus the relevant use cases as props. `cleanupCandidates` (inactive players with no recorded match, from `CleanupInactivePlayersUseCase.preview()`) and `showCleanupConfirm` are recomputed by every `loadPlayers()` call, alongside `players`/`stats`, so the "Clean up (N)" button and its confirmation modal always reflect the current preview.
 - **ScoreDetail**: `buildInitialState()` resolves `Create` vs `Edit` mode and restores a matching draft; a `useEffect` keyed on `state.rounds` autosaves the draft after each score change (skipped on the initial mount via a ref, so no draft is written before the first user edit). `viewMode` (default `standings`) toggles between the read-only ranking grid (`.gs-grid`/`.gs-card`, built by `computeStandings()` — ranks by `gameType.winCondition`, ties share a rank, `delta` is only the last round's entered score) and the `history` tab, rendered by `RoundHistoryList` (`src/ui/scoredetail/RoundHistoryList.tsx`): one `.hist-round` card per round, its `.hist-cells` a `flex-wrap` list of `.hist-cell` (player name + editable score field, `updateScore`) so any player count wraps instead of scrolling sideways; the header's delete action (`removeRound`) is hidden once a single round remains. Its "Add round" button dispatches `openRoundSheet`, the same as the bottom bar's CTA. The bottom bar's full-width "Enter round N" button (`nextRoundNumber()` = `countRoundsPlayed()` + 1) opens `RoundEntrySheet` (`.sheet`, own state `showRoundSheet`/`roundSheetInputs`): one `LudoNumberInput` per player defaulted to 0, next to their pre-round total; `submitRoundSheet` fills the first not-yet-played round (or appends one) and closes, `closeRoundSheet` discards the draft inputs untouched.
-- **Stats**: `StatsScreen` exposes an `onBackOverrideChange` prop so `App.tsx` can make the header's back button clear the player selection instead of navigating, when a player is selected (see App shell below).
+- **Stats**: `StatsScreen` exposes an `onBackOverrideChange` prop so `App.tsx` can make the header's back button clear the player selection instead of navigating, when a player is selected (see App shell below). The player-detail view also renders a "Trophies" section below the head-to-head list: one badge per trophy the selected player holds, from `state.trophiesByPlayer` (a `Map<string, PlayerTrophyBadge[]>` populated by `loadStats()` alongside the leaderboard, so it follows the same game-type tab and reloads whenever it changes). Always rendered, with an explicit empty state when the player holds none.
 
 ## Use Cases
 
@@ -41,6 +41,7 @@ Notable design choices:
 | `GetPlayerStatsUseCase` | `invoke()` | `Map<string, PlayerStats>` |
 | `GetHeadToHeadUseCase` | `invoke(gameTypeId?: string)` | `PlayerDetail[]` (sorted by ELO desc, ≥1 match only) |
 | `GetTrophiesUseCase` | `invoke(gameTypeId?: string)` | `Trophy[]` — not persisted, recomputed every call; see Hall of Fame in `doc/functional/features/hall-of-fame.md` |
+| `groupTrophiesByPlayer` | `groupTrophiesByPlayer(trophies: Trophy[])` | `Map<string, PlayerTrophyBadge[]>` — pure inversion of `Trophy[]` (id → holders) into per-player badges (`{ trophy, holder }`), ordered by `TROPHY_BADGE_ORDER` (permanent records A1/A4/B2/B3/C1/C3/D1/E1, then rotating A2/F2); a player holding the same trophy id more than once (D1's per-game-type record) gets one badge per holder entry. `src/application/groupTrophiesByPlayer.ts`, used by Stats' player-detail badges |
 | `EloCalculator` | `compute(matches, gameTypes: Map<string, GameType>)` | `Map<string, number>` |
 | `EloCalculator` | `computeHistory(matches, gameTypes: Map<string, GameType>)` | `EloSnapshot[]` (`{ matchId, date, ratings: Map<string, number> }`, one per considered match, ordered by date ascending — ratings after that match) |
 | `FindGameTypeByIdUseCase` | `invoke(id: string)` | `GameType \| undefined` |
@@ -118,7 +119,7 @@ Notable design choices:
 | `Home` | — | `HomeScreen` — onboarding banner, resume-draft banner, player list with multi-select, game selection modal with inline game-type creation |
 | `History` | — | `HistoryScreen` — past matches list, delete with confirmation, filter by game type |
 | `Import` | — | `ImportScreen` — JSON import, 3-step wizard: select file → preview → result |
-| `Stats` | — | `StatsScreen` — ELO leaderboard, head-to-head. Contextual back clears the player selection when set, else navigates Home |
+| `Stats` | — | `StatsScreen` — ELO leaderboard, head-to-head, trophy badges on the player detail. Contextual back clears the player selection when set, else navigates Home |
 | `Games` | — | `GameTypeScreen` — game type management: create, edit, archive with confirmation |
 | `Sync` | — | `SyncScreen` — Google Drive cloud backup, only reachable when `services.syncUseCase` is defined |
 | `HallOfFame` | — | `HallOfFameScreen` — playful trophies (streaks, volume, records, rivalry, monthly), one card per trophy, per-game-type filter (same mechanic as Stats) |
@@ -140,7 +141,7 @@ Notable design choices:
 
 ## Tests
 
-72 test files, 794 tests, all colocated `*.test.ts(x)` next to the file they cover, running under Vitest + `jsdom` (no real browser needed for any of them, including the Google Drive/OAuth and theme tests that historically required one).
+75 test files, 864 tests, all colocated `*.test.ts(x)` next to the file they cover, running under Vitest + `jsdom` (no real browser needed for any of them, including the Google Drive/OAuth and theme tests that historically required one).
 
 Notable coverage that goes beyond a 1:1 port of business logic:
 - **Component tests** (`*Screen.test.tsx`) for every screen, on top of each reducer's own pure-function tests.
@@ -167,6 +168,8 @@ Notable coverage that goes beyond a 1:1 port of business logic:
 Files (`public/css/`): `tokens/*.css` (Catppuccin design tokens, see Styling in `doc/technical/architecture.md`), `theme.css`, `layout.css`, `home.css`, `games.css`, `scoring.css`, `history.css`, `stats.css`, `halloffame.css`, `import.css`, `sync.css`, `theme-picker.css`, `components.css`, `styles.css` (entry point, `@import`s the rest).
 
 Hall of Fame classes (`halloffame.css`): `.trophy-list`, `.trophy-card` (extends the shared `.card`, `display: block`), `.trophy-card-title`, `.trophy-card-description`, `.trophy-card-empty`, `.trophy-holders`, `.trophy-holder`, `.trophy-holder-info`, `.trophy-holder-name`, `.trophy-holder-detail`, `.trophy-holder-value` (`--font-score`, tabular figures like Stats' ELO figures).
+
+Stats trophy badge classes (`stats.css`): `.stats-trophy-badges` (flex-wrap row of pills), `.stats-trophy-badge` (icon + title + value pill, `--surface-sunken` background), `.stats-trophy-badge-title`, `.stats-trophy-badge-value` (`--font-score`). Icons come from `src/ui/stats/trophyIcons.ts` (`TROPHY_ICONS: Record<string, LucideIcon>`, keyed by trophy id) — presentation-only, kept out of `domain/`/`application/` per the `Trophy` model's own doc note.
 
 Key classes: `.modal-body`, `.modal-row`, `.modal-title`, `.detail-row`, `.detail-label`, `.detail-value`, `.splash`, `.splash-content`, `.spinner`, `.onboarding-guide`, `.fab-position`, `.list-container`, `.list-container--spaced`, `.list-item-row`, `.list-item-label`, `.list-item-label--selectable`, `.list-item-label--selected`, `.list-item-name`, `.list-item-subtitle`, `.list-item-actions`, `.list-item-select-picto`.
 
