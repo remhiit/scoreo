@@ -13,6 +13,10 @@ export interface ListItemRowProps {
   players?: ReactNode
   /** Rendered in `.list-item-date`. */
   date?: ReactNode
+  /** Rendered in `.list-item-badge`, at the end of the label zone — e.g. a trophy count. */
+  badge?: ReactNode
+  /** Accessible name for the badge, since its content is usually a picto + a number. */
+  badgeLabel?: string
   /** Shows the ○/● picto. */
   isSelectable?: boolean
   /** ● if true, ○ if false. */
@@ -32,6 +36,8 @@ export function ListItemRow({
   subtitle,
   players,
   date,
+  badge,
+  badgeLabel,
   isSelectable = false,
   isSelected = false,
   onSelect,
@@ -53,6 +59,11 @@ export function ListItemRow({
           {players && <span className="list-item-players">{players}</span>}
           {date && <span className="list-item-date">{date}</span>}
         </div>
+        {badge && (
+          <span className="list-item-badge" aria-label={badgeLabel}>
+            {badge}
+          </span>
+        )}
       </div>
 
       <div className="list-item-actions">

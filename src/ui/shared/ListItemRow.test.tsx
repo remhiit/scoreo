@@ -54,4 +54,21 @@ describe('ListItemRow', () => {
     expect(container.querySelector('.list-item-players')).not.toBeInTheDocument()
     expect(container.querySelector('.list-item-date')).not.toBeInTheDocument()
   })
+
+  it('renders the badge slot with its accessible label', () => {
+    render(<ListItemRow label="Alice" badge={<>🏆3</>} badgeLabel="3 trophies" />)
+    expect(screen.getByLabelText('3 trophies')).toHaveTextContent('🏆3')
+  })
+
+  it('omits the badge slot when not provided, even with a badgeLabel', () => {
+    const { container } = render(<ListItemRow label="Alice" badgeLabel="0 trophies" />)
+    expect(container.querySelector('.list-item-badge')).not.toBeInTheDocument()
+  })
+
+  it('a click on the badge still selects the row', () => {
+    const onSelect = vi.fn()
+    render(<ListItemRow label="Alice" onSelect={onSelect} badge={<>🏆3</>} badgeLabel="3 trophies" />)
+    fireEvent.click(screen.getByLabelText('3 trophies'))
+    expect(onSelect).toHaveBeenCalledTimes(1)
+  })
 })

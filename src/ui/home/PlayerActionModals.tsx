@@ -1,12 +1,9 @@
 import { useState } from 'react'
-import type { CleanupInactivePlayersUseCase } from '../../application/cleanupInactivePlayersUseCase'
 import type { DeletePlayerUseCase } from '../../application/deletePlayerUseCase'
-import type { GetPlayerStatsUseCase } from '../../application/getPlayerStatsUseCase'
-import type { GetPlayersUseCase } from '../../application/getPlayersUseCase'
 import type { RenamePlayerUseCase } from '../../application/renamePlayerUseCase'
 import { CleanupConfirmModal } from './CleanupConfirmModal'
 import { DeletePlayerModal } from './DeletePlayerModal'
-import type { PlayerAction } from './playerReducer'
+import type { PlayerAction, PlayerDataSources } from './playerReducer'
 import { submitCleanup, submitConfirmRename, submitDeletePlayer } from './playerReducer'
 import type { PlayerState } from './playerTypes'
 import { RenamePlayerModal } from './RenamePlayerModal'
@@ -16,9 +13,7 @@ export interface PlayerActionModalsProps {
   dispatch: (action: PlayerAction) => void
   deletePlayer: DeletePlayerUseCase
   renamePlayerUseCase: RenamePlayerUseCase
-  cleanupInactivePlayers: CleanupInactivePlayersUseCase
-  getPlayers: GetPlayersUseCase
-  getPlayerStats: GetPlayerStatsUseCase
+  sources: PlayerDataSources
 }
 
 export function PlayerActionModals({
@@ -26,9 +21,7 @@ export function PlayerActionModals({
   dispatch,
   deletePlayer,
   renamePlayerUseCase,
-  cleanupInactivePlayers,
-  getPlayers,
-  getPlayerStats,
+  sources,
 }: PlayerActionModalsProps) {
   const [anonymize, setAnonymize] = useState(false)
   const [prevDeleteConfirmPlayerId, setPrevDeleteConfirmPlayerId] = useState(
@@ -57,14 +50,7 @@ export function PlayerActionModals({
         onConfirmDelete={() => {
           if (state.deleteConfirmPlayerId === undefined) return
           dispatch(
-            submitDeletePlayer(
-              deletePlayer,
-              getPlayers,
-              getPlayerStats,
-              cleanupInactivePlayers,
-              state.deleteConfirmPlayerId,
-              anonymize,
-            ),
+            submitDeletePlayer(deletePlayer, sources, state.deleteConfirmPlayerId, anonymize),
           )
         }}
       />
@@ -77,13 +63,7 @@ export function PlayerActionModals({
         error={state.error}
         onClose={() => dispatch({ type: 'cancelRename' })}
         onConfirmRename={() => {
-          const action = submitConfirmRename(
-            renamePlayerUseCase,
-            getPlayers,
-            getPlayerStats,
-            cleanupInactivePlayers,
-            state,
-          )
+          const action = submitConfirmRename(renamePlayerUseCase, sources, state)
           if (action) dispatch(action)
         }}
       />
@@ -92,9 +72,7 @@ export function PlayerActionModals({
         open={state.showCleanupConfirm}
         candidates={state.cleanupCandidates}
         onClose={() => dispatch({ type: 'dismissCleanupConfirm' })}
-        onConfirmCleanup={() =>
-          dispatch(submitCleanup(cleanupInactivePlayers, getPlayers, getPlayerStats))
-        }
+        onConfirmCleanup={() => dispatch(submitCleanup(sources))}
       />
     </>
   )

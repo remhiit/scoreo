@@ -7,6 +7,7 @@ import { DeletePlayerUseCase } from '../../application/deletePlayerUseCase'
 import { GetGameTypesUseCase } from '../../application/getGameTypesUseCase'
 import { GetPlayerStatsUseCase } from '../../application/getPlayerStatsUseCase'
 import { GetPlayersUseCase } from '../../application/getPlayersUseCase'
+import { GetTrophiesUseCase } from '../../application/getTrophiesUseCase'
 import { RenamePlayerUseCase } from '../../application/renamePlayerUseCase'
 import { InMemoryGameTypeRepository } from '../../infrastructure/testing/inMemoryGameTypeRepository'
 import { InMemoryMatchDraftRepository } from '../../infrastructure/testing/inMemoryMatchDraftRepository'
@@ -30,6 +31,7 @@ function buildProps(overrides: Partial<HomeScreenProps> = {}) {
     deletePlayer: new DeletePlayerUseCase(playerRepo),
     renamePlayerUseCase: new RenamePlayerUseCase(playerRepo),
     cleanupInactivePlayers: new CleanupInactivePlayersUseCase(playerRepo, matchRepo),
+    getTrophies: new GetTrophiesUseCase(matchRepo, gameTypeRepo, playerRepo),
     getGameTypes: () => getGameTypesUseCase.invoke(),
     onAddGameType: (name, winCondition) => addGameTypeUseCase.invoke(name, winCondition),
     onStartGame,
@@ -268,6 +270,49 @@ describe('HomeScreen', () => {
 
     expect(screen.getByText('Clean up (1)')).toBeInTheDocument()
     expect(playerRepo.getAll(true)).toHaveLength(1)
+  })
+
+  it('shows a trophy count badge only for players holding trophies', () => {
+    const { props, playerRepo, matchRepo, gameTypeRepo } = buildProps()
+    playerRepo.save({ id: 'p1', name: 'Alice', active: true })
+    playerRepo.save({ id: 'p2', name: 'Bob', active: true })
+    gameTypeRepo.save({
+      id: 'gt1',
+      name: 'Chess',
+      winCondition: 'HIGHEST_SCORE',
+      tieBreakRule: 'NONE',
+      tieBreakCondition: 'HIGHEST_SCORE',
+      tieBreakLabel: null,
+      active: true,
+    })
+    matchRepo.save({
+      id: 'm1',
+      date: 1000,
+      gameTypeId: 'gt1',
+      playerScores: [
+        { playerId: 'p1', score: 10 },
+        { playerId: 'p2', score: 5 },
+      ],
+      manualWinners: [],
+      secondaryPlayerScores: [],
+      rounds: [],
+    })
+    const { container } = render(<HomeScreen {...props} />)
+
+    expect(container.querySelectorAll('.list-item-badge')).toHaveLength(1)
+
+    const aliceRow = screen.getByText('Alice', { selector: '.list-item-name' }).closest('.list-item-row')!
+    const badge = aliceRow.querySelector('.list-item-badge')!
+    expect(badge).toHaveTextContent('6')
+    expect(badge).toHaveAttribute('aria-label', '6 trophies')
+  })
+
+  it('shows no trophy badge at all before any match is played', () => {
+    const { props, playerRepo } = buildProps()
+    playerRepo.save({ id: 'p1', name: 'Alice', active: true })
+    const { container } = render(<HomeScreen {...props} />)
+
+    expect(container.querySelector('.list-item-badge')).not.toBeInTheDocument()
   })
 
   it('shows the resume-draft banner and calls onResumeDraft', () => {

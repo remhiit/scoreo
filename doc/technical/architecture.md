@@ -125,7 +125,7 @@ Vite copies `public/` to the production output (`dist/`) natively — see [`depl
 
 **Shared UI components** (`src/ui/shared/`):
 - `ListContainer` — wraps any list of `ListItemRow` items; applies `display:flex; flex-direction:column; gap:8px`. Accepts an optional `className` prop (e.g. `"list-container--spaced"` for `margin-top:16px`). Used by Home, Games, History screens.
-- `ListItemRow` — single row with label, optional subtitle/players/date slots, and optional action buttons (view/edit/delete), rendered as `LudoButton` (`ghost`/`danger`), square and flush against the row's right edge. Supports selectable mode (○/●), the clickable zone spanning the row's full bounds.
+- `ListItemRow` — single row with label, optional subtitle/players/date/badge slots, and optional action buttons (view/edit/delete), rendered as `LudoButton` (`ghost`/`danger`), square and flush against the row's right edge. Supports selectable mode (○/●), the clickable zone spanning the row's full bounds. The `badge` slot (with its `badgeLabel` accessible name) sits at the end of that zone — a click on it selects the row like any other part of it.
 
 ## Persistence
 

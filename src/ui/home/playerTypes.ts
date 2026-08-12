@@ -4,6 +4,8 @@ import type { Player } from '../../domain/model/player'
 export interface PlayerState {
   players: Player[]
   stats: Map<string, PlayerStats>
+  /** Player id -> number of trophies held. Absent id means zero. */
+  trophyCounts: Map<string, number>
   inputName: string
   error: string | undefined
   deleteConfirmPlayerId: string | undefined
@@ -16,6 +18,7 @@ export interface PlayerState {
 export const initialPlayerState: PlayerState = {
   players: [],
   stats: new Map(),
+  trophyCounts: new Map(),
   inputName: '',
   error: undefined,
   deleteConfirmPlayerId: undefined,

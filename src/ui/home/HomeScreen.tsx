@@ -1,11 +1,12 @@
 import { Play } from 'lucide-react'
-import { useReducer, useRef, useState } from 'react'
+import { useMemo, useReducer, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { AddPlayerUseCase } from '../../application/addPlayerUseCase'
 import type { CleanupInactivePlayersUseCase } from '../../application/cleanupInactivePlayersUseCase'
 import type { DeletePlayerUseCase } from '../../application/deletePlayerUseCase'
 import type { GetPlayerStatsUseCase } from '../../application/getPlayerStatsUseCase'
 import type { GetPlayersUseCase } from '../../application/getPlayersUseCase'
+import type { GetTrophiesUseCase } from '../../application/getTrophiesUseCase'
 import type { RenamePlayerUseCase } from '../../application/renamePlayerUseCase'
 import type { WinCondition } from '../../domain/model/enums'
 import type { GameType } from '../../domain/model/gameType'
@@ -25,6 +26,7 @@ export interface HomeScreenProps {
   deletePlayer: DeletePlayerUseCase
   renamePlayerUseCase: RenamePlayerUseCase
   cleanupInactivePlayers: CleanupInactivePlayersUseCase
+  getTrophies: GetTrophiesUseCase
   getGameTypes: () => GameType[]
   onAddGameType: (name: string, winCondition: WinCondition) => GameType
   onStartGame: (gameTypeId: string, playerIds: string[]) => void
@@ -40,6 +42,7 @@ export function HomeScreen({
   deletePlayer,
   renamePlayerUseCase,
   cleanupInactivePlayers,
+  getTrophies,
   getGameTypes,
   onAddGameType,
   onStartGame,
@@ -48,9 +51,13 @@ export function HomeScreen({
   getMatchCount = () => 0,
 }: HomeScreenProps) {
   const { t } = useTranslation()
+  const sources = useMemo(
+    () => ({ getPlayers, getPlayerStats, cleanupInactivePlayers, getTrophies }),
+    [getPlayers, getPlayerStats, cleanupInactivePlayers, getTrophies],
+  )
   const [state, dispatch] = useReducer(playerReducer, initialPlayerState, (init) => ({
     ...init,
-    ...loadPlayers(getPlayers, getPlayerStats, cleanupInactivePlayers),
+    ...loadPlayers(sources),
   }))
 
   const draft = matchDraftRepository?.load()
@@ -91,11 +98,7 @@ export function HomeScreen({
       <AddPlayerField
         value={state.inputName}
         onChange={(name) => dispatch({ type: 'updateInput', name })}
-        onSubmit={() =>
-          dispatch(
-            submitAddPlayer(addPlayer, getPlayers, getPlayerStats, cleanupInactivePlayers, state),
-          )
-        }
+        onSubmit={() => dispatch(submitAddPlayer(addPlayer, sources, state))}
         error={state.error}
       />
 
@@ -113,6 +116,7 @@ export function HomeScreen({
       <PlayerListSection
         players={state.players}
         stats={state.stats}
+        trophyCounts={state.trophyCounts}
         selectedPlayers={selectedPlayers}
         onToggleSelect={toggleSelectPlayer}
         onEditPlayer={(playerId) => dispatch({ type: 'startRename', playerId })}
@@ -149,9 +153,7 @@ export function HomeScreen({
         dispatch={dispatch}
         deletePlayer={deletePlayer}
         renamePlayerUseCase={renamePlayerUseCase}
-        cleanupInactivePlayers={cleanupInactivePlayers}
-        getPlayers={getPlayers}
-        getPlayerStats={getPlayerStats}
+        sources={sources}
       />
     </>
   )

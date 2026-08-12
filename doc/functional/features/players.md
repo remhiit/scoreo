@@ -17,14 +17,19 @@
 |-----------|---------|
 | **Reducer** | `playerReducer` — `src/ui/home/playerReducer.ts` |
 | **Action** | `PlayerAction`: `updateInput`, `addSucceeded`/`addFailed`, `showDeleteConfirm`, `dismissDeleteConfirm`, `deleted`, `startRename`, `updateRenameInput`, `renameSucceeded`/`renameFailed`, `cancelRename`, `showCleanupConfirm`, `dismissCleanupConfirm`, `cleanupCompleted` |
-| **State** | `PlayerState`: `players`, `stats`, `inputName`, `error`, `deleteConfirmPlayerId`, `renamingPlayerId`, `renameInput`, `cleanupCandidates`, `showCleanupConfirm` |
+| **State** | `PlayerState`: `players`, `stats`, `trophyCounts`, `inputName`, `error`, `deleteConfirmPlayerId`, `renamingPlayerId`, `renameInput`, `cleanupCandidates`, `showCleanupConfirm` |
 
 Screen: `src/ui/home/HomeScreen.tsx`. See `doc/reference.md` for the full reducer table.
 
 ## Screen: PlayerScreen
 
 - Text input + **Add** button to create a player
-- List of active players with name + W/L stats + ✏️ edit button + 🗑 delete button
+- List of active players with name + W/L stats + trophy count badge + ✏️ edit button + 🗑 delete button
+- Trophy count badge (🏆 N, at the end of the row's selectable zone):
+  - Shown only for a player holding at least one trophy — no badge, not a "0", for the others
+  - Counts the badges of [`stats.md`](stats.md#player-detail)'s per-player trophy list: an ex aequo holder counts the trophy like a sole holder, and a trophy held twice (the D1 game record on two game types) counts twice
+  - Recomputed after every player mutation (add, delete, rename, cleanup), like the W/L stats
+  - Home shows the count only; which trophies they are stays on the Stats player detail
 - Edit mode (rename modal): clicking ✏️ opens a modal
   - Modal title: "Rename player: {oldName}"
   - Text input field with autofocus and primary-colored border

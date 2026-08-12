@@ -286,6 +286,7 @@ function AppShell() {
             deletePlayer={deletePlayer}
             renamePlayerUseCase={renamePlayerUseCase}
             cleanupInactivePlayers={cleanupInactivePlayers}
+            getTrophies={getTrophies}
             getGameTypes={homeGetGameTypes}
             onAddGameType={homeOnAddGameType}
             onStartGame={handleStartGame}

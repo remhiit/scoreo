@@ -3,13 +3,29 @@ import type { CleanupInactivePlayersUseCase } from '../../application/cleanupIna
 import type { DeletePlayerUseCase } from '../../application/deletePlayerUseCase'
 import type { GetPlayerStatsUseCase, PlayerStats } from '../../application/getPlayerStatsUseCase'
 import type { GetPlayersUseCase } from '../../application/getPlayersUseCase'
+import type { GetTrophiesUseCase } from '../../application/getTrophiesUseCase'
+import { groupTrophiesByPlayer } from '../../application/groupTrophiesByPlayer'
 import type { RenamePlayerUseCase } from '../../application/renamePlayerUseCase'
 import type { Player } from '../../domain/model/player'
 import type { PlayerState } from './playerTypes'
 
+/**
+ * The read-side use cases every `load*`/`submit*` helper needs to rebuild the
+ * screen after a mutation. Bundled rather than passed one by one: they always
+ * travel together, and each new derived column (stats, then trophies) would
+ * otherwise add a positional parameter to all five helpers.
+ */
+export interface PlayerDataSources {
+  getPlayers: GetPlayersUseCase
+  getPlayerStats: GetPlayerStatsUseCase
+  cleanupInactivePlayers: CleanupInactivePlayersUseCase
+  getTrophies: GetTrophiesUseCase
+}
+
 interface LoadedPlayers {
   players: Player[]
   stats: Map<string, PlayerStats>
+  trophyCounts: Map<string, number>
   cleanupCandidates: Player[]
 }
 
@@ -30,21 +46,24 @@ export type PlayerAction =
   | { type: 'dismissCleanupConfirm' }
   | ({ type: 'cleanupCompleted' } & LoadedPlayers)
 
+function withLoaded(state: PlayerState, loaded: LoadedPlayers): PlayerState {
+  return {
+    ...state,
+    players: loaded.players,
+    stats: loaded.stats,
+    trophyCounts: loaded.trophyCounts,
+    cleanupCandidates: loaded.cleanupCandidates,
+  }
+}
+
 export function playerReducer(state: PlayerState, action: PlayerAction): PlayerState {
   switch (action.type) {
     case 'loaded':
-      return { ...state, players: action.players, stats: action.stats, cleanupCandidates: action.cleanupCandidates }
+      return withLoaded(state, action)
     case 'updateInput':
       return { ...state, inputName: action.name, error: undefined }
     case 'addSucceeded':
-      return {
-        ...state,
-        players: action.players,
-        stats: action.stats,
-        cleanupCandidates: action.cleanupCandidates,
-        inputName: '',
-        error: undefined,
-      }
+      return { ...withLoaded(state, action), inputName: '', error: undefined }
     case 'addFailed':
       return { ...state, error: action.error }
     case 'showDeleteConfirm':
@@ -52,13 +71,7 @@ export function playerReducer(state: PlayerState, action: PlayerAction): PlayerS
     case 'dismissDeleteConfirm':
       return { ...state, deleteConfirmPlayerId: undefined }
     case 'deleted':
-      return {
-        ...state,
-        players: action.players,
-        stats: action.stats,
-        cleanupCandidates: action.cleanupCandidates,
-        deleteConfirmPlayerId: undefined,
-      }
+      return { ...withLoaded(state, action), deleteConfirmPlayerId: undefined }
     case 'startRename': {
       const player = state.players.find((p) => p.id === action.playerId)
       if (!player) return state
@@ -68,10 +81,7 @@ export function playerReducer(state: PlayerState, action: PlayerAction): PlayerS
       return { ...state, renameInput: action.name }
     case 'renameSucceeded':
       return {
-        ...state,
-        players: action.players,
-        stats: action.stats,
-        cleanupCandidates: action.cleanupCandidates,
+        ...withLoaded(state, action),
         renamingPlayerId: undefined,
         renameInput: '',
         error: undefined,
@@ -85,13 +95,7 @@ export function playerReducer(state: PlayerState, action: PlayerAction): PlayerS
     case 'dismissCleanupConfirm':
       return { ...state, showCleanupConfirm: false }
     case 'cleanupCompleted':
-      return {
-        ...state,
-        players: action.players,
-        stats: action.stats,
-        cleanupCandidates: action.cleanupCandidates,
-        showCleanupConfirm: false,
-      }
+      return { ...withLoaded(state, action), showCleanupConfirm: false }
   }
 }
 
@@ -99,29 +103,38 @@ function errorMessage(e: unknown): string {
   return e instanceof Error ? e.message : String(e)
 }
 
-export function loadPlayers(
-  getPlayers: GetPlayersUseCase,
-  getPlayerStats: GetPlayerStatsUseCase,
-  cleanupInactivePlayers: CleanupInactivePlayersUseCase,
-): LoadedPlayers {
+/**
+ * Home only shows how many trophies a player holds, not which ones — the
+ * badge detail (title, value, unit) stays on the Stats player detail. Counting
+ * reuses `groupTrophiesByPlayer()`, so ex aequo holders count like sole
+ * holders and a doubly-held id (D1 per game type) counts twice.
+ */
+function countTrophiesByPlayer(getTrophies: GetTrophiesUseCase): Map<string, number> {
+  const counts = new Map<string, number>()
+  for (const [playerId, badges] of groupTrophiesByPlayer(getTrophies.invoke())) {
+    counts.set(playerId, badges.length)
+  }
+  return counts
+}
+
+export function loadPlayers(sources: PlayerDataSources): LoadedPlayers {
   return {
-    players: getPlayers.invoke(),
-    stats: getPlayerStats.invoke(),
-    cleanupCandidates: cleanupInactivePlayers.preview(),
+    players: sources.getPlayers.invoke(),
+    stats: sources.getPlayerStats.invoke(),
+    trophyCounts: countTrophiesByPlayer(sources.getTrophies),
+    cleanupCandidates: sources.cleanupInactivePlayers.preview(),
   }
 }
 
 /** Mirrors PlayerHandler's AddPlayer try/catch, using the current form input. */
 export function submitAddPlayer(
   addPlayer: AddPlayerUseCase,
-  getPlayers: GetPlayersUseCase,
-  getPlayerStats: GetPlayerStatsUseCase,
-  cleanupInactivePlayers: CleanupInactivePlayersUseCase,
+  sources: PlayerDataSources,
   state: PlayerState,
 ): PlayerAction {
   try {
     addPlayer.invoke(state.inputName.trim())
-    return { type: 'addSucceeded', ...loadPlayers(getPlayers, getPlayerStats, cleanupInactivePlayers) }
+    return { type: 'addSucceeded', ...loadPlayers(sources) }
   } catch (e) {
     return { type: 'addFailed', error: errorMessage(e) }
   }
@@ -129,38 +142,30 @@ export function submitAddPlayer(
 
 export function submitDeletePlayer(
   deletePlayer: DeletePlayerUseCase,
-  getPlayers: GetPlayersUseCase,
-  getPlayerStats: GetPlayerStatsUseCase,
-  cleanupInactivePlayers: CleanupInactivePlayersUseCase,
+  sources: PlayerDataSources,
   id: string,
   anonymize: boolean,
 ): PlayerAction {
   deletePlayer.invoke(id, anonymize)
-  return { type: 'deleted', ...loadPlayers(getPlayers, getPlayerStats, cleanupInactivePlayers) }
+  return { type: 'deleted', ...loadPlayers(sources) }
 }
 
 /** Mirrors ConfirmRename's `state.renamingPlayerId ?: return` guard: undefined means no-op. */
 export function submitConfirmRename(
   renamePlayerUseCase: RenamePlayerUseCase,
-  getPlayers: GetPlayersUseCase,
-  getPlayerStats: GetPlayerStatsUseCase,
-  cleanupInactivePlayers: CleanupInactivePlayersUseCase,
+  sources: PlayerDataSources,
   state: PlayerState,
 ): PlayerAction | undefined {
   if (state.renamingPlayerId === undefined) return undefined
   try {
     renamePlayerUseCase.invoke(state.renamingPlayerId, state.renameInput.trim())
-    return { type: 'renameSucceeded', ...loadPlayers(getPlayers, getPlayerStats, cleanupInactivePlayers) }
+    return { type: 'renameSucceeded', ...loadPlayers(sources) }
   } catch (e) {
     return { type: 'renameFailed', error: errorMessage(e) }
   }
 }
 
-export function submitCleanup(
-  cleanupInactivePlayers: CleanupInactivePlayersUseCase,
-  getPlayers: GetPlayersUseCase,
-  getPlayerStats: GetPlayerStatsUseCase,
-): PlayerAction {
-  cleanupInactivePlayers.execute()
-  return { type: 'cleanupCompleted', ...loadPlayers(getPlayers, getPlayerStats, cleanupInactivePlayers) }
+export function submitCleanup(sources: PlayerDataSources): PlayerAction {
+  sources.cleanupInactivePlayers.execute()
+  return { type: 'cleanupCompleted', ...loadPlayers(sources) }
 }

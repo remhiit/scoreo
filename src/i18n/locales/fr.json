@@ -62,6 +62,8 @@
     "onboardingStep3": "Sélectionnez ≥2 joueurs et cliquez sur « Nouvelle partie »",
     "noPlayersYet": "Aucun joueur pour l'instant. Ajoutez-en un ci-dessus.",
     "playersSelected": "{{count}}/2 joueurs sélectionnés",
+    "trophyCount_one": "{{count}} trophée",
+    "trophyCount_other": "{{count}} trophées",
     "cleanUp": "Nettoyer ({{count}})",
     "newMatch": "Nouvelle partie",
     "selectGameTitle": "Choisir un jeu",
