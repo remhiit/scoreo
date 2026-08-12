@@ -4,7 +4,7 @@ import type { GameType } from '../../domain/model/gameType'
 import type { Match } from '../../domain/model/match'
 import type { Player } from '../../domain/model/player'
 import { GetGameTypesUseCase } from '../../application/getGameTypesUseCase'
-import { GetTrophiesUseCase } from '../../application/getTrophiesUseCase'
+import { GetTrophiesUseCase, REGULAR_MIN_MATCHES } from '../../application/getTrophiesUseCase'
 import { InMemoryGameTypeRepository } from '../../infrastructure/testing/inMemoryGameTypeRepository'
 import { InMemoryMatchRepository } from '../../infrastructure/testing/inMemoryMatchRepository'
 import { InMemoryPlayerRepository } from '../../infrastructure/testing/inMemoryPlayerRepository'
@@ -66,6 +66,15 @@ describe('HallOfFameScreen', () => {
     expect(screen.getAllByText('Alice')).toHaveLength(5)
     // Bob: Current Streak + Streak Breaker holder + Game Record (Darts, 10).
     expect(screen.getAllByText('Bob')).toHaveLength(3)
+  })
+
+  it('renders a threshold-interpolated description and a structured holder detail', () => {
+    renderHallOfFame()
+
+    // B3's description interpolates REGULAR_MIN_MATCHES rather than hardcoding it.
+    expect(screen.getByText(`Best win ratio, among players with at least ${REGULAR_MIN_MATCHES} matches`)).toBeInTheDocument()
+    // A4's detail is built from structured data (kind: 'streakBroken') via i18n, not a pre-assembled sentence.
+    expect(screen.getByText("Ended Alice's streak")).toBeInTheDocument()
   })
 
   it('shows an explicit empty state when a trophy has no holders', () => {

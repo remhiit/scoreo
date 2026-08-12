@@ -89,7 +89,55 @@
     "noHeadToHead": "No head-to-head data yet."
   },
   "hallOfFame": {
-    "noRecordYet": "No record yet."
+    "noRecordYet": "No record yet.",
+    "trophies": {
+      "a1": {
+        "title": "The Invincible",
+        "description": "Longest winning streak of all time"
+      },
+      "a2": {
+        "title": "Current Streak",
+        "description": "Consecutive wins right now"
+      },
+      "a4": {
+        "title": "Streak Breaker",
+        "description": "Ended the biggest winning streak",
+        "detail": "Ended {{brokenPlayerName}}'s streak"
+      },
+      "b2": {
+        "title": "The Collector",
+        "description": "Most wins of all time"
+      },
+      "b3": {
+        "title": "The Regular",
+        "description": "Best win ratio, among players with at least {{minMatches}} matches",
+        "detail": "{{wins}}/{{played}} matches"
+      },
+      "c1": {
+        "title": "The Peak",
+        "description": "Highest ELO rating ever reached"
+      },
+      "c3": {
+        "title": "King of the Hill",
+        "description": "Cumulated time spent leading the ELO ranking"
+      },
+      "d1": {
+        "title": "Game Record",
+        "description": "Best score ever recorded on a match, per game type"
+      },
+      "e1": {
+        "title": "Nemesis",
+        "description": "Biggest wins-minus-losses gap against a single rival, among pairs with at least {{minMeetings}} meetings"
+      },
+      "f2": {
+        "title": "Player of the Month",
+        "description": "Most wins this calendar month"
+      }
+    },
+    "units": {
+      "elo": "ELO",
+      "days": "days"
+    }
   },
   "import": {
     "selectFile": "Select a JSON file to import",
