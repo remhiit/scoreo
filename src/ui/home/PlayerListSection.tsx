@@ -1,4 +1,4 @@
-import { Sparkles } from 'lucide-react'
+import { Sparkles, Trophy } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import type { PlayerStats } from '../../application/getPlayerStatsUseCase'
 import type { Player } from '../../domain/model/player'
@@ -9,6 +9,8 @@ import { LudoButton } from '../shared/LudoButton'
 export interface PlayerListSectionProps {
   players: Player[]
   stats: Map<string, PlayerStats>
+  /** Player id -> number of trophies held; no badge below 1. */
+  trophyCounts: Map<string, number>
   selectedPlayers: Set<string>
   onToggleSelect: (playerId: string) => void
   onEditPlayer: (playerId: string) => void
@@ -20,6 +22,7 @@ export interface PlayerListSectionProps {
 export function PlayerListSection({
   players,
   stats,
+  trophyCounts,
   selectedPlayers,
   onToggleSelect,
   onEditPlayer,
@@ -39,11 +42,21 @@ export function PlayerListSection({
             const isSelected = selectedPlayers.has(player.id)
             const playerStats = stats.get(player.id)
             const subtitle = playerStats ? `${playerStats.wins}W ${playerStats.losses}L` : undefined
+            const trophyCount = trophyCounts.get(player.id) ?? 0
             return (
               <ListItemRow
                 key={player.id}
                 label={player.name}
                 subtitle={subtitle}
+                badge={
+                  trophyCount > 0 ? (
+                    <>
+                      <Trophy size={14} aria-hidden />
+                      {trophyCount}
+                    </>
+                  ) : undefined
+                }
+                badgeLabel={t('home.trophyCount', { count: trophyCount })}
                 isSelectable
                 isSelected={isSelected}
                 onSelect={() => onToggleSelect(player.id)}

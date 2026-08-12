@@ -6,6 +6,7 @@ import { CleanupInactivePlayersUseCase } from '../../application/cleanupInactive
 import { DeletePlayerUseCase } from '../../application/deletePlayerUseCase'
 import { GetPlayerStatsUseCase } from '../../application/getPlayerStatsUseCase'
 import { GetPlayersUseCase } from '../../application/getPlayersUseCase'
+import { GetTrophiesUseCase } from '../../application/getTrophiesUseCase'
 import { RenamePlayerUseCase } from '../../application/renamePlayerUseCase'
 import { InMemoryGameTypeRepository } from '../../infrastructure/testing/inMemoryGameTypeRepository'
 import { InMemoryMatchRepository } from '../../infrastructure/testing/inMemoryMatchRepository'
@@ -43,20 +44,20 @@ function buildUseCases(
   return {
     playerRepo,
     addPlayer: new AddPlayerUseCase(playerRepo),
-    getPlayers: new GetPlayersUseCase(playerRepo),
-    getPlayerStats: new GetPlayerStatsUseCase(matchRepo, gameTypeRepo),
     deletePlayer: new DeletePlayerUseCase(playerRepo),
     renamePlayerUseCase: new RenamePlayerUseCase(playerRepo),
-    cleanupInactivePlayers: new CleanupInactivePlayersUseCase(playerRepo, matchRepo),
+    sources: {
+      getPlayers: new GetPlayersUseCase(playerRepo),
+      getPlayerStats: new GetPlayerStatsUseCase(matchRepo, gameTypeRepo),
+      cleanupInactivePlayers: new CleanupInactivePlayersUseCase(playerRepo, matchRepo),
+      getTrophies: new GetTrophiesUseCase(matchRepo, gameTypeRepo, playerRepo),
+    },
   }
 }
 
 function add(state: PlayerState, uc: ReturnType<typeof buildUseCases>, name: string): PlayerState {
   const withInput = playerReducer(state, { type: 'updateInput', name })
-  return playerReducer(
-    withInput,
-    submitAddPlayer(uc.addPlayer, uc.getPlayers, uc.getPlayerStats, uc.cleanupInactivePlayers, withInput),
-  )
+  return playerReducer(withInput, submitAddPlayer(uc.addPlayer, uc.sources, withInput))
 }
 
 describe('playerReducer', () => {
@@ -68,7 +69,7 @@ describe('playerReducer', () => {
 
   it('updateInput updates inputName and clears the error', () => {
     const uc = buildUseCases()
-    let state = playerReducer(initialPlayerState, submitAddPlayer(uc.addPlayer, uc.getPlayers, uc.getPlayerStats, uc.cleanupInactivePlayers, initialPlayerState))
+    let state = playerReducer(initialPlayerState, submitAddPlayer(uc.addPlayer, uc.sources, initialPlayerState))
     state = playerReducer(state, { type: 'updateInput', name: 'Alice' })
 
     expect(state.inputName).toBe('Alice')
@@ -95,7 +96,7 @@ describe('playerReducer', () => {
 
   it('adding with an empty input sets an error', () => {
     const uc = buildUseCases()
-    const state = playerReducer(initialPlayerState, submitAddPlayer(uc.addPlayer, uc.getPlayers, uc.getPlayerStats, uc.cleanupInactivePlayers, initialPlayerState))
+    const state = playerReducer(initialPlayerState, submitAddPlayer(uc.addPlayer, uc.sources, initialPlayerState))
 
     expect(state.players).toEqual([])
     expect(state.error).toBe('name: Player name must not be blank')
@@ -112,7 +113,7 @@ describe('playerReducer', () => {
   it('showDeleteConfirm sets deleteConfirmPlayerId', () => {
     const uc = buildUseCases()
     uc.playerRepo.save({ id: 'p1', name: 'Alice', active: true })
-    let state = playerReducer(initialPlayerState, { type: 'loaded', ...loadPlayers(uc.getPlayers, uc.getPlayerStats, uc.cleanupInactivePlayers) })
+    let state = playerReducer(initialPlayerState, { type: 'loaded', ...loadPlayers(uc.sources) })
 
     state = playerReducer(state, { type: 'showDeleteConfirm', id: 'p1' })
 
@@ -130,12 +131,12 @@ describe('playerReducer', () => {
     const uc = buildUseCases()
     uc.playerRepo.save({ id: 'p1', name: 'Alice', active: true })
     uc.playerRepo.save({ id: 'p2', name: 'Bob', active: true })
-    let state = playerReducer(initialPlayerState, { type: 'loaded', ...loadPlayers(uc.getPlayers, uc.getPlayerStats, uc.cleanupInactivePlayers) })
+    let state = playerReducer(initialPlayerState, { type: 'loaded', ...loadPlayers(uc.sources) })
     state = playerReducer(state, { type: 'showDeleteConfirm', id: 'p1' })
 
     state = playerReducer(
       state,
-      submitDeletePlayer(uc.deletePlayer, uc.getPlayers, uc.getPlayerStats, uc.cleanupInactivePlayers, 'p1', false),
+      submitDeletePlayer(uc.deletePlayer, uc.sources, 'p1', false),
     )
 
     expect(state.players).toHaveLength(1)
@@ -146,9 +147,9 @@ describe('playerReducer', () => {
   it('deleting with anonymize blanks the name', () => {
     const uc = buildUseCases()
     uc.playerRepo.save({ id: 'p1', name: 'Alice', active: true })
-    let state = playerReducer(initialPlayerState, { type: 'loaded', ...loadPlayers(uc.getPlayers, uc.getPlayerStats, uc.cleanupInactivePlayers) })
+    let state = playerReducer(initialPlayerState, { type: 'loaded', ...loadPlayers(uc.sources) })
 
-    state = playerReducer(state, submitDeletePlayer(uc.deletePlayer, uc.getPlayers, uc.getPlayerStats, uc.cleanupInactivePlayers, 'p1', true))
+    state = playerReducer(state, submitDeletePlayer(uc.deletePlayer, uc.sources, 'p1', true))
 
     expect(state.players).toEqual([])
     const all = uc.playerRepo.getAll(true)
@@ -160,9 +161,9 @@ describe('playerReducer', () => {
   it('deleting without anonymize keeps the name', () => {
     const uc = buildUseCases()
     uc.playerRepo.save({ id: 'p1', name: 'Alice', active: true })
-    let state = playerReducer(initialPlayerState, { type: 'loaded', ...loadPlayers(uc.getPlayers, uc.getPlayerStats, uc.cleanupInactivePlayers) })
+    let state = playerReducer(initialPlayerState, { type: 'loaded', ...loadPlayers(uc.sources) })
 
-    state = playerReducer(state, submitDeletePlayer(uc.deletePlayer, uc.getPlayers, uc.getPlayerStats, uc.cleanupInactivePlayers, 'p1', false))
+    state = playerReducer(state, submitDeletePlayer(uc.deletePlayer, uc.sources, 'p1', false))
 
     expect(state.players).toEqual([])
     const all = uc.playerRepo.getAll(true)
@@ -183,19 +184,60 @@ describe('playerReducer', () => {
       { playerId: 'p2', score: 5 },
     ]))
     const uc2 = buildUseCases(uc.playerRepo, matchRepo, gameTypeRepo)
-    let state = playerReducer(initialPlayerState, { type: 'loaded', ...loadPlayers(uc2.getPlayers, uc2.getPlayerStats, uc2.cleanupInactivePlayers) })
+    let state = playerReducer(initialPlayerState, { type: 'loaded', ...loadPlayers(uc2.sources) })
 
-    state = playerReducer(state, submitDeletePlayer(uc2.deletePlayer, uc2.getPlayers, uc2.getPlayerStats, uc2.cleanupInactivePlayers, 'p1', false))
+    state = playerReducer(state, submitDeletePlayer(uc2.deletePlayer, uc2.sources, 'p1', false))
 
     expect(state.players).toHaveLength(1)
     expect(state.players[0].name).toBe('Bob')
     expect(state.stats.get('p2')?.losses).toBe(1)
   })
 
+  it('loading counts the trophies held by each player, and omits players holding none', () => {
+    const playerRepo = new InMemoryPlayerRepository()
+    playerRepo.save({ id: 'p1', name: 'Alice', active: true })
+    playerRepo.save({ id: 'p2', name: 'Bob', active: true })
+    const gameTypeRepo = new InMemoryGameTypeRepository()
+    gameTypeRepo.save(gameType('gt1', 'Test'))
+    const matchRepo = new InMemoryMatchRepository()
+    matchRepo.save(match('m1', 1000, 'gt1', [
+      { playerId: 'p1', score: 10 },
+      { playerId: 'p2', score: 5 },
+    ]))
+    const uc = buildUseCases(playerRepo, matchRepo, gameTypeRepo)
+
+    const state = playerReducer(initialPlayerState, { type: 'loaded', ...loadPlayers(uc.sources) })
+
+    // Alice holds every record this single match can award (longest streak,
+    // current streak, most wins, ELO peak, king of the hill, game record).
+    expect(state.trophyCounts.get('p1')).toBe(6)
+    expect(state.trophyCounts.get('p2')).toBeUndefined()
+  })
+
+  it('trophy counts are recomputed after a player mutation', () => {
+    const playerRepo = new InMemoryPlayerRepository()
+    playerRepo.save({ id: 'p1', name: 'Alice', active: true })
+    playerRepo.save({ id: 'p2', name: 'Bob', active: true })
+    const gameTypeRepo = new InMemoryGameTypeRepository()
+    gameTypeRepo.save(gameType('gt1', 'Test'))
+    const matchRepo = new InMemoryMatchRepository()
+    matchRepo.save(match('m1', 1000, 'gt1', [
+      { playerId: 'p1', score: 10 },
+      { playerId: 'p2', score: 5 },
+    ]))
+    const uc = buildUseCases(playerRepo, matchRepo, gameTypeRepo)
+    let state = playerReducer(initialPlayerState, { type: 'loaded', ...loadPlayers(uc.sources) })
+
+    state = add(state, uc, 'Chloé')
+
+    expect(state.trophyCounts.get('p1')).toBe(6)
+    expect(state.trophyCounts.get(state.players[state.players.length - 1].id)).toBeUndefined()
+  })
+
   it('startRename populates renamingPlayerId and renameInput with the current name', () => {
     const uc = buildUseCases()
     uc.playerRepo.save({ id: 'p1', name: 'Alice', active: true })
-    let state = playerReducer(initialPlayerState, { type: 'loaded', ...loadPlayers(uc.getPlayers, uc.getPlayerStats, uc.cleanupInactivePlayers) })
+    let state = playerReducer(initialPlayerState, { type: 'loaded', ...loadPlayers(uc.sources) })
 
     state = playerReducer(state, { type: 'startRename', playerId: 'p1' })
 
@@ -213,7 +255,7 @@ describe('playerReducer', () => {
   it('updateRenameInput updates the renameInput field', () => {
     const uc = buildUseCases()
     uc.playerRepo.save({ id: 'p1', name: 'Alice', active: true })
-    let state = playerReducer(initialPlayerState, { type: 'loaded', ...loadPlayers(uc.getPlayers, uc.getPlayerStats, uc.cleanupInactivePlayers) })
+    let state = playerReducer(initialPlayerState, { type: 'loaded', ...loadPlayers(uc.sources) })
     state = playerReducer(state, { type: 'startRename', playerId: 'p1' })
 
     state = playerReducer(state, { type: 'updateRenameInput', name: 'Alicia' })
@@ -224,11 +266,11 @@ describe('playerReducer', () => {
   it('confirming a rename calls the use case and updates the players list', () => {
     const uc = buildUseCases()
     uc.playerRepo.save({ id: 'p1', name: 'Alice', active: true })
-    let state = playerReducer(initialPlayerState, { type: 'loaded', ...loadPlayers(uc.getPlayers, uc.getPlayerStats, uc.cleanupInactivePlayers) })
+    let state = playerReducer(initialPlayerState, { type: 'loaded', ...loadPlayers(uc.sources) })
     state = playerReducer(state, { type: 'startRename', playerId: 'p1' })
     state = playerReducer(state, { type: 'updateRenameInput', name: 'Alicia' })
 
-    const action = submitConfirmRename(uc.renamePlayerUseCase, uc.getPlayers, uc.getPlayerStats, uc.cleanupInactivePlayers, state)!
+    const action = submitConfirmRename(uc.renamePlayerUseCase, uc.sources, state)!
     state = playerReducer(state, action)
 
     expect(state.players[0].name).toBe('Alicia')
@@ -237,11 +279,11 @@ describe('playerReducer', () => {
   it('confirming a rename clears the rename state after success', () => {
     const uc = buildUseCases()
     uc.playerRepo.save({ id: 'p1', name: 'Alice', active: true })
-    let state = playerReducer(initialPlayerState, { type: 'loaded', ...loadPlayers(uc.getPlayers, uc.getPlayerStats, uc.cleanupInactivePlayers) })
+    let state = playerReducer(initialPlayerState, { type: 'loaded', ...loadPlayers(uc.sources) })
     state = playerReducer(state, { type: 'startRename', playerId: 'p1' })
     state = playerReducer(state, { type: 'updateRenameInput', name: 'Alicia' })
 
-    const action = submitConfirmRename(uc.renamePlayerUseCase, uc.getPlayers, uc.getPlayerStats, uc.cleanupInactivePlayers, state)!
+    const action = submitConfirmRename(uc.renamePlayerUseCase, uc.sources, state)!
     state = playerReducer(state, action)
 
     expect(state.renamingPlayerId).toBeUndefined()
@@ -252,11 +294,11 @@ describe('playerReducer', () => {
   it('confirming a rename with an empty name sets an error and does not save', () => {
     const uc = buildUseCases()
     uc.playerRepo.save({ id: 'p1', name: 'Alice', active: true })
-    let state = playerReducer(initialPlayerState, { type: 'loaded', ...loadPlayers(uc.getPlayers, uc.getPlayerStats, uc.cleanupInactivePlayers) })
+    let state = playerReducer(initialPlayerState, { type: 'loaded', ...loadPlayers(uc.sources) })
     state = playerReducer(state, { type: 'startRename', playerId: 'p1' })
     state = playerReducer(state, { type: 'updateRenameInput', name: '   ' })
 
-    const action = submitConfirmRename(uc.renamePlayerUseCase, uc.getPlayers, uc.getPlayerStats, uc.cleanupInactivePlayers, state)!
+    const action = submitConfirmRename(uc.renamePlayerUseCase, uc.sources, state)!
     state = playerReducer(state, action)
 
     expect(state.error).toBe('name: Player name must not be blank')
@@ -267,7 +309,7 @@ describe('playerReducer', () => {
   it('cancelRename discards changes and clears state', () => {
     const uc = buildUseCases()
     uc.playerRepo.save({ id: 'p1', name: 'Alice', active: true })
-    let state = playerReducer(initialPlayerState, { type: 'loaded', ...loadPlayers(uc.getPlayers, uc.getPlayerStats, uc.cleanupInactivePlayers) })
+    let state = playerReducer(initialPlayerState, { type: 'loaded', ...loadPlayers(uc.sources) })
     state = playerReducer(state, { type: 'startRename', playerId: 'p1' })
     state = playerReducer(state, { type: 'updateRenameInput', name: 'Bob' })
 
@@ -281,12 +323,12 @@ describe('playerReducer', () => {
   it('renaming preserves the player id (tied to stats)', () => {
     const uc = buildUseCases()
     uc.playerRepo.save({ id: 'p1', name: 'Alice', active: true })
-    let state = playerReducer(initialPlayerState, { type: 'loaded', ...loadPlayers(uc.getPlayers, uc.getPlayerStats, uc.cleanupInactivePlayers) })
+    let state = playerReducer(initialPlayerState, { type: 'loaded', ...loadPlayers(uc.sources) })
     const originalId = state.players[0].id
     state = playerReducer(state, { type: 'startRename', playerId: 'p1' })
     state = playerReducer(state, { type: 'updateRenameInput', name: 'Alicia' })
 
-    const action = submitConfirmRename(uc.renamePlayerUseCase, uc.getPlayers, uc.getPlayerStats, uc.cleanupInactivePlayers, state)!
+    const action = submitConfirmRename(uc.renamePlayerUseCase, uc.sources, state)!
     state = playerReducer(state, action)
 
     expect(state.players[0].id).toBe(originalId)
@@ -295,9 +337,9 @@ describe('playerReducer', () => {
   it('confirming a rename without a prior startRename is a no-op', () => {
     const uc = buildUseCases()
     uc.playerRepo.save({ id: 'p1', name: 'Alice', active: true })
-    const state = playerReducer(initialPlayerState, { type: 'loaded', ...loadPlayers(uc.getPlayers, uc.getPlayerStats, uc.cleanupInactivePlayers) })
+    const state = playerReducer(initialPlayerState, { type: 'loaded', ...loadPlayers(uc.sources) })
 
-    const action = submitConfirmRename(uc.renamePlayerUseCase, uc.getPlayers, uc.getPlayerStats, uc.cleanupInactivePlayers, state)
+    const action = submitConfirmRename(uc.renamePlayerUseCase, uc.sources, state)
 
     expect(action).toBeUndefined()
     expect(state.players[0].name).toBe('Alice')

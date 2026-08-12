@@ -36,3 +36,6 @@
   leaderboard and head-to-head: under a game type filter, they're computed
   on that game type's matches only. Badge order: permanent records first
   (A1, A4, B2, B3, C1, C3, D1, E1), then rotating trophies (A2, F2).
+  The Home player list shows the same badges as a bare count next to each
+  player (see [`players.md`](players.md#screen-playerscreen)), computed on
+  all game types; this screen is where that count is broken down.

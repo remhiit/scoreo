@@ -195,6 +195,23 @@
     margin-top: 3px;
 }
 
+/* Poussé en fin de zone label (juste avant les actions) — la zone de
+   sélection reste cliquable sur toute sa largeur, badge compris. */
+.list-item-badge {
+    margin-left: auto;
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1);
+    flex-shrink: 0;
+    padding: var(--space-1) var(--space-3);
+    background: var(--surface-sunken);
+    border-radius: var(--radius-pill);
+    color: var(--color-primary);
+    font-family: var(--font-score);
+    font-weight: 700;
+    font-size: var(--text-sm);
+}
+
 .list-item-actions {
     display: flex;
     align-items: stretch;
