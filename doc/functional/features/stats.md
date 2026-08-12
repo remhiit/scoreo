@@ -31,11 +31,21 @@
   `ELO`/days). Always rendered, even with no trophy: an explicit empty state
   replaces the badge row rather than hiding the section. A player ex aequo
   on a trophy gets the badge the same as a sole holder; a player holding
-  the same trophy id more than once (D1's per-game-type record) gets one
-  badge per record. Badges follow the screen's game-type tab, same as the
-  leaderboard and head-to-head: under a game type filter, they're computed
-  on that game type's matches only. Badge order: permanent records first
-  (A1, A4, B2, B3, C1, C3, D1, E1), then rotating trophies (A2, F2).
+  the same trophy id more than once (D1's per-game-type record, or F3's one
+  holder per month won) gets one badge per record — no cap, no grouping, no
+  "+N" pill: a player who won 5 months gets 5 separate F3 badges. Badges
+  follow the screen's game-type tab, same as the leaderboard and
+  head-to-head: under a game type filter, they're computed on that game
+  type's matches only. Badge order: permanent records first
+  (A1, A4, B2, B3, C1, C3, D1, E1), then the acquired monthly hall of fame
+  (F3), then rotating trophies (A2, F2).
+  A badge for a dated (F3) holder appends its period to the title via the
+  `hallOfFame.badgePeriod` i18n key (`"{{title}} — {{period}}"`), the
+  period formatted short (`toLocaleDateString(i18n.language, { month:
+  'short', year: 'numeric' })`, e.g. "Monthly Champions — Jul 2026"); a
+  player's F3 badges are ordered most-recent month first, matching the
+  holder order F3 already returns. Badges with no `period` (every other
+  trophy) show just the plain title, as before.
   The Home player list shows the same badges as a bare count next to each
   player (see [`players.md`](players.md#screen-playerscreen)), computed on
   all game types; this screen is where that count is broken down.

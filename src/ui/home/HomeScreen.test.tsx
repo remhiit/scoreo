@@ -303,8 +303,10 @@ describe('HomeScreen', () => {
 
     const aliceRow = screen.getByText('Alice', { selector: '.list-item-name' }).closest('.list-item-row')!
     const badge = aliceRow.querySelector('.list-item-badge')!
-    expect(badge).toHaveTextContent('6')
-    expect(badge).toHaveAttribute('aria-label', '6 trophies')
+    // 6 records this single (long-past) match can award, plus the monthly
+    // champion badge (F3) since its month is long completed.
+    expect(badge).toHaveTextContent('7')
+    expect(badge).toHaveAttribute('aria-label', '7 trophies')
   })
 
   it('shows no trophy badge at all before any match is played', () => {

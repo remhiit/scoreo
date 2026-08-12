@@ -208,10 +208,32 @@ describe('playerReducer', () => {
 
     const state = playerReducer(initialPlayerState, { type: 'loaded', ...loadPlayers(uc.sources) })
 
-    // Alice holds every record this single match can award (longest streak,
-    // current streak, most wins, ELO peak, king of the hill, game record).
-    expect(state.trophyCounts.get('p1')).toBe(6)
+    // Alice holds every record this single (long-past) match can award:
+    // longest streak, current streak, most wins, ELO peak, king of the hill,
+    // game record, and — since its month is long completed — the monthly
+    // champion badge (F3) for that month.
+    expect(state.trophyCounts.get('p1')).toBe(7)
     expect(state.trophyCounts.get('p2')).toBeUndefined()
+  })
+
+  it('trophy count grows by one per completed month won (F3), same rule as a trophy held twice', () => {
+    const playerRepo = new InMemoryPlayerRepository()
+    playerRepo.save({ id: 'p1', name: 'Alice', active: true })
+    const gameTypeRepo = new InMemoryGameTypeRepository()
+    gameTypeRepo.save(gameType('gt1', 'Test'))
+    const matchRepo = new InMemoryMatchRepository()
+    for (let month = 0; month < 5; month++) {
+      matchRepo.save(match(`m${month}`, new Date(2020, month, 15).getTime(), 'gt1', [
+        { playerId: 'p1', score: 10 },
+      ]))
+    }
+    const uc = buildUseCases(playerRepo, matchRepo, gameTypeRepo)
+
+    const state = playerReducer(initialPlayerState, { type: 'loaded', ...loadPlayers(uc.sources) })
+
+    const f3Count = uc.sources.getTrophies.invoke().find((t) => t.id === 'f3')!.holders.length
+    expect(f3Count).toBe(5)
+    expect(state.trophyCounts.get('p1')).toBeGreaterThanOrEqual(5)
   })
 
   it('trophy counts are recomputed after a player mutation', () => {
@@ -230,7 +252,7 @@ describe('playerReducer', () => {
 
     state = add(state, uc, 'Chloé')
 
-    expect(state.trophyCounts.get('p1')).toBe(6)
+    expect(state.trophyCounts.get('p1')).toBe(7)
     expect(state.trophyCounts.get(state.players[state.players.length - 1].id)).toBeUndefined()
   })
 

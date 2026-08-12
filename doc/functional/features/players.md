@@ -27,7 +27,7 @@ Screen: `src/ui/home/HomeScreen.tsx`. See `doc/reference.md` for the full reduce
 - List of active players with name + W/L stats + trophy count badge + ✏️ edit button + 🗑 delete button
 - Trophy count badge (🏆 N, at the end of the row's selectable zone):
   - Shown only for a player holding at least one trophy — no badge, not a "0", for the others
-  - Counts the badges of [`stats.md`](stats.md#player-detail)'s per-player trophy list: an ex aequo holder counts the trophy like a sole holder, and a trophy held twice (the D1 game record on two game types) counts twice
+  - Counts the badges of [`stats.md`](stats.md#player-detail)'s per-player trophy list: an ex aequo holder counts the trophy like a sole holder, and a trophy held twice (the D1 game record on two game types, or F3's monthly champion — 5 months won counts as +5) counts twice/N times
   - Recomputed after every player mutation (add, delete, rename, cleanup), like the W/L stats
   - Home shows the count only; which trophies they are stays on the Stats player detail
 - Edit mode (rename modal): clicking ✏️ opens a modal

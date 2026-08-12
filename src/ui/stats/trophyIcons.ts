@@ -1,4 +1,4 @@
-import { Calendar, Crown, Flame, Mountain, Skull, Star, Swords, Target, TrendingUp, Trophy as TrophyIcon } from 'lucide-react'
+import { Calendar, Crown, Flame, Medal, Mountain, Skull, Star, Swords, Target, TrendingUp, Trophy as TrophyIcon } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 
 /**
@@ -16,4 +16,5 @@ export const TROPHY_ICONS: Record<string, LucideIcon> = {
   d1: Star,
   e1: Skull,
   f2: Calendar,
+  f3: Medal,
 }
