@@ -12,6 +12,11 @@ const LANGUAGE_LABEL_KEY: Record<SupportedLanguage, string> = {
   fr: 'languagePicker.french',
 }
 
+const LANGUAGE_FLAG: Record<SupportedLanguage, string> = {
+  en: '🇬🇧',
+  fr: '🇫🇷',
+}
+
 /** Language picker, opened from the burger menu. Modeled on ThemePickerDialog. */
 export function LanguagePickerDialog({ onClose }: LanguagePickerDialogProps) {
   const { t, i18n } = useTranslation()
@@ -31,7 +36,10 @@ export function LanguagePickerDialog({ onClose }: LanguagePickerDialogProps) {
             className={lang === i18n.language ? 'theme-chip theme-chip--active' : 'theme-chip'}
             onClick={() => void i18n.changeLanguage(lang)}
           >
-            {t(LANGUAGE_LABEL_KEY[lang])}
+            <span className="language-picker-flag" aria-hidden="true">
+              {LANGUAGE_FLAG[lang]}
+            </span>
+            <span>{t(LANGUAGE_LABEL_KEY[lang])}</span>
           </button>
         ))}
       </div>

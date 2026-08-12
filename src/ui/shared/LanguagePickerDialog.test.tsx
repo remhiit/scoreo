@@ -11,10 +11,10 @@ describe('LanguagePickerDialog', () => {
   it('shows English and French options, with the active language highlighted', () => {
     render(<LanguagePickerDialog onClose={() => {}} />)
 
-    const english = screen.getByText('English')
-    const french = screen.getByText('French')
-    expect(english.className).toContain('theme-chip--active')
-    expect(french.className).not.toContain('theme-chip--active')
+    const english = screen.getByText('English').closest('button')
+    const french = screen.getByText('French').closest('button')
+    expect(english?.className).toContain('theme-chip--active')
+    expect(french?.className).not.toContain('theme-chip--active')
   })
 
   it('switches language and persists the choice to localStorage', async () => {
@@ -34,5 +34,12 @@ describe('LanguagePickerDialog', () => {
     fireEvent.click(screen.getByText('Close'))
 
     expect(onClose).toHaveBeenCalled()
+  })
+
+  it('shows a flag next to each language option', () => {
+    render(<LanguagePickerDialog onClose={() => {}} />)
+
+    expect(screen.getByText('🇬🇧')).toBeInTheDocument()
+    expect(screen.getByText('🇫🇷')).toBeInTheDocument()
   })
 })

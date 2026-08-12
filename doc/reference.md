@@ -136,7 +136,7 @@ Notable design choices:
 | `LudoTextInput` | `value`, `onChange`, `label?`, `placeholder?`, `size?`, `disabled?`, `invalid?`, `autofocus?`, `onEnter?` | Controlled text field. |
 | `LudoNumberInput` | `value`, `onChange`, `min?`, `max?`, `step?`, `stepper?` (default `true`), `size?`, `disabled?` | Controlled number field, `-`/`+` stepper by default. |
 | `LudoModal` | `open`, `title?`, `onClose?`, `footer?`, `children` | Centered dialog with scrim; closes on scrim click or Escape. Used by every dialog in the app, including the theme picker. |
-| `LanguagePickerDialog` | `onClose` | EN/FR language picker, opened from the burger menu's "🌐 Language" item; modeled on `ThemePickerDialog`, reuses its `.theme-picker-row`/`.theme-chip` CSS. Calls `i18n.changeLanguage()`. |
+| `LanguagePickerDialog` | `onClose` | EN/FR language picker, opened from the burger menu's "🌐 Language" item; modeled on `ThemePickerDialog`, reuses its `.theme-picker-row`/`.theme-chip` CSS. Each option shows a flag emoji (🇬🇧/🇫🇷) next to the language name via `.language-picker-flag`. Calls `i18n.changeLanguage()`. |
 
 ## Tests
 
