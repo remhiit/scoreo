@@ -136,6 +136,10 @@
       "f2": {
         "title": "Joueur du mois",
         "description": "Le plus de victoires ce mois-ci"
+      },
+      "f3": {
+        "title": "Palmarès mensuel",
+        "description": "Vainqueur de chaque mois révolu"
       }
     },
     "units": {

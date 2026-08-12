@@ -8,7 +8,12 @@ on every visit.
 ## Trophy Model
 
 - `Trophy { id, holders: TrophyHolder[], unit? }`
-- `TrophyHolder { playerId, name, value, detail? }`
+- `TrophyHolder { playerId, name, value, detail?, period? }`
+- `period` is orthogonal to `detail` — set only by periodic trophies (F3),
+  currently `TrophyPeriod = { kind: 'month', year, month }` (`month` 0-11,
+  local time). Not persisted, no zod schema, same as the rest of the model.
+  `kind` leaves the door open to other granularities (week, year), but only
+  `'month'` is implemented so far.
 - `title`/`description` are **not** on the model — they live in i18n, under
   `hallOfFame.trophies.<id>.title`/`.description` (`<id>` is the trophy code
   in lowercase, e.g. `a1`, `b3`). The UI resolves them from `id`; the use
@@ -50,6 +55,7 @@ on every visit.
 | D1 | **Game Record** | Best score ever recorded on a match, per game type. Direction follows the game type's `winCondition` (`HIGHEST_SCORE` → max, `LOWEST_SCORE` → min); `MANUAL` game types are excluded. Under the "All" filter the trophy lists one row per game type (`detail` names it); under a single game type filter, only that one row. |
 | E1 | **Nemesis** | Among player pairs who have met at least `NEMESIS_MIN_MEETINGS` (5) times, the pair with the largest wins-minus-losses gap. The holder is the dominant player; `detail` names the dominated one. |
 | F2 | **Player of the Month** | Most wins in the current calendar month (device's local month). A rotating trophy — legitimately empty early in the month. |
+| F3 | **Monthly Champions** | One holder per completed calendar month with at least one win — the current month is excluded (that's F2's job). Each holder carries a `period` naming its month; ties within a month produce multiple holders for that month. Holders are sorted from the most recent completed month to the oldest, then within a month by the same name/`playerId` tie-break as `topHolders`. A month with no match produces no entry; if no month has ever been completed with a win, `f3` has `holders: []` like any other trophy. Retroactive: adding or correcting a past match recomputes the relevant month's holder(s), since nothing is persisted. |
 
 `REGULAR_MIN_MATCHES` and `NEMESIS_MIN_MEETINGS` are named constants exported
 from `GetTrophiesUseCase`.
@@ -66,6 +72,16 @@ recomputed from scratch on that game type's matches only.
 - One card per trophy: title, description, and its holder(s) — name, value,
   and `detail` when present. A trophy with no holder shows an explicit empty
   state ("No record yet.") instead of being hidden.
+- F3's card groups its holders by month instead of listing them flat: each
+  group has a subtitle localized via
+  `toLocaleDateString(i18n.language, { month: 'long', year: 'numeric' })`
+  (e.g. "July 2026"), most recent month first — holders already arrive
+  sorted that way from `GetTrophiesUseCase`, so the UI only groups
+  consecutive same-`period` holders (`groupHoldersByMonth` in
+  `HallOfFameScreen.tsx`).
+- `holderKey()` — the React key for a holder row — folds `period` into its
+  disambiguation, alongside `detail`, so a player crowned in more than one
+  month doesn't collide on the same key.
 - Reachable from the burger menu ("🏆 Hall of Fame").
 
 ## Per-Player View

@@ -63,8 +63,8 @@ describe('GetTrophiesUseCase', () => {
   it('returns all trophies with empty holders when there are no matches', () => {
     const trophies = buildUseCase().invoke()
 
-    expect(trophies).toHaveLength(10)
-    expect(trophies.map((t) => t.id)).toEqual(['a1', 'a2', 'a4', 'b2', 'b3', 'c1', 'c3', 'd1', 'e1', 'f2'])
+    expect(trophies).toHaveLength(11)
+    expect(trophies.map((t) => t.id)).toEqual(['a1', 'a2', 'a4', 'b2', 'b3', 'c1', 'c3', 'd1', 'e1', 'f2', 'f3'])
     for (const t of trophies) {
       expect(t.holders).toEqual([])
     }
@@ -713,6 +713,130 @@ describe('GetTrophiesUseCase', () => {
     })
   })
 
+  describe('F3 — Monthly Champions', () => {
+    beforeEach(() => {
+      vi.useFakeTimers()
+      vi.setSystemTime(new Date(2026, 7, 15))
+    })
+
+    afterEach(() => {
+      vi.useRealTimers()
+    })
+
+    it('crowns the winner of each completed month, excluding the current month', () => {
+      const playerRepo = new InMemoryPlayerRepository()
+      playerRepo.save(player('p1', 'Alice'))
+      playerRepo.save(player('p2', 'Bob'))
+      const gameTypeRepo = new InMemoryGameTypeRepository()
+      gameTypeRepo.save(gameType('gt1', 'Test'))
+      const matchRepo = new InMemoryMatchRepository()
+      // July 2026: Alice wins twice, Bob once.
+      matchRepo.save(match('m1', new Date(2026, 6, 5).getTime(), 'gt1', [{ playerId: 'p1', score: 10 }, { playerId: 'p2', score: 5 }]))
+      matchRepo.save(match('m2', new Date(2026, 6, 10).getTime(), 'gt1', [{ playerId: 'p1', score: 10 }, { playerId: 'p2', score: 5 }]))
+      matchRepo.save(match('m3', new Date(2026, 6, 15).getTime(), 'gt1', [{ playerId: 'p2', score: 10 }, { playerId: 'p1', score: 5 }]))
+      // August 2026 is the current month — excluded from f3.
+      matchRepo.save(match('m4', new Date(2026, 7, 2).getTime(), 'gt1', [{ playerId: 'p1', score: 10 }, { playerId: 'p2', score: 5 }]))
+
+      const holders = trophy(buildUseCase(matchRepo, gameTypeRepo, playerRepo).invoke(), 'f3').holders
+
+      expect(holders).toEqual([{ playerId: 'p1', name: 'Alice', value: 2, period: { kind: 'month', year: 2026, month: 6 } }])
+    })
+
+    it('produces multiple holders on a tie within the same month', () => {
+      const playerRepo = new InMemoryPlayerRepository()
+      playerRepo.save(player('p1', 'Alice'))
+      playerRepo.save(player('p2', 'Bob'))
+      const gameTypeRepo = new InMemoryGameTypeRepository()
+      gameTypeRepo.save(gameType('gt1', 'Test'))
+      const matchRepo = new InMemoryMatchRepository()
+      matchRepo.save(match('m1', new Date(2026, 6, 5).getTime(), 'gt1', [{ playerId: 'p1', score: 10 }, { playerId: 'p2', score: 5 }]))
+      matchRepo.save(match('m2', new Date(2026, 6, 10).getTime(), 'gt1', [{ playerId: 'p2', score: 10 }, { playerId: 'p1', score: 5 }]))
+
+      const holders = trophy(buildUseCase(matchRepo, gameTypeRepo, playerRepo).invoke(), 'f3').holders
+
+      expect(holders).toEqual([
+        { playerId: 'p1', name: 'Alice', value: 1, period: { kind: 'month', year: 2026, month: 6 } },
+        { playerId: 'p2', name: 'Bob', value: 1, period: { kind: 'month', year: 2026, month: 6 } },
+      ])
+    })
+
+    it('orders holders from the most recent completed month to the oldest', () => {
+      const playerRepo = new InMemoryPlayerRepository()
+      playerRepo.save(player('p1', 'Alice'))
+      playerRepo.save(player('p2', 'Bob'))
+      const gameTypeRepo = new InMemoryGameTypeRepository()
+      gameTypeRepo.save(gameType('gt1', 'Test'))
+      const matchRepo = new InMemoryMatchRepository()
+      // June 2026: Bob wins.
+      matchRepo.save(match('m1', new Date(2026, 5, 5).getTime(), 'gt1', [{ playerId: 'p2', score: 10 }, { playerId: 'p1', score: 5 }]))
+      // July 2026: Alice wins.
+      matchRepo.save(match('m2', new Date(2026, 6, 5).getTime(), 'gt1', [{ playerId: 'p1', score: 10 }, { playerId: 'p2', score: 5 }]))
+
+      const holders = trophy(buildUseCase(matchRepo, gameTypeRepo, playerRepo).invoke(), 'f3').holders
+
+      expect(holders).toEqual([
+        { playerId: 'p1', name: 'Alice', value: 1, period: { kind: 'month', year: 2026, month: 6 } },
+        { playerId: 'p2', name: 'Bob', value: 1, period: { kind: 'month', year: 2026, month: 5 } },
+      ])
+    })
+
+    it('treats December and January of different years as two distinct periods', () => {
+      vi.setSystemTime(new Date(2026, 1, 15))
+      const playerRepo = new InMemoryPlayerRepository()
+      playerRepo.save(player('p1', 'Alice'))
+      playerRepo.save(player('p2', 'Bob'))
+      const gameTypeRepo = new InMemoryGameTypeRepository()
+      gameTypeRepo.save(gameType('gt1', 'Test'))
+      const matchRepo = new InMemoryMatchRepository()
+      // December 2025: Bob wins.
+      matchRepo.save(match('m1', new Date(2025, 11, 20).getTime(), 'gt1', [{ playerId: 'p2', score: 10 }, { playerId: 'p1', score: 5 }]))
+      // January 2026: Alice wins.
+      matchRepo.save(match('m2', new Date(2026, 0, 5).getTime(), 'gt1', [{ playerId: 'p1', score: 10 }, { playerId: 'p2', score: 5 }]))
+
+      const holders = trophy(buildUseCase(matchRepo, gameTypeRepo, playerRepo).invoke(), 'f3').holders
+
+      expect(holders).toEqual([
+        { playerId: 'p1', name: 'Alice', value: 1, period: { kind: 'month', year: 2026, month: 0 } },
+        { playerId: 'p2', name: 'Bob', value: 1, period: { kind: 'month', year: 2025, month: 11 } },
+      ])
+    })
+
+    it('is empty when no month has ever been completed with a win', () => {
+      const playerRepo = new InMemoryPlayerRepository()
+      playerRepo.save(player('p1', 'Alice'))
+      playerRepo.save(player('p2', 'Bob'))
+      const gameTypeRepo = new InMemoryGameTypeRepository()
+      gameTypeRepo.save(gameType('gt1', 'Test'))
+      const matchRepo = new InMemoryMatchRepository()
+      matchRepo.save(match('m1', new Date(2026, 7, 2).getTime(), 'gt1', [{ playerId: 'p1', score: 10 }, { playerId: 'p2', score: 5 }]))
+
+      const holders = trophy(buildUseCase(matchRepo, gameTypeRepo, playerRepo).invoke(), 'f3').holders
+
+      expect(holders).toEqual([])
+    })
+
+    it('follows the game type filter, like every other trophy', () => {
+      const playerRepo = new InMemoryPlayerRepository()
+      playerRepo.save(player('p1', 'Alice'))
+      playerRepo.save(player('p2', 'Bob'))
+      const gameTypeRepo = new InMemoryGameTypeRepository()
+      gameTypeRepo.save(gameType('gt1', 'Chess'))
+      gameTypeRepo.save(gameType('gt2', 'Darts'))
+      const matchRepo = new InMemoryMatchRepository()
+      matchRepo.save(match('m1', new Date(2026, 6, 5).getTime(), 'gt1', [{ playerId: 'p1', score: 10 }, { playerId: 'p2', score: 5 }]))
+      matchRepo.save(match('m2', new Date(2026, 6, 10).getTime(), 'gt2', [{ playerId: 'p2', score: 10 }, { playerId: 'p1', score: 5 }]))
+
+      const useCase = buildUseCase(matchRepo, gameTypeRepo, playerRepo)
+
+      expect(trophy(useCase.invoke('gt1'), 'f3').holders).toEqual([
+        { playerId: 'p1', name: 'Alice', value: 1, period: { kind: 'month', year: 2026, month: 6 } },
+      ])
+      expect(trophy(useCase.invoke('gt2'), 'f3').holders).toEqual([
+        { playerId: 'p2', name: 'Bob', value: 1, period: { kind: 'month', year: 2026, month: 6 } },
+      ])
+    })
+  })
+
   describe('game type filter', () => {
     it('computes trophies only from the selected game type matches', () => {
       const playerRepo = new InMemoryPlayerRepository()
@@ -766,6 +890,25 @@ describe('GetTrophiesUseCase', () => {
       const holders = trophy(buildUseCase(matchRepo, gameTypeRepo, playerRepo).invoke(), 'a1').holders
 
       expect(holders).toEqual([{ playerId: 'p1', name: 'Alice', value: 2 }])
+    })
+
+    it('inactive players remain eligible for a past monthly title (f3)', () => {
+      vi.useFakeTimers()
+      vi.setSystemTime(new Date(2026, 7, 15))
+
+      const playerRepo = new InMemoryPlayerRepository()
+      playerRepo.save(player('p1', 'Alice', false))
+      playerRepo.save(player('p2', 'Bob'))
+      const gameTypeRepo = new InMemoryGameTypeRepository()
+      gameTypeRepo.save(gameType('gt1', 'Test'))
+      const matchRepo = new InMemoryMatchRepository()
+      matchRepo.save(match('m1', new Date(2026, 6, 5).getTime(), 'gt1', [{ playerId: 'p1', score: 10 }, { playerId: 'p2', score: 5 }]))
+
+      const holders = trophy(buildUseCase(matchRepo, gameTypeRepo, playerRepo).invoke(), 'f3').holders
+
+      expect(holders).toEqual([{ playerId: 'p1', name: 'Alice', value: 1, period: { kind: 'month', year: 2026, month: 6 } }])
+
+      vi.useRealTimers()
     })
   })
 })

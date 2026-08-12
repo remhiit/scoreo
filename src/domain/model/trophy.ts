@@ -11,11 +11,16 @@ export type TrophyHolderDetail =
   | { kind: 'streakBroken'; brokenPlayerName: string }
   | { kind: 'date'; epochMs: number }
 
+/** F3's periodic trophy: a holder is scoped to a completed calendar month (0-11, local time). */
+export type TrophyPeriod = { kind: 'month'; year: number; month: number }
+
 export interface TrophyHolder {
   playerId: string
   name: string
   value: number
   detail?: TrophyHolderDetail
+  /** Orthogonal to `detail` — set only by periodic trophies (F3), unrelated to the one-shot detail cases above. */
+  period?: TrophyPeriod
 }
 
 /**
