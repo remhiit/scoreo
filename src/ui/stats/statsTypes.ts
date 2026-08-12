@@ -1,11 +1,13 @@
 import type { GameType } from '../../domain/model/gameType'
 import type { PlayerDetail } from '../../application/getHeadToHeadUseCase'
+import type { PlayerTrophyBadge } from '../../application/groupTrophiesByPlayer'
 
 export interface StatsState {
   leaderboard: PlayerDetail[]
   selectedPlayerId: string | undefined
   gameTypes: GameType[]
   selectedGameTypeId: string | undefined
+  trophiesByPlayer: Map<string, PlayerTrophyBadge[]>
 }
 
 export const initialStatsState: StatsState = {
@@ -13,6 +15,7 @@ export const initialStatsState: StatsState = {
   selectedPlayerId: undefined,
   gameTypes: [],
   selectedGameTypeId: undefined,
+  trophiesByPlayer: new Map(),
 }
 
 export function selectedPlayer(state: StatsState): PlayerDetail | undefined {

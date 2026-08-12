@@ -307,6 +307,7 @@ function AppShell() {
           <StatsScreen
             getHeadToHead={getHeadToHead}
             getGameTypes={getGameTypes}
+            getTrophies={getTrophies}
             onBackOverrideChange={handleStatsBackOverrideChange}
           />
         )}

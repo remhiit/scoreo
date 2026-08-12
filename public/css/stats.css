@@ -127,3 +127,31 @@
     min-width: 48px;
     text-align: right;
 }
+
+.stats-trophy-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+}
+
+.stats-trophy-badge {
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
+    padding: var(--space-1) var(--space-3);
+    background: var(--surface-sunken);
+    border-radius: var(--radius-pill);
+    color: var(--color-primary);
+}
+
+.stats-trophy-badge-title {
+    font-size: var(--text-sm);
+    font-weight: 500;
+    color: var(--text-body);
+}
+
+.stats-trophy-badge-value {
+    font-family: var(--font-score);
+    font-weight: 700;
+    font-size: var(--text-sm);
+}

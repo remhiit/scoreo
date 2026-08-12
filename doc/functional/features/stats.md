@@ -25,3 +25,14 @@
 
 - Overall W/L record and win %
 - Head-to-head list: opponent name, win bar, wins-losses record
+- Trophies: below the head-to-head list, a "Trophies" section shows one
+  badge per Hall of Fame trophy (see `hall-of-fame.md`) the selected player
+  currently holds — icon, translated title, and value (unit included, e.g.
+  `ELO`/days). Always rendered, even with no trophy: an explicit empty state
+  replaces the badge row rather than hiding the section. A player ex aequo
+  on a trophy gets the badge the same as a sole holder; a player holding
+  the same trophy id more than once (D1's per-game-type record) gets one
+  badge per record. Badges follow the screen's game-type tab, same as the
+  leaderboard and head-to-head: under a game type filter, they're computed
+  on that game type's matches only. Badge order: permanent records first
+  (A1, A4, B2, B3, C1, C3, D1, E1), then rotating trophies (A2, F2).

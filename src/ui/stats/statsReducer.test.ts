@@ -4,6 +4,7 @@ import type { Match } from '../../domain/model/match'
 import type { Player } from '../../domain/model/player'
 import { GetGameTypesUseCase } from '../../application/getGameTypesUseCase'
 import { GetHeadToHeadUseCase } from '../../application/getHeadToHeadUseCase'
+import { GetTrophiesUseCase } from '../../application/getTrophiesUseCase'
 import { InMemoryGameTypeRepository } from '../../infrastructure/testing/inMemoryGameTypeRepository'
 import { InMemoryMatchRepository } from '../../infrastructure/testing/inMemoryMatchRepository'
 import { InMemoryPlayerRepository } from '../../infrastructure/testing/inMemoryPlayerRepository'
@@ -38,6 +39,7 @@ function buildUseCases(
   return {
     getHeadToHead: new GetHeadToHeadUseCase(matchRepo, gameTypeRepo, playerRepo),
     getGameTypes: new GetGameTypesUseCase(gameTypeRepo),
+    getTrophies: new GetTrophiesUseCase(matchRepo, gameTypeRepo, playerRepo),
   }
 }
 
@@ -58,9 +60,9 @@ describe('statsReducer', () => {
       { playerId: 'p1', score: 10 },
       { playerId: 'p2', score: 5 },
     ]))
-    const { getHeadToHead, getGameTypes } = buildUseCases(playerRepo, gameTypeRepo, matchRepo)
+    const { getHeadToHead, getGameTypes, getTrophies } = buildUseCases(playerRepo, gameTypeRepo, matchRepo)
 
-    const { leaderboard } = loadStats(getHeadToHead, getGameTypes, undefined)
+    const { leaderboard } = loadStats(getHeadToHead, getGameTypes, getTrophies, undefined)
 
     expect(leaderboard).toHaveLength(2)
   })
@@ -76,9 +78,9 @@ describe('statsReducer', () => {
       { playerId: 'p1', score: 10 },
       { playerId: 'p2', score: 5 },
     ]))
-    const { getHeadToHead, getGameTypes } = buildUseCases(playerRepo, gameTypeRepo, matchRepo)
-    const { leaderboard, gameTypes } = loadStats(getHeadToHead, getGameTypes, undefined)
-    let state = statsReducer(initialStatsState, { type: 'loaded', leaderboard, gameTypes })
+    const { getHeadToHead, getGameTypes, getTrophies } = buildUseCases(playerRepo, gameTypeRepo, matchRepo)
+    const load = loadStats(getHeadToHead, getGameTypes, getTrophies, undefined)
+    let state = statsReducer(initialStatsState, { type: 'loaded', ...load })
 
     state = statsReducer(state, { type: 'selectPlayer', playerId: 'p1' })
 
@@ -101,9 +103,9 @@ describe('statsReducer', () => {
       { playerId: 'p1', score: 8 },
       { playerId: 'p2', score: 12 },
     ]))
-    const { getHeadToHead, getGameTypes } = buildUseCases(playerRepo, gameTypeRepo, matchRepo)
+    const { getHeadToHead, getGameTypes, getTrophies } = buildUseCases(playerRepo, gameTypeRepo, matchRepo)
 
-    const { leaderboard } = loadStats(getHeadToHead, getGameTypes, undefined)
+    const { leaderboard } = loadStats(getHeadToHead, getGameTypes, getTrophies, undefined)
 
     expect(leaderboard).toHaveLength(2)
     expect(leaderboard[0].name).toBe('Bob')
@@ -121,9 +123,9 @@ describe('statsReducer', () => {
       { playerId: 'p1', score: 10 },
       { playerId: 'p2', score: 5 },
     ]))
-    const { getHeadToHead, getGameTypes } = buildUseCases(playerRepo, gameTypeRepo, matchRepo)
-    const { leaderboard, gameTypes } = loadStats(getHeadToHead, getGameTypes, undefined)
-    let state = statsReducer(initialStatsState, { type: 'loaded', leaderboard, gameTypes })
+    const { getHeadToHead, getGameTypes, getTrophies } = buildUseCases(playerRepo, gameTypeRepo, matchRepo)
+    const load = loadStats(getHeadToHead, getGameTypes, getTrophies, undefined)
+    let state = statsReducer(initialStatsState, { type: 'loaded', ...load })
 
     state = statsReducer(state, { type: 'selectPlayer', playerId: 'p1' })
     state = statsReducer(state, { type: 'backToLeaderboard' })
@@ -148,15 +150,15 @@ describe('statsReducer', () => {
       { playerId: 'p1', score: 3 },
       { playerId: 'p2', score: 10 },
     ]))
-    const { getHeadToHead, getGameTypes } = buildUseCases(playerRepo, gameTypeRepo, matchRepo)
-    const initialLoad = loadStats(getHeadToHead, getGameTypes, undefined)
+    const { getHeadToHead, getGameTypes, getTrophies } = buildUseCases(playerRepo, gameTypeRepo, matchRepo)
+    const initialLoad = loadStats(getHeadToHead, getGameTypes, getTrophies, undefined)
     let state = statsReducer(initialStatsState, { type: 'loaded', ...initialLoad })
 
     expect(state.gameTypes).toHaveLength(2)
     expect(state.leaderboard).toHaveLength(2)
 
     state = statsReducer(state, { type: 'selectGameType', gameTypeId: 'gt1' })
-    const gt1Load = loadStats(getHeadToHead, getGameTypes, state.selectedGameTypeId)
+    const gt1Load = loadStats(getHeadToHead, getGameTypes, getTrophies, state.selectedGameTypeId)
     state = statsReducer(state, { type: 'loaded', ...gt1Load })
 
     expect(state.selectedGameTypeId).toBe('gt1')
@@ -165,7 +167,7 @@ describe('statsReducer', () => {
     expect(state.leaderboard.find((p) => p.playerId === 'p2')?.elo).toBe(1184)
 
     state = statsReducer(state, { type: 'selectGameType', gameTypeId: 'gt2' })
-    const gt2Load = loadStats(getHeadToHead, getGameTypes, state.selectedGameTypeId)
+    const gt2Load = loadStats(getHeadToHead, getGameTypes, getTrophies, state.selectedGameTypeId)
     state = statsReducer(state, { type: 'loaded', ...gt2Load })
 
     expect(state.selectedGameTypeId).toBe('gt2')

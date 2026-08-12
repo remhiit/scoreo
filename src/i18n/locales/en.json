@@ -86,7 +86,9 @@
     "all": "All",
     "noStatsYet": "No stats yet — play some matches first.",
     "headToHead": "Head-to-head",
-    "noHeadToHead": "No head-to-head data yet."
+    "noHeadToHead": "No head-to-head data yet.",
+    "trophies": "Trophies",
+    "noTrophies": "No trophies yet."
   },
   "hallOfFame": {
     "noRecordYet": "No record yet.",

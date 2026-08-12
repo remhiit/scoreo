@@ -67,3 +67,9 @@ recomputed from scratch on that game type's matches only.
   and `detail` when present. A trophy with no holder shows an explicit empty
   state ("No record yet.") instead of being hidden.
 - Reachable from the burger menu ("🏆 Hall of Fame").
+
+## Per-Player View
+
+The reverse read — "what has this player won" instead of "who holds this
+trophy" — lives on the Stats screen's player detail, not here: see
+"Player Detail" in `stats.md` for the trophy badges shown there.

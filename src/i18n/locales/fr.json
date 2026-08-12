@@ -86,7 +86,9 @@
     "all": "Tous",
     "noStatsYet": "Aucune statistique pour l'instant — jouez quelques parties d'abord.",
     "headToHead": "Face-à-face",
-    "noHeadToHead": "Aucune donnée de face-à-face pour l'instant."
+    "noHeadToHead": "Aucune donnée de face-à-face pour l'instant.",
+    "trophies": "Trophées",
+    "noTrophies": "Aucun trophée pour l'instant."
   },
   "hallOfFame": {
     "noRecordYet": "Aucun record pour l'instant.",
