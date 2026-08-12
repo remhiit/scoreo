@@ -35,6 +35,10 @@
     padding: 3px 9px;
 }
 
+.language-picker-flag {
+    margin-right: var(--space-1);
+}
+
 .accent-swatch {
     width: 26px;
     height: 26px;
