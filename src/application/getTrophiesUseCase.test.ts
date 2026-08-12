@@ -182,7 +182,7 @@ describe('GetTrophiesUseCase', () => {
 
       const holders = trophy(buildUseCase(matchRepo, gameTypeRepo, playerRepo).invoke(), 'a4').holders
 
-      expect(holders).toEqual([{ playerId: 'p2', name: 'Bob', value: 2, detail: "Ended Alice's streak" }])
+      expect(holders).toEqual([{ playerId: 'p2', name: 'Bob', value: 2, detail: { kind: 'streakBroken', brokenPlayerName: 'Alice' } }])
     })
 
     it('is empty when no streak of 2 or more is ever broken', () => {
@@ -235,8 +235,8 @@ describe('GetTrophiesUseCase', () => {
       const holders = trophy(buildUseCase(matchRepo, gameTypeRepo, playerRepo).invoke(), 'a4').holders
 
       expect(holders).toEqual([
-        { playerId: 'p2', name: 'Bob', value: 2, detail: "Ended Alice's streak" },
-        { playerId: 'p3', name: 'Charlie', value: 2, detail: "Ended Alice's streak" },
+        { playerId: 'p2', name: 'Bob', value: 2, detail: { kind: 'streakBroken', brokenPlayerName: 'Alice' } },
+        { playerId: 'p3', name: 'Charlie', value: 2, detail: { kind: 'streakBroken', brokenPlayerName: 'Alice' } },
       ])
     })
 
@@ -260,7 +260,7 @@ describe('GetTrophiesUseCase', () => {
 
       const holders = trophy(buildUseCase(matchRepo, gameTypeRepo, playerRepo).invoke(), 'a4').holders
 
-      expect(holders).toEqual([{ playerId: 'p2', name: 'Bob', value: 3, detail: "Ended Charlie's streak" }])
+      expect(holders).toEqual([{ playerId: 'p2', name: 'Bob', value: 3, detail: { kind: 'streakBroken', brokenPlayerName: 'Charlie' } }])
     })
   })
 
@@ -333,7 +333,7 @@ describe('GetTrophiesUseCase', () => {
 
       const holders = trophy(buildUseCase(matchRepo, gameTypeRepo, playerRepo).invoke(), 'b3').holders
 
-      expect(holders).toEqual([{ playerId: 'p1', name: 'Alice', value: 0.8, detail: '8/10 matches' }])
+      expect(holders).toEqual([{ playerId: 'p1', name: 'Alice', value: 0.8, detail: { kind: 'ratio', wins: 8, played: 10 } }])
     })
 
     it('produces multiple holders on a tied ratio', () => {
@@ -351,9 +351,9 @@ describe('GetTrophiesUseCase', () => {
 
       // Charlie played both batches (10 against each), so he ties too: 10/20 = 0.5.
       expect(holders).toEqual([
-        { playerId: 'p1', name: 'Alice', value: 0.5, detail: '5/10 matches' },
-        { playerId: 'p2', name: 'Bob', value: 0.5, detail: '5/10 matches' },
-        { playerId: 'p3', name: 'Charlie', value: 0.5, detail: '10/20 matches' },
+        { playerId: 'p1', name: 'Alice', value: 0.5, detail: { kind: 'ratio', wins: 5, played: 10 } },
+        { playerId: 'p2', name: 'Bob', value: 0.5, detail: { kind: 'ratio', wins: 5, played: 10 } },
+        { playerId: 'p3', name: 'Charlie', value: 0.5, detail: { kind: 'ratio', wins: 10, played: 20 } },
       ])
     })
 
@@ -387,7 +387,9 @@ describe('GetTrophiesUseCase', () => {
 
       const holders = trophy(buildUseCase(matchRepo, gameTypeRepo, playerRepo).invoke(), 'c1').holders
 
-      expect(holders).toEqual([{ playerId: 'p1', name: 'Alice', value: 1231, detail: '15 Jan 2026' }])
+      expect(holders).toEqual([
+        { playerId: 'p1', name: 'Alice', value: 1231, detail: { kind: 'date', epochMs: new Date(2026, 0, 15).getTime() } },
+      ])
     })
 
     it('uses the single match rating when there is only one match', () => {
@@ -401,7 +403,9 @@ describe('GetTrophiesUseCase', () => {
 
       const holders = trophy(buildUseCase(matchRepo, gameTypeRepo, playerRepo).invoke(), 'c1').holders
 
-      expect(holders).toEqual([{ playerId: 'p1', name: 'Alice', value: 1216, detail: '10 Jan 2026' }])
+      expect(holders).toEqual([
+        { playerId: 'p1', name: 'Alice', value: 1216, detail: { kind: 'date', epochMs: new Date(2026, 0, 10).getTime() } },
+      ])
     })
 
     it('recomputes the ELO history only from the selected game type matches', () => {
@@ -417,8 +421,12 @@ describe('GetTrophiesUseCase', () => {
 
       const useCase = buildUseCase(matchRepo, gameTypeRepo, playerRepo)
 
-      expect(trophy(useCase.invoke('gt1'), 'c1').holders).toEqual([{ playerId: 'p1', name: 'Alice', value: 1216, detail: '10 Jan 2026' }])
-      expect(trophy(useCase.invoke('gt2'), 'c1').holders).toEqual([{ playerId: 'p2', name: 'Bob', value: 1216, detail: '20 Jan 2026' }])
+      expect(trophy(useCase.invoke('gt1'), 'c1').holders).toEqual([
+        { playerId: 'p1', name: 'Alice', value: 1216, detail: { kind: 'date', epochMs: new Date(2026, 0, 10).getTime() } },
+      ])
+      expect(trophy(useCase.invoke('gt2'), 'c1').holders).toEqual([
+        { playerId: 'p2', name: 'Bob', value: 1216, detail: { kind: 'date', epochMs: new Date(2026, 0, 20).getTime() } },
+      ])
     })
   })
 

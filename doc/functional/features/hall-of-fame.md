@@ -7,11 +7,27 @@ on every visit.
 
 ## Trophy Model
 
-- `Trophy { id, title, description, holders: TrophyHolder[], unit? }`
+- `Trophy { id, holders: TrophyHolder[], unit? }`
 - `TrophyHolder { playerId, name, value, detail? }`
-- `unit` is an optional display suffix for the holder's value (e.g. `"ELO"`,
-  `"days"`); omitted for trophies whose value is self-explanatory (counts,
-  ratios, raw scores).
+- `title`/`description` are **not** on the model — they live in i18n, under
+  `hallOfFame.trophies.<id>.title`/`.description` (`<id>` is the trophy code
+  in lowercase, e.g. `a1`, `b3`). The UI resolves them from `id`; the use
+  case only returns identifiers and data, never presentation strings. B3 and
+  E1's descriptions interpolate their threshold (`REGULAR_MIN_MATCHES`,
+  `NEMESIS_MIN_MEETINGS`) via i18next variables (`{{minMatches}}`,
+  `{{minMeetings}}`) rather than a hardcoded number in the locale files.
+- `unit` is `'elo' | 'days'`, resolved to display text via
+  `hallOfFame.units.<unit>` by the UI; omitted for trophies whose value is
+  self-explanatory (counts, ratios, raw scores).
+- `detail` is either a plain `string` — for the two holders whose detail is
+  pure user data, not an interface label (D1's game type name, E1's rival
+  name) — or a structured object resolved via i18n by the UI:
+  - B3: `{ kind: 'ratio', wins, played }` → `hallOfFame.trophies.b3.detail`
+  - A4: `{ kind: 'streakBroken', brokenPlayerName }` →
+    `hallOfFame.trophies.a4.detail`
+  - C1: `{ kind: 'date', epochMs }` → formatted at the current locale in the
+    UI (`toLocaleDateString(i18n.language, …)`), replacing the old
+    hardcoded-`en-US` `formatEloDate()`.
 - A trophy with no eligible holder (not enough data) still renders, with
   `holders: []` — it's never omitted from the list.
 - Ties produce multiple holders.

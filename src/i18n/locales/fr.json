@@ -89,7 +89,55 @@
     "noHeadToHead": "Aucune donnée de face-à-face pour l'instant."
   },
   "hallOfFame": {
-    "noRecordYet": "Aucun record pour l'instant."
+    "noRecordYet": "Aucun record pour l'instant.",
+    "trophies": {
+      "a1": {
+        "title": "L'Invincible",
+        "description": "Plus longue série de victoires de tous les temps"
+      },
+      "a2": {
+        "title": "Série en cours",
+        "description": "Victoires consécutives en ce moment"
+      },
+      "a4": {
+        "title": "Briseur de série",
+        "description": "A mis fin à la plus grande série de victoires",
+        "detail": "A mis fin à la série de {{brokenPlayerName}}"
+      },
+      "b2": {
+        "title": "Le Collectionneur",
+        "description": "Le plus de victoires de tous les temps"
+      },
+      "b3": {
+        "title": "L'Habitué",
+        "description": "Meilleur ratio de victoires, parmi les joueurs ayant joué au moins {{minMatches}} parties",
+        "detail": "{{wins}}/{{played}} parties"
+      },
+      "c1": {
+        "title": "Le Sommet",
+        "description": "Classement ELO le plus élevé jamais atteint"
+      },
+      "c3": {
+        "title": "Le Roi de la colline",
+        "description": "Temps cumulé passé en tête du classement ELO"
+      },
+      "d1": {
+        "title": "Record de jeu",
+        "description": "Meilleur score jamais enregistré sur une partie, par type de jeu"
+      },
+      "e1": {
+        "title": "Némésis",
+        "description": "Plus grand écart victoires moins défaites contre un même rival, parmi les paires s'étant affrontées au moins {{minMeetings}} fois"
+      },
+      "f2": {
+        "title": "Joueur du mois",
+        "description": "Le plus de victoires ce mois-ci"
+      }
+    },
+    "units": {
+      "elo": "ELO",
+      "days": "jours"
+    }
   },
   "import": {
     "selectFile": "Sélectionnez un fichier JSON à importer",

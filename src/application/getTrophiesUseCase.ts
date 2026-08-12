@@ -28,6 +28,11 @@ interface RivalryTally {
   meetings: number
 }
 
+/** D1 and E1 always populate `detail` with the plain string case (a name), never the structured ones. */
+function stringDetail(detail: TrophyHolder['detail']): string {
+  return typeof detail === 'string' ? detail : ''
+}
+
 function compareMatchesChronologically(a: Match, b: Match): number {
   if (a.date !== b.date) return a.date - b.date
   return a.id < b.id ? -1 : a.id > b.id ? 1 : 0
@@ -74,7 +79,7 @@ function bestRatioHolders(
       playerId,
       name: names.get(playerId) ?? playerId,
       value: Math.round((wins / played) * 100) / 100,
-      detail: `${wins}/${played} matches`,
+      detail: { kind: 'ratio' as const, wins, played },
     }))
     .sort((a, b) => a.name.localeCompare(b.name) || a.playerId.localeCompare(b.playerId))
 }
@@ -115,7 +120,7 @@ function gameRecordHolders(matches: Match[], gameTypes: Map<string, GameType>, n
   }
 
   return holders.sort(
-    (a, b) => (a.detail ?? '').localeCompare(b.detail ?? '') || a.name.localeCompare(b.name) || a.playerId.localeCompare(b.playerId),
+    (a, b) => stringDetail(a.detail).localeCompare(stringDetail(b.detail)) || a.name.localeCompare(b.name) || a.playerId.localeCompare(b.playerId),
   )
 }
 
@@ -171,15 +176,7 @@ function nemesisHolders(matches: Match[], gameTypes: Map<string, GameType>, name
       value: gap,
       detail: names.get(dominatedId) ?? dominatedId,
     }))
-    .sort((a, b) => a.name.localeCompare(b.name) || (a.detail ?? '').localeCompare(b.detail ?? ''))
-}
-
-function formatEloDate(epochMs: number): string {
-  const date = new Date(epochMs)
-  const day = date.getDate()
-  const month = date.toLocaleString('en-US', { month: 'short' })
-  const year = date.getFullYear()
-  return `${day} ${month} ${year}`
+    .sort((a, b) => a.name.localeCompare(b.name) || stringDetail(a.detail).localeCompare(stringDetail(b.detail)))
 }
 
 /** C1 — the highest rating each player has ever reached, with the date it happened. */
@@ -203,7 +200,7 @@ function eloPeakHolders(history: EloSnapshot[], names: Map<string, string>): Tro
   const holders: TrophyHolder[] = []
   for (const [playerId, peak] of peaks) {
     if (peak.value === max) {
-      holders.push({ playerId, name: names.get(playerId) ?? playerId, value: peak.value, detail: formatEloDate(peak.date) })
+      holders.push({ playerId, name: names.get(playerId) ?? playerId, value: peak.value, detail: { kind: 'date', epochMs: peak.date } })
     }
   }
   return holders.sort((a, b) => a.name.localeCompare(b.name) || a.playerId.localeCompare(b.playerId))
@@ -346,71 +343,51 @@ export class GetTrophiesUseCase {
               playerId: b.winnerId,
               name: names.get(b.winnerId) ?? b.winnerId,
               value: b.streakLength,
-              detail: `Ended ${b.brokenPlayerName}'s streak`,
+              detail: { kind: 'streakBroken' as const, brokenPlayerName: b.brokenPlayerName },
             }))
-            .sort((a, b) => a.name.localeCompare(b.name) || (a.detail ?? '').localeCompare(b.detail ?? ''))
+            .sort((a, b) => a.name.localeCompare(b.name) || a.detail.brokenPlayerName.localeCompare(b.detail.brokenPlayerName))
 
     return [
       {
         id: 'a1',
-        title: 'The Invincible',
-        description: 'Longest winning streak of all time',
         holders: topHolders(longestStreak, names),
       },
       {
         id: 'a2',
-        title: 'Current Streak',
-        description: 'Consecutive wins right now',
         holders: topHolders(currentStreak, names),
       },
       {
         id: 'a4',
-        title: 'Streak Breaker',
-        description: "Ended the biggest winning streak",
         holders: streakBreakerHolders,
       },
       {
         id: 'b2',
-        title: 'The Collector',
-        description: 'Most wins of all time',
         holders: topHolders(totalWins, names),
       },
       {
         id: 'b3',
-        title: 'The Regular',
-        description: `Best win ratio, among players with at least ${REGULAR_MIN_MATCHES} matches`,
         holders: bestRatioHolders(matchesPlayed, totalWins, names),
       },
       {
         id: 'c1',
-        title: 'The Peak',
-        description: 'Highest ELO rating ever reached',
         holders: eloPeakHolders(eloHistory, names),
-        unit: 'ELO',
+        unit: 'elo',
       },
       {
         id: 'c3',
-        title: 'King of the Hill',
-        description: 'Cumulated time spent leading the ELO ranking',
         holders: kingOfTheHillHolders(eloHistory, names, now.getTime()),
         unit: 'days',
       },
       {
         id: 'd1',
-        title: 'Game Record',
-        description: 'Best score ever recorded on a match, per game type',
         holders: gameRecordHolders(matches, gameTypes, names),
       },
       {
         id: 'e1',
-        title: 'Nemesis',
-        description: `Biggest wins-minus-losses gap against a single rival, among pairs with at least ${NEMESIS_MIN_MEETINGS} meetings`,
         holders: nemesisHolders(matches, gameTypes, names),
       },
       {
         id: 'f2',
-        title: 'Player of the Month',
-        description: 'Most wins this calendar month',
         holders: topHolders(monthWins, names),
       },
     ]
