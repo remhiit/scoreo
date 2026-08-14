@@ -18,6 +18,36 @@ function toIntOrNull(s: string): number | null {
   return /^-?\d+$/.test(s) ? Number(s) : null
 }
 
+/** YYYY-MM-DD calendar date in the user's local timezone (Match.date itself stays an epoch ms, timezone-agnostic). */
+export function toDateOnly(epochMs: number): string {
+  const d = new Date(epochMs)
+  const year = d.getFullYear()
+  const month = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
+function isFutureDate(dateStr: string, currentEpochMs: number): boolean {
+  return dateStr > toDateOnly(currentEpochMs)
+}
+
+const DATE_ONLY_PATTERN = /^\d{4}-\d{2}-\d{2}$/
+
+/** Rejects empty strings and calendar-invalid dates (e.g. 2026-02-30), not just malformed ones. */
+function isValidDateOnly(dateStr: string): boolean {
+  if (!DATE_ONLY_PATTERN.test(dateStr)) return false
+  const [year, month, day] = dateStr.split('-').map(Number)
+  const d = new Date(year, month - 1, day)
+  return d.getFullYear() === year && d.getMonth() === month - 1 && d.getDate() === day
+}
+
+/** Combines a YYYY-MM-DD calendar date (local) with the local time-of-day taken from a reference epoch timestamp. */
+function combineDateWithTimeOfDay(dateStr: string, referenceEpochMs: number): number {
+  const [year, month, day] = dateStr.split('-').map(Number)
+  const ref = new Date(referenceEpochMs)
+  return new Date(year, month - 1, day, ref.getHours(), ref.getMinutes(), ref.getSeconds(), ref.getMilliseconds()).getTime()
+}
+
 export function computeTotals(players: Player[], rounds: Record<string, string>[]): Map<string, number> {
   const totals = new Map<string, number>()
   for (const player of players) {
@@ -142,6 +172,7 @@ function validateRounds(state: ScoreDetailState): { ok: true } | { ok: false; er
 
 export type ScoreDetailAction =
   | { type: 'setViewMode'; mode: ScoreDetailViewMode }
+  | { type: 'updateMatchDate'; value: string }
   | { type: 'updateScore'; roundIndex: number; playerId: string; value: string }
   | { type: 'addRound' }
   | { type: 'removeRound'; index: number }
@@ -173,6 +204,8 @@ export function scoreDetailReducer(state: ScoreDetailState, action: ScoreDetailA
   switch (action.type) {
     case 'setViewMode':
       return { ...state, viewMode: action.mode }
+    case 'updateMatchDate':
+      return { ...state, matchDate: action.value, error: undefined }
     case 'updateScore': {
       const rounds = state.rounds.slice()
       rounds[action.roundIndex] = { ...rounds[action.roundIndex], [action.playerId]: action.value }
@@ -294,12 +327,14 @@ function performSave(
     if (deps.mode.type === 'Edit') {
       const original = deps.mode.matchRepository.findById(deps.mode.matchId)
       if (!original) return { type: 'saveFailed', error: 'Could not find original match to update' }
-      const updated: Match = { ...original, playerScores, manualWinners, secondaryPlayerScores, rounds }
+      const date = combineDateWithTimeOfDay(state.matchDate, original.date)
+      const updated: Match = { ...original, date, playerScores, manualWinners, secondaryPlayerScores, rounds }
       deps.mode.updateMatchUseCase.invoke(updated)
       deps.matchDraftRepository?.clear()
       return { type: 'saved' }
     }
-    const result = deps.createMatch.invoke(state.gameType.id, playerScores, deps.currentDate(), {
+    const date = combineDateWithTimeOfDay(state.matchDate, deps.currentDate())
+    const result = deps.createMatch.invoke(state.gameType.id, playerScores, date, {
       manualWinners,
       secondaryPlayerScores,
       rounds,
@@ -316,6 +351,12 @@ function performSave(
 
 /** Mirrors ScoreDetailHandler's Terminate: validates, then routes to a modal or straight to save. */
 export function submitTerminate(state: ScoreDetailState, deps: ScoreDetailDeps): ScoreDetailAction {
+  if (!isValidDateOnly(state.matchDate)) {
+    return { type: 'validationFailed', error: 'Match date is required' }
+  }
+  if (isFutureDate(state.matchDate, deps.currentDate())) {
+    return { type: 'validationFailed', error: 'Match date cannot be in the future' }
+  }
   const validation = validateRounds(state)
   if (!validation.ok) return { type: 'validationFailed', error: validation.error }
 
@@ -420,11 +461,12 @@ function reconstructRounds(match: Match): Record<string, string>[] {
   return [round]
 }
 
-function freshState(gameType: GameType, players: Player[]): ScoreDetailState {
+function freshState(gameType: GameType, players: Player[], currentDateEpochMs: number): ScoreDetailState {
   return {
     gameType,
     players,
     rounds: [{}],
+    matchDate: toDateOnly(currentDateEpochMs),
     viewMode: 'standings',
     showWinnerModal: false,
     modalWinners: new Set(),
@@ -447,7 +489,7 @@ function freshState(gameType: GameType, players: Player[]): ScoreDetailState {
 /** Mirrors ScoreDetailHandler.reset(): fresh state (ignores any draft/edit mode) + clears the draft. */
 export function resetState(gameType: GameType, players: Player[], deps: ScoreDetailDeps): ScoreDetailState {
   deps.matchDraftRepository?.clear()
-  return freshState(gameType, players)
+  return freshState(gameType, players, deps.currentDate())
 }
 
 /** Mirrors ScoreDetailHandler's init block: loads an existing match for editing, or restores a matching draft. */
@@ -455,9 +497,10 @@ export function buildInitialState(
   gameType: GameType,
   players: Player[],
   mode: ScoreDetailMode,
+  currentDate: () => number,
   matchDraftRepository?: MatchDraftRepository,
 ): ScoreDetailState {
-  const base = freshState(gameType, players)
+  const base = freshState(gameType, players, currentDate())
 
   if (mode.type === 'Edit') {
     const match = mode.matchRepository.findById(mode.matchId)
@@ -471,6 +514,7 @@ export function buildInitialState(
       gameType: editGameType,
       players: editPlayers,
       rounds: reconstructRounds(match),
+      matchDate: toDateOnly(match.date),
       editingMatchId: mode.matchId,
     }
   }

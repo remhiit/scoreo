@@ -24,6 +24,8 @@ export interface ScoreDetailState {
   players: Player[]
   /** One entry per round: playerId -> score string (as typed by the user). */
   rounds: Record<string, string>[]
+  /** Calendar date (YYYY-MM-DD) chosen for this match; defaults to today in Create, to the match's date in Edit. */
+  matchDate: string
   viewMode: ScoreDetailViewMode
   showWinnerModal: boolean
   modalWinners: Set<string>

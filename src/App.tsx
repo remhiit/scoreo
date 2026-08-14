@@ -142,7 +142,7 @@ function ScoreDetailRoute({ screen, services, onSaved, onCancel, onMissingGameTy
   )
   const initialState = useMemo(() => {
     if (!gameType) return undefined
-    return buildInitialState(gameType, players, mode, services.matchDraftRepository)
+    return buildInitialState(gameType, players, mode, services.currentDate, services.matchDraftRepository)
   }, [gameType, players, mode, services])
 
   useEffect(() => {

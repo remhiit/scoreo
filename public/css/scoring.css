@@ -56,6 +56,25 @@
     margin-bottom: var(--space-3);
 }
 
+/* ── Match date field — above the view switch, visible in both views ── */
+
+.match-date-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+    margin-bottom: var(--space-3);
+}
+
+.match-date-label {
+    font-size: var(--text-sm);
+    color: var(--text-muted);
+}
+
+.match-date-input {
+    width: auto;
+}
+
 /* ── View switch (Standings / History) ── */
 
 .seg {

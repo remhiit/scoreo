@@ -159,12 +159,13 @@ Then navigation to ScoreDetailScreen in edit mode
      - Game type: preserved
      - Players: preserved
      - Scores: reconstructed as 1 round with totals
+     - Date field: prefilled with the match's existing date
      - Title changes to "Edit match"
-   And user can modify scores and rounds
+   And user can modify scores, rounds and the match date
 When user clicks "Finish match"
-Then match is updated (overwrites original with same ID and date)
+Then match is updated (overwrites original with same ID; date preserved unless the date field was changed, in which case only the calendar day changes)
    And navigation returns to Home
-   And History reflects updated scores
+   And History reflects updated scores and, if changed, the new date and its position in the sort order
 ```
 
 ## Mockup
