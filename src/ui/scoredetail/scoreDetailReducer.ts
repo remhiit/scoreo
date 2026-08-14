@@ -18,12 +18,12 @@ function toIntOrNull(s: string): number | null {
   return /^-?\d+$/.test(s) ? Number(s) : null
 }
 
-/** YYYY-MM-DD calendar date, computed in UTC to stay consistent with Match.date's UTC epoch storage. */
+/** YYYY-MM-DD calendar date in the user's local timezone (Match.date itself stays an epoch ms, timezone-agnostic). */
 export function toDateOnly(epochMs: number): string {
   const d = new Date(epochMs)
-  const year = d.getUTCFullYear()
-  const month = String(d.getUTCMonth() + 1).padStart(2, '0')
-  const day = String(d.getUTCDate()).padStart(2, '0')
+  const year = d.getFullYear()
+  const month = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
   return `${year}-${month}-${day}`
 }
 
@@ -37,15 +37,15 @@ const DATE_ONLY_PATTERN = /^\d{4}-\d{2}-\d{2}$/
 function isValidDateOnly(dateStr: string): boolean {
   if (!DATE_ONLY_PATTERN.test(dateStr)) return false
   const [year, month, day] = dateStr.split('-').map(Number)
-  const d = new Date(Date.UTC(year, month - 1, day))
-  return d.getUTCFullYear() === year && d.getUTCMonth() === month - 1 && d.getUTCDate() === day
+  const d = new Date(year, month - 1, day)
+  return d.getFullYear() === year && d.getMonth() === month - 1 && d.getDate() === day
 }
 
-/** Combines a YYYY-MM-DD calendar date with the time-of-day (UTC) taken from a reference epoch timestamp. */
+/** Combines a YYYY-MM-DD calendar date (local) with the local time-of-day taken from a reference epoch timestamp. */
 function combineDateWithTimeOfDay(dateStr: string, referenceEpochMs: number): number {
   const [year, month, day] = dateStr.split('-').map(Number)
   const ref = new Date(referenceEpochMs)
-  return Date.UTC(year, month - 1, day, ref.getUTCHours(), ref.getUTCMinutes(), ref.getUTCSeconds(), ref.getUTCMilliseconds())
+  return new Date(year, month - 1, day, ref.getHours(), ref.getMinutes(), ref.getSeconds(), ref.getMilliseconds()).getTime()
 }
 
 export function computeTotals(players: Player[], rounds: Record<string, string>[]): Map<string, number> {

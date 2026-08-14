@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import type { GameType } from '../../domain/model/gameType'
 import type { Match } from '../../domain/model/match'
 import type { Player } from '../../domain/model/player'
@@ -1085,6 +1085,48 @@ describe('scoreDetailReducer', () => {
 
     expect(harness.state.saved).toBe(true)
     expect(matchRepo.getAll()).toHaveLength(1)
+  })
+
+  it('defaults matchDate to the local calendar day, not the UTC day, past midnight in a positive-offset timezone', () => {
+    vi.stubEnv('TZ', 'Europe/Paris')
+    try {
+      const gt = gameType('gt1', 'TestGame')
+      const gameTypeRepo = new InMemoryGameTypeRepository()
+      gameTypeRepo.save(gt)
+      // 2026-01-01 00:30 in Europe/Paris (UTC+1), but still 2025-12-31 in UTC.
+      const currentDate = () => Date.UTC(2025, 11, 31, 23, 30, 0, 0)
+      const state = buildInitialState(gt, [alice, bob], { type: 'Create' }, currentDate)
+
+      expect(state.matchDate).toBe('2026-01-01')
+    } finally {
+      vi.unstubAllEnvs()
+    }
+  })
+
+  it('terminate does not reject today\'s local date as a future date when the UTC day is still yesterday', () => {
+    vi.stubEnv('TZ', 'Europe/Paris')
+    try {
+      const gt = gameType('gt1', 'TestGame')
+      const gameTypeRepo = new InMemoryGameTypeRepository()
+      gameTypeRepo.save(gt)
+      const matchRepo = new InMemoryMatchRepository()
+      const currentDate = () => Date.UTC(2025, 11, 31, 23, 30, 0, 0)
+      const deps: ScoreDetailDeps = {
+        createMatch: new CreateMatchUseCase(matchRepo, gameTypeRepo),
+        mode: { type: 'Create' },
+        currentDate,
+      }
+      let state = buildInitialState(gt, [alice, bob], deps.mode, deps.currentDate)
+      state = scoreDetailReducer(state, { type: 'updateScore', roundIndex: 0, playerId: 'alice', value: '10' })
+      state = scoreDetailReducer(state, { type: 'updateScore', roundIndex: 0, playerId: 'bob', value: '5' })
+      state = scoreDetailReducer(state, submitTerminate(state, deps))
+
+      expect(state.error).toBeUndefined()
+      expect(state.saved).toBe(true)
+      expect(matchRepo.getAll()).toHaveLength(1)
+    } finally {
+      vi.unstubAllEnvs()
+    }
   })
 
   it('updateScore saves a draft to the repository', () => {
