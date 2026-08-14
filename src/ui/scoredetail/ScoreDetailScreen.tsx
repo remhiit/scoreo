@@ -22,6 +22,7 @@ import {
   submitKeepTie,
   submitSecondaryScores,
   submitTerminate,
+  toDateOnly,
   type ScoreDetailDeps,
 } from './scoreDetailReducer'
 import { SecondaryScoreDialog } from './SecondaryScoreDialog'
@@ -68,6 +69,20 @@ export function ScoreDetailScreen({ initialState, onSaved, onCancel, ...deps }: 
 
   return (
     <>
+      <div className="match-date-row">
+        <label htmlFor="match-date-input" className="match-date-label">
+          {t('scoreDetail.matchDate')}
+        </label>
+        <input
+          id="match-date-input"
+          type="date"
+          className="ludo-input ludo-input--sm ludo-input--bare match-date-input"
+          value={state.matchDate}
+          max={toDateOnly(deps.currentDate())}
+          onChange={(e) => dispatch({ type: 'updateMatchDate', value: e.target.value })}
+        />
+      </div>
+
       <div className="seg">
         <button
           type="button"

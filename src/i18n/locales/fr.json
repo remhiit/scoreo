@@ -164,6 +164,7 @@
     "done": "Terminé"
   },
   "scoreDetail": {
+    "matchDate": "Date de la partie",
     "standings": "Classement",
     "history": "Historique",
     "enterRound": "Saisir la manche {{number}}",

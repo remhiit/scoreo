@@ -43,7 +43,7 @@ function renderScreen(
     currentDate: () => 1767225600000,
     matchDraftRepository: options.matchDraftRepository,
   }
-  const initialState = buildInitialState(gt, [alice, bob], mode, options.matchDraftRepository)
+  const initialState = buildInitialState(gt, [alice, bob], mode, deps.currentDate, options.matchDraftRepository)
   const onSaved = vi.fn()
   const onCancel = vi.fn()
   const result = render(
@@ -61,7 +61,46 @@ function switchToHistory() {
   fireEvent.click(screen.getByText('History'))
 }
 
+function dateInput() {
+  return screen.getByLabelText('Match date') as HTMLInputElement
+}
+
 describe('ScoreDetailScreen', () => {
+  it('shows the match date field prefilled to today, capped at today', () => {
+    renderScreen(gameType())
+
+    expect(dateInput().value).toBe('2026-01-01')
+    expect(dateInput().max).toBe('2026-01-01')
+  })
+
+  it('changing the date field is reflected on the saved match', () => {
+    const { matchRepo } = renderScreen(gameType())
+
+    fireEvent.change(dateInput(), { target: { value: '2025-12-20' } })
+    switchToHistory()
+    const [aliceInput, bobInput] = scoreInputs()
+    fireEvent.change(aliceInput, { target: { value: '10' } })
+    fireEvent.change(bobInput, { target: { value: '5' } })
+    fireEvent.click(screen.getByText('Finish match'))
+
+    expect(matchRepo.getAll()).toHaveLength(1)
+    expect(matchRepo.getAll()[0].date).toBe(Date.UTC(2025, 11, 20, 0, 0, 0, 0))
+  })
+
+  it('picking a future date blocks the save with an error', () => {
+    const { matchRepo } = renderScreen(gameType())
+
+    fireEvent.change(dateInput(), { target: { value: '2026-01-02' } })
+    switchToHistory()
+    const [aliceInput, bobInput] = scoreInputs()
+    fireEvent.change(aliceInput, { target: { value: '10' } })
+    fireEvent.change(bobInput, { target: { value: '5' } })
+    fireEvent.click(screen.getByText('Finish match'))
+
+    expect(matchRepo.getAll()).toHaveLength(0)
+    expect(screen.getByText('Match date cannot be in the future')).toBeInTheDocument()
+  })
+
   it('defaults to the Standings view, showing a rank card per player', () => {
     renderScreen(gameType())
 

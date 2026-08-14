@@ -73,13 +73,17 @@ class Harness {
       currentDate: () => 1767225600000,
       matchDraftRepository,
     }
-    this.state = buildInitialState(gt, players, mode, matchDraftRepository)
+    this.state = buildInitialState(gt, players, mode, this.deps.currentDate, matchDraftRepository)
   }
 
   private afterRoundsChange(before: Record<string, string>[]) {
     if (this.state.rounds !== before) {
       saveDraft(this.deps, this.state.gameType, this.state.players, this.state.rounds)
     }
+  }
+
+  updateMatchDate(value: string) {
+    this.state = scoreDetailReducer(this.state, { type: 'updateMatchDate', value })
   }
 
   updateScore(roundIndex: number, playerId: string, value: string) {
@@ -226,6 +230,17 @@ describe('scoreDetailReducer', () => {
   it('initial state defaults to the standings view', () => {
     const { harness } = buildHarness()
     expect(harness.state.viewMode).toBe('standings')
+  })
+
+  it('initial state defaults matchDate to today in create mode', () => {
+    const { harness } = buildHarness()
+    expect(harness.state.matchDate).toBe('2026-01-01')
+  })
+
+  it('updateMatchDate changes the matchDate', () => {
+    const { harness } = buildHarness()
+    harness.updateMatchDate('2026-01-05')
+    expect(harness.state.matchDate).toBe('2026-01-05')
   })
 
   it('setViewMode switches between standings and history', () => {
@@ -765,6 +780,7 @@ describe('scoreDetailReducer', () => {
     const harness = new Harness(gt, [alice, bob], matchRepo, gameTypeRepo, mode)
 
     expect(harness.state.editingMatchId).toBe('m1')
+    expect(harness.state.matchDate).toBe('1970-01-01')
     expect(harness.state.rounds).toHaveLength(1)
     expect(harness.state.rounds[0].alice).toBe('10')
     expect(harness.state.rounds[0].bob).toBe('5')
@@ -965,6 +981,84 @@ describe('scoreDetailReducer', () => {
     harness.terminate()
 
     expect(matchRepo.findById('m1')?.date).toBe(originalDate)
+  })
+
+  it('editing a match with a changed date updates Match.date, keeping the original time-of-day', () => {
+    const gt = gameType('gt1', 'TestGame')
+    const gameTypeRepo = new InMemoryGameTypeRepository()
+    gameTypeRepo.save(gt)
+    const matchRepo = new InMemoryMatchRepository()
+    const playerRepo = new InMemoryPlayerRepository()
+    playerRepo.save(alice)
+    playerRepo.save(bob)
+    const originalDate = Date.UTC(2025, 11, 20, 14, 30, 5, 0)
+    matchRepo.save({
+      id: 'm1',
+      gameTypeId: gt.id,
+      date: originalDate,
+      playerScores: [
+        { playerId: 'alice', score: 10 },
+        { playerId: 'bob', score: 5 },
+      ],
+      manualWinners: [],
+      secondaryPlayerScores: [],
+      rounds: [],
+    })
+
+    const mode: ScoreDetailMode = {
+      type: 'Edit',
+      matchId: 'm1',
+      updateMatchUseCase: new UpdateMatchUseCase(matchRepo),
+      matchRepository: matchRepo,
+      playerRepository: playerRepo,
+      gameTypeRepository: gameTypeRepo,
+    }
+    const harness = new Harness(gt, [alice, bob], matchRepo, gameTypeRepo, mode)
+    expect(harness.state.matchDate).toBe('2025-12-20')
+
+    harness.updateMatchDate('2025-12-18')
+    harness.updateScore(0, 'alice', '20')
+    harness.terminate()
+
+    expect(matchRepo.findById('m1')?.date).toBe(Date.UTC(2025, 11, 18, 14, 30, 5, 0))
+  })
+
+  it('create mode saves the chosen match date combined with the time-of-day from currentDate()', () => {
+    const { harness, matchRepo } = buildHarness()
+
+    harness.updateMatchDate('2025-12-20')
+    harness.updateScore(0, 'alice', '10')
+    harness.updateScore(0, 'bob', '5')
+    harness.terminate()
+
+    expect(harness.state.saved).toBe(true)
+    const saved = matchRepo.getAll()[0]
+    expect(saved.date).toBe(Date.UTC(2025, 11, 20, 0, 0, 0, 0))
+  })
+
+  it('terminate rejects a future match date and does not save', () => {
+    const { harness, matchRepo } = buildHarness()
+
+    harness.updateMatchDate('2026-01-02')
+    harness.updateScore(0, 'alice', '10')
+    harness.updateScore(0, 'bob', '5')
+    harness.terminate()
+
+    expect(harness.state.saved).toBe(false)
+    expect(harness.state.error).toBeDefined()
+    expect(matchRepo.getAll()).toHaveLength(0)
+  })
+
+  it('terminate accepts a match date equal to today', () => {
+    const { harness, matchRepo } = buildHarness()
+
+    harness.updateMatchDate('2026-01-01')
+    harness.updateScore(0, 'alice', '10')
+    harness.updateScore(0, 'bob', '5')
+    harness.terminate()
+
+    expect(harness.state.saved).toBe(true)
+    expect(matchRepo.getAll()).toHaveLength(1)
   })
 
   it('updateScore saves a draft to the repository', () => {

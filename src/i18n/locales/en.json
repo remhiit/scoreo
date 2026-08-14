@@ -164,6 +164,7 @@
     "done": "Done"
   },
   "scoreDetail": {
+    "matchDate": "Match date",
     "standings": "Standings",
     "history": "History",
     "enterRound": "Enter round {{number}}",
