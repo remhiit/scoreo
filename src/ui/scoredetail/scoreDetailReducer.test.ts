@@ -1049,6 +1049,32 @@ describe('scoreDetailReducer', () => {
     expect(matchRepo.getAll()).toHaveLength(0)
   })
 
+  it('terminate rejects an empty match date and does not save', () => {
+    const { harness, matchRepo } = buildHarness()
+
+    harness.updateMatchDate('')
+    harness.updateScore(0, 'alice', '10')
+    harness.updateScore(0, 'bob', '5')
+    harness.terminate()
+
+    expect(harness.state.saved).toBe(false)
+    expect(harness.state.error).toBeDefined()
+    expect(matchRepo.getAll()).toHaveLength(0)
+  })
+
+  it('terminate rejects a calendar-invalid match date and does not save', () => {
+    const { harness, matchRepo } = buildHarness()
+
+    harness.updateMatchDate('2026-02-30')
+    harness.updateScore(0, 'alice', '10')
+    harness.updateScore(0, 'bob', '5')
+    harness.terminate()
+
+    expect(harness.state.saved).toBe(false)
+    expect(harness.state.error).toBeDefined()
+    expect(matchRepo.getAll()).toHaveLength(0)
+  })
+
   it('terminate accepts a match date equal to today', () => {
     const { harness, matchRepo } = buildHarness()
 

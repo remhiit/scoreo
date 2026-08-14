@@ -27,7 +27,7 @@ Screen: `src/ui/scoredetail/ScoreDetailScreen.tsx`. See `doc/reference.md` for t
 
 ### Match date field
 
-A native `<input type="date">` sits above the view switch, always visible (both views read the same `matchDate` state). It's prefilled to today in create mode, or to the match's existing date in edit mode, and stays freely editable. The field's `max` is capped at today, so the date picker can't offer a future date; a future date typed in manually is still rejected on **Finish match** with an error, blocking the save. Leaving the field untouched keeps today's date (create) or the match's original date (edit) exactly as before this field existed. Only the calendar day is chosen — the time-of-day is never user-editable: on save, the chosen day is combined with the moment of saving's time-of-day in create mode, or with the original match's time-of-day in edit mode, so editing the date never changes what time a match appears to have been played at. Not persisted to the in-progress `MatchDraft` — resuming a draft always starts from today's date.
+A native `<input type="date">` sits above the view switch, always visible (both views read the same `matchDate` state). It's prefilled to today in create mode, or to the match's existing date in edit mode, and stays freely editable. The field's `max` is capped at today, so the date picker can't offer a future date; a future date typed in manually is still rejected on **Finish match** with an error, blocking the save. The field has no `required` attribute, so it can be cleared manually (e.g. backspace); an empty or calendar-invalid `matchDate` (not just a future one) is likewise rejected on **Finish match** with an error, blocking the save — otherwise it would silently store `Match.date: NaN` and break chronological sort (History, ELO, trophies). Leaving the field untouched keeps today's date (create) or the match's original date (edit) exactly as before this field existed. Only the calendar day is chosen — the time-of-day is never user-editable: on save, the chosen day is combined with the moment of saving's time-of-day in create mode, or with the original match's time-of-day in edit mode, so editing the date never changes what time a match appears to have been played at. Not persisted to the in-progress `MatchDraft` — resuming a draft always starts from today's date.
 
 ### View switch: Standings / History
 
@@ -160,6 +160,15 @@ Then the Match is saved with the chosen date, at the current time of day
 ```
 Given a new match
 When I type a date in the future into the date field
+And I enter scores and click "Finish match"
+Then an error is shown and the match is not saved
+```
+
+### Rejecting an empty or invalid match date
+
+```
+Given a new match
+When I clear the date field (or it holds a calendar-invalid date)
 And I enter scores and click "Finish match"
 Then an error is shown and the match is not saved
 ```

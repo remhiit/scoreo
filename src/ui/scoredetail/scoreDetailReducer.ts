@@ -31,6 +31,16 @@ function isFutureDate(dateStr: string, currentEpochMs: number): boolean {
   return dateStr > toDateOnly(currentEpochMs)
 }
 
+const DATE_ONLY_PATTERN = /^\d{4}-\d{2}-\d{2}$/
+
+/** Rejects empty strings and calendar-invalid dates (e.g. 2026-02-30), not just malformed ones. */
+function isValidDateOnly(dateStr: string): boolean {
+  if (!DATE_ONLY_PATTERN.test(dateStr)) return false
+  const [year, month, day] = dateStr.split('-').map(Number)
+  const d = new Date(Date.UTC(year, month - 1, day))
+  return d.getUTCFullYear() === year && d.getUTCMonth() === month - 1 && d.getUTCDate() === day
+}
+
 /** Combines a YYYY-MM-DD calendar date with the time-of-day (UTC) taken from a reference epoch timestamp. */
 function combineDateWithTimeOfDay(dateStr: string, referenceEpochMs: number): number {
   const [year, month, day] = dateStr.split('-').map(Number)
@@ -341,6 +351,9 @@ function performSave(
 
 /** Mirrors ScoreDetailHandler's Terminate: validates, then routes to a modal or straight to save. */
 export function submitTerminate(state: ScoreDetailState, deps: ScoreDetailDeps): ScoreDetailAction {
+  if (!isValidDateOnly(state.matchDate)) {
+    return { type: 'validationFailed', error: 'Match date is required' }
+  }
   if (isFutureDate(state.matchDate, deps.currentDate())) {
     return { type: 'validationFailed', error: 'Match date cannot be in the future' }
   }
