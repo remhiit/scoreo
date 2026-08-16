@@ -10,7 +10,7 @@ import { GetPlayersUseCase } from '../../application/getPlayersUseCase'
 import { InMemoryGameTypeRepository } from '../../infrastructure/testing/inMemoryGameTypeRepository'
 import { InMemoryMatchRepository } from '../../infrastructure/testing/inMemoryMatchRepository'
 import { InMemoryPlayerRepository } from '../../infrastructure/testing/inMemoryPlayerRepository'
-import { buildScoreSummary, deleteMatch, historyReducer, loadDisplays } from './historyReducer'
+import { buildRoundBreakdown, buildScoreSummary, deleteMatch, historyReducer, loadDisplays } from './historyReducer'
 import type { MatchDisplay } from './historyTypes'
 import { initialHistoryState } from './historyTypes'
 
@@ -365,6 +365,24 @@ describe('historyReducer', () => {
 
     expect(state.selectedGameTypeFilter).toBe('gt1')
   })
+
+  it('showRounds records the match whose round detail is being viewed', () => {
+    const state = historyReducer(initialHistoryState, { type: 'showRounds', matchId: 'm1' })
+
+    expect(state.roundsMatchId).toBe('m1')
+  })
+
+  it('dismissRounds closes the round detail modal', () => {
+    const opened = historyReducer(initialHistoryState, { type: 'showRounds', matchId: 'm1' })
+
+    expect(historyReducer(opened, { type: 'dismissRounds' }).roundsMatchId).toBeUndefined()
+  })
+
+  it('reloading the list closes the round detail modal', () => {
+    const opened = historyReducer(initialHistoryState, { type: 'showRounds', matchId: 'm1' })
+
+    expect(historyReducer(opened, { type: 'loaded', displays: [] }).roundsMatchId).toBeUndefined()
+  })
 })
 
 function buildDisplay(overrides: Partial<MatchDisplay> = {}): MatchDisplay {
@@ -403,5 +421,85 @@ describe('buildScoreSummary', () => {
     const parts = buildScoreSummary(buildDisplay({ playerLabels: {} }))
 
     expect(parts[0].text).toBe('p1 10')
+  })
+})
+
+describe('buildRoundBreakdown', () => {
+  const rounds = [
+    [
+      { playerId: 'p1', score: 10 },
+      { playerId: 'p2', score: 5 },
+    ],
+    [
+      { playerId: 'p1', score: 3 },
+      { playerId: 'p2', score: 7 },
+    ],
+  ]
+
+  it('numbers the rounds and resolves each participant in scoring order', () => {
+    const display = buildDisplay({
+      match: match(
+        'm1',
+        1000,
+        'gt1',
+        [
+          { playerId: 'p1', score: 13 },
+          { playerId: 'p2', score: 12 },
+        ],
+        { rounds },
+      ),
+    })
+
+    expect(buildRoundBreakdown(display)).toEqual([
+      {
+        roundNumber: 1,
+        cells: [
+          { playerId: 'p1', label: 'Alice', score: 10 },
+          { playerId: 'p2', label: 'Bob', score: 5 },
+        ],
+      },
+      {
+        roundNumber: 2,
+        cells: [
+          { playerId: 'p1', label: 'Alice', score: 3 },
+          { playerId: 'p2', label: 'Bob', score: 7 },
+        ],
+      },
+    ])
+  })
+
+  it('scores a player absent from a round as zero, keeping the cells aligned', () => {
+    const display = buildDisplay({
+      match: match(
+        'm1',
+        1000,
+        'gt1',
+        [
+          { playerId: 'p1', score: 10 },
+          { playerId: 'p2', score: 0 },
+        ],
+        { rounds: [[{ playerId: 'p1', score: 10 }]] },
+      ),
+    })
+
+    expect(buildRoundBreakdown(display)[0].cells).toEqual([
+      { playerId: 'p1', label: 'Alice', score: 10 },
+      { playerId: 'p2', label: 'Bob', score: 0 },
+    ])
+  })
+
+  it('falls back to the raw player id when the label is unknown', () => {
+    const display = buildDisplay({
+      playerLabels: {},
+      match: match('m1', 1000, 'gt1', [{ playerId: 'p1', score: 10 }], {
+        rounds: [[{ playerId: 'p1', score: 10 }]],
+      }),
+    })
+
+    expect(buildRoundBreakdown(display)[0].cells[0].label).toBe('p1')
+  })
+
+  it('returns no rows for a match stored without round detail', () => {
+    expect(buildRoundBreakdown(buildDisplay())).toEqual([])
   })
 })

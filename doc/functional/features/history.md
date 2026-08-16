@@ -13,8 +13,8 @@
 
 | Component | Details |
 |-----------|---------|
-| **Reducer** | `historyReducer` — `src/ui/history/historyReducer.ts` (`loaded`, `showDeleteConfirm`, `deleteFailed`, `dismissDeleteConfirm`, `selectGameTypeFilter` actions), plus pure helper `buildScoreSummary(display)` building the per-player score-line parts (text + `isWinner`) rendered by `HistoryScreen` |
-| **State** | `MatchDisplay[]` computed from repositories on mount |
+| **Reducer** | `historyReducer` — `src/ui/history/historyReducer.ts` (`loaded`, `showDeleteConfirm`, `deleteFailed`, `dismissDeleteConfirm`, `selectGameTypeFilter`, `showRounds`, `dismissRounds` actions), plus pure helpers `buildScoreSummary(display)` building the per-player score-line parts (text + `isWinner`) rendered by `HistoryScreen`, and `buildRoundBreakdown(display)` building the round detail modal's rows |
+| **State** | `MatchDisplay[]` computed from repositories on mount, plus `roundsMatchId` (match shown in the round detail modal) |
 
 Screen: `src/ui/history/HistoryScreen.tsx`.
 
@@ -39,6 +39,7 @@ Screen: `src/ui/history/HistoryScreen.tsx`.
   3. Match date **with time-of-day** (`.list-item-date`, HH:mm in local timezone)
 - The winner(s) are read from `MatchDisplay.winners` (already computed by `loadDisplays`) — no extra use case call to build the row
 - Each row has action icons:
+  - 👁 (View details) — opens the read-only **round detail modal** (below)
   - ✏️ (Edit) — navigates to `ScoreDetailScreen` in edit mode to re-enter scores
   - 🗑 (Delete) — opens delete confirmation modal
 - Deleted player names show one of:
@@ -50,6 +51,14 @@ Screen: `src/ui/history/HistoryScreen.tsx`.
 - Matches with `isTieBreakIndeterminate = true` show:
     - **⚠️ Missing info** badge next to the game type name
     - Explanatory message below scores: *"This match was recorded before tie-break rules were introduced. The result is based on equality."*
+- **Round detail modal** (when 👁 clicked):
+   - Title: "Round detail", game type name and date on the first line
+   - One card per round played, in the order played: "Round N" then that round's score for each player, players in the match's own order so the cells line up from one round to the next
+   - A player absent from a stored round shows 0 for that round
+   - A totals line closes the modal: same content as the row's score line, winner(s) in bold
+   - A match stored **without** round detail (played before rounds were kept, or imported) shows *"No round detail was recorded for this match."* instead of the cards — the totals line is still shown
+   - Read-only: scores are not editable here, editing stays on `ScoreDetailScreen` (✏️)
+   - Closes on "Close", on the scrim, or on Escape
 - **Delete confirmation modal** (when 🗑 clicked):
    - Title: "Delete match?"
    - Shows: game type name, date, player scores
@@ -158,7 +167,7 @@ Then navigation to ScoreDetailScreen in edit mode
    And match data is pre-loaded:
      - Game type: preserved
      - Players: preserved
-     - Scores: reconstructed as 1 round with totals
+     - Scores: the match's stored rounds, one editor round each (1 round with the totals if the match has no stored round detail)
      - Date field: prefilled with the match's existing date
      - Title changes to "Edit match"
    And user can modify scores, rounds and the match date
@@ -168,6 +177,27 @@ Then match is updated (overwrites original with same ID; date preserved unless t
    And History reflects updated scores and, if changed, the new date and its position in the sort order
 ```
 
+### View the round detail of a match
+
+```
+Given a match played in 3 rounds
+When I click 👁 on its History row
+Then a "Round detail" modal opens listing Round 1, Round 2 and Round 3
+   And each round shows every player's score for that round
+   And the totals line shows the final scores, the winner in bold
+When I click "Close"
+Then the modal closes and no match data has changed
+```
+
+### View a match recorded without round detail
+
+```
+Given a match saved before rounds were kept (or imported), so `rounds` is empty
+When I click 👁 on its History row
+Then the modal explains that no round detail was recorded for this match
+   And the totals line is still shown
+```
+
 ## Mockup
 
 ```
@@ -175,12 +205,12 @@ Then match is updated (overwrites original with same ID; date preserved unless t
 │ Filter by game: [All games    ▼]    │
 ├──────────────────────────────────────┤
 │  ┌──────────────────────────────┐    │
-│  │ Belote                    🗑│    │
+│  │ Belote               👁 ✏️ 🗑│    │
 │  │ Alice 10 · Bob 5             │    │
 │  │ 2026-06-10 14:30             │    │
 │  └──────────────────────────────┘    │
 │  ┌──────────────────────────────┐    │
-│  │ Custom                    🗑│    │
+│  │ Custom               👁 ✏️ 🗑│    │
 │  │ Alice (deleted) 8 · Deleted player 3 │
 │  │ 2026-06-09 10:15             │    │
 │  └──────────────────────────────┘    │
@@ -188,3 +218,21 @@ Then match is updated (overwrites original with same ID; date preserved unless t
 ```
 
 *(Alice is rendered in bold in both rows above — she has the highest score in each match.)*
+
+
+## Mockup (Round detail modal)
+
+```
+┌─────────────────────────────┐
+│  Round detail            ×  │
+│  Belote · 2026-06-10 14:30  │
+│ ┌ ROUND 1 ────────────────┐ │
+│ │ Alice 6   Bob 2  Carla 4│ │
+│ └─────────────────────────┘ │
+│ ┌ ROUND 2 ────────────────┐ │
+│ │ Alice 4   Bob 3  Carla 1│ │
+│ └─────────────────────────┘ │
+│ Total: Alice 10 · Bob 5 …   │
+│                    [Close]  │
+└─────────────────────────────┘
+```

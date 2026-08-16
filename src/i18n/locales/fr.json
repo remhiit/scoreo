@@ -50,7 +50,10 @@
     "unknownGame": "Jeu inconnu",
     "unknown": "Inconnu",
     "deleteTitle": "Supprimer la partie ?",
-    "matchDataWillBeLost": "Les données de la partie seront perdues."
+    "matchDataWillBeLost": "Les données de la partie seront perdues.",
+    "roundsTitle": "Détail des manches",
+    "noRoundDetail": "Le détail des manches n'a pas été enregistré pour cette partie.",
+    "totals": "Total :"
   },
   "home": {
     "resumeMatch": "Reprendre la partie en cours",

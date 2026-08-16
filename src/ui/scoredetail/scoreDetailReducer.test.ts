@@ -217,6 +217,35 @@ function buildHarnessWithGameType(gt: GameType, players: Player[] = [alice, bob]
   return { harness: new Harness(gt, players, matchRepo, gameTypeRepo), matchRepo, gameTypeRepo }
 }
 
+/** Edit mode over a pre-saved match, the way History opens an existing match. */
+function buildEditHarness(rounds: Match['rounds'], playerScores: Match['playerScores']) {
+  const gt = gameType('gt1', 'TestGame')
+  const gameTypeRepo = new InMemoryGameTypeRepository()
+  gameTypeRepo.save(gt)
+  const matchRepo = new InMemoryMatchRepository()
+  const playerRepo = new InMemoryPlayerRepository()
+  playerRepo.save(alice)
+  playerRepo.save(bob)
+  matchRepo.save({
+    id: 'm1',
+    gameTypeId: gt.id,
+    date: 1000,
+    playerScores,
+    manualWinners: [],
+    secondaryPlayerScores: [],
+    rounds,
+  })
+  const mode: ScoreDetailMode = {
+    type: 'Edit',
+    matchId: 'm1',
+    updateMatchUseCase: new UpdateMatchUseCase(matchRepo),
+    matchRepository: matchRepo,
+    playerRepository: playerRepo,
+    gameTypeRepository: gameTypeRepo,
+  }
+  return { harness: new Harness(gt, [alice, bob], matchRepo, gameTypeRepo, mode), matchRepo }
+}
+
 describe('scoreDetailReducer', () => {
   it('initial state has one empty round and no modal', () => {
     const { harness } = buildHarness()
@@ -786,7 +815,7 @@ describe('scoreDetailReducer', () => {
     expect(harness.state.rounds[0].bob).toBe('5')
   })
 
-  it('reconstructRounds always produces a single round', () => {
+  it('reconstructRounds falls back to a single round of totals when no round detail was stored', () => {
     const gt = gameType('gt1', 'TestGame')
     const gameTypeRepo = new InMemoryGameTypeRepository()
     gameTypeRepo.save(gt)
@@ -821,6 +850,106 @@ describe('scoreDetailReducer', () => {
     expect(harness.state.rounds).toHaveLength(1)
     expect(harness.state.rounds[0].alice).toBe('30')
     expect(harness.state.rounds[0].bob).toBe('20')
+  })
+
+  it('rebuilds the editor from the stored rounds when the match has round detail', () => {
+    const { harness } = buildEditHarness(
+      [
+        [
+          { playerId: 'alice', score: 10 },
+          { playerId: 'bob', score: 5 },
+        ],
+        [
+          { playerId: 'alice', score: 3 },
+          { playerId: 'bob', score: 7 },
+        ],
+      ],
+      [
+        { playerId: 'alice', score: 13 },
+        { playerId: 'bob', score: 12 },
+      ],
+    )
+
+    expect(harness.state.rounds).toEqual([
+      { alice: '10', bob: '5' },
+      { alice: '3', bob: '7' },
+    ])
+    expect(harness.totals().get('alice')).toBe(13)
+    expect(harness.totals().get('bob')).toBe(12)
+  })
+
+  it('re-saving an edited match without changing anything keeps its stored round detail', () => {
+    const rounds = [
+      [
+        { playerId: 'alice', score: 10 },
+        { playerId: 'bob', score: 5 },
+      ],
+      [
+        { playerId: 'alice', score: 3 },
+        { playerId: 'bob', score: 7 },
+      ],
+    ]
+    const { harness, matchRepo } = buildEditHarness(rounds, [
+      { playerId: 'alice', score: 13 },
+      { playerId: 'bob', score: 12 },
+    ])
+
+    harness.terminate()
+
+    expect(harness.state.saved).toBe(true)
+    expect(matchRepo.findById('m1')?.rounds).toEqual(rounds)
+    expect(matchRepo.findById('m1')?.playerScores).toEqual([
+      { playerId: 'alice', score: 13 },
+      { playerId: 'bob', score: 12 },
+    ])
+  })
+
+  it('leaves a player out of the editor cell when a stored round omits them', () => {
+    const { harness } = buildEditHarness(
+      [[{ playerId: 'alice', score: 10 }], [{ playerId: 'bob', score: 5 }]],
+      [
+        { playerId: 'alice', score: 10 },
+        { playerId: 'bob', score: 5 },
+      ],
+    )
+
+    expect(harness.state.rounds).toEqual([{ alice: '10' }, { bob: '5' }])
+    expect(harness.totals().get('alice')).toBe(10)
+    expect(harness.totals().get('bob')).toBe(5)
+  })
+
+  it('falls back to a single round of totals when the stored rounds do not sum to the totals', () => {
+    const { harness } = buildEditHarness(
+      [
+        [
+          { playerId: 'alice', score: 10 },
+          { playerId: 'bob', score: 5 },
+        ],
+      ],
+      [
+        { playerId: 'alice', score: 100 },
+        { playerId: 'bob', score: 12 },
+      ],
+    )
+
+    expect(harness.state.rounds).toEqual([{ alice: '100', bob: '12' }])
+  })
+
+  it('falls back to a single round of totals when a stored round names a player outside the match', () => {
+    const { harness } = buildEditHarness(
+      [
+        [
+          { playerId: 'alice', score: 10 },
+          { playerId: 'carol', score: 5 },
+        ],
+      ],
+      [
+        { playerId: 'alice', score: 10 },
+        { playerId: 'bob', score: 0 },
+      ],
+    )
+
+    expect(harness.state.rounds).toEqual([{ alice: '10', bob: '0' }])
   })
 
   it('terminate calls the update use case in edit mode', () => {

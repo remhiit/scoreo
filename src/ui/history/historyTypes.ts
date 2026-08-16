@@ -15,6 +15,8 @@ export interface MatchDisplay {
 export interface HistoryState {
   displays: MatchDisplay[]
   deleteConfirmMatchId: string | undefined
+  /** Match whose per-round detail is shown in the read-only rounds modal; undefined = modal closed. */
+  roundsMatchId: string | undefined
   /** undefined = all games */
   selectedGameTypeFilter: string | undefined
   error: string | undefined
@@ -23,6 +25,7 @@ export interface HistoryState {
 export const initialHistoryState: HistoryState = {
   displays: [],
   deleteConfirmMatchId: undefined,
+  roundsMatchId: undefined,
   selectedGameTypeFilter: undefined,
   error: undefined,
 }

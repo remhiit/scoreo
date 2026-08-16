@@ -8,6 +8,8 @@ import type { HistoryState, MatchDisplay } from './historyTypes'
 export type HistoryAction =
   | { type: 'loaded'; displays: MatchDisplay[] }
   | { type: 'showDeleteConfirm'; matchId: string }
+  | { type: 'showRounds'; matchId: string }
+  | { type: 'dismissRounds' }
   | { type: 'deleteFailed'; error: string }
   | { type: 'dismissDeleteConfirm' }
   | { type: 'selectGameTypeFilter'; gameTypeId: string | undefined }
@@ -15,13 +17,23 @@ export type HistoryAction =
 export function historyReducer(state: HistoryState, action: HistoryAction): HistoryState {
   switch (action.type) {
     case 'loaded':
-      return { ...state, displays: action.displays, deleteConfirmMatchId: undefined, error: undefined }
+      return {
+        ...state,
+        displays: action.displays,
+        deleteConfirmMatchId: undefined,
+        roundsMatchId: undefined,
+        error: undefined,
+      }
     case 'showDeleteConfirm':
       return { ...state, deleteConfirmMatchId: action.matchId }
     case 'deleteFailed':
       return { ...state, error: action.error }
     case 'dismissDeleteConfirm':
       return { ...state, deleteConfirmMatchId: undefined }
+    case 'showRounds':
+      return { ...state, roundsMatchId: action.matchId }
+    case 'dismissRounds':
+      return { ...state, roundsMatchId: undefined }
     case 'selectGameTypeFilter':
       return { ...state, selectedGameTypeFilter: action.gameTypeId }
   }
@@ -39,6 +51,35 @@ export function buildScoreSummary(display: MatchDisplay): ScoreSummaryPart[] {
     playerId: ps.playerId,
     text: `${display.playerLabels[ps.playerId] ?? ps.playerId} ${ps.score}`,
     isWinner: display.winners.includes(ps.playerId),
+  }))
+}
+
+export interface RoundBreakdownCell {
+  playerId: string
+  label: string
+  score: number
+}
+
+export interface RoundBreakdownRow {
+  roundNumber: number
+  cells: RoundBreakdownCell[]
+}
+
+/**
+ * Builds the read-only per-round view of a match from `Match.rounds`: one row per
+ * round played, each listing every participant in the match's own player order, so
+ * cells line up from one round to the next. Returns `[]` for a match stored without
+ * round detail (saved before `Match.rounds` existed, or imported) — the screen shows
+ * an explanatory message instead of an empty list.
+ */
+export function buildRoundBreakdown(display: MatchDisplay): RoundBreakdownRow[] {
+  return display.match.rounds.map((round, index) => ({
+    roundNumber: index + 1,
+    cells: display.match.playerScores.map((ps) => ({
+      playerId: ps.playerId,
+      label: display.playerLabels[ps.playerId] ?? ps.playerId,
+      score: round.find((entry) => entry.playerId === ps.playerId)?.score ?? 0,
+    })),
   }))
 }
 

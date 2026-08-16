@@ -29,8 +29,14 @@ function gameType(id: string, name: string): GameType {
   }
 }
 
-function match(id: string, date: number, gameTypeId: string, playerScores: Match['playerScores']): Match {
-  return { id, date, gameTypeId, playerScores, manualWinners: [], secondaryPlayerScores: [], rounds: [] }
+function match(
+  id: string,
+  date: number,
+  gameTypeId: string,
+  playerScores: Match['playerScores'],
+  rounds: Match['rounds'] = [],
+): Match {
+  return { id, date, gameTypeId, playerScores, manualWinners: [], secondaryPlayerScores: [], rounds }
 }
 
 /** Chess (m1) is the most recent match, so it sorts first in the list. */
@@ -42,10 +48,25 @@ function renderHistory(onEditMatch?: HistoryScreenProps['onEditMatch']) {
   gameTypeRepo.save(gameType('gt1', 'Chess'))
   gameTypeRepo.save(gameType('gt2', 'Darts'))
   const matchRepo = new InMemoryMatchRepository()
-  matchRepo.save(match('m1', 2000, 'gt1', [
-    { playerId: 'p1', score: 10 },
-    { playerId: 'p2', score: 5 },
-  ]))
+  matchRepo.save(match(
+    'm1',
+    2000,
+    'gt1',
+    [
+      { playerId: 'p1', score: 10 },
+      { playerId: 'p2', score: 5 },
+    ],
+    [
+      [
+        { playerId: 'p1', score: 6 },
+        { playerId: 'p2', score: 2 },
+      ],
+      [
+        { playerId: 'p1', score: 4 },
+        { playerId: 'p2', score: 3 },
+      ],
+    ],
+  ))
   matchRepo.save(match('m2', 1000, 'gt2', [
     { playerId: 'p1', score: 3 },
     { playerId: 'p2', score: 10 },
@@ -181,5 +202,56 @@ describe('HistoryScreen', () => {
     expect(screen.getByText('Delete match?')).toBeInTheDocument()
     expect(screen.getByText('Match data will be lost.')).toBeInTheDocument()
     expect(screen.getByText('Cancel', { selector: 'button' })).toBeInTheDocument()
+  })
+
+  it('view flow: shows every stored round of the match, then its totals', () => {
+    renderHistory()
+
+    fireEvent.click(screen.getAllByLabelText('View details')[0])
+
+    expect(screen.getByText('Round detail')).toBeInTheDocument()
+    const roundCards = document.querySelectorAll('.rounds-detail-round')
+    expect(roundCards).toHaveLength(2)
+    expect(roundCards[0]).toHaveTextContent('Round 1')
+    expect(roundCards[0]).toHaveTextContent('Alice6')
+    expect(roundCards[0]).toHaveTextContent('Bob2')
+    expect(roundCards[1]).toHaveTextContent('Round 2')
+    expect(roundCards[1]).toHaveTextContent('Alice4')
+    expect(roundCards[1]).toHaveTextContent('Bob3')
+
+    const totals = document.querySelector('.rounds-detail-totals')
+    expect(totals).toHaveTextContent('Alice 10 · Bob 5')
+    expect(totals!.querySelector('strong')).toHaveTextContent('Alice 10')
+  })
+
+  it('explains that a match stored without round detail has none to show', () => {
+    renderHistory()
+
+    fireEvent.click(screen.getAllByLabelText('View details')[1])
+
+    expect(screen.getByText('No round detail was recorded for this match.')).toBeInTheDocument()
+    expect(document.querySelectorAll('.rounds-detail-round')).toHaveLength(0)
+    expect(document.querySelector('.rounds-detail-totals')).toHaveTextContent('Bob 10')
+  })
+
+  it('closes the round detail modal on Close', () => {
+    renderHistory()
+
+    fireEvent.click(screen.getAllByLabelText('View details')[0])
+    fireEvent.click(screen.getByText('Close', { selector: 'button' }))
+
+    expect(screen.queryByText('Round detail')).not.toBeInTheDocument()
+  })
+
+  it('translates the round detail modal', async () => {
+    renderHistory()
+    await i18n.changeLanguage('fr')
+
+    fireEvent.click(screen.getAllByLabelText('View details')[0])
+
+    expect(screen.getByText('Détail des manches')).toBeInTheDocument()
+    expect(document.querySelector('.rounds-detail-round')).toHaveTextContent('Manche 1')
+
+    await i18n.changeLanguage('en')
   })
 })

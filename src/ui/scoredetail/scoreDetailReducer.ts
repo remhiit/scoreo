@@ -453,7 +453,35 @@ export function saveDraft(
   })
 }
 
+/**
+ * Stored rounds are only trusted when every round entry names a participant of
+ * the match and the per-player sums match the recorded totals. A mismatch means
+ * the detail and the totals disagree (partial sync, match written by an older
+ * build): rebuilding from it would silently change the match's scores.
+ */
+function roundsAgreeWithTotals(match: Match): boolean {
+  const totals = new Map(match.playerScores.map((ps) => [ps.playerId, ps.score]))
+  const sums = new Map<string, number>()
+  for (const round of match.rounds) {
+    for (const ps of round) {
+      if (!totals.has(ps.playerId)) return false
+      sums.set(ps.playerId, (sums.get(ps.playerId) ?? 0) + ps.score)
+    }
+  }
+  return match.playerScores.every((ps) => (sums.get(ps.playerId) ?? 0) === ps.score)
+}
+
+/**
+ * Rebuilds the editor's round grid from the match's stored per-round detail, so
+ * editing an existing match keeps its rounds instead of flattening them into a
+ * single round of totals on the next save. Falls back to that single round when
+ * no detail was stored (matches saved before `Match.rounds` existed, or
+ * imported) or when the stored detail disagrees with the totals.
+ */
 function reconstructRounds(match: Match): Record<string, string>[] {
+  if (match.rounds.length > 0 && roundsAgreeWithTotals(match)) {
+    return match.rounds.map((round) => Object.fromEntries(round.map((ps) => [ps.playerId, String(ps.score)])))
+  }
   const round: Record<string, string> = {}
   for (const ps of match.playerScores) {
     round[ps.playerId] = String(ps.score)
