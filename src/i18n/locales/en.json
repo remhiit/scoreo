@@ -50,7 +50,10 @@
     "unknownGame": "Unknown game",
     "unknown": "Unknown",
     "deleteTitle": "Delete match?",
-    "matchDataWillBeLost": "Match data will be lost."
+    "matchDataWillBeLost": "Match data will be lost.",
+    "roundsTitle": "Round detail",
+    "noRoundDetail": "No round detail was recorded for this match.",
+    "totals": "Total:"
   },
   "home": {
     "resumeMatch": "Resume match in progress",

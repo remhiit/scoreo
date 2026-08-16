@@ -238,7 +238,9 @@ to a pre-Catppuccin build would still find a valid (if stale) value.
 
 **Compatibilité ascendante :** `MatchSchema` déclare `rounds` avec `.default([])` — un `Match` sérialisé avant ce changement se décode sans erreur avec `rounds: []`. Les matchs importés via `schemas/import/` gardent également `rounds: []` (le format d'import ne transporte pas le détail des manches). Aucun backfill des matchs déjà enregistrés : la donnée n'existe plus, elle ne peut pas être reconstruite.
 
-**Hors scope :** ce changement ne fait que stocker la donnée — aucune exploitation (affichage enrichi, statistiques, trophées niveau manche) n'est ajoutée par cette issue.
+**Hors scope de #249 :** ce changement ne faisait que stocker la donnée — aucune exploitation n'était ajoutée à ce stade.
+
+**Restitution (issue #303) :** la donnée est désormais relue. `buildInitialState()` reconstruit l'éditeur à partir de `match.rounds` en mode édition (au lieu d'une manche unique portant les totaux), et l'écran Historique expose une modale en lecture seule listant les manches (action 👁). Deux replis conservent le comportement d'origine — une manche unique portant les `playerScores` — quand `rounds` est vide (match antérieur à #249 ou importé) ou quand le détail stocké contredit les totaux (`roundsAgreeWithTotals()` : joueur inconnu du match, ou somme par joueur ≠ `playerScores`). Conséquence : rouvrir puis réenregistrer une partie ne détruit plus son détail de manches, alors que le comportement antérieur le remplaçait par une manche unique. Statistiques et trophées au niveau manche restent hors scope.
 
 ---
 

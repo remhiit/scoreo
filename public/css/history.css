@@ -43,3 +43,68 @@
     mask-size: 14px 14px;
     -webkit-mask-size: 14px 14px;
 }
+
+/* ── Round detail modal (👁 on a history row) ──
+   Read-only mirror of the score screen's `.hist-round` cards: one card per
+   round, cells wrapping instead of scrolling sideways so any player count
+   fits the modal's width. */
+
+.rounds-detail-head {
+    margin: 0 0 var(--space-3);
+    color: var(--text-muted);
+    font-size: var(--text-sm);
+}
+
+.rounds-detail-empty {
+    margin: 0;
+    color: var(--text-muted);
+}
+
+.rounds-detail-round {
+    background: var(--surface-card);
+    border: var(--border-width) solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    margin-bottom: var(--space-2);
+}
+
+.rounds-detail-round-head {
+    display: block;
+    padding: 6px var(--space-2) 6px 14px;
+    background: var(--surface-sunken);
+    border-radius: var(--radius-md) var(--radius-md) 0 0;
+    font-size: var(--text-xs);
+    font-weight: var(--weight-semibold);
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-wide);
+    color: var(--text-muted);
+}
+
+.rounds-detail-cells {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 10px 14px;
+}
+
+.rounds-detail-cell {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    background: var(--surface-sunken);
+    border-radius: var(--radius-sm);
+    padding: 5px 9px;
+    font-size: var(--text-sm);
+}
+
+.rounds-detail-score {
+    font-variant-numeric: tabular-nums;
+    font-weight: var(--weight-semibold);
+    color: var(--text-body);
+}
+
+.rounds-detail-totals {
+    margin: var(--space-3) 0 0;
+    padding-top: var(--space-3);
+    border-top: var(--border-width) solid var(--border-subtle);
+    font-size: var(--text-sm);
+}

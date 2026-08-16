@@ -9,7 +9,7 @@ import { ListContainer } from '../shared/ListContainer'
 import { ListItemRow } from '../shared/ListItemRow'
 import { LudoButton } from '../shared/LudoButton'
 import { LudoModal } from '../shared/LudoModal'
-import { buildScoreSummary, deleteMatch, historyReducer, loadDisplays } from './historyReducer'
+import { buildRoundBreakdown, buildScoreSummary, deleteMatch, historyReducer, loadDisplays } from './historyReducer'
 import { initialHistoryState } from './historyTypes'
 
 export interface HistoryScreenProps {
@@ -72,6 +72,8 @@ export function HistoryScreen({
   })()
 
   const matchToDelete = state.displays.find((d) => d.match.id === state.deleteConfirmMatchId)
+  const matchToView = state.displays.find((d) => d.match.id === state.roundsMatchId)
+  const roundBreakdown = matchToView ? buildRoundBreakdown(matchToView) : []
 
   return (
     <>
@@ -117,6 +119,7 @@ export function HistoryScreen({
                   </>
                 }
                 date={display.dateFormatted}
+                onView={() => dispatch({ type: 'showRounds', matchId: display.match.id })}
                 onEdit={
                   onEditMatch && gameType
                     ? () =>
@@ -133,6 +136,55 @@ export function HistoryScreen({
           })}
         </ListContainer>
       )}
+
+      <LudoModal
+        open={matchToView !== undefined}
+        title={t('history.roundsTitle')}
+        onClose={() => dispatch({ type: 'dismissRounds' })}
+        footer={
+          <LudoButton
+            text={t('common.close')}
+            variant="secondary"
+            onClick={() => dispatch({ type: 'dismissRounds' })}
+          />
+        }
+      >
+        {matchToView && (
+          <>
+            <p className="rounds-detail-head">
+              {matchToView.gameType?.name ?? t('history.unknownGame')} · {matchToView.dateFormatted}
+            </p>
+            {roundBreakdown.length === 0 ? (
+              <p className="rounds-detail-empty">{t('history.noRoundDetail')}</p>
+            ) : (
+              roundBreakdown.map((round) => (
+                <div key={round.roundNumber} className="rounds-detail-round">
+                  <span className="rounds-detail-round-head">
+                    {t('scoreDetail.round', { number: round.roundNumber })}
+                  </span>
+                  <div className="rounds-detail-cells">
+                    {round.cells.map((cell) => (
+                      <span key={cell.playerId} className="rounds-detail-cell">
+                        <span>{cell.label}</span>
+                        <span className="rounds-detail-score">{cell.score}</span>
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              ))
+            )}
+            <p className="rounds-detail-totals">
+              {t('history.totals')}{' '}
+              {buildScoreSummary(matchToView).map((part, i) => (
+                <Fragment key={part.playerId}>
+                  {i > 0 && ' · '}
+                  {part.isWinner ? <strong>{part.text}</strong> : part.text}
+                </Fragment>
+              ))}
+            </p>
+          </>
+        )}
+      </LudoModal>
 
       <LudoModal
         open={state.deleteConfirmMatchId !== undefined && matchToDelete !== undefined}

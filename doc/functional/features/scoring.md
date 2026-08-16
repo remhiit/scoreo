@@ -123,14 +123,20 @@ When navigating to `ScoreDetailScreen` with a `matchId` parameter (from History)
 
 ### Data Reconstruction
 
-All matches are stored with `playerScores` (total score per player) and `rounds` (per-round detail, `PlayerScore[][]`, one entry per round played — empty for matches saved before this was tracked, or imported without round detail). When editing, the screen still reconstructs rounds as 1 round containing the `playerScores` totals (not the stored `rounds` detail — see `doc/technical/migrations.md` § `Match.rounds`). User can then split into multiple rounds or edit the single-round total as desired; on save, whatever rounds are present in the editor become the new `Match.rounds`.
+All matches are stored with `playerScores` (total score per player) and `rounds` (per-round detail, `PlayerScore[][]`, one entry per round played — empty for matches saved before this was tracked, or imported without round detail). When editing, the screen rebuilds the editor from the stored `rounds`: one editor round per stored round, so the History tab shows the match exactly as it was played, and re-saving it untouched leaves `Match.rounds` unchanged.
+
+Two cases fall back to a single round holding the `playerScores` totals:
+- the match has **no** stored round detail (`rounds: []` — saved before this was tracked, or imported);
+- the stored rounds **disagree** with the totals: a round names a player who isn't in the match, or the per-player sums don't equal `playerScores`. Rebuilding from such data would silently change the match's scores, so the totals win.
+
+In both cases the user can then split the single round into several, exactly as before. On save, whatever rounds are present in the editor become the new `Match.rounds` — so a fallback edit replaces the (missing or inconsistent) detail with the editor's rounds.
 
 ### Workflow
 
 1. User clicks match card in History
-2. `ScoreDetailScreen` loads match + reconstructs as 1 round with totals
+2. `ScoreDetailScreen` loads match + rebuilds its stored rounds (1 round with totals as a fallback, see above)
 3. Title changes to "Edit match"
-4. User edits rounds/scores
+4. User edits rounds/scores (the History tab lists the match's own rounds)
 5. Clicks "Finish match" (button text unchanged, intent same)
 6. Calls `UpdateMatchUseCase` instead of `CreateMatchUseCase`
 7. Match overwritten (id preserved; date preserved unless the match date field was changed, in which case only the calendar day changes, the original time-of-day is kept)
@@ -245,7 +251,7 @@ Then the match is saved with manualWinners=["Alice"]
 
 ### Edit match from history
 ```
-Given a completed match exists with Alice=20, Bob=15
+Given a completed match exists with Alice=20, Bob=15, stored without round detail
 When I click the match card in History
 Then ScoreDetailScreen loads in edit mode:
    - Title shows "Edit match"
@@ -254,6 +260,25 @@ Then ScoreDetailScreen loads in edit mode:
 When I update Alice to 25 and click "Finish match"
 Then the match is updated with new scores (same ID, same date)
    And History displays updated scores
+```
+
+### Editing a match keeps its rounds
+
+```
+Given a completed match played in 3 rounds
+When I open it for editing from History
+Then the History tab shows those 3 rounds with their own scores
+When I click "Finish match" without changing anything
+Then the match is saved with the same 3 rounds (no round detail is lost)
+```
+
+### Editing a match whose rounds disagree with its totals
+
+```
+Given a match whose stored rounds don't sum to its recorded totals
+When I open it for editing from History
+Then the editor shows a single round holding the recorded totals
+   And the totals displayed match the ones stored
 ```
 
 ### Edit match preserves original date
