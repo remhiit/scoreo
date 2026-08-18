@@ -65,6 +65,8 @@ The rulebook PDF (`LVDT_Rules-225x225mm_FR.pdf`) is kept in the repo working dir
 - **Develop**: user says to develop → pick the first open, unassigned `P0` issue (fall back to the next available priority), implement it, commit, open a PR referencing `Closes #N`, then move to the next one.
 - One commit per issue. Commit message = issue title.
 
+See `doc/technical/automation-plan.md` for the target automation architecture (labels as event bus, skills, phasing toward autonomy) and `.claude/skills/` for the skills that implement each step (`issue-to-spec`, `implement-task`, `pr-review`, `address-feedback`, `site-quality`, `project-conventions`).
+
 ## Rules
 
 - Reducer lives in `ui/*/`. Takes an `Action` → produces a `State`.
