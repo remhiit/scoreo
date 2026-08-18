@@ -16,4 +16,5 @@ See the individual feature docs for detail:
 
 - [`features/players.md`](features/players.md)
 - [`features/scoring.md`](features/scoring.md)
+- [`features/objectif-cards.md`](features/objectif-cards.md) — transcription of the 16 physical cards (reference only, not yet used by the app)
 - [`features/history.md`](features/history.md)
