@@ -11,10 +11,15 @@ export class AddPlayerUseCase {
   invoke(name: string): Player {
     const trimmed = name.trim()
     if (trimmed.length === 0) {
-      throw new ValidationError('name', 'Player name must not be blank')
+      throw new ValidationError('name', 'Player name must not be blank', 'errors.playerName.blank')
     }
     if (trimmed.length > MAX_NAME_LENGTH) {
-      throw new ValidationError('name', `Player name must be ${MAX_NAME_LENGTH} characters or less`)
+      throw new ValidationError(
+        'name',
+        `Player name must be ${MAX_NAME_LENGTH} characters or less`,
+        'errors.playerName.tooLong',
+        { max: MAX_NAME_LENGTH },
+      )
     }
     const player: Player = { id: newId(), name: trimmed, active: true }
     this.repository.save(player)

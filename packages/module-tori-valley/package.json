@@ -16,9 +16,12 @@
     "check:doc-links": "node scripts/check-doc-links.mjs"
   },
   "dependencies": {
+    "i18next": "^26.3.6",
+    "i18next-browser-languagedetector": "^8.2.1",
     "lucide-react": "^1.24.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
+    "react-i18next": "^17.0.11",
     "zod": "^3.24.1"
   },
   "devDependencies": {

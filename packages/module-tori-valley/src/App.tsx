@@ -1,5 +1,7 @@
 import { ArrowLeft } from 'lucide-react'
 import { useMemo } from 'react'
+import type { TFunction } from 'i18next'
+import { useTranslation } from 'react-i18next'
 import { AddPlayerUseCase } from './application/addPlayerUseCase'
 import { CreateMatchUseCase } from './application/createMatchUseCase'
 import { DeleteMatchUseCase } from './application/deleteMatchUseCase'
@@ -7,6 +9,7 @@ import { DeletePlayerUseCase } from './application/deletePlayerUseCase'
 import { GetMatchesUseCase } from './application/getMatchesUseCase'
 import { GetPlayersUseCase } from './application/getPlayersUseCase'
 import { UpdateMatchUseCase } from './application/updateMatchUseCase'
+import { SUPPORTED_LANGUAGES } from './i18n'
 import { ServicesProvider, useServices } from './services/ServicesContext'
 import { HistoryScreen } from './ui/history/HistoryScreen'
 import { HomeScreen } from './ui/home/HomeScreen'
@@ -18,14 +21,14 @@ import { ScoreDetailScreen } from './ui/scoredetail/ScoreDetailScreen'
 import type { ScoreDetailMode } from './ui/scoredetail/scoreDetailTypes'
 import { AppButton } from './ui/shared/AppButton'
 
-function screenTitle(screen: Screen): string {
+function screenTitle(screen: Screen, t: TFunction): string {
   switch (screen.type) {
     case 'Home':
-      return 'Torī Valley'
+      return t('app.title')
     case 'History':
-      return 'History'
+      return t('app.history')
     case 'ScoreDetail':
-      return screen.matchId !== undefined ? 'Edit match' : 'New match'
+      return screen.matchId !== undefined ? t('app.editMatch') : t('app.newMatch')
   }
 }
 
@@ -75,6 +78,7 @@ function ScoreDetailRoute({ screen, onSaved, onCancel }: ScoreDetailRouteProps) 
 function AppShell() {
   const services = useServices()
   const { current, navigate } = useHashRouter()
+  const { t, i18n } = useTranslation()
 
   const addPlayer = useMemo(() => new AddPlayerUseCase(services.playerRepository), [services])
   const getPlayers = useMemo(() => new GetPlayersUseCase(services.playerRepository), [services])
@@ -92,7 +96,7 @@ function AppShell() {
             text={<ArrowLeft size={20} />}
             variant="ghost"
             iconOnly
-            ariaLabel="Back"
+            ariaLabel={t('app.back')}
             onClick={onBack}
           />
         )}
@@ -100,8 +104,20 @@ function AppShell() {
           className="app-title clickable"
           onClick={() => current.type !== 'Home' && navigate(HOME_SCREEN)}
         >
-          {screenTitle(current)}
+          {screenTitle(current, t)}
         </span>
+        <select
+          className="lang-select"
+          aria-label={t('language.label')}
+          value={i18n.language}
+          onChange={(e) => void i18n.changeLanguage(e.target.value)}
+        >
+          {SUPPORTED_LANGUAGES.map((lng) => (
+            <option key={lng} value={lng}>
+              {lng === 'en' ? 'English' : 'Français'}
+            </option>
+          ))}
+        </select>
       </div>
 
       <div className="app-content">

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { ValidationError } from '../../domain/model/errors'
+import i18n from '../../i18n'
 import { InMemoryPlayerRepository } from '../../infrastructure/testing/inMemoryPlayerRepository'
 import { AddPlayerUseCase } from '../../application/addPlayerUseCase'
 import { DeletePlayerUseCase } from '../../application/deletePlayerUseCase'
@@ -39,7 +40,12 @@ describe('submitAddPlayer', () => {
   it('adds the trimmed input name and reloads players', () => {
     const repo = new InMemoryPlayerRepository()
     const state = { ...initialHomeState, inputName: '  Alice  ' }
-    const action = submitAddPlayer(new AddPlayerUseCase(repo), new GetPlayersUseCase(repo), state)
+    const action = submitAddPlayer(
+      new AddPlayerUseCase(repo),
+      new GetPlayersUseCase(repo),
+      state,
+      i18n.t,
+    )
     expect(action).toEqual({ type: 'addSucceeded', players: repo.getAll() })
     expect(repo.getAll()[0].name).toBe('Alice')
   })
@@ -47,7 +53,12 @@ describe('submitAddPlayer', () => {
   it('returns addFailed on a blank name', () => {
     const repo = new InMemoryPlayerRepository()
     const state = { ...initialHomeState, inputName: '   ' }
-    const action = submitAddPlayer(new AddPlayerUseCase(repo), new GetPlayersUseCase(repo), state)
+    const action = submitAddPlayer(
+      new AddPlayerUseCase(repo),
+      new GetPlayersUseCase(repo),
+      state,
+      i18n.t,
+    )
     expect(action.type).toBe('addFailed')
     expect((action as { error: string }).error).toContain(new ValidationError('name', '').field)
   })

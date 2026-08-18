@@ -82,7 +82,12 @@ Colocated `*.test.ts(x)` next to the file they cover, running under Vitest + `js
 
 ## localStorage Keys
 
-| Key                   | Content         |
-| --------------------- | --------------- |
-| `tori_valley_players` | JSON `Player[]` |
-| `tori_valley_matches` | JSON `Match[]`  |
+| Key                    | Content                              |
+| ---------------------- | ------------------------------------ |
+| `tori_valley_players`  | JSON `Player[]`                      |
+| `tori_valley_matches`  | JSON `Match[]`                       |
+| `tori_valley_language` | Selected UI language (`'en'`/`'fr'`) |
+
+## Internationalization
+
+`src/i18n/index.ts` — i18next instance (English/French), initialized once from `main.tsx` (and `src/test/setup.ts` for tests). Resource dictionaries: `src/i18n/locales/en.ts` / `fr.ts`. `App.tsx` renders the language `<select>` in the app header. `ValidationError`/`NotFoundError` (`src/domain/model/errors.ts`) carry an optional `code` (+ `params`) i18n key, translated by the `ui` layer.

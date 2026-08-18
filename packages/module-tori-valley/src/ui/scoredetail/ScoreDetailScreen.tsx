@@ -1,9 +1,11 @@
 import { useReducer } from 'react'
+import { useTranslation } from 'react-i18next'
 import type { CreateMatchUseCase } from '../../application/createMatchUseCase'
 import type { UpdateMatchUseCase } from '../../application/updateMatchUseCase'
-import { LANDSCAPE_TYPES, landscapeTypeLabel } from '../../domain/model/landscape'
+import { LANDSCAPE_TYPES } from '../../domain/model/landscape'
 import { PARCHEMIN_VALUES, scorePlayerResult, type ParcheminValue } from '../../domain/model/match'
-import { MAX_TORII_PER_COLOR, TORII_COLORS, type ToriiColor } from '../../domain/model/torii'
+import { MAX_TORII_PER_COLOR, TORII_COLORS } from '../../domain/model/torii'
+import { NotFoundError, ValidationError } from '../../domain/model/errors'
 import { AppButton } from '../shared/AppButton'
 import { scoreDetailReducer } from './scoreDetailReducer'
 import type { ScoreDetailState } from './scoreDetailTypes'
@@ -17,14 +19,6 @@ export interface ScoreDetailScreenProps {
   onCancel: () => void
 }
 
-function errorMessage(e: unknown): string {
-  return e instanceof Error ? e.message : String(e)
-}
-
-function toriiColorLabel(color: ToriiColor): string {
-  return color[0].toUpperCase() + color.slice(1)
-}
-
 export function ScoreDetailScreen({
   initialState,
   createMatch,
@@ -33,7 +27,14 @@ export function ScoreDetailScreen({
   onSaved,
   onCancel,
 }: ScoreDetailScreenProps) {
+  const { t } = useTranslation()
   const [state, dispatch] = useReducer(scoreDetailReducer, initialState)
+
+  function errorMessage(e: unknown): string {
+    if (e instanceof ValidationError && e.code) return t(e.code, e.params)
+    if (e instanceof NotFoundError && e.code) return t(e.code, { id: e.id })
+    return e instanceof Error ? e.message : String(e)
+  }
 
   const pinceauHolderId = state.results.find((r) => r.hasPinceau)?.playerId
 
@@ -64,7 +65,7 @@ export function ScoreDetailScreen({
       )}
 
       <div className="card">
-        <label htmlFor="pinceau-holder">Pinceau holder (+2 VP)</label>
+        <label htmlFor="pinceau-holder">{t('scoreDetail.pinceauHolderLabel')}</label>
         <select
           id="pinceau-holder"
           value={pinceauHolderId ?? ''}
@@ -72,7 +73,7 @@ export function ScoreDetailScreen({
             dispatch({ type: 'setPinceauHolder', playerId: e.target.value || undefined })
           }
         >
-          <option value="">— None —</option>
+          <option value="">{t('scoreDetail.noneOption')}</option>
           {state.players.map((player) => (
             <option key={player.id} value={player.id}>
               {player.name}
@@ -88,17 +89,15 @@ export function ScoreDetailScreen({
 
         return (
           <div className="card" key={player.id}>
-            <h2>
-              {player.name} — {total} VP
-            </h2>
+            <h2>{t('scoreDetail.playerTotal', { name: player.name, total })}</h2>
 
-            <h3>Torī</h3>
+            <h3>{t('scoreDetail.toriiHeading')}</h3>
             <table className="score-table">
               <tbody>
                 {TORII_COLORS.map((color) => (
                   <tr key={color}>
                     <th>
-                      <span className={`torii-badge ${color}`}>{toriiColorLabel(color)}</span>
+                      <span className={`torii-badge ${color}`}>{t(`torii.${color}`)}</span>
                     </th>
                     <td>
                       <input
@@ -106,7 +105,7 @@ export function ScoreDetailScreen({
                         min={0}
                         max={MAX_TORII_PER_COLOR}
                         value={result.toriiCounts[color]}
-                        aria-label={`${player.name} ${color} Torī count`}
+                        aria-label={t('scoreDetail.toriiCountAria', { name: player.name, color })}
                         onChange={(e) =>
                           dispatch({
                             type: 'updateToriiCount',
@@ -122,17 +121,20 @@ export function ScoreDetailScreen({
               </tbody>
             </table>
 
-            <h3>Objectif cards</h3>
+            <h3>{t('scoreDetail.objectifHeading')}</h3>
             <table className="score-table">
               <tbody>
                 {LANDSCAPE_TYPES.map((landscape) => (
                   <tr key={landscape}>
-                    <th>{landscapeTypeLabel(landscape)}</th>
+                    <th>{t(`landscape.${landscape}`)}</th>
                     <td>
                       <input
                         type="number"
                         value={result.objectifPoints[landscape]}
-                        aria-label={`${player.name} ${landscapeTypeLabel(landscape)} Objectif points`}
+                        aria-label={t('scoreDetail.objectifPointsAria', {
+                          name: player.name,
+                          landscape: t(`landscape.${landscape}`),
+                        })}
                         onChange={(e) =>
                           dispatch({
                             type: 'updateObjectifPoints',
@@ -148,7 +150,7 @@ export function ScoreDetailScreen({
               </tbody>
             </table>
 
-            <label htmlFor={`parchemin-${player.id}`}>Parchemin</label>
+            <label htmlFor={`parchemin-${player.id}`}>{t('scoreDetail.parcheminLabel')}</label>
             <select
               id={`parchemin-${player.id}`}
               value={result.parcheminValue}
@@ -162,7 +164,9 @@ export function ScoreDetailScreen({
             >
               {PARCHEMIN_VALUES.map((value) => (
                 <option key={value} value={value}>
-                  {value === 0 ? '— None —' : `${value} VP`}
+                  {value === 0
+                    ? t('scoreDetail.noneOption')
+                    : t('scoreDetail.parcheminVp', { value })}
                 </option>
               ))}
             </select>
@@ -171,8 +175,8 @@ export function ScoreDetailScreen({
       })}
 
       <div className="list-item">
-        <AppButton text="Cancel" variant="secondary" onClick={onCancel} />
-        <AppButton text="Save match" onClick={handleSave} />
+        <AppButton text={t('scoreDetail.cancel')} variant="secondary" onClick={onCancel} />
+        <AppButton text={t('scoreDetail.save')} onClick={handleSave} />
       </div>
     </div>
   )
