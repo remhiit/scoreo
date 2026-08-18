@@ -1,6 +1,8 @@
 # Objectif cards — transcription
 
-**Status: transcribed, selection recorded, scoring still manual.** The app now records which variant was dealt per landscape (`Match.objectifCards`, picked on the Match setup screen), but nothing computes points from it yet — Objectif scoring is still entered by hand (see "Objectif cards (manual entry)" in `doc/functional/features/scoring.md`). This file is the reference those future scoring functions will be built from.
+**Status: transcribed, selection recorded, scoring functions written, not wired to the UI yet.** The app records which variant was dealt per landscape (`Match.objectifCards`, picked on the Match setup screen), and `src/domain/model/objectifCard.ts` turns a handful of counts into points for 13 of the 15 cards. Nothing calls those functions yet — score entry still takes a bare point total per landscape.
+
+**Which cards are computed.** All except **Village variante A** and **Eau variante C**, which score against the _neighbouring players'_ boards and so need a seating order the app doesn't model; they stay on manual entry. Each computable card declares the counts it needs (e.g. Bambou A asks only "how many groups of exactly 2 tiles?"), so no tile-by-tile board model is required.
 
 Each landscape (Bamboo, Cherry Blossom, Mountain, Water, Village) has 3 difficulty variants (A/B/C) — **15 Objectif cards**, all transcribed below.
 
