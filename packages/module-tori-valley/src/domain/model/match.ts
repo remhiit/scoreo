@@ -1,4 +1,9 @@
-import { emptyObjectifPoints, LANDSCAPE_TYPES, type ObjectifPoints } from './landscape'
+import {
+  emptyObjectifPoints,
+  LANDSCAPE_TYPES,
+  type ObjectifCardSelection,
+  type ObjectifPoints,
+} from './landscape'
 import { emptyToriiCounts, scoreTorii, type ToriiCounts } from './torii'
 
 /** VP for the highest-value unclaimed Parchemin token; 0 means none taken (rulebook p.6). */
@@ -39,6 +44,8 @@ export interface Match {
   playedAt: number
   playerIds: string[]
   results: PlayerResult[]
+  /** Which Objectif card variant was dealt per landscape for this match. */
+  objectifCards: ObjectifCardSelection
 }
 
 /**

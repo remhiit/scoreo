@@ -1,4 +1,8 @@
-import type { LandscapeType } from '../../domain/model/landscape'
+import {
+  defaultObjectifCardSelection,
+  type LandscapeType,
+  type ObjectifCardSelection,
+} from '../../domain/model/landscape'
 import { emptyPlayerResult, type ParcheminValue, type PlayerResult } from '../../domain/model/match'
 import type { Player } from '../../domain/model/player'
 import type { ToriiColor } from '../../domain/model/torii'
@@ -8,12 +12,13 @@ export function buildInitialState(
   players: Player[],
   mode: ScoreDetailMode,
   existingResults: PlayerResult[] = [],
+  objectifCards: ObjectifCardSelection = defaultObjectifCardSelection(),
 ): ScoreDetailState {
   const results = players.map(
     (player) =>
       existingResults.find((r) => r.playerId === player.id) ?? emptyPlayerResult(player.id),
   )
-  return { players, results, mode, error: undefined, saved: false }
+  return { players, results, mode, objectifCards, error: undefined, saved: false }
 }
 
 export type ScoreDetailAction =

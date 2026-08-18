@@ -9,11 +9,19 @@ import { DeletePlayerUseCase } from './application/deletePlayerUseCase'
 import { GetMatchesUseCase } from './application/getMatchesUseCase'
 import { GetPlayersUseCase } from './application/getPlayersUseCase'
 import { UpdateMatchUseCase } from './application/updateMatchUseCase'
+import type { ObjectifCardSelection } from './domain/model/landscape'
 import { SUPPORTED_LANGUAGES } from './i18n'
 import { ServicesProvider, useServices } from './services/ServicesContext'
 import { HistoryScreen } from './ui/history/HistoryScreen'
 import { HomeScreen } from './ui/home/HomeScreen'
-import { HISTORY_SCREEN, HOME_SCREEN, scoreDetailScreen } from './ui/navigation/screen'
+import { MatchSetupScreen } from './ui/matchsetup/MatchSetupScreen'
+import {
+  HISTORY_SCREEN,
+  HOME_SCREEN,
+  homeScreen,
+  matchSetupScreen,
+  scoreDetailScreen,
+} from './ui/navigation/screen'
 import type { Screen } from './ui/navigation/screen'
 import { useHashRouter } from './ui/navigation/useHashRouter'
 import { buildInitialState } from './ui/scoredetail/scoreDetailReducer'
@@ -27,9 +35,36 @@ function screenTitle(screen: Screen, t: TFunction): string {
       return t('app.title')
     case 'History':
       return t('app.history')
+    case 'MatchSetup':
+      return t('app.matchSetup')
     case 'ScoreDetail':
       return screen.matchId !== undefined ? t('app.editMatch') : t('app.newMatch')
   }
+}
+
+interface MatchSetupRouteProps {
+  screen: Extract<Screen, { type: 'MatchSetup' }>
+  onConfirm: (objectifCards: ObjectifCardSelection) => void
+  onCancel: () => void
+}
+
+/** Pre-fills the variants from the stored match when editing one. */
+function MatchSetupRoute({ screen, onConfirm, onCancel }: MatchSetupRouteProps) {
+  const services = useServices()
+  const existingMatch = useMemo(
+    () =>
+      screen.matchId !== undefined ? services.matchRepository.findById(screen.matchId) : undefined,
+    [services, screen.matchId],
+  )
+
+  return (
+    <MatchSetupScreen
+      playerIds={screen.playerIds}
+      initialSelection={existingMatch?.objectifCards}
+      onConfirm={onConfirm}
+      onCancel={onCancel}
+    />
+  )
 }
 
 interface ScoreDetailRouteProps {
@@ -56,9 +91,17 @@ function ScoreDetailRoute({ screen, onSaved, onCancel }: ScoreDetailRouteProps) 
   )
   const createMatch = useMemo(() => new CreateMatchUseCase(services.matchRepository), [services])
   const updateMatch = useMemo(() => new UpdateMatchUseCase(services.matchRepository), [services])
+  // Editing reads the cards off the stored match; creating gets them from the
+  // setup screen via the route.
   const initialState = useMemo(
-    () => buildInitialState(players, mode, existingMatch?.results ?? []),
-    [players, mode, existingMatch],
+    () =>
+      buildInitialState(
+        players,
+        mode,
+        existingMatch?.results ?? [],
+        screen.objectifCards ?? existingMatch?.objectifCards,
+      ),
+    [players, mode, existingMatch, screen.objectifCards],
   )
 
   if (players.length === 0) return null
@@ -126,8 +169,22 @@ function AppShell() {
             addPlayer={addPlayer}
             getPlayers={getPlayers}
             deletePlayer={deletePlayer}
-            onStartMatch={(playerIds) => navigate(scoreDetailScreen(playerIds))}
+            initialSelectedPlayerIds={current.selectedPlayerIds}
+            onStartMatch={(playerIds) => navigate(matchSetupScreen(playerIds))}
             onViewHistory={() => navigate(HISTORY_SCREEN)}
+          />
+        )}
+        {current.type === 'MatchSetup' && (
+          <MatchSetupRoute
+            screen={current}
+            onConfirm={(objectifCards) =>
+              navigate(scoreDetailScreen(current.playerIds, current.matchId, objectifCards))
+            }
+            onCancel={() =>
+              navigate(
+                current.matchId !== undefined ? HISTORY_SCREEN : homeScreen(current.playerIds),
+              )
+            }
           />
         )}
         {current.type === 'History' && (
@@ -135,7 +192,7 @@ function AppShell() {
             getMatches={getMatches}
             getPlayers={getPlayers}
             deleteMatch={deleteMatch}
-            onEditMatch={(matchId, playerIds) => navigate(scoreDetailScreen(playerIds, matchId))}
+            onEditMatch={(matchId, playerIds) => navigate(matchSetupScreen(playerIds, matchId))}
           />
         )}
         {current.type === 'ScoreDetail' && (

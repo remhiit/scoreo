@@ -5,6 +5,15 @@ export const en = {
     history: 'History',
     newMatch: 'New match',
     editMatch: 'Edit match',
+    matchSetup: 'Match setup',
+  },
+  matchSetup: {
+    heading: 'Objectif cards',
+    intro: 'One card per landscape was dealt at setup — pick which variant.',
+    variantAria: '{{landscape}} variant {{variant}}',
+    toriiAlwaysInPlay: 'always in play',
+    back: 'Back',
+    start: 'Start match',
   },
   language: {
     label: 'Language',

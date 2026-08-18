@@ -6,12 +6,14 @@ import type { DeletePlayerUseCase } from '../../application/deletePlayerUseCase'
 import type { GetPlayersUseCase } from '../../application/getPlayersUseCase'
 import { AppButton } from '../shared/AppButton'
 import { homeReducer, MAX_MATCH_PLAYERS, submitAddPlayer, submitDeletePlayer } from './homeReducer'
-import { initialHomeState } from './homeTypes'
+import { buildInitialHomeState } from './homeTypes'
 
 export interface HomeScreenProps {
   addPlayer: AddPlayerUseCase
   getPlayers: GetPlayersUseCase
   deletePlayer: DeletePlayerUseCase
+  /** Players to re-check on arrival, e.g. when coming back from match setup. */
+  initialSelectedPlayerIds?: string[]
   onStartMatch: (playerIds: string[]) => void
   onViewHistory: () => void
 }
@@ -20,11 +22,12 @@ export function HomeScreen({
   addPlayer,
   getPlayers,
   deletePlayer,
+  initialSelectedPlayerIds,
   onStartMatch,
   onViewHistory,
 }: HomeScreenProps) {
   const { t } = useTranslation()
-  const [state, dispatch] = useReducer(homeReducer, initialHomeState)
+  const [state, dispatch] = useReducer(homeReducer, buildInitialHomeState(initialSelectedPlayerIds))
 
   useEffect(() => {
     dispatch({ type: 'loaded', players: getPlayers.invoke() })

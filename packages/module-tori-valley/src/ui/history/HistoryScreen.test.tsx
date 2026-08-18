@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { DeleteMatchUseCase } from '../../application/deleteMatchUseCase'
 import { GetMatchesUseCase } from '../../application/getMatchesUseCase'
 import { GetPlayersUseCase } from '../../application/getPlayersUseCase'
+import { defaultObjectifCardSelection } from '../../domain/model/landscape'
 import { emptyPlayerResult } from '../../domain/model/match'
 import { InMemoryMatchRepository } from '../../infrastructure/testing/inMemoryMatchRepository'
 import { InMemoryPlayerRepository } from '../../infrastructure/testing/inMemoryPlayerRepository'
@@ -17,6 +18,7 @@ function setup() {
     id: 'm1',
     playedAt: 1000,
     playerIds: ['p1', 'p2'],
+    objectifCards: defaultObjectifCardSelection(),
     results: [
       { ...emptyPlayerResult('p1'), parcheminValue: 5 },
       { ...emptyPlayerResult('p2'), parcheminValue: 3 },
