@@ -59,7 +59,7 @@ The rulebook PDF (`LVDT_Rules-225x225mm_FR.pdf`) is kept in the repo working dir
 
 ## Workflow
 
-- The backlog lives in **GitHub Issues** (+ the GitHub Project in Kanban view), not in a `.task/` folder — two sources of truth would eventually diverge.
+- The backlog lives in **GitHub Issues**, not in a `.task/` folder — two sources of truth would eventually diverge.
 - Priority: labels `P0`…`P3` (P0 = most urgent).
 - **Plan**: user describes a feature or fix → create an issue (title, acceptance criteria, affected files) with the matching priority label.
 - **Develop**: user says to develop → pick the first open, unassigned `P0` issue (fall back to the next available priority), implement it, commit, open a PR referencing `Closes #N`, then move to the next one.
