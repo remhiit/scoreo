@@ -11,20 +11,34 @@ function validatePlayersAndResults(playerIds: string[], results: PlayerResult[])
     throw new ValidationError(
       'playerIds',
       `A match needs between ${MIN_PLAYERS} and ${MAX_PLAYERS} players`,
+      'errors.match.playerCount',
+      { min: MIN_PLAYERS, max: MAX_PLAYERS },
     )
   }
   if (new Set(playerIds).size !== playerIds.length) {
-    throw new ValidationError('playerIds', 'Duplicate player ids in match')
+    throw new ValidationError(
+      'playerIds',
+      'Duplicate player ids in match',
+      'errors.match.duplicatePlayers',
+    )
   }
   const resultPlayerIds = results.map((r) => r.playerId)
   if (
     new Set(resultPlayerIds).size !== resultPlayerIds.length ||
     resultPlayerIds.length !== playerIds.length
   ) {
-    throw new ValidationError('results', 'There must be exactly one result per player')
+    throw new ValidationError(
+      'results',
+      'There must be exactly one result per player',
+      'errors.match.resultsCount',
+    )
   }
   if (!playerIds.every((id) => resultPlayerIds.includes(id))) {
-    throw new ValidationError('results', 'Results must cover every player in the match')
+    throw new ValidationError(
+      'results',
+      'Results must cover every player in the match',
+      'errors.match.resultsCoverage',
+    )
   }
 }
 

@@ -2,7 +2,7 @@
 
 ## Stack
 
-React 18 + TypeScript, Vite, Vitest + Testing Library (jsdom, no real browser needed), Zod for schema validation, ESLint (typescript-eslint, react-hooks, react-refresh) + Prettier, pnpm. PWA shell (manifest, service worker) for installability; no backend — 100% local-first via `localStorage`.
+React 18 + TypeScript, Vite, Vitest + Testing Library (jsdom, no real browser needed), Zod for schema validation, ESLint (typescript-eslint, react-hooks, react-refresh) + Prettier, pnpm. PWA shell (manifest, service worker) for installability; no backend — 100% local-first via `localStorage`. i18next + react-i18next + `i18next-browser-languagedetector` for internationalization (English/French).
 
 ## Layering (hexagonal / ports & adapters)
 
@@ -31,6 +31,10 @@ Every domain model that gets persisted (`Player`, `Match`/`PlayerResult`) has a 
 ## Persistence
 
 `localStorage` only, no cloud sync in this MVP (see keys in [`doc/reference.md`](../reference.md)). If cloud sync is added later, follow scoreo's pattern: an optional `CloudSyncRepository` port, wired into `createServices()` only when configured, so the rest of the app is unaffected when it's absent.
+
+## Internationalization
+
+`src/i18n/index.ts` initializes a single i18next instance (English + French, bundled resource dictionaries in `src/i18n/locales/`) at app startup (imported once from `main.tsx`, and from `src/test/setup.ts` for tests). `App.tsx` renders a language `<select>` in the header on every screen; `i18next-browser-languagedetector` picks the initial language from a previous choice in `localStorage` (`tori_valley_language`) or, failing that, the browser's language, and caches subsequent manual choices back to that key. Components read `useTranslation()`'s `t()`; `domain/model/errors.ts`'s `ValidationError`/`NotFoundError` carry an optional stable `code` (and `params` for interpolation) that the `ui` layer translates at render/dispatch time — the domain layer itself has no i18n dependency, only a plain string key.
 
 ## Styling
 

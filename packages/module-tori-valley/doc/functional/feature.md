@@ -8,6 +8,10 @@ Torī Valley Scoreboard is a score calculator for the physical board game _La Va
 2. **Score entry** (`ScoreDetail`) — for each selected player, enter what they ended the game with: Torī counts per color, their Objectif card results per landscape, their Parchemin value (if any), and who (if anyone) holds the Pinceau. Each player's total VP updates live. Tap **Save match**.
 3. **History** — browse past matches, see final scores and the winner (🏆), edit a match's entered results, or delete it.
 
+## Language
+
+The app is available in English and French. On first launch it follows the browser's language; a selector in the header (visible on every screen) lets the player switch at any time, and the choice is remembered in `localStorage` (`tori_valley_language`) for the next visit.
+
 See the individual feature docs for detail:
 
 - [`features/players.md`](features/players.md)

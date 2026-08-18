@@ -1,6 +1,8 @@
+import type { TFunction } from 'i18next'
 import type { AddPlayerUseCase } from '../../application/addPlayerUseCase'
 import type { DeletePlayerUseCase } from '../../application/deletePlayerUseCase'
 import type { GetPlayersUseCase } from '../../application/getPlayersUseCase'
+import { NotFoundError, ValidationError } from '../../domain/model/errors'
 import type { Player } from '../../domain/model/player'
 import type { HomeState } from './homeTypes'
 
@@ -53,7 +55,9 @@ export function homeReducer(state: HomeState, action: HomeAction): HomeState {
   }
 }
 
-function errorMessage(e: unknown): string {
+function errorMessage(e: unknown, t: TFunction): string {
+  if (e instanceof ValidationError && e.code) return t(e.code, e.params)
+  if (e instanceof NotFoundError && e.code) return t(e.code, { id: e.id })
   return e instanceof Error ? e.message : String(e)
 }
 
@@ -61,12 +65,13 @@ export function submitAddPlayer(
   addPlayer: AddPlayerUseCase,
   getPlayers: GetPlayersUseCase,
   state: HomeState,
+  t: TFunction,
 ): HomeAction {
   try {
     addPlayer.invoke(state.inputName.trim())
     return { type: 'addSucceeded', players: getPlayers.invoke() }
   } catch (e) {
-    return { type: 'addFailed', error: errorMessage(e) }
+    return { type: 'addFailed', error: errorMessage(e, t) }
   }
 }
 

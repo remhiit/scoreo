@@ -36,4 +36,26 @@ describe('App', () => {
     fireEvent.click(screen.getByText('View history'))
     expect(screen.getByText('Alice 🏆')).toBeInTheDocument()
   })
+
+  it('switches the UI to French and persists the choice', () => {
+    render(<App />)
+    expect(screen.getByText('Players')).toBeInTheDocument()
+
+    fireEvent.change(screen.getByLabelText('Language'), { target: { value: 'fr' } })
+
+    expect(screen.getByText('Joueurs')).toBeInTheDocument()
+    expect(
+      screen.getByText('Aucun joueur pour le moment — ajoutez-en un ci-dessus.'),
+    ).toBeInTheDocument()
+    expect(localStorage.getItem('tori_valley_language')).toBe('fr')
+  })
+
+  it('shows a translated validation error in French', () => {
+    render(<App />)
+    fireEvent.change(screen.getByLabelText('Language'), { target: { value: 'fr' } })
+
+    fireEvent.click(screen.getByText('Ajouter'))
+
+    expect(screen.getByText('Le nom du joueur ne peut pas être vide')).toBeInTheDocument()
+  })
 })

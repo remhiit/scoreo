@@ -1,5 +1,6 @@
 import { Trash2 } from 'lucide-react'
 import { useEffect, useReducer } from 'react'
+import { useTranslation } from 'react-i18next'
 import type { AddPlayerUseCase } from '../../application/addPlayerUseCase'
 import type { DeletePlayerUseCase } from '../../application/deletePlayerUseCase'
 import type { GetPlayersUseCase } from '../../application/getPlayersUseCase'
@@ -22,6 +23,7 @@ export function HomeScreen({
   onStartMatch,
   onViewHistory,
 }: HomeScreenProps) {
+  const { t } = useTranslation()
   const [state, dispatch] = useReducer(homeReducer, initialHomeState)
 
   useEffect(() => {
@@ -30,7 +32,7 @@ export function HomeScreen({
   }, [])
 
   function handleAddPlayer() {
-    dispatch(submitAddPlayer(addPlayer, getPlayers, state))
+    dispatch(submitAddPlayer(addPlayer, getPlayers, state, t))
   }
 
   function handleDeletePlayer(id: string) {
@@ -43,20 +45,20 @@ export function HomeScreen({
   return (
     <div>
       <div className="card">
-        <h2>Players</h2>
+        <h2>{t('home.playersHeading')}</h2>
         <div className="list-item">
           <input
-            aria-label="New player name"
+            aria-label={t('home.newPlayerNameLabel')}
             value={state.inputName}
             onChange={(e) => dispatch({ type: 'updateInput', name: e.target.value })}
             onKeyDown={(e) => e.key === 'Enter' && handleAddPlayer()}
           />
-          <AppButton text="Add" onClick={handleAddPlayer} />
+          <AppButton text={t('home.add')} onClick={handleAddPlayer} />
         </div>
         {state.error && <p role="alert">{state.error}</p>}
 
         {state.players.length === 0 ? (
-          <p className="empty">No players yet — add some above.</p>
+          <p className="empty">{t('home.noPlayers')}</p>
         ) : (
           <div className="list">
             {state.players.map((player) => (
@@ -73,7 +75,7 @@ export function HomeScreen({
                   text={<Trash2 size={16} aria-hidden />}
                   variant="ghost"
                   iconOnly
-                  ariaLabel={`Delete ${player.name}`}
+                  ariaLabel={t('home.deletePlayerAria', { name: player.name })}
                   onClick={() => handleDeletePlayer(player.id)}
                 />
               </label>
@@ -83,9 +85,9 @@ export function HomeScreen({
       </div>
 
       <div className="list-item">
-        <AppButton text="View history" variant="secondary" onClick={onViewHistory} />
+        <AppButton text={t('home.viewHistory')} variant="secondary" onClick={onViewHistory} />
         <AppButton
-          text="Start match"
+          text={t('home.startMatch')}
           disabled={!canStartMatch}
           onClick={() => onStartMatch(state.selectedPlayerIds)}
         />

@@ -1,0 +1,71 @@
+export const en = {
+  app: {
+    title: 'Torī Valley',
+    back: 'Back',
+    history: 'History',
+    newMatch: 'New match',
+    editMatch: 'Edit match',
+  },
+  language: {
+    label: 'Language',
+  },
+  home: {
+    playersHeading: 'Players',
+    newPlayerNameLabel: 'New player name',
+    add: 'Add',
+    noPlayers: 'No players yet — add some above.',
+    deletePlayerAria: 'Delete {{name}}',
+    viewHistory: 'View history',
+    startMatch: 'Start match',
+  },
+  history: {
+    noMatches: 'No matches recorded yet.',
+    edit: 'Edit',
+    deleteMatchAria: 'Delete match',
+    unknownPlayer: 'Unknown player',
+    vp: '{{value}} VP',
+  },
+  scoreDetail: {
+    pinceauHolderLabel: 'Pinceau holder (+2 VP)',
+    noneOption: '— None —',
+    playerTotal: '{{name}} — {{total}} VP',
+    toriiHeading: 'Torī',
+    toriiCountAria: '{{name}} {{color}} Torī count',
+    objectifHeading: 'Objectif cards',
+    objectifPointsAria: '{{name}} {{landscape}} Objectif points',
+    parcheminLabel: 'Parchemin',
+    parcheminVp: '{{value}} VP',
+    cancel: 'Cancel',
+    save: 'Save match',
+  },
+  torii: {
+    green: 'Green',
+    red: 'Red',
+    blue: 'Blue',
+    yellow: 'Yellow',
+    purple: 'Purple',
+  },
+  landscape: {
+    bamboo: 'Bamboo',
+    cherryBlossom: 'Cherry Blossom',
+    mountain: 'Mountain',
+    water: 'Water',
+    village: 'Village',
+  },
+  errors: {
+    playerName: {
+      blank: 'Player name must not be blank',
+      tooLong: 'Player name must be {{max}} characters or less',
+    },
+    match: {
+      playerCount: 'A match needs between {{min}} and {{max}} players',
+      duplicatePlayers: 'Duplicate player ids in match',
+      resultsCount: 'There must be exactly one result per player',
+      resultsCoverage: 'Results must cover every player in the match',
+    },
+    notFound: {
+      player: 'Player {{id}} not found',
+      match: 'Match {{id}} not found',
+    },
+  },
+}

@@ -1,5 +1,7 @@
 import { Trash2 } from 'lucide-react'
 import { useEffect, useState } from 'react'
+import type { TFunction } from 'i18next'
+import { useTranslation } from 'react-i18next'
 import type { DeleteMatchUseCase } from '../../application/deleteMatchUseCase'
 import type { GetMatchesUseCase } from '../../application/getMatchesUseCase'
 import type { GetPlayersUseCase } from '../../application/getPlayersUseCase'
@@ -14,8 +16,8 @@ export interface HistoryScreenProps {
   onEditMatch: (matchId: string, playerIds: string[]) => void
 }
 
-function playerName(players: Player[], playerId: string): string {
-  return players.find((p) => p.id === playerId)?.name ?? 'Unknown player'
+function playerName(players: Player[], playerId: string, t: TFunction): string {
+  return players.find((p) => p.id === playerId)?.name ?? t('history.unknownPlayer')
 }
 
 export function HistoryScreen({
@@ -24,6 +26,7 @@ export function HistoryScreen({
   deleteMatch,
   onEditMatch,
 }: HistoryScreenProps) {
+  const { t } = useTranslation()
   const [matches, setMatches] = useState<Match[]>([])
   const [players, setPlayers] = useState<Player[]>([])
 
@@ -39,7 +42,7 @@ export function HistoryScreen({
   }
 
   if (matches.length === 0) {
-    return <p className="empty">No matches recorded yet.</p>
+    return <p className="empty">{t('history.noMatches')}</p>
   }
 
   const sorted = [...matches].sort((a, b) => b.playedAt - a.playedAt)
@@ -54,7 +57,7 @@ export function HistoryScreen({
               <span>{new Date(match.playedAt).toLocaleDateString()}</span>
               <span>
                 <AppButton
-                  text="Edit"
+                  text={t('history.edit')}
                   variant="secondary"
                   onClick={() => onEditMatch(match.id, match.playerIds)}
                 />
@@ -62,7 +65,7 @@ export function HistoryScreen({
                   text={<Trash2 size={16} aria-hidden />}
                   variant="ghost"
                   iconOnly
-                  ariaLabel="Delete match"
+                  ariaLabel={t('history.deleteMatchAria')}
                   onClick={() => handleDelete(match.id)}
                 />
               </span>
@@ -75,10 +78,10 @@ export function HistoryScreen({
                     className={winners.has(result.playerId) ? 'total-row' : ''}
                   >
                     <th>
-                      {playerName(players, result.playerId)}
+                      {playerName(players, result.playerId, t)}
                       {winners.has(result.playerId) ? ' 🏆' : ''}
                     </th>
-                    <td>{scorePlayerResult(result)} VP</td>
+                    <td>{t('history.vp', { value: scorePlayerResult(result) })}</td>
                   </tr>
                 ))}
               </tbody>
