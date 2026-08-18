@@ -10,7 +10,9 @@ Enter how many of each of the 5 Torī colors (green, red, blue, yellow, purple; 
 
 ## Objectif cards (manual entry)
 
-Each landscape type (Bamboo, Cherry Blossom, Mountain, Water, Village) had one Objectif card selected at game setup, and each defines its own scoring rule for how that landscape's tiles are arranged on the player's board. There are 16 such cards (A/B/C difficulty variants) with card-specific text that hasn't been digitized into this app yet, so **the player's resulting point total per landscape is entered manually**, read off the physical card. Automating this is tracked as a follow-up (see the project backlog) once the card texts are transcribed.
+Each landscape type (Bamboo, Cherry Blossom, Mountain, Water, Village) had one Objectif card selected at game setup, and each defines its own scoring rule for how that landscape's tiles are arranged on the player's board. There are 15 such cards (A/B/C difficulty variants per landscape), plus a Torī scoring reference card in the same deck.
+
+The card texts are now transcribed in [`objectif-cards.md`](objectif-cards.md), but **the player's resulting point total per landscape is still entered manually**, read off the physical card — nothing computes them yet. Automating it is tracked as a follow-up (see the project backlog); that doc also flags the cards that would make it hard (some depend on neighbouring players' boards, others cross two landscapes).
 
 ## Parchemin (manual selection)
 
