@@ -2,6 +2,8 @@
 
 A Progressive Web App (PWA) built with React + TypeScript for calculating scores for the board game _[La Vallée des Torī](https://www.origames.fr)_ (Origames).
 
+🔗 [Live app](https://remhiit.github.io/toriValleyScoreBoard/)
+
 ## Repository structure
 
 - `src/domain`, `src/application`, `src/infrastructure`, `src/services`, `src/ui` — application source code
