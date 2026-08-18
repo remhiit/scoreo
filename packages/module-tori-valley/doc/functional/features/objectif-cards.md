@@ -1,6 +1,6 @@
 # Objectif cards — transcription
 
-**Status: work in progress, not yet used by the app.** Objectif scoring is currently entered manually (see "Objectif cards (manual entry)" in `doc/functional/features/scoring.md`). This file transcribes the physical cards' text/tables one by one so a future use case can compute the score automatically instead of relying on manual entry. Until that use case exists, this doc has no effect on app behavior.
+**Status: transcribed, selection recorded, scoring still manual.** The app now records which variant was dealt per landscape (`Match.objectifCards`, picked on the Match setup screen), but nothing computes points from it yet — Objectif scoring is still entered by hand (see "Objectif cards (manual entry)" in `doc/functional/features/scoring.md`). This file is the reference those future scoring functions will be built from.
 
 Each landscape (Bamboo, Cherry Blossom, Mountain, Water, Village) has 3 difficulty variants (A/B/C) — **15 Objectif cards**, all transcribed below.
 

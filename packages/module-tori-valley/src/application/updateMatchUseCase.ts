@@ -1,11 +1,13 @@
 import { NotFoundError, ValidationError } from '../domain/model/errors'
+import type { ObjectifCardSelection } from '../domain/model/landscape'
 import type { Match, PlayerResult } from '../domain/model/match'
 import type { MatchRepository } from '../domain/port/matchRepository'
 
 export class UpdateMatchUseCase {
   constructor(private readonly matchRepository: MatchRepository) {}
 
-  invoke(matchId: string, results: PlayerResult[]): Match {
+  /** `objectifCards` left out keeps whatever the match was recorded with. */
+  invoke(matchId: string, results: PlayerResult[], objectifCards?: ObjectifCardSelection): Match {
     const existing = this.matchRepository.findById(matchId)
     if (!existing) throw new NotFoundError('Match', matchId, 'errors.notFound.match')
 
@@ -28,7 +30,11 @@ export class UpdateMatchUseCase {
       )
     }
 
-    const updated: Match = { ...existing, results }
+    const updated: Match = {
+      ...existing,
+      results,
+      objectifCards: objectifCards ?? existing.objectifCards,
+    }
     this.matchRepository.save(updated)
     return updated
   }

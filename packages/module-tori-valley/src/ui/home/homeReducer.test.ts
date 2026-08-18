@@ -6,9 +6,30 @@ import { AddPlayerUseCase } from '../../application/addPlayerUseCase'
 import { DeletePlayerUseCase } from '../../application/deletePlayerUseCase'
 import { GetPlayersUseCase } from '../../application/getPlayersUseCase'
 import { homeReducer, submitAddPlayer, submitDeletePlayer } from './homeReducer'
-import { initialHomeState } from './homeTypes'
+import { buildInitialHomeState, initialHomeState } from './homeTypes'
+
+describe('buildInitialHomeState', () => {
+  it('starts with nothing selected by default', () => {
+    expect(buildInitialHomeState().selectedPlayerIds).toEqual([])
+  })
+
+  it('restores a player preselection, so coming back from match setup keeps it', () => {
+    expect(buildInitialHomeState(['p1', 'p2']).selectedPlayerIds).toEqual(['p1', 'p2'])
+  })
+})
 
 describe('homeReducer', () => {
+  it('drops preselected players that no longer exist once the list loads', () => {
+    const state = buildInitialHomeState(['p1', 'gone'])
+
+    const next = homeReducer(state, {
+      type: 'loaded',
+      players: [{ id: 'p1', name: 'Alice', active: true }],
+    })
+
+    expect(next.selectedPlayerIds).toEqual(['p1'])
+  })
+
   it('updates the input name', () => {
     const next = homeReducer(initialHomeState, { type: 'updateInput', name: 'Alice' })
     expect(next.inputName).toBe('Alice')

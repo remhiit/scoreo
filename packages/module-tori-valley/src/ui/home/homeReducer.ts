@@ -21,7 +21,14 @@ export type HomeAction =
 export function homeReducer(state: HomeState, action: HomeAction): HomeState {
   switch (action.type) {
     case 'loaded':
-      return { ...state, players: action.players }
+      // A preselection restored from the URL may name players deleted since.
+      return {
+        ...state,
+        players: action.players,
+        selectedPlayerIds: state.selectedPlayerIds.filter((id) =>
+          action.players.some((p) => p.id === id),
+        ),
+      }
     case 'updateInput':
       return { ...state, inputName: action.name, error: undefined }
     case 'addSucceeded':

@@ -5,8 +5,9 @@ Torī Valley Scoreboard is a score calculator for the physical board game _La Va
 ## User flow
 
 1. **Home** — add the players around the table (names only, reused across matches), then select 1–4 of them and tap **Start match**.
-2. **Score entry** (`ScoreDetail`) — for each selected player, enter what they ended the game with: Torī counts per color, their Objectif card results per landscape, their Parchemin value (if any), and who (if anyone) holds the Pinceau. Each player's total VP updates live. Tap **Save match**.
-3. **History** — browse past matches, see final scores and the winner (🏆), edit a match's entered results, or delete it.
+2. **Match setup** (`MatchSetup`) — pick which Objectif card variant (A/B/C) was dealt for each of the 5 landscapes. Everything defaults to `A`, so the screen can be confirmed as-is. The Torī card is always in play and has nothing to pick. Tap **Start match**; **Back** returns to Home with the players still selected.
+3. **Score entry** (`ScoreDetail`) — for each selected player, enter what they ended the game with: Torī counts per color, their Objectif card results per landscape, their Parchemin value (if any), and who (if anyone) holds the Pinceau. Each player's total VP updates live. Tap **Save match**.
+4. **History** — browse past matches, see final scores and the winner (🏆), edit a match's entered results, or delete it. Editing goes back through **Match setup** first, showing the variants that match was recorded with.
 
 ## Language
 
@@ -16,5 +17,5 @@ See the individual feature docs for detail:
 
 - [`features/players.md`](features/players.md)
 - [`features/scoring.md`](features/scoring.md)
-- [`features/objectif-cards.md`](features/objectif-cards.md) — transcription of the 16 physical cards (reference only, not yet used by the app)
+- [`features/objectif-cards.md`](features/objectif-cards.md) — transcription of the 16 physical cards; the selection is recorded per match, but nothing computes points from it yet
 - [`features/history.md`](features/history.md)

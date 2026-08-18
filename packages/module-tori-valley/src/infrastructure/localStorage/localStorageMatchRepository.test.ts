@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest'
+import { defaultObjectifCardSelection } from '../../domain/model/landscape'
 import { emptyPlayerResult, type Match } from '../../domain/model/match'
 import { LocalStorageMatchRepository } from './localStorageMatchRepository'
 
@@ -8,6 +9,7 @@ function makeMatch(id: string): Match {
     playedAt: 1000,
     playerIds: ['p1', 'p2'],
     results: [emptyPlayerResult('p1'), emptyPlayerResult('p2')],
+    objectifCards: defaultObjectifCardSelection(),
   }
 }
 
@@ -64,5 +66,40 @@ describe('LocalStorageMatchRepository', () => {
     const repo = new LocalStorageMatchRepository()
 
     expect(repo.getAll()[0].results).toEqual([])
+  })
+
+  it('backward compat: a match stored before card selection existed still loads', () => {
+    localStorage.setItem(
+      'tori_valley_matches',
+      JSON.stringify([
+        {
+          id: 'm1',
+          playedAt: 1000,
+          playerIds: ['p1'],
+          results: [
+            {
+              playerId: 'p1',
+              toriiCounts: { green: 1, red: 1, blue: 0, yellow: 0, purple: 0 },
+              parcheminValue: 3,
+              hasPinceau: true,
+              objectifPoints: {
+                bamboo: 4,
+                cherryBlossom: 0,
+                mountain: 0,
+                water: 0,
+                village: 0,
+              },
+            },
+          ],
+        },
+      ]),
+    )
+    const repo = new LocalStorageMatchRepository()
+
+    const loaded = repo.getAll()[0]
+    expect(loaded.objectifCards).toEqual(defaultObjectifCardSelection())
+    // the pre-existing result must survive untouched
+    expect(loaded.results[0].objectifPoints.bamboo).toBe(4)
+    expect(loaded.results[0].parcheminValue).toBe(3)
   })
 })

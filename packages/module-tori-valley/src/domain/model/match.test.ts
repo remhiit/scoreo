@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { emptyObjectifPoints } from './landscape'
+import { defaultObjectifCardSelection, emptyObjectifPoints } from './landscape'
 import { emptyPlayerResult, matchWinners, scorePlayerResult, type Match } from './match'
 import { emptyToriiCounts } from './torii'
 
@@ -21,7 +21,13 @@ describe('scorePlayerResult', () => {
 })
 
 describe('matchWinners', () => {
-  const baseMatch: Match = { id: 'm1', playedAt: 0, playerIds: ['p1', 'p2'], results: [] }
+  const baseMatch: Match = {
+    id: 'm1',
+    playedAt: 0,
+    playerIds: ['p1', 'p2'],
+    results: [],
+    objectifCards: defaultObjectifCardSelection(),
+  }
 
   it('returns the single highest scorer', () => {
     const match: Match = {

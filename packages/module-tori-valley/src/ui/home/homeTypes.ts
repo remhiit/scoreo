@@ -8,10 +8,14 @@ export interface HomeState {
   deleteConfirmPlayerId: string | undefined
 }
 
-export const initialHomeState: HomeState = {
-  players: [],
-  inputName: '',
-  error: undefined,
-  selectedPlayerIds: [],
-  deleteConfirmPlayerId: undefined,
+export function buildInitialHomeState(selectedPlayerIds: string[] = []): HomeState {
+  return {
+    players: [],
+    inputName: '',
+    error: undefined,
+    selectedPlayerIds,
+    deleteConfirmPlayerId: undefined,
+  }
 }
+
+export const initialHomeState: HomeState = buildInitialHomeState()

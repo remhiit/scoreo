@@ -45,9 +45,10 @@ export function ScoreDetailScreen({
           state.players.map((p) => p.id),
           state.results,
           currentDate(),
+          state.objectifCards,
         )
       } else {
-        updateMatch.invoke(state.mode.matchId, state.results)
+        updateMatch.invoke(state.mode.matchId, state.results, state.objectifCards)
       }
       dispatch({ type: 'saveSucceeded' })
       onSaved()

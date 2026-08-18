@@ -29,6 +29,11 @@ describe('App', () => {
     fireEvent.click(screen.getByText('Alice'))
     fireEvent.click(screen.getByText('Start match'))
 
+    // Match setup sits between the player list and score entry.
+    expect(screen.getByText('Objectif cards')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('radio', { name: 'Bamboo variant C' }))
+    fireEvent.click(screen.getByText('Start match'))
+
     expect(screen.getByText('Alice — 0 VP')).toBeInTheDocument()
     fireEvent.click(screen.getByText('Save match'))
 
@@ -57,5 +62,39 @@ describe('App', () => {
     fireEvent.click(screen.getByText('Ajouter'))
 
     expect(screen.getByText('Le nom du joueur ne peut pas être vide')).toBeInTheDocument()
+  })
+
+  it('carries the picked card variants into the saved match', () => {
+    render(<App />)
+    fireEvent.change(screen.getByLabelText('New player name'), { target: { value: 'Alice' } })
+    fireEvent.click(screen.getByText('Add'))
+    fireEvent.click(screen.getByText('Alice'))
+    fireEvent.click(screen.getByText('Start match'))
+
+    fireEvent.click(screen.getByRole('radio', { name: 'Water variant B' }))
+    fireEvent.click(screen.getByText('Start match'))
+    fireEvent.click(screen.getByText('Save match'))
+
+    const stored = JSON.parse(localStorage.getItem('tori_valley_matches') ?? '[]')
+    expect(stored[0].objectifCards).toEqual({
+      bamboo: 'A',
+      cherryBlossom: 'A',
+      mountain: 'A',
+      water: 'B',
+      village: 'A',
+    })
+  })
+
+  it('going back from match setup keeps the player selected', () => {
+    render(<App />)
+    fireEvent.change(screen.getByLabelText('New player name'), { target: { value: 'Alice' } })
+    fireEvent.click(screen.getByText('Add'))
+    fireEvent.click(screen.getByText('Alice'))
+    fireEvent.click(screen.getByText('Start match'))
+
+    fireEvent.click(screen.getByText('Back'))
+
+    // Back on Home, Alice is still ticked, so the match can be restarted directly.
+    expect(screen.getByRole('checkbox')).toBeChecked()
   })
 })

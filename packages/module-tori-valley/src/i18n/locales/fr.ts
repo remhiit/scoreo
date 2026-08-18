@@ -7,6 +7,15 @@ export const fr: typeof en = {
     history: 'Historique',
     newMatch: 'Nouvelle partie',
     editMatch: 'Modifier la partie',
+    matchSetup: 'Mise en place',
+  },
+  matchSetup: {
+    heading: 'Cartes Objectif',
+    intro: 'Une carte par paysage a été distribuée — indiquez laquelle.',
+    variantAria: '{{landscape}} variante {{variant}}',
+    toriiAlwaysInPlay: 'toujours en jeu',
+    back: 'Retour',
+    start: 'Commencer',
   },
   language: {
     label: 'Langue',

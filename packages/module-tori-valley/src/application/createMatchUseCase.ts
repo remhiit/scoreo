@@ -1,4 +1,8 @@
 import { ValidationError } from '../domain/model/errors'
+import {
+  defaultObjectifCardSelection,
+  type ObjectifCardSelection,
+} from '../domain/model/landscape'
 import type { Match, PlayerResult } from '../domain/model/match'
 import type { MatchRepository } from '../domain/port/matchRepository'
 import { newId } from './idGenerator'
@@ -45,9 +49,14 @@ function validatePlayersAndResults(playerIds: string[], results: PlayerResult[])
 export class CreateMatchUseCase {
   constructor(private readonly matchRepository: MatchRepository) {}
 
-  invoke(playerIds: string[], results: PlayerResult[], playedAt: number): Match {
+  invoke(
+    playerIds: string[],
+    results: PlayerResult[],
+    playedAt: number,
+    objectifCards: ObjectifCardSelection = defaultObjectifCardSelection(),
+  ): Match {
     validatePlayersAndResults(playerIds, results)
-    const match: Match = { id: newId(), playedAt, playerIds, results }
+    const match: Match = { id: newId(), playedAt, playerIds, results, objectifCards }
     this.matchRepository.save(match)
     return match
   }

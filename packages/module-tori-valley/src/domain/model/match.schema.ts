@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { emptyObjectifPoints } from './landscape'
+import { defaultObjectifCardSelection, emptyObjectifPoints, OBJECTIF_VARIANTS } from './landscape'
 import { emptyToriiCounts } from './torii'
 
 export const ToriiCountsSchema = z.object({
@@ -30,9 +30,22 @@ export const PlayerResultSchema = z.object({
   objectifPoints: ObjectifPointsSchema.default(emptyObjectifPoints),
 })
 
+export const ObjectifVariantSchema = z.enum(OBJECTIF_VARIANTS).default('A')
+
+export const ObjectifCardSelectionSchema = z.object({
+  bamboo: ObjectifVariantSchema,
+  cherryBlossom: ObjectifVariantSchema,
+  mountain: ObjectifVariantSchema,
+  water: ObjectifVariantSchema,
+  village: ObjectifVariantSchema,
+})
+
 export const MatchSchema = z.object({
   id: z.string(),
   playedAt: z.number(),
   playerIds: z.array(z.string()).min(1),
   results: z.array(PlayerResultSchema).default([]),
+  // Matches saved before card selection existed have no variants recorded;
+  // they read back as all-A rather than failing to parse.
+  objectifCards: ObjectifCardSelectionSchema.default(defaultObjectifCardSelection),
 })
