@@ -1,0 +1,189 @@
+#!/usr/bin/env node
+// Mirrors each issue/PR's label state onto the GitHub Project "Status" field.
+// Labels are the source of truth — this is a one-way sync, never the reverse.
+// Two modes:
+//   - triggered by an `issues`/`pull_request` labeled/unlabeled event: syncs
+//     just that one item, read from GITHUB_EVENT_PATH
+//   - triggered by schedule/workflow_dispatch: reconciles every open issue and PR
+import { readFileSync } from 'node:fs'
+
+const PROJECT_TOKEN = process.env.PROJECT_TOKEN
+const PROJECT_OWNER = process.env.PROJECT_OWNER
+const PROJECT_NUMBER = Number(process.env.PROJECT_NUMBER)
+const REPO_OWNER = process.env.REPO_OWNER
+const REPO_NAME = process.env.REPO_NAME
+
+if (!PROJECT_TOKEN) {
+  console.log('PROJECT_TOKEN secret not set — skipping project sync.')
+  process.exit(0)
+}
+
+const STATUS_FIELD_NAME = 'Status'
+
+// First matching label wins.
+const LABEL_STATUS_PRIORITY = [
+  ['needs-human', 'In Progress'],
+  ['needs-fix', 'In Progress'],
+  ['in-progress', 'In Progress'],
+  ['ready', 'Todo'],
+]
+
+async function graphql(query, variables) {
+  const res = await fetch('https://api.github.com/graphql', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${PROJECT_TOKEN}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ query, variables }),
+  })
+  const json = await res.json()
+  if (json.errors) throw new Error(JSON.stringify(json.errors))
+  return json.data
+}
+
+async function getProjectMeta() {
+  const data = await graphql(
+    `
+      query ($login: String!, $number: Int!) {
+        user(login: $login) {
+          projectV2(number: $number) {
+            id
+            fields(first: 20) {
+              nodes {
+                ... on ProjectV2SingleSelectField {
+                  id
+                  name
+                  options {
+                    id
+                    name
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    `,
+    { login: PROJECT_OWNER, number: PROJECT_NUMBER },
+  )
+  const project = data.user.projectV2
+  const statusField = project.fields.nodes.find((f) => f?.name === STATUS_FIELD_NAME)
+  if (!statusField) throw new Error(`Project field "${STATUS_FIELD_NAME}" not found`)
+  return { projectId: project.id, statusField }
+}
+
+function desiredStatus(labelNames) {
+  for (const [label, status] of LABEL_STATUS_PRIORITY) {
+    if (labelNames.includes(label)) return status
+  }
+  return null
+}
+
+function graphqlFieldName(kind) {
+  return kind === 'issue' ? 'issue' : 'pullRequest'
+}
+
+function connectionName(kind) {
+  return kind === 'issue' ? 'issues' : 'pullRequests'
+}
+
+async function getItem(kind, number) {
+  const field = graphqlFieldName(kind)
+  const data = await graphql(
+    `query($owner: String!, $repo: String!, $number: Int!) {
+      repository(owner: $owner, name: $repo) {
+        ${field}(number: $number) {
+          labels(first: 20) { nodes { name } }
+          projectItems(first: 10) { nodes { id project { id } } }
+        }
+      }
+    }`,
+    { owner: REPO_OWNER, repo: REPO_NAME, number },
+  )
+  return data.repository[field]
+}
+
+async function listOpenNumbers(kind) {
+  const connection = connectionName(kind)
+  const data = await graphql(
+    `query($owner: String!, $repo: String!) {
+      repository(owner: $owner, name: $repo) {
+        ${connection}(states: OPEN, first: 100) { nodes { number } }
+      }
+    }`,
+    { owner: REPO_OWNER, repo: REPO_NAME },
+  )
+  const numbers = data.repository[connection].nodes.map((n) => n.number)
+  if (numbers.length === 100) {
+    console.warn(
+      `Fetched exactly 100 open ${connection} — there may be more that this reconciliation run is silently skipping (no pagination yet).`,
+    )
+  }
+  return numbers
+}
+
+async function setStatus(projectId, itemId, statusField, statusName) {
+  const option = statusField.options.find((o) => o.name === statusName)
+  if (!option) throw new Error(`Status option "${statusName}" not found`)
+  await graphql(
+    `
+      mutation ($projectId: ID!, $itemId: ID!, $fieldId: ID!, $optionId: String!) {
+        updateProjectV2ItemFieldValue(
+          input: {
+            projectId: $projectId
+            itemId: $itemId
+            fieldId: $fieldId
+            value: { singleSelectOptionId: $optionId }
+          }
+        ) {
+          projectV2Item {
+            id
+          }
+        }
+      }
+    `,
+    { projectId, itemId, fieldId: statusField.id, optionId: option.id },
+  )
+}
+
+async function syncOne(projectId, statusField, kind, number) {
+  const node = await getItem(kind, number)
+  if (!node) return
+
+  const labelNames = node.labels.nodes.map((l) => l.name)
+  const target = desiredStatus(labelNames)
+  if (!target) return
+
+  const item = node.projectItems.nodes.find((i) => i.project.id === projectId)
+  if (!item) {
+    console.log(`${kind} #${number}: not on the project board, skipping`)
+    return
+  }
+
+  console.log(`${kind} #${number}: -> ${target}`)
+  await setStatus(projectId, item.id, statusField, target)
+}
+
+async function main() {
+  const { projectId, statusField } = await getProjectMeta()
+  const eventName = process.env.GITHUB_EVENT_NAME
+
+  if (eventName === 'issues' || eventName === 'pull_request') {
+    const payload = JSON.parse(readFileSync(process.env.GITHUB_EVENT_PATH, 'utf-8'))
+    const kind = eventName === 'issues' ? 'issue' : 'pull_request'
+    const number = (payload.issue ?? payload.pull_request).number
+    await syncOne(projectId, statusField, kind, number)
+    return
+  }
+
+  // Scheduled / manual run: reconcile every open issue and PR.
+  for (const number of await listOpenNumbers('issue')) {
+    await syncOne(projectId, statusField, 'issue', number)
+  }
+  for (const number of await listOpenNumbers('pull_request')) {
+    await syncOne(projectId, statusField, 'pull_request', number)
+  }
+}
+
+main()

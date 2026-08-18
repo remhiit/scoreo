@@ -1,0 +1,39 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+*.tsbuildinfo
+
+# Logs
+*.log
+
+# Env
+.env
+.env.*
+!.env.example
+
+# Editor / OS
+.vscode-test
+.DS_Store
+
+# Vite
+vite.config.js.timestamp-*
+vite.config.ts.timestamp-*
+.vite/
+
+# Coverage
+coverage/
+*.lcov
+
+# pnpm
+.pnpm-store
+
+# Lighthouse CI reports
+.lighthouseci/
+
+# Copyrighted rulebook PDF — kept locally for reference, not for distribution
+LVDT_Rules*.pdf
+
+# Claude Code local settings (personal, not shared)
+.claude/settings.local.json

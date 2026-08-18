@@ -1,0 +1,26 @@
+# Glossary
+
+## Project terms
+
+| Term          | Definition                                                                                                                                                                    |
+| ------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Reducer**   | Pure function `(state, action) => state` in `ui/*/`, colocated with its screen. Receives an **Action** and produces the next **State**. Contains the screen's business logic. |
+| **Action**    | Discriminated union representing a user event or an async result (click, input, use-case outcome, etc.). Dispatched to the reducer via `dispatch()`.                          |
+| **State**     | Plain object representing the complete state of a screen at a given moment. Produced by the reducer, read by the screen component via `useReducer`.                           |
+| **Use Case**  | Class in `application/` that encapsulates one business operation (e.g. `AddPlayerUseCase`, `CreateMatchUseCase`). No framework dependency.                                    |
+| **Port**      | TypeScript interface in `domain/port/` defining a data access contract (e.g. `PlayerRepository`).                                                                             |
+| **Adapter**   | Concrete implementation of a Port in `infrastructure/` (e.g. `LocalStoragePlayerRepository`).                                                                                 |
+| **MVI-style** | Model-View-Intent-inspired unidirectional data flow: View → dispatch(Action) → reducer → State → View, via React's `useReducer`.                                              |
+| **Match**     | One recorded playthrough of the game: a set of players and their final `PlayerResult`.                                                                                        |
+
+## Game terms (_La Vallée des Torī_, Origames)
+
+| Term              | Definition                                                                                                                                                                                                                                                                                                                             |
+| ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Torī**          | A colored gate token/symbol printed on some Paysage tiles. 5 colors (green, red, blue, yellow, purple), 7 of each. Scored at game end by grouping the collection into series of distinct colors.                                                                                                                                       |
+| **Paysage tile**  | A landscape tile of one of 5 types: Bambou (Bamboo), Cerisier (Cherry Blossom), Montagne (Mountain), Eau (Water), Village. Players place these on their personal board.                                                                                                                                                                |
+| **Parchemin**     | A scroll token (values 5/4/4/3 for 4 players, scaled down for fewer) awarded once per player for placing a tile matching the game's starting landscape type on a dedicated board spot.                                                                                                                                                 |
+| **Pinceau**       | The single "brush" token in the game. Whoever holds it at game end scores +2 VP. Found exclusively on Bambou tiles.                                                                                                                                                                                                                    |
+| **Sceau**         | A one-use "stamp" token (5 types, one per landscape) granting a special action. Not modeled as a distinct score input in this app — its effects only change what a player was able to place during the physical game, not the final tally.                                                                                             |
+| **Objectif card** | One of 16 scoring cards (A/B/C variants), one selected per landscape type at game setup, defining how that landscape's tile arrangement scores points. The app currently takes each player's resulting Objectif score per landscape as a manual number entry — see [`functional/features/scoring.md`](functional/features/scoring.md). |
+| **VP**            | Victory Points.                                                                                                                                                                                                                                                                                                                        |
