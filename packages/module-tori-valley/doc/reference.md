@@ -10,7 +10,7 @@ Exhaustive tables. Read before exploring `src/`.
 | MatchSetup     | `src/ui/matchsetup/matchSetupReducer.ts`   | `MatchSetupAction`  | `selectVariant`                                                                                                                       | `src/ui/matchsetup/matchSetupTypes.ts` (`MatchSetupState`)                                            |
 | ScoreDetail    | `src/ui/scoredetail/scoreDetailReducer.ts` | `ScoreDetailAction` | `updateToriiCount`, `updateParchemin`, `setPinceauHolder`, `updateObjectifPoints`, `saveSucceeded`, `saveFailed`                      | `src/ui/scoredetail/scoreDetailTypes.ts` (`ScoreDetailState`, `ScoreDetailMode` = `Create` \| `Edit`) |
 
-History (`src/ui/history/HistoryScreen.tsx`) has no reducer — it's simple enough to use plain `useState`/`useEffect`.
+History (`src/ui/history/HistoryScreen.tsx`) has no reducer — it's simple enough to use plain `useState`/`useEffect` (match list, players, and the post-export notice).
 
 ## Use Cases
 
@@ -26,6 +26,7 @@ History (`src/ui/history/HistoryScreen.tsx`) has no reducer — it's simple enou
 | `UpdateMatchUseCase`  | `invoke(matchId, results, objectifCards?)`             | `Match`    |
 | `GetMatchesUseCase`   | `invoke()`                                             | `Match[]`  |
 | `DeleteMatchUseCase`  | `invoke(matchId)`                                      | `void`     |
+| `ExportMatchesUseCase` | `invoke()`                                            | `ExportMatchesResult` (Scoreo import payload + count of skipped solo matches — see [`functional/features/export.md`](functional/features/export.md)) |
 
 ## Domain Models
 
@@ -80,6 +81,8 @@ History (`src/ui/history/HistoryScreen.tsx`) has no reducer — it's simple enou
 | Component   | Props                                                                                                                                           | Usage                                    |
 | ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------- |
 | `AppButton` | `text`, `variant?` (`'primary' \| 'secondary' \| 'ghost' \| 'danger'`, default `primary`), `iconOnly?`, `ariaLabel?`, `...ButtonHTMLAttributes` | The single interactive-action primitive. |
+
+`src/ui/shared/downloadJson.ts` — not a component: `downloadJson(filename, content)` hands the user a `.json` file through the browser's download flow (used by History's Scoreo export).
 
 ## Tests
 

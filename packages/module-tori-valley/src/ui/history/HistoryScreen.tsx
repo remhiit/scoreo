@@ -1,18 +1,21 @@
-import { Trash2 } from 'lucide-react'
+import { Download, Trash2 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import type { TFunction } from 'i18next'
 import { useTranslation } from 'react-i18next'
 import type { DeleteMatchUseCase } from '../../application/deleteMatchUseCase'
+import type { ExportMatchesUseCase } from '../../application/exportMatchesUseCase'
 import type { GetMatchesUseCase } from '../../application/getMatchesUseCase'
 import type { GetPlayersUseCase } from '../../application/getPlayersUseCase'
 import { matchWinners, scorePlayerResult, type Match } from '../../domain/model/match'
 import type { Player } from '../../domain/model/player'
 import { AppButton } from '../shared/AppButton'
+import { downloadJson } from '../shared/downloadJson'
 
 export interface HistoryScreenProps {
   getMatches: GetMatchesUseCase
   getPlayers: GetPlayersUseCase
   deleteMatch: DeleteMatchUseCase
+  exportMatches: ExportMatchesUseCase
   onEditMatch: (matchId: string, playerIds: string[]) => void
 }
 
@@ -20,15 +23,22 @@ function playerName(players: Player[], playerId: string, t: TFunction): string {
   return players.find((p) => p.id === playerId)?.name ?? t('history.unknownPlayer')
 }
 
+/** Local calendar day, so the filename matches the date on the user's own clock. */
+function exportFilename(exportedAt: number): string {
+  return `tori-valley-scoreo-${new Date(exportedAt).toLocaleDateString('sv-SE')}.json`
+}
+
 export function HistoryScreen({
   getMatches,
   getPlayers,
   deleteMatch,
+  exportMatches,
   onEditMatch,
 }: HistoryScreenProps) {
   const { t } = useTranslation()
   const [matches, setMatches] = useState<Match[]>([])
   const [players, setPlayers] = useState<Player[]>([])
+  const [exportNotice, setExportNotice] = useState<string | null>(null)
 
   useEffect(() => {
     setMatches(getMatches.invoke())
@@ -39,6 +49,24 @@ export function HistoryScreen({
   function handleDelete(matchId: string) {
     deleteMatch.invoke(matchId)
     setMatches(getMatches.invoke())
+    setExportNotice(null)
+  }
+
+  function handleExport() {
+    const { payload, skippedSoloMatches } = exportMatches.invoke()
+    // Scoreo's contract requires a non-empty `games`, so a history of nothing
+    // but solo matches has no file to offer — say so instead of downloading one
+    // that would be rejected at import.
+    if (payload.games.length === 0) {
+      setExportNotice(t('history.exportNothing'))
+      return
+    }
+    downloadJson(exportFilename(payload.exportedAt), payload)
+    setExportNotice(
+      skippedSoloMatches > 0
+        ? t('history.exportSkippedSolo', { count: skippedSoloMatches })
+        : null,
+    )
   }
 
   if (matches.length === 0) {
@@ -49,6 +77,22 @@ export function HistoryScreen({
 
   return (
     <div className="list">
+      <div className="list-item">
+        <AppButton
+          text={
+            <>
+              <Download size={16} aria-hidden /> {t('history.exportForScoreo')}
+            </>
+          }
+          variant="secondary"
+          onClick={handleExport}
+        />
+      </div>
+      {exportNotice && (
+        <div className="card" role="status">
+          {exportNotice}
+        </div>
+      )}
       {sorted.map((match) => {
         const winners = new Set(matchWinners(match))
         return (
