@@ -5,6 +5,13 @@ const KEY = 'scoreo_sync_config'
 const SyncConfigSchema = z.object({
   lastSyncTimestamp: z.number().default(0),
   lastSyncFileId: z.string().default(''),
+  /**
+   * Email of the authorized Google account, used as GIS `hint` so a silent token refresh
+   * picks that account instead of showing the account chooser (issue #305). Not a secret —
+   * unlike the legacy `email` field below, which belonged to a payload that also carried
+   * the access token in plaintext and is still purged on load.
+   */
+  accountEmail: z.string().default(''),
 })
 
 export type SyncConfig = z.infer<typeof SyncConfigSchema>

@@ -1,31 +1,49 @@
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { MockGoogleDriveClient } from '../testing/mockGoogleDriveClient'
 import { GoogleAuthService } from './googleAuthService'
 import { GoogleDriveSyncAdapter } from './googleDriveSyncAdapter'
 import { clearSyncConfig, loadSyncConfig, saveSyncConfig, type SyncConfig } from './syncConfig'
 
 function config(overrides: Partial<SyncConfig> = {}): SyncConfig {
-  return { lastSyncTimestamp: 0, lastSyncFileId: '', ...overrides }
+  return { lastSyncTimestamp: 0, lastSyncFileId: '', accountEmail: '', ...overrides }
 }
 
+/** Captures the last TokenClientConfig GIS was initialized with, so tests can assert on `hint`. */
+const gisCalls: { hint?: string }[] = []
+
 function installMockGis(onRequestAccessToken: (respond: (result: { ok: true; token: string } | { ok: false }) => void) => void) {
+  gisCalls.length = 0
   window.google = {
     accounts: {
       oauth2: {
         initTokenClient: (tokenConfig) => ({
-          requestAccessToken: () =>
+          requestAccessToken: () => {
+            gisCalls.push({ hint: tokenConfig.hint })
             onRequestAccessToken((result) => {
               if (result.ok) {
                 tokenConfig.callback({ access_token: result.token, expires_in: 3600, token_type: 'Bearer' })
               } else {
                 tokenConfig.error_callback({ type: 'consent_required', message: 'Silent refresh failed' })
               }
-            }),
+            })
+          },
         }),
         revoke: (_token, callback) => callback(),
       },
     },
   }
+}
+
+/** login() resolves the account email through userinfo — stubbed here so no real network call happens. */
+function mockUserinfo(email: string | null) {
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async () =>
+      email === null
+        ? ({ ok: false, status: 401, json: async () => ({}) } as Response)
+        : ({ ok: true, json: async () => ({ email }) } as Response),
+    ),
+  )
 }
 
 describe('GoogleDriveSyncAdapter', () => {
@@ -36,6 +54,7 @@ describe('GoogleDriveSyncAdapter', () => {
   afterEach(() => {
     clearSyncConfig()
     delete window.google
+    vi.unstubAllGlobals()
   })
 
   describe('session restore after reload (no in-memory token)', () => {
@@ -50,7 +69,7 @@ describe('GoogleDriveSyncAdapter', () => {
       expect(authService.accessToken).toBe('refreshed-token')
     })
 
-    it('push throws NotAuthenticated and clears the session when the silent refresh fails', async () => {
+    it('push throws NotAuthenticated and clears the in-memory session when the silent refresh fails', async () => {
       installMockGis((respond) => respond({ ok: false }))
       const authService = new GoogleAuthService()
       const adapter = new GoogleDriveSyncAdapter(authService, 'test-client-id', new MockGoogleDriveClient())
@@ -60,6 +79,75 @@ describe('GoogleDriveSyncAdapter', () => {
       ).rejects.toMatchObject({ kind: 'NotAuthenticated' })
 
       expect(authService.accessToken).toBeNull()
+    })
+  })
+
+  describe('silent refresh hint (issue #305)', () => {
+    it('passes the persisted account email to GIS as hint, so no account picker is shown', async () => {
+      saveSyncConfig(config({ accountEmail: 'player@example.com' }))
+      installMockGis((respond) => respond({ ok: true, token: 'refreshed-token' }))
+      const adapter = new GoogleDriveSyncAdapter(new GoogleAuthService(), 'test-client-id', new MockGoogleDriveClient())
+
+      await adapter.push({ players: [], gameTypes: [], matches: [], lastModified: 1700000000 })
+
+      expect(gisCalls.at(-1)?.hint).toBe('player@example.com')
+    })
+
+    it('refreshes without a hint when no account email is known yet (pre-#305 session)', async () => {
+      installMockGis((respond) => respond({ ok: true, token: 'refreshed-token' }))
+      const adapter = new GoogleDriveSyncAdapter(new GoogleAuthService(), 'test-client-id', new MockGoogleDriveClient())
+
+      await adapter.push({ players: [], gameTypes: [], matches: [], lastModified: 1700000000 })
+
+      expect(gisCalls.at(-1)?.hint).toBeUndefined()
+    })
+
+    it('login persists the account email so later refreshes can use it as hint', async () => {
+      mockUserinfo('player@example.com')
+      installMockGis((respond) => respond({ ok: true, token: 'fresh-token' }))
+      const adapter = new GoogleDriveSyncAdapter(new GoogleAuthService(), 'test-client-id', new MockGoogleDriveClient())
+
+      await adapter.login()
+
+      expect(loadSyncConfig().accountEmail).toBe('player@example.com')
+    })
+
+    it('login keeps the previously persisted email when the userinfo lookup fails', async () => {
+      saveSyncConfig(config({ accountEmail: 'player@example.com' }))
+      mockUserinfo(null)
+      installMockGis((respond) => respond({ ok: true, token: 'fresh-token' }))
+      const adapter = new GoogleDriveSyncAdapter(new GoogleAuthService(), 'test-client-id', new MockGoogleDriveClient())
+
+      await adapter.login()
+
+      expect(loadSyncConfig().accountEmail).toBe('player@example.com')
+    })
+  })
+
+  describe('SyncConfig survives a failed refresh (issue #305)', () => {
+    it('keeps lastSyncFileId and accountEmail when the silent refresh fails', async () => {
+      saveSyncConfig(config({ lastSyncTimestamp: 1700000000, lastSyncFileId: 'file-1', accountEmail: 'player@example.com' }))
+      installMockGis((respond) => respond({ ok: false }))
+      const adapter = new GoogleDriveSyncAdapter(new GoogleAuthService(), 'test-client-id', new MockGoogleDriveClient())
+
+      await expect(
+        adapter.push({ players: [], gameTypes: [], matches: [], lastModified: 1700000000 }),
+      ).rejects.toMatchObject({ kind: 'NotAuthenticated' })
+
+      expect(loadSyncConfig()).toEqual(
+        config({ lastSyncTimestamp: 1700000000, lastSyncFileId: 'file-1', accountEmail: 'player@example.com' }),
+      )
+    })
+
+    it('stays disconnected after a failed refresh without losing the persisted config', async () => {
+      saveSyncConfig(config({ accountEmail: 'player@example.com' }))
+      installMockGis((respond) => respond({ ok: false }))
+      const adapter = new GoogleDriveSyncAdapter(new GoogleAuthService(), 'test-client-id')
+
+      const status = await adapter.getStatus()
+
+      expect(status.connected).toBe(false)
+      expect(loadSyncConfig().accountEmail).toBe('player@example.com')
     })
   })
 
@@ -163,7 +251,8 @@ describe('GoogleDriveSyncAdapter', () => {
       const raw = localStorage.getItem('scoreo_sync_config')
       expect(raw).not.toContain('leaked-token')
       expect(raw).not.toContain('accessToken')
-      expect(raw).not.toContain('email')
+      expect(raw).not.toContain('"email"')
+      expect(raw).not.toContain('user@example.com')
     })
 
     it('purges a lingering email field from an entry already past the #51 fix (accessToken/expiresAt already gone)', () => {
@@ -176,7 +265,25 @@ describe('GoogleDriveSyncAdapter', () => {
 
       expect(config1).toEqual(config({ lastSyncTimestamp: 1_700_000_000_000, lastSyncFileId: 'file-xyz' }))
       const raw = localStorage.getItem('scoreo_sync_config')
-      expect(raw).not.toContain('email')
+      expect(raw).not.toContain('"email"')
+      expect(raw).not.toContain('user@example.com')
+    })
+
+    it('decodes a pre-#305 entry with accountEmail defaulted to an empty string', () => {
+      localStorage.setItem(
+        'scoreo_sync_config',
+        JSON.stringify({ lastSyncTimestamp: 1_700_000_000_000, lastSyncFileId: 'file-xyz' }),
+      )
+
+      expect(loadSyncConfig()).toEqual(config({ lastSyncTimestamp: 1_700_000_000_000, lastSyncFileId: 'file-xyz', accountEmail: '' }))
+    })
+
+    it('roundtrips accountEmail', () => {
+      const original = config({ accountEmail: 'player@example.com' })
+
+      saveSyncConfig(original)
+
+      expect(loadSyncConfig()).toEqual(original)
     })
 
     it('does not persist an access token across adapter instances', () => {

@@ -220,6 +220,30 @@ to a pre-Catppuccin build would still find a valid (if stale) value.
 
 ---
 
+## `SyncConfig` — ajout du champ `accountEmail` (issue #305)
+
+**Contexte :** après chaque relance de la PWA, `GoogleAuthService.accessToken` est `null` (token gardé en mémoire seulement, issue #51). Le premier auto-sync — déclenché ~2,5 s après l'enregistrement d'une partie — passe donc par `ensureFreshToken()` → `requestAccessToken({ prompt: '' })`. Or `prompt: ''` ne suffit pas à rendre le rafraîchissement silencieux : sans `hint`, GIS ne sait pas quel compte renouveler dès que plusieurs sessions Google coexistent dans le navigateur, et affiche le sélecteur de compte. Symptôme : l'écran de sélection de compte réapparaissait à chaque partie enregistrée.
+
+**Changement :** `SyncConfig` gagne `accountEmail`, l'email du compte autorisé, transmis à GIS comme `hint` lors du rafraîchissement silencieux. `GoogleAuthService.login()` le résout via l'endpoint OIDC `https://openidconnect.googleapis.com/v1/userinfo` (le scope `openid email` était déjà demandé) avant de rendre la main, et `GoogleDriveSyncAdapter.login()` le persiste. Ce n'est **pas** un retour en arrière sur l'issue #108 : l'email n'est plus obtenu depuis un `id_token` (que le Token Model ne renvoie jamais), et il ne sert plus de signal de connexion — l'état « connecté » reste déterminé uniquement par la présence d'un access token en mémoire.
+
+`ensureFreshToken()` cesse par ailleurs d'appeler `clearSyncConfig()` quand le rafraîchissement échoue : une simple erreur réseau ou une session Google expirée effaçait `lastSyncFileId` (obligeant la sync suivante à redécouvrir le fichier Drive) et effacerait désormais le `hint` qui rend le rafraîchissement silencieux. Seul `logout()` purge la configuration.
+
+**Ancien format :**
+```json
+{ "lastSyncTimestamp": 1700000000, "lastSyncFileId": "..." }
+```
+
+**Nouveau format :**
+```json
+{ "lastSyncTimestamp": 1700000000, "lastSyncFileId": "...", "accountEmail": "user@example.com" }
+```
+
+**Compatibilité ascendante :** `accountEmail` est déclaré avec `.default('')` — une entrée écrite avant ce changement se décode sans erreur avec `accountEmail: ''`, et le rafraîchissement est alors tenté sans `hint` (comportement antérieur, sans régression). L'email est repeuplé au prochain login explicite.
+
+**Note sur le champ legacy `email` :** l'ancien champ `email` (issue #108) reste purgé au chargement — il appartenait à une entrée qui transportait aussi le token d'accès en clair. `accountEmail` est un champ distinct, ne contenant qu'une donnée non secrète et ne servant qu'au `hint`.
+
+---
+
 ## `Match.rounds` — conservation du détail des manches jouées (issue #249)
 
 **Contexte :** `MatchDraft.rounds` (le détail par manche saisi pendant une partie) était jeté à la validation du match : `Match` ne conservait que le score final par joueur (`playerScores`). Toute statistique ou tout trophée reposant sur le déroulé d'une partie (meilleure manche, remontée au classement, nombre de manches) était donc impossible à calculer, et la donnée des parties déjà jouées était définitivement perdue une fois le match enregistré.

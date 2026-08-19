@@ -75,12 +75,23 @@ export class GoogleDriveSyncAdapter implements CloudSyncRepository {
     return new Promise((resolve, reject) => {
       this.authService.login(this.clientId, SCOPE, (result) => {
         if (result.ok) {
+          this.persistAccountEmail()
           resolve()
         } else {
           reject(result.error)
         }
       })
     })
+  }
+
+  /**
+   * Stores the account email so later silent refreshes can pass it as `hint`. Keeps whatever
+   * was already persisted when the userinfo lookup failed — a missing hint would bring the
+   * account chooser back, so a previously known email is better than none.
+   */
+  private persistAccountEmail(): void {
+    const config = loadSyncConfig()
+    saveSyncConfig({ ...config, accountEmail: this.authService.accountEmail ?? config.accountEmail })
   }
 
   async logout(): Promise<void> {
@@ -91,6 +102,11 @@ export class GoogleDriveSyncAdapter implements CloudSyncRepository {
   /**
    * Always attempts a silent GIS refresh when there's no fresh in-memory token, regardless of
    * any persisted signal — there is none to depend on (see getStatus doc above).
+   *
+   * A failure clears the in-memory session only. The persisted config survives on purpose
+   * (issue #305): a transient network error or an expired Google session would otherwise drop
+   * `accountEmail` and `lastSyncFileId`, costing the very hint that makes the next refresh
+   * silent, and forcing the next sync to re-discover the Drive file. Only `logout` purges it.
    */
   private async ensureFreshToken(): Promise<void> {
     const expiresAt = this.authService.expiresAt
@@ -101,20 +117,25 @@ export class GoogleDriveSyncAdapter implements CloudSyncRepository {
     } catch {
       this.authService.accessToken = null
       this.authService.expiresAt = null
-      clearSyncConfig()
       throw { kind: 'NotAuthenticated', message: 'Not authenticated' } satisfies SyncException
     }
   }
 
   private async refreshTokenSilently(): Promise<void> {
+    const hint = loadSyncConfig().accountEmail
     return new Promise((resolve, reject) => {
-      this.authService.refreshToken(this.clientId, SCOPE, (result) => {
-        if (result.ok) {
-          resolve()
-        } else {
-          reject(result.error)
-        }
-      })
+      this.authService.refreshToken(
+        this.clientId,
+        SCOPE,
+        (result) => {
+          if (result.ok) {
+            resolve()
+          } else {
+            reject(result.error)
+          }
+        },
+        hint || undefined,
+      )
     })
   }
 
