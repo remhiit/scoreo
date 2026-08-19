@@ -139,14 +139,24 @@ export class GoogleAuthService {
     this.accountEmail = null
   }
 
-  /** Never throws: a failed lookup only costs the `hint`, it must not fail an otherwise valid login. */
+  /**
+   * Never throws: a failed lookup only costs the `hint`, it must not fail an otherwise valid login.
+   * It is logged rather than swallowed silently — a failure here is invisible in the UI (the login
+   * still succeeds) but brings back the account chooser on every refresh, so it needs to leave a
+   * trace. `USERINFO_ENDPOINT`'s origin must stay listed in `index.html`'s `connect-src`, otherwise
+   * the CSP rejects this call in a real browser while jsdom-based tests keep passing.
+   */
   private async fetchAccountEmail(accessToken: string): Promise<string | null> {
     try {
       const response = await fetch(USERINFO_ENDPOINT, { headers: { Authorization: `Bearer ${accessToken}` } })
-      if (!response.ok) return null
+      if (!response.ok) {
+        console.warn(`[GoogleAuthService] userinfo lookup failed (${response.status}) — silent refresh will run without hint.`)
+        return null
+      }
       const json = (await response.json()) as UserInfoResponse
       return json.email ?? null
-    } catch {
+    } catch (e) {
+      console.warn('[GoogleAuthService] userinfo lookup failed — silent refresh will run without hint.', e)
       return null
     }
   }
