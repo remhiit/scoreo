@@ -35,6 +35,12 @@ export const fr: typeof en = {
     deleteMatchAria: 'Supprimer la partie',
     unknownPlayer: 'Joueur inconnu',
     vp: '{{value}} PV',
+    exportForScoreo: 'Exporter vers Scoreo',
+    exportSkippedSolo_one: '1 partie solo non exportée — Scoreo exige au moins 2 joueurs par partie.',
+    exportSkippedSolo_other:
+      '{{count}} parties solo non exportées — Scoreo exige au moins 2 joueurs par partie.',
+    exportNothing:
+      'Rien à exporter — Scoreo exige au moins 2 joueurs par partie, et toutes les parties enregistrées sont solo.',
   },
   scoreDetail: {
     pinceauHolderLabel: 'Détenteur du Pinceau (+2 PV)',

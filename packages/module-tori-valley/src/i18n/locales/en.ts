@@ -33,6 +33,12 @@ export const en = {
     deleteMatchAria: 'Delete match',
     unknownPlayer: 'Unknown player',
     vp: '{{value}} VP',
+    exportForScoreo: 'Export for Scoreo',
+    exportSkippedSolo_one: '1 solo match left out — Scoreo needs at least 2 players per match.',
+    exportSkippedSolo_other:
+      '{{count}} solo matches left out — Scoreo needs at least 2 players per match.',
+    exportNothing:
+      'Nothing to export — Scoreo needs at least 2 players per match, and every recorded match is solo.',
   },
   scoreDetail: {
     pinceauHolderLabel: 'Pinceau holder (+2 VP)',

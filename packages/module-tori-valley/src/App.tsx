@@ -6,6 +6,7 @@ import { AddPlayerUseCase } from './application/addPlayerUseCase'
 import { CreateMatchUseCase } from './application/createMatchUseCase'
 import { DeleteMatchUseCase } from './application/deleteMatchUseCase'
 import { DeletePlayerUseCase } from './application/deletePlayerUseCase'
+import { ExportMatchesUseCase } from './application/exportMatchesUseCase'
 import { GetMatchesUseCase } from './application/getMatchesUseCase'
 import { GetPlayersUseCase } from './application/getPlayersUseCase'
 import { UpdateMatchUseCase } from './application/updateMatchUseCase'
@@ -128,6 +129,15 @@ function AppShell() {
   const deletePlayer = useMemo(() => new DeletePlayerUseCase(services.playerRepository), [services])
   const getMatches = useMemo(() => new GetMatchesUseCase(services.matchRepository), [services])
   const deleteMatch = useMemo(() => new DeleteMatchUseCase(services.matchRepository), [services])
+  const exportMatches = useMemo(
+    () =>
+      new ExportMatchesUseCase(
+        services.matchRepository,
+        services.playerRepository,
+        services.currentDate,
+      ),
+    [services],
+  )
 
   const onBack: (() => void) | null = current.type === 'Home' ? null : () => navigate(HOME_SCREEN)
 
@@ -192,6 +202,7 @@ function AppShell() {
             getMatches={getMatches}
             getPlayers={getPlayers}
             deleteMatch={deleteMatch}
+            exportMatches={exportMatches}
             onEditMatch={(matchId, playerIds) => navigate(matchSetupScreen(playerIds, matchId))}
           />
         )}
