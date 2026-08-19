@@ -62,6 +62,50 @@ export const fr: typeof en = {
     yellow: 'Jaune',
     purple: 'Violet',
   },
+  objectifCard: {
+    bamboo: {
+      A: { groups: 'Groupes de exactement 2 tuiles Bambou' },
+      B: {
+        groupsOf2: 'Groupes de 2 tuiles',
+        groupsOf3: 'Groupes de 3 tuiles',
+        groupsOf4: 'Groupes de 4 tuiles',
+      },
+      C: {
+        onDiagonal: 'Tuiles sur une diagonale (cases ordinaires)',
+        inCorner: 'Tuiles dans un coin',
+        atCrossing: 'Une tuile occupe le croisement des diagonales',
+      },
+    },
+    cherryBlossom: {
+      A: { tiles: 'Tuiles Cerisier', fullColumns: 'Colonnes de 4 Cerisier' },
+      B: { occupiedColumns: 'Colonnes contenant au moins 1 tuile' },
+      C: { cherryTiles: 'Tuiles Cerisier', villageTiles: 'Tuiles Village' },
+    },
+    mountain: {
+      A: { rowsWithExactlyOne: 'Lignes contenant exactement 1 Montagne' },
+      B: { groups: 'Groupes de 2 tuiles Montagne ou plus' },
+      C: { tiles: 'Tuiles Montagne', waterAdjacencies: 'Adjacences Montagne–Eau' },
+    },
+    village: {
+      B: { largestGroupSize: 'Tuiles de votre plus grand groupe Village' },
+      C: { distinctAdjacentTypes: 'Types voisins distincts, cumulés sur les Villages' },
+    },
+    water: {
+      A: {
+        largestGroupSize: 'Tuiles de votre plus grand groupe Eau',
+        touchesTopAndBottom: 'Ce groupe touche les bords haut et bas',
+      },
+      B: { isolatedEdgeTiles: 'Tuiles Eau isolées touchant le bord du plateau' },
+    },
+    notComputable: {
+      neighbours: 'Se calcule par rapport aux tableaux voisins — saisissez le total à la main.',
+    },
+    errors: {
+      missing: 'Cette valeur est obligatoire',
+      integer: 'Saisissez un nombre entier',
+      range: 'Saisissez une valeur entre {{min}} et {{max}}',
+    },
+  },
   landscape: {
     bamboo: 'Bambou',
     cherryBlossom: 'Fleur de cerisier',

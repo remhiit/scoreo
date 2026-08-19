@@ -60,6 +60,50 @@ export const en = {
     yellow: 'Yellow',
     purple: 'Purple',
   },
+  objectifCard: {
+    bamboo: {
+      A: { groups: 'Groups of exactly 2 Bamboo tiles' },
+      B: {
+        groupsOf2: 'Groups of 2 tiles',
+        groupsOf3: 'Groups of 3 tiles',
+        groupsOf4: 'Groups of 4 tiles',
+      },
+      C: {
+        onDiagonal: 'Tiles on a diagonal (plain squares)',
+        inCorner: 'Tiles in a corner',
+        atCrossing: 'A tile sits where the diagonals cross',
+      },
+    },
+    cherryBlossom: {
+      A: { tiles: 'Cherry Blossom tiles', fullColumns: 'Columns of 4 Cherry Blossom' },
+      B: { occupiedColumns: 'Columns holding at least 1 tile' },
+      C: { cherryTiles: 'Cherry Blossom tiles', villageTiles: 'Village tiles' },
+    },
+    mountain: {
+      A: { rowsWithExactlyOne: 'Rows holding exactly 1 Mountain' },
+      B: { groups: 'Groups of 2 or more Mountain tiles' },
+      C: { tiles: 'Mountain tiles', waterAdjacencies: 'Mountain–Water adjacencies' },
+    },
+    village: {
+      B: { largestGroupSize: 'Tiles in your largest Village group' },
+      C: { distinctAdjacentTypes: 'Distinct neighbouring types, summed over Villages' },
+    },
+    water: {
+      A: {
+        largestGroupSize: 'Tiles in your largest Water group',
+        touchesTopAndBottom: 'That group touches both the top and bottom edges',
+      },
+      B: { isolatedEdgeTiles: 'Isolated Water tiles touching the board edge' },
+    },
+    notComputable: {
+      neighbours: "Scored against the neighbouring players' boards — enter the total by hand.",
+    },
+    errors: {
+      missing: 'This value is required',
+      integer: 'Enter a whole number',
+      range: 'Enter a value between {{min}} and {{max}}',
+    },
+  },
   landscape: {
     bamboo: 'Bamboo',
     cherryBlossom: 'Cherry Blossom',
