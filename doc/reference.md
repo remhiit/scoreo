@@ -99,8 +99,8 @@ Notable design choices:
 | `migrateMatches` | — (utility) | `migrateMatches(rawJson, generateId): string \| null` — v1 ISO date strings → epoch ms, non-UUID ids → `crypto.randomUUID()`, idempotent (returns `null` if nothing changed) | `src/infrastructure/migration/migrateMatches.ts` |
 | `GoogleDriveClient` | — (Drive REST v3 wrapper) | find/create/update/read/upsert `scoreo-data.json`, exponential-backoff retry on `RateLimited`/`NetworkError` | `src/infrastructure/google/googleDriveClient.ts` (`Result<T, SyncException>`) |
 | `GoogleDriveSyncAdapter` | `CloudSyncRepository` | Google Drive App Data Folder (async/await) — "cloud wins" on pull, no local merge | `src/infrastructure/google/googleDriveSyncAdapter.ts` |
-| `GoogleAuthService` | — (GIS Token Model wrapper) | `accessToken`/`expiresAt`/`idToken` in memory; `login`/`refreshToken`/`logout` | `src/infrastructure/google/googleAuthService.ts` |
-| `syncConfig` | — (functions, not a class) | localStorage (`scoreo_sync_config`, non-sensitive fields only): `loadSyncConfig()`, `saveSyncConfig()`, `clearSyncConfig()` | `src/infrastructure/google/syncConfig.ts` |
+| `GoogleAuthService` | — (GIS Token Model wrapper) | `accessToken`/`expiresAt`/`accountEmail` in memory; `login` (resolves the account email via the OIDC userinfo endpoint) / `refreshToken` (takes a `hint`) / `logout` | `src/infrastructure/google/googleAuthService.ts` |
+| `syncConfig` | — (functions, not a class) | localStorage (`scoreo_sync_config`, non-sensitive fields only, `accountEmail` included): `loadSyncConfig()`, `saveSyncConfig()`, `clearSyncConfig()` | `src/infrastructure/google/syncConfig.ts` |
 | `OAUTH_CLIENT_ID` | — (constant) | `import.meta.env.VITE_GOOGLE_CLIENT_ID`, empty string if unset | `src/infrastructure/google/oauthConfig.ts` |
 | `InMemory*Repository` (×5: Player, GameType, Match, MatchDraft, CloudSync) | matching port | in-memory, used by tests only | `src/infrastructure/testing/inMemory*Repository.ts` |
 | `mockGoogleDriveClient` | — (manual test double, no mock library) | in-memory | `src/infrastructure/testing/mockGoogleDriveClient.ts` |
@@ -201,7 +201,7 @@ Theme: Catppuccin tokens (`tokens/colors-*.css` + `tokens/semantic.css`), 4 flav
 | `scoreo_gametypes` | JSON `GameType[]` |
 | `scoreo_matches` | JSON `Match[]` |
 | `scoreo_match_draft` | JSON `MatchDraft` (gameTypeId, playerIds, rounds, updatedAt) |
-| `scoreo_sync_config` | JSON `SyncConfig` (lastSyncTimestamp, lastSyncFileId) — no OAuth token and no email (kept in memory only / not tracked, see #51 and #108) |
+| `scoreo_sync_config` | JSON `SyncConfig` (lastSyncTimestamp, lastSyncFileId, accountEmail) — no OAuth token (kept in memory only, see #51). `accountEmail` is the GIS silent-refresh `hint`, not a connection signal (see #108 and #305) |
 | `scoreo_flavor` | `"latte"` \| `"frappe"` \| `"macchiato"` \| `"mocha"` (Catppuccin flavor, optional) |
 | `scoreo_accent` | one of the 14 Catppuccin hues, e.g. `"mauve"` (optional) |
 | `scoreo_theme` | **legacy**, pre-Catppuccin: `"dark"` or `"light"`. Only read once as a migration fallback when `scoreo_flavor` is absent (see `doc/technical/migrations.md`) — never written anymore. |

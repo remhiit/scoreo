@@ -14,15 +14,17 @@
 
 ## Session restore
 
-The OAuth access token is **never persisted** — it lives only in memory (`GoogleAuthService`), for the lifetime of the page (see #51: it used to be stored in plaintext in `scoreo_sync_config`, exploitable via XSS). `scoreo_sync_config` only keeps the non-sensitive `lastSyncTimestamp`/`lastSyncFileId` — no email either (see #108 below).
+The OAuth access token is **never persisted** — it lives only in memory (`GoogleAuthService`), for the lifetime of the page (see #51: it used to be stored in plaintext in `scoreo_sync_config`, exploitable via XSS). `scoreo_sync_config` only keeps non-sensitive fields: `lastSyncTimestamp`, `lastSyncFileId`, and `accountEmail` — the last one being the silent-refresh `hint`, never a connection signal (see #108 and #305 below).
 
 On every page reload the in-memory token is gone, so the session is restored via a **silent GIS refresh attempted unconditionally**, every time — `CloudSyncRepository.getStatus()`/`ensureFreshToken()` never depend on a persisted email or flag to decide whether to try:
 - On mount, the Sync screen immediately shows a **"Restoring session..."** loading view (`SyncPhase.Restoring`) instead of the "Connect with Google" button, so a reloading user can't click Connect while the silent refresh is still in flight
 - No popup required
-- A silent `requestAccessToken({ prompt: '' })` call fetches a fresh token before the first sync
+- A silent `requestAccessToken({ prompt: '' })` call fetches a fresh token before the first sync, with the persisted `accountEmail` passed to `initTokenClient` as `hint` so GIS renews that account without showing its account chooser (#305)
 - Sync then triggers immediately (same flow as a fresh login)
 - If the silent refresh fails (e.g. Google consent revoked, or there never was a session), the user is shown the "Connect" screen
 - If the silent refresh succeeds but the **auto-sync itself** then fails (network error, API error), the phase falls back to `Disconnected` while the `connected` flag is kept `true` (the account is still authenticated, only the last sync attempt failed). The Sync screen reflects this by showing a **"Disconnect"** button instead of "Connect with Google", so the user can cleanly log out rather than being stuck retrying a silent connect
+
+**Issue #305:** `prompt: ''` on its own does not make the refresh silent. Without a `hint`, GIS cannot tell which account to renew as soon as several Google sessions coexist in the browser, and falls back to the account chooser — which reappeared after every saved match, since each PWA relaunch starts with no in-memory token. Fix: `GoogleAuthService.login()` resolves the authorized account's email through the OIDC userinfo endpoint (`https://openidconnect.googleapis.com/v1/userinfo`, covered by the `openid email` scope already requested) before handing back control, `GoogleDriveSyncAdapter.login()` persists it as `accountEmail`, and every silent refresh passes it back as `hint`. A pre-#305 session has an empty `accountEmail` and simply refreshes without a hint, as before, until the next explicit login repopulates it. Note this does **not** revert #108: the email no longer comes from an `id_token`, and it is never used to decide connected state. A failed refresh no longer clears `scoreo_sync_config` either — a transient network error would otherwise drop both the hint and `lastSyncFileId`; only an explicit disconnect purges it.
 
 **Issue #108:** the email used to be extracted from the OAuth `id_token`, but the GIS Token Model (`google.accounts.oauth2.initTokenClient`) never actually returns one in practice (only `access_token`) — so the "connected" signal that was supposed to survive a reload (`config.email !== ''`) was always empty, and the Connect button reappeared after every F5 despite an active Google session. Fix: connected state is decided purely by whether an access token ends up in memory (in-memory already, or obtained via the silent refresh above) — never by a persisted email or flag. The `email` field is gone from `SyncStatus`, `SyncConfig`, and the UI; the Sync screen no longer shows "Connected as {email}".
 
@@ -31,7 +33,7 @@ On every page reload the in-memory token is gone, so the session is restored via
 - Storage: **App Data Folder** on Google Drive (invisible to the user, does not count against quota)
 - Single file: `scoreo-data.json`
 - Scope: `openid email https://www.googleapis.com/auth/drive.appdata`
-- OAuth Token Model (GIS) — token kept in memory only (never written to storage), silent refresh via `prompt=""`
+- OAuth Token Model (GIS) — token kept in memory only (never written to storage), silent refresh via `prompt=""` plus the `accountEmail` hint (#305)
 
 ## Auto-sync
 
