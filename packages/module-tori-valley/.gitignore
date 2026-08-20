@@ -32,6 +32,13 @@ coverage/
 # Lighthouse CI reports
 .lighthouseci/
 
+# Playwright run output — the baselines under tests/visual/**-snapshots/ ARE committed,
+# everything below is per-run noise (diffs, traces, HTML report).
+test-results/
+playwright-report/
+blob-report/
+.playwright/
+
 # Copyrighted rulebook PDF — kept locally for reference, not for distribution
 LVDT_Rules*.pdf
 

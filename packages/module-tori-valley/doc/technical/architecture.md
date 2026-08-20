@@ -2,7 +2,7 @@
 
 ## Stack
 
-React 18 + TypeScript, Vite, Vitest + Testing Library (jsdom, no real browser needed), Zod for schema validation, ESLint (typescript-eslint, react-hooks, react-refresh) + Prettier, pnpm. PWA shell (manifest, service worker) for installability; no backend — 100% local-first via `localStorage`. i18next + react-i18next + `i18next-browser-languagedetector` for internationalization (English/French).
+React 18 + TypeScript, Vite, Vitest + Testing Library (jsdom, no real browser needed) for behaviour and Playwright + Chromium for visual regression, Zod for schema validation, ESLint (typescript-eslint, react-hooks, react-refresh) + Prettier, pnpm. PWA shell (manifest, service worker) for installability; no backend — 100% local-first via `localStorage`. i18next + react-i18next + `i18next-browser-languagedetector` for internationalization (English/French).
 
 ## Layering (hexagonal / ports & adapters)
 
@@ -19,6 +19,15 @@ Dependency direction is strictly inward: `ui` → `services`/`application` → `
 ## MVI-style screens
 
 Each screen owns a pure `(state, action) => state` reducer (`useReducer`), colocated under `src/ui/<screen>/`. Side-effecting work (use-case calls) happens in `submit*`/plain event-handler functions in the screen component, which then `dispatch()` the resulting action — the reducer itself never touches a repository or a use case. See [`doc/glossary.md`](../glossary.md) and [`doc/reference.md`](../reference.md) for the exhaustive per-screen tables.
+
+## Testing
+
+Two suites, split by what they can actually observe:
+
+- **Behaviour** — Vitest + Testing Library under jsdom, colocated `*.test.ts(x)`. Fast, and the place for every reducer, use case, adapter and screen interaction. jsdom computes no layout, so it can assert what the DOM says but never what the user sees.
+- **Visual regression** — Playwright + Chromium in `tests/visual/`, screenshotting the production build at a phone and a desktop viewport and diffing against committed PNG baselines. This is what catches a broken flex direction, a row that stops truncating, or an unreadable dark-mode token.
+
+The two never overlap: the Playwright specs assert pixels only and contain no behavioural assertions. Baselines are recorded inside the same container image CI uses (`pnpm test:visual:container --update-snapshots`) because font rasterisation differs between distributions — full rules, determinism guarantees and the procedure for updating a baseline are in [`visual-testing.md`](visual-testing.md).
 
 ## Backward compatibility
 

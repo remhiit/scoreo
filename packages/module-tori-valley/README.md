@@ -52,6 +52,20 @@ The site is automatically deployed on every push to `main`:
 pnpm test
 ```
 
+### Run visual regression tests
+
+Screenshots every screen in Chromium and diffs it against committed baselines.
+
+```bash
+pnpm exec playwright install chromium   # once
+pnpm build                              # the suite screenshots dist/
+pnpm test:visual
+```
+
+Baselines are recorded in the same container image CI uses, never on your own
+machine — `pnpm test:visual:container --update-snapshots`. See
+[`doc/technical/visual-testing.md`](doc/technical/visual-testing.md).
+
 ### Typecheck / lint
 
 ```bash
