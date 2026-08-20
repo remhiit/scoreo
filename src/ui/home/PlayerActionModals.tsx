@@ -46,9 +46,9 @@ export function PlayerActionModals({
   // Read-only projection of the pending merge, recomputed whenever either side
   // changes — the mutation itself stays in submitMergePlayers.
   const mergePreview = useMemo(() => {
-    if (state.mergeDuplicateId === undefined || state.mergeKeptId === undefined) return undefined
-    return mergePlayersUseCase.preview(state.mergeDuplicateId, state.mergeKeptId)
-  }, [mergePlayersUseCase, state.mergeDuplicateId, state.mergeKeptId])
+    if (state.mergeKeptId === undefined || state.mergeDuplicateIds.length === 0) return undefined
+    return mergePlayersUseCase.preview(state.mergeKeptId, state.mergeDuplicateIds)
+  }, [mergePlayersUseCase, state.mergeKeptId, state.mergeDuplicateIds])
 
   return (
     <>
@@ -89,12 +89,12 @@ export function PlayerActionModals({
       <MergePlayersModal
         open={state.showMergeDialog}
         players={state.allPlayers}
-        duplicateId={state.mergeDuplicateId}
         keptId={state.mergeKeptId}
+        duplicateIds={state.mergeDuplicateIds}
         preview={mergePreview}
         error={state.mergeError}
-        onSelectDuplicate={(id) => dispatch({ type: 'selectMergeDuplicate', id })}
         onSelectKept={(id) => dispatch({ type: 'selectMergeKept', id })}
+        onToggleDuplicate={(id) => dispatch({ type: 'toggleMergeDuplicate', id })}
         onClose={() => dispatch({ type: 'dismissMergeDialog' })}
         onConfirmMerge={() => {
           const action = submitMergePlayers(mergePlayersUseCase, sources, state)

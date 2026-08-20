@@ -208,16 +208,26 @@ describe('GameTypeScreen', () => {
     expect(screen.getByText('Merge')).toBeInTheDocument()
   })
 
-  it('merges a duplicate game type into the kept one and moves its matches', () => {
+  it('merges several duplicate game types into the kept one and moves their matches', () => {
     const repo = new InMemoryGameTypeRepository()
     const matchRepo = new InMemoryMatchRepository()
     repo.save(buildGameType('keep', 'Belote'))
-    repo.save(buildGameType('dup', 'Belote '))
+    repo.save(buildGameType('dup', 'Belote coinchee'))
+    repo.save(buildGameType('dup2', 'belote'))
     matchRepo.save({
       id: 'm1',
       date: 1000,
       gameTypeId: 'dup',
       playerScores: [{ playerId: 'p1', score: 10 }],
+      manualWinners: [],
+      secondaryPlayerScores: [],
+      rounds: [],
+    })
+    matchRepo.save({
+      id: 'm2',
+      date: 2000,
+      gameTypeId: 'dup2',
+      playerScores: [{ playerId: 'p1', score: 7 }],
       manualWinners: [],
       secondaryPlayerScores: [],
       rounds: [],
@@ -235,28 +245,29 @@ describe('GameTypeScreen', () => {
 
     fireEvent.click(screen.getByText('Merge'))
     const dialog = screen.getByRole('dialog')
-    fireEvent.change(within(dialog).getByLabelText('Duplicate to remove'), { target: { value: 'dup' } })
     fireEvent.change(within(dialog).getByLabelText('Game to keep'), { target: { value: 'keep' } })
+    fireEvent.click(within(dialog).getByText('Belote coinchee', { selector: '.list-item-name' }))
+    fireEvent.click(within(dialog).getByText('belote', { selector: '.list-item-name' }))
 
-    expect(within(dialog).getByText('1 match will move.')).toBeInTheDocument()
+    expect(within(dialog).getByText('2 matches will move.')).toBeInTheDocument()
 
     fireEvent.click(within(dialog).getByText('Merge'))
 
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
     expect(repo.getAll(true).map((gt) => gt.id)).toEqual(['keep'])
-    expect(matchRepo.getAll()[0].gameTypeId).toBe('keep')
+    expect(matchRepo.getAll().map((m) => m.gameTypeId)).toEqual(['keep', 'keep'])
   })
 
-  it('warns without blocking when the two game types do not score the same way', () => {
+  it('warns without blocking when a selected game type does not score the same way', () => {
     const repo = new InMemoryGameTypeRepository()
     repo.save(buildGameType('keep', 'Belote'))
-    repo.save({ ...buildGameType('dup', 'Belote '), winCondition: 'LOWEST_SCORE' })
+    repo.save({ ...buildGameType('dup', 'Belote coinchee'), winCondition: 'LOWEST_SCORE' })
     renderScreen(repo)
 
     fireEvent.click(screen.getByText('Merge'))
     const dialog = screen.getByRole('dialog')
-    fireEvent.change(within(dialog).getByLabelText('Duplicate to remove'), { target: { value: 'dup' } })
     fireEvent.change(within(dialog).getByLabelText('Game to keep'), { target: { value: 'keep' } })
+    fireEvent.click(within(dialog).getByText('Belote coinchee', { selector: '.list-item-name' }))
 
     expect(within(dialog).getByText(/"Belote" rules will apply/)).toBeInTheDocument()
     expect(within(dialog).getByText('Merge').closest('button')).toBeEnabled()
@@ -269,8 +280,9 @@ describe('GameTypeScreen', () => {
     renderScreen(repo)
 
     fireEvent.click(screen.getByText('Merge'))
+    const dialog = screen.getByRole('dialog')
 
-    // One option per picker: the duplicate list and the "keep" list.
-    expect(within(screen.getByRole('dialog')).getAllByText('Belote coinchee (archived)')).toHaveLength(2)
+    expect(within(dialog).getByText('Belote coinchee (archived)', { selector: 'option' })).toBeInTheDocument()
+    expect(within(dialog).getByText('(archived)', { selector: '.list-item-subtitle' })).toBeInTheDocument()
   })
 })

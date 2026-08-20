@@ -10,16 +10,16 @@
 | `GetPlayersUseCase` | `includeInactive: Boolean = false` | `List<Player>` | Excludes inactive by default |
 | `GetPlayerStatsUseCase` | — | `Map<String, PlayerStats>` | Computes wins/losses from all matches (regardless of player active status) |
 | `CleanupInactivePlayersUseCase` | `preview()` / `execute()` | `List<Player>` | Finds inactive players referenced by no match (neither `playerScores` nor `secondaryPlayerScores`); `execute()` hard-deletes them via `PlayerRepository.hardDelete` and returns the deleted list |
-| `MergePlayersUseCase` | `preview(duplicateId, keptId)` | `MergePlayersPreview` | Counts the matches referencing the duplicate (`affectedMatches`) and those referencing both players (`conflictingMatches`). Pure counting — no validation, no mutation |
-| `MergePlayersUseCase` | `invoke(duplicateId, keptId)` | `Unit` | Moves every match reference to the duplicate (`playerScores`, `secondaryPlayerScores`, `rounds`, `manualWinners`) onto the kept player, clears a `MatchDraft` naming the duplicate, then hard-deletes the duplicate. Refuses a self-merge, an unknown id, or any match involving both players |
+| `MergePlayersUseCase` | `preview(keptId, duplicateIds)` | `MergePlayersPreview` | Counts the matches referencing at least one duplicate (`affectedMatches`) and those referencing two or more members of the group `[keptId, ...duplicateIds]` (`conflictingMatches`). Pure counting — no validation, no mutation |
+| `MergePlayersUseCase` | `invoke(keptId, duplicateIds)` | `Unit` | Moves every match reference to any duplicate (`playerScores`, `secondaryPlayerScores`, `rounds`, `manualWinners`) onto the kept player, clears a `MatchDraft` naming a duplicate, then hard-deletes each duplicate. Refuses a self-merge, an empty duplicate list, an unknown id, or any match involving two members of the group |
 
 ## MVI-style
 
 | Component | Details |
 |-----------|---------|
 | **Reducer** | `playerReducer` — `src/ui/home/playerReducer.ts` |
-| **Action** | `PlayerAction`: `updateInput`, `addSucceeded`/`addFailed`, `showDeleteConfirm`, `dismissDeleteConfirm`, `deleted`, `startRename`, `updateRenameInput`, `renameSucceeded`/`renameFailed`, `cancelRename`, `showCleanupConfirm`, `dismissCleanupConfirm`, `cleanupCompleted`, `showMergeDialog`, `dismissMergeDialog`, `selectMergeDuplicate`, `selectMergeKept`, `mergeSucceeded`/`mergeFailed` |
-| **State** | `PlayerState`: `players`, `allPlayers`, `stats`, `trophyCounts`, `inputName`, `error`, `deleteConfirmPlayerId`, `renamingPlayerId`, `renameInput`, `cleanupCandidates`, `showCleanupConfirm`, `showMergeDialog`, `mergeDuplicateId`, `mergeKeptId`, `mergeError` |
+| **Action** | `PlayerAction`: `updateInput`, `addSucceeded`/`addFailed`, `showDeleteConfirm`, `dismissDeleteConfirm`, `deleted`, `startRename`, `updateRenameInput`, `renameSucceeded`/`renameFailed`, `cancelRename`, `showCleanupConfirm`, `dismissCleanupConfirm`, `cleanupCompleted`, `showMergeDialog`, `dismissMergeDialog`, `selectMergeKept`, `toggleMergeDuplicate`, `mergeSucceeded`/`mergeFailed` |
+| **State** | `PlayerState`: `players`, `allPlayers`, `stats`, `trophyCounts`, `inputName`, `error`, `deleteConfirmPlayerId`, `renamingPlayerId`, `renameInput`, `cleanupCandidates`, `showCleanupConfirm`, `showMergeDialog`, `mergeKeptId`, `mergeDuplicateIds`, `mergeError` |
 
 Screen: `src/ui/home/HomeScreen.tsx`. See `doc/reference.md` for the full reducer table.
 
@@ -45,14 +45,15 @@ Screen: `src/ui/home/HomeScreen.tsx`. See `doc/reference.md` for the full reduce
   - Checkbox: "Erase name from history" (controls `anonymize` flag)
   - **Cancel** / **Delete** buttons
 - "Merge" button (shown as soon as at least 2 players exist, soft-deleted ones included — next to "Clean up" in the same row under the list): opens the merge dialog
-  - Two dropdowns: **Duplicate to remove** and **Player to keep**. The duplicate is filtered out of the second list, so both sides can never name the same player
-  - Both lists include soft-deleted players, suffixed "(deleted)" — an import can duplicate a player who was already deleted
-  - Once both are picked, the dialog states how many matches will move
-  - **Merge** stays disabled until both sides are picked
-  - Confirming moves every reference to the duplicate (match scores, tie-break scores, per-round scores, manual winners) onto the player kept, then permanently deletes the duplicate. Wins/losses, ELO and trophies are recomputed from the merged history
-  - A draft match in progress that named the duplicate is discarded (its player id no longer exists)
-  - If the kept player was soft-deleted and the duplicate was active, the kept player becomes active again — otherwise the merge would hide the result
-  - **Blocked case**: if any match has the two players facing each other, the dialog says so in red and **Merge** stays disabled — merging would make someone play against themselves
+  - One dropdown, **Player to keep**, then below it **Duplicates to remove**: the multi-select list (○/●) of every other player. Several duplicates can be folded in one pass — an import can spell the same person three ways
+  - The player picked as the one to keep is dropped from the duplicates list (and unticked if it was already ticked), so it can never be its own duplicate
+  - Both the dropdown and the list include soft-deleted players, marked "(deleted)" — an import can duplicate a player who was already deleted
+  - Once a kept player and at least one duplicate are picked, the dialog states how many matches will move
+  - **Merge** stays disabled until then
+  - Confirming moves every reference to each duplicate (match scores, tie-break scores, per-round scores, manual winners) onto the player kept, then permanently deletes the duplicates. Wins/losses, ELO and trophies are recomputed from the merged history
+  - A draft match in progress that named a duplicate is discarded (its player id no longer exists)
+  - If the kept player was soft-deleted and any duplicate was active, the kept player becomes active again — otherwise the merge would hide the result
+  - **Blocked case**: if any match has two of the selected players facing each other — the kept player against a duplicate, or two duplicates against each other — the dialog says so in red and **Merge** stays disabled; merging would make someone play against themselves. Leaving the opponent out of the selection unblocks it
 - "Clean up (N)" button (only shown when `CleanupInactivePlayersUseCase.preview()` returns at least one player, `N` being that count): opens a confirmation modal listing the eligible players by name
   - **Cancel** closes the modal, deletes nothing
   - **Delete permanently** hard-deletes every listed player (`PlayerRepository.hardDelete`, irreversible) and closes the modal
@@ -102,23 +103,25 @@ Then "Bob" is permanently removed from storage (not just marked inactive)
 And "Alice" is unaffected, the "Clean up" button disappears
 ```
 
-### Merge a duplicate created by an import
+### Merge the duplicates created by an import
 ```
-Given an import created "Jean Luc" alongside the existing "Jean-Luc"
-And "Jean Luc" holds 3 matches, "Jean-Luc" holds 0
-When I click "Merge", pick "Jean Luc" as the duplicate and "Jean-Luc" as the player to keep
+Given an import created "Jean Luc" and "JeanLuc" alongside the existing "Jean-Luc"
+And "Jean Luc" holds 2 matches, "JeanLuc" holds 1, "Jean-Luc" holds 0
+When I click "Merge", pick "Jean-Luc" as the player to keep, and tick both duplicates
 Then the dialog reads "3 matches will move."
 When I confirm
-Then "Jean Luc" is gone from Home and its 3 matches now count for "Jean-Luc"
+Then both duplicates are gone from Home and their 3 matches now count for "Jean-Luc"
 And the history/stats show a single player with the combined record
 ```
 
 ### Merge blocked by a shared match
 ```
-Given "Jean Luc" and "Jean-Luc" both played in the same match
-When I pick them as duplicate and kept player
-Then the dialog warns that 1 match already has both players facing each other
+Given "Jean Luc" and "JeanLuc" played against each other in one match
+When I pick "Jean-Luc" as the player to keep and tick both of them
+Then the dialog warns that 1 match already has two of the selected players facing each other
 And the Merge button is disabled
+When I untick "JeanLuc"
+Then the warning clears and the merge can proceed for "Jean Luc" alone
 ```
 
 ### Rename a player (fix typo)

@@ -49,17 +49,17 @@ export type PlayerAction =
   | ({ type: 'cleanupCompleted' } & LoadedPlayers)
   | { type: 'showMergeDialog' }
   | { type: 'dismissMergeDialog' }
-  | { type: 'selectMergeDuplicate'; id: string | undefined }
   | { type: 'selectMergeKept'; id: string | undefined }
+  | { type: 'toggleMergeDuplicate'; id: string }
   | ({ type: 'mergeSucceeded' } & LoadedPlayers)
   | { type: 'mergeFailed'; error: string }
 
 const CLOSED_MERGE_DIALOG = {
   showMergeDialog: false,
-  mergeDuplicateId: undefined,
   mergeKeptId: undefined,
+  mergeDuplicateIds: [],
   mergeError: undefined,
-} as const
+}
 
 function withLoaded(state: PlayerState, loaded: LoadedPlayers): PlayerState {
   return {
@@ -116,17 +116,23 @@ export function playerReducer(state: PlayerState, action: PlayerAction): PlayerS
       return { ...state, ...CLOSED_MERGE_DIALOG, showMergeDialog: true }
     case 'dismissMergeDialog':
       return { ...state, ...CLOSED_MERGE_DIALOG }
-    case 'selectMergeDuplicate':
+    case 'selectMergeKept':
       return {
         ...state,
-        mergeDuplicateId: action.id,
-        // The duplicate is excluded from the "keep" list, so a kept player that
-        // just became the duplicate has to be dropped rather than left dangling.
-        mergeKeptId: state.mergeKeptId === action.id ? undefined : state.mergeKeptId,
+        mergeKeptId: action.id,
+        // The kept player is filtered out of the duplicates list, so one that
+        // was already ticked has to be dropped rather than left invisibly set.
+        mergeDuplicateIds: state.mergeDuplicateIds.filter((id) => id !== action.id),
         mergeError: undefined,
       }
-    case 'selectMergeKept':
-      return { ...state, mergeKeptId: action.id, mergeError: undefined }
+    case 'toggleMergeDuplicate':
+      return {
+        ...state,
+        mergeDuplicateIds: state.mergeDuplicateIds.includes(action.id)
+          ? state.mergeDuplicateIds.filter((id) => id !== action.id)
+          : [...state.mergeDuplicateIds, action.id],
+        mergeError: undefined,
+      }
     case 'mergeSucceeded':
       return { ...withLoaded(state, action), ...CLOSED_MERGE_DIALOG }
     case 'mergeFailed':
@@ -212,10 +218,10 @@ export function submitMergePlayers(
   sources: PlayerDataSources,
   state: PlayerState,
 ): PlayerAction | undefined {
-  const { mergeDuplicateId, mergeKeptId } = state
-  if (mergeDuplicateId === undefined || mergeKeptId === undefined) return undefined
+  const { mergeKeptId, mergeDuplicateIds } = state
+  if (mergeKeptId === undefined || mergeDuplicateIds.length === 0) return undefined
   try {
-    mergePlayersUseCase.invoke(mergeDuplicateId, mergeKeptId)
+    mergePlayersUseCase.invoke(mergeKeptId, mergeDuplicateIds)
     return { type: 'mergeSucceeded', ...loadPlayers(sources) }
   } catch (e) {
     return { type: 'mergeFailed', error: errorMessage(e) }

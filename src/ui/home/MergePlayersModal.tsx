@@ -7,13 +7,13 @@ export interface MergePlayersModalProps {
   open: boolean
   /** Soft-deleted players included — an import can duplicate an already-deleted player. */
   players: Player[]
-  duplicateId: string | undefined
   keptId: string | undefined
-  /** undefined until both sides are picked. */
+  duplicateIds: string[]
+  /** undefined until a kept player and at least one duplicate are picked. */
   preview: MergePlayersPreview | undefined
   error: string | undefined
-  onSelectDuplicate: (id: string | undefined) => void
   onSelectKept: (id: string | undefined) => void
+  onToggleDuplicate: (id: string) => void
   onClose: () => void
   onConfirmMerge: () => void
 }
@@ -21,21 +21,22 @@ export interface MergePlayersModalProps {
 export function MergePlayersModal({
   open,
   players,
-  duplicateId,
   keptId,
+  duplicateIds,
   preview,
   error,
-  onSelectDuplicate,
   onSelectKept,
+  onToggleDuplicate,
   onClose,
   onConfirmMerge,
 }: MergePlayersModalProps) {
   const { t } = useTranslation()
 
-  const options = players.map((player) => {
-    const name = player.name || t('home.unnamedPlayer')
-    return { id: player.id, label: player.active ? name : t('home.deletedSuffix', { name }) }
-  })
+  const options = players.map((player) => ({
+    id: player.id,
+    label: player.name || t('home.unnamedPlayer'),
+    note: player.active ? undefined : t('home.deletedNote'),
+  }))
 
   const blocked = preview !== undefined && preview.conflictingMatches > 0
 
@@ -44,14 +45,14 @@ export function MergePlayersModal({
       open={open}
       title={t('home.mergeTitle')}
       body={t('home.mergeBody')}
-      duplicateLabel={t('home.mergeDuplicateLabel')}
       keptLabel={t('home.mergeKeptLabel')}
+      duplicatesLabel={t('home.mergeDuplicatesLabel')}
       placeholder={t('home.mergeSelectPlaceholder')}
       options={options}
-      duplicateId={duplicateId}
       keptId={keptId}
-      onSelectDuplicate={onSelectDuplicate}
+      duplicateIds={duplicateIds}
       onSelectKept={onSelectKept}
+      onToggleDuplicate={onToggleDuplicate}
       summary={preview && t('home.mergeSummary', { count: preview.affectedMatches })}
       warning={blocked ? t('home.mergeConflict', { count: preview.conflictingMatches }) : undefined}
       blocked={blocked}

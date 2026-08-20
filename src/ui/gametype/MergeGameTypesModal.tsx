@@ -7,13 +7,13 @@ export interface MergeGameTypesModalProps {
   open: boolean
   /** Archived game types included — a duplicate is often archived before being merged. */
   gameTypes: GameType[]
-  duplicateId: string | undefined
   keptId: string | undefined
-  /** undefined until both sides are picked. */
+  duplicateIds: string[]
+  /** undefined until a kept game type and at least one duplicate are picked. */
   preview: MergeGameTypesPreview | undefined
   error: string | undefined
-  onSelectDuplicate: (id: string | undefined) => void
   onSelectKept: (id: string | undefined) => void
+  onToggleDuplicate: (id: string) => void
   onClose: () => void
   onConfirmMerge: () => void
 }
@@ -21,12 +21,12 @@ export interface MergeGameTypesModalProps {
 export function MergeGameTypesModal({
   open,
   gameTypes,
-  duplicateId,
   keptId,
+  duplicateIds,
   preview,
   error,
-  onSelectDuplicate,
   onSelectKept,
+  onToggleDuplicate,
   onClose,
   onConfirmMerge,
 }: MergeGameTypesModalProps) {
@@ -34,7 +34,8 @@ export function MergeGameTypesModal({
 
   const options = gameTypes.map((gameType) => ({
     id: gameType.id,
-    label: gameType.active ? gameType.name : t('gametype.archivedSuffix', { name: gameType.name }),
+    label: gameType.name,
+    note: gameType.active ? undefined : t('gametype.archivedNote'),
   }))
 
   const keptName = gameTypes.find((gt) => gt.id === keptId)?.name ?? ''
@@ -44,14 +45,14 @@ export function MergeGameTypesModal({
       open={open}
       title={t('gametype.mergeTitle')}
       body={t('gametype.mergeBody')}
-      duplicateLabel={t('gametype.mergeDuplicateLabel')}
       keptLabel={t('gametype.mergeKeptLabel')}
+      duplicatesLabel={t('gametype.mergeDuplicatesLabel')}
       placeholder={t('gametype.mergeSelectPlaceholder')}
       options={options}
-      duplicateId={duplicateId}
       keptId={keptId}
-      onSelectDuplicate={onSelectDuplicate}
+      duplicateIds={duplicateIds}
       onSelectKept={onSelectKept}
+      onToggleDuplicate={onToggleDuplicate}
       summary={preview && t('gametype.mergeSummary', { count: preview.affectedMatches })}
       warning={preview?.rulesDiffer ? t('gametype.mergeRulesDiffer', { name: keptName }) : undefined}
       confirmText={t('gametype.mergeConfirm')}

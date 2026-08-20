@@ -38,17 +38,17 @@ export type GameTypeAction =
   | { type: 'dismissArchiveConfirm' }
   | { type: 'showMergeDialog' }
   | { type: 'dismissMergeDialog' }
-  | { type: 'selectMergeDuplicate'; id: string | undefined }
   | { type: 'selectMergeKept'; id: string | undefined }
+  | { type: 'toggleMergeDuplicate'; id: string }
   | ({ type: 'mergeSucceeded' } & LoadedGameTypes)
   | { type: 'mergeFailed'; error: string }
 
 const CLOSED_MERGE_DIALOG = {
   showMergeDialog: false,
-  mergeDuplicateId: undefined,
   mergeKeptId: undefined,
+  mergeDuplicateIds: [],
   mergeError: undefined,
-} as const
+}
 
 function resetForm(state: GameTypeState, loaded: LoadedGameTypes): GameTypeState {
   return {
@@ -121,18 +121,24 @@ export function gameTypeReducer(state: GameTypeState, action: GameTypeAction): G
       return { ...state, ...CLOSED_MERGE_DIALOG, showMergeDialog: true }
     case 'dismissMergeDialog':
       return { ...state, ...CLOSED_MERGE_DIALOG }
-    case 'selectMergeDuplicate':
+    case 'selectMergeKept':
       return {
         ...state,
-        mergeDuplicateId: action.id,
-        // The duplicate is excluded from the "keep" list, so a kept game type
-        // that just became the duplicate has to be dropped rather than left
-        // dangling.
-        mergeKeptId: state.mergeKeptId === action.id ? undefined : state.mergeKeptId,
+        mergeKeptId: action.id,
+        // The kept game type is filtered out of the duplicates list, so one
+        // that was already ticked has to be dropped rather than left invisibly
+        // set.
+        mergeDuplicateIds: state.mergeDuplicateIds.filter((id) => id !== action.id),
         mergeError: undefined,
       }
-    case 'selectMergeKept':
-      return { ...state, mergeKeptId: action.id, mergeError: undefined }
+    case 'toggleMergeDuplicate':
+      return {
+        ...state,
+        mergeDuplicateIds: state.mergeDuplicateIds.includes(action.id)
+          ? state.mergeDuplicateIds.filter((id) => id !== action.id)
+          : [...state.mergeDuplicateIds, action.id],
+        mergeError: undefined,
+      }
     case 'mergeSucceeded':
       return {
         ...state,
@@ -209,10 +215,10 @@ export function submitMergeGameTypes(
   getGameTypes: GetGameTypesUseCase,
   state: GameTypeState,
 ): LoadedGameTypes | { error: string } | undefined {
-  const { mergeDuplicateId, mergeKeptId } = state
-  if (mergeDuplicateId === undefined || mergeKeptId === undefined) return undefined
+  const { mergeKeptId, mergeDuplicateIds } = state
+  if (mergeKeptId === undefined || mergeDuplicateIds.length === 0) return undefined
   try {
-    mergeGameTypesUseCase.invoke(mergeDuplicateId, mergeKeptId)
+    mergeGameTypesUseCase.invoke(mergeKeptId, mergeDuplicateIds)
     return loadGameTypes(getGameTypes)
   } catch (e) {
     return { error: errorMessage(e) }

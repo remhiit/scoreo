@@ -304,39 +304,50 @@ describe('gameTypeReducer', () => {
     expect(state.allGameTypes).toHaveLength(2)
   })
 
-  it('showMergeDialog opens the dialog with both sides unpicked', () => {
-    let state = gameTypeReducer(initialGameTypeState, { type: 'selectMergeDuplicate', id: 'stale' })
+  it('showMergeDialog opens the dialog with nothing picked', () => {
+    let state = gameTypeReducer(initialGameTypeState, { type: 'toggleMergeDuplicate', id: 'stale' })
     state = gameTypeReducer(state, { type: 'showMergeDialog' })
 
     expect(state.showMergeDialog).toBe(true)
-    expect(state.mergeDuplicateId).toBeUndefined()
     expect(state.mergeKeptId).toBeUndefined()
+    expect(state.mergeDuplicateIds).toEqual([])
   })
 
   it('dismissMergeDialog closes the dialog and drops the selection', () => {
     let state = gameTypeReducer(initialGameTypeState, { type: 'showMergeDialog' })
-    state = gameTypeReducer(state, { type: 'selectMergeDuplicate', id: 'gt1' })
-    state = gameTypeReducer(state, { type: 'selectMergeKept', id: 'gt2' })
+    state = gameTypeReducer(state, { type: 'selectMergeKept', id: 'gt1' })
+    state = gameTypeReducer(state, { type: 'toggleMergeDuplicate', id: 'gt2' })
     state = gameTypeReducer(state, { type: 'dismissMergeDialog' })
 
     expect(state.showMergeDialog).toBe(false)
-    expect(state.mergeDuplicateId).toBeUndefined()
     expect(state.mergeKeptId).toBeUndefined()
+    expect(state.mergeDuplicateIds).toEqual([])
   })
 
-  it('picking the kept game type as duplicate clears the kept side', () => {
-    let state = gameTypeReducer(initialGameTypeState, { type: 'selectMergeKept', id: 'gt2' })
-    state = gameTypeReducer(state, { type: 'selectMergeDuplicate', id: 'gt2' })
+  it('toggleMergeDuplicate ticks and unticks a duplicate, keeping the others', () => {
+    let state = gameTypeReducer(initialGameTypeState, { type: 'toggleMergeDuplicate', id: 'gt2' })
+    state = gameTypeReducer(state, { type: 'toggleMergeDuplicate', id: 'gt3' })
+    expect(state.mergeDuplicateIds).toEqual(['gt2', 'gt3'])
 
-    expect(state.mergeDuplicateId).toBe('gt2')
-    expect(state.mergeKeptId).toBeUndefined()
+    state = gameTypeReducer(state, { type: 'toggleMergeDuplicate', id: 'gt2' })
+    expect(state.mergeDuplicateIds).toEqual(['gt3'])
   })
 
-  it('merging moves the matches, drops the duplicate and closes the dialog', () => {
+  it('picking an already ticked duplicate as the kept game type unticks it', () => {
+    let state = gameTypeReducer(initialGameTypeState, { type: 'toggleMergeDuplicate', id: 'gt2' })
+    state = gameTypeReducer(state, { type: 'toggleMergeDuplicate', id: 'gt3' })
+    state = gameTypeReducer(state, { type: 'selectMergeKept', id: 'gt2' })
+
+    expect(state.mergeKeptId).toBe('gt2')
+    expect(state.mergeDuplicateIds).toEqual(['gt3'])
+  })
+
+  it('merging moves the matches, drops every duplicate and closes the dialog', () => {
     const useCases = buildUseCases()
     let state = add(initialGameTypeState, useCases, 'Belote')
     state = add(state, useCases, 'Belote ')
-    const [keep, dup] = state.gameTypes
+    state = add(state, useCases, 'belote')
+    const [keep, dup, dup2] = state.gameTypes
     useCases.matchRepo.save({
       id: 'm1',
       date: 1000,
@@ -346,15 +357,25 @@ describe('gameTypeReducer', () => {
       secondaryPlayerScores: [],
       rounds: [],
     })
+    useCases.matchRepo.save({
+      id: 'm2',
+      date: 2000,
+      gameTypeId: dup2.id,
+      playerScores: [{ playerId: 'p1', score: 7 }],
+      manualWinners: [],
+      secondaryPlayerScores: [],
+      rounds: [],
+    })
     state = gameTypeReducer(state, { type: 'showMergeDialog' })
-    state = gameTypeReducer(state, { type: 'selectMergeDuplicate', id: dup.id })
     state = gameTypeReducer(state, { type: 'selectMergeKept', id: keep.id })
+    state = gameTypeReducer(state, { type: 'toggleMergeDuplicate', id: dup.id })
+    state = gameTypeReducer(state, { type: 'toggleMergeDuplicate', id: dup2.id })
 
     const result = submitMergeGameTypes(useCases.mergeGameTypes, useCases.getGameTypes, state)!
     state = gameTypeReducer(state, { type: 'mergeSucceeded', ...(result as LoadedGameTypes) })
 
     expect(state.gameTypes.map((gt) => gt.id)).toEqual([keep.id])
-    expect(useCases.matchRepo.getAll()[0].gameTypeId).toBe(keep.id)
+    expect(useCases.matchRepo.getAll().map((m) => m.gameTypeId)).toEqual([keep.id, keep.id])
     expect(state.showMergeDialog).toBe(false)
     expect(state.mergeError).toBeUndefined()
   })
@@ -363,8 +384,8 @@ describe('gameTypeReducer', () => {
     const useCases = buildUseCases()
     let state = add(initialGameTypeState, useCases, 'Belote')
     state = gameTypeReducer(state, { type: 'showMergeDialog' })
-    state = gameTypeReducer(state, { type: 'selectMergeDuplicate', id: 'ghost' })
     state = gameTypeReducer(state, { type: 'selectMergeKept', id: state.gameTypes[0].id })
+    state = gameTypeReducer(state, { type: 'toggleMergeDuplicate', id: 'ghost' })
 
     const result = submitMergeGameTypes(useCases.mergeGameTypes, useCases.getGameTypes, state)!
     state = gameTypeReducer(state, { type: 'mergeFailed', error: (result as { error: string }).error })
@@ -374,9 +395,16 @@ describe('gameTypeReducer', () => {
     expect(state.gameTypes).toHaveLength(1)
   })
 
-  it('confirming a merge with only one side picked is a no-op', () => {
+  it('confirming a merge with no duplicate ticked is a no-op', () => {
     const useCases = buildUseCases()
-    const state = gameTypeReducer(initialGameTypeState, { type: 'selectMergeDuplicate', id: 'gt1' })
+    const state = gameTypeReducer(initialGameTypeState, { type: 'selectMergeKept', id: 'gt1' })
+
+    expect(submitMergeGameTypes(useCases.mergeGameTypes, useCases.getGameTypes, state)).toBeUndefined()
+  })
+
+  it('confirming a merge with no kept game type picked is a no-op', () => {
+    const useCases = buildUseCases()
+    const state = gameTypeReducer(initialGameTypeState, { type: 'toggleMergeDuplicate', id: 'gt1' })
 
     expect(submitMergeGameTypes(useCases.mergeGameTypes, useCases.getGameTypes, state)).toBeUndefined()
   })

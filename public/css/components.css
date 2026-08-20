@@ -182,9 +182,11 @@
 
 /* ── Merge dialog (MergeSelectModal) ── */
 
+/* Sits right under the duplicates list, hence the top margin the list doesn't carry. */
 .merge-summary {
   font-size: var(--text-sm);
   color: var(--text-body);
+  margin-top: var(--space-4);
   margin-bottom: var(--space-2);
 }
 

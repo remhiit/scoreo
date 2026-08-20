@@ -20,10 +20,10 @@ export interface PlayerState {
   cleanupCandidates: Player[]
   showCleanupConfirm: boolean
   showMergeDialog: boolean
-  /** Player to absorb, hard-deleted once the merge succeeds. */
-  mergeDuplicateId: string | undefined
-  /** Player to keep, inheriting the duplicate's matches. */
+  /** Player to keep, inheriting the duplicates' matches. */
   mergeKeptId: string | undefined
+  /** Players to absorb, hard-deleted once the merge succeeds. Never contains `mergeKeptId`. */
+  mergeDuplicateIds: string[]
   /** Kept apart from `error`, which is also rendered under the add-player field. */
   mergeError: string | undefined
 }
@@ -41,7 +41,7 @@ export const initialPlayerState: PlayerState = {
   cleanupCandidates: [],
   showCleanupConfirm: false,
   showMergeDialog: false,
-  mergeDuplicateId: undefined,
   mergeKeptId: undefined,
+  mergeDuplicateIds: [],
   mergeError: undefined,
 }

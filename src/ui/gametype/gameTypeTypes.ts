@@ -19,10 +19,10 @@ export interface GameTypeState {
   error: string | undefined
   archiveConfirmGameTypeId: string | undefined
   showMergeDialog: boolean
-  /** Game type to absorb, hard-deleted once the merge succeeds. */
-  mergeDuplicateId: string | undefined
-  /** Game type to keep, inheriting the duplicate's matches. */
+  /** Game type to keep, inheriting the duplicates' matches. */
   mergeKeptId: string | undefined
+  /** Game types to absorb, hard-deleted once the merge succeeds. Never contains `mergeKeptId`. */
+  mergeDuplicateIds: string[]
   /** Kept apart from `error`, which is rendered on the screen behind the dialog. */
   mergeError: string | undefined
 }
@@ -40,7 +40,7 @@ export const initialGameTypeState: GameTypeState = {
   error: undefined,
   archiveConfirmGameTypeId: undefined,
   showMergeDialog: false,
-  mergeDuplicateId: undefined,
   mergeKeptId: undefined,
+  mergeDuplicateIds: [],
   mergeError: undefined,
 }

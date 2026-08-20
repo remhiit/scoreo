@@ -95,9 +95,9 @@ export function GameTypeScreen({
   // Read-only projection of the pending merge, recomputed whenever either side
   // changes — the mutation itself stays in submitMergeGameTypes.
   const mergePreview = useMemo(() => {
-    if (state.mergeDuplicateId === undefined || state.mergeKeptId === undefined) return undefined
-    return mergeGameTypes.preview(state.mergeDuplicateId, state.mergeKeptId)
-  }, [mergeGameTypes, state.mergeDuplicateId, state.mergeKeptId])
+    if (state.mergeKeptId === undefined || state.mergeDuplicateIds.length === 0) return undefined
+    return mergeGameTypes.preview(state.mergeKeptId, state.mergeDuplicateIds)
+  }, [mergeGameTypes, state.mergeKeptId, state.mergeDuplicateIds])
 
   const selectedGameType = state.gameTypes.find((gt) => gt.id === state.selectedGameId)
   const editingGameType = state.gameTypes.find((gt) => gt.id === state.editingGameId)
@@ -231,12 +231,12 @@ export function GameTypeScreen({
       <MergeGameTypesModal
         open={state.showMergeDialog}
         gameTypes={state.allGameTypes}
-        duplicateId={state.mergeDuplicateId}
         keptId={state.mergeKeptId}
+        duplicateIds={state.mergeDuplicateIds}
         preview={mergePreview}
         error={state.mergeError}
-        onSelectDuplicate={(id) => dispatch({ type: 'selectMergeDuplicate', id })}
         onSelectKept={(id) => dispatch({ type: 'selectMergeKept', id })}
+        onToggleDuplicate={(id) => dispatch({ type: 'toggleMergeDuplicate', id })}
         onClose={() => dispatch({ type: 'dismissMergeDialog' })}
         onConfirmMerge={handleMerge}
       />

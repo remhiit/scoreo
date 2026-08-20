@@ -383,48 +383,61 @@ describe('playerReducer', () => {
     expect(state.allPlayers.map((p) => p.id)).toEqual(['p1', 'p2'])
   })
 
-  it('showMergeDialog opens the dialog with both sides unpicked', () => {
-    let state = playerReducer(initialPlayerState, { type: 'selectMergeDuplicate', id: 'stale' })
+  it('showMergeDialog opens the dialog with nothing picked', () => {
+    let state = playerReducer(initialPlayerState, { type: 'toggleMergeDuplicate', id: 'stale' })
     state = playerReducer(state, { type: 'showMergeDialog' })
 
     expect(state.showMergeDialog).toBe(true)
-    expect(state.mergeDuplicateId).toBeUndefined()
     expect(state.mergeKeptId).toBeUndefined()
+    expect(state.mergeDuplicateIds).toEqual([])
   })
 
   it('dismissMergeDialog closes the dialog and drops the selection', () => {
     let state = playerReducer(initialPlayerState, { type: 'showMergeDialog' })
-    state = playerReducer(state, { type: 'selectMergeDuplicate', id: 'p1' })
-    state = playerReducer(state, { type: 'selectMergeKept', id: 'p2' })
+    state = playerReducer(state, { type: 'selectMergeKept', id: 'p1' })
+    state = playerReducer(state, { type: 'toggleMergeDuplicate', id: 'p2' })
     state = playerReducer(state, { type: 'dismissMergeDialog' })
 
     expect(state.showMergeDialog).toBe(false)
-    expect(state.mergeDuplicateId).toBeUndefined()
     expect(state.mergeKeptId).toBeUndefined()
+    expect(state.mergeDuplicateIds).toEqual([])
   })
 
-  it('picking the kept player as duplicate clears the kept side', () => {
-    let state = playerReducer(initialPlayerState, { type: 'selectMergeKept', id: 'p2' })
-    state = playerReducer(state, { type: 'selectMergeDuplicate', id: 'p2' })
+  it('toggleMergeDuplicate ticks and unticks a duplicate, keeping the others', () => {
+    let state = playerReducer(initialPlayerState, { type: 'toggleMergeDuplicate', id: 'p2' })
+    state = playerReducer(state, { type: 'toggleMergeDuplicate', id: 'p3' })
+    expect(state.mergeDuplicateIds).toEqual(['p2', 'p3'])
 
-    expect(state.mergeDuplicateId).toBe('p2')
-    expect(state.mergeKeptId).toBeUndefined()
+    state = playerReducer(state, { type: 'toggleMergeDuplicate', id: 'p2' })
+    expect(state.mergeDuplicateIds).toEqual(['p3'])
   })
 
-  it('merging moves the matches, drops the duplicate and closes the dialog', () => {
+  it('picking an already ticked duplicate as the kept player unticks it', () => {
+    let state = playerReducer(initialPlayerState, { type: 'toggleMergeDuplicate', id: 'p2' })
+    state = playerReducer(state, { type: 'toggleMergeDuplicate', id: 'p3' })
+    state = playerReducer(state, { type: 'selectMergeKept', id: 'p2' })
+
+    expect(state.mergeKeptId).toBe('p2')
+    expect(state.mergeDuplicateIds).toEqual(['p3'])
+  })
+
+  it('merging moves the matches, drops every duplicate and closes the dialog', () => {
     const uc = buildUseCases()
-    uc.playerRepo.save({ id: 'dup', name: 'Jean Luc', active: true })
     uc.playerRepo.save({ id: 'keep', name: 'Jean-Luc', active: true })
+    uc.playerRepo.save({ id: 'dup', name: 'Jean Luc', active: true })
+    uc.playerRepo.save({ id: 'dup2', name: 'JeanLuc', active: true })
     uc.matchRepo.save(match('m1', 1000, 'gt1', [{ playerId: 'dup', score: 10 }]))
+    uc.matchRepo.save(match('m2', 2000, 'gt1', [{ playerId: 'dup2', score: 7 }]))
     let state = playerReducer(initialPlayerState, { type: 'loaded', ...loadPlayers(uc.sources) })
     state = playerReducer(state, { type: 'showMergeDialog' })
-    state = playerReducer(state, { type: 'selectMergeDuplicate', id: 'dup' })
     state = playerReducer(state, { type: 'selectMergeKept', id: 'keep' })
+    state = playerReducer(state, { type: 'toggleMergeDuplicate', id: 'dup' })
+    state = playerReducer(state, { type: 'toggleMergeDuplicate', id: 'dup2' })
 
     state = playerReducer(state, submitMergePlayers(uc.mergePlayersUseCase, uc.sources, state)!)
 
     expect(state.players.map((p) => p.id)).toEqual(['keep'])
-    expect(uc.matchRepo.getAll()[0].playerScores[0].playerId).toBe('keep')
+    expect(uc.matchRepo.getAll().map((m) => m.playerScores[0].playerId)).toEqual(['keep', 'keep'])
     expect(state.showMergeDialog).toBe(false)
     expect(state.mergeError).toBeUndefined()
   })
@@ -441,8 +454,8 @@ describe('playerReducer', () => {
     )
     let state = playerReducer(initialPlayerState, { type: 'loaded', ...loadPlayers(uc.sources) })
     state = playerReducer(state, { type: 'showMergeDialog' })
-    state = playerReducer(state, { type: 'selectMergeDuplicate', id: 'dup' })
     state = playerReducer(state, { type: 'selectMergeKept', id: 'keep' })
+    state = playerReducer(state, { type: 'toggleMergeDuplicate', id: 'dup' })
 
     state = playerReducer(state, submitMergePlayers(uc.mergePlayersUseCase, uc.sources, state)!)
 
@@ -451,11 +464,20 @@ describe('playerReducer', () => {
     expect(state.players).toHaveLength(2)
   })
 
-  it('confirming a merge with only one side picked is a no-op', () => {
+  it('confirming a merge with no duplicate ticked is a no-op', () => {
+    const uc = buildUseCases()
+    uc.playerRepo.save({ id: 'keep', name: 'Jean-Luc', active: true })
+    let state = playerReducer(initialPlayerState, { type: 'loaded', ...loadPlayers(uc.sources) })
+    state = playerReducer(state, { type: 'selectMergeKept', id: 'keep' })
+
+    expect(submitMergePlayers(uc.mergePlayersUseCase, uc.sources, state)).toBeUndefined()
+  })
+
+  it('confirming a merge with no kept player picked is a no-op', () => {
     const uc = buildUseCases()
     uc.playerRepo.save({ id: 'dup', name: 'Jean Luc', active: true })
     let state = playerReducer(initialPlayerState, { type: 'loaded', ...loadPlayers(uc.sources) })
-    state = playerReducer(state, { type: 'selectMergeDuplicate', id: 'dup' })
+    state = playerReducer(state, { type: 'toggleMergeDuplicate', id: 'dup' })
 
     expect(submitMergePlayers(uc.mergePlayersUseCase, uc.sources, state)).toBeUndefined()
   })

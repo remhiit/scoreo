@@ -361,10 +361,11 @@ describe('HomeScreen', () => {
     expect(screen.getByText('Merge')).toBeInTheDocument()
   })
 
-  it('merges a duplicate into the kept player and moves their matches', () => {
+  it('merges several duplicates into the kept player and moves their matches', () => {
     const { props, playerRepo, matchRepo } = buildProps()
-    playerRepo.save({ id: 'dup', name: 'Jean Luc', active: true })
     playerRepo.save({ id: 'keep', name: 'Jean-Luc', active: true })
+    playerRepo.save({ id: 'dup', name: 'Jean Luc', active: true })
+    playerRepo.save({ id: 'dup2', name: 'JeanLuc', active: true })
     matchRepo.save({
       id: 'm1',
       date: 1000,
@@ -374,27 +375,56 @@ describe('HomeScreen', () => {
       secondaryPlayerScores: [],
       rounds: [],
     })
+    matchRepo.save({
+      id: 'm2',
+      date: 2000,
+      gameTypeId: 'gt1',
+      playerScores: [{ playerId: 'dup2', score: 7 }],
+      manualWinners: [],
+      secondaryPlayerScores: [],
+      rounds: [],
+    })
     render(<HomeScreen {...props} />)
 
     fireEvent.click(screen.getByText('Merge'))
     const dialog = screen.getByRole('dialog')
-    fireEvent.change(within(dialog).getByLabelText('Duplicate to remove'), { target: { value: 'dup' } })
     fireEvent.change(within(dialog).getByLabelText('Player to keep'), { target: { value: 'keep' } })
+    fireEvent.click(within(dialog).getByText('Jean Luc', { selector: '.list-item-name' }))
+    fireEvent.click(within(dialog).getByText('JeanLuc', { selector: '.list-item-name' }))
 
-    expect(within(dialog).getByText('1 match will move.')).toBeInTheDocument()
+    expect(within(dialog).getByText('2 matches will move.')).toBeInTheDocument()
 
     fireEvent.click(within(dialog).getByText('Merge'))
 
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
     expect(screen.queryByText('Jean Luc', { selector: '.list-item-name' })).not.toBeInTheDocument()
+    expect(screen.queryByText('JeanLuc', { selector: '.list-item-name' })).not.toBeInTheDocument()
     expect(screen.getByText('Jean-Luc', { selector: '.list-item-name' })).toBeInTheDocument()
-    expect(matchRepo.getAll()[0].playerScores[0].playerId).toBe('keep')
+    expect(matchRepo.getAll().map((m) => m.playerScores[0].playerId)).toEqual(['keep', 'keep'])
   })
 
-  it('blocks a merge of two players who already faced each other', () => {
-    const { props, playerRepo, matchRepo } = buildProps()
-    playerRepo.save({ id: 'dup', name: 'Jean Luc', active: true })
+  it('keeps the Merge button disabled until a kept player and a duplicate are picked', () => {
+    const { props, playerRepo } = buildProps()
     playerRepo.save({ id: 'keep', name: 'Jean-Luc', active: true })
+    playerRepo.save({ id: 'dup', name: 'Jean Luc', active: true })
+    render(<HomeScreen {...props} />)
+
+    fireEvent.click(screen.getByText('Merge'))
+    const dialog = screen.getByRole('dialog')
+    const confirm = within(dialog).getByText('Merge').closest('button')!
+    expect(confirm).toBeDisabled()
+
+    fireEvent.change(within(dialog).getByLabelText('Player to keep'), { target: { value: 'keep' } })
+    expect(confirm).toBeDisabled()
+
+    fireEvent.click(within(dialog).getByText('Jean Luc', { selector: '.list-item-name' }))
+    expect(confirm).toBeEnabled()
+  })
+
+  it('blocks a merge when two of the selected players already faced each other', () => {
+    const { props, playerRepo, matchRepo } = buildProps()
+    playerRepo.save({ id: 'keep', name: 'Jean-Luc', active: true })
+    playerRepo.save({ id: 'dup', name: 'Jean Luc', active: true })
     matchRepo.save({
       id: 'm1',
       date: 1000,
@@ -411,11 +441,13 @@ describe('HomeScreen', () => {
 
     fireEvent.click(screen.getByText('Merge'))
     const dialog = screen.getByRole('dialog')
-    fireEvent.change(within(dialog).getByLabelText('Duplicate to remove'), { target: { value: 'dup' } })
     fireEvent.change(within(dialog).getByLabelText('Player to keep'), { target: { value: 'keep' } })
+    fireEvent.click(within(dialog).getByText('Jean Luc', { selector: '.list-item-name' }))
 
     expect(
-      within(dialog).getByText('1 match already has both players facing each other: merging is not possible.'),
+      within(dialog).getByText(
+        '1 match already has two of the selected players facing each other: merging is not possible.',
+      ),
     ).toBeInTheDocument()
     expect(within(dialog).getByText('Merge').closest('button')).toBeDisabled()
   })
@@ -427,12 +459,13 @@ describe('HomeScreen', () => {
     render(<HomeScreen {...props} />)
 
     fireEvent.click(screen.getByText('Merge'))
+    const dialog = screen.getByRole('dialog')
 
-    // One option per picker: the duplicate list and the "keep" list.
-    expect(within(screen.getByRole('dialog')).getAllByText('Jean Luc (deleted)')).toHaveLength(2)
+    expect(within(dialog).getByText('Jean Luc (deleted)', { selector: 'option' })).toBeInTheDocument()
+    expect(within(dialog).getByText('(deleted)', { selector: '.list-item-subtitle' })).toBeInTheDocument()
   })
 
-  it('clears the duplicate from the "keep" list so both sides cannot name the same player', () => {
+  it('drops the kept player from the duplicates list, so it cannot be its own duplicate', () => {
     const { props, playerRepo } = buildProps()
     playerRepo.save({ id: 'p1', name: 'Jean Luc', active: true })
     playerRepo.save({ id: 'p2', name: 'Jean-Luc', active: true })
@@ -440,10 +473,11 @@ describe('HomeScreen', () => {
 
     fireEvent.click(screen.getByText('Merge'))
     const dialog = screen.getByRole('dialog')
+    fireEvent.click(within(dialog).getByText('Jean-Luc', { selector: '.list-item-name' }))
     fireEvent.change(within(dialog).getByLabelText('Player to keep'), { target: { value: 'p2' } })
-    fireEvent.change(within(dialog).getByLabelText('Duplicate to remove'), { target: { value: 'p2' } })
 
-    expect(within(dialog).getByLabelText('Player to keep')).toHaveValue('')
+    // Jean-Luc was ticked as a duplicate, then picked as the player to keep.
+    expect(within(dialog).queryByText('Jean-Luc', { selector: '.list-item-name' })).not.toBeInTheDocument()
     expect(within(dialog).getByText('Merge').closest('button')).toBeDisabled()
   })
 })

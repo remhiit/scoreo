@@ -1,32 +1,35 @@
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
+import { ListContainer } from './ListContainer'
+import { ListItemRow } from './ListItemRow'
 import { LudoButton } from './LudoButton'
 import { LudoModal } from './LudoModal'
 
 export interface MergeSelectOption {
   id: string
-  /** Already decorated for display — e.g. suffixed with "(deleted)" / "(archived)". */
   label: string
+  /** Qualifier rendered next to the label — e.g. "(deleted)" / "(archived)". */
+  note?: string
 }
 
 export interface MergeSelectModalProps {
   open: boolean
   title: string
-  /** One sentence stating what the merge does, above the two pickers. */
+  /** One sentence stating what the merge does, above the pickers. */
   body: string
-  duplicateLabel: string
   keptLabel: string
+  duplicatesLabel: string
   placeholder: string
   options: MergeSelectOption[]
-  duplicateId: string | undefined
   keptId: string | undefined
-  onSelectDuplicate: (id: string | undefined) => void
+  duplicateIds: string[]
   onSelectKept: (id: string | undefined) => void
-  /** What the merge would do, e.g. how many matches move. Rendered once both sides are picked. */
+  onToggleDuplicate: (id: string) => void
+  /** What the merge would do, e.g. how many matches move. Rendered once the selection is complete. */
   summary?: ReactNode
   /** Caveat shown alongside the summary — informative unless `blocked`, which paints it as a blocker. */
   warning?: ReactNode
-  /** Keeps confirmation disabled despite both sides being picked. */
+  /** Keeps confirmation disabled despite a complete selection. */
   blocked?: boolean
   confirmText: string
   error: string | undefined
@@ -34,24 +37,29 @@ export interface MergeSelectModalProps {
   onConfirm: () => void
 }
 
+function optionText(option: MergeSelectOption): string {
+  return option.note ? `${option.label} ${option.note}` : option.label
+}
+
 /**
- * Two-picker merge dialog shared by the player and game-type merges: pick the
- * duplicate to absorb, pick the one to keep, read what it would do, confirm.
- * The duplicate is excluded from the "keep" list, so the two can never name the
- * same entity.
+ * Merge dialog shared by the player and game-type merges: one dropdown for the
+ * entity to keep, then a multi-select list of the duplicates to fold into it —
+ * an import can spell the same name three ways, so several duplicates go in one
+ * pass. The kept entity is filtered out of the duplicates list, so it can never
+ * be its own duplicate.
  */
 export function MergeSelectModal({
   open,
   title,
   body,
-  duplicateLabel,
   keptLabel,
+  duplicatesLabel,
   placeholder,
   options,
-  duplicateId,
   keptId,
-  onSelectDuplicate,
+  duplicateIds,
   onSelectKept,
+  onToggleDuplicate,
   summary,
   warning,
   blocked = false,
@@ -61,7 +69,8 @@ export function MergeSelectModal({
   onConfirm,
 }: MergeSelectModalProps) {
   const { t } = useTranslation()
-  const bothPicked = duplicateId !== undefined && keptId !== undefined
+  const candidates = options.filter((option) => option.id !== keptId)
+  const selectionComplete = keptId !== undefined && duplicateIds.length > 0
 
   return (
     <LudoModal
@@ -74,30 +83,13 @@ export function MergeSelectModal({
           <LudoButton
             text={confirmText}
             variant="primary"
-            disabled={!bothPicked || blocked}
+            disabled={!selectionComplete || blocked}
             onClick={onConfirm}
           />
         </>
       }
     >
       <div className="modal-body">{body}</div>
-
-      <div className="section-label">{duplicateLabel}</div>
-      <div className="select-chevron">
-        <select
-          className="select"
-          aria-label={duplicateLabel}
-          value={duplicateId ?? ''}
-          onChange={(e) => onSelectDuplicate(e.target.value === '' ? undefined : e.target.value)}
-        >
-          <option value="">{placeholder}</option>
-          {options.map((option) => (
-            <option key={option.id} value={option.id}>
-              {option.label}
-            </option>
-          ))}
-        </select>
-      </div>
 
       <div className="section-label">{keptLabel}</div>
       <div className="select-chevron">
@@ -108,18 +100,30 @@ export function MergeSelectModal({
           onChange={(e) => onSelectKept(e.target.value === '' ? undefined : e.target.value)}
         >
           <option value="">{placeholder}</option>
-          {options
-            .filter((option) => option.id !== duplicateId)
-            .map((option) => (
-              <option key={option.id} value={option.id}>
-                {option.label}
-              </option>
-            ))}
+          {options.map((option) => (
+            <option key={option.id} value={option.id}>
+              {optionText(option)}
+            </option>
+          ))}
         </select>
       </div>
 
-      {bothPicked && summary && <div className="merge-summary">{summary}</div>}
-      {bothPicked && warning && (
+      <div className="section-label">{duplicatesLabel}</div>
+      <ListContainer>
+        {candidates.map((option) => (
+          <ListItemRow
+            key={option.id}
+            label={option.label}
+            subtitle={option.note}
+            isSelectable
+            isSelected={duplicateIds.includes(option.id)}
+            onSelect={() => onToggleDuplicate(option.id)}
+          />
+        ))}
+      </ListContainer>
+
+      {selectionComplete && summary && <div className="merge-summary">{summary}</div>}
+      {selectionComplete && warning && (
         <div className={blocked ? 'merge-warning merge-warning--blocking' : 'merge-warning'}>{warning}</div>
       )}
       {error && <div className="error-msg">{error}</div>}

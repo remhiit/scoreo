@@ -6,11 +6,12 @@ import type { MatchRepository } from '../domain/port/matchRepository'
 import type { PlayerRepository } from '../domain/port/playerRepository'
 
 export interface MergePlayersPreview {
-  /** Matches referencing the duplicate — how many would be rewritten. */
+  /** Matches referencing at least one duplicate — how many would be rewritten. */
   affectedMatches: number
   /**
-   * Matches referencing both players. Merging those would make the kept player
-   * face themselves, so a non-zero count blocks the merge entirely.
+   * Matches referencing two or more members of the merge group (the kept player
+   * and the duplicates). Merging those would make the kept player face
+   * themselves, so a non-zero count blocks the merge entirely.
    */
   conflictingMatches: number
 }
@@ -25,16 +26,20 @@ function referencesPlayer(match: Match, playerId: string): boolean {
   )
 }
 
-function remapScores(scores: PlayerScore[], sourceId: string, targetId: string): PlayerScore[] {
-  return scores.map((s) => (s.playerId === sourceId ? { ...s, playerId: targetId } : s))
+function countMembersInMatch(match: Match, group: readonly string[]): number {
+  return group.filter((playerId) => referencesPlayer(match, playerId)).length
+}
+
+function remapScores(scores: PlayerScore[], duplicates: ReadonlySet<string>, keptId: string): PlayerScore[] {
+  return scores.map((s) => (duplicates.has(s.playerId) ? { ...s, playerId: keptId } : s))
 }
 
 /**
- * Folds a duplicate player into the one to keep: every match reference moves to
- * the kept player, then the duplicate is hard-deleted. Renaming can't do this —
- * matches point at the player id, not the name — which is what makes an import
- * that spelled the same person twice ("Jean-Luc" / "Jean Luc") split their
- * stats, ELO and trophies in two.
+ * Folds one or more duplicate players into the one to keep: every match
+ * reference moves to the kept player, then each duplicate is hard-deleted.
+ * Renaming can't do this — matches point at the player id, not the name — which
+ * is what makes an import that spelled the same person several ways ("Jean-Luc"
+ * / "Jean Luc" / "JeanLuc") split their stats, ELO and trophies apart.
  */
 export class MergePlayersUseCase {
   constructor(
@@ -43,60 +48,79 @@ export class MergePlayersUseCase {
     private readonly matchDraftRepository: MatchDraftRepository,
   ) {}
 
-  preview(sourceId: string, targetId: string): MergePlayersPreview {
-    if (sourceId === targetId) return { affectedMatches: 0, conflictingMatches: 0 }
+  preview(keptId: string, duplicateIds: readonly string[]): MergePlayersPreview {
+    const duplicates = this.normalizeDuplicates(keptId, duplicateIds)
+    if (duplicates.size === 0) return { affectedMatches: 0, conflictingMatches: 0 }
 
+    const group = [keptId, ...duplicates]
     let affectedMatches = 0
     let conflictingMatches = 0
     for (const match of this.matchRepository.getAll()) {
-      if (!referencesPlayer(match, sourceId)) continue
+      if (![...duplicates].some((id) => referencesPlayer(match, id))) continue
       affectedMatches++
-      if (referencesPlayer(match, targetId)) conflictingMatches++
+      if (countMembersInMatch(match, group) > 1) conflictingMatches++
     }
     return { affectedMatches, conflictingMatches }
   }
 
-  invoke(sourceId: string, targetId: string): void {
+  invoke(keptId: string, duplicateIds: readonly string[]): void {
     const players = this.playerRepository.getAll(true)
-    const source = players.find((p) => p.id === sourceId)
-    if (!source) throw new NotFoundError('Player', sourceId)
-    const target = players.find((p) => p.id === targetId)
-    if (!target) throw new NotFoundError('Player', targetId)
-    if (sourceId === targetId) {
+    const kept = players.find((p) => p.id === keptId)
+    if (!kept) throw new NotFoundError('Player', keptId)
+
+    const duplicates = new Set(duplicateIds)
+    if (duplicates.has(keptId)) {
       throw new ValidationError('playerId', 'A player cannot be merged into themselves')
     }
+    if (duplicates.size === 0) {
+      throw new ValidationError('playerId', 'Select at least one duplicate to merge')
+    }
+    const merged = [...duplicates].map((id) => {
+      const player = players.find((p) => p.id === id)
+      if (!player) throw new NotFoundError('Player', id)
+      return player
+    })
 
-    const { conflictingMatches } = this.preview(sourceId, targetId)
+    const { conflictingMatches } = this.preview(keptId, [...duplicates])
     if (conflictingMatches > 0) {
       throw new ValidationError(
         'playerId',
-        `${conflictingMatches} match(es) involve both players, merging them would make one face themselves`,
+        `${conflictingMatches} match(es) involve two of the selected players, merging them would make one face themselves`,
       )
     }
 
     const rewritten = this.matchRepository
       .getAll()
-      .filter((match) => referencesPlayer(match, sourceId))
+      .filter((match) => [...duplicates].some((id) => referencesPlayer(match, id)))
       .map((match) => ({
         ...match,
-        playerScores: remapScores(match.playerScores, sourceId, targetId),
-        secondaryPlayerScores: remapScores(match.secondaryPlayerScores, sourceId, targetId),
-        rounds: match.rounds.map((round) => remapScores(round, sourceId, targetId)),
-        // No dedupe needed: a match naming the target too is a conflict, refused above.
-        manualWinners: match.manualWinners.map((id) => (id === sourceId ? targetId : id)),
+        playerScores: remapScores(match.playerScores, duplicates, keptId),
+        secondaryPlayerScores: remapScores(match.secondaryPlayerScores, duplicates, keptId),
+        rounds: match.rounds.map((round) => remapScores(round, duplicates, keptId)),
+        // No dedupe needed: a match naming two group members is a conflict, refused above.
+        manualWinners: match.manualWinners.map((id) => (duplicates.has(id) ? keptId : id)),
       }))
     // One saveAll rather than one save per match: a single change notification,
     // hence a single debounced auto-sync push.
     if (rewritten.length > 0) this.matchRepository.saveAll(rewritten)
 
-    // A draft naming the duplicate would keep an id nothing resolves to.
+    // A draft naming a duplicate would keep an id nothing resolves to.
     const draft = this.matchDraftRepository.load()
-    if (draft?.playerIds.includes(sourceId)) this.matchDraftRepository.clear()
+    if (draft?.playerIds.some((id) => duplicates.has(id))) this.matchDraftRepository.clear()
 
-    // The kept player inherits the duplicate's activity: folding an active
+    // The kept player inherits the duplicates' activity: folding an active
     // duplicate into a soft-deleted target would otherwise hide the result.
-    if (source.active && !target.active) this.playerRepository.save({ ...target, active: true })
+    if (!kept.active && merged.some((p) => p.active)) {
+      this.playerRepository.save({ ...kept, active: true })
+    }
 
-    this.playerRepository.hardDelete(sourceId)
+    for (const duplicate of merged) this.playerRepository.hardDelete(duplicate.id)
+  }
+
+  /** Drops repeats and the kept player itself, so `preview` stays a pure read whatever the UI passes. */
+  private normalizeDuplicates(keptId: string, duplicateIds: readonly string[]): Set<string> {
+    const duplicates = new Set(duplicateIds)
+    duplicates.delete(keptId)
+    return duplicates
   }
 }

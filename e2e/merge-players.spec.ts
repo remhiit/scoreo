@@ -11,32 +11,43 @@ test.beforeEach(async ({ page }) => {
   await page.reload()
 })
 
-test('merging a duplicate player moves their match record onto the player kept', async ({ page }) => {
-  const opponent = `Alice ${Date.now()}`
-  const kept = `Jean-Luc ${Date.now()}`
-  const duplicate = `Jean Luc ${Date.now()}`
-  const gameTypeName = `Highest score ${Date.now()}`
+test('merging two duplicate players moves their match records onto the player kept', async ({ page }) => {
+  const stamp = Date.now()
+  const opponent = `Alice ${stamp}`
+  const kept = `Jean-Luc ${stamp}`
+  const duplicateA = `Jean Luc ${stamp}`
+  const duplicateB = `JeanLuc ${stamp}`
+  const gameTypeName = `Highest score ${stamp}`
 
   await addPlayer(page, opponent)
   await addPlayer(page, kept)
-  await addPlayer(page, duplicate)
+  await addPlayer(page, duplicateA)
+  await addPlayer(page, duplicateB)
 
-  // The duplicate is the one carrying the history, as after a name-mismatched import.
-  await startMatch(page, [opponent, duplicate])
+  // The duplicates carry the history, as after an import that spelled the same
+  // person three ways.
+  await startMatch(page, [opponent, duplicateA])
   await createGameType(page, gameTypeName, 'HIGHEST_SCORE')
   await page.getByRole('button', { name: 'Start match' }).click()
-  await enterRoundScore(page, { [opponent]: 5, [duplicate]: 10 })
+  await enterRoundScore(page, { [opponent]: 5, [duplicateA]: 10 })
   await finishMatch(page)
 
-  await mergePlayers(page, duplicate, kept)
+  await startMatch(page, [opponent, duplicateB])
+  await page.getByRole('dialog', { name: 'Select a game' }).getByRole('combobox').selectOption({ label: gameTypeName })
+  await page.getByRole('button', { name: 'Start match' }).click()
+  await enterRoundScore(page, { [opponent]: 3, [duplicateB]: 12 })
+  await finishMatch(page)
 
-  await expect(page.getByText(duplicate, { exact: true })).toHaveCount(0)
+  await mergePlayers(page, kept, [duplicateA, duplicateB])
+
+  await expect(page.getByText(duplicateA, { exact: true })).toHaveCount(0)
+  await expect(page.getByText(duplicateB, { exact: true })).toHaveCount(0)
   await expect(page.getByText(kept, { exact: true })).toBeVisible()
 
   await page.getByRole('button', { name: 'Menu' }).click()
   await page.getByRole('button', { name: 'Stats' }).click()
 
   const keptRow = await readLeaderboardRow(page, kept)
-  expect(keptRow.wins).toBe(1)
+  expect(keptRow.wins).toBe(2)
   expect(keptRow.losses).toBe(0)
 })
