@@ -109,6 +109,15 @@ When I import JSON containing a match with id "m1"
 Then that match is Skipped ⚠️
 ```
 
+### Name mismatch creates a duplicate
+```
+Given "Jean-Luc" already exists
+When I import JSON whose ranking names "Jean Luc"
+Then a second player "Jean Luc" is created (names are matched case-insensitively, but otherwise exactly)
+And the two can be folded back together from Home's "Merge" dialog — see players.md
+```
+The same holds for the `game` field and game types — see [`games.md`](games.md#merge-dialog).
+
 ### Score mismatch detection
 ```
 Given a JSON with ranking score 25 but details sum to 20

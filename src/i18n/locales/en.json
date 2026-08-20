@@ -40,7 +40,18 @@
     "archive": "Archive",
     "archiveTitle": "Archive {{name}}?",
     "archiveBody": "It will no longer appear in game selection.",
-    "saveChanges": "Save changes"
+    "saveChanges": "Save changes",
+    "merge": "Merge",
+    "mergeTitle": "Merge two games",
+    "mergeBody": "The duplicate's matches move to the game you keep, then the duplicate is permanently deleted.",
+    "mergeDuplicateLabel": "Duplicate to remove",
+    "mergeKeptLabel": "Game to keep",
+    "mergeSelectPlaceholder": "— Choose a game —",
+    "mergeSummary_one": "{{count}} match will move.",
+    "mergeSummary_other": "{{count}} matches will move.",
+    "mergeRulesDiffer": "The two games don't score the same way: \"{{name}}\" rules will apply to the moved matches, which may change their winners.",
+    "mergeConfirm": "Merge",
+    "archivedSuffix": "{{name}} (archived)"
   },
   "history": {
     "filterByGame": "Filter by game:",
@@ -85,7 +96,19 @@
     "cleanupTitle": "Clean up {{count}} inactive player(s)?",
     "cleanupBody": "This permanently deletes players with no recorded match. This cannot be undone.",
     "unnamedPlayer": "(unnamed player)",
-    "deletePermanently": "Delete permanently"
+    "deletePermanently": "Delete permanently",
+    "merge": "Merge",
+    "mergeTitle": "Merge two players",
+    "mergeBody": "The duplicate's matches move to the player you keep, then the duplicate is permanently deleted.",
+    "mergeDuplicateLabel": "Duplicate to remove",
+    "mergeKeptLabel": "Player to keep",
+    "mergeSelectPlaceholder": "— Choose a player —",
+    "mergeSummary_one": "{{count}} match will move.",
+    "mergeSummary_other": "{{count}} matches will move.",
+    "mergeConflict_one": "{{count}} match already has both players facing each other: merging is not possible.",
+    "mergeConflict_other": "{{count}} matches already have both players facing each other: merging is not possible.",
+    "mergeConfirm": "Merge",
+    "deletedSuffix": "{{name}} (deleted)"
   },
   "stats": {
     "all": "All",

@@ -1,4 +1,4 @@
-import { Sparkles, Trophy } from 'lucide-react'
+import { Merge, Sparkles, Trophy } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import type { PlayerStats } from '../../application/getPlayerStatsUseCase'
 import type { Player } from '../../domain/model/player'
@@ -17,6 +17,9 @@ export interface PlayerListSectionProps {
   onDeleteRequest: (playerId: string) => void
   cleanupCandidatesCount: number
   onShowCleanupConfirm: () => void
+  /** Players eligible for a merge, soft-deleted ones included — merging needs at least 2. */
+  mergeCandidatesCount: number
+  onShowMergeDialog: () => void
 }
 
 export function PlayerListSection({
@@ -29,6 +32,8 @@ export function PlayerListSection({
   onDeleteRequest,
   cleanupCandidatesCount,
   onShowCleanupConfirm,
+  mergeCandidatesCount,
+  onShowMergeDialog,
 }: PlayerListSectionProps) {
   const { t } = useTranslation()
 
@@ -74,17 +79,31 @@ export function PlayerListSection({
         </div>
       )}
 
-      {cleanupCandidatesCount > 0 && (
-        <LudoButton
-          text={
-            <>
-              <Sparkles size={16} aria-hidden /> {t('home.cleanUp', { count: cleanupCandidatesCount })}
-            </>
-          }
-          variant="secondary"
-          onClick={onShowCleanupConfirm}
-        />
-      )}
+      <div className="player-list-tools">
+        {mergeCandidatesCount >= 2 && (
+          <LudoButton
+            text={
+              <>
+                <Merge size={16} aria-hidden /> {t('home.merge')}
+              </>
+            }
+            variant="secondary"
+            onClick={onShowMergeDialog}
+          />
+        )}
+
+        {cleanupCandidatesCount > 0 && (
+          <LudoButton
+            text={
+              <>
+                <Sparkles size={16} aria-hidden /> {t('home.cleanUp', { count: cleanupCandidatesCount })}
+              </>
+            }
+            variant="secondary"
+            onClick={onShowCleanupConfirm}
+          />
+        )}
+      </div>
     </>
   )
 }

@@ -8,6 +8,7 @@ import { GetGameTypesUseCase } from '../../application/getGameTypesUseCase'
 import { GetPlayerStatsUseCase } from '../../application/getPlayerStatsUseCase'
 import { GetPlayersUseCase } from '../../application/getPlayersUseCase'
 import { GetTrophiesUseCase } from '../../application/getTrophiesUseCase'
+import { MergePlayersUseCase } from '../../application/mergePlayersUseCase'
 import { RenamePlayerUseCase } from '../../application/renamePlayerUseCase'
 import { InMemoryGameTypeRepository } from '../../infrastructure/testing/inMemoryGameTypeRepository'
 import { InMemoryMatchDraftRepository } from '../../infrastructure/testing/inMemoryMatchDraftRepository'
@@ -20,6 +21,7 @@ function buildProps(overrides: Partial<HomeScreenProps> = {}) {
   const playerRepo = new InMemoryPlayerRepository()
   const matchRepo = new InMemoryMatchRepository()
   const gameTypeRepo = new InMemoryGameTypeRepository()
+  const draftRepo = new InMemoryMatchDraftRepository()
   const addGameTypeUseCase = new AddGameTypeUseCase(gameTypeRepo)
   const getGameTypesUseCase = new GetGameTypesUseCase(gameTypeRepo)
 
@@ -30,6 +32,7 @@ function buildProps(overrides: Partial<HomeScreenProps> = {}) {
     getPlayerStats: new GetPlayerStatsUseCase(matchRepo, gameTypeRepo),
     deletePlayer: new DeletePlayerUseCase(playerRepo),
     renamePlayerUseCase: new RenamePlayerUseCase(playerRepo),
+    mergePlayersUseCase: new MergePlayersUseCase(playerRepo, matchRepo, draftRepo),
     cleanupInactivePlayers: new CleanupInactivePlayersUseCase(playerRepo, matchRepo),
     getTrophies: new GetTrophiesUseCase(matchRepo, gameTypeRepo, playerRepo),
     getGameTypes: () => getGameTypesUseCase.invoke(),
@@ -37,7 +40,7 @@ function buildProps(overrides: Partial<HomeScreenProps> = {}) {
     onStartGame,
     ...overrides,
   }
-  return { props, playerRepo, matchRepo, gameTypeRepo, onStartGame }
+  return { props, playerRepo, matchRepo, gameTypeRepo, draftRepo, onStartGame }
 }
 
 describe('HomeScreen', () => {
@@ -343,5 +346,104 @@ describe('HomeScreen', () => {
     expect(screen.queryByText('No players yet. Add one above.')).not.toBeInTheDocument()
 
     await i18n.changeLanguage('en')
+  })
+
+  it('offers a merge only once two players exist', () => {
+    const { props, playerRepo } = buildProps()
+    playerRepo.save({ id: 'p1', name: 'Jean Luc', active: true })
+    const { rerender } = render(<HomeScreen {...props} />)
+
+    expect(screen.queryByText('Merge')).not.toBeInTheDocument()
+
+    playerRepo.save({ id: 'p2', name: 'Jean-Luc', active: true })
+    rerender(<HomeScreen {...props} key="reloaded" />)
+
+    expect(screen.getByText('Merge')).toBeInTheDocument()
+  })
+
+  it('merges a duplicate into the kept player and moves their matches', () => {
+    const { props, playerRepo, matchRepo } = buildProps()
+    playerRepo.save({ id: 'dup', name: 'Jean Luc', active: true })
+    playerRepo.save({ id: 'keep', name: 'Jean-Luc', active: true })
+    matchRepo.save({
+      id: 'm1',
+      date: 1000,
+      gameTypeId: 'gt1',
+      playerScores: [{ playerId: 'dup', score: 10 }],
+      manualWinners: [],
+      secondaryPlayerScores: [],
+      rounds: [],
+    })
+    render(<HomeScreen {...props} />)
+
+    fireEvent.click(screen.getByText('Merge'))
+    const dialog = screen.getByRole('dialog')
+    fireEvent.change(within(dialog).getByLabelText('Duplicate to remove'), { target: { value: 'dup' } })
+    fireEvent.change(within(dialog).getByLabelText('Player to keep'), { target: { value: 'keep' } })
+
+    expect(within(dialog).getByText('1 match will move.')).toBeInTheDocument()
+
+    fireEvent.click(within(dialog).getByText('Merge'))
+
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    expect(screen.queryByText('Jean Luc', { selector: '.list-item-name' })).not.toBeInTheDocument()
+    expect(screen.getByText('Jean-Luc', { selector: '.list-item-name' })).toBeInTheDocument()
+    expect(matchRepo.getAll()[0].playerScores[0].playerId).toBe('keep')
+  })
+
+  it('blocks a merge of two players who already faced each other', () => {
+    const { props, playerRepo, matchRepo } = buildProps()
+    playerRepo.save({ id: 'dup', name: 'Jean Luc', active: true })
+    playerRepo.save({ id: 'keep', name: 'Jean-Luc', active: true })
+    matchRepo.save({
+      id: 'm1',
+      date: 1000,
+      gameTypeId: 'gt1',
+      playerScores: [
+        { playerId: 'dup', score: 10 },
+        { playerId: 'keep', score: 4 },
+      ],
+      manualWinners: [],
+      secondaryPlayerScores: [],
+      rounds: [],
+    })
+    render(<HomeScreen {...props} />)
+
+    fireEvent.click(screen.getByText('Merge'))
+    const dialog = screen.getByRole('dialog')
+    fireEvent.change(within(dialog).getByLabelText('Duplicate to remove'), { target: { value: 'dup' } })
+    fireEvent.change(within(dialog).getByLabelText('Player to keep'), { target: { value: 'keep' } })
+
+    expect(
+      within(dialog).getByText('1 match already has both players facing each other: merging is not possible.'),
+    ).toBeInTheDocument()
+    expect(within(dialog).getByText('Merge').closest('button')).toBeDisabled()
+  })
+
+  it('lists soft-deleted players as merge candidates, marked as deleted', () => {
+    const { props, playerRepo } = buildProps()
+    playerRepo.save({ id: 'p1', name: 'Jean-Luc', active: true })
+    playerRepo.save({ id: 'p2', name: 'Jean Luc', active: false })
+    render(<HomeScreen {...props} />)
+
+    fireEvent.click(screen.getByText('Merge'))
+
+    // One option per picker: the duplicate list and the "keep" list.
+    expect(within(screen.getByRole('dialog')).getAllByText('Jean Luc (deleted)')).toHaveLength(2)
+  })
+
+  it('clears the duplicate from the "keep" list so both sides cannot name the same player', () => {
+    const { props, playerRepo } = buildProps()
+    playerRepo.save({ id: 'p1', name: 'Jean Luc', active: true })
+    playerRepo.save({ id: 'p2', name: 'Jean-Luc', active: true })
+    render(<HomeScreen {...props} />)
+
+    fireEvent.click(screen.getByText('Merge'))
+    const dialog = screen.getByRole('dialog')
+    fireEvent.change(within(dialog).getByLabelText('Player to keep'), { target: { value: 'p2' } })
+    fireEvent.change(within(dialog).getByLabelText('Duplicate to remove'), { target: { value: 'p2' } })
+
+    expect(within(dialog).getByLabelText('Player to keep')).toHaveValue('')
+    expect(within(dialog).getByText('Merge').closest('button')).toBeDisabled()
   })
 })

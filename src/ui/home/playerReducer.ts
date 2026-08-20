@@ -5,6 +5,7 @@ import type { GetPlayerStatsUseCase, PlayerStats } from '../../application/getPl
 import type { GetPlayersUseCase } from '../../application/getPlayersUseCase'
 import type { GetTrophiesUseCase } from '../../application/getTrophiesUseCase'
 import { groupTrophiesByPlayer } from '../../application/groupTrophiesByPlayer'
+import type { MergePlayersUseCase } from '../../application/mergePlayersUseCase'
 import type { RenamePlayerUseCase } from '../../application/renamePlayerUseCase'
 import type { Player } from '../../domain/model/player'
 import type { PlayerState } from './playerTypes'
@@ -24,6 +25,7 @@ export interface PlayerDataSources {
 
 interface LoadedPlayers {
   players: Player[]
+  allPlayers: Player[]
   stats: Map<string, PlayerStats>
   trophyCounts: Map<string, number>
   cleanupCandidates: Player[]
@@ -45,11 +47,25 @@ export type PlayerAction =
   | { type: 'showCleanupConfirm' }
   | { type: 'dismissCleanupConfirm' }
   | ({ type: 'cleanupCompleted' } & LoadedPlayers)
+  | { type: 'showMergeDialog' }
+  | { type: 'dismissMergeDialog' }
+  | { type: 'selectMergeDuplicate'; id: string | undefined }
+  | { type: 'selectMergeKept'; id: string | undefined }
+  | ({ type: 'mergeSucceeded' } & LoadedPlayers)
+  | { type: 'mergeFailed'; error: string }
+
+const CLOSED_MERGE_DIALOG = {
+  showMergeDialog: false,
+  mergeDuplicateId: undefined,
+  mergeKeptId: undefined,
+  mergeError: undefined,
+} as const
 
 function withLoaded(state: PlayerState, loaded: LoadedPlayers): PlayerState {
   return {
     ...state,
     players: loaded.players,
+    allPlayers: loaded.allPlayers,
     stats: loaded.stats,
     trophyCounts: loaded.trophyCounts,
     cleanupCandidates: loaded.cleanupCandidates,
@@ -96,6 +112,25 @@ export function playerReducer(state: PlayerState, action: PlayerAction): PlayerS
       return { ...state, showCleanupConfirm: false }
     case 'cleanupCompleted':
       return { ...withLoaded(state, action), showCleanupConfirm: false }
+    case 'showMergeDialog':
+      return { ...state, ...CLOSED_MERGE_DIALOG, showMergeDialog: true }
+    case 'dismissMergeDialog':
+      return { ...state, ...CLOSED_MERGE_DIALOG }
+    case 'selectMergeDuplicate':
+      return {
+        ...state,
+        mergeDuplicateId: action.id,
+        // The duplicate is excluded from the "keep" list, so a kept player that
+        // just became the duplicate has to be dropped rather than left dangling.
+        mergeKeptId: state.mergeKeptId === action.id ? undefined : state.mergeKeptId,
+        mergeError: undefined,
+      }
+    case 'selectMergeKept':
+      return { ...state, mergeKeptId: action.id, mergeError: undefined }
+    case 'mergeSucceeded':
+      return { ...withLoaded(state, action), ...CLOSED_MERGE_DIALOG }
+    case 'mergeFailed':
+      return { ...state, mergeError: action.error }
   }
 }
 
@@ -120,6 +155,7 @@ function countTrophiesByPlayer(getTrophies: GetTrophiesUseCase): Map<string, num
 export function loadPlayers(sources: PlayerDataSources): LoadedPlayers {
   return {
     players: sources.getPlayers.invoke(),
+    allPlayers: sources.getPlayers.invoke(true),
     stats: sources.getPlayerStats.invoke(),
     trophyCounts: countTrophiesByPlayer(sources.getTrophies),
     cleanupCandidates: sources.cleanupInactivePlayers.preview(),
@@ -168,4 +204,20 @@ export function submitConfirmRename(
 export function submitCleanup(sources: PlayerDataSources): PlayerAction {
   sources.cleanupInactivePlayers.execute()
   return { type: 'cleanupCompleted', ...loadPlayers(sources) }
+}
+
+/** Mirrors submitConfirmRename's guard: an incomplete selection is a no-op. */
+export function submitMergePlayers(
+  mergePlayersUseCase: MergePlayersUseCase,
+  sources: PlayerDataSources,
+  state: PlayerState,
+): PlayerAction | undefined {
+  const { mergeDuplicateId, mergeKeptId } = state
+  if (mergeDuplicateId === undefined || mergeKeptId === undefined) return undefined
+  try {
+    mergePlayersUseCase.invoke(mergeDuplicateId, mergeKeptId)
+    return { type: 'mergeSucceeded', ...loadPlayers(sources) }
+  } catch (e) {
+    return { type: 'mergeFailed', error: errorMessage(e) }
+  }
 }

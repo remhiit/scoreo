@@ -8,6 +8,9 @@
 | `UpdateGameTypeUseCase` | `gameType: GameType` | `Unit` | Overwrites existing game type |
 | `GetGameTypesUseCase` | — | `List<GameType>` | Returns all game types |
 | `CreateMatchUseCase` | `gameTypeId, playerScores, date, manualWinners, secondaryPlayerScores` | `Match` | Validates players match scores list |
+| `ArchiveGameTypeUseCase` | `gameTypeId: String` | `Unit` | Soft-delete (`active = false`); matches stay attached to it |
+| `MergeGameTypesUseCase` | `preview(duplicateId, keptId)` | `MergeGameTypesPreview` | Counts the matches played under the duplicate (`affectedMatches`) and reports whether the two score differently (`rulesDiffer`). Pure reads — no validation, no mutation |
+| `MergeGameTypesUseCase` | `invoke(duplicateId, keptId)` | `Unit` | Moves every match's `gameTypeId` onto the kept game type, clears a `MatchDraft` naming the duplicate, then hard-deletes the duplicate. Refuses a self-merge or an unknown id |
 
 ## TieBreakRule
 
@@ -30,8 +33,8 @@
 | Component | Details |
 |-----------|---------|
 | **Reducer** | `gameTypeReducer` — `src/ui/gametype/gameTypeReducer.ts` |
-| **Action** | `GameTypeAction`: `updateName`, `selectWinCondition`, `updateTieBreakRule`, `updateTieBreakCondition`, `updateTieBreakLabel`, `selectGame`, `deselectGame`, `addSucceeded`/`addFailed`, `editGameType`, `cancelEdit`, `updateSucceeded`/`updateFailed`, `showArchiveConfirm`, `archiveSucceeded`/`archiveFailed`, `dismissArchiveConfirm` |
-| **State** | `GameTypeState`: `gameTypes`, `inputName`, `selectedWinCondition`, `selectedTieBreakRule`, `selectedTieBreakCondition`, `selectedTieBreakLabel`, `selectedGameId`, `editingGameId`, `error`, `archiveConfirmGameTypeId` |
+| **Action** | `GameTypeAction`: `updateName`, `selectWinCondition`, `updateTieBreakRule`, `updateTieBreakCondition`, `updateTieBreakLabel`, `selectGame`, `deselectGame`, `addSucceeded`/`addFailed`, `editGameType`, `cancelEdit`, `updateSucceeded`/`updateFailed`, `showArchiveConfirm`, `archiveSucceeded`/`archiveFailed`, `dismissArchiveConfirm`, `showMergeDialog`, `dismissMergeDialog`, `selectMergeDuplicate`, `selectMergeKept`, `mergeSucceeded`/`mergeFailed` |
+| **State** | `GameTypeState`: `gameTypes`, `allGameTypes`, `inputName`, `selectedWinCondition`, `selectedTieBreakRule`, `selectedTieBreakCondition`, `selectedTieBreakLabel`, `selectedGameId`, `editingGameId`, `error`, `archiveConfirmGameTypeId`, `showMergeDialog`, `mergeDuplicateId`, `mergeKeptId`, `mergeError` |
 
 Screen: `src/ui/gametype/GameTypeScreen.tsx`. See `doc/reference.md` for the full reducer table.
 
@@ -44,6 +47,17 @@ Screen: `src/ui/gametype/GameTypeScreen.tsx`. See `doc/reference.md` for the ful
   - 👁 (View) — opens detail modal
   - ✏️ (Edit) — opens edit form in modal
   - 🗑 (Archive/Delete) — opens archive confirmation modal
+
+### Merge dialog
+- "Merge" button under the list, shown as soon as at least 2 game types exist (archived ones included)
+- Two dropdowns: **Duplicate to remove** and **Game to keep**. The duplicate is filtered out of the second list, so both sides can never name the same game type
+- Both lists include archived game types, suffixed "(archived)" — a duplicate is often archived to hide it before the user thinks of merging
+- Once both are picked, the dialog states how many matches will move
+- **Merge** stays disabled until both sides are picked
+- Confirming moves every match from the duplicate onto the game type kept, then permanently deletes the duplicate (`GameTypeRepository.hardDelete`, unlike archiving)
+- A draft match in progress that named the duplicate is discarded (its game type id no longer exists)
+- If the kept game type was archived and the duplicate was active, the kept one is unarchived — otherwise the merge would hide the result
+- **Warning, not a blocker**: if the two don't score the same way (`winCondition`, `tieBreakRule`, or `tieBreakCondition` under `SECONDARY_SCORE`), the dialog warns that the kept game type's rules will apply to the moved matches and may change their winners. Merging is still allowed — picking the target *is* picking the rules
 
 ### Detail view
 - Shows: game name, win condition, tie-break rule, tie-break condition/label (if SECONDARY_SCORE)
@@ -103,6 +117,24 @@ When I select it, tap the (...) menu and click Archive
 Then a confirmation modal appears: "Are you sure you want to archive 'Old Game'?"
 And I click "Archive" to confirm
 Then the game is removed from the list (soft-delete with active=false flag)
+```
+
+### Merge a duplicate created by an import
+```
+Given an import created "Belote " alongside the existing "Belote"
+And "Belote " holds 3 matches
+When I click "Merge", pick "Belote " as the duplicate and "Belote" as the game to keep
+Then the dialog reads "3 matches will move."
+When I confirm
+Then "Belote " is gone from the list and its 3 matches show under "Belote" in History
+```
+
+### Merge two games with different rules
+```
+Given "Belote" scores HIGHEST_SCORE and "Belote coinchée" scores LOWEST_SCORE
+When I pick them as duplicate and kept game
+Then the dialog warns that the kept game's rules will apply and may change the winners
+And the Merge button stays enabled
 ```
 
 ### Cancel archive

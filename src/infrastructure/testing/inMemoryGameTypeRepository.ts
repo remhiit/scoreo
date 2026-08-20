@@ -30,6 +30,10 @@ export class InMemoryGameTypeRepository implements GameTypeRepository {
     return this.getAll(true).find((g) => g.id === id)
   }
 
+  hardDelete(id: string): void {
+    this.gameTypes = this.gameTypes.filter((g) => g.id !== id)
+  }
+
   deleteAll(): void {
     this.gameTypes = []
   }

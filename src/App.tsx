@@ -30,6 +30,8 @@ import { GetPlayerStatsUseCase } from './application/getPlayerStatsUseCase'
 import { GetPlayersUseCase } from './application/getPlayersUseCase'
 import { GetTrophiesUseCase } from './application/getTrophiesUseCase'
 import { ImportMatchesUseCase } from './application/importMatchesUseCase'
+import { MergeGameTypesUseCase } from './application/mergeGameTypesUseCase'
+import { MergePlayersUseCase } from './application/mergePlayersUseCase'
 import { RenamePlayerUseCase } from './application/renamePlayerUseCase'
 import { UpdateGameTypeUseCase } from './application/updateGameTypeUseCase'
 import { UpdateMatchUseCase } from './application/updateMatchUseCase'
@@ -191,6 +193,15 @@ function AppShell() {
   const updateGameType = useMemo(() => new UpdateGameTypeUseCase(services.gameTypeRepository), [services])
   const findGameTypeById = useMemo(() => new FindGameTypeByIdUseCase(services.gameTypeRepository), [services])
   const archiveGameType = useMemo(() => new ArchiveGameTypeUseCase(services.gameTypeRepository), [services])
+  const mergeGameTypes = useMemo(
+    () =>
+      new MergeGameTypesUseCase(
+        services.gameTypeRepository,
+        services.matchRepository,
+        services.matchDraftRepository,
+      ),
+    [services],
+  )
   const importUseCase = useMemo(
     () =>
       new ImportMatchesUseCase(
@@ -212,6 +223,10 @@ function AppShell() {
   )
   const deletePlayer = useMemo(() => new DeletePlayerUseCase(services.playerRepository), [services])
   const renamePlayerUseCase = useMemo(() => new RenamePlayerUseCase(services.playerRepository), [services])
+  const mergePlayersUseCase = useMemo(
+    () => new MergePlayersUseCase(services.playerRepository, services.matchRepository, services.matchDraftRepository),
+    [services],
+  )
   const cleanupInactivePlayers = useMemo(
     () => new CleanupInactivePlayersUseCase(services.playerRepository, services.matchRepository),
     [services],
@@ -285,6 +300,7 @@ function AppShell() {
             getPlayerStats={getPlayerStats}
             deletePlayer={deletePlayer}
             renamePlayerUseCase={renamePlayerUseCase}
+            mergePlayersUseCase={mergePlayersUseCase}
             cleanupInactivePlayers={cleanupInactivePlayers}
             getTrophies={getTrophies}
             getGameTypes={homeGetGameTypes}
@@ -321,6 +337,7 @@ function AppShell() {
             getGameTypes={getGameTypes}
             findGameTypeById={findGameTypeById}
             archiveGameType={archiveGameType}
+            mergeGameTypes={mergeGameTypes}
           />
         )}
         {current.type === 'Sync' &&

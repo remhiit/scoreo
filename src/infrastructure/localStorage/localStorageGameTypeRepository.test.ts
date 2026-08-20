@@ -146,11 +146,39 @@ describe('LocalStorageGameTypeRepository', () => {
     repo.saveAll([{ ...gt, id: 'gt2' }])
     expect(listener).toHaveBeenCalledTimes(2)
 
-    repo.deleteAll()
+    repo.hardDelete('gt2')
     expect(listener).toHaveBeenCalledTimes(3)
+
+    repo.deleteAll()
+    expect(listener).toHaveBeenCalledTimes(4)
 
     repo.getAll(true)
     repo.findById('gt1')
-    expect(listener).toHaveBeenCalledTimes(3)
+    expect(listener).toHaveBeenCalledTimes(4)
+  })
+
+  it('hardDelete removes the game type entirely, unlike archiving which sets active to false', () => {
+    const repo = new LocalStorageGameTypeRepository()
+    const gt = {
+      id: 'gt1',
+      name: 'Belote',
+      winCondition: 'HIGHEST_SCORE' as const,
+      tieBreakRule: 'NONE' as const,
+      tieBreakCondition: 'HIGHEST_SCORE' as const,
+      tieBreakLabel: null,
+      active: false,
+    }
+    repo.save(gt)
+    repo.save({ ...gt, id: 'gt2', name: 'Tarot', active: true })
+
+    repo.hardDelete('gt1')
+
+    expect(repo.getAll(true).map((g) => g.id)).toEqual(['gt2'])
+  })
+
+  it('hardDelete of a nonexistent id does not throw', () => {
+    const repo = new LocalStorageGameTypeRepository()
+
+    expect(() => repo.hardDelete('non_existent')).not.toThrow()
   })
 })

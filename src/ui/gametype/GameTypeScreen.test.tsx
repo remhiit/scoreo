@@ -4,8 +4,11 @@ import { AddGameTypeUseCase } from '../../application/addGameTypeUseCase'
 import { ArchiveGameTypeUseCase } from '../../application/archiveGameTypeUseCase'
 import { FindGameTypeByIdUseCase } from '../../application/findGameTypeByIdUseCase'
 import { GetGameTypesUseCase } from '../../application/getGameTypesUseCase'
+import { MergeGameTypesUseCase } from '../../application/mergeGameTypesUseCase'
 import { UpdateGameTypeUseCase } from '../../application/updateGameTypeUseCase'
 import { InMemoryGameTypeRepository } from '../../infrastructure/testing/inMemoryGameTypeRepository'
+import { InMemoryMatchDraftRepository } from '../../infrastructure/testing/inMemoryMatchDraftRepository'
+import { InMemoryMatchRepository } from '../../infrastructure/testing/inMemoryMatchRepository'
 import i18n from '../../i18n/i18n'
 import { GameTypeScreen } from './GameTypeScreen'
 
@@ -17,12 +20,27 @@ function renderScreen(repo = new InMemoryGameTypeRepository()) {
       getGameTypes={new GetGameTypesUseCase(repo)}
       findGameTypeById={new FindGameTypeByIdUseCase(repo)}
       archiveGameType={new ArchiveGameTypeUseCase(repo)}
+      mergeGameTypes={
+        new MergeGameTypesUseCase(repo, new InMemoryMatchRepository(), new InMemoryMatchDraftRepository())
+      }
     />,
   )
 }
 
 function nameInput() {
   return screen.getByPlaceholderText('Game name')
+}
+
+function buildGameType(id: string, name: string) {
+  return {
+    id,
+    name,
+    winCondition: 'HIGHEST_SCORE' as const,
+    tieBreakRule: 'NONE' as const,
+    tieBreakCondition: 'HIGHEST_SCORE' as const,
+    tieBreakLabel: null,
+    active: true,
+  }
 }
 
 describe('GameTypeScreen', () => {
@@ -153,6 +171,9 @@ describe('GameTypeScreen', () => {
         getGameTypes={new GetGameTypesUseCase(repo)}
         findGameTypeById={new FindGameTypeByIdUseCase(repo)}
         archiveGameType={new ArchiveGameTypeUseCase(repo)}
+        mergeGameTypes={
+          new MergeGameTypesUseCase(repo, new InMemoryMatchRepository(), new InMemoryMatchDraftRepository())
+        }
         showTitle={false}
       />,
     )
@@ -172,5 +193,84 @@ describe('GameTypeScreen', () => {
     expect(screen.getByText("Aucun type de jeu pour l'instant. Ajoutez-en un.")).toBeInTheDocument()
 
     await i18n.changeLanguage('en')
+  })
+
+  it('offers a merge only once two game types exist', () => {
+    const repo = new InMemoryGameTypeRepository()
+    renderScreen(repo)
+
+    fireEvent.change(nameInput(), { target: { value: 'Belote' } })
+    fireEvent.click(screen.getByText('Add game type'))
+    expect(screen.queryByText('Merge')).not.toBeInTheDocument()
+
+    fireEvent.change(nameInput(), { target: { value: 'Belote coinchee' } })
+    fireEvent.click(screen.getByText('Add game type'))
+    expect(screen.getByText('Merge')).toBeInTheDocument()
+  })
+
+  it('merges a duplicate game type into the kept one and moves its matches', () => {
+    const repo = new InMemoryGameTypeRepository()
+    const matchRepo = new InMemoryMatchRepository()
+    repo.save(buildGameType('keep', 'Belote'))
+    repo.save(buildGameType('dup', 'Belote '))
+    matchRepo.save({
+      id: 'm1',
+      date: 1000,
+      gameTypeId: 'dup',
+      playerScores: [{ playerId: 'p1', score: 10 }],
+      manualWinners: [],
+      secondaryPlayerScores: [],
+      rounds: [],
+    })
+    render(
+      <GameTypeScreen
+        addGameType={new AddGameTypeUseCase(repo)}
+        updateGameType={new UpdateGameTypeUseCase(repo)}
+        getGameTypes={new GetGameTypesUseCase(repo)}
+        findGameTypeById={new FindGameTypeByIdUseCase(repo)}
+        archiveGameType={new ArchiveGameTypeUseCase(repo)}
+        mergeGameTypes={new MergeGameTypesUseCase(repo, matchRepo, new InMemoryMatchDraftRepository())}
+      />,
+    )
+
+    fireEvent.click(screen.getByText('Merge'))
+    const dialog = screen.getByRole('dialog')
+    fireEvent.change(within(dialog).getByLabelText('Duplicate to remove'), { target: { value: 'dup' } })
+    fireEvent.change(within(dialog).getByLabelText('Game to keep'), { target: { value: 'keep' } })
+
+    expect(within(dialog).getByText('1 match will move.')).toBeInTheDocument()
+
+    fireEvent.click(within(dialog).getByText('Merge'))
+
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    expect(repo.getAll(true).map((gt) => gt.id)).toEqual(['keep'])
+    expect(matchRepo.getAll()[0].gameTypeId).toBe('keep')
+  })
+
+  it('warns without blocking when the two game types do not score the same way', () => {
+    const repo = new InMemoryGameTypeRepository()
+    repo.save(buildGameType('keep', 'Belote'))
+    repo.save({ ...buildGameType('dup', 'Belote '), winCondition: 'LOWEST_SCORE' })
+    renderScreen(repo)
+
+    fireEvent.click(screen.getByText('Merge'))
+    const dialog = screen.getByRole('dialog')
+    fireEvent.change(within(dialog).getByLabelText('Duplicate to remove'), { target: { value: 'dup' } })
+    fireEvent.change(within(dialog).getByLabelText('Game to keep'), { target: { value: 'keep' } })
+
+    expect(within(dialog).getByText(/"Belote" rules will apply/)).toBeInTheDocument()
+    expect(within(dialog).getByText('Merge').closest('button')).toBeEnabled()
+  })
+
+  it('lists archived game types as merge candidates, marked as archived', () => {
+    const repo = new InMemoryGameTypeRepository()
+    repo.save(buildGameType('keep', 'Belote'))
+    repo.save({ ...buildGameType('dup', 'Belote coinchee'), active: false })
+    renderScreen(repo)
+
+    fireEvent.click(screen.getByText('Merge'))
+
+    // One option per picker: the duplicate list and the "keep" list.
+    expect(within(screen.getByRole('dialog')).getAllByText('Belote coinchee (archived)')).toHaveLength(2)
   })
 })

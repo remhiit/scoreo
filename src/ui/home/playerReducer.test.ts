@@ -7,8 +7,10 @@ import { DeletePlayerUseCase } from '../../application/deletePlayerUseCase'
 import { GetPlayerStatsUseCase } from '../../application/getPlayerStatsUseCase'
 import { GetPlayersUseCase } from '../../application/getPlayersUseCase'
 import { GetTrophiesUseCase } from '../../application/getTrophiesUseCase'
+import { MergePlayersUseCase } from '../../application/mergePlayersUseCase'
 import { RenamePlayerUseCase } from '../../application/renamePlayerUseCase'
 import { InMemoryGameTypeRepository } from '../../infrastructure/testing/inMemoryGameTypeRepository'
+import { InMemoryMatchDraftRepository } from '../../infrastructure/testing/inMemoryMatchDraftRepository'
 import { InMemoryMatchRepository } from '../../infrastructure/testing/inMemoryMatchRepository'
 import { InMemoryPlayerRepository } from '../../infrastructure/testing/inMemoryPlayerRepository'
 import {
@@ -17,6 +19,7 @@ import {
   submitAddPlayer,
   submitConfirmRename,
   submitDeletePlayer,
+  submitMergePlayers,
 } from './playerReducer'
 import { initialPlayerState, type PlayerState } from './playerTypes'
 
@@ -43,9 +46,11 @@ function buildUseCases(
 ) {
   return {
     playerRepo,
+    matchRepo,
     addPlayer: new AddPlayerUseCase(playerRepo),
     deletePlayer: new DeletePlayerUseCase(playerRepo),
     renamePlayerUseCase: new RenamePlayerUseCase(playerRepo),
+    mergePlayersUseCase: new MergePlayersUseCase(playerRepo, matchRepo, new InMemoryMatchDraftRepository()),
     sources: {
       getPlayers: new GetPlayersUseCase(playerRepo),
       getPlayerStats: new GetPlayerStatsUseCase(matchRepo, gameTypeRepo),
@@ -366,5 +371,92 @@ describe('playerReducer', () => {
     expect(action).toBeUndefined()
     expect(state.players[0].name).toBe('Alice')
     expect(state.renamingPlayerId).toBeUndefined()
+  })
+  it('loading also exposes soft-deleted players as merge candidates', () => {
+    const uc = buildUseCases()
+    uc.playerRepo.save({ id: 'p1', name: 'Alice', active: true })
+    uc.playerRepo.save({ id: 'p2', name: 'Alicia', active: false })
+
+    const state = playerReducer(initialPlayerState, { type: 'loaded', ...loadPlayers(uc.sources) })
+
+    expect(state.players.map((p) => p.id)).toEqual(['p1'])
+    expect(state.allPlayers.map((p) => p.id)).toEqual(['p1', 'p2'])
+  })
+
+  it('showMergeDialog opens the dialog with both sides unpicked', () => {
+    let state = playerReducer(initialPlayerState, { type: 'selectMergeDuplicate', id: 'stale' })
+    state = playerReducer(state, { type: 'showMergeDialog' })
+
+    expect(state.showMergeDialog).toBe(true)
+    expect(state.mergeDuplicateId).toBeUndefined()
+    expect(state.mergeKeptId).toBeUndefined()
+  })
+
+  it('dismissMergeDialog closes the dialog and drops the selection', () => {
+    let state = playerReducer(initialPlayerState, { type: 'showMergeDialog' })
+    state = playerReducer(state, { type: 'selectMergeDuplicate', id: 'p1' })
+    state = playerReducer(state, { type: 'selectMergeKept', id: 'p2' })
+    state = playerReducer(state, { type: 'dismissMergeDialog' })
+
+    expect(state.showMergeDialog).toBe(false)
+    expect(state.mergeDuplicateId).toBeUndefined()
+    expect(state.mergeKeptId).toBeUndefined()
+  })
+
+  it('picking the kept player as duplicate clears the kept side', () => {
+    let state = playerReducer(initialPlayerState, { type: 'selectMergeKept', id: 'p2' })
+    state = playerReducer(state, { type: 'selectMergeDuplicate', id: 'p2' })
+
+    expect(state.mergeDuplicateId).toBe('p2')
+    expect(state.mergeKeptId).toBeUndefined()
+  })
+
+  it('merging moves the matches, drops the duplicate and closes the dialog', () => {
+    const uc = buildUseCases()
+    uc.playerRepo.save({ id: 'dup', name: 'Jean Luc', active: true })
+    uc.playerRepo.save({ id: 'keep', name: 'Jean-Luc', active: true })
+    uc.matchRepo.save(match('m1', 1000, 'gt1', [{ playerId: 'dup', score: 10 }]))
+    let state = playerReducer(initialPlayerState, { type: 'loaded', ...loadPlayers(uc.sources) })
+    state = playerReducer(state, { type: 'showMergeDialog' })
+    state = playerReducer(state, { type: 'selectMergeDuplicate', id: 'dup' })
+    state = playerReducer(state, { type: 'selectMergeKept', id: 'keep' })
+
+    state = playerReducer(state, submitMergePlayers(uc.mergePlayersUseCase, uc.sources, state)!)
+
+    expect(state.players.map((p) => p.id)).toEqual(['keep'])
+    expect(uc.matchRepo.getAll()[0].playerScores[0].playerId).toBe('keep')
+    expect(state.showMergeDialog).toBe(false)
+    expect(state.mergeError).toBeUndefined()
+  })
+
+  it('a refused merge keeps the dialog open and reports the reason', () => {
+    const uc = buildUseCases()
+    uc.playerRepo.save({ id: 'dup', name: 'Jean Luc', active: true })
+    uc.playerRepo.save({ id: 'keep', name: 'Jean-Luc', active: true })
+    uc.matchRepo.save(
+      match('m1', 1000, 'gt1', [
+        { playerId: 'dup', score: 10 },
+        { playerId: 'keep', score: 4 },
+      ]),
+    )
+    let state = playerReducer(initialPlayerState, { type: 'loaded', ...loadPlayers(uc.sources) })
+    state = playerReducer(state, { type: 'showMergeDialog' })
+    state = playerReducer(state, { type: 'selectMergeDuplicate', id: 'dup' })
+    state = playerReducer(state, { type: 'selectMergeKept', id: 'keep' })
+
+    state = playerReducer(state, submitMergePlayers(uc.mergePlayersUseCase, uc.sources, state)!)
+
+    expect(state.showMergeDialog).toBe(true)
+    expect(state.mergeError).toMatch(/face themselves/)
+    expect(state.players).toHaveLength(2)
+  })
+
+  it('confirming a merge with only one side picked is a no-op', () => {
+    const uc = buildUseCases()
+    uc.playerRepo.save({ id: 'dup', name: 'Jean Luc', active: true })
+    let state = playerReducer(initialPlayerState, { type: 'loaded', ...loadPlayers(uc.sources) })
+    state = playerReducer(state, { type: 'selectMergeDuplicate', id: 'dup' })
+
+    expect(submitMergePlayers(uc.mergePlayersUseCase, uc.sources, state)).toBeUndefined()
   })
 })

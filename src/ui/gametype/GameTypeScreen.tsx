@@ -1,9 +1,11 @@
-import { useEffect, useReducer } from 'react'
+import { Merge } from 'lucide-react'
+import { useEffect, useMemo, useReducer } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { AddGameTypeUseCase } from '../../application/addGameTypeUseCase'
 import type { ArchiveGameTypeUseCase } from '../../application/archiveGameTypeUseCase'
 import type { FindGameTypeByIdUseCase } from '../../application/findGameTypeByIdUseCase'
 import type { GetGameTypesUseCase } from '../../application/getGameTypesUseCase'
+import type { MergeGameTypesUseCase } from '../../application/mergeGameTypesUseCase'
 import type { UpdateGameTypeUseCase } from '../../application/updateGameTypeUseCase'
 import { tieBreakRuleLabel, winConditionLabel } from '../../domain/model/enums'
 import { ListContainer } from '../shared/ListContainer'
@@ -17,9 +19,11 @@ import {
   resolveGameTypeForEdit,
   submitAddGameType,
   submitArchiveGameType,
+  submitMergeGameTypes,
   submitUpdateGameType,
 } from './gameTypeReducer'
 import { initialGameTypeState } from './gameTypeTypes'
+import { MergeGameTypesModal } from './MergeGameTypesModal'
 
 export interface GameTypeScreenProps {
   addGameType: AddGameTypeUseCase
@@ -27,6 +31,7 @@ export interface GameTypeScreenProps {
   getGameTypes: GetGameTypesUseCase
   findGameTypeById: FindGameTypeByIdUseCase
   archiveGameType: ArchiveGameTypeUseCase
+  mergeGameTypes: MergeGameTypesUseCase
   showTitle?: boolean
 }
 
@@ -36,23 +41,20 @@ export function GameTypeScreen({
   getGameTypes,
   findGameTypeById,
   archiveGameType,
+  mergeGameTypes,
   showTitle = true,
 }: GameTypeScreenProps) {
   const { t } = useTranslation()
   const [state, dispatch] = useReducer(gameTypeReducer, initialGameTypeState)
 
   useEffect(() => {
-    dispatch({ type: 'loaded', gameTypes: loadGameTypes(getGameTypes) })
+    dispatch({ type: 'loaded', ...loadGameTypes(getGameTypes) })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const handleAdd = () => {
     const result = submitAddGameType(addGameType, getGameTypes, state)
-    dispatch(
-      'error' in result
-        ? { type: 'addFailed', error: result.error }
-        : { type: 'addSucceeded', gameTypes: result.gameTypes },
-    )
+    dispatch('error' in result ? { type: 'addFailed', error: result.error } : { type: 'addSucceeded', ...result })
   }
 
   const handleEdit = (id: string) => {
@@ -73,20 +75,29 @@ export function GameTypeScreen({
     }
     const result = submitUpdateGameType(updateGameType, getGameTypes, updated)
     dispatch(
-      'error' in result
-        ? { type: 'updateFailed', error: result.error }
-        : { type: 'updateSucceeded', gameTypes: result.gameTypes },
+      'error' in result ? { type: 'updateFailed', error: result.error } : { type: 'updateSucceeded', ...result },
     )
   }
 
   const handleArchive = (gameTypeId: string) => {
     const result = submitArchiveGameType(archiveGameType, getGameTypes, gameTypeId)
     dispatch(
-      'error' in result
-        ? { type: 'archiveFailed', error: result.error }
-        : { type: 'archiveSucceeded', gameTypes: result.gameTypes },
+      'error' in result ? { type: 'archiveFailed', error: result.error } : { type: 'archiveSucceeded', ...result },
     )
   }
+
+  const handleMerge = () => {
+    const result = submitMergeGameTypes(mergeGameTypes, getGameTypes, state)
+    if (!result) return
+    dispatch('error' in result ? { type: 'mergeFailed', error: result.error } : { type: 'mergeSucceeded', ...result })
+  }
+
+  // Read-only projection of the pending merge, recomputed whenever either side
+  // changes — the mutation itself stays in submitMergeGameTypes.
+  const mergePreview = useMemo(() => {
+    if (state.mergeDuplicateId === undefined || state.mergeKeptId === undefined) return undefined
+    return mergeGameTypes.preview(state.mergeDuplicateId, state.mergeKeptId)
+  }, [mergeGameTypes, state.mergeDuplicateId, state.mergeKeptId])
 
   const selectedGameType = state.gameTypes.find((gt) => gt.id === state.selectedGameId)
   const editingGameType = state.gameTypes.find((gt) => gt.id === state.editingGameId)
@@ -115,6 +126,20 @@ export function GameTypeScreen({
             />
           ))}
         </ListContainer>
+      )}
+
+      {state.allGameTypes.length >= 2 && (
+        <div className="game-list-tools">
+          <LudoButton
+            text={
+              <>
+                <Merge size={16} aria-hidden /> {t('gametype.merge')}
+              </>
+            }
+            variant="secondary"
+            onClick={() => dispatch({ type: 'showMergeDialog' })}
+          />
+        </div>
       )}
 
       <LudoModal
@@ -202,6 +227,19 @@ export function GameTypeScreen({
       >
         {t('gametype.archiveBody')}
       </LudoModal>
+
+      <MergeGameTypesModal
+        open={state.showMergeDialog}
+        gameTypes={state.allGameTypes}
+        duplicateId={state.mergeDuplicateId}
+        keptId={state.mergeKeptId}
+        preview={mergePreview}
+        error={state.mergeError}
+        onSelectDuplicate={(id) => dispatch({ type: 'selectMergeDuplicate', id })}
+        onSelectKept={(id) => dispatch({ type: 'selectMergeKept', id })}
+        onClose={() => dispatch({ type: 'dismissMergeDialog' })}
+        onConfirmMerge={handleMerge}
+      />
     </>
   )
 }
