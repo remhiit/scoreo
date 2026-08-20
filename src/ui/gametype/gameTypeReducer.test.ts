@@ -3,25 +3,33 @@ import { AddGameTypeUseCase } from '../../application/addGameTypeUseCase'
 import { ArchiveGameTypeUseCase } from '../../application/archiveGameTypeUseCase'
 import { FindGameTypeByIdUseCase } from '../../application/findGameTypeByIdUseCase'
 import { GetGameTypesUseCase } from '../../application/getGameTypesUseCase'
+import { MergeGameTypesUseCase } from '../../application/mergeGameTypesUseCase'
 import { UpdateGameTypeUseCase } from '../../application/updateGameTypeUseCase'
 import { InMemoryGameTypeRepository } from '../../infrastructure/testing/inMemoryGameTypeRepository'
+import { InMemoryMatchDraftRepository } from '../../infrastructure/testing/inMemoryMatchDraftRepository'
+import { InMemoryMatchRepository } from '../../infrastructure/testing/inMemoryMatchRepository'
 import {
   gameTypeReducer,
+  loadGameTypes,
   resolveGameTypeForEdit,
   submitAddGameType,
   submitArchiveGameType,
+  submitMergeGameTypes,
   submitUpdateGameType,
+  type LoadedGameTypes,
 } from './gameTypeReducer'
 import { initialGameTypeState, type GameTypeState } from './gameTypeTypes'
 
-function buildUseCases(repo = new InMemoryGameTypeRepository()) {
+function buildUseCases(repo = new InMemoryGameTypeRepository(), matchRepo = new InMemoryMatchRepository()) {
   return {
     repo,
+    matchRepo,
     addGameType: new AddGameTypeUseCase(repo),
     updateGameType: new UpdateGameTypeUseCase(repo),
     getGameTypes: new GetGameTypesUseCase(repo),
     findGameTypeById: new FindGameTypeByIdUseCase(repo),
     archiveGameType: new ArchiveGameTypeUseCase(repo),
+    mergeGameTypes: new MergeGameTypesUseCase(repo, matchRepo, new InMemoryMatchDraftRepository()),
   }
 }
 
@@ -34,7 +42,7 @@ function add(
   const result = submitAddGameType(useCases.addGameType, useCases.getGameTypes, withName)
   return 'error' in result
     ? gameTypeReducer(withName, { type: 'addFailed', error: result.error })
-    : gameTypeReducer(withName, { type: 'addSucceeded', gameTypes: result.gameTypes })
+    : gameTypeReducer(withName, { type: 'addSucceeded', ...result })
 }
 
 describe('gameTypeReducer', () => {
@@ -133,7 +141,7 @@ describe('gameTypeReducer', () => {
     const result = submitAddGameType(useCases.addGameType, useCases.getGameTypes, state)
     state = 'error' in result
       ? gameTypeReducer(state, { type: 'addFailed', error: result.error })
-      : gameTypeReducer(state, { type: 'addSucceeded', gameTypes: result.gameTypes })
+      : gameTypeReducer(state, { type: 'addSucceeded', ...result })
 
     expect(state.gameTypes).toHaveLength(1)
     const gameType = state.gameTypes[0]
@@ -162,7 +170,7 @@ describe('gameTypeReducer', () => {
     state = gameTypeReducer(state, { type: 'updateTieBreakCondition', condition: 'LOWEST_SCORE' })
     state = gameTypeReducer(state, { type: 'updateTieBreakLabel', label: 'Handicap' })
     const result = submitAddGameType(useCases.addGameType, useCases.getGameTypes, state)
-    state = gameTypeReducer(state, { type: 'addSucceeded', gameTypes: (result as { gameTypes: typeof state.gameTypes }).gameTypes })
+    state = gameTypeReducer(state, { type: 'addSucceeded', ...(result as LoadedGameTypes) })
 
     const gameTypeId = state.gameTypes[0].id
     const gameType = resolveGameTypeForEdit(useCases.findGameTypeById, gameTypeId)!
@@ -200,7 +208,7 @@ describe('gameTypeReducer', () => {
     const result = submitUpdateGameType(useCases.updateGameType, useCases.getGameTypes, updated)
     state = 'error' in result
       ? gameTypeReducer(state, { type: 'updateFailed', error: result.error })
-      : gameTypeReducer(state, { type: 'updateSucceeded', gameTypes: result.gameTypes })
+      : gameTypeReducer(state, { type: 'updateSucceeded', ...result })
 
     expect(state.gameTypes).toHaveLength(1)
     expect(state.gameTypes[0].name).toBe('Belote Updated')
@@ -214,7 +222,7 @@ describe('gameTypeReducer', () => {
     const gameType = state.gameTypes[0]
     state = gameTypeReducer(state, { type: 'editGameType', gameType })
     const result = submitUpdateGameType(useCases.updateGameType, useCases.getGameTypes, gameType)
-    state = gameTypeReducer(state, { type: 'updateSucceeded', gameTypes: (result as { gameTypes: typeof state.gameTypes }).gameTypes })
+    state = gameTypeReducer(state, { type: 'updateSucceeded', ...(result as LoadedGameTypes) })
 
     expect(state.editingGameId).toBeUndefined()
     expect(state.inputName).toBe('')
@@ -253,7 +261,7 @@ describe('gameTypeReducer', () => {
     const result = submitArchiveGameType(useCases.archiveGameType, useCases.getGameTypes, gameTypeIdToArchive)
     state = 'error' in result
       ? gameTypeReducer(state, { type: 'archiveFailed', error: result.error })
-      : gameTypeReducer(state, { type: 'archiveSucceeded', gameTypes: result.gameTypes })
+      : gameTypeReducer(state, { type: 'archiveSucceeded', ...result })
 
     expect(state.gameTypes).toHaveLength(1)
     expect(state.gameTypes[0].name).toBe('Golf')
@@ -266,7 +274,7 @@ describe('gameTypeReducer', () => {
     const gameTypeId = state.gameTypes[0].id
     state = gameTypeReducer(state, { type: 'showArchiveConfirm', gameTypeId })
     const result = submitArchiveGameType(useCases.archiveGameType, useCases.getGameTypes, gameTypeId)
-    state = gameTypeReducer(state, { type: 'archiveSucceeded', gameTypes: (result as { gameTypes: typeof state.gameTypes }).gameTypes })
+    state = gameTypeReducer(state, { type: 'archiveSucceeded', ...(result as LoadedGameTypes) })
 
     expect(state.archiveConfirmGameTypeId).toBeUndefined()
   })
@@ -280,8 +288,136 @@ describe('gameTypeReducer', () => {
     expect(state.selectedGameId).toBe(gameTypeId)
 
     const result = submitArchiveGameType(useCases.archiveGameType, useCases.getGameTypes, gameTypeId)
-    state = gameTypeReducer(state, { type: 'archiveSucceeded', gameTypes: (result as { gameTypes: typeof state.gameTypes }).gameTypes })
+    state = gameTypeReducer(state, { type: 'archiveSucceeded', ...(result as LoadedGameTypes) })
 
     expect(state.selectedGameId).toBeUndefined()
+  })
+  it('loading also exposes archived game types as merge candidates', () => {
+    const useCases = buildUseCases()
+    let state = add(initialGameTypeState, useCases, 'Belote')
+    state = add(state, useCases, 'Belote coinchee')
+    const archivedId = state.gameTypes[1].id
+    const archived = submitArchiveGameType(useCases.archiveGameType, useCases.getGameTypes, archivedId)
+    state = gameTypeReducer(state, { type: 'archiveSucceeded', ...(archived as LoadedGameTypes) })
+
+    expect(state.gameTypes).toHaveLength(1)
+    expect(state.allGameTypes).toHaveLength(2)
+  })
+
+  it('showMergeDialog opens the dialog with nothing picked', () => {
+    let state = gameTypeReducer(initialGameTypeState, { type: 'toggleMergeDuplicate', id: 'stale' })
+    state = gameTypeReducer(state, { type: 'showMergeDialog' })
+
+    expect(state.showMergeDialog).toBe(true)
+    expect(state.mergeKeptId).toBeUndefined()
+    expect(state.mergeDuplicateIds).toEqual([])
+  })
+
+  it('dismissMergeDialog closes the dialog and drops the selection', () => {
+    let state = gameTypeReducer(initialGameTypeState, { type: 'showMergeDialog' })
+    state = gameTypeReducer(state, { type: 'selectMergeKept', id: 'gt1' })
+    state = gameTypeReducer(state, { type: 'toggleMergeDuplicate', id: 'gt2' })
+    state = gameTypeReducer(state, { type: 'dismissMergeDialog' })
+
+    expect(state.showMergeDialog).toBe(false)
+    expect(state.mergeKeptId).toBeUndefined()
+    expect(state.mergeDuplicateIds).toEqual([])
+  })
+
+  it('toggleMergeDuplicate ticks and unticks a duplicate, keeping the others', () => {
+    let state = gameTypeReducer(initialGameTypeState, { type: 'toggleMergeDuplicate', id: 'gt2' })
+    state = gameTypeReducer(state, { type: 'toggleMergeDuplicate', id: 'gt3' })
+    expect(state.mergeDuplicateIds).toEqual(['gt2', 'gt3'])
+
+    state = gameTypeReducer(state, { type: 'toggleMergeDuplicate', id: 'gt2' })
+    expect(state.mergeDuplicateIds).toEqual(['gt3'])
+  })
+
+  it('picking an already ticked duplicate as the kept game type unticks it', () => {
+    let state = gameTypeReducer(initialGameTypeState, { type: 'toggleMergeDuplicate', id: 'gt2' })
+    state = gameTypeReducer(state, { type: 'toggleMergeDuplicate', id: 'gt3' })
+    state = gameTypeReducer(state, { type: 'selectMergeKept', id: 'gt2' })
+
+    expect(state.mergeKeptId).toBe('gt2')
+    expect(state.mergeDuplicateIds).toEqual(['gt3'])
+  })
+
+  it('merging moves the matches, drops every duplicate and closes the dialog', () => {
+    const useCases = buildUseCases()
+    let state = add(initialGameTypeState, useCases, 'Belote')
+    state = add(state, useCases, 'Belote ')
+    state = add(state, useCases, 'belote')
+    const [keep, dup, dup2] = state.gameTypes
+    useCases.matchRepo.save({
+      id: 'm1',
+      date: 1000,
+      gameTypeId: dup.id,
+      playerScores: [{ playerId: 'p1', score: 10 }],
+      manualWinners: [],
+      secondaryPlayerScores: [],
+      rounds: [],
+    })
+    useCases.matchRepo.save({
+      id: 'm2',
+      date: 2000,
+      gameTypeId: dup2.id,
+      playerScores: [{ playerId: 'p1', score: 7 }],
+      manualWinners: [],
+      secondaryPlayerScores: [],
+      rounds: [],
+    })
+    state = gameTypeReducer(state, { type: 'showMergeDialog' })
+    state = gameTypeReducer(state, { type: 'selectMergeKept', id: keep.id })
+    state = gameTypeReducer(state, { type: 'toggleMergeDuplicate', id: dup.id })
+    state = gameTypeReducer(state, { type: 'toggleMergeDuplicate', id: dup2.id })
+
+    const result = submitMergeGameTypes(useCases.mergeGameTypes, useCases.getGameTypes, state)!
+    state = gameTypeReducer(state, { type: 'mergeSucceeded', ...(result as LoadedGameTypes) })
+
+    expect(state.gameTypes.map((gt) => gt.id)).toEqual([keep.id])
+    expect(useCases.matchRepo.getAll().map((m) => m.gameTypeId)).toEqual([keep.id, keep.id])
+    expect(state.showMergeDialog).toBe(false)
+    expect(state.mergeError).toBeUndefined()
+  })
+
+  it('a refused merge keeps the dialog open and reports the reason', () => {
+    const useCases = buildUseCases()
+    let state = add(initialGameTypeState, useCases, 'Belote')
+    state = gameTypeReducer(state, { type: 'showMergeDialog' })
+    state = gameTypeReducer(state, { type: 'selectMergeKept', id: state.gameTypes[0].id })
+    state = gameTypeReducer(state, { type: 'toggleMergeDuplicate', id: 'ghost' })
+
+    const result = submitMergeGameTypes(useCases.mergeGameTypes, useCases.getGameTypes, state)!
+    state = gameTypeReducer(state, { type: 'mergeFailed', error: (result as { error: string }).error })
+
+    expect(state.showMergeDialog).toBe(true)
+    expect(state.mergeError).toBe('GameType ghost not found')
+    expect(state.gameTypes).toHaveLength(1)
+  })
+
+  it('confirming a merge with no duplicate ticked is a no-op', () => {
+    const useCases = buildUseCases()
+    const state = gameTypeReducer(initialGameTypeState, { type: 'selectMergeKept', id: 'gt1' })
+
+    expect(submitMergeGameTypes(useCases.mergeGameTypes, useCases.getGameTypes, state)).toBeUndefined()
+  })
+
+  it('confirming a merge with no kept game type picked is a no-op', () => {
+    const useCases = buildUseCases()
+    const state = gameTypeReducer(initialGameTypeState, { type: 'toggleMergeDuplicate', id: 'gt1' })
+
+    expect(submitMergeGameTypes(useCases.mergeGameTypes, useCases.getGameTypes, state)).toBeUndefined()
+  })
+
+  it('loadGameTypes returns the active list and the full one', () => {
+    const useCases = buildUseCases()
+    let state = add(initialGameTypeState, useCases, 'Belote')
+    state = add(state, useCases, 'Tarot')
+    useCases.archiveGameType.invoke(state.gameTypes[0].id)
+
+    expect(loadGameTypes(useCases.getGameTypes)).toEqual({
+      gameTypes: useCases.repo.getAll(),
+      allGameTypes: useCases.repo.getAll(true),
+    })
   })
 })

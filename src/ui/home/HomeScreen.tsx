@@ -7,6 +7,7 @@ import type { DeletePlayerUseCase } from '../../application/deletePlayerUseCase'
 import type { GetPlayerStatsUseCase } from '../../application/getPlayerStatsUseCase'
 import type { GetPlayersUseCase } from '../../application/getPlayersUseCase'
 import type { GetTrophiesUseCase } from '../../application/getTrophiesUseCase'
+import type { MergePlayersUseCase } from '../../application/mergePlayersUseCase'
 import type { RenamePlayerUseCase } from '../../application/renamePlayerUseCase'
 import type { WinCondition } from '../../domain/model/enums'
 import type { GameType } from '../../domain/model/gameType'
@@ -25,6 +26,7 @@ export interface HomeScreenProps {
   getPlayerStats: GetPlayerStatsUseCase
   deletePlayer: DeletePlayerUseCase
   renamePlayerUseCase: RenamePlayerUseCase
+  mergePlayersUseCase: MergePlayersUseCase
   cleanupInactivePlayers: CleanupInactivePlayersUseCase
   getTrophies: GetTrophiesUseCase
   getGameTypes: () => GameType[]
@@ -41,6 +43,7 @@ export function HomeScreen({
   getPlayerStats,
   deletePlayer,
   renamePlayerUseCase,
+  mergePlayersUseCase,
   cleanupInactivePlayers,
   getTrophies,
   getGameTypes,
@@ -123,6 +126,8 @@ export function HomeScreen({
         onDeleteRequest={(playerId) => dispatch({ type: 'showDeleteConfirm', id: playerId })}
         cleanupCandidatesCount={state.cleanupCandidates.length}
         onShowCleanupConfirm={() => dispatch({ type: 'showCleanupConfirm' })}
+        mergeCandidatesCount={state.allPlayers.length}
+        onShowMergeDialog={() => dispatch({ type: 'showMergeDialog' })}
       />
 
       {state.players.length > 0 && (
@@ -153,6 +158,7 @@ export function HomeScreen({
         dispatch={dispatch}
         deletePlayer={deletePlayer}
         renamePlayerUseCase={renamePlayerUseCase}
+        mergePlayersUseCase={mergePlayersUseCase}
         sources={sources}
       />
     </>

@@ -40,7 +40,18 @@
     "archive": "Archiver",
     "archiveTitle": "Archiver {{name}} ?",
     "archiveBody": "Il n'apparaîtra plus dans la sélection de jeu.",
-    "saveChanges": "Enregistrer les modifications"
+    "saveChanges": "Enregistrer les modifications",
+    "merge": "Fusionner",
+    "mergeTitle": "Fusionner des jeux",
+    "mergeBody": "Les parties des doublons seront transférées vers le jeu conservé, puis les doublons seront supprimés définitivement.",
+    "mergeKeptLabel": "Jeu à conserver",
+    "mergeSelectPlaceholder": "— Choisir un jeu —",
+    "mergeSummary_one": "{{count}} partie sera transférée.",
+    "mergeSummary_other": "{{count}} parties seront transférées.",
+    "mergeRulesDiffer": "Les jeux sélectionnés n'ont pas tous les mêmes règles de score : celles de « {{name}} » s'appliqueront aux parties transférées, ce qui peut en changer les gagnants.",
+    "mergeConfirm": "Fusionner",
+    "mergeDuplicatesLabel": "Doublons à supprimer",
+    "archivedNote": "(archivé)"
   },
   "history": {
     "filterByGame": "Filtrer par jeu :",
@@ -85,7 +96,19 @@
     "cleanupTitle": "Nettoyer {{count}} joueur(s) inactif(s) ?",
     "cleanupBody": "Ceci supprime définitivement les joueurs sans partie enregistrée. Cette action est irréversible.",
     "unnamedPlayer": "(joueur sans nom)",
-    "deletePermanently": "Supprimer définitivement"
+    "deletePermanently": "Supprimer définitivement",
+    "merge": "Fusionner",
+    "mergeTitle": "Fusionner des joueurs",
+    "mergeBody": "Les parties des doublons seront transférées vers le joueur conservé, puis les doublons seront supprimés définitivement.",
+    "mergeKeptLabel": "Joueur à conserver",
+    "mergeSelectPlaceholder": "— Choisir un joueur —",
+    "mergeSummary_one": "{{count}} partie sera transférée.",
+    "mergeSummary_other": "{{count}} parties seront transférées.",
+    "mergeConflict_one": "{{count}} partie oppose déjà deux des joueurs sélectionnés : la fusion est impossible.",
+    "mergeConflict_other": "{{count}} parties opposent déjà deux des joueurs sélectionnés : la fusion est impossible.",
+    "mergeConfirm": "Fusionner",
+    "mergeDuplicatesLabel": "Doublons à supprimer",
+    "deletedNote": "(supprimé)"
   },
   "stats": {
     "all": "Tous",

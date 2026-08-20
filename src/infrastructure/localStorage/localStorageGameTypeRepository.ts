@@ -53,6 +53,11 @@ export class LocalStorageGameTypeRepository implements GameTypeRepository {
     return readAll().find((g) => g.id === id)
   }
 
+  hardDelete(id: string): void {
+    writeAll(readAll().filter((gameType) => gameType.id !== id))
+    this.notifier?.notifyChanged()
+  }
+
   deleteAll(): void {
     writeAll([])
     this.notifier?.notifyChanged()

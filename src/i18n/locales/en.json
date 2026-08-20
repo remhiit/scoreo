@@ -40,7 +40,18 @@
     "archive": "Archive",
     "archiveTitle": "Archive {{name}}?",
     "archiveBody": "It will no longer appear in game selection.",
-    "saveChanges": "Save changes"
+    "saveChanges": "Save changes",
+    "merge": "Merge",
+    "mergeTitle": "Merge games",
+    "mergeBody": "The duplicates' matches move to the game you keep, then the duplicates are permanently deleted.",
+    "mergeKeptLabel": "Game to keep",
+    "mergeSelectPlaceholder": "— Choose a game —",
+    "mergeSummary_one": "{{count}} match will move.",
+    "mergeSummary_other": "{{count}} matches will move.",
+    "mergeRulesDiffer": "The selected games don't all score the same way: \"{{name}}\" rules will apply to the moved matches, which may change their winners.",
+    "mergeConfirm": "Merge",
+    "mergeDuplicatesLabel": "Duplicates to remove",
+    "archivedNote": "(archived)"
   },
   "history": {
     "filterByGame": "Filter by game:",
@@ -85,7 +96,19 @@
     "cleanupTitle": "Clean up {{count}} inactive player(s)?",
     "cleanupBody": "This permanently deletes players with no recorded match. This cannot be undone.",
     "unnamedPlayer": "(unnamed player)",
-    "deletePermanently": "Delete permanently"
+    "deletePermanently": "Delete permanently",
+    "merge": "Merge",
+    "mergeTitle": "Merge players",
+    "mergeBody": "The duplicates' matches move to the player you keep, then the duplicates are permanently deleted.",
+    "mergeKeptLabel": "Player to keep",
+    "mergeSelectPlaceholder": "— Choose a player —",
+    "mergeSummary_one": "{{count}} match will move.",
+    "mergeSummary_other": "{{count}} matches will move.",
+    "mergeConflict_one": "{{count}} match already has two of the selected players facing each other: merging is not possible.",
+    "mergeConflict_other": "{{count}} matches already have two of the selected players facing each other: merging is not possible.",
+    "mergeConfirm": "Merge",
+    "mergeDuplicatesLabel": "Duplicates to remove",
+    "deletedNote": "(deleted)"
   },
   "stats": {
     "all": "All",
