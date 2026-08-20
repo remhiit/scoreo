@@ -87,7 +87,21 @@ History (`src/ui/history/HistoryScreen.tsx`) has no reducer — it's simple enou
 
 ## Tests
 
-Colocated `*.test.ts(x)` next to the file they cover, running under Vitest + `jsdom`. Every screen has a component test on top of its reducer's pure-function tests; `src/App.test.tsx` covers the full add-player → start-match → save → view-in-history flow end to end.
+Two suites, answering different questions — see [`technical/visual-testing.md`](technical/visual-testing.md).
+
+**Behaviour** (`pnpm test`) — colocated `*.test.ts(x)` next to the file they cover, running under Vitest + `jsdom`. Every screen has a component test on top of its reducer's pure-function tests; `src/App.test.tsx` covers the full add-player → start-match → save → view-in-history flow end to end.
+
+**Visual regression** (`pnpm test:visual`) — Playwright + Chromium against the production build, in `tests/visual/`. Two viewport projects (`phone` 412×839, `desktop` 1280×800), so every row below is two committed PNGs. State is seeded straight into `localStorage` by `openApp()` and each screen is reached by its hash route, never by clicking through the previous one.
+
+| Spec file                                | Screen      | Captures                                                                       |
+| ---------------------------------------- | ----------- | ------------------------------------------------------------------------------ |
+| `tests/visual/home.visual.spec.ts`        | Home        | empty state, with players, an overlong player name, French labels               |
+| `tests/visual/matchSetup.visual.spec.ts`  | MatchSetup  | variant picker at defaults, and pre-filled from a stored match                  |
+| `tests/visual/scoreDetail.visual.spec.ts` | ScoreDetail | create mode (3 players and solo), edit mode populated from a stored match       |
+| `tests/visual/history.visual.spec.ts`     | History     | empty state, two matches incl. the winner highlight, a deleted-player fallback  |
+| `tests/visual/darkMode.visual.spec.ts`    | Home + ScoreDetail | the `prefers-color-scheme: dark` palette                                |
+
+Support files: `tests/visual/support/app.ts` (`openApp`, `expectScreenshot`, `routes`) and `tests/visual/support/fixtures.ts` (fixed `Player[]`/`Match[]`, typed against the domain models). Baselines live in `tests/visual/*-snapshots/` and **must be recorded through `pnpm test:visual:container`**, never on a developer machine.
 
 ## localStorage Keys
 
