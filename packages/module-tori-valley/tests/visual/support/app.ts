@@ -5,14 +5,17 @@ import type { Player } from '../../../src/domain/model/player'
 
 /**
  * localStorage keys owned by the adapters in `src/infrastructure/localStorage/`
- * and by the i18n language detector (`src/i18n/index.ts`). Duplicated here
+ * and by the standalone i18n bootstrap (`src/i18n/standalone.ts`). Duplicated here
  * rather than imported, because those constants are module-private — if one of
  * them is ever renamed, the seeded screens fall back to their empty state and
  * the affected baselines fail loudly.
  */
 const PLAYERS_KEY = 'tori_valley_players'
 const MATCHES_KEY = 'tori_valley_matches'
-const LANGUAGE_KEY = 'tori_valley_language'
+// Shared with Scoreo since the merge; the app's former `tori_valley_language`
+// is only read as a fallback, so seeding it here would test the fallback
+// rather than the language selection.
+const LANGUAGE_KEY = 'scoreo_lang'
 
 export interface SeededState {
   players?: Player[]

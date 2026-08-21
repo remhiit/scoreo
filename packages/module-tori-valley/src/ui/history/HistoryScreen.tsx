@@ -2,6 +2,7 @@ import { Download, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import type { TFunction } from 'i18next'
 import { useTranslation } from 'react-i18next'
+import { TORI_VALLEY_NS } from '../../i18n'
 import type { DeleteMatchUseCase } from '../../application/deleteMatchUseCase'
 import type { ExportMatchesUseCase } from '../../application/exportMatchesUseCase'
 import type { GetMatchesUseCase } from '../../application/getMatchesUseCase'
@@ -35,7 +36,7 @@ export function HistoryScreen({
   exportMatches,
   onEditMatch,
 }: HistoryScreenProps) {
-  const { t } = useTranslation()
+  const { t } = useTranslation(TORI_VALLEY_NS)
   // Both reads hit localStorage synchronously, so they belong in the initial
   // state rather than in a mount effect: the first paint already has the data
   // instead of rendering an empty list and immediately re-rendering.
