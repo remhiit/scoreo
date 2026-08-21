@@ -12,8 +12,8 @@ Runs on every `push` to `main` and every `pull_request`, as five independent job
 | `test` | `pnpm test` | Yes |
 | `build` | `pnpm typecheck` then `pnpm build` | Yes |
 | `doc-links` | `node scripts/check-doc-links.mjs` — fails on any relative Markdown link under `doc/` pointing to a non-existent file | Yes |
-| `design-tokens` | `node scripts/check-design-tokens.mjs` — fails if a raw px/duration/easing value in `public/css/*.css` exactly matches a design token (see `doc/technical/architecture.md` §Design tokens) | Yes |
-| `lighthouse` | Builds, then runs Lighthouse CI against `dist/` using `lighthouserc.json` (assertions at `error` level since #183) | Turns the job red on a failing assertion, but not a required status check — no `continue-on-error`, report uploaded as a build artifact |
+| `design-tokens` | `node scripts/check-design-tokens.mjs` — fails if a raw px/duration/easing value in `apps/scoreo/public/css/*.css` exactly matches a design token (see `doc/technical/architecture.md` §Design tokens) | Yes |
+| `lighthouse` | Builds, then runs Lighthouse CI against `apps/scoreo/dist/` using `lighthouserc.json` (assertions at `error` level since #183) | Turns the job red on a failing assertion, but not a required status check — no `continue-on-error`, report uploaded as a build artifact |
 
 Each job name (`lint`, `test`, `build`, `doc-links`) is meant to be set as a required status check in branch protection (see `setup-repo.sh`). `lighthouse` is deliberately left out of that required list — its assertions run at `error` level, with `minScore` thresholds (`lighthouserc.json`) recalibrated below the Phase 0 baseline (performance 0.96, accessibility 0.95, best-practices 0.96, SEO 0.90 — the `pwa` category was dropped since Lighthouse 12 no longer computes it by default): accessibility ≥ 0.90, best-practices ≥ 0.90 and SEO ≥ 0.85 (~0.05 below baseline, an anti-noise margin), while `performance` was recalibrated much further down to ≥ 0.60 after direct runner measurements showed 25+ points of CPU-variance noise on GitHub Actions (see `doc/technical/automation-plan.md` §9). A red `lighthouse` run is a visible signal on the PR, not yet a merge blocker.
 
@@ -208,7 +208,7 @@ To enable cloud backup, you need an OAuth 2.0 Client ID from Google Cloud.
 
 Add a repository secret `GOOGLE_CLIENT_ID` with the value from step 5.
 
-`deploy.yml`'s build step passes it to Vite as `VITE_GOOGLE_CLIENT_ID`, read at build time by `src/infrastructure/google/oauthConfig.ts` via `import.meta.env.VITE_GOOGLE_CLIENT_ID`. If the variable is absent, the sync feature is silently disabled (the Sync menu entry does not appear).
+`deploy.yml`'s build step passes it to Vite as `VITE_GOOGLE_CLIENT_ID`, read at build time by `apps/scoreo/src/infrastructure/google/oauthConfig.ts` via `import.meta.env.VITE_GOOGLE_CLIENT_ID`. If the variable is absent, the sync feature is silently disabled (the Sync menu entry does not appear).
 
 ```yaml
 env:
@@ -235,14 +235,14 @@ Codeberg Pages deployment (`.forgejo/workflows/deploy.yml`, Kotlin/Gradle-based)
 2. Setup Node.js 22 (`actions/setup-node`, `cache: pnpm`)
 3. Install dependencies: `pnpm install --frozen-lockfile`
 4. Build: `pnpm build` (with `VITE_GOOGLE_CLIENT_ID` from `secrets.GOOGLE_CLIENT_ID`)
-5. **Verify all `public/` assets are in the artifact** — cross-check that every file/directory in `public/` made it into `dist/`. Fails if anything is missing. (Vite copies `public/` to `dist/` natively, unlike the old webpack pipeline's manual `cp -r`, so this step is mostly a regression guard rather than a required manual step.)
+5. **Verify all `apps/scoreo/public/` assets are in the artifact** — cross-check that every file/directory in `apps/scoreo/public/` made it into `apps/scoreo/dist/`. Fails if anything is missing. (Vite copies `apps/scoreo/public/` to `apps/scoreo/dist/` natively, unlike the old webpack pipeline's manual `cp -r`, so this step is mostly a regression guard rather than a required manual step.)
 
 `deploy.yml` no longer runs `pnpm test` itself — `ci.yml`'s `test` job already covers the same push event, so re-running it here was a pure duplicate.
 
 ### Deployment
 
 6. Configure Pages
-7. Upload artifact (`dist/`)
+7. Upload artifact (`apps/scoreo/dist/`)
 8. Deploy to GitHub Pages
 
 **Output exposure**: The `deploy` job exposes `${{ steps.deploy.outputs.page_url }}` so dependent jobs can verify the deployed site.
@@ -252,7 +252,7 @@ Codeberg Pages deployment (`.forgejo/workflows/deploy.yml`, Kotlin/Gradle-based)
 **Job**: `smoke-test` (runs after successful deployment)
 
 Verifies the deployed site is fully functional by making HTTP requests to key URLs:
-- Root path (`/Scoreo/`) — confirms `index.html` is served
+- Root path (`/Scoreo/`) — confirms `apps/scoreo/index.html` is served
 - `manifest.json` — confirms the PWA manifest is accessible
 - `sw.js` — confirms the service worker script is accessible
 - `css/styles.css` — confirms CSS assets are accessible

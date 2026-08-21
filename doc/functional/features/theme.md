@@ -17,7 +17,7 @@ Accent: 14 Catppuccin hues (`mauve` default) — see `tokens/semantic.css`.
 
 ## CSS
 
-Files (`public/css/`):
+Files (`apps/scoreo/public/css/`):
 - `tokens/` — Catppuccin flavor palettes
   (`colors-latte.css`, `colors-frappe.css`, `colors-macchiato.css`,
   `colors-mocha.css`) + the semantic alias/accent layer
@@ -26,7 +26,7 @@ Files (`public/css/`):
   `.accent-swatch` and their `--active` variants, for the picker
   dialog.
 
-Burger menu entry: `"🎨 Theme"` (in `src/App.tsx`) opens
+Burger menu entry: `"🎨 Theme"` (in `apps/scoreo/src/App.tsx`) opens
 `ThemePickerDialog`, which uses `LudoModal`/`LudoButton` (the chips/
 swatches themselves stay custom — Ludo has no "color swatch"
 primitive).
@@ -35,12 +35,12 @@ primitive).
 
 | File | Role |
 |------|------|
-| `src/ui/theme/themeManager.ts` | `readInitialFlavor`/`readInitialAccent`/`applyTheme`/`saveFlavor`/`saveAccent` — pure functions, localStorage, `data-theme`/`data-accent` on `<html>`, legacy migration |
-| `src/ui/theme/themeContext.ts` | `ThemeContext` (`createContext`) + `ThemeState` type — no component, so importing it doesn't break Fast Refresh |
-| `src/ui/theme/ThemeContext.tsx` | `ThemeProvider` — wraps `themeManager.ts`, provides `ThemeContext` so the picker and the rest of the app share live state |
-| `src/ui/theme/useTheme.ts` | `useTheme()` hook, reads `ThemeContext` |
-| `src/ui/theme/ThemePickerDialog.tsx` | Flavor chips + accent swatches, rendered via `LudoModal` |
-| `src/App.tsx` | Renders the burger menu entry + dialog |
+| `apps/scoreo/src/ui/theme/themeManager.ts` | `readInitialFlavor`/`readInitialAccent`/`applyTheme`/`saveFlavor`/`saveAccent` — pure functions, localStorage, `data-theme`/`data-accent` on `<html>`, legacy migration |
+| `apps/scoreo/src/ui/theme/themeContext.ts` | `ThemeContext` (`createContext`) + `ThemeState` type — no component, so importing it doesn't break Fast Refresh |
+| `apps/scoreo/src/ui/theme/ThemeContext.tsx` | `ThemeProvider` — wraps `themeManager.ts`, provides `ThemeContext` so the picker and the rest of the app share live state |
+| `apps/scoreo/src/ui/theme/useTheme.ts` | `useTheme()` hook, reads `ThemeContext` |
+| `apps/scoreo/src/ui/theme/ThemePickerDialog.tsx` | Flavor chips + accent swatches, rendered via `LudoModal` |
+| `apps/scoreo/src/App.tsx` | Renders the burger menu entry + dialog |
 
 No dedicated reducer (global concern, no dedicated screen) — state lives in `ThemeContext`.
 

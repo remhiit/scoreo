@@ -53,17 +53,17 @@ the regression; don't chase single-point noise between runs.
 
 ### 4. PWA validity
 
-Check `public/manifest.json` and `public/sw.js` are still internally
+Check `apps/scoreo/public/manifest.json` and `apps/scoreo/public/sw.js` are still internally
 consistent with the app: icon paths in the manifest resolve
-(`public/icon-192.png`, `public/icon-512.png`), `sw.js`'s cached asset list
+(`apps/scoreo/public/icon-192.png`, `apps/scoreo/public/icon-512.png`), `sw.js`'s cached asset list
 (if any) matches what `pnpm build` actually emits, and the deploy workflow's
 "verify all public/ assets are in the artifact" step (`deploy.yml`) still
-passes conceptually — i.e. nothing new was added to `public/` without a
+passes conceptually — i.e. nothing new was added to `apps/scoreo/public/` without a
 corresponding reference.
 
 ## What this skill does not do
 
-It does not touch `public/`, `src/domain/model/`, ports/adapters, or
+It does not touch `apps/scoreo/public/`, `apps/scoreo/src/domain/model/`, ports/adapters, or
 navigation as part of a "quick fix" — those are the same categories excluded
 from the `auto` whitelist in `automation-plan.md` §5 for a reason. If a
 hygiene pass surfaces something in those areas, open a normal issue via

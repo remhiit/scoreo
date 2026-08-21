@@ -264,7 +264,7 @@ que le déblocage d'une issue profite au dispatch du même run.
 
 **Autorisé au départ :** contenu, documentation, dépendances, refacto local sans
 changement de comportement public.
-**Exclu :** modèles sérialisés et migrations, ports/adapters, `public/`
+**Exclu :** modèles sérialisés et migrations, ports/adapters, `apps/scoreo/public/`
 (manifest, `sw.js`), config Vite/TS, navigation.
 
 > Cohérent avec les règles du `CLAUDE.md` : tout modèle sérialisé doit rester
@@ -776,7 +776,7 @@ R6 hebdo. C'est le rapport qui pilote l'élargissement de la liste blanche `auto
   anti-bruit inter-runs — ces trois catégories restent stables sur le runner
   CI). Pour `performance`, le seuil ~0.05-sous-baseline (0.90) s'est révélé
   inapplicable : mesuré directement sur le runner CI (`treosh/lighthouse-ci-action`,
-  build `dist/` servi tel que le fait le job `lighthouse`), le score varie de
+  build `apps/scoreo/dist/` servi tel que le fait le job `lighthouse`), le score varie de
   0.65 à 0.81 sur 3 exécutions consécutives du même commit — un écart de plus
   de 25 points de la baseline, dû à la variance CPU du runner GitHub Actions
   partagé et pas à une régression du site. Seuil `performance` recalibré à

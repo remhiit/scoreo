@@ -4,7 +4,7 @@
 
 Suites de tests pour la synchronisation Google Drive, toutes exécutables sous Vitest/`jsdom` — aucun navigateur réel requis (contrairement à l'ancienne suite Kotlin/JS qui nécessitait `jsTest`/Karma pour les mêmes tests) :
 
-- `GoogleAuthService` — gestion OAuth et tokens (`src/infrastructure/google/googleAuthService.ts` / `.test.ts`)
+- `GoogleAuthService` — gestion OAuth et tokens (`apps/scoreo/src/infrastructure/google/googleAuthService.ts` / `.test.ts`)
 - `GoogleDriveSyncAdapter` — synchronisation cloud, adapter `CloudSyncRepository` (`googleDriveSyncAdapter.ts` / `.test.ts`)
 - `GoogleDriveClient` — client HTTP Drive API v3 (`googleDriveClient.ts` / `.test.ts`)
 - `mockGoogleDriveClient.ts` — double de test manuel, pas de librairie de mock
@@ -29,7 +29,7 @@ L'ancienne suite Kotlin ne pouvait pas réellement charger Google Identity Servi
 pnpm test
 
 # Juste les tests Google Drive
-pnpm exec vitest run src/infrastructure/google
+pnpm --filter scoreo exec vitest run src/infrastructure/google
 ```
 
 ## Limitations actuelles

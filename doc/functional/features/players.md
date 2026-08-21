@@ -17,11 +17,11 @@
 
 | Component | Details |
 |-----------|---------|
-| **Reducer** | `playerReducer` — `src/ui/home/playerReducer.ts` |
+| **Reducer** | `playerReducer` — `apps/scoreo/src/ui/home/playerReducer.ts` |
 | **Action** | `PlayerAction`: `updateInput`, `addSucceeded`/`addFailed`, `showDeleteConfirm`, `dismissDeleteConfirm`, `deleted`, `startRename`, `updateRenameInput`, `renameSucceeded`/`renameFailed`, `cancelRename`, `showCleanupConfirm`, `dismissCleanupConfirm`, `cleanupCompleted`, `showMergeDialog`, `dismissMergeDialog`, `selectMergeKept`, `toggleMergeDuplicate`, `mergeSucceeded`/`mergeFailed` |
 | **State** | `PlayerState`: `players`, `allPlayers`, `stats`, `trophyCounts`, `inputName`, `error`, `deleteConfirmPlayerId`, `renamingPlayerId`, `renameInput`, `cleanupCandidates`, `showCleanupConfirm`, `showMergeDialog`, `mergeKeptId`, `mergeDuplicateIds`, `mergeError` |
 
-Screen: `src/ui/home/HomeScreen.tsx`. See `doc/reference.md` for the full reducer table.
+Screen: `apps/scoreo/src/ui/home/HomeScreen.tsx`. See `doc/reference.md` for the full reducer table.
 
 ## Screen: PlayerScreen
 

@@ -6,6 +6,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 PWA React + TypeScript de suivi de scores entre amis. MVI-style (reducer/action/state par écran, via `useReducer`). Architecture hexagonale (Ports & Adapters). 100% local-first (localStorage), sync cloud optionnelle via Google Drive.
 
+Le dépôt est un **monorepo pnpm** : Scoreo est l'application hôte (`apps/scoreo/`, la seule déployée) et les compteurs de points dédiés à un jeu deviennent des **modules** (`packages/`, chargés à la demande). Toutes les commandes se lancent depuis la racine du workspace ; voir « Arborescence clé » et `doc/technical/architecture.md` § *Repository layout*.
+
 ## Langue
 
 Toujours répondre en français dans le chat (texte adressé à l'utilisateur), y compris les messages de statut, résumés et questions. Les commits, PR et issues sont également en français (message de commit = titre de l'issue, cf. section Workflow), conformément à la pratique déjà en place dans le repo. Le code, les identifiants et la documentation technique (`doc/`) restent en anglais.
@@ -16,7 +18,7 @@ Toujours répondre en français dans le chat (texte adressé à l'utilisateur), 
 # Dev server (hot reload)
 pnpm dev
 
-# Build production (sortie: dist/)
+# Build production (sortie: apps/scoreo/dist/)
 pnpm build
 
 # Preview d'un build de production
@@ -26,7 +28,7 @@ pnpm preview
 pnpm test
 
 # Un seul fichier de test
-pnpm exec vitest run src/ui/scoredetail/scoreDetailReducer.test.ts
+pnpm --filter scoreo exec vitest run src/ui/scoredetail/scoreDetailReducer.test.ts
 
 # Typecheck / lint
 pnpm typecheck
@@ -34,6 +36,8 @@ pnpm lint
 ```
 
 `.claude/hooks/session-start.sh` (déclaré dans `.claude/settings.json`) préchauffe `node_modules` au démarrage d'une session Claude Code sur le web (`$CLAUDE_CODE_REMOTE`), pour que `pnpm test`/`typecheck`/`lint`/`build` soient rapides dès la première commande — active le pnpm épinglé dans `package.json` (`packageManager`) via Corepack (`registry.npmjs.org`), puis `pnpm install --frozen-lockfile`.
+
+Les scripts de la racine essaiment avec `pnpm -r` (ou `--filter scoreo` pour ceux qui ne concernent que l'app) ; `pnpm test` fait tourner en plus le projet Vitest racine, qui ne couvre que les tests des scripts d'automatisation (`scripts/*.test.mjs`).
 
 Pas de dépendance Gradle/JVM : tout passe par `package.json` (pnpm). Tests unitaires colocalisés (`*.test.ts(x)`), tournant intégralement sous Vitest/jsdom — pas de suite séparée nécessitant un vrai navigateur.
 
@@ -51,15 +55,18 @@ Lire ces fichiers dans l'ordre. Tout le contexte nécessaire y est :
 
 | Dossier | Contenu |
 |---|---|
-| `src/domain/` | `model/` (types + schémas zod), `port/` (interfaces repository) |
-| `src/application/` | Use cases (opérations métier, zéro dépendance framework) |
-| `src/infrastructure/` | `localStorage/` (adapters), `google/` (sync Google Drive : OAuth, DriveClient, DriveSyncAdapter, SyncConfig), `migration/` (migration Match v1→v2), `testing/` (fakes in-memory pour les tests) |
-| `src/services/` | `ServicesContext.tsx` — DI racine (`useMemo`), hook `useServices()` |
-| `src/ui/*/` | Un dossier par écran : `<screen>Reducer.ts` (+ test), `<screen>Types.ts`, `<Screen>.tsx` (+ test) |
-| `src/ui/shared/` | Composants React partagés (`LudoButton`, `LudoModal`, `LudoTable`, ...) |
-| `src/ui/theme/` | `themeManager.ts`, `ThemeContext.tsx`, `ThemePickerDialog.tsx` |
-| `src/ui/navigation/` | `screen.ts` (union `Screen`), `hash.ts` (`parseHash`/`screenToHash`), `useHashRouter.ts` |
-| `public/` | `manifest.json`, `sw.js`, icônes PWA, `css/` (dont `css/tokens/`) |
+| `apps/scoreo/` | L'app hôte : `index.html`, `public/`, `src/`, `e2e/`, ses configs Vite/Vitest/Playwright/TS et son `package.json` (React, zod, vite, vitest) |
+| `packages/` | Les modules de comptage, un dossier par module. Vide pour l'instant : le workspace est câblé pour eux (`pnpm-workspace.yaml`), chaque absorption en ajoute un |
+| Racine | `package.json` privé (scripts `pnpm -r`, eslint/prettier/tsc), `tsconfig.base.json`, `eslint.config.js`, `vitest.config.ts` (tests de `scripts/` uniquement), `lighthouserc.json`, `doc/`, `schemas/`, `scripts/`, `.github/`, `.claude/` |
+| `apps/scoreo/src/domain/` | `model/` (types + schémas zod), `port/` (interfaces repository) |
+| `apps/scoreo/src/application/` | Use cases (opérations métier, zéro dépendance framework) |
+| `apps/scoreo/src/infrastructure/` | `localStorage/` (adapters), `google/` (sync Google Drive : OAuth, DriveClient, DriveSyncAdapter, SyncConfig), `migration/` (migration Match v1→v2), `testing/` (fakes in-memory pour les tests) |
+| `apps/scoreo/src/services/` | `ServicesContext.tsx` — DI racine (`useMemo`), hook `useServices()` |
+| `apps/scoreo/src/ui/*/` | Un dossier par écran : `<screen>Reducer.ts` (+ test), `<screen>Types.ts`, `<Screen>.tsx` (+ test) |
+| `apps/scoreo/src/ui/shared/` | Composants React partagés (`LudoButton`, `LudoModal`, `LudoTable`, ...) |
+| `apps/scoreo/src/ui/theme/` | `themeManager.ts`, `ThemeContext.tsx`, `ThemePickerDialog.tsx` |
+| `apps/scoreo/src/ui/navigation/` | `screen.ts` (union `Screen`), `hash.ts` (`parseHash`/`screenToHash`), `useHashRouter.ts` |
+| `apps/scoreo/public/` | `manifest.json`, `sw.js`, icônes PWA, `css/` (dont `css/tokens/`) |
 | `schemas/import/` | Schémas JSON du format d'import (versionnés, `v1.0`/`v1.1`) |
 | `ds_temp/` | Référence temporaire du handoff design (Ludo Design System) : tokens, composants, mapping écran→fichiers. Source de vérité visuelle pour les issues de migration à venir ; à supprimer une fois la migration terminée. Voir `ds_temp/design_handoff_scoreo_ds/README.md` |
 

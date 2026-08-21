@@ -43,11 +43,11 @@ jobs:
           VITE_GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
         run: pnpm build
 
-      - name: Verify all public/ assets are in the artifact
+      - name: Verify all apps/scoreo/public/ assets are in the artifact
         run: |
-          for f in public/*; do
+          for f in apps/scoreo/public/*; do
             name=$(basename "$f")
-            test -e "dist/$name" \
+            test -e "apps/scoreo/dist/$name" \
               || (echo "Missing from artifact: $name" && exit 1)
           done
 
@@ -57,7 +57,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: dist/
+          path: apps/scoreo/dist/
 
       - name: Deploy to GitHub Pages
         id: deploy

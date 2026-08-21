@@ -1,8 +1,8 @@
 # Navigation (hash router) Tests
 
-**File:** `src/ui/navigation/hash.test.ts`
+**File:** `apps/scoreo/src/ui/navigation/hash.test.ts`
 
-**Total Tests:** 43 (plus 3 in `src/ui/navigation/useHashRouter.test.ts` for the hook's DOM wiring)
+**Total Tests:** 43 (plus 3 in `apps/scoreo/src/ui/navigation/useHashRouter.test.ts` for the hook's DOM wiring)
 
 ## Overview
 
@@ -12,7 +12,7 @@ Pure unit tests for **routing logic**: URL ↔ Screen mapping. Tests hash fragme
 
 ### Pure Functions Tested
 
-`src/ui/navigation/hash.ts` exports two pure functions, also the ones used by the real router:
+`apps/scoreo/src/ui/navigation/hash.ts` exports two pure functions, also the ones used by the real router:
 
 1. **`parseHash(hash: string): Screen`**
    - Parses URL hash (`#/route/...`) into a `Screen` object
@@ -22,11 +22,11 @@ Pure unit tests for **routing logic**: URL ↔ Screen mapping. Tests hash fragme
    - Serializes a `Screen` object to a hash URL string
    - Always produces valid, predictable hashes
 
-`src/ui/navigation/useHashRouter.ts` is the hook that syncs a `Screen` with `window.location.hash` via `pushState`/`popstate`, built directly on top of these two functions — so the tests in `hash.test.ts` exercise the exact same code path the app uses, not a duplicate.
+`apps/scoreo/src/ui/navigation/useHashRouter.ts` is the hook that syncs a `Screen` with `window.location.hash` via `pushState`/`popstate`, built directly on top of these two functions — so the tests in `hash.test.ts` exercise the exact same code path the app uses, not a duplicate.
 
 ### Key Invariants
 
-- `Screen` (`src/ui/navigation/screen.ts`) is a plain discriminated union, no framework dependency
+- `Screen` (`apps/scoreo/src/ui/navigation/screen.ts`) is a plain discriminated union, no framework dependency
 - **Roundtrip guarantee:** `parseHash(screenToHash(screen).replace(/^#/, '')) === original screen`
 - All 7 screen types tested (Home, History, Import, Stats, Games, Sync, ScoreDetail)
 
@@ -92,7 +92,7 @@ Extra URL segments beyond the expected shape are ignored; CSV generation for mul
 pnpm test
 
 # Just the navigation tests
-pnpm exec vitest run src/ui/navigation
+pnpm --filter scoreo exec vitest run src/ui/navigation
 ```
 
 ## Maintenance Notes

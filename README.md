@@ -4,7 +4,11 @@ Scoreo is a Progressive Web App (PWA) built with React + TypeScript for tracking
 
 ## Repository structure
 
-- `src/domain`, `src/application`, `src/infrastructure`, `src/services`, `src/ui` — application source code
+The repository is a pnpm workspace (`apps/*`, `packages/*`). Every command below runs from its root.
+
+- `apps/scoreo/` — the host PWA, and the only project deployed
+- `packages/` — the score-counting modules Scoreo loads on demand (none yet)
+- `apps/scoreo/src/domain`, `apps/scoreo/src/application`, `apps/scoreo/src/infrastructure`, `apps/scoreo/src/services`, `apps/scoreo/src/ui` — application source code
 - `doc/functional/` — functional documentation (features, user flows)
 - `doc/technical/` — technical documentation (architecture, design decisions)
 
@@ -30,7 +34,7 @@ Opens a dev server with hot reload.
 pnpm build
 ```
 
-Output lands in `dist/`. Preview it locally:
+Output lands in `apps/scoreo/dist/`. Preview it locally:
 
 ```bash
 pnpm preview

@@ -25,11 +25,11 @@ interface ImportResult {
 
 | Component | Details |
 |-----------|---------|
-| **Reducer** | `importReducer` — `src/ui/import/importReducer.ts` |
+| **Reducer** | `importReducer` — `apps/scoreo/src/ui/import/importReducer.ts` |
 | **Action** | `ImportAction`: `previewReady`, `previewFailed`, `importSucceeded`, `importFailed`, `fileError`, `reset` |
 | **State** | `ImportState`: `step` (`'IDLE'` → `'READY'` → `'DONE'`), `preview`, `jsonContent`, `result`, `error` |
 
-Screen: `src/ui/import/ImportScreen.tsx`. See `doc/reference.md` for the full reducer table.
+Screen: `apps/scoreo/src/ui/import/ImportScreen.tsx`. See `doc/reference.md` for the full reducer table.
 
 ## Screen: ImportScreen
 
