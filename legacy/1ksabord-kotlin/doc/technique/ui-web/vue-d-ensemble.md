@@ -17,6 +17,10 @@ Kotlin/JS. Dépend du domaine, jamais l'inverse.
 | `Compression.kt` | Compression LZW pour fichiers `.sabords` |
 | `Stats.kt` | Statistiques des joueurs connus |
 
+Les ressources statiques `resources/` (`index.html`, `manifest.json`,
+`sw.js`, icônes) complètent l'adaptateur — voir [`pwa.md`](pwa.md) pour
+le service worker.
+
 ## Principes
 
 - **Pas de framework JS** — tout est Kotlin/JS pur
