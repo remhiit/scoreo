@@ -1,0 +1,50 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+*.tsbuildinfo
+
+# Logs
+*.log
+
+# Env
+.env
+.env.*
+!.env.example
+
+# Editor / OS
+.vscode-test
+.DS_Store
+
+# Vite
+vite.config.js.timestamp-*
+vite.config.ts.timestamp-*
+.vite/
+
+# Coverage
+coverage/
+*.lcov
+
+# pnpm
+.pnpm-store
+
+# Lighthouse CI reports
+.lighthouseci/
+
+# Playwright run output — the baselines under tests/visual/**-snapshots/ ARE committed,
+# everything below is per-run noise (diffs, traces, HTML report).
+test-results/
+playwright-report/
+blob-report/
+.playwright/
+
+# Copyrighted rulebook PDF — kept locally for reference, not for distribution
+LVDT_Rules*.pdf
+
+# Copyrighted card scans — same rule as the rulebook above: local backup only.
+# See doc/functional/features/objectif-cards.md ("Scans des cartes").
+doc/resources/objectif-cards/
+
+# Claude Code local settings (personal, not shared)
+.claude/settings.local.json
