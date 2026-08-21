@@ -1,6 +1,12 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this package.
+
+This package was absorbed from the standalone `remhiit/toriValleyScoreBoard` repository and is
+becoming a **scoring module** loaded by Scoreo. The workspace root's `CLAUDE.md` governs the repo as
+a whole (language, backlog, commit conventions, skills); this file covers what is specific to the
+module. The commands below run as written **from this directory** — from the workspace root, prefix
+them with `pnpm --filter @scoreboards/module-tori-valley`.
 
 # Torī Valley Scoreboard
 
@@ -24,12 +30,16 @@ pnpm test
 # A single test file
 pnpm exec vitest run src/domain/model/torii.test.ts
 
-# Typecheck / lint
+# Typecheck
 pnpm typecheck
-pnpm lint
+
+# Visual regression suite (Playwright, in the pinned container image)
+pnpm test:visual:container
 ```
 
-No Gradle/JVM dependency: everything goes through `package.json` (pnpm). Unit tests are colocated (`*.test.ts(x)`), running entirely under Vitest/jsdom — no separate suite requiring a real browser.
+Linting and formatting are workspace-wide: run `pnpm lint` / `pnpm format` from the repository root.
+
+Unit tests are colocated (`*.test.ts(x)`), running entirely under Vitest/jsdom — no separate suite requiring a real browser.
 
 ## Before exploring the code
 
@@ -42,7 +52,7 @@ Read these files in order — all the necessary context is there:
 
 ## The game's rules
 
-The rulebook PDF (`LVDT_Rules-225x225mm_FR.pdf`) is kept in the repo working directory for reference but is **gitignored, never committed** (copyrighted material). If it's missing, ask the user for a copy before touching scoring logic. `doc/functional/features/scoring.md` summarizes the rules that are actually implemented, and flags what isn't (notably: the 16 Objectif cards' exact scoring text hasn't been digitized, so Objectif points are entered manually rather than computed — see that doc for the open item).
+The rulebook PDF (`LVDT_Rules-225x225mm_FR.pdf`) is kept in this package's working directory for reference but is **gitignored, never committed** (copyrighted material). If it's missing, ask the user for a copy before touching scoring logic. `doc/functional/features/scoring.md` summarizes the rules that are actually implemented, and flags what isn't (notably: the 16 Objectif cards' exact scoring text hasn't been digitized, so Objectif points are entered manually rather than computed — see that doc for the open item).
 
 ## Key directory layout
 
@@ -59,13 +69,11 @@ The rulebook PDF (`LVDT_Rules-225x225mm_FR.pdf`) is kept in the repo working dir
 
 ## Workflow
 
-- The backlog lives in **GitHub Issues**, not in a `.task/` folder — two sources of truth would eventually diverge.
-- Priority: labels `P0`…`P3` (P0 = most urgent).
-- **Plan**: user describes a feature or fix → create an issue (title, acceptance criteria, affected files) with the matching priority label.
-- **Develop**: user says to develop → pick the first open, unassigned `P0` issue (fall back to the next available priority), implement it, commit, open a PR referencing `Closes #N`, then move to the next one.
-- One commit per issue. Commit message = issue title.
-
-See `doc/technical/automation-plan.md` for the target automation architecture (labels as event bus, skills, phasing toward autonomy) and `.claude/skills/` for the skills that implement each step (`issue-to-spec`, `implement-task`, `pr-review`, `address-feedback`, `site-quality`, `project-conventions`).
+The backlog, the priority labels, the one-commit-per-issue rule and the automation skills are the
+workspace's, not this package's: see the workspace root's `CLAUDE.md` and its
+`doc/technical/automation-plan.md` (this package still carries its own stale copy of that document —
+the two get merged when the documentation is consolidated).
+Issues that belong to this module carry the `module:tori-valley` label.
 
 ## Rules
 

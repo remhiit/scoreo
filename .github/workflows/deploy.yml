@@ -41,7 +41,8 @@ jobs:
       - name: Build production
         env:
           VITE_GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
-        run: pnpm build
+        # Only the app is deployed; the modules are built by ci.yml.
+        run: pnpm --filter scoreo build
 
       - name: Verify all apps/scoreo/public/ assets are in the artifact
         run: |

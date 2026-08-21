@@ -9,6 +9,18 @@
     // tsconfig.visual.json) and must not leak Node globals into browser code.
     "types": [],
 
+    // This package is still on React 18 while the workspace's app is on React 19,
+    // so two @types/react live side by side. A dependency's own `.d.ts` (e.g.
+    // lucide-react's) resolves `react` from the hoisted store, which holds the
+    // React 19 types, and its JSX types then clash with this package's React 18
+    // ones. Pinning the mapping keeps every `from 'react'` in the program on the
+    // types this package actually depends on. Removable once both are on React 19.
+    "baseUrl": ".",
+    "paths": {
+      "react": ["./node_modules/@types/react"],
+      "react-dom": ["./node_modules/@types/react-dom"]
+    },
+
     "moduleResolution": "bundler",
     "allowImportingTsExtensions": true,
     "verbatimModuleSyntax": true,
