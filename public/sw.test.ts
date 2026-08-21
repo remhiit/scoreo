@@ -17,7 +17,12 @@ function makeRequest(path: string, { method = 'GET', mode = 'no-cors' } = {}) {
   return { url: `${ORIGIN}${path}`, method, mode }
 }
 
-function createEnv({ cached = undefined as unknown, networkResponse = makeResponse(true), networkError = undefined as unknown } = {}) {
+function createEnv({
+  cached = undefined as unknown,
+  networkResponse = makeResponse(true),
+  networkError = undefined as unknown,
+  cacheKeys = [] as string[],
+} = {}) {
   const listeners: Record<string, (event: unknown) => void> = {}
   const cache = {
     addAll: vi.fn().mockResolvedValue(undefined),
@@ -26,7 +31,7 @@ function createEnv({ cached = undefined as unknown, networkResponse = makeRespon
   const caches = {
     open: vi.fn().mockResolvedValue(cache),
     match: vi.fn().mockResolvedValue(cached),
-    keys: vi.fn().mockResolvedValue([]),
+    keys: vi.fn().mockResolvedValue(cacheKeys),
     delete: vi.fn().mockResolvedValue(true),
   }
   const fetchImpl = vi.fn(() => (networkError ? Promise.reject(networkError) : Promise.resolve(networkResponse)))
@@ -42,6 +47,16 @@ function createEnv({ cached = undefined as unknown, networkResponse = makeRespon
   return { listeners, caches, cache, fetch: fetchImpl, self }
 }
 
+async function dispatchActivate(env: ReturnType<typeof createEnv>) {
+  let waitUntilPromise: Promise<unknown> | undefined
+  env.listeners.activate({
+    waitUntil: (p: Promise<unknown>) => {
+      waitUntilPromise = p
+    },
+  })
+  await waitUntilPromise
+}
+
 function dispatchFetch(env: ReturnType<typeof createEnv>, request: ReturnType<typeof makeRequest>) {
   let respondWithPromise: Promise<unknown> | undefined
   let respondWithCalled = false
@@ -55,6 +70,22 @@ function dispatchFetch(env: ReturnType<typeof createEnv>, request: ReturnType<ty
   env.listeners.fetch(event)
   return { respondWithCalled, result: respondWithPromise }
 }
+
+describe('public/sw.js activate handler', () => {
+  it('keeps the caches owned by the sibling PWAs sharing the origin', async () => {
+    const env = createEnv({ cacheKeys: ['scoreo-v3', 'tori-valley-v1', 'ksabord-v1'] })
+    await dispatchActivate(env)
+    expect(env.caches.delete).not.toHaveBeenCalled()
+  })
+
+  it('still purges the previous Scoreo caches', async () => {
+    const env = createEnv({ cacheKeys: ['scoreo-v1', 'scoreo-v2', 'scoreo-v3', 'tori-valley-v1'] })
+    await dispatchActivate(env)
+    expect(env.caches.delete).toHaveBeenCalledWith('scoreo-v1')
+    expect(env.caches.delete).toHaveBeenCalledWith('scoreo-v2')
+    expect(env.caches.delete).toHaveBeenCalledTimes(2)
+  })
+})
 
 describe('public/sw.js fetch handler', () => {
   let env: ReturnType<typeof createEnv>
