@@ -2,7 +2,7 @@
 
 ## Stack
 
-React 18 + TypeScript, Vite, Vitest + Testing Library (jsdom, no real browser needed) for behaviour and Playwright + Chromium for visual regression, Zod for schema validation, ESLint (typescript-eslint, react-hooks, react-refresh) + Prettier, pnpm. PWA shell (manifest, service worker) for installability; no backend — 100% local-first via `localStorage`. i18next + react-i18next + `i18next-browser-languagedetector` for internationalization (English/French).
+React 19 + TypeScript, Vite, Vitest + Testing Library (jsdom, no real browser needed) for behaviour and Playwright + Chromium for visual regression, Zod for schema validation, ESLint (typescript-eslint, react-hooks, react-refresh) + Prettier, pnpm. PWA shell (manifest, service worker) for installability; no backend — 100% local-first via `localStorage`. i18next + react-i18next + `i18next-browser-languagedetector` for internationalization (English/French).
 
 ## Layering (hexagonal / ports & adapters)
 
