@@ -8,6 +8,11 @@ const CACHE_NAME = 'scoreo-v3'
 // `css/*.css`, `manifest.json`, icons) is served network-first with a cache
 // fallback for offline, refreshing the cache on every successful response.
 const ASSETS = ['./', './index.html', './css/styles.css']
+// The Cache Storage API is scoped per origin, not per service-worker scope:
+// the sibling PWAs deployed alongside Scoreo on `remhiit.github.io` share it.
+// Only Scoreo's own caches may be purged, so the activation filter is keyed on
+// the prefix derived from CACHE_NAME (everything before its trailing `-v<N>`).
+const CACHE_PREFIX = CACHE_NAME.replace(/-v\d+$/, '-')
 
 self.addEventListener('install', (event) => {
   event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS)))
@@ -16,7 +21,11 @@ self.addEventListener('install', (event) => {
 
 self.addEventListener('activate', (event) => {
   event.waitUntil(
-    caches.keys().then((keys) => Promise.all(keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k)))),
+    caches
+      .keys()
+      .then((keys) =>
+        Promise.all(keys.filter((k) => k.startsWith(CACHE_PREFIX) && k !== CACHE_NAME).map((k) => caches.delete(k))),
+      ),
   )
   self.clients.claim()
 })
