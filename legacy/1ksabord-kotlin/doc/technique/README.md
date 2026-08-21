@@ -20,7 +20,8 @@ doc/technique/
     ├── vue-d-ensemble.md
     ├── rendu.md
     ├── evenements.md
-    └── persistence.md
+    ├── persistence.md
+    └── pwa.md
 ```
 
 -
