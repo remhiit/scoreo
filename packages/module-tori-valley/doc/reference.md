@@ -89,7 +89,7 @@ History (`src/ui/history/HistoryScreen.tsx`) has no reducer — it's simple enou
 
 Two suites, answering different questions — see [`technical/visual-testing.md`](technical/visual-testing.md).
 
-**Behaviour** (`pnpm test`) — colocated `*.test.ts(x)` next to the file they cover, running under Vitest + `jsdom`. Every screen has a component test on top of its reducer's pure-function tests; `src/App.test.tsx` covers the full add-player → start-match → save → view-in-history flow end to end.
+**Behaviour** (`pnpm test`) — colocated `*.test.ts(x)` next to the file they cover, running under Vitest + `jsdom`. Every screen has a component test on top of its reducer's pure-function tests; `src/App.test.tsx` covers the full add-player → start-match → save → view-in-history flow end to end. One exception to colocation: `src/test/sw.test.ts` covers `public/sw.js` (loaded through `?raw` and evaluated with fake `self`/`caches`), because Vitest only collects `src/**`.
 
 **Visual regression** (`pnpm test:visual`) — Playwright + Chromium against the production build, in `tests/visual/`. Two viewport projects (`phone` 412×839, `desktop` 1280×800), so every row below is two committed PNGs. State is seeded straight into `localStorage` by `openApp()` and each screen is reached by its hash route, never by clicking through the previous one.
 
