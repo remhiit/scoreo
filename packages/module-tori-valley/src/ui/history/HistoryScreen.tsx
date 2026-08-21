@@ -1,5 +1,5 @@
 import { Download, Trash2 } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import type { TFunction } from 'i18next'
 import { useTranslation } from 'react-i18next'
 import type { DeleteMatchUseCase } from '../../application/deleteMatchUseCase'
@@ -36,15 +36,12 @@ export function HistoryScreen({
   onEditMatch,
 }: HistoryScreenProps) {
   const { t } = useTranslation()
-  const [matches, setMatches] = useState<Match[]>([])
-  const [players, setPlayers] = useState<Player[]>([])
+  // Both reads hit localStorage synchronously, so they belong in the initial
+  // state rather than in a mount effect: the first paint already has the data
+  // instead of rendering an empty list and immediately re-rendering.
+  const [matches, setMatches] = useState<Match[]>(() => getMatches.invoke())
+  const [players] = useState<Player[]>(() => getPlayers.invoke(true))
   const [exportNotice, setExportNotice] = useState<string | null>(null)
-
-  useEffect(() => {
-    setMatches(getMatches.invoke())
-    setPlayers(getPlayers.invoke(true))
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
 
   function handleDelete(matchId: string) {
     deleteMatch.invoke(matchId)
