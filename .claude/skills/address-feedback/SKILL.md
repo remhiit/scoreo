@@ -94,7 +94,7 @@ because a human happened to invoke the skill this time.
    run — `playwright.config.ts` starts its server with `pnpm preview`,
    which serves `apps/scoreo/dist/`. In the Claude Code remote environment, Chromium is
    preinstalled (`PLAYWRIGHT_BROWSERS_PATH=/opt/pw-browsers`) — do not run
-   `playwright install`; locally, run `pnpm exec playwright install
+   `playwright install`; locally, run `pnpm --filter scoreo exec playwright install
    chromium` first if needed. If an e2e test fails in a way that looks
    unrelated to this diff, re-run once before concluding it's flaky — don't
    "fix" a test at random just to make it pass.
