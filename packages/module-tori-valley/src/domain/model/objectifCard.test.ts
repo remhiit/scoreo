@@ -127,8 +127,13 @@ describe('input validation', () => {
     expect(() => scoreObjectifCard('water', 'C', {})).toThrow(ValidationError)
   })
 
-  it('rejects a missing input rather than treating it as zero', () => {
+  it('rejects a missing count rather than treating it as zero', () => {
     expect(() => scoreObjectifCard('bamboo', 'B', { groupsOf2: 1 })).toThrow(ValidationError)
+  })
+
+  it('treats an absent flag as "no", since unticked is an answer', () => {
+    expect(scoreObjectifCard('water', 'A', { largestGroupSize: 5 })).toBe(15)
+    expect(scoreObjectifCard('bamboo', 'C', { onDiagonal: 1, inCorner: 0 })).toBe(3)
   })
 
   it('rejects a negative input', () => {

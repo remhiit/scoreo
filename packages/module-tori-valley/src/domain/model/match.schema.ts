@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import { defaultObjectifCardSelection, emptyObjectifPoints, OBJECTIF_VARIANTS } from './landscape'
+import { emptyObjectifInputs, emptyObjectifManual } from './objectifCard'
 import { emptyToriiCounts } from './torii'
 
 export const ToriiCountsSchema = z.object({
@@ -22,12 +23,36 @@ export const ParcheminValueSchema = z
   .union([z.literal(0), z.literal(3), z.literal(4), z.literal(5)])
   .default(0)
 
+const CardInputsSchema = z.record(z.string(), z.number().int()).default({})
+
+export const ObjectifInputsSchema = z.object({
+  bamboo: CardInputsSchema,
+  cherryBlossom: CardInputsSchema,
+  mountain: CardInputsSchema,
+  water: CardInputsSchema,
+  village: CardInputsSchema,
+})
+
+const ManualFlagSchema = z.boolean().default(false)
+
+export const ObjectifManualSchema = z.object({
+  bamboo: ManualFlagSchema,
+  cherryBlossom: ManualFlagSchema,
+  mountain: ManualFlagSchema,
+  water: ManualFlagSchema,
+  village: ManualFlagSchema,
+})
+
 export const PlayerResultSchema = z.object({
   playerId: z.string(),
   toriiCounts: ToriiCountsSchema.default(emptyToriiCounts),
   parcheminValue: ParcheminValueSchema,
   hasPinceau: z.boolean().default(false),
   objectifPoints: ObjectifPointsSchema.default(emptyObjectifPoints),
+  // Results saved before guided entry existed carry only objectifPoints; they
+  // read back with no inputs and nothing overridden, and their totals stand.
+  objectifInputs: ObjectifInputsSchema.default(emptyObjectifInputs),
+  objectifManual: ObjectifManualSchema.default(emptyObjectifManual),
 })
 
 export const ObjectifVariantSchema = z.enum(OBJECTIF_VARIANTS).default('A')

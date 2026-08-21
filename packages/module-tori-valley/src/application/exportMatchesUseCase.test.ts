@@ -142,14 +142,14 @@ describe('ExportMatchesUseCase', () => {
       objectifCards: defaultObjectifCardSelection(),
       results: [
         {
-          playerId: 'p1',
+          ...emptyPlayerResult('p1'),
           toriiCounts: { green: 3, red: 2, blue: 1, yellow: 0, purple: 1 },
           parcheminValue: 4,
           hasPinceau: true,
           objectifPoints: { bamboo: 3, cherryBlossom: 7, mountain: 0, water: 2, village: 5 },
         },
         {
-          playerId: 'p2',
+          ...emptyPlayerResult('p2'),
           toriiCounts: { green: 1, red: 1, blue: 4, yellow: 2, purple: 0 },
           parcheminValue: 3,
           hasPinceau: false,

@@ -7,6 +7,7 @@ import { PARCHEMIN_VALUES, scorePlayerResult, type ParcheminValue } from '../../
 import { MAX_TORII_PER_COLOR, TORII_COLORS } from '../../domain/model/torii'
 import { NotFoundError, ValidationError } from '../../domain/model/errors'
 import { AppButton } from '../shared/AppButton'
+import { ObjectifLandscapeEntry } from './ObjectifLandscapeEntry'
 import { scoreDetailReducer } from './scoreDetailReducer'
 import type { ScoreDetailState } from './scoreDetailTypes'
 
@@ -123,33 +124,16 @@ export function ScoreDetailScreen({
             </table>
 
             <h3>{t('scoreDetail.objectifHeading')}</h3>
-            <table className="score-table">
-              <tbody>
-                {LANDSCAPE_TYPES.map((landscape) => (
-                  <tr key={landscape}>
-                    <th>{t(`landscape.${landscape}`)}</th>
-                    <td>
-                      <input
-                        type="number"
-                        value={result.objectifPoints[landscape]}
-                        aria-label={t('scoreDetail.objectifPointsAria', {
-                          name: player.name,
-                          landscape: t(`landscape.${landscape}`),
-                        })}
-                        onChange={(e) =>
-                          dispatch({
-                            type: 'updateObjectifPoints',
-                            playerId: player.id,
-                            landscape,
-                            points: Number(e.target.value),
-                          })
-                        }
-                      />
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            {LANDSCAPE_TYPES.map((landscape) => (
+              <ObjectifLandscapeEntry
+                key={landscape}
+                landscape={landscape}
+                variant={state.objectifCards[landscape]}
+                playerName={player.name}
+                result={result}
+                dispatch={dispatch}
+              />
+            ))}
 
             <label htmlFor={`parchemin-${player.id}`}>{t('scoreDetail.parcheminLabel')}</label>
             <select

@@ -10,7 +10,13 @@ const players = [
 describe('buildInitialState', () => {
   it('creates an empty result per player when there are no existing results', () => {
     const state = buildInitialState(players, { type: 'Create' })
-    expect(state.results).toEqual([emptyPlayerResult('p1'), emptyPlayerResult('p2')])
+    // Village A is in play by default and can't be computed (it scores against
+    // the neighbours' boards), so that landscape starts on manual entry.
+    const expected = (id: string) => ({
+      ...emptyPlayerResult(id),
+      objectifManual: { ...emptyPlayerResult(id).objectifManual, village: true },
+    })
+    expect(state.results).toEqual([expected('p1'), expected('p2')])
   })
 
   it('reuses existing results when editing a match', () => {

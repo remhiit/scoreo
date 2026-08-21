@@ -1,8 +1,5 @@
 import { ValidationError } from '../domain/model/errors'
-import {
-  defaultObjectifCardSelection,
-  type ObjectifCardSelection,
-} from '../domain/model/landscape'
+import { defaultObjectifCardSelection, type ObjectifCardSelection } from '../domain/model/landscape'
 import type { Match, PlayerResult } from '../domain/model/match'
 import type { MatchRepository } from '../domain/port/matchRepository'
 import { newId } from './idGenerator'

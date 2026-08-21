@@ -4,6 +4,12 @@ import {
   type ObjectifCardSelection,
   type ObjectifPoints,
 } from './landscape'
+import {
+  emptyObjectifInputs,
+  emptyObjectifManual,
+  type ObjectifInputsByLandscape,
+  type ObjectifManualFlags,
+} from './objectifCard'
 import { emptyToriiCounts, scoreTorii, type ToriiCounts } from './torii'
 
 /** VP for the highest-value unclaimed Parchemin token; 0 means none taken (rulebook p.6). */
@@ -18,7 +24,15 @@ export interface PlayerResult {
   toriiCounts: ToriiCounts
   parcheminValue: ParcheminValue
   hasPinceau: boolean
+  /**
+   * Points per landscape — the authoritative total, whether computed from
+   * `objectifInputs` or typed by hand. `scorePlayerResult` reads only this.
+   */
   objectifPoints: ObjectifPoints
+  /** The counts `objectifPoints` was computed from, kept so edit mode shows them back. */
+  objectifInputs: ObjectifInputsByLandscape
+  /** Landscapes whose total was typed by hand instead of computed. */
+  objectifManual: ObjectifManualFlags
 }
 
 export function emptyPlayerResult(playerId: string): PlayerResult {
@@ -28,6 +42,8 @@ export function emptyPlayerResult(playerId: string): PlayerResult {
     parcheminValue: 0,
     hasPinceau: false,
     objectifPoints: emptyObjectifPoints(),
+    objectifInputs: emptyObjectifInputs(),
+    objectifManual: emptyObjectifManual(),
   }
 }
 
