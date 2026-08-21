@@ -1,9 +1,22 @@
 #!/usr/bin/env node
-// Fails if any relative markdown link under doc/ points to a non-existent file.
+// Fails if any relative markdown link under a doc/ directory points to a
+// non-existent file. Covers the workspace's own doc/ plus each package's, so a
+// module absorbed from another repository keeps its documentation checked.
 import { readFileSync, existsSync, readdirSync } from 'node:fs'
 import { dirname, resolve, join } from 'node:path'
 
-const DOC_ROOT = 'doc'
+const DOC_ROOTS = ['doc', ...packageDocRoots()]
+
+function packageDocRoots() {
+  const out = []
+  if (!existsSync('packages')) return out
+  for (const entry of readdirSync('packages', { withFileTypes: true })) {
+    if (!entry.isDirectory()) continue
+    const path = join('packages', entry.name, 'doc')
+    if (existsSync(path)) out.push(path)
+  }
+  return out
+}
 
 function findMarkdownFiles(dir) {
   const out = []
@@ -28,7 +41,7 @@ function isExternalOrAnchor(target) {
 
 let errors = []
 
-for (const file of findMarkdownFiles(DOC_ROOT)) {
+for (const file of DOC_ROOTS.flatMap(findMarkdownFiles)) {
   const content = readFileSync(file, 'utf-8')
   const fileDir = dirname(file)
 
@@ -48,9 +61,9 @@ for (const file of findMarkdownFiles(DOC_ROOT)) {
 }
 
 if (errors.length > 0) {
-  console.error(`Found ${errors.length} broken link(s) under ${DOC_ROOT}/:\n`)
+  console.error(`Found ${errors.length} broken link(s) under ${DOC_ROOTS.join('/, ')}/:\n`)
   for (const err of errors) console.error(`  - ${err}`)
   process.exit(1)
 }
 
-console.log(`All relative links under ${DOC_ROOT}/ resolve correctly.`)
+console.log(`All relative links under ${DOC_ROOTS.join('/, ')}/ resolve correctly.`)

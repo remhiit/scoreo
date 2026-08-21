@@ -1,5 +1,11 @@
 # Torī Valley Scoreboard
 
+> Absorbed from the standalone `remhiit/toriValleyScoreBoard` repository into the Scoreo workspace,
+> where it is becoming a scoring module Scoreo loads on demand. The commands below run as written
+> from this directory (`packages/module-tori-valley`); from the workspace root, prefix them with
+> `pnpm --filter @scoreboards/module-tori-valley`. `pnpm install` is workspace-wide and belongs at
+> the root.
+
 A Progressive Web App (PWA) built with React + TypeScript for calculating scores for the board game _[La Vallée des Torī](https://www.origames.fr)_ (Origames).
 
 🔗 [Live app](https://remhiit.github.io/toriValleyScoreBoard/)

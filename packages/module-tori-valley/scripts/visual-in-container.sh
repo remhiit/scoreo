@@ -10,10 +10,15 @@
 #   scripts/visual-in-container.sh                      # verify against the baselines
 #   scripts/visual-in-container.sh --update-snapshots   # re-record them
 #
-# Requires podman or docker, and a `dist/` built by `pnpm build`.
+# Requires podman or docker, and a `dist/` built by
+# `pnpm --filter @scoreboards/module-tori-valley build`.
 set -euo pipefail
 
-REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+PACKAGE_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+# pnpm links this package's node_modules into the workspace store at the root,
+# so the container has to see the whole workspace, not just this package.
+WORKSPACE_ROOT="$(cd "${PACKAGE_ROOT}/../.." && pwd)"
+PACKAGE_REL="${PACKAGE_ROOT#"${WORKSPACE_ROOT}/"}"
 
 RUNTIME=""
 for candidate in podman docker; do
@@ -32,10 +37,10 @@ fi
 
 # Derived from the installed package so the image can never drift from the
 # @playwright/test version that records the baselines.
-VERSION="$(node -p "require('${REPO_ROOT}/package.json').devDependencies['@playwright/test'].replace(/^\D*/, '')")"
+VERSION="$(node -p "require('${PACKAGE_ROOT}/package.json').devDependencies['@playwright/test'].replace(/^\D*/, '')")"
 IMAGE="mcr.microsoft.com/playwright:v${VERSION}-noble"
 
-RUN_ARGS=(--rm -v "${REPO_ROOT}:/work:z" -w /work -e CI=1 -e HOME=/tmp)
+RUN_ARGS=(--rm -v "${WORKSPACE_ROOT}:/work:z" -w "/work/${PACKAGE_REL}" -e CI=1 -e HOME=/tmp)
 
 # Rootless podman already maps the container root to the invoking user, so the
 # recorded PNGs come out owned by them. Rootful docker does not.

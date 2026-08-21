@@ -7,7 +7,7 @@ Scoreo is a Progressive Web App (PWA) built with React + TypeScript for tracking
 The repository is a pnpm workspace (`apps/*`, `packages/*`). Every command below runs from its root.
 
 - `apps/scoreo/` — the host PWA, and the only project deployed
-- `packages/` — the score-counting modules Scoreo loads on demand (none yet)
+- `packages/module-tori-valley/` — the Torī Valley score counter, absorbed from its own repository and on its way to becoming a module Scoreo loads on demand
 - `apps/scoreo/src/domain`, `apps/scoreo/src/application`, `apps/scoreo/src/infrastructure`, `apps/scoreo/src/services`, `apps/scoreo/src/ui` — application source code
 - `doc/functional/` — functional documentation (features, user flows)
 - `doc/technical/` — technical documentation (architecture, design decisions)

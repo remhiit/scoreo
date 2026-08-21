@@ -56,7 +56,7 @@ Lire ces fichiers dans l'ordre. Tout le contexte nécessaire y est :
 | Dossier | Contenu |
 |---|---|
 | `apps/scoreo/` | L'app hôte : `index.html`, `public/`, `src/`, `e2e/`, ses configs Vite/Vitest/Playwright/TS et son `package.json` (React, zod, vite, vitest) |
-| `packages/` | Les modules de comptage, un dossier par module. Vide pour l'instant : le workspace est câblé pour eux (`pnpm-workspace.yaml`), chaque absorption en ajoute un |
+| `packages/` | Les modules de comptage, un dossier par module. `module-tori-valley/` (absorbé depuis `remhiit/toriValleyScoreBoard`, encore une app autonome le temps des phases suivantes) ; il a son propre `CLAUDE.md` |
 | Racine | `package.json` privé (scripts `pnpm -r`, eslint/prettier/tsc), `tsconfig.base.json`, `eslint.config.js`, `vitest.config.ts` (tests de `scripts/` uniquement), `lighthouserc.json`, `doc/`, `schemas/`, `scripts/`, `.github/`, `.claude/` |
 | `apps/scoreo/src/domain/` | `model/` (types + schémas zod), `port/` (interfaces repository) |
 | `apps/scoreo/src/application/` | Use cases (opérations métier, zéro dépendance framework) |
