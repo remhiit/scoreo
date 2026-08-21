@@ -68,8 +68,9 @@ Two separate suites, run by different `pnpm` scripts and CI jobs:
 
 The repository is a **pnpm workspace** (`pnpm-workspace.yaml`: `apps/*`, `packages/*`). Scoreo is the
 host application and the only one deployed; the score-counting modules absorbed from the sibling
-repositories will live under `packages/` and be loaded by Scoreo. No `packages/` project exists yet:
-the workspace is wired for them, and each absorption adds one.
+repositories live under `packages/` and are loaded by Scoreo. `packages/module-tori-valley/` (absorbed
+from `remhiit/toriValleyScoreBoard`, with its commit history preserved) is the first one — still a
+standalone app for now, ahead of being wired in as a loaded module in a later phase.
 
 ```
 .                                  # workspace root — no source of its own
@@ -80,12 +81,14 @@ the workspace is wired for them, and each absorption adds one.
 ├── vitest.config.ts               # root project: only the scripts/ automation tests
 ├── lighthouserc.json              # asserts against apps/scoreo/dist/
 ├── doc/  schemas/  scripts/  .github/  .claude/
-└── apps/
-    └── scoreo/                    # the deployed PWA
-        ├── index.html  vite.config.ts  vitest.config.ts  playwright.config.ts
-        ├── tsconfig.json  tsconfig.app.json  tsconfig.node.json
-        ├── public/  src/  e2e/
-        └── package.json           # React/zod/vite/vitest deps live here
+├── apps/
+│   └── scoreo/                    # the deployed PWA
+│       ├── index.html  vite.config.ts  vitest.config.ts  playwright.config.ts
+│       ├── tsconfig.json  tsconfig.app.json  tsconfig.node.json
+│       ├── public/  src/  e2e/
+│       └── package.json           # React/zod/vite/vitest deps live here
+└── packages/
+    └── module-tori-valley/        # absorbed score-counting module, still a standalone app
 ```
 
 Every command still runs from the workspace root: `pnpm dev`, `pnpm build`, `pnpm test`,
