@@ -1,6 +1,7 @@
 import { Trash2 } from 'lucide-react'
 import { useEffect, useReducer } from 'react'
 import { useTranslation } from 'react-i18next'
+import { TORI_VALLEY_NS } from '../../i18n'
 import type { AddPlayerUseCase } from '../../application/addPlayerUseCase'
 import type { DeletePlayerUseCase } from '../../application/deletePlayerUseCase'
 import type { GetPlayersUseCase } from '../../application/getPlayersUseCase'
@@ -26,7 +27,7 @@ export function HomeScreen({
   onStartMatch,
   onViewHistory,
 }: HomeScreenProps) {
-  const { t } = useTranslation()
+  const { t } = useTranslation(TORI_VALLEY_NS)
   const [state, dispatch] = useReducer(homeReducer, buildInitialHomeState(initialSelectedPlayerIds))
 
   useEffect(() => {

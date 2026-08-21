@@ -1,4 +1,5 @@
 import { useTranslation } from 'react-i18next'
+import { TORI_VALLEY_NS } from '../../i18n'
 import type { LandscapeType, ObjectifVariant } from '../../domain/model/landscape'
 import { objectifCard } from '../../domain/model/objectifCard'
 import type { PlayerResult } from '../../domain/model/match'
@@ -24,7 +25,7 @@ export function ObjectifLandscapeEntry({
   result,
   dispatch,
 }: ObjectifLandscapeEntryProps) {
-  const { t } = useTranslation()
+  const { t } = useTranslation(TORI_VALLEY_NS)
   const card = objectifCard(landscape, variant)
   const landscapeLabel = t(`landscape.${landscape}`)
   const isManual = result.objectifManual[landscape]

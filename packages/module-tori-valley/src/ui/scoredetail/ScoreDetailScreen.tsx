@@ -1,5 +1,6 @@
 import { useReducer } from 'react'
 import { useTranslation } from 'react-i18next'
+import { TORI_VALLEY_NS } from '../../i18n'
 import type { CreateMatchUseCase } from '../../application/createMatchUseCase'
 import type { UpdateMatchUseCase } from '../../application/updateMatchUseCase'
 import { LANDSCAPE_TYPES } from '../../domain/model/landscape'
@@ -28,7 +29,7 @@ export function ScoreDetailScreen({
   onSaved,
   onCancel,
 }: ScoreDetailScreenProps) {
-  const { t } = useTranslation()
+  const { t } = useTranslation(TORI_VALLEY_NS)
   const [state, dispatch] = useReducer(scoreDetailReducer, initialState)
 
   function errorMessage(e: unknown): string {

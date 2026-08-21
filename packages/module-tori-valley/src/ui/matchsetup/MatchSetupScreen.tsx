@@ -1,5 +1,6 @@
 import { useReducer } from 'react'
 import { useTranslation } from 'react-i18next'
+import { TORI_VALLEY_NS } from '../../i18n'
 import {
   LANDSCAPE_TYPES,
   OBJECTIF_VARIANTS,
@@ -23,7 +24,7 @@ export function MatchSetupScreen({
   onConfirm,
   onCancel,
 }: MatchSetupScreenProps) {
-  const { t } = useTranslation()
+  const { t } = useTranslation(TORI_VALLEY_NS)
   const [state, dispatch] = useReducer(
     matchSetupReducer,
     buildInitialMatchSetupState(playerIds, initialSelection),

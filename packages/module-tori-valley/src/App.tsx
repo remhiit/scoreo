@@ -11,7 +11,7 @@ import { GetMatchesUseCase } from './application/getMatchesUseCase'
 import { GetPlayersUseCase } from './application/getPlayersUseCase'
 import { UpdateMatchUseCase } from './application/updateMatchUseCase'
 import type { ObjectifCardSelection } from './domain/model/landscape'
-import { SUPPORTED_LANGUAGES } from './i18n'
+import { SUPPORTED_LANGUAGES, TORI_VALLEY_NS } from './i18n'
 import { ServicesProvider, useServices } from './services/ServicesContext'
 import { HistoryScreen } from './ui/history/HistoryScreen'
 import { HomeScreen } from './ui/home/HomeScreen'
@@ -122,7 +122,7 @@ function ScoreDetailRoute({ screen, onSaved, onCancel }: ScoreDetailRouteProps) 
 function AppShell() {
   const services = useServices()
   const { current, navigate } = useHashRouter()
-  const { t, i18n } = useTranslation()
+  const { t, i18n } = useTranslation(TORI_VALLEY_NS)
 
   const addPlayer = useMemo(() => new AddPlayerUseCase(services.playerRepository), [services])
   const getPlayers = useMemo(() => new GetPlayersUseCase(services.playerRepository), [services])

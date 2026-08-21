@@ -1,35 +1,23 @@
-import i18next from 'i18next'
-import LanguageDetector from 'i18next-browser-languagedetector'
-import { initReactI18next } from 'react-i18next'
+import type { i18n as I18nInstance } from 'i18next'
 import { en } from './locales/en'
 import { fr } from './locales/fr'
+
+/**
+ * The i18next namespace this module's translations live under.
+ *
+ * The module is on its way to being rendered inside Scoreo, which owns the
+ * i18next instance and already has a `translation` namespace of its own. Keeping
+ * these strings in a namespace of their own means the two sets can never collide,
+ * and the host registers them with `registerTranslations` rather than merging
+ * dictionaries.
+ */
+export const TORI_VALLEY_NS = 'tori-valley'
 
 export const SUPPORTED_LANGUAGES = ['en', 'fr'] as const
 export type SupportedLanguage = (typeof SUPPORTED_LANGUAGES)[number]
 
-// Resources are bundled (not fetched from a backend), so init resolves synchronously —
-// the first render never sees raw translation keys flash before they resolve.
-void i18next
-  .use(LanguageDetector)
-  .use(initReactI18next)
-  .init({
-    resources: {
-      en: { translation: en },
-      fr: { translation: fr },
-    },
-    fallbackLng: 'en',
-    supportedLngs: SUPPORTED_LANGUAGES,
-    load: 'languageOnly',
-    interpolation: { escapeValue: false },
-    detection: {
-      order: ['localStorage', 'navigator'],
-      caches: ['localStorage'],
-      lookupLocalStorage: 'tori_valley_language',
-    },
-  })
-
-i18next.on('languageChanged', (lng) => {
-  document.documentElement.lang = lng
-})
-
-export default i18next
+/** Adds this module's dictionaries to an existing i18next instance. Idempotent. */
+export function registerTranslations(i18n: I18nInstance): void {
+  i18n.addResourceBundle('en', TORI_VALLEY_NS, en, true, true)
+  i18n.addResourceBundle('fr', TORI_VALLEY_NS, fr, true, true)
+}

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { ValidationError } from '../../domain/model/errors'
-import i18n from '../../i18n'
+import i18n from '../../i18n/standalone'
 import { InMemoryPlayerRepository } from '../../infrastructure/testing/inMemoryPlayerRepository'
 import { AddPlayerUseCase } from '../../application/addPlayerUseCase'
 import { DeletePlayerUseCase } from '../../application/deletePlayerUseCase'

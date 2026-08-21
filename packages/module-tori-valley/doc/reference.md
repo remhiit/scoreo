@@ -109,8 +109,8 @@ Support files: `tests/visual/support/app.ts` (`openApp`, `expectScreenshot`, `ro
 | ---------------------- | ------------------------------------ |
 | `tori_valley_players`  | JSON `Player[]`                      |
 | `tori_valley_matches`  | JSON `Match[]`                       |
-| `tori_valley_language` | Selected UI language (`'en'`/`'fr'`) |
+| `scoreo_lang` | Selected UI language (`'en'`/`'fr'`), shared with Scoreo. Replaces `tori_valley_language`, still read once for a language chosen before the merge |
 
 ## Internationalization
 
-`src/i18n/index.ts` — i18next instance (English/French), initialized once from `main.tsx` (and `src/test/setup.ts` for tests). Resource dictionaries: `src/i18n/locales/en.ts` / `fr.ts`. `App.tsx` renders the language `<select>` in the app header. `ValidationError`/`NotFoundError` (`src/domain/model/errors.ts`) carry an optional `code` (+ `params`) i18n key, translated by the `ui` layer.
+`src/i18n/index.ts` — the module's dictionaries as the `tori-valley` i18next namespace, added to a host instance by `registerTranslations()`. `src/i18n/standalone.ts` — the instance used when the app runs on its own, initialized once from `main.tsx` (and `src/test/setup.ts` for tests). Resource dictionaries: `src/i18n/locales/en.ts` / `fr.ts`. `App.tsx` renders the language `<select>` in the app header. `ValidationError`/`NotFoundError` (`src/domain/model/errors.ts`) carry an optional `code` (+ `params`) i18n key, translated by the `ui` layer.

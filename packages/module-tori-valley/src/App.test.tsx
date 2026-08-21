@@ -1,5 +1,6 @@
 import { fireEvent, render, screen } from '@testing-library/react'
 import { beforeEach, describe, expect, it } from 'vitest'
+import { LANG_STORAGE_KEY } from './i18n/standalone'
 import { App } from './App'
 
 describe('App', () => {
@@ -52,7 +53,7 @@ describe('App', () => {
     expect(
       screen.getByText('Aucun joueur pour le moment — ajoutez-en un ci-dessus.'),
     ).toBeInTheDocument()
-    expect(localStorage.getItem('tori_valley_language')).toBe('fr')
+    expect(localStorage.getItem(LANG_STORAGE_KEY)).toBe('fr')
   })
 
   it('shows a translated validation error in French', () => {
