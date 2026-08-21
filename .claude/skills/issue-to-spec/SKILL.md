@@ -35,7 +35,7 @@ Write the issue body as:
 
 ## Fichiers impactés
 
-- `src/ui/<screen>/<screen>Reducer.ts` (+ test)
+- `apps/scoreo/src/ui/<screen>/<screen>Reducer.ts` (+ test)
 - ... (be specific: reducer/use case/model/port/adapter/screen files, per
   doc/reference.md's tables)
 
@@ -78,8 +78,8 @@ This is the one field that isn't free-form — it comes straight from the
   no public behavior change.
 - **Élevé** (never `auto`, always manual merge): serialized models and their
   migrations (`Player`/`GameType`/`Match`/`PlayerScore`), ports/adapters,
-  `public/` (manifest, `sw.js`), Vite/TS config, navigation
-  (`src/ui/navigation/`).
+  `apps/scoreo/public/` (manifest, `sw.js`), Vite/TS config, navigation
+  (`apps/scoreo/src/ui/navigation/`).
 
 If a single issue's impacted files span both categories, classify it
 **Élevé** — the whole issue takes the stricter category, don't split risk

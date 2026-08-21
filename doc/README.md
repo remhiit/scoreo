@@ -7,4 +7,4 @@
 | [`technical/deployment.md`](technical/deployment.md) | CI/CD and deployment |
 | [`technical/migrations.md`](technical/migrations.md) | Data migration history |
 | [`glossary.md`](glossary.md) | Project term definitions |
-| `src/ressource/schemas/import/` | JSON schemas for import format (v1.0, v1.1) |
+| `apps/scoreo/src/ressource/schemas/import/` | JSON schemas for import format (v1.0, v1.1) |

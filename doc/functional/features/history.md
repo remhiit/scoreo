@@ -13,10 +13,10 @@
 
 | Component | Details |
 |-----------|---------|
-| **Reducer** | `historyReducer` — `src/ui/history/historyReducer.ts` (`loaded`, `showDeleteConfirm`, `deleteFailed`, `dismissDeleteConfirm`, `selectGameTypeFilter`, `showRounds`, `dismissRounds` actions), plus pure helpers `buildScoreSummary(display)` building the per-player score-line parts (text + `isWinner`) rendered by `HistoryScreen`, and `buildRoundBreakdown(display)` building the round detail modal's rows |
+| **Reducer** | `historyReducer` — `apps/scoreo/src/ui/history/historyReducer.ts` (`loaded`, `showDeleteConfirm`, `deleteFailed`, `dismissDeleteConfirm`, `selectGameTypeFilter`, `showRounds`, `dismissRounds` actions), plus pure helpers `buildScoreSummary(display)` building the per-player score-line parts (text + `isWinner`) rendered by `HistoryScreen`, and `buildRoundBreakdown(display)` building the round detail modal's rows |
 | **State** | `MatchDisplay[]` computed from repositories on mount, plus `roundsMatchId` (match shown in the round detail modal) |
 
-Screen: `src/ui/history/HistoryScreen.tsx`.
+Screen: `apps/scoreo/src/ui/history/HistoryScreen.tsx`.
 
 ### MatchDisplay
 

@@ -32,11 +32,11 @@
 
 | Component | Details |
 |-----------|---------|
-| **Reducer** | `gameTypeReducer` — `src/ui/gametype/gameTypeReducer.ts` |
+| **Reducer** | `gameTypeReducer` — `apps/scoreo/src/ui/gametype/gameTypeReducer.ts` |
 | **Action** | `GameTypeAction`: `updateName`, `selectWinCondition`, `updateTieBreakRule`, `updateTieBreakCondition`, `updateTieBreakLabel`, `selectGame`, `deselectGame`, `addSucceeded`/`addFailed`, `editGameType`, `cancelEdit`, `updateSucceeded`/`updateFailed`, `showArchiveConfirm`, `archiveSucceeded`/`archiveFailed`, `dismissArchiveConfirm`, `showMergeDialog`, `dismissMergeDialog`, `selectMergeKept`, `toggleMergeDuplicate`, `mergeSucceeded`/`mergeFailed` |
 | **State** | `GameTypeState`: `gameTypes`, `allGameTypes`, `inputName`, `selectedWinCondition`, `selectedTieBreakRule`, `selectedTieBreakCondition`, `selectedTieBreakLabel`, `selectedGameId`, `editingGameId`, `error`, `archiveConfirmGameTypeId`, `showMergeDialog`, `mergeKeptId`, `mergeDuplicateIds`, `mergeError` |
 
-Screen: `src/ui/gametype/GameTypeScreen.tsx`. See `doc/reference.md` for the full reducer table.
+Screen: `apps/scoreo/src/ui/gametype/GameTypeScreen.tsx`. See `doc/reference.md` for the full reducer table.
 
 ## Screen: GameTypeScreen
 

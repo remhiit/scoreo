@@ -55,14 +55,14 @@ anyone scanning the backlog into thinking the issue is still unclaimed.
    && pnpm test:e2e` — all five, not a subset. This mirrors what `ci.yml`
    will run on the PR; catch failures here rather than in CI. Build before
    the e2e run — `playwright.config.ts` starts its server with `pnpm
-   preview`, which serves `dist/`. In the Claude Code remote environment,
+   preview`, which serves `apps/scoreo/dist/`. In the Claude Code remote environment,
    Chromium is preinstalled (`PLAYWRIGHT_BROWSERS_PATH=/opt/pw-browsers`) —
    do not run `playwright install`; locally, run `pnpm exec playwright
    install chromium` first if needed. If an e2e test fails in a way that
    looks unrelated to this diff, re-run once before concluding it's flaky —
    don't "fix" a test at random just to make it pass.
 6. **Visual check for UI changes.** If the issue touches a screen
-   (`src/ui/*/`), start the dev server and exercise the actual flow in a
+   (`apps/scoreo/src/ui/*/`), start the dev server and exercise the actual flow in a
    browser — golden path and the edge cases named in the acceptance
    criteria. Don't claim a UI change works from tests alone.
 7. **Update `doc/`** per `CLAUDE.md`'s Pre-commit Checklist: the matching
@@ -77,7 +77,7 @@ anyone scanning the backlog into thinking the issue is still unclaimed.
    automatically on merge.
 10. **Label `auto`** only if the issue's spec marked risk as **Faible**
     *and* the actual diff still matches that (re-check: did this PR end up
-    touching a serialized model, a port/adapter, `public/`, Vite/TS config,
+    touching a serialized model, a port/adapter, `apps/scoreo/public/`, Vite/TS config,
     or navigation despite the spec's prediction? If so, don't add `auto` —
     the diff overrides the prediction).
 11. Move to the next `ready` issue rather than batching multiple issues into

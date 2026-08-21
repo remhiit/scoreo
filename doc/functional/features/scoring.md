@@ -10,11 +10,11 @@
 
 | Component | Details |
 |-----------|---------|
-| **Reducer** | `scoreDetailReducer` — `src/ui/scoredetail/scoreDetailReducer.ts` |
+| **Reducer** | `scoreDetailReducer` — `apps/scoreo/src/ui/scoredetail/scoreDetailReducer.ts` |
 | **Action** | `ScoreDetailAction`: `setViewMode`, `updateMatchDate`, `updateScore`, `addRound`, `removeRound`, `cancelImmediate`, `showCancelConfirm`, `confirmCancel`, `dismissCancelConfirm`, `validationFailed`, `openWinnerModal`, `openManualSelectionDialog`, `openSecondaryScoreDialog`, `saved`, `saveFailed`, `dismissModal`, `toggleModalWinner`, `confirmWinnersEmptyError`, `updateSecondaryScoreInput`, `secondaryScoreInvalid`, `secondaryScoreEscalate`, `toggleManualSelectionWinner`, `manualWinnersEmptyError`, `dismissTieBreak`, `openRoundSheet`, `closeRoundSheet`, `updateRoundSheetInput`, `submitRoundSheet` |
 | **State** | `ScoreDetailState`: `gameType`, `players`, `rounds`, `matchDate`, `viewMode`, `showWinnerModal`, `modalWinners`, `showSecondaryScoreDialog`, `tiedPlayerIds`, `secondaryScoreInputs`, `showManualSelectionDialog`, `manualSelectionWinners`, `collectedSecondaryScores`, `error`, `saved`, `cancelled`, `editingMatchId`, `showCancelConfirm`, `showRoundSheet`, `roundSheetInputs` |
 
-Screen: `src/ui/scoredetail/ScoreDetailScreen.tsx`. See `doc/reference.md` for the full reducer table.
+Screen: `apps/scoreo/src/ui/scoredetail/ScoreDetailScreen.tsx`. See `doc/reference.md` for the full reducer table.
 
 ## Screen: ScoreDetailScreen
 
@@ -53,7 +53,7 @@ A 2-column card grid (`.gs-grid`), one `.gs-card` per player, holding any headco
 - The leading card(s) — rank 1, possibly several on a tie — get an accented border/total (`.gs-card--lead`).
 - This view is read-only: no inputs, no add/remove-round controls.
 
-### History view: one card per round (`RoundHistoryList`, `src/ui/scoredetail/RoundHistoryList.tsx`)
+### History view: one card per round (`RoundHistoryList`, `apps/scoreo/src/ui/scoredetail/RoundHistoryList.tsx`)
 
 Each round is a `.hist-round` card, not a table row — this is what lets any player count (tested up to 8) fit without horizontal scrolling:
 
@@ -74,7 +74,7 @@ Each round is a `.hist-round` card, not a table row — this is what lets any pl
 
 ### Round entry sheet
 
-The primary way to enter a new round. A full-width primary button in the bottom bar reads "Enter round N" (N = `nextRoundNumber(rounds)`, the first not-yet-played round + 1). Tapping it opens `RoundEntrySheet` (`src/ui/scoredetail/RoundEntrySheet.tsx`), a bottom sheet (`.sheet`) over a dimming scrim (`.sheet-scrim`):
+The primary way to enter a new round. A full-width primary button in the bottom bar reads "Enter round N" (N = `nextRoundNumber(rounds)`, the first not-yet-played round + 1). Tapping it opens `RoundEntrySheet` (`apps/scoreo/src/ui/scoredetail/RoundEntrySheet.tsx`), a bottom sheet (`.sheet`) over a dimming scrim (`.sheet-scrim`):
 
 - Title "Round N".
 - One `.sheet-row` per player: name, current total (`.sheet-row-tot`, computed before this round), and a `LudoNumberInput` stepper defaulted to 0.

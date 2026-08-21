@@ -1,6 +1,6 @@
 #!/usr/bin/env node
-// Fails if a raw px/duration/easing value in public/css/*.css exactly matches
-// a design token (public/css/tokens/), locking in the mechanical
+// Fails if a raw px/duration/easing value in apps/scoreo/public/css/*.css exactly
+// matches a design token (apps/scoreo/public/css/tokens/), locking in the mechanical
 // var(...) substitution done for issue #238 (Ludo Design System adherence,
 // ds_temp/design_handoff_scoreo_ds). Modeled on check-doc-links.mjs.
 //
@@ -14,7 +14,7 @@ import { readFileSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 
-const CSS_ROOT = 'public/css'
+const CSS_ROOT = 'apps/scoreo/public/css'
 const TOKENS_DIR = 'tokens'
 
 // Keyed by the exact px integer a token resolves to.

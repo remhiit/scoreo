@@ -1,14 +1,10 @@
-import { configDefaults, defineConfig, mergeConfig } from 'vitest/config'
-import viteConfig from './vite.config'
+import { defineConfig } from 'vitest/config'
 
-export default mergeConfig(
-  viteConfig,
-  defineConfig({
-    test: {
-      environment: 'jsdom',
-      globals: false,
-      setupFiles: ['./src/test/setup.ts'],
-      exclude: [...configDefaults.exclude, 'e2e/**'],
-    },
-  }),
-)
+// The workspace root only owns the repo-automation scripts under scripts/;
+// every application/package test runs from its own project via `pnpm -r test`.
+export default defineConfig({
+  test: {
+    include: ['scripts/**/*.test.mjs'],
+    environment: 'node',
+  },
+})

@@ -182,7 +182,7 @@ to a pre-Catppuccin build would still find a valid (if stale) value.
 
 **Contexte :** le token OAuth Google était stocké en clair dans `localStorage` (clé `scoreo_sync_config`), exploitable en cas de XSS (issue de sécurité #51).
 
-**Changement :** `SyncConfig` (`src/infrastructure/google/syncConfig.ts`) ne contient plus `accessToken` ni `expiresAt`. Ces deux valeurs vivent désormais uniquement en mémoire, dans `GoogleAuthService.accessToken`/`expiresAt` (jamais sérialisées). Champs restants à cette étape : `email`, `lastSyncTimestamp`, `lastSyncFileId` — `email` sera lui aussi retiré par la suite, voir entrée #108 ci-dessous.
+**Changement :** `SyncConfig` (`apps/scoreo/src/infrastructure/google/syncConfig.ts`) ne contient plus `accessToken` ni `expiresAt`. Ces deux valeurs vivent désormais uniquement en mémoire, dans `GoogleAuthService.accessToken`/`expiresAt` (jamais sérialisées). Champs restants à cette étape : `email`, `lastSyncTimestamp`, `lastSyncFileId` — `email` sera lui aussi retiré par la suite, voir entrée #108 ci-dessous.
 
 **Ancien format :**
 ```json
@@ -204,7 +204,7 @@ to a pre-Catppuccin build would still find a valid (if stale) value.
 
 **Contexte :** l'email de l'utilisateur connecté était censé être extrait d'un `id_token` OAuth, mais l'API GIS Token Model (`google.accounts.oauth2.initTokenClient`) ne renvoie jamais cet `id_token` en pratique (seul `access_token` est fourni). `syncConfig.email` restait donc toujours vide, et comme le token d'accès n'est volontairement jamais persisté (issue #51), le signal censé indiquer une session restaurable après un F5 (`config.email !== ''`) ne fonctionnait jamais : `getStatus()` retombait à `connected: false` à chaque rechargement de page.
 
-**Changement :** `email` est retiré de `SyncConfig` (`src/infrastructure/google/syncConfig.ts`), de `SyncStatus` (`src/domain/port/cloudSyncRepository.ts`), de `GoogleAuthService.idToken` (plus décodé du tout), et de l'UI (`SyncScreen` n'affiche plus "Connected as {email}"). L'état "connecté" est désormais déterminé uniquement par la présence d'un access token en mémoire (`GoogleAuthService.accessToken`), obtenu directement ou via un rafraîchissement silencieux GIS tenté systématiquement par `getStatus()`/`ensureFreshToken()` — plus jamais conditionné par un email ou un flag persisté. `SyncState` (`src/ui/sync/syncTypes.ts`) remplace son champ `email: string | null` par `connected: boolean`, qui reste `true` après un login réussi même si l'auto-sync qui suit échoue (comportement de l'issue #97 préservé).
+**Changement :** `email` est retiré de `SyncConfig` (`apps/scoreo/src/infrastructure/google/syncConfig.ts`), de `SyncStatus` (`apps/scoreo/src/domain/port/cloudSyncRepository.ts`), de `GoogleAuthService.idToken` (plus décodé du tout), et de l'UI (`SyncScreen` n'affiche plus "Connected as {email}"). L'état "connecté" est désormais déterminé uniquement par la présence d'un access token en mémoire (`GoogleAuthService.accessToken`), obtenu directement ou via un rafraîchissement silencieux GIS tenté systématiquement par `getStatus()`/`ensureFreshToken()` — plus jamais conditionné par un email ou un flag persisté. `SyncState` (`apps/scoreo/src/ui/sync/syncTypes.ts`) remplace son champ `email: string | null` par `connected: boolean`, qui reste `true` après un login réussi même si l'auto-sync qui suit échoue (comportement de l'issue #97 préservé).
 
 **Ancien format :**
 ```json
@@ -248,7 +248,7 @@ to a pre-Catppuccin build would still find a valid (if stale) value.
 
 **Contexte :** `MatchDraft.rounds` (le détail par manche saisi pendant une partie) était jeté à la validation du match : `Match` ne conservait que le score final par joueur (`playerScores`). Toute statistique ou tout trophée reposant sur le déroulé d'une partie (meilleure manche, remontée au classement, nombre de manches) était donc impossible à calculer, et la donnée des parties déjà jouées était définitivement perdue une fois le match enregistré.
 
-**Changement :** `Match` (`src/domain/model/match.ts` / `match.schema.ts`) ajoute le champ `rounds: PlayerScore[][]` — une entrée par manche jouée, chaque entrée listant le score de cette manche pour chaque participant. `CreateMatchUseCase.invoke()` accepte `rounds` en option et le persiste ; `ScoreDetailScreen`/`scoreDetailReducer` convertissent les manches saisies (`state.rounds`, en `Record<string, string>[]`) en `PlayerScore[][]` à la sauvegarde (création comme édition depuis History), en ignorant la manche finale non encore jouée.
+**Changement :** `Match` (`apps/scoreo/src/domain/model/match.ts` / `match.schema.ts`) ajoute le champ `rounds: PlayerScore[][]` — une entrée par manche jouée, chaque entrée listant le score de cette manche pour chaque participant. `CreateMatchUseCase.invoke()` accepte `rounds` en option et le persiste ; `ScoreDetailScreen`/`scoreDetailReducer` convertissent les manches saisies (`state.rounds`, en `Record<string, string>[]`) en `PlayerScore[][]` à la sauvegarde (création comme édition depuis History), en ignorant la manche finale non encore jouée.
 
 **Ancien format :**
 ```json
@@ -272,13 +272,13 @@ to a pre-Catppuccin build would still find a valid (if stale) value.
 
 **Contexte historique :** le projet était initialement écrit en Kotlin/JS avec `kotlinx.serialization` (`Json { ignoreUnknownKeys = true }` + valeurs par défaut sur les data class). La réécriture complète vers React/TypeScript (achevée) a changé le moteur de (dé)sérialisation sans jamais changer le format JSON stocké dans `localStorage` — mêmes clés, mêmes champs, mêmes valeurs par défaut, à chaque étape.
 
-Le moteur actuel : schémas [zod](https://zod.dev) avec `.default()` par champ (`src/domain/model/*.schema.ts`), qui strip nativement les clés inconnues à la validation (comportement équivalent à l'ancien `ignoreUnknownKeys`).
+Le moteur actuel : schémas [zod](https://zod.dev) avec `.default()` par champ (`apps/scoreo/src/domain/model/*.schema.ts`), qui strip nativement les clés inconnues à la validation (comportement équivalent à l'ancien `ignoreUnknownKeys`).
 
-29 tests de contrat backward-compat dans `src/domain/model/serialization.contract.test.ts` : chaque cas vérifie qu'un JSON dans un ancien format (sans les champs ajoutés depuis) se décode toujours avec les mêmes valeurs par défaut.
+29 tests de contrat backward-compat dans `apps/scoreo/src/domain/model/serialization.contract.test.ts` : chaque cas vérifie qu'un JSON dans un ancien format (sans les champs ajoutés depuis) se décode toujours avec les mêmes valeurs par défaut.
 
 ## Test de migration croisée
 
-`src/infrastructure/crossMigration.test.ts` rejoue, dans un seul snapshot
+`apps/scoreo/src/infrastructure/crossMigration.test.ts` rejoue, dans un seul snapshot
 `localStorage`, le format le plus ancien documenté sur cette page : joueurs et
 types de jeu sans `active`, types de jeu sans champs tie-break, matches au
 format v1 (ids 12 caractères, dates `"YYYY-MM-DD"`, sans `manualWinners`/

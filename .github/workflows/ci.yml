@@ -91,7 +91,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Install Playwright browsers
-        run: pnpm exec playwright install --with-deps chromium
+        run: pnpm --filter scoreo exec playwright install --with-deps chromium
 
       - name: Build
         run: pnpm build
@@ -122,7 +122,7 @@ jobs:
         with:
           node-version: 22
 
-      - name: Check public/css/ design token adherence
+      - name: Check apps/scoreo/public/css/ design token adherence
         run: node scripts/check-design-tokens.mjs
 
   lighthouse:
