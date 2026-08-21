@@ -6,7 +6,7 @@ import { emptyToriiCounts } from './torii'
 describe('scorePlayerResult', () => {
   it('sums Torī, Parchemin, Pinceau, and Objectif points', () => {
     const result = {
-      playerId: 'p1',
+      ...emptyPlayerResult('p1'),
       toriiCounts: { ...emptyToriiCounts(), green: 1, red: 1 }, // series of 2 → 2 VP
       parcheminValue: 4 as const,
       hasPinceau: true, // +2 VP

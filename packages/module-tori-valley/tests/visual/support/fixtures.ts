@@ -1,5 +1,6 @@
 import type { ObjectifCardSelection } from '../../../src/domain/model/landscape'
 import type { Match, PlayerResult } from '../../../src/domain/model/match'
+import { emptyObjectifInputs, emptyObjectifManual } from '../../../src/domain/model/objectifCard'
 import type { Player } from '../../../src/domain/model/player'
 import type { ToriiCounts } from '../../../src/domain/model/torii'
 
@@ -51,7 +52,19 @@ function result(
   hasPinceau: boolean,
   objectifPoints: PlayerResult['objectifPoints'],
 ): PlayerResult {
-  return { playerId, toriiCounts, parcheminValue, hasPinceau, objectifPoints }
+  // Deliberately shaped like a match saved before guided Objectif entry existed:
+  // per-landscape totals stored, no inputs behind them. That is what every
+  // existing user's localStorage actually holds, so it is the state worth
+  // holding a baseline of — see doc/technical/visual-testing.md.
+  return {
+    playerId,
+    toriiCounts,
+    parcheminValue,
+    hasPinceau,
+    objectifPoints,
+    objectifInputs: emptyObjectifInputs(),
+    objectifManual: emptyObjectifManual(),
+  }
 }
 
 /** 2024-03-15T12:00:00Z — pinned so History's rendered date never moves. */

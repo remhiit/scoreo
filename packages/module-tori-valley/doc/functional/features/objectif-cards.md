@@ -1,6 +1,6 @@
 # Objectif cards — transcription
 
-**Status: transcribed, selection recorded, scoring functions written, not wired to the UI yet.** The app records which variant was dealt per landscape (`Match.objectifCards`, picked on the Match setup screen), and `src/domain/model/objectifCard.ts` turns a handful of counts into points for 13 of the 15 cards. Nothing calls those functions yet — score entry still takes a bare point total per landscape.
+**Status: transcribed and scored by the app.** The variant dealt per landscape is recorded on the Match setup screen (`Match.objectifCards`), and score entry asks for the counts the selected card needs, computing the points via `src/domain/model/objectifCard.ts`. See [`scoring.md`](scoring.md) for how that entry behaves, including the manual override.
 
 **Which cards are computed.** All except **Village variante A** and **Eau variante C**, which score against the _neighbouring players'_ boards and so need a seating order the app doesn't model; they stay on manual entry. Each computable card declares the counts it needs (e.g. Bambou A asks only "how many groups of exactly 2 tiles?"), so no tile-by-tile board model is required.
 

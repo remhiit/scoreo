@@ -26,6 +26,20 @@ export interface ObjectifInputField {
 
 export type ObjectifCardInputs = Record<string, number>
 
+/** What the player entered for each landscape's card, keyed by field. */
+export type ObjectifInputsByLandscape = Record<LandscapeType, ObjectifCardInputs>
+
+export function emptyObjectifInputs(): ObjectifInputsByLandscape {
+  return { bamboo: {}, cherryBlossom: {}, mountain: {}, water: {}, village: {} }
+}
+
+/** Landscapes whose total was typed by hand rather than computed. */
+export type ObjectifManualFlags = Record<LandscapeType, boolean>
+
+export function emptyObjectifManual(): ObjectifManualFlags {
+  return { bamboo: false, cherryBlossom: false, mountain: false, water: false, village: false }
+}
+
 export interface ObjectifCardDefinition {
   landscape: LandscapeType
   variant: ObjectifVariant
@@ -203,6 +217,12 @@ export function scoreObjectifCard(
   inputs: ObjectifCardInputs,
 ): number {
   const definition = objectifCard(landscape, variant)
-  for (const field of definition.fields) validate(field, inputs)
-  return definition.score(inputs)
+  // An unticked flag means "no", not "not answered yet" — only counts are
+  // genuinely required, so a card whose optional flag is absent still scores.
+  const effective: ObjectifCardInputs = { ...inputs }
+  for (const field of definition.fields) {
+    if (field.kind === 'flag' && effective[field.key] === undefined) effective[field.key] = 0
+  }
+  for (const field of definition.fields) validate(field, effective)
+  return definition.score(effective)
 }
