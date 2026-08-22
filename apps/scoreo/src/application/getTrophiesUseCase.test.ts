@@ -42,7 +42,7 @@ function match(
   playerScores: Match['playerScores'],
   overrides: Partial<Match> = {},
 ): Match {
-  return { id, date, gameTypeId, playerScores, manualWinners: [], secondaryPlayerScores: [], rounds: [], ...overrides }
+  return { id, date, gameTypeId, playerScores, manualWinners: [], secondaryPlayerScores: [], rounds: [], moduleData: null, ...overrides }
 }
 
 function buildUseCase(

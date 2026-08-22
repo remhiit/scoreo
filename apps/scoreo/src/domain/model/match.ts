@@ -11,6 +11,20 @@ export interface Match {
   secondaryPlayerScores: PlayerScore[]
   /** One entry per round played, each listing every participant's score for that round. Empty for matches saved before this was tracked, or imported without round detail. */
   rounds: PlayerScore[][]
+  /**
+   * The scoring module's own state for this match, stored verbatim and **never
+   * inspected**: only the module that wrote it knows how to read it, and
+   * `version` is the module's own so it can migrate its payload. This is what
+   * lets reopening a module match restore its grid. `null` for every match
+   * Scoreo scored itself.
+   */
+  moduleData: MatchModuleData | null
+}
+
+export interface MatchModuleData {
+  moduleId: string
+  version: number
+  data: unknown
 }
 
 /**

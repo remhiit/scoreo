@@ -338,7 +338,7 @@ function performSave(
       manualWinners,
       secondaryPlayerScores,
       rounds,
-    })
+        })
     if (result.ok) {
       deps.matchDraftRepository?.clear()
       return { type: 'saved' }
@@ -449,7 +449,7 @@ export function saveDraft(
     gameTypeId: gameType.id,
     playerIds: players.map((p) => p.id),
     rounds,
-    updatedAt: Date.now(),
+      updatedAt: Date.now(),
   })
 }
 

@@ -236,5 +236,14 @@
     "dismiss": "Dismiss",
     "syncFailed": "Sync failed",
     "loginFailed": "Login failed"
+  },
+  "modules": {
+    "loading": "Loading the module…",
+    "failedToLoad": "This module could not be loaded.",
+    "unknownModule": "This module is not installed.",
+    "availableModules": "Available modules",
+    "playInScoreo": "Play in Scoreo",
+    "playOnModule": "Play on the module",
+    "playerRange": "{{min}}–{{max}} players"
   }
 }

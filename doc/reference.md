@@ -55,6 +55,7 @@ Notable design choices:
 | `GetMatchesUseCase` | `invoke()` | `Match[]` |
 | `UpdateGameTypeUseCase` | `invoke(gameType: GameType)` | `void` |
 | `ImportMatchesUseCase` | `preview(jsonString)`, `execute(jsonString)` | `Result<ImportPreview, Error>`, `Result<ImportResult, Error>` — resolves the game type by name, then by `moduleId` through the installed manifests, then creates it |
+| `rankingToMatch` | `rankingToMatch(input)` | `Match` — turns an outside ranking into a match; `rank === 1` becomes a `manualWinner`, because the source owns tie-breaks Scoreo does not know. Shared by the v1.1 import and by `ModuleHostAdapter` |
 | `BindModuleUseCase` | `invoke(manifest: ScoringModuleManifest)` | `GameType` — binds a scoring module to a game type on first use, idempotent: reuse by `moduleId`, else stamp a name match, else create from the manifest. Nothing is materialized at startup |
 | `SyncUseCase` | `async autoSync()` | `Promise<SyncOutcome>` (`{kind:'Synced', result} \| {kind:'Conflict', conflict}`) |
 | `SyncUseCase` | `async resolveConflict(keepLocal: boolean)` | `Promise<SyncResult>` |
@@ -70,7 +71,7 @@ Notable design choices:
 |---|---|---|
 | `Player` | `id: string`, `name: string`, `active: boolean` (default `true`) | `player.ts` / `player.schema.ts` — both re-export `@scoreboards/shared-domain`, which holds the single definition shared with the scoring modules |
 | `GameType` | `id`, `name`, `winCondition: WinCondition`, `tieBreakRule: TieBreakRule` (default `'NONE'`), `tieBreakCondition: WinCondition` (default `'HIGHEST_SCORE'`), `tieBreakLabel: string \| null` (default `null`), `active: boolean` (default `true`), `moduleId: string \| null` (default `null` — the scoring module able to count this game; a capability flag, not a redirection) | `gameType.ts` / `gameType.schema.ts` — also exports `computeWinners(gameType, playerScores, condition?)` |
-| `Match` | `id`, `date: number` (epoch ms), `gameTypeId`, `playerScores: PlayerScore[]`, `manualWinners: string[]` (default `[]`), `secondaryPlayerScores: PlayerScore[]` (default `[]`), `rounds: PlayerScore[][]` (default `[]` — one entry per round played, each listing every participant's score for that round; empty for matches saved before this was tracked, or imported without round detail) | `match.ts` / `match.schema.ts` — also exports `isTieBreakIndeterminate(match, gameType)` |
+| `Match` | `id`, `date: number` (epoch ms), `gameTypeId`, `playerScores: PlayerScore[]`, `manualWinners: string[]` (default `[]`), `secondaryPlayerScores: PlayerScore[]` (default `[]`), `moduleData: { moduleId, version, data } \| null` (default `null` — the scoring module's own state, stored verbatim and **never inspected**), `rounds: PlayerScore[][]` (default `[]` — one entry per round played, each listing every participant's score for that round; empty for matches saved before this was tracked, or imported without round detail) | `match.ts` / `match.schema.ts` — also exports `isTieBreakIndeterminate(match, gameType)` |
 | `MatchDraft` | `gameTypeId`, `playerIds: string[]`, `rounds: Record<string, string>[]`, `updatedAt: number` | `matchDraft.ts` / `matchDraft.schema.ts` |
 | `PlayerScore` | `playerId: string`, `score: number` | `playerScore.ts` / `playerScore.schema.ts` |
 | `WinCondition` | union `'HIGHEST_SCORE' \| 'LOWEST_SCORE' \| 'MANUAL'` + `winConditionLabel()` | `enums.ts` |
@@ -90,6 +91,7 @@ Notable design choices:
 | `GameTypeRepository` | `getAll(includeInactive?)`, `save(gameType)`, `saveAll(gameTypes)`, `findById(id)`, `hardDelete(id)`, `deleteAll()` |
 | `MatchRepository` | `getAll()`, `save(match)`, `saveAll(matches)`, `findById(id)`, `delete(id)`, `deleteAll()` |
 | `MatchDraftRepository` | `save(draft)`, `load(): MatchDraft \| undefined`, `clear()` |
+| `ModuleDraftRepository` | `load(moduleId)`, `save(moduleId, state)`, `clear(moduleId)` — one opaque slot per scoring module, so two modules never overwrite each other's turn in progress |
 | `CloudSyncRepository` | `push(data): Promise<void>`, `pull(): Promise<SyncData>`, `getStatus(): Promise<SyncStatus>`, `login(): Promise<void>`, `logout(): Promise<void>` — plus `SyncData`, `SyncStatus` (`connected`, `lastSync`, `isOnline` — no `email`), and the discriminated union `SyncException` (`NotAuthenticated`, `NetworkError`, `ApiError{code,message}`, `Conflict`, `RateLimited`), all in `cloudSyncRepository.ts` |
 | `DataChangeNotifier` | `notifyChanged(): void`, `subscribe(listener): () => void` (returns an unsubscribe function), `runMuted<T>(fn: () => T): T` (suppresses `notifyChanged()` calls raised inside `fn`, nestable) |
 | `ConnectivityChecker` | `isOnline(): boolean` — lets `AutoSyncCoordinator` (in `application/`) check network status without touching `navigator` directly |

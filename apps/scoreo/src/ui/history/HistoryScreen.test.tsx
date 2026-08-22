@@ -37,7 +37,16 @@ function match(
   playerScores: Match['playerScores'],
   rounds: Match['rounds'] = [],
 ): Match {
-  return { id, date, gameTypeId, playerScores, manualWinners: [], secondaryPlayerScores: [], rounds }
+  return {
+    id,
+    date,
+    gameTypeId,
+    playerScores,
+    manualWinners: [],
+    secondaryPlayerScores: [],
+    rounds,
+    moduleData: null,
+  }
 }
 
 /** Chess (m1) is the most recent match, so it sorts first in the list. */

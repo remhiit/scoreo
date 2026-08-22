@@ -26,6 +26,7 @@ function buildProps(overrides: Partial<HomeScreenProps> = {}) {
   const getGameTypesUseCase = new GetGameTypesUseCase(gameTypeRepo)
 
   const onStartGame = vi.fn()
+  const onStartModule = vi.fn()
   const props: HomeScreenProps = {
     addPlayer: new AddPlayerUseCase(playerRepo),
     getPlayers: new GetPlayersUseCase(playerRepo),
@@ -38,6 +39,7 @@ function buildProps(overrides: Partial<HomeScreenProps> = {}) {
     getGameTypes: () => getGameTypesUseCase.invoke(),
     onAddGameType: (name, winCondition) => addGameTypeUseCase.invoke(name, winCondition),
     onStartGame,
+    onStartModule,
     ...overrides,
   }
   return { props, playerRepo, matchRepo, gameTypeRepo, draftRepo, onStartGame }
@@ -234,6 +236,7 @@ describe('HomeScreen', () => {
       manualWinners: [],
       secondaryPlayerScores: [],
       rounds: [],
+      moduleData: null,
     })
     render(<HomeScreen {...props} />)
 
@@ -302,6 +305,7 @@ describe('HomeScreen', () => {
       manualWinners: [],
       secondaryPlayerScores: [],
       rounds: [],
+      moduleData: null,
     })
     const { container } = render(<HomeScreen {...props} />)
 
@@ -377,6 +381,7 @@ describe('HomeScreen', () => {
       manualWinners: [],
       secondaryPlayerScores: [],
       rounds: [],
+      moduleData: null,
     })
     matchRepo.save({
       id: 'm2',
@@ -386,6 +391,7 @@ describe('HomeScreen', () => {
       manualWinners: [],
       secondaryPlayerScores: [],
       rounds: [],
+      moduleData: null,
     })
     render(<HomeScreen {...props} />)
 
@@ -439,6 +445,7 @@ describe('HomeScreen', () => {
       manualWinners: [],
       secondaryPlayerScores: [],
       rounds: [],
+      moduleData: null,
     })
     render(<HomeScreen {...props} />)
 

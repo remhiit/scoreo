@@ -97,6 +97,7 @@ describe('InMemoryRepository fakes', () => {
       manualWinners: [],
       secondaryPlayerScores: [],
       rounds: [],
+      moduleData: null,
     }
 
     repo.save(match)
@@ -117,6 +118,7 @@ describe('InMemoryRepository fakes', () => {
       manualWinners: [],
       secondaryPlayerScores: [],
       rounds: [],
+      moduleData: null,
     })
     repo.save({
       id: 'm2',
@@ -126,6 +128,7 @@ describe('InMemoryRepository fakes', () => {
       manualWinners: [],
       secondaryPlayerScores: [],
       rounds: [],
+      moduleData: null,
     })
 
     expect(repo.getAll()).toHaveLength(2)
@@ -166,6 +169,7 @@ describe('InMemoryRepository fakes', () => {
       manualWinners: [],
       secondaryPlayerScores: [],
       rounds: [],
+      moduleData: null,
     })
     const found = repo.findById('m1')
     expect(found).toBeDefined()
@@ -226,6 +230,7 @@ describe('InMemoryRepository fakes', () => {
       manualWinners: [],
       secondaryPlayerScores: [],
       rounds: [],
+      moduleData: null,
     })
 
     repo.deleteAll()

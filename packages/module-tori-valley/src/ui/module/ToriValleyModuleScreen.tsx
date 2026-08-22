@@ -1,5 +1,7 @@
 import type { ScoringModuleScreenProps } from '@scoreboards/module-api'
+import i18next from 'i18next'
 import { useMemo, useState } from 'react'
+import { registerTranslations } from '../../i18n'
 import type { ObjectifCardSelection } from '../../domain/model/landscape'
 import {
   ToriValleyModuleDataSchema,
@@ -11,6 +13,14 @@ import { MatchSetupScreen } from '../matchsetup/MatchSetupScreen'
 import { buildInitialState } from '../scoredetail/scoreDetailReducer'
 import { ScoreDetailScreen } from '../scoredetail/ScoreDetailScreen'
 import type { ScoreDetailMode } from '../scoredetail/scoreDetailTypes'
+
+/**
+ * The module's strings join the host's i18next instance when this chunk loads,
+ * under the module's own namespace. Doing it here rather than asking the host to
+ * do it keeps Scoreo free of any knowledge of what a module translates — and
+ * costs nothing until someone opens the module.
+ */
+registerTranslations(i18next)
 
 /**
  * Torī Valley as the host runs it.

@@ -356,6 +356,7 @@ describe('gameTypeReducer', () => {
       manualWinners: [],
       secondaryPlayerScores: [],
       rounds: [],
+      moduleData: null,
     })
     useCases.matchRepo.save({
       id: 'm2',
@@ -365,6 +366,7 @@ describe('gameTypeReducer', () => {
       manualWinners: [],
       secondaryPlayerScores: [],
       rounds: [],
+      moduleData: null,
     })
     state = gameTypeReducer(state, { type: 'showMergeDialog' })
     state = gameTypeReducer(state, { type: 'selectMergeKept', id: keep.id })

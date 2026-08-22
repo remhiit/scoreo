@@ -34,6 +34,7 @@ describe('CleanupInactivePlayersUseCase', () => {
       manualWinners: [],
       secondaryPlayerScores: [],
       rounds: [],
+      moduleData: null,
     })
     const useCase = new CleanupInactivePlayersUseCase(playerRepo, matchRepo)
 
@@ -52,6 +53,7 @@ describe('CleanupInactivePlayersUseCase', () => {
       manualWinners: [],
       secondaryPlayerScores: [{ playerId: 'p1', score: 10 }],
       rounds: [],
+      moduleData: null,
     })
     const useCase = new CleanupInactivePlayersUseCase(playerRepo, matchRepo)
 
@@ -105,6 +107,7 @@ describe('CleanupInactivePlayersUseCase', () => {
       manualWinners: [],
       secondaryPlayerScores: [],
       rounds: [],
+      moduleData: null,
     })
     const useCase = new CleanupInactivePlayersUseCase(playerRepo, matchRepo)
 

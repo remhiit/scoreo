@@ -33,6 +33,7 @@ describe('GetPlayerStatsUseCase', () => {
       manualWinners: [],
       secondaryPlayerScores: [],
       rounds: [],
+      moduleData: null,
     })
 
     const stats = new GetPlayerStatsUseCase(matchRepo, gameTypeRepo).invoke()
@@ -67,6 +68,7 @@ describe('GetPlayerStatsUseCase', () => {
       manualWinners: [],
       secondaryPlayerScores: [],
       rounds: [],
+      moduleData: null,
     })
 
     const stats = new GetPlayerStatsUseCase(matchRepo, gameTypeRepo).invoke()
@@ -101,6 +103,7 @@ describe('GetPlayerStatsUseCase', () => {
       manualWinners: [],
       secondaryPlayerScores: [],
       rounds: [],
+      moduleData: null,
     })
     matchRepo.save({
       id: 'm2',
@@ -113,6 +116,7 @@ describe('GetPlayerStatsUseCase', () => {
       manualWinners: [],
       secondaryPlayerScores: [],
       rounds: [],
+      moduleData: null,
     })
 
     const stats = new GetPlayerStatsUseCase(matchRepo, gameTypeRepo).invoke()
@@ -134,6 +138,7 @@ describe('GetPlayerStatsUseCase', () => {
       manualWinners: [],
       secondaryPlayerScores: [],
       rounds: [],
+      moduleData: null,
     })
 
     const stats = new GetPlayerStatsUseCase(matchRepo, gameTypeRepo).invoke()
@@ -165,6 +170,7 @@ describe('GetPlayerStatsUseCase', () => {
       manualWinners: ['bob'],
       secondaryPlayerScores: [],
       rounds: [],
+      moduleData: null,
     })
 
     const stats = new GetPlayerStatsUseCase(matchRepo, gameTypeRepo).invoke()
@@ -197,6 +203,7 @@ describe('GetPlayerStatsUseCase', () => {
       manualWinners: [],
       secondaryPlayerScores: [],
       rounds: [],
+      moduleData: null,
     })
 
     const stats = new GetPlayerStatsUseCase(matchRepo, gameTypeRepo).invoke()
@@ -232,6 +239,7 @@ describe('GetPlayerStatsUseCase', () => {
       manualWinners: [],
       secondaryPlayerScores: [],
       rounds: [],
+      moduleData: null,
     })
 
     const stats = new GetPlayerStatsUseCase(matchRepo, gameTypeRepo).invoke()

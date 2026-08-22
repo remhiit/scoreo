@@ -1,9 +1,11 @@
-import { forwardRef, useImperativeHandle, useState } from 'react'
+import type { ScoringModuleManifest } from '@scoreboards/module-api'
+import { forwardRef, useImperativeHandle, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { NotFoundError, ValidationError } from '../../domain/model/errors'
 import type { WinCondition } from '../../domain/model/enums'
 import type { GameType } from '../../domain/model/gameType'
 import i18n from '../../i18n/i18n'
+import { MODULE_MANIFESTS } from '../../modules/registry'
 import { GameSelectModal } from './GameSelectModal'
 
 export interface GameSelectModalHandle {
@@ -14,6 +16,7 @@ export interface GameSelectModalContainerProps {
   getGameTypes: () => GameType[]
   onAddGameType: (name: string, winCondition: WinCondition) => GameType
   onStartGame: (gameTypeId: string, playerIds: string[]) => void
+  onStartModule: (moduleId: string, playerIds: string[]) => void
   selectedPlayerIds: string[]
 }
 
@@ -26,7 +29,7 @@ export const GameSelectModalContainer = forwardRef<
   GameSelectModalHandle,
   GameSelectModalContainerProps
 >(function GameSelectModalContainer(
-  { getGameTypes, onAddGameType, onStartGame, selectedPlayerIds },
+  { getGameTypes, onAddGameType, onStartGame, onStartModule, selectedPlayerIds },
   ref,
 ) {
   const { t } = useTranslation()
@@ -50,6 +53,32 @@ export const GameSelectModalContainer = forwardRef<
       setOpen(true)
     },
   }))
+
+  const boundModuleIds = useMemo(
+    () => new Set(gameTypes.map((gt) => gt.moduleId).filter((id): id is string => id !== null)),
+    [gameTypes],
+  )
+
+  // A module already bound is reachable through its game type above; showing it
+  // here too would offer the same game twice.
+  const availableModules: ScoringModuleManifest[] = useMemo(
+    () =>
+      MODULE_MANIFESTS.filter(
+        (m) =>
+          !boundModuleIds.has(m.moduleId) &&
+          selectedPlayerIds.length >= m.minPlayers &&
+          selectedPlayerIds.length <= m.maxPlayers,
+      ),
+    [boundModuleIds, selectedPlayerIds.length],
+  )
+
+  const moduleForSelectedGame = useMemo(
+    () =>
+      selectedGameType?.moduleId === undefined || selectedGameType.moduleId === null
+        ? undefined
+        : MODULE_MANIFESTS.find((m) => m.moduleId === selectedGameType.moduleId),
+    [selectedGameType],
+  )
 
   function addInlineGameType() {
     const name = inlineGameName.trim()
@@ -97,6 +126,12 @@ export const GameSelectModalContainer = forwardRef<
       onChangeInlineGameWinCondition={setInlineGameWinCondition}
       inlineGameError={inlineGameError}
       onAddInlineGameType={addInlineGameType}
+      availableModules={availableModules}
+      moduleForSelectedGame={moduleForSelectedGame}
+      onStartOnModule={(moduleId) => {
+        setOpen(false)
+        onStartModule(moduleId, selectedPlayerIds)
+      }}
     />
   )
 })

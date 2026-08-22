@@ -14,6 +14,7 @@ describe('UpdateMatchUseCase', () => {
       manualWinners: [],
       secondaryPlayerScores: [],
       rounds: [],
+      moduleData: null,
     }
     repo.save(original)
 
@@ -33,6 +34,7 @@ describe('UpdateMatchUseCase', () => {
       manualWinners: [],
       secondaryPlayerScores: [],
       rounds: [],
+      moduleData: null,
     }
     repo.save(original)
 
@@ -52,6 +54,7 @@ describe('UpdateMatchUseCase', () => {
       manualWinners: [],
       secondaryPlayerScores: [],
       rounds: [],
+      moduleData: null,
     }
     repo.save(original)
 

@@ -61,6 +61,7 @@ export class CreateMatchUseCase {
       manualWinners,
       secondaryPlayerScores,
       rounds,
+      moduleData: null,
     }
     this.matchRepository.save(match)
     return ok(match)

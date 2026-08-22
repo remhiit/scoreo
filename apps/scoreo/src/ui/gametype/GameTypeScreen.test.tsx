@@ -241,6 +241,7 @@ describe('GameTypeScreen', () => {
       manualWinners: [],
       secondaryPlayerScores: [],
       rounds: [],
+      moduleData: null,
     })
     matchRepo.save({
       id: 'm2',
@@ -250,6 +251,7 @@ describe('GameTypeScreen', () => {
       manualWinners: [],
       secondaryPlayerScores: [],
       rounds: [],
+      moduleData: null,
     })
     render(
       <GameTypeScreen

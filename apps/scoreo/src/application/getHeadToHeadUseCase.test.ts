@@ -30,7 +30,7 @@ function gameType(id: string, name: string, winCondition: GameType['winCondition
 }
 
 function match(id: string, date: number, gameTypeId: string, playerScores: Match['playerScores'], overrides: Partial<Match> = {}): Match {
-  return { id, date, gameTypeId, playerScores, manualWinners: [], secondaryPlayerScores: [], rounds: [], ...overrides }
+  return { id, date, gameTypeId, playerScores, manualWinners: [], secondaryPlayerScores: [], rounds: [], moduleData: null, ...overrides }
 }
 
 function buildUseCase(

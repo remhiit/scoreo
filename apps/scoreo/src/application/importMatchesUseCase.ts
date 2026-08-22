@@ -1,7 +1,6 @@
 import type { ScoringModuleManifest } from '@scoreboards/module-api'
 import { WinConditionSchema, type WinCondition } from '../domain/model/enums'
 import type { GameType } from '../domain/model/gameType'
-import type { Match } from '../domain/model/match'
 import type { Player } from '../domain/model/player'
 import type { PlayerScore } from '../domain/model/playerScore'
 import type { GameTypeRepository } from '../domain/port/gameTypeRepository'
@@ -9,6 +8,7 @@ import type { MatchRepository } from '../domain/port/matchRepository'
 import type { PlayerRepository } from '../domain/port/playerRepository'
 import { err, ok, type Result } from '../domain/result'
 import { newId } from './idGenerator'
+import { rankingToMatch } from './rankingToMatch'
 
 export interface SemanticVersion {
   major: number
@@ -164,17 +164,18 @@ export class ImportMatchesUseCase {
           if (!valid) continue
         }
 
-        const manualWinners = scores.filter((s) => rankingMap.get(s.playerId) === 1).map((s) => s.playerId)
-
-        const match: Match = {
+        // `rounds` stays empty here: the file's round detail is validated above
+        // but not yet stored — a separate, known gap, not this use case's job.
+        const match = rankingToMatch({
           id: game.id,
           date: game.date ?? this.currentDate(),
           gameTypeId: gameType.id,
-          playerScores: scores,
-          manualWinners,
-          secondaryPlayerScores: [],
-          rounds: [],
-        }
+          ranking: scores.map((score) => ({
+            playerId: score.playerId,
+            score: score.score,
+            rank: rankingMap.get(score.playerId) ?? 0,
+          })),
+        })
         this.matchRepository.save(match)
         imported++
       }

@@ -336,6 +336,51 @@ Le cas 1 rend l'opération idempotente. Les cas 1 et 2 réactivent un jeu archiv
 
 ---
 
+## `Match.moduleData` — l'état du module, stocké mais jamais lu (issue #329)
+
+**Contexte :** une partie comptée sur un module doit pouvoir être **rouverte** sur ce module, avec sa grille restaurée. Le classement seul ne suffit pas : Torī a besoin de ses cartes Objectif et du détail par joueur, 1000 Sabords aura besoin de son état de tour.
+
+**Changement :** `Match` gagne `moduleData: { moduleId, version, data } | null`.
+
+`data` est **opaque**. Scoreo ne l'inspecte jamais : seul le module qui l'a écrit sait la lire, et `version` appartient au module, qui migre sa propre charge. C'est une entorse assumée à la pureté du domaine (risque n°3 du plan), en échange de quoi l'état du module est synchronisé sur Drive gratuitement, comme le reste du `Match`.
+
+`moduleId` est estampillé par l'hôte, pas par le module : c'est ce qui garantit qu'une charge n'est jamais rendue au mauvais module (`resolveEditing` refuse de rendre à un module la charge d'un autre).
+
+**Ancien format :**
+
+```json
+{
+  "id": "m1",
+  "date": 1700000000,
+  "gameTypeId": "gt1",
+  "playerScores": [],
+  "manualWinners": [],
+  "secondaryPlayerScores": [],
+  "rounds": []
+}
+```
+
+**Nouveau format :**
+
+```json
+{
+  "id": "m1",
+  "date": 1700000000,
+  "gameTypeId": "gt1",
+  "playerScores": [],
+  "manualWinners": [],
+  "secondaryPlayerScores": [],
+  "rounds": [],
+  "moduleData": { "moduleId": "tori-valley", "version": 1, "data": { "…": "…" } }
+}
+```
+
+**Compatibilité ascendante :** `moduleData` est déclaré `.default(null)` — une partie écrite avant ce changement, ou comptée par Scoreo lui-même, se relit avec `moduleData: null`. Couvert par `serialization.contract.test.ts` (un cas avec charge, un cas legacy sans).
+
+**Nouvelle clé localStorage :** `scoreo_module_draft_<moduleId>`, une par module. Le `MatchDraftRepository` de Scoreo n'a qu'un emplacement anonyme (`scoreo_match_draft`) et ne pouvait pas servir : deux modules s'y écraseraient. Un brouillon illisible est jeté, jamais réparé — ce n'est pas une source de vérité.
+
+---
+
 ---
 
 ## Note technique : moteur de sérialisation (zod)
