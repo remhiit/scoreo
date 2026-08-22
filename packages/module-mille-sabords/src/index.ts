@@ -1,3 +1,4 @@
+export { milleSabordsManifest, milleSabordsModule } from './module'
 export * from './domain/constantes'
 export * from './domain/lancerDes'
 export * from './domain/modeles'

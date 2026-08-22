@@ -1,4 +1,5 @@
 import { contributionPour, type PartieTerminee } from '../domain/modeles'
+import { milleSabordsManifest } from '../module'
 
 /**
  * The v1.1 file contract Scoreo imports (`schemas/import/v1.1.json-schema`).
@@ -43,8 +44,11 @@ export interface ExportSabords {
 
 export const EXPORT_VERSION = '1.1'
 
-/** The game name Scoreo creates on first import. */
-export const EXPORT_GAME_NAME = '1000 Sabords'
+/**
+ * The game name Scoreo creates on first import. Taken from the manifest so the
+ * file export and the in-process binding can never name the game differently.
+ */
+export const EXPORT_GAME_NAME = milleSabordsManifest.gameNames[0]
 
 /**
  * Per-round deltas, clamped exactly as `Partie.totalJoueurParNom` clamps: at
