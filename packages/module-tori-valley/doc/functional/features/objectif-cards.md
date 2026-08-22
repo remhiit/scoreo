@@ -211,7 +211,7 @@ Les 5 couleurs illustrées (avec leur symbole) : vert ▲, rouge ◆, bleu 💧,
 
 ## Scans des cartes
 
-Des photos recadrées des 16 cartes existent en local dans `doc/resources/objectif-cards/`, une par carte :
+Des photos recadrées des 16 cartes sont versionnées dans [`../../resources/objectif-cards/`](../../resources/objectif-cards/), une par carte — c'est la référence à ouvrir quand ce document ne suffit pas :
 
 ```
 bambou-a.jpg     cerisier-a.jpg   montagne-a.jpg   village-a.jpg   eau-a.jpg

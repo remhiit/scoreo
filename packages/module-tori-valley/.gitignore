@@ -39,12 +39,5 @@ playwright-report/
 blob-report/
 .playwright/
 
-# Copyrighted rulebook PDF — kept locally for reference, not for distribution
-LVDT_Rules*.pdf
-
-# Copyrighted card scans — same rule as the rulebook above: local backup only.
-# See doc/functional/features/objectif-cards.md ("Scans des cartes").
-doc/resources/objectif-cards/
-
 # Claude Code local settings (personal, not shared)
 .claude/settings.local.json

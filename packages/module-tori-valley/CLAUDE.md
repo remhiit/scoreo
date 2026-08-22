@@ -52,7 +52,7 @@ Read these files in order — all the necessary context is there:
 
 ## The game's rules
 
-The rulebook PDF (`LVDT_Rules-225x225mm_FR.pdf`) is kept in this package's working directory for reference but is **gitignored, never committed** (copyrighted material). If it's missing, ask the user for a copy before touching scoring logic. `doc/functional/features/scoring.md` summarizes the rules that are actually implemented, and flags what isn't (notably: the 16 Objectif cards' exact scoring text hasn't been digitized, so Objectif points are entered manually rather than computed — see that doc for the open item).
+The rulebook PDF and cropped photos of all 16 Objectif cards live in `doc/resources/` and are committed: the monorepo is meant to hold everything needed to work on the game, without reaching for the archived satellite repository. Read them before touching scoring logic. `doc/functional/features/scoring.md` summarizes the rules that are actually implemented, and flags what isn't (notably: the 16 Objectif cards' exact scoring text hasn't been digitized, so Objectif points are entered manually rather than computed — see that doc for the open item).
 
 ## Key directory layout
 
