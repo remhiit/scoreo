@@ -1,0 +1,57 @@
+# TEMPORARY — removed together with legacy/ once the 1000 Sabords port lands.
+#
+# The Kotlin/JS app under legacy/1ksabord-kotlin is the oracle the TypeScript
+# port is checked against, so its 107 tests have to keep passing. Its own
+# repository never ran them: its only workflow deployed to Pages. This is the
+# first time they guard anything.
+name: Kotlin legacy
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  kotlin-tests:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: legacy/1ksabord-kotlin/kotlin
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      # Gradle 8.7 is pinned by the committed wrapper. Do not call a system
+      # gradle here: 9.x does not support the Kotlin 2.0.21 plugin this build
+      # needs, and the wrapper is what keeps CI and a developer's machine on the
+      # same toolchain.
+      - name: Cache Gradle and Kotlin/JS toolchains
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+            legacy/1ksabord-kotlin/kotlin/.kotlin
+            ~/.cache/yarn
+          key: kotlin-legacy-${{ runner.os }}-${{ hashFiles('legacy/1ksabord-kotlin/kotlin/**/*.gradle.kts', 'legacy/1ksabord-kotlin/kotlin/gradle/wrapper/gradle-wrapper.properties') }}
+          restore-keys: kotlin-legacy-${{ runner.os }}-
+
+      # `jsNodeTest`, not `check` or `allTests`: those pull in `jsBrowserTest`,
+      # which is configured nowhere and would need a headless Chrome. Only the
+      # Node target has its test environment set up (useMocha, 20s timeout).
+      - name: Run the Kotlin test suite
+        run: ./gradlew jsNodeTest --no-daemon
+
+      - name: Upload test results
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: kotlin-legacy-test-results
+          path: legacy/1ksabord-kotlin/kotlin/build/test-results/
+          retention-days: 30

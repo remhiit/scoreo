@@ -13,6 +13,10 @@ export default tseslint.config(
       '**/test-results/**',
       '**/playwright-report/**',
       '**/blob-report/**',
+      // Kotlin/JS source kept as the oracle for the 1000 Sabords port. It is not
+      // ours to lint, it is the thing the port is checked against — and it goes
+      // away once the port lands.
+      'legacy/**',
     ],
   },
   {

@@ -69,6 +69,7 @@ Lire ces fichiers dans l'ordre. Tout le contexte nécessaire y est :
 | `apps/scoreo/src/ui/navigation/` | `screen.ts` (union `Screen`), `hash.ts` (`parseHash`/`screenToHash`), `useHashRouter.ts` |
 | `apps/scoreo/public/` | `manifest.json`, `sw.js`, icônes PWA, `css/` (dont `css/tokens/`) |
 | `schemas/import/` | Schémas JSON du format d'import (versionnés, `v1.0`/`v1.1`) |
+| `legacy/1ksabord-kotlin/` | **Temporaire.** L'app Kotlin/JS de 1000 Sabords absorbée avec son historique, gardée comme **oracle** du portage TypeScript : ses 107 tests tournent en CI (`kotlin-legacy.yml`) et doivent rester verts. Supprimée avec son workflow une fois le portage livré. Ne rien y développer |
 | `doc/modules/` | La doc des jeux comptés par un module, recopiée depuis les dépôts satellites pour que le monorepo se suffise à lui-même : `mille-sabords/` (règles, guide, doc technique de l'app Kotlin, PDF des règles). Celle de Torī vit dans son paquet, avec ses scans de cartes et son PDF (`packages/module-tori-valley/doc/resources/`) |
 | `ds_temp/` | Référence temporaire du handoff design (Ludo Design System) : tokens, composants, mapping écran→fichiers. Source de vérité visuelle pour les issues de migration à venir ; à supprimer une fois la migration terminée. Voir `ds_temp/design_handoff_scoreo_ds/README.md` |
 
