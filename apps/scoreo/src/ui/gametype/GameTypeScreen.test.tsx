@@ -133,6 +133,24 @@ describe('GameTypeScreen', () => {
     expect(within(screen.getByRole('dialog')).getByText('Manual selection')).toBeInTheDocument()
   })
 
+  it('editing a game type bound to a scoring module leaves it bound', () => {
+    const repo = new InMemoryGameTypeRepository()
+    repo.save({ ...buildGameType('gt1', 'La Vallée des Torī'), moduleId: 'tori-valley' })
+    renderScreen(repo)
+
+    fireEvent.click(screen.getByLabelText('Edit'))
+    const editDialog = screen.getByRole('dialog')
+    fireEvent.change(within(editDialog).getByDisplayValue('No tie-break'), {
+      target: { value: 'MANUAL_SELECTION' },
+    })
+    fireEvent.click(within(editDialog).getByText('Save changes'))
+
+    // The form owns the rules, not the binding: saving here must not unbind the
+    // module, or the game would silently stop offering its module screen.
+    expect(repo.findById('gt1')?.tieBreakRule).toBe('MANUAL_SELECTION')
+    expect(repo.findById('gt1')?.moduleId).toBe('tori-valley')
+  })
+
   it('cancelling edit restores the add form without changes', () => {
     renderScreen()
     fireEvent.change(nameInput(), { target: { value: 'Belote' } })

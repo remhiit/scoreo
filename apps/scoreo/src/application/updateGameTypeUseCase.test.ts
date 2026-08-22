@@ -26,7 +26,6 @@ describe('UpdateGameTypeUseCase', () => {
       tieBreakRule: 'SECONDARY_SCORE',
       tieBreakCondition: 'LOWEST_SCORE',
       tieBreakLabel: 'Handicap',
-      moduleId: null,
     })
 
     const result = repo.findById(created.id)

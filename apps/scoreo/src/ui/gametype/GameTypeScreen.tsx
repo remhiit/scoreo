@@ -65,6 +65,9 @@ export function GameTypeScreen({
   const handleUpdate = () => {
     const editing = state.gameTypes.find((gt) => gt.id === state.editingGameId)
     if (!editing) return
+    // Every field the form owns is overridden here; `moduleId` is deliberately
+    // not one of them. It comes from `...editing` and must survive editing:
+    // a game bound to a scoring module stays bound when it is renamed.
     const updated = {
       ...editing,
       name: state.inputName.trim(),
@@ -72,7 +75,6 @@ export function GameTypeScreen({
       tieBreakRule: state.selectedTieBreakRule,
       tieBreakCondition: state.selectedTieBreakCondition,
       tieBreakLabel: state.selectedTieBreakLabel ?? null,
-      moduleId: null,
     }
     const result = submitUpdateGameType(updateGameType, getGameTypes, updated)
     dispatch(
