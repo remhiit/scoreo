@@ -88,8 +88,16 @@ standalone app for now, ahead of being wired in as a loaded module in a later ph
 │       ├── public/  src/  e2e/
 │       └── package.json           # React/zod/vite/vitest deps live here
 └── packages/
+    ├── module-api/                # the host ↔ module contract, no runtime dependency
+    ├── shared-domain/             # Player, PlayerSchema, newId, isUuid, Result
     └── module-tori-valley/        # absorbed score-counting module, still a standalone app
 ```
+
+`module-api` and `shared-domain` are consumed as TypeScript source (their `exports` field points at
+`src/index.ts`): nothing to build before the app compiles, and one definition of `Player` for the
+whole workspace. The two packages are distinct on purpose — `shared-domain` is vocabulary both sides
+already had, `module-api` is the boundary between them. See
+[`module-contract.md`](module-contract.md).
 
 Every command still runs from the workspace root: `pnpm dev`, `pnpm build`, `pnpm test`,
 `pnpm typecheck`, `pnpm lint`, `pnpm test:e2e`. The root scripts fan out with `pnpm -r`
@@ -99,7 +107,7 @@ project covering `scripts/*.test.mjs`. To run a single app test file:
 
 ## Source structure
 
-- **`apps/scoreo/src/domain/`** — `model/` (types + zod schemas), `port/` (repository interfaces), `result.ts`
+- **`apps/scoreo/src/domain/`** — `model/` (types + zod schemas), `port/` (repository interfaces), `result.ts`. `player.ts`, `player.schema.ts` and `result.ts` re-export `@scoreboards/shared-domain`: the app keeps its domain vocabulary while the definitions are shared with the modules
 - **`apps/scoreo/src/application/`** — use cases (business logic, framework-agnostic)
 - **`apps/scoreo/src/infrastructure/`** — `localStorage/` (adapters), `google/` (Drive sync, OAuth, config), `migration/` (Match v1→v2), `testing/` (in-memory fakes + mocks for tests)
 - **`apps/scoreo/src/services/`** — root DI context
