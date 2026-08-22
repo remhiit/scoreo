@@ -153,6 +153,23 @@ The host side never trusts blindly:
 
 Drafts live in `scoreo_module_draft_<moduleId>`, one per module.
 
+## A module's look is its own, and stays its own
+
+A module keeps the identity of the game it counts: Torī Valley wears its warm washi palette inside
+Scoreo, not the flavor and accent the user picked for the host.
+
+That only holds if none of it escapes. **Scope every rule of a module's stylesheet under a class of
+its own** (`.module-<moduleId>`), carried by whatever the module renders. A bare `:root`, or a bare
+element selector like `input` or `label`, applies to the whole document — and a stylesheet is never
+unloaded on navigation, so the leak follows the player for the rest of the session.
+
+The names collide by design: both sides speak of `--color-primary`, `--space-5`, `--radius-lg`, with
+different values. `apps/scoreo/e2e/module-style-isolation.spec.ts` guards the boundary; a new module
+should extend it rather than assume.
+
+Anything that must paint before scripts run belongs in the module's own shell, not in the
+stylesheet: the sheet ships inside the JS chunk, so it arrives too late for a splash.
+
 ## What is deliberately _not_ shared
 
 Repository ports. Scoreo's `PlayerRepository` carries a `saveAll` that its `SyncUseCase` needs and a
