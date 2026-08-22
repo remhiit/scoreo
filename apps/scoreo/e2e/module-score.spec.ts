@@ -30,8 +30,10 @@ test('scoring a match on the Torī Valley module lands it in Scoreo history', as
   await page.getByRole('button', { name: 'Start match' }).click()
   await expect(page.getByRole('button', { name: 'Save match' })).toBeVisible()
 
-  // One green Torī for Alice is enough to make her the winner.
+  // Torī score in series of *distinct* colours: a lone Torī is worth 0 VP, two
+  // of different colours are worth 2. So Alice needs two colours to win.
   await page.getByLabel(`${alice} green Torī count`).fill('1')
+  await page.getByLabel(`${alice} red Torī count`).fill('1')
   await page.getByRole('button', { name: 'Save match' }).click()
 
   // Back in Scoreo: one match, under the game type the module's manifest named,
@@ -43,8 +45,9 @@ test('scoring a match on the Torī Valley module lands it in Scoreo history', as
   const row = page.locator('.list-item-row')
   await expect(row).toHaveCount(1)
   await expect(row.getByText('La Vallée des Torī')).toBeVisible()
-  // The winner is the one in bold — one green Torī beats nothing at all.
-  await expect(row.locator('strong')).toContainText(alice)
+  // Winners are bold: Alice alone, with the 2 VP her Torī series is worth.
+  await expect(row.locator('strong')).toHaveCount(1)
+  await expect(row.locator('strong')).toContainText(`${alice} 2`)
 })
 
 test('a game a module counts still offers Scoreo’s own score screen', async ({ page }) => {
