@@ -10,12 +10,28 @@
 // A negative px value (e.g. `-12px`, used for negative-margin click-target
 // tricks) is not flagged: substituting it needs a calc(-1 * var(...))
 // wrapper, not a direct var() swap, so it's out of scope for this ticket.
-import { readFileSync, readdirSync } from 'node:fs'
+import { existsSync, readFileSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 
 const CSS_ROOT = 'apps/scoreo/public/css'
 const TOKENS_DIR = 'tokens'
+
+/**
+ * Every CSS the design tokens govern. A scoring module's stylesheet is scanned
+ * too: it renders inside Scoreo, so a raw value there is just as much of a
+ * theme leak as one in the app's own CSS.
+ */
+function cssRoots() {
+  const roots = [CSS_ROOT]
+  if (!existsSync('packages')) return roots
+  for (const entry of readdirSync('packages', { withFileTypes: true })) {
+    if (!entry.isDirectory()) continue
+    const path = join('packages', entry.name, 'src')
+    if (existsSync(path)) roots.push(path)
+  }
+  return roots
+}
 
 // Keyed by the exact px integer a token resolves to.
 const SPACING_PX = {
@@ -80,6 +96,10 @@ const SPACING_PROPS = new Set([
 const DURATION_PROPS = new Set(['transition', 'transition-duration', 'animation', 'animation-duration'])
 
 function tokenForPxProperty(property, px) {
+  // A custom property *defines* a value, it does not consume a token — and a
+  // module legitimately defines its own `--radius-sm: 6px`. Only declarations
+  // that could have used a var() are candidates.
+  if (property.startsWith('--')) return undefined
   if (SPACING_PROPS.has(property)) return SPACING_PX[px]
   if (property === 'font-size') return TEXT_PX[px]
   if (property === 'border-radius' || property.endsWith('-radius')) return RADIUS_PX[px]
@@ -96,6 +116,16 @@ function stripComments(text) {
   return text.replace(/\/\*[\s\S]*?\*\//g, (m) => m.replace(/[^\n]/g, ' '))
 }
 
+/**
+ * Blanks out `var(...)` expressions before scanning a value. What sits inside
+ * one is either a token name or its deliberate fallback — and a fallback is the
+ * correct way to write a value that must survive where the token is undefined,
+ * as a module's stylesheet does on its own standalone page.
+ */
+function stripVarExpressions(value) {
+  return value.replace(/var\((?:[^()]|\([^()]*\))*\)/g, '')
+}
+
 export function findViolations(cssText, filePath) {
   const violations = []
   const text = stripComments(cssText)
@@ -105,8 +135,12 @@ export function findViolations(cssText, filePath) {
     const rawValue = match[2]
     const line = text.slice(0, match.index).split('\n').length
 
+    if (property.startsWith('--')) continue
+
+    const value = stripVarExpressions(rawValue)
+
     if (DURATION_PROPS.has(property)) {
-      for (const durMatch of rawValue.matchAll(DURATION_RE)) {
+      for (const durMatch of value.matchAll(DURATION_RE)) {
         const num = Number(durMatch[1])
         const ms = durMatch[2] === 's' ? num * 1000 : num
         const varName = DURATION_MS[ms]
@@ -114,19 +148,19 @@ export function findViolations(cssText, filePath) {
           violations.push({ file: filePath, line, property, found: durMatch[0], expected: `var(${varName})` })
         }
       }
-      if (EASE_STANDARD_RE.test(rawValue)) {
+      if (EASE_STANDARD_RE.test(value)) {
         violations.push({
           file: filePath,
           line,
           property,
-          found: rawValue.match(EASE_STANDARD_RE)[0],
+          found: value.match(EASE_STANDARD_RE)[0],
           expected: 'var(--ease-standard)',
         })
       }
       continue
     }
 
-    for (const pxMatch of rawValue.matchAll(PX_RE)) {
+    for (const pxMatch of value.matchAll(PX_RE)) {
       const px = Number(pxMatch[1])
       const varName = tokenForPxProperty(property, px)
       if (varName) {
@@ -152,21 +186,25 @@ function findCssFiles(dir) {
 }
 
 function main() {
+  const roots = cssRoots()
   const violations = []
-  for (const file of findCssFiles(CSS_ROOT)) {
-    const content = readFileSync(file, 'utf-8')
-    violations.push(...findViolations(content, file))
+  for (const root of roots) {
+    for (const file of findCssFiles(root)) {
+      const content = readFileSync(file, 'utf-8')
+      violations.push(...findViolations(content, file))
+    }
   }
 
+  const scanned = roots.map((root) => `${root}/`).join(', ')
   if (violations.length > 0) {
-    console.error(`Found ${violations.length} raw value(s) matching a design token in ${CSS_ROOT}/:\n`)
+    console.error(`Found ${violations.length} raw value(s) matching a design token in ${scanned}:\n`)
     for (const v of violations) {
       console.error(`  - ${v.file}:${v.line} ${v.property}: ${v.found} -> use ${v.expected}`)
     }
     process.exit(1)
   }
 
-  console.log(`No raw px/duration/easing value under ${CSS_ROOT}/ matches a design token.`)
+  console.log(`No raw px/duration/easing value under ${scanned} matches a design token.`)
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {

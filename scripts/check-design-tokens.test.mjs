@@ -97,4 +97,32 @@ describe('findViolations', () => {
     const css = '.card {\n  /* padding: 16px; */\n  color: red;\n}\n'
     expect(findViolations(css, 'f.css')).toEqual([])
   })
+
+  describe('values that only look like leaks', () => {
+    // A module defines its own scale; those declarations are the tokens, not
+    // uses of them.
+    it('ignores a custom property that defines a px value', () => {
+      expect(findViolations(':root { --radius-sm: 6px; }', 'a.css')).toEqual([])
+    })
+
+    it('ignores a custom property that defines a duration', () => {
+      expect(findViolations(':root { --duration-fast: 100ms; }', 'a.css')).toEqual([])
+    })
+
+    // The fallback is how a value survives where the token is undefined — which
+    // is exactly what a module's stylesheet needs on its own standalone page.
+    it('ignores a px value used as a var() fallback', () => {
+      expect(findViolations('.a { font-size: var(--text-md, 16px); }', 'a.css')).toEqual([])
+    })
+
+    it('ignores a radius used as a var() fallback', () => {
+      expect(findViolations('.a { border-radius: var(--radius-pill, 999px); }', 'a.css')).toEqual([])
+    })
+
+    it('still flags a raw value sitting next to a var()', () => {
+      const violations = findViolations('.a { padding: var(--space-2) 16px; }', 'a.css')
+      expect(violations).toHaveLength(1)
+      expect(violations[0].expected).toBe('var(--space-4)')
+    })
+  })
 })

@@ -93,6 +93,11 @@ standalone app for now, ahead of being wired in as a loaded module in a later ph
     └── module-tori-valley/        # absorbed score-counting module, still a standalone app
 ```
 
+`check-design-tokens` scans each package's `src/` alongside the app's own CSS: a module renders
+inside Scoreo, so a raw value there leaks out of the theme just as much as one in `apps/scoreo`. It
+ignores custom-property declarations and `var()` fallbacks — those define a value or keep one
+working where the token is undefined, which is how a module stays usable outside the host.
+
 `module-api` and `shared-domain` are consumed as TypeScript source (their `exports` field points at
 `src/index.ts`): nothing to build before the app compiles, and one definition of `Player` for the
 whole workspace. The two packages are distinct on purpose — `shared-domain` is vocabulary both sides
