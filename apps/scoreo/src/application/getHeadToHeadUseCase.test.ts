@@ -24,6 +24,7 @@ function gameType(id: string, name: string, winCondition: GameType['winCondition
     tieBreakRule: 'NONE',
     tieBreakCondition: 'HIGHEST_SCORE',
     tieBreakLabel: null,
+    moduleId: null,
     active: true,
   }
 }

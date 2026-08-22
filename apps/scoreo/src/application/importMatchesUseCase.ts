@@ -1,3 +1,4 @@
+import type { ScoringModuleManifest } from '@scoreboards/module-api'
 import { WinConditionSchema, type WinCondition } from '../domain/model/enums'
 import type { GameType } from '../domain/model/gameType'
 import type { Match } from '../domain/model/match'
@@ -105,6 +106,8 @@ export class ImportMatchesUseCase {
     private readonly gameTypeRepository: GameTypeRepository,
     private readonly matchRepository: MatchRepository,
     private readonly currentDate: () => number,
+    /** The installed modules' manifests, used only to recognise a renamed game. */
+    private readonly moduleManifests: readonly ScoringModuleManifest[],
   ) {}
 
   preview(jsonString: string): Result<ImportPreview, Error> {
@@ -249,8 +252,19 @@ export class ImportMatchesUseCase {
   }
 
   private resolveGameType(name: string, winCondition: string | null): GameType {
-    const existing = this.gameTypeRepository.getAll().find((gt) => gt.name.toLowerCase() === name.toLowerCase())
+    const all = this.gameTypeRepository.getAll()
+    const existing = all.find((gt) => gt.name.toLowerCase() === name.toLowerCase())
     if (existing) return existing
+
+    // The file names the game, never the module — `moduleId` is local to this
+    // installation. So when the name misses, ask whether a module claims it: a
+    // game bound to a module and since renamed would otherwise be imported
+    // again under its old name, next to itself.
+    const manifest = this.findManifestByGameName(name)
+    if (manifest) {
+      const bound = all.find((gt) => gt.moduleId === manifest.moduleId)
+      if (bound) return bound
+    }
     let wc: WinCondition = 'MANUAL'
     if (winCondition) {
       const found = WIN_CONDITIONS.find((c) => c.toLowerCase() === winCondition.toLowerCase())
@@ -266,10 +280,18 @@ export class ImportMatchesUseCase {
       tieBreakRule: 'NONE',
       tieBreakCondition: 'HIGHEST_SCORE',
       tieBreakLabel: null,
+      moduleId: null,
       active: true,
     }
     this.gameTypeRepository.save(gameType)
     return gameType
+  }
+
+  private findManifestByGameName(name: string): ScoringModuleManifest | undefined {
+    const needle = name.trim().toLowerCase()
+    return this.moduleManifests.find((m) =>
+      m.gameNames.some((n) => n.trim().toLowerCase() === needle),
+    )
   }
 
   private resolvePlayer(name: string, existingPlayers: Player[]): Player {

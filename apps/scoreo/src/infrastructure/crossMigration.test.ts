@@ -86,6 +86,7 @@ describe('cross-migration: real old-format localStorage export', () => {
       tieBreakRule: 'NONE',
       tieBreakCondition: 'HIGHEST_SCORE',
       tieBreakLabel: null,
+      moduleId: null,
       active: true,
     })
     const tarot = gameTypes.find((g) => g.id === 'gt-tarot')

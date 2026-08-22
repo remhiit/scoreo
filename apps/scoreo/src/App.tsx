@@ -65,6 +65,7 @@ import { SyncScreen } from './ui/sync/SyncScreen'
 import { useAutoSync } from './ui/sync/useAutoSync'
 import { ThemeProvider } from './ui/theme/ThemeContext'
 import { ThemePickerDialog } from './ui/theme/ThemePickerDialog'
+import { MODULE_MANIFESTS } from './modules/registry'
 
 function screenTitle(screen: Screen): string {
   switch (screen.type) {
@@ -209,6 +210,7 @@ function AppShell() {
         services.gameTypeRepository,
         services.matchRepository,
         services.currentDate,
+        MODULE_MANIFESTS,
       ),
     [services],
   )

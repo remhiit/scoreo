@@ -54,7 +54,8 @@ Notable design choices:
 | `GetGameTypesUseCase` | `invoke(includeInactive = false)` | `GameType[]` |
 | `GetMatchesUseCase` | `invoke()` | `Match[]` |
 | `UpdateGameTypeUseCase` | `invoke(gameType: GameType)` | `void` |
-| `ImportMatchesUseCase` | `preview(jsonString)`, `execute(jsonString)` | `Result<ImportPreview, Error>`, `Result<ImportResult, Error>` |
+| `ImportMatchesUseCase` | `preview(jsonString)`, `execute(jsonString)` | `Result<ImportPreview, Error>`, `Result<ImportResult, Error>` — resolves the game type by name, then by `moduleId` through the installed manifests, then creates it |
+| `BindModuleUseCase` | `invoke(manifest: ScoringModuleManifest)` | `GameType` — binds a scoring module to a game type on first use, idempotent: reuse by `moduleId`, else stamp a name match, else create from the manifest. Nothing is materialized at startup |
 | `SyncUseCase` | `async autoSync()` | `Promise<SyncOutcome>` (`{kind:'Synced', result} \| {kind:'Conflict', conflict}`) |
 | `SyncUseCase` | `async resolveConflict(keepLocal: boolean)` | `Promise<SyncResult>` |
 | `SyncUseCase` | `async pushLocalData()` | `Promise<SyncResult>` (`{pushed, pulled: 0, timestamp}`) — pushes the full local snapshot, used by `AutoSyncCoordinator` |
@@ -68,7 +69,7 @@ Notable design choices:
 | Model | Fields | File |
 |---|---|---|
 | `Player` | `id: string`, `name: string`, `active: boolean` (default `true`) | `player.ts` / `player.schema.ts` — both re-export `@scoreboards/shared-domain`, which holds the single definition shared with the scoring modules |
-| `GameType` | `id`, `name`, `winCondition: WinCondition`, `tieBreakRule: TieBreakRule` (default `'NONE'`), `tieBreakCondition: WinCondition` (default `'HIGHEST_SCORE'`), `tieBreakLabel: string \| null` (default `null`), `active: boolean` (default `true`) | `gameType.ts` / `gameType.schema.ts` — also exports `computeWinners(gameType, playerScores, condition?)` |
+| `GameType` | `id`, `name`, `winCondition: WinCondition`, `tieBreakRule: TieBreakRule` (default `'NONE'`), `tieBreakCondition: WinCondition` (default `'HIGHEST_SCORE'`), `tieBreakLabel: string \| null` (default `null`), `active: boolean` (default `true`), `moduleId: string \| null` (default `null` — the scoring module able to count this game; a capability flag, not a redirection) | `gameType.ts` / `gameType.schema.ts` — also exports `computeWinners(gameType, playerScores, condition?)` |
 | `Match` | `id`, `date: number` (epoch ms), `gameTypeId`, `playerScores: PlayerScore[]`, `manualWinners: string[]` (default `[]`), `secondaryPlayerScores: PlayerScore[]` (default `[]`), `rounds: PlayerScore[][]` (default `[]` — one entry per round played, each listing every participant's score for that round; empty for matches saved before this was tracked, or imported without round detail) | `match.ts` / `match.schema.ts` — also exports `isTieBreakIndeterminate(match, gameType)` |
 | `MatchDraft` | `gameTypeId`, `playerIds: string[]`, `rounds: Record<string, string>[]`, `updatedAt: number` | `matchDraft.ts` / `matchDraft.schema.ts` |
 | `PlayerScore` | `playerId: string`, `score: number` | `playerScore.ts` / `playerScore.schema.ts` |

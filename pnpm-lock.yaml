@@ -38,6 +38,12 @@ importers:
 
   apps/scoreo:
     dependencies:
+      '@scoreboards/module-api':
+        specifier: workspace:*
+        version: link:../../packages/module-api
+      '@scoreboards/module-tori-valley':
+        specifier: workspace:*
+        version: link:../../packages/module-tori-valley
       '@scoreboards/shared-domain':
         specifier: workspace:*
         version: link:../../packages/shared-domain
@@ -111,6 +117,9 @@ importers:
 
   packages/module-tori-valley:
     dependencies:
+      '@scoreboards/module-api':
+        specifier: workspace:*
+        version: link:../module-api
       '@scoreboards/shared-domain':
         specifier: workspace:*
         version: link:../shared-domain

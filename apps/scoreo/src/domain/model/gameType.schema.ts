@@ -9,4 +9,7 @@ export const GameTypeSchema = z.object({
   tieBreakCondition: WinConditionSchema.default('HIGHEST_SCORE'),
   tieBreakLabel: z.string().nullable().default(null),
   active: z.boolean().default(true),
+  // Game types saved before modules existed carry no moduleId; they read back
+  // unbound rather than failing to parse.
+  moduleId: z.string().nullable().default(null),
 })

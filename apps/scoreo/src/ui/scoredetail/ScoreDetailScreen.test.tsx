@@ -22,6 +22,7 @@ function gameType(
     tieBreakRule,
     tieBreakCondition: 'HIGHEST_SCORE',
     tieBreakLabel: null,
+    moduleId: null,
     active: true,
   }
 }

@@ -39,6 +39,7 @@ function buildGameType(id: string, name: string) {
     tieBreakRule: 'NONE' as const,
     tieBreakCondition: 'HIGHEST_SCORE' as const,
     tieBreakLabel: null,
+    moduleId: null,
     active: true,
   }
 }

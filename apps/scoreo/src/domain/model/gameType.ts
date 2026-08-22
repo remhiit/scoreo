@@ -9,6 +9,12 @@ export interface GameType {
   tieBreakCondition: WinCondition
   tieBreakLabel: string | null
   active: boolean
+  /**
+   * The scoring module able to count this game, or `null` for a game Scoreo
+   * counts on its own. A capability flag, not a redirection: the generic score
+   * screen stays available for a game that has a module.
+   */
+  moduleId: string | null
 }
 
 export function computeWinners(

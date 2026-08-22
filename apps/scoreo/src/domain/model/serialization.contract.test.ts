@@ -25,6 +25,7 @@ describe('serialization contract (backward compatibility)', () => {
       tieBreakRule: 'NONE',
       tieBreakCondition: 'HIGHEST_SCORE',
       tieBreakLabel: null,
+      moduleId: null,
       active: true,
     }
     expect(roundTrip(GameTypeSchema, original)).toEqual(original)
@@ -38,9 +39,37 @@ describe('serialization contract (backward compatibility)', () => {
       tieBreakRule: 'NONE',
       tieBreakCondition: 'HIGHEST_SCORE',
       tieBreakLabel: null,
+      moduleId: null,
       active: true,
     }
     expect(roundTrip(GameTypeSchema, original)).toEqual(original)
+  })
+
+  it('GameType bound to a scoring module serialization round-trip', () => {
+    const original = {
+      id: 'gt3',
+      name: 'La Vallée des Torī',
+      winCondition: 'HIGHEST_SCORE',
+      tieBreakRule: 'NONE',
+      tieBreakCondition: 'HIGHEST_SCORE',
+      tieBreakLabel: null,
+      active: true,
+      moduleId: 'tori-valley',
+    }
+    expect(roundTrip(GameTypeSchema, original)).toEqual(original)
+  })
+
+  it('GameType saved before modules existed reads back unbound', () => {
+    const legacy = {
+      id: 'gt4',
+      name: 'Belote',
+      winCondition: 'HIGHEST_SCORE',
+      tieBreakRule: 'NONE',
+      tieBreakCondition: 'HIGHEST_SCORE',
+      tieBreakLabel: null,
+      active: true,
+    }
+    expect(roundTrip(GameTypeSchema, legacy)).toEqual({ ...legacy, moduleId: null })
   })
 
   it('PlayerScore serialization round-trip', () => {
@@ -182,6 +211,7 @@ describe('serialization contract (backward compatibility)', () => {
       tieBreakRule: 'NONE',
       tieBreakCondition: 'HIGHEST_SCORE',
       tieBreakLabel: null,
+      moduleId: null,
       active: true,
     })
   })
@@ -194,6 +224,7 @@ describe('serialization contract (backward compatibility)', () => {
       tieBreakRule: 'SECONDARY_SCORE',
       tieBreakCondition: 'LOWEST_SCORE',
       tieBreakLabel: 'Best Secondary',
+      moduleId: null,
       active: true,
     }
     expect(roundTrip(GameTypeSchema, original)).toEqual(original)
@@ -208,6 +239,7 @@ describe('serialization contract (backward compatibility)', () => {
       tieBreakRule: 'NONE',
       tieBreakCondition: 'HIGHEST_SCORE',
       tieBreakLabel: null,
+      moduleId: null,
       active: true,
     })
   })
@@ -226,6 +258,7 @@ describe('serialization contract (backward compatibility)', () => {
       tieBreakRule: 'MANUAL_SELECTION',
       tieBreakCondition: 'HIGHEST_SCORE',
       tieBreakLabel: null,
+      moduleId: null,
       active: true,
     })
   })

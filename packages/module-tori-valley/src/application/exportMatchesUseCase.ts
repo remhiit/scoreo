@@ -10,12 +10,17 @@ import type { Player } from '../domain/model/player'
 import { scoreTorii } from '../domain/model/torii'
 import type { MatchRepository } from '../domain/port/matchRepository'
 import type { PlayerRepository } from '../domain/port/playerRepository'
+import { toriValleyManifest } from '../module'
 
 /** Scoreo's import contract version this export targets (`schemas/import/v1.1.json-schema`). */
 export const EXPORT_VERSION = '1.1'
 
-/** Game name Scoreo will create on first import — the physical game's French title. */
-export const EXPORT_GAME_NAME = 'La Vallée des Torī'
+/**
+ * Game name Scoreo will create on first import — the physical game's French
+ * title. Taken from the manifest so the file export and the in-process binding
+ * can never name the game differently.
+ */
+export const EXPORT_GAME_NAME = toriValleyManifest.gameNames[0]
 
 /** Scoreo needs ≥2 entries in `ranking`, so solo matches can't be represented. */
 export const MIN_EXPORTABLE_PLAYERS = 2

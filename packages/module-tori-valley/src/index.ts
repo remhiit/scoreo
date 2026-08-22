@@ -1,0 +1,1 @@
+export { toriValleyManifest } from './module'

@@ -14,6 +14,7 @@ function setup(winCondition: WinCondition) {
     tieBreakRule: 'NONE',
     tieBreakCondition: 'HIGHEST_SCORE',
     tieBreakLabel: null,
+    moduleId: null,
     active: true,
   })
   const useCase = new CreateMatchUseCase(matchRepo, gameTypeRepo)

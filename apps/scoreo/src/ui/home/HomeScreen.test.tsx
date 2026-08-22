@@ -103,6 +103,7 @@ describe('HomeScreen', () => {
       tieBreakRule: 'NONE',
       tieBreakCondition: 'HIGHEST_SCORE',
       tieBreakLabel: null,
+      moduleId: null,
       active: true,
     })
     render(<HomeScreen {...props} />)
@@ -131,6 +132,7 @@ describe('HomeScreen', () => {
       tieBreakRule: 'NONE',
       tieBreakCondition: 'HIGHEST_SCORE',
       tieBreakLabel: null,
+      moduleId: null,
       active: true,
     })
     render(<HomeScreen {...props} />)
@@ -286,6 +288,7 @@ describe('HomeScreen', () => {
       tieBreakRule: 'NONE',
       tieBreakCondition: 'HIGHEST_SCORE',
       tieBreakLabel: null,
+      moduleId: null,
       active: true,
     })
     matchRepo.save({

@@ -30,6 +30,7 @@ export class AddGameTypeUseCase {
       tieBreakRule: options.tieBreakRule ?? 'NONE',
       tieBreakCondition: options.tieBreakCondition ?? 'HIGHEST_SCORE',
       tieBreakLabel: options.tieBreakLabel ?? null,
+      moduleId: null,
       active: true,
     }
     this.repository.save(gameType)

@@ -14,6 +14,7 @@ function buildGameType(overrides: Partial<GameType> = {}): GameType {
     tieBreakRule: 'NONE',
     tieBreakCondition: 'HIGHEST_SCORE',
     tieBreakLabel: null,
+    moduleId: null,
     active: true,
     ...overrides,
   }
