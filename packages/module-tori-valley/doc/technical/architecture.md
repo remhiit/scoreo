@@ -47,10 +47,12 @@ Every domain model that gets persisted (`Player`, `Match`/`PlayerResult`) has a 
 
 ## PWA shell
 
-`public/registerSw.js` registers `public/sw.js` on load (and unregisters any worker on `localhost`, so dev never serves a stale cache). `sw.js` precaches only the non-hashed entry points (`./`, `index.html`, `css/styles.css`) — Vite's content-hashed bundles are unknown at write time and get cached on first fetch instead.
+`public/registerSw.js` registers `public/sw.js` on load (and unregisters any worker on `localhost`, so dev never serves a stale cache). `sw.js` precaches only the non-hashed entry points (`./`, `index.html`) — Vite's content-hashed bundles are unknown at write time and get cached on first fetch instead.
 
 **The Cache Storage API is scoped to the origin, not to the service worker's scope.** `remhiit.github.io` hosts several PWAs (scoreo, this app, 1kSaBord), so they all share one cache namespace: an `activate` handler that deletes every cache other than its own `CACHE_NAME` wipes the _neighbouring apps'_ offline caches. The purge is therefore restricted to names starting with `CACHE_PREFIX` (derived from `CACHE_NAME` by dropping its trailing `-v<n>`), which keeps the version purge intact while leaving `scoreo-*` / `ksabord-*` alone. `src/test/sw.test.ts` guards both halves of that rule.
 
 ## Styling
 
-Single `public/css/styles.css`: CSS custom properties for light/dark (`prefers-color-scheme`), no theme picker (unlike scoreo) — kept simple for this MVP; a full flavor/accent picker could be added later following scoreo's `tokens/*.css` pattern if wanted.
+Single `src/styles.css`, imported by both entry points rather than linked from `public/`: the standalone shell pulls it in through `main.tsx`, and the hosted module screen imports it too, so Vite emits it as a CSS chunk loaded alongside the module's JS chunk. That is what makes the module arrive **styled** inside Scoreo, at zero cost until someone opens it. Only the splash keeps a handful of inline rules in `index.html`, since it has to paint before any script runs.
+
+It still defines its own colour custom properties for light/dark (`prefers-color-scheme`) rather than Scoreo's Catppuccin tokens — moving onto them is tracked separately, and needs the tokens to become a package first.
