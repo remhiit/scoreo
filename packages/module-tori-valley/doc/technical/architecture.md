@@ -55,4 +55,8 @@ Every domain model that gets persisted (`Player`, `Match`/`PlayerResult`) has a 
 
 Single `src/styles.css`, imported by both entry points rather than linked from `public/`: the standalone shell pulls it in through `main.tsx`, and the hosted module screen imports it too, so Vite emits it as a CSS chunk loaded alongside the module's JS chunk. That is what makes the module arrive **styled** inside Scoreo, at zero cost until someone opens it. Only the splash keeps a handful of inline rules in `index.html`, since it has to paint before any script runs.
 
-It still defines its own colour custom properties for light/dark (`prefers-color-scheme`) rather than Scoreo's Catppuccin tokens — moving onto them is tracked separately, and needs the tokens to become a package first.
+Every colour is resolved against the host's semantic token first, with the module's own palette as the fallback: `--color-bg: var(--surface-app, #fdf6ee)`. Inside Scoreo the tokens are defined, so the module follows the flavor and accent the user picked; on the standalone page nothing defines them and the fallbacks reproduce the palette this app has always shipped, pixel for pixel. That is what the visual baselines verify.
+
+Two things deliberately stay the module's own. **Spacing and radii**: Scoreo's scale reuses the same names for different values (`--space-5` is 20px there, 24px here), so adopting it is a real layout change rather than a rename. **The Torī hues**: a red Torī is red in every flavor, so they map onto the Catppuccin palette (`--ctp-red`) rather than onto a semantic role, and their contrast text is fixed.
+
+Note the aliases are named `--tori-primary` / `--tori-danger`, not `--color-primary` / `--color-danger`: a custom property cannot reference itself, and Scoreo already owns those two names.
