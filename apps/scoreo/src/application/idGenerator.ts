@@ -1,9 +1,2 @@
-const UUID_V4_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
-
-export function newId(): string {
-  return crypto.randomUUID()
-}
-
-export function isUuid(str: string): boolean {
-  return UUID_V4_REGEX.test(str)
-}
+// Shared with the scoring modules; see `@scoreboards/shared-domain`.
+export { isUuid, newId } from '@scoreboards/shared-domain'

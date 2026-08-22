@@ -26,7 +26,7 @@ Notable design choices:
 
 ## Use Cases
 
-`apps/scoreo/src/application/*.ts` — one class per file, business logic with zero framework dependency, constructed with the ports (repositories) it needs. Validation/lookup failures either throw `ValidationError`/`NotFoundError` (`apps/scoreo/src/domain/model/errors.ts`) or, where the call site needs to branch on the outcome without try/catch, return `Result<T, E>` (`apps/scoreo/src/domain/result.ts` — `{ ok: true, value } | { ok: false, error }`).
+`apps/scoreo/src/application/*.ts` — one class per file, business logic with zero framework dependency, constructed with the ports (repositories) it needs. Validation/lookup failures either throw `ValidationError`/`NotFoundError` (`apps/scoreo/src/domain/model/errors.ts`) or, where the call site needs to branch on the outcome without try/catch, return `Result<T, E>` (`apps/scoreo/src/domain/result.ts` — `{ ok: true, value } | { ok: false, error }`, re-exported from `@scoreboards/shared-domain`).
 
 | Use Case | Method | Returns |
 |---|---|---|
@@ -67,7 +67,7 @@ Notable design choices:
 
 | Model | Fields | File |
 |---|---|---|
-| `Player` | `id: string`, `name: string`, `active: boolean` (default `true`) | `player.ts` / `player.schema.ts` |
+| `Player` | `id: string`, `name: string`, `active: boolean` (default `true`) | `player.ts` / `player.schema.ts` — both re-export `@scoreboards/shared-domain`, which holds the single definition shared with the scoring modules |
 | `GameType` | `id`, `name`, `winCondition: WinCondition`, `tieBreakRule: TieBreakRule` (default `'NONE'`), `tieBreakCondition: WinCondition` (default `'HIGHEST_SCORE'`), `tieBreakLabel: string \| null` (default `null`), `active: boolean` (default `true`) | `gameType.ts` / `gameType.schema.ts` — also exports `computeWinners(gameType, playerScores, condition?)` |
 | `Match` | `id`, `date: number` (epoch ms), `gameTypeId`, `playerScores: PlayerScore[]`, `manualWinners: string[]` (default `[]`), `secondaryPlayerScores: PlayerScore[]` (default `[]`), `rounds: PlayerScore[][]` (default `[]` — one entry per round played, each listing every participant's score for that round; empty for matches saved before this was tracked, or imported without round detail) | `match.ts` / `match.schema.ts` — also exports `isTieBreakIndeterminate(match, gameType)` |
 | `MatchDraft` | `gameTypeId`, `playerIds: string[]`, `rounds: Record<string, string>[]`, `updatedAt: number` | `matchDraft.ts` / `matchDraft.schema.ts` |

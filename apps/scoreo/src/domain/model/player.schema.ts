@@ -1,7 +1,3 @@
-import { z } from 'zod'
-
-export const PlayerSchema = z.object({
-  id: z.string(),
-  name: z.string(),
-  active: z.boolean().default(true),
-})
+// See `./player`: the schema follows the model into `@scoreboards/shared-domain`,
+// unchanged — the bytes it parses are already on users' devices.
+export { PlayerSchema } from '@scoreboards/shared-domain'
