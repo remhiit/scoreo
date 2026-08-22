@@ -1,4 +1,4 @@
-import type { ScoringModuleManifest } from '@scoreboards/module-api'
+import type { ScoringModule, ScoringModuleManifest } from '@scoreboards/module-api'
 
 /**
  * What Scoreo knows about this module before loading any of it.
@@ -23,4 +23,16 @@ export const toriValleyManifest: ScoringModuleManifest = {
   minPlayers: 2,
   maxPlayers: 4,
   dataVersion: 1,
+}
+
+/**
+ * The module as the host's registry lists it.
+ *
+ * `load` is a thunk holding a dynamic import, so the screen and everything it
+ * drags in — the scoring rules, the translations, lucide — become a separate
+ * chunk. Only this closure lands in Scoreo's main bundle.
+ */
+export const toriValleyModule: ScoringModule = {
+  manifest: toriValleyManifest,
+  load: () => import('./ui/module/ToriValleyModuleScreen'),
 }

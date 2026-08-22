@@ -1,10 +1,14 @@
 import { useReducer } from 'react'
 import { useTranslation } from 'react-i18next'
 import { TORI_VALLEY_NS } from '../../i18n'
-import type { CreateMatchUseCase } from '../../application/createMatchUseCase'
-import type { UpdateMatchUseCase } from '../../application/updateMatchUseCase'
+import type { ObjectifCardSelection } from '../../domain/model/landscape'
 import { LANDSCAPE_TYPES } from '../../domain/model/landscape'
-import { PARCHEMIN_VALUES, scorePlayerResult, type ParcheminValue } from '../../domain/model/match'
+import {
+  PARCHEMIN_VALUES,
+  scorePlayerResult,
+  type ParcheminValue,
+  type PlayerResult,
+} from '../../domain/model/match'
 import { MAX_TORII_PER_COLOR, TORII_COLORS } from '../../domain/model/torii'
 import { NotFoundError, ValidationError } from '../../domain/model/errors'
 import { AppButton } from '../shared/AppButton'
@@ -14,18 +18,20 @@ import type { ScoreDetailState } from './scoreDetailTypes'
 
 export interface ScoreDetailScreenProps {
   initialState: ScoreDetailState
-  createMatch: CreateMatchUseCase
-  updateMatch: UpdateMatchUseCase
-  currentDate: () => number
+  /**
+   * Persists the entered scores. Where they go is the caller's business: the
+   * standalone app writes them to its own repository, the hosted module hands
+   * them to Scoreo through `ModuleHost`. Throwing here surfaces as the screen's
+   * error message, exactly as a rejected use case used to.
+   */
+  save: (results: PlayerResult[], objectifCards: ObjectifCardSelection) => void
   onSaved: () => void
   onCancel: () => void
 }
 
 export function ScoreDetailScreen({
   initialState,
-  createMatch,
-  updateMatch,
-  currentDate,
+  save,
   onSaved,
   onCancel,
 }: ScoreDetailScreenProps) {
@@ -42,16 +48,7 @@ export function ScoreDetailScreen({
 
   function handleSave() {
     try {
-      if (state.mode.type === 'Create') {
-        createMatch.invoke(
-          state.players.map((p) => p.id),
-          state.results,
-          currentDate(),
-          state.objectifCards,
-        )
-      } else {
-        updateMatch.invoke(state.mode.matchId, state.results, state.objectifCards)
-      }
+      save(state.results, state.objectifCards)
       dispatch({ type: 'saveSucceeded' })
       onSaved()
     } catch (e) {

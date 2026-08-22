@@ -43,6 +43,20 @@ History (`src/ui/history/HistoryScreen.tsx`) has no reducer — it's simple enou
 | `ObjectifCardDefinition` / `ObjectifInputField` | per-card `fields` descriptor (`key`, `labelKey`, `min`, `max`, `kind: 'count' \| 'flag'`) plus a `score(inputs)` function; `computable: false` for the two neighbour-dependent cards              | `objectifCard.ts` — also exports `objectifCard(landscape, variant)`, `scoreObjectifCard(landscape, variant, inputs)` |
 | `ValidationError` / `NotFoundError`             | real `Error` subclasses (`kind: 'Validation' \| 'NotFound'`), union type `DomainError`                                                                                                            | `errors.ts`                                                                                                          |
 
+## Hosted module
+
+The package is both a standalone app and a scoring module Scoreo loads. What the host uses:
+
+| Export | File | Role |
+| --- | --- | --- |
+| `toriValleyManifest` | `src/module.ts` | Read eagerly by Scoreo's registry, so this file imports nothing but its type |
+| `toriValleyModule` | `src/module.ts` | `{ manifest, load }` — `load` holds a dynamic import, which is what puts the screen in its own chunk |
+| `ToriValleyModuleScreen` | `src/ui/module/ToriValleyModuleScreen.tsx` | Default export, implements `ScoringModuleScreenProps`. Reads players from `host.getPlayers()`, saves through `host.saveMatch()`, and **never touches `tori_valley_*`** — the host owns the storage |
+| `toModuleMatchResult` | `src/domain/model/moduleResult.ts` | The single description of a finished match, keyed by `playerId`. The v1.1 file export maps ids to names on top of it, so file and module can never disagree about a rank or a category |
+| `ToriValleyModuleDataSchema` | `src/domain/model/moduleResult.ts` | Validates the opaque payload the host hands back when a match is reopened; an unreadable one starts a fresh grid |
+
+`ScoreDetailScreen` takes a `save(results, objectifCards)` callback rather than use cases: standalone writes to the repository, hosted hands the result to Scoreo.
+
 ## Ports (Repository Interfaces)
 
 `src/domain/port/*.ts` — plain TypeScript interfaces.
