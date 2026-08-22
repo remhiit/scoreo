@@ -72,7 +72,6 @@ export function GameTypeScreen({
       tieBreakRule: state.selectedTieBreakRule,
       tieBreakCondition: state.selectedTieBreakCondition,
       tieBreakLabel: state.selectedTieBreakLabel ?? null,
-      moduleId: null,
     }
     const result = submitUpdateGameType(updateGameType, getGameTypes, updated)
     dispatch(

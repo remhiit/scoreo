@@ -133,6 +133,21 @@ describe('GameTypeScreen', () => {
     expect(within(screen.getByRole('dialog')).getByText('Manual selection')).toBeInTheDocument()
   })
 
+  it('preserves moduleId when editing a game type bound to a module', () => {
+    const repo = new InMemoryGameTypeRepository()
+    repo.save({ ...buildGameType('bound', 'Tori Valley'), moduleId: 'tori-valley' })
+    renderScreen(repo)
+
+    fireEvent.click(screen.getByLabelText('Edit'))
+    const editDialog = screen.getByRole('dialog')
+    fireEvent.change(within(editDialog).getByDisplayValue('No tie-break'), {
+      target: { value: 'MANUAL_SELECTION' },
+    })
+    fireEvent.click(within(editDialog).getByText('Save changes'))
+
+    expect(repo.findById('bound')?.moduleId).toBe('tori-valley')
+  })
+
   it('cancelling edit restores the add form without changes', () => {
     renderScreen()
     fireEvent.change(nameInput(), { target: { value: 'Belote' } })
