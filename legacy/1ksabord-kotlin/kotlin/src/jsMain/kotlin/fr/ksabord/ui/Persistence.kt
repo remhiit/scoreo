@@ -245,12 +245,17 @@ fun exporterHistorique() {
  * Exporte l'historique en JSON clair (non compresse) destiné à un système
  * de scores multi-jeux. Produit un fichier .json avec une enveloppe descriptive.
  */
-fun exporterHistoriqueJson() {
-    val historique = obtenirHistoriqueParties()
-    if (historique.isEmpty()) {
-        window.alert("Aucune partie à exporter.")
-        return
-    }
+/**
+ * Construit l'enveloppe d'export, sans toucher au DOM.
+ *
+ * Extrait d'exporterHistoriqueJson() pour que les tests exercent le code
+ * réellement livré : ils en gardaient jusqu'ici une copie, qui pouvait donc
+ * rester verte pendant que le chemin de production divergeait.
+ */
+internal fun construireEnveloppeExport(
+    historique: List<PartieTerminee>,
+    exportedAt: Long,
+): ExportSabords {
     val jeux = historique.map { p ->
         val classement = p.classement.mapIndexed { i, j ->
             ExportClassement(name = j.nom, score = j.score, rank = i + 1)
@@ -283,14 +288,27 @@ fun exporterHistoriqueJson() {
             details = details,
         )
     }
-    val envelope = ExportSabords(
+    return ExportSabords(
         version      = "1.1",
         game         = "1000 Sabords",
-        exportedAt   = Date.now().toLong(),
+        exportedAt   = exportedAt,
         gameCount    = jeux.size,
         winCondition = "HIGHEST_SCORE",
         games        = jeux,
     )
+}
+
+/**
+ * Exporte l'historique en JSON clair (non compresse) destiné à un système
+ * de scores multi-jeux. Produit un fichier .json avec une enveloppe descriptive.
+ */
+fun exporterHistoriqueJson() {
+    val historique = obtenirHistoriqueParties()
+    if (historique.isEmpty()) {
+        window.alert("Aucune partie à exporter.")
+        return
+    }
+    val envelope = construireEnveloppeExport(historique, Date.now().toLong())
     val json = formatJsonPretty.encodeToString(envelope)
 
     window.asDynamic().__sabords_export = json

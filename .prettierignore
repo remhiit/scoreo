@@ -1,0 +1,3 @@
+
+# Sortie figée de l'oracle Kotlin : reformater ces octets casserait la comparaison.
+packages/module-mille-sabords/tests/golden/
