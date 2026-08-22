@@ -53,6 +53,24 @@ Every domain model that gets persisted (`Player`, `Match`/`PlayerResult`) has a 
 
 ## Styling
 
-Single `src/styles.css`, imported by both entry points rather than linked from `public/`: the standalone shell pulls it in through `main.tsx`, and the hosted module screen imports it too, so Vite emits it as a CSS chunk loaded alongside the module's JS chunk. That is what makes the module arrive **styled** inside Scoreo, at zero cost until someone opens it. Only the splash keeps a handful of inline rules in `index.html`, since it has to paint before any script runs.
+Single `src/styles.css`, imported by both entry points rather than linked from `public/`: the
+standalone shell pulls it in through `main.tsx`, and the hosted module screen imports it too, so Vite
+emits it as a CSS chunk loaded alongside the module's JS chunk. That is what makes the module arrive
+**styled** inside Scoreo, at zero cost until someone opens it.
+
+**Every rule is scoped under `.module-tori-valley`**, and both entry points carry that class — the
+standalone on `<body>`, the hosted screen on a wrapper around whatever it renders. The module keeps
+the identity of the game it counts (Torī Valley's warm washi palette, its own spacing and radii),
+and none of it escapes into the host.
+
+That scoping is not cosmetic. The two stylesheets name tokens alike with different values —
+`--color-primary` (Torī red vs Catppuccin mauve), `--space-5` (24px vs 20px), `--radius-lg` (16px vs
+14px), plus `--color-danger`, `--shadow-sm`, `--shadow-md` — and element selectors like `input`,
+`select` and `label` would have restyled the whole app. A stylesheet is not unloaded on navigation,
+so an unscoped rule would have followed the player for the rest of the session. `apps/scoreo/e2e/
+module-style-isolation.spec.ts` guards it.
+
+Anything that must paint before scripts run is inline in `index.html` — the splash, and the
+`html`/`#root` layout resets, which sit outside the module's scope and belong to the shell anyway.
 
 It still defines its own colour custom properties for light/dark (`prefers-color-scheme`) rather than Scoreo's Catppuccin tokens — moving onto them is tracked separately, and needs the tokens to become a package first.

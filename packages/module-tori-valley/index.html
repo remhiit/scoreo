@@ -52,6 +52,22 @@
           transform: rotate(360deg);
         }
       }
+      /*
+        Layout resets the stylesheet no longer carries: it is scoped to
+        .module-tori-valley now, and html/#root sit outside that scope. They
+        belong to this shell anyway, not to the module.
+      */
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        height: 100%;
+      }
+      #root {
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+      }
       @media (prefers-color-scheme: dark) {
         .splash {
           background: #201a17;
@@ -66,7 +82,7 @@
       }
     </style>
   </head>
-  <body>
+  <body class="module-tori-valley">
     <div id="splash" class="splash">
       <div class="splash-content">
         <h1>Torī Valley</h1>
