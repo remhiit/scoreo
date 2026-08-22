@@ -1,0 +1,40 @@
+# Kotlin compiler cache
+.kotlin/
+
+# Gradle
+.gradle/
+build/
+kotlin/build/
+kotlin/.gradle/
+*.class
+
+# Kotlin/JS
+kotlin/kotlin-js-store/
+node_modules/
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Fichiers de zone Windows
+*.Identifier
+*:Zone.Identifier
+
+# Binaires
+*.jar
+*.war
+*.ear
+*.aar
+*.apk
+*.aab
+*.dex
+*.so
+*.dylib
+*.dll
+*.exe
+*.o

@@ -1,0 +1,268 @@
+package fr.ksabord
+
+import fr.ksabord.domaine.*
+import fr.ksabord.ui.*
+import kotlinx.browser.localStorage
+import kotlinx.serialization.encodeToString
+import kotlin.test.*
+
+class PersistenceTest {
+
+    @BeforeTest
+    fun setUp() {
+        // Polyfill localStorage et crypto pour Node.js
+        js("""
+            if (typeof globalThis.window === 'undefined') {
+                var __store = {};
+                globalThis.window = globalThis;
+                globalThis.window.localStorage = {
+                    getItem: function(k) { return __store[k] || null; },
+                    setItem: function(k, v) { __store[k] = v; },
+                    removeItem: function(k) { delete __store[k]; },
+                    clear: function() { __store = {}; }
+                };
+            }
+            if (typeof globalThis.crypto === 'undefined') {
+                globalThis.crypto = {
+                    randomUUID: function() {
+                        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+                            var r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
+                            return v.toString(16);
+                        });
+                    }
+                };
+            }
+        """)
+        partie.reinitialiser()
+        localStorage.removeItem(CLÉ_HISTORIQUE)
+        localStorage.removeItem(CLÉ_JOUEURS)
+    }
+
+    // ===== helpers =====
+
+    private fun creerPartieTerminee(
+        horodatage: Long = 1000L,
+        uuid: String = genererUuid(),
+        joueurs: List<Pair<String, Int>> = listOf("Alice" to 1200, "Bob" to 800),
+    ): PartieTerminee {
+        val classement = joueurs.mapIndexed { i, (nom, score) ->
+            ResultatJoueur(nom, score, i)
+        }.sortedByDescending { it.score }
+        return PartieTerminee(
+            uuid = uuid,
+            horodatage = horodatage,
+            classement = classement,
+            nombreManches = 3,
+            coups = emptyList(),
+        )
+    }
+
+    private fun stockerPartie(p: PartieTerminee) {
+        localStorage.setItem(CLÉ_HISTORIQUE, formatJson.encodeToString(listOf(p)))
+    }
+
+    // ===== genererUuid =====
+
+    @Test fun genererUuid_retourneUneChaineNonVide() {
+        assertTrue(genererUuid().isNotEmpty())
+    }
+
+    @Test fun genererUuid_ressembleÀUnUUIDv4() {
+        val uuid = genererUuid()
+        val pattern = """^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$""".toRegex()
+        assertTrue(pattern.matches(uuid.lowercase()), "Format UUIDv4 attendu, obtenu: $uuid")
+    }
+
+    @Test fun genererUuid_retourneDesValeursUniques() {
+        val uuids = (1..10).map { genererUuid() }
+        assertEquals(10, uuids.distinct().size)
+    }
+
+    // ===== archiverPartieTerminee → uuid présent =====
+
+    @Test fun archiverPartieTerminee_genereUnUUID() {
+        partie.joueurs.add("Alice"); partie.joueurs.add("Bob")
+        partie.commencer()
+        partie.ajouterCoup(CoupManuel("Alice", 500, 1, 500))
+        partie.ajouterCoup(CoupManuel("Bob", 300, 1, 300))
+        archiverPartieTerminee()
+
+        val historique = obtenirHistoriqueParties()
+        assertEquals(1, historique.size)
+        assertTrue(historique[0].uuid.isNotEmpty())
+    }
+
+    @Test fun archiverPartieTerminee_uuidUniqueÀChaqueFois() {
+        partie.joueurs.add("Alice"); partie.joueurs.add("Bob")
+        repeat(3) {
+            partie.commencer()
+            partie.ajouterCoup(CoupManuel("Alice", 100, 1, 100))
+            partie.ajouterCoup(CoupManuel("Bob", 100, 1, 100))
+            archiverPartieTerminee()
+            partie.reinitialiser()
+        }
+        val historique = obtenirHistoriqueParties()
+        assertEquals(3, historique.size)
+        assertEquals(3, historique.map { it.uuid }.distinct().size)
+    }
+
+    // ===== backfill : obtenirHistoriqueParties avec legacy =====
+
+    @Test fun obtenirHistoriqueParties_backfillGenereUUIDPourLegacy() {
+        val legacy = """[{"horodatage":100,"classement":[{"nom":"Alice","score":500,"indexCouleur":0}],"nombreManches":2,"coups":[]}]"""
+        localStorage.setItem(CLÉ_HISTORIQUE, legacy)
+
+        val historique = obtenirHistoriqueParties()
+        assertEquals(1, historique.size)
+        assertTrue(historique[0].uuid.isNotEmpty())
+    }
+
+    @Test fun obtenirHistoriqueParties_backfillPersisteLesUUID() {
+        val legacy = """[{"horodatage":100,"classement":[{"nom":"Alice","score":500,"indexCouleur":0}],"nombreManches":2,"coups":[]}]"""
+        localStorage.setItem(CLÉ_HISTORIQUE, legacy)
+        obtenirHistoriqueParties()
+
+        val recharge = localStorage.getItem(CLÉ_HISTORIQUE)
+        assertNotNull(recharge)
+        assertTrue(recharge!!.contains("uuid"))
+    }
+
+    @Test fun obtenirHistoriqueParties_neModifiePasLesEntreesAvecUUID() {
+        val uuid = genererUuid()
+        stockerPartie(creerPartieTerminee(uuid = uuid))
+
+        val historique = obtenirHistoriqueParties()
+        assertEquals(uuid, historique[0].uuid)
+    }
+
+    // ===== export JSON =====
+
+    @Test fun exportPartie_idCorrespondÀUUID() {
+        val uuid = genererUuid()
+        stockerPartie(creerPartieTerminee(uuid = uuid))
+
+        val exportData = construireExportJson()
+        assertEquals("1000 Sabords", exportData.game)
+        assertEquals(uuid, exportData.games[0].id)
+    }
+
+    @Test fun exportPartie_classementRangeCorrespondAIndex() {
+        stockerPartie(creerPartieTerminee(joueurs = listOf("Bob" to 800, "Alice" to 1200)))
+
+        val ranking = construireExportJson().games[0].ranking
+        assertEquals("Alice", ranking[0].name)
+        assertEquals(1, ranking[0].rank)
+        assertEquals("Bob", ranking[1].name)
+        assertEquals(2, ranking[1].rank)
+    }
+
+    @Test fun exportPartie_detailsContientScoresParRound() {
+        val coups = listOf(CoupManuel("Alice", 500, 1, 500))
+        stockerPartie(creerPartieTerminee().copy(coups = coups))
+
+        val details = construireExportJson().games[0].details
+        assertNotNull(details)
+        assertEquals(1, details.size)
+        val aliceScore = details[0].scores.first { it.name == "Alice" }
+        assertEquals(500, aliceScore.score)
+        val bobScore = details[0].scores.first { it.name == "Bob" }
+        assertEquals(0, bobScore.score)
+    }
+
+    @Test fun exportPartie_detailsNullSiPasDeCoups() {
+        stockerPartie(creerPartieTerminee(joueurs = listOf("Alice" to 1200, "Bob" to 800)))
+        assertNull(construireExportJson().games[0].details)
+    }
+
+    @Test fun exportPartie_sommeDeltasEgaleRankingScore_avecClamp() {
+        // Bob : +400 round 1, pénalité île Alice -600 => clamp 0, +300 => total 300
+        // Alice : 0 partout => total 0
+        // Vérifie que le delta clampé satisfait sum(rounds) == ranking.score même quand clamp joue
+        val coups = listOf(
+            CoupManuel("Alice", 0, 1, 0),
+            CoupManuel("Bob", 400, 1, 400),
+            CoupCalculateur("Alice", "none", LancerDes(), 0, "", bust = false, ileCranes = true, penaliteIle = -600, magiquePirate = false),
+            CoupManuel("Bob", 300, 1, 300),
+        )
+        val joueurs = listOf("Bob" to 300, "Alice" to 0)
+        stockerPartie(creerPartieTerminee(joueurs = joueurs).copy(coups = coups))
+
+        val export = construireExportJson().games[0]
+        val details = assertNotNull(export.details)
+
+        // Invariant Scoreo : sum(round deltas) == ranking.score pour chaque joueur
+        for (entry in export.ranking) {
+            val somme = details.sumOf { round -> round.scores.first { it.name == entry.name }.score }
+            assertEquals(entry.score, somme, "Invariant rompu pour ${entry.name}")
+        }
+    }
+
+    @Test fun exportContientPlusieursParties() {
+        val p1 = creerPartieTerminee(horodatage = 100L)
+        val p2 = creerPartieTerminee(horodatage = 200L)
+        localStorage.setItem(CLÉ_HISTORIQUE, formatJson.encodeToString(listOf(p1, p2)))
+
+        val exportData = construireExportJson()
+        assertEquals(2, exportData.gameCount)
+        assertEquals(2, exportData.games.size)
+    }
+
+    @Test fun exportContientVersionEtWinCondition() {
+        stockerPartie(creerPartieTerminee())
+        val exportData = construireExportJson()
+        assertEquals("1.1", exportData.version)
+        assertEquals("HIGHEST_SCORE", exportData.winCondition)
+    }
+
+    @Test fun exportFormatJsonValide() {
+        stockerPartie(creerPartieTerminee())
+
+        val json = formatJsonPretty.encodeToString(construireExportJson())
+        assertTrue(json.isNotEmpty())
+        assertTrue(json.contains("1000 Sabords"))
+        assertTrue(json.contains("\"id\""))
+    }
+}
+
+/**
+ * Construit l'enveloppe d'export sans déclencher le téléchargement.
+ */
+internal fun construireExportJson(): ExportSabords {
+    val historique = obtenirHistoriqueParties()
+    val jeux = historique.map { p ->
+        val classement = p.classement.mapIndexed { i, j ->
+            ExportClassement(name = j.nom, score = j.score, rank = i + 1)
+        }
+        val joueurs = p.classement.map { it.nom }
+        val tailleManche = joueurs.size
+        val details = if (p.coups.isEmpty()) null
+        else {
+            val totaux = joueurs.associateWith { 0 }.toMutableMap()
+            p.coups.chunked(tailleManche).map { roundCoups ->
+                val avant = totaux.toMap()
+                for (coup in roundCoups) {
+                    for (nom in joueurs) {
+                        totaux[nom] = maxOf(0, totaux.getValue(nom) + coup.contributionPour(nom))
+                    }
+                }
+                RoundExport(scores = joueurs.map { nom ->
+                    ScoreExport(name = nom, score = totaux.getValue(nom) - avant.getValue(nom))
+                })
+            }
+        }
+        ExportPartie(
+            id      = p.uuid,
+            date    = p.horodatage,
+            ranking = classement,
+            details = details,
+        )
+    }
+    return ExportSabords(
+        version      = "1.1",
+        game         = "1000 Sabords",
+        exportedAt   = kotlin.js.Date.now().toLong(),
+        gameCount    = jeux.size,
+        winCondition = "HIGHEST_SCORE",
+        games        = jeux,
+    )
+}
