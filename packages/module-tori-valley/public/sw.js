@@ -8,7 +8,9 @@ const CACHE_PREFIX = CACHE_NAME.replace(/-v\d+$/, '') + '-'
 // Vite's build output uses content-hashed JS/CSS filenames unknown ahead of
 // time, so only the stable, non-hashed entry points are precached here;
 // everything else is cached on first fetch by the cache-first handler below.
-const ASSETS = ['./', './index.html', './css/styles.css']
+// The stylesheet ships inside the bundle since it became the module's own, so
+// it is hashed too and no longer belongs on this list.
+const ASSETS = ['./', './index.html']
 
 self.addEventListener('install', (event) => {
   event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS)))

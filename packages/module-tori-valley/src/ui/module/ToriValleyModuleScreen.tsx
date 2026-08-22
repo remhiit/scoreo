@@ -2,6 +2,9 @@ import type { ScoringModuleScreenProps } from '@scoreboards/module-api'
 import i18next from 'i18next'
 import { useMemo, useState } from 'react'
 import { registerTranslations } from '../../i18n'
+// Bundled with this chunk, so the module arrives styled and costs the host
+// nothing until someone opens it.
+import '../../styles.css'
 import type { ObjectifCardSelection } from '../../domain/model/landscape'
 import {
   ToriValleyModuleDataSchema,

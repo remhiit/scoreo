@@ -15,7 +15,56 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="Torī Valley" />
     <title>Torī Valley Scoreboard</title>
-    <link rel="stylesheet" href="/css/styles.css" />
+    <!--
+      The app's stylesheet now ships with the bundle, so the module carries its
+      own styles when Scoreo loads it. Only the splash is inlined here: it has to
+      be painted before any script runs.
+    -->
+    <style>
+      .splash {
+        position: fixed;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #fdf6ee;
+        z-index: 100;
+      }
+      .splash.hidden {
+        display: none;
+      }
+      .splash-content {
+        text-align: center;
+        color: #2b2320;
+        font-family: system-ui, sans-serif;
+      }
+      .spinner {
+        width: 32px;
+        height: 32px;
+        margin: 12px auto;
+        border: 3px solid #e4d5c4;
+        border-top-color: #b3435c;
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+      }
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+      @media (prefers-color-scheme: dark) {
+        .splash {
+          background: #201a17;
+        }
+        .splash-content {
+          color: #f1e9e2;
+        }
+        .spinner {
+          border-color: #4a3d35;
+          border-top-color: #e0708a;
+        }
+      }
+    </style>
   </head>
   <body>
     <div id="splash" class="splash">
