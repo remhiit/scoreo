@@ -49,6 +49,7 @@ describe('InMemoryRepository fakes', () => {
       tieBreakRule: 'NONE' as const,
       tieBreakCondition: 'HIGHEST_SCORE' as const,
       tieBreakLabel: null,
+      moduleId: null,
       active: true,
     }
 
@@ -69,6 +70,7 @@ describe('InMemoryRepository fakes', () => {
       tieBreakRule: 'NONE',
       tieBreakCondition: 'HIGHEST_SCORE',
       tieBreakLabel: null,
+      moduleId: null,
       active: true,
     })
     repo.save({
@@ -78,6 +80,7 @@ describe('InMemoryRepository fakes', () => {
       tieBreakRule: 'NONE',
       tieBreakCondition: 'HIGHEST_SCORE',
       tieBreakLabel: null,
+      moduleId: null,
       active: true,
     })
 
@@ -145,6 +148,7 @@ describe('InMemoryRepository fakes', () => {
       tieBreakRule: 'NONE',
       tieBreakCondition: 'HIGHEST_SCORE',
       tieBreakLabel: null,
+      moduleId: null,
       active: true,
     })
     const found = repo.findById('gt1')
@@ -203,6 +207,7 @@ describe('InMemoryRepository fakes', () => {
       tieBreakRule: 'NONE',
       tieBreakCondition: 'HIGHEST_SCORE',
       tieBreakLabel: null,
+      moduleId: null,
       active: true,
     })
 

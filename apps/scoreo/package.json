@@ -13,6 +13,8 @@
     "typecheck": "tsc -b --noEmit"
   },
   "dependencies": {
+    "@scoreboards/module-api": "workspace:*",
+    "@scoreboards/module-tori-valley": "workspace:*",
     "@scoreboards/shared-domain": "workspace:*",
     "i18next": "^26.3.6",
     "lucide-react": "^1.32.0",

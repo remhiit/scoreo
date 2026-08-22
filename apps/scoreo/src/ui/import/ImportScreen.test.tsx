@@ -7,6 +7,7 @@ import { InMemoryMatchRepository } from '../../infrastructure/testing/inMemoryMa
 import { InMemoryPlayerRepository } from '../../infrastructure/testing/inMemoryPlayerRepository'
 import i18n from '../../i18n/i18n'
 import { ImportScreen } from './ImportScreen'
+import { MODULE_MANIFESTS } from '../../modules/registry'
 
 function buildUseCase() {
   return new ImportMatchesUseCase(
@@ -14,6 +15,7 @@ function buildUseCase() {
     new InMemoryGameTypeRepository(),
     new InMemoryMatchRepository(),
     () => 1767225600000,
+    MODULE_MANIFESTS,
   )
 }
 

@@ -61,6 +61,7 @@ Lire ces fichiers dans l'ordre. Tout le contexte nécessaire y est :
 | `apps/scoreo/src/domain/` | `model/` (types + schémas zod), `port/` (interfaces repository) |
 | `apps/scoreo/src/application/` | Use cases (opérations métier, zéro dépendance framework) |
 | `apps/scoreo/src/infrastructure/` | `localStorage/` (adapters), `google/` (sync Google Drive : OAuth, DriveClient, DriveSyncAdapter, SyncConfig), `migration/` (migration Match v1→v2), `testing/` (fakes in-memory pour les tests) |
+| `apps/scoreo/src/modules/` | Intégration des modules côté hôte : `registry.ts` (le **seul** fichier qui nomme un module) |
 | `apps/scoreo/src/services/` | `ServicesContext.tsx` — DI racine (`useMemo`), hook `useServices()` |
 | `apps/scoreo/src/ui/*/` | Un dossier par écran : `<screen>Reducer.ts` (+ test), `<screen>Types.ts`, `<Screen>.tsx` (+ test) |
 | `apps/scoreo/src/ui/shared/` | Composants React partagés (`LudoButton`, `LudoModal`, `LudoTable`, ...) |

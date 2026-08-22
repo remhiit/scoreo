@@ -16,6 +16,7 @@ describe('LocalStorageGameTypeRepository', () => {
       tieBreakRule: 'NONE',
       tieBreakCondition: 'HIGHEST_SCORE',
       tieBreakLabel: null,
+      moduleId: null,
       active: true,
     })
 
@@ -32,6 +33,7 @@ describe('LocalStorageGameTypeRepository', () => {
       tieBreakRule: 'NONE' as const,
       tieBreakCondition: 'HIGHEST_SCORE' as const,
       tieBreakLabel: null,
+      moduleId: null,
       active: true,
     }
     repo.save(gt)
@@ -50,6 +52,7 @@ describe('LocalStorageGameTypeRepository', () => {
       tieBreakRule: 'NONE',
       tieBreakCondition: 'HIGHEST_SCORE',
       tieBreakLabel: null,
+      moduleId: null,
       active: true,
     })
     repo.save({
@@ -59,6 +62,7 @@ describe('LocalStorageGameTypeRepository', () => {
       tieBreakRule: 'NONE',
       tieBreakCondition: 'HIGHEST_SCORE',
       tieBreakLabel: null,
+      moduleId: null,
       active: false,
     })
 
@@ -75,6 +79,7 @@ describe('LocalStorageGameTypeRepository', () => {
       tieBreakRule: 'NONE',
       tieBreakCondition: 'HIGHEST_SCORE',
       tieBreakLabel: null,
+      moduleId: null,
       active: false,
     })
 
@@ -103,6 +108,7 @@ describe('LocalStorageGameTypeRepository', () => {
         tieBreakRule: 'NONE',
         tieBreakCondition: 'HIGHEST_SCORE',
         tieBreakLabel: null,
+        moduleId: null,
         active: true,
       },
     ])
@@ -117,6 +123,7 @@ describe('LocalStorageGameTypeRepository', () => {
       tieBreakRule: 'NONE',
       tieBreakCondition: 'HIGHEST_SCORE',
       tieBreakLabel: null,
+      moduleId: null,
       active: true,
     })
 
@@ -137,6 +144,7 @@ describe('LocalStorageGameTypeRepository', () => {
       tieBreakRule: 'NONE' as const,
       tieBreakCondition: 'HIGHEST_SCORE' as const,
       tieBreakLabel: null,
+      moduleId: null,
       active: true,
     }
 
@@ -166,6 +174,7 @@ describe('LocalStorageGameTypeRepository', () => {
       tieBreakRule: 'NONE' as const,
       tieBreakCondition: 'HIGHEST_SCORE' as const,
       tieBreakLabel: null,
+      moduleId: null,
       active: false,
     }
     repo.save(gt)

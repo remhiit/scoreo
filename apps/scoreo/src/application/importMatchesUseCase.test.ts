@@ -4,6 +4,7 @@ import { InMemoryMatchRepository } from '../infrastructure/testing/inMemoryMatch
 import { InMemoryPlayerRepository } from '../infrastructure/testing/inMemoryPlayerRepository'
 import { ImportMatchesUseCase } from './importMatchesUseCase'
 import * as TestImportData from './testImportData'
+import { MODULE_MANIFESTS } from '../modules/registry'
 
 function useCase(
   playerRepo = new InMemoryPlayerRepository(),
@@ -11,7 +12,7 @@ function useCase(
   matchRepo = new InMemoryMatchRepository(),
   currentDate = () => 1767225600000,
 ) {
-  return new ImportMatchesUseCase(playerRepo, gameTypeRepo, matchRepo, currentDate)
+  return new ImportMatchesUseCase(playerRepo, gameTypeRepo, matchRepo, currentDate, MODULE_MANIFESTS)
 }
 
 describe('ImportMatchesUseCase', () => {
@@ -82,11 +83,100 @@ describe('ImportMatchesUseCase', () => {
         tieBreakRule: 'NONE',
         tieBreakCondition: 'HIGHEST_SCORE',
         tieBreakLabel: null,
+        moduleId: null,
         active: true,
       })
       useCase(undefined, gameTypeRepo).execute(TestImportData.validJson)
       expect(gameTypeRepo.getAll()).toHaveLength(1)
       expect(gameTypeRepo.getAll()[0].id).toBe('existing')
+    })
+
+    describe('a game a module counts', () => {
+      const toriJson = JSON.stringify({
+        version: '1.1',
+        game: 'La Vallée des Torī',
+        winCondition: 'HIGHEST_SCORE',
+        games: [
+          {
+            id: 'tv1',
+            date: 1767225600000,
+            ranking: [
+              { name: 'Alice', score: 42, rank: 1 },
+              { name: 'Bob', score: 30, rank: 2 },
+            ],
+            details: null,
+          },
+        ],
+      })
+
+      // The file never carries a moduleId — it travels between installations
+      // where module ids mean nothing — so the name is all the import has to go on.
+      it('reuses the bound game type even after the user renamed it', () => {
+        const gameTypeRepo = new InMemoryGameTypeRepository()
+        gameTypeRepo.save({
+          id: 'bound',
+          name: 'Torī, chez moi',
+          winCondition: 'HIGHEST_SCORE',
+          tieBreakRule: 'NONE',
+          tieBreakCondition: 'HIGHEST_SCORE',
+          tieBreakLabel: null,
+          moduleId: 'tori-valley',
+          active: true,
+        })
+
+        useCase(undefined, gameTypeRepo).execute(toriJson)
+
+        expect(gameTypeRepo.getAll()).toHaveLength(1)
+        expect(gameTypeRepo.getAll()[0].id).toBe('bound')
+      })
+
+      it('still prefers a name match, so an unbound game type is not duplicated either', () => {
+        const gameTypeRepo = new InMemoryGameTypeRepository()
+        gameTypeRepo.save({
+          id: 'by-name',
+          name: 'La Vallée des Torī',
+          winCondition: 'HIGHEST_SCORE',
+          tieBreakRule: 'NONE',
+          tieBreakCondition: 'HIGHEST_SCORE',
+          tieBreakLabel: null,
+          moduleId: null,
+          active: true,
+        })
+
+        useCase(undefined, gameTypeRepo).execute(toriJson)
+
+        expect(gameTypeRepo.getAll()).toHaveLength(1)
+        expect(gameTypeRepo.getAll()[0].id).toBe('by-name')
+      })
+
+      // Binding is lazy: it happens when someone plays the module, not on import.
+      it('creates the game type unbound when nothing matches', () => {
+        const gameTypeRepo = new InMemoryGameTypeRepository()
+
+        useCase(undefined, gameTypeRepo).execute(toriJson)
+
+        expect(gameTypeRepo.getAll()).toHaveLength(1)
+        expect(gameTypeRepo.getAll()[0].name).toBe('La Vallée des Torī')
+        expect(gameTypeRepo.getAll()[0].moduleId).toBeNull()
+      })
+
+      it('does not reuse a game bound to a module that does not claim this name', () => {
+        const gameTypeRepo = new InMemoryGameTypeRepository()
+        gameTypeRepo.save({
+          id: 'other',
+          name: 'Renamed',
+          winCondition: 'HIGHEST_SCORE',
+          tieBreakRule: 'NONE',
+          tieBreakCondition: 'HIGHEST_SCORE',
+          tieBreakLabel: null,
+          moduleId: 'some-other-module',
+          active: true,
+        })
+
+        useCase(undefined, gameTypeRepo).execute(toriJson)
+
+        expect(gameTypeRepo.getAll()).toHaveLength(2)
+      })
     })
 
     it('auto-creates unknown players', () => {

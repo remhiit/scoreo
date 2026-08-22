@@ -5,12 +5,14 @@
 **Background:** initial format used 12-char alphanumeric IDs and ISO date strings (`"YYYY-MM-DD"`).
 
 **Changes:**
+
 - `Match.id`: 12-char random → UUID v4
 - `Match.date`: `String` → `Long` (epoch milliseconds)
 
 **Migration:** handled automatically in `LocalStorageMatchRepository.migrateIfNeeded()`.
 
 **Logic:**
+
 1. Read raw JSON from `localStorage` key `scoreo_matches`
 2. For each match object:
    - If `date` is a `String` → parse with `LocalDate.parse()`, convert to epoch ms at UTC midnight, replace value
@@ -32,6 +34,7 @@
 `GameType` model adds field `active: Boolean = true`.
 
 **Old format** (v1.1):
+
 ```json
 {
   "id": "...",
@@ -43,6 +46,7 @@
 ```
 
 **New format** (v1.2):
+
 ```json
 {
   "id": "...",
@@ -95,6 +99,7 @@
 **Schema Changes**
 
 `GameType` model adds fields:
+
 - `tieBreakRule: TieBreakRule = TieBreakRule.NONE`
 - `tieBreakCondition: WinCondition = WinCondition.HIGHEST_SCORE`
 - `tieBreakLabel: String? = null`
@@ -118,6 +123,7 @@
 **Schema Changes**
 
 New model `MatchDraft` with fields:
+
 - `gameTypeId: String`
 - `playerIds: List<String>`
 - `rounds: List<Map<String, String>>`
@@ -154,6 +160,7 @@ presets, default `mauve`).
 
 `ThemeManager.readInitialFlavor()` migrates on read, the first time a
 user without `scoreo_flavor` loads the app:
+
 - `scoreo_theme == "dark"` → flavor `"mocha"`
 - `scoreo_theme == "light"` → flavor `"latte"`
 - neither key present → `prefers-color-scheme: dark` decides (`mocha`
@@ -185,11 +192,19 @@ to a pre-Catppuccin build would still find a valid (if stale) value.
 **Changement :** `SyncConfig` (`apps/scoreo/src/infrastructure/google/syncConfig.ts`) ne contient plus `accessToken` ni `expiresAt`. Ces deux valeurs vivent désormais uniquement en mémoire, dans `GoogleAuthService.accessToken`/`expiresAt` (jamais sérialisées). Champs restants à cette étape : `email`, `lastSyncTimestamp`, `lastSyncFileId` — `email` sera lui aussi retiré par la suite, voir entrée #108 ci-dessous.
 
 **Ancien format :**
+
 ```json
-{ "accessToken": "ya29....", "email": "user@example.com", "lastSyncTimestamp": 1700000000, "lastSyncFileId": "...", "expiresAt": 1700003600000 }
+{
+  "accessToken": "ya29....",
+  "email": "user@example.com",
+  "lastSyncTimestamp": 1700000000,
+  "lastSyncFileId": "...",
+  "expiresAt": 1700003600000
+}
 ```
 
 **Nouveau format :**
+
 ```json
 { "email": "user@example.com", "lastSyncTimestamp": 1700000000, "lastSyncFileId": "..." }
 ```
@@ -207,11 +222,13 @@ to a pre-Catppuccin build would still find a valid (if stale) value.
 **Changement :** `email` est retiré de `SyncConfig` (`apps/scoreo/src/infrastructure/google/syncConfig.ts`), de `SyncStatus` (`apps/scoreo/src/domain/port/cloudSyncRepository.ts`), de `GoogleAuthService.idToken` (plus décodé du tout), et de l'UI (`SyncScreen` n'affiche plus "Connected as {email}"). L'état "connecté" est désormais déterminé uniquement par la présence d'un access token en mémoire (`GoogleAuthService.accessToken`), obtenu directement ou via un rafraîchissement silencieux GIS tenté systématiquement par `getStatus()`/`ensureFreshToken()` — plus jamais conditionné par un email ou un flag persisté. `SyncState` (`apps/scoreo/src/ui/sync/syncTypes.ts`) remplace son champ `email: string | null` par `connected: boolean`, qui reste `true` après un login réussi même si l'auto-sync qui suit échoue (comportement de l'issue #97 préservé).
 
 **Ancien format :**
+
 ```json
 { "email": "user@example.com", "lastSyncTimestamp": 1700000000, "lastSyncFileId": "..." }
 ```
 
 **Nouveau format :**
+
 ```json
 { "lastSyncTimestamp": 1700000000, "lastSyncFileId": "..." }
 ```
@@ -229,11 +246,13 @@ to a pre-Catppuccin build would still find a valid (if stale) value.
 `ensureFreshToken()` cesse par ailleurs d'appeler `clearSyncConfig()` quand le rafraîchissement échoue : une simple erreur réseau ou une session Google expirée effaçait `lastSyncFileId` (obligeant la sync suivante à redécouvrir le fichier Drive) et effacerait désormais le `hint` qui rend le rafraîchissement silencieux. Seul `logout()` purge la configuration.
 
 **Ancien format :**
+
 ```json
 { "lastSyncTimestamp": 1700000000, "lastSyncFileId": "..." }
 ```
 
 **Nouveau format :**
+
 ```json
 { "lastSyncTimestamp": 1700000000, "lastSyncFileId": "...", "accountEmail": "user@example.com" }
 ```
@@ -251,11 +270,13 @@ to a pre-Catppuccin build would still find a valid (if stale) value.
 **Changement :** `Match` (`apps/scoreo/src/domain/model/match.ts` / `match.schema.ts`) ajoute le champ `rounds: PlayerScore[][]` — une entrée par manche jouée, chaque entrée listant le score de cette manche pour chaque participant. `CreateMatchUseCase.invoke()` accepte `rounds` en option et le persiste ; `ScoreDetailScreen`/`scoreDetailReducer` convertissent les manches saisies (`state.rounds`, en `Record<string, string>[]`) en `PlayerScore[][]` à la sauvegarde (création comme édition depuis History), en ignorant la manche finale non encore jouée.
 
 **Ancien format :**
+
 ```json
 { "id": "...", "date": 1700000000000, "gameTypeId": "...", "playerScores": [...], "manualWinners": [], "secondaryPlayerScores": [] }
 ```
 
 **Nouveau format :**
+
 ```json
 { "id": "...", "date": 1700000000000, "gameTypeId": "...", "playerScores": [...], "manualWinners": [], "secondaryPlayerScores": [], "rounds": [[{ "playerId": "p1", "score": 10 }, { "playerId": "p2", "score": 5 }]] }
 ```
@@ -265,6 +286,55 @@ to a pre-Catppuccin build would still find a valid (if stale) value.
 **Hors scope de #249 :** ce changement ne faisait que stocker la donnée — aucune exploitation n'était ajoutée à ce stade.
 
 **Restitution (issue #303) :** la donnée est désormais relue. `buildInitialState()` reconstruit l'éditeur à partir de `match.rounds` en mode édition (au lieu d'une manche unique portant les totaux), et l'écran Historique expose une modale en lecture seule listant les manches (action 👁). Deux replis conservent le comportement d'origine — une manche unique portant les `playerScores` — quand `rounds` est vide (match antérieur à #249 ou importé) ou quand le détail stocké contredit les totaux (`roundsAgreeWithTotals()` : joueur inconnu du match, ou somme par joueur ≠ `playerScores`). Conséquence : rouvrir puis réenregistrer une partie ne détruit plus son détail de manches, alors que le comportement antérieur le remplaçait par une manche unique. Statistiques et trophées au niveau manche restent hors scope.
+
+## `GameType.moduleId` — liaison d'un jeu à un module de comptage (issue #326)
+
+**Contexte :** les compteurs de points dédiés à un jeu (Torī, bientôt 1000 Sabords) deviennent des modules chargés par Scoreo. Il faut donc savoir quel module sait compter quel `GameType`, sans matérialiser quoi que ce soit au démarrage : un profil vierge ne doit afficher aucun jeu tant qu'aucune partie n'a été lancée.
+
+**Changement :** `GameType` gagne `moduleId: string | null`. C'est un **drapeau de capacité**, pas une redirection : l'écran de score générique de Scoreo reste accessible pour un jeu qui a un module, conformément au « proposer soit l'un, soit l'autre ».
+
+La liaison est paresseuse et se fait dans `BindModuleUseCase`, au moment où quelqu'un choisit de jouer sur le module :
+
+1. un `GameType` porte déjà ce `moduleId` → il est réutilisé, quel que soit son nom entre-temps ;
+2. sinon un `GameType` porte un nom que le manifeste revendique (insensible à la casse) → `moduleId` y est estampillé, cas fréquent d'un historique créé par un import v1.1 ;
+3. sinon le `GameType` est créé à cet instant, depuis le manifeste.
+
+Le cas 1 rend l'opération idempotente. Les cas 1 et 2 réactivent un jeu archivé : jouer un jeu, c'est le redemander.
+
+**Ancien format :**
+
+```json
+{
+  "id": "gt1",
+  "name": "Belote",
+  "winCondition": "HIGHEST_SCORE",
+  "tieBreakRule": "NONE",
+  "tieBreakCondition": "HIGHEST_SCORE",
+  "tieBreakLabel": null,
+  "active": true
+}
+```
+
+**Nouveau format :**
+
+```json
+{
+  "id": "gt1",
+  "name": "Belote",
+  "winCondition": "HIGHEST_SCORE",
+  "tieBreakRule": "NONE",
+  "tieBreakCondition": "HIGHEST_SCORE",
+  "tieBreakLabel": null,
+  "active": true,
+  "moduleId": null
+}
+```
+
+**Compatibilité ascendante :** `moduleId` est déclaré `.default(null)` — un `GameType` écrit avant ce changement se décode sans erreur, non lié, et le reste jusqu'à ce qu'un module soit joué. Couvert par `serialization.contract.test.ts` (un cas avec `moduleId`, un cas legacy sans).
+
+**Le champ ne sort jamais dans le JSON v1.1.** Le contrat fichier traverse des installations où les ids de module n'ont aucun sens. En contrepartie, `ImportMatchesUseCase.resolveGameType` consulte les manifestes en second recours : quand le nom du fichier ne correspond à aucun jeu local mais qu'un module revendique ce nom, le jeu déjà lié à ce module est réutilisé. Sans ça, un jeu lié puis renommé serait réimporté sous son ancien nom, à côté de lui-même.
+
+---
 
 ---
 
@@ -293,4 +363,3 @@ migrés).
 
 App 100% local-first sans backend : c'est la seule garantie que les
 utilisateurs existants ne perdent rien lors d'une mise à jour.
-

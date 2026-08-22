@@ -106,6 +106,32 @@ not anything was saved.
 `apps/scoreo/src/modules/registry.ts` is the only file in Scoreo that names a module. Removing one
 means deleting its folder, one import, one array entry, then `pnpm install`.
 
+The registry currently holds manifests (`MODULE_MANIFESTS`); it gains the matching `load` thunks when
+the module screen lands. A manifest must stay a plain object importing nothing but its type — the
+host reads it eagerly, so anything it pulled in would end up in Scoreo's main bundle.
+
+## Binding a module to a game
+
+Nothing is materialized when the app starts: a fresh profile has no game types at all. A module's
+game becomes real the first time someone plays it, through `BindModuleUseCase`:
+
+1. a `GameType` already carries this `moduleId` → reuse it, whatever its name has become;
+2. otherwise a `GameType`'s name matches one the manifest claims → stamp the `moduleId` onto it —
+   the common case for a history a v1.1 import already created;
+3. otherwise create the `GameType` now, from the manifest.
+
+Rule 1 makes the whole thing idempotent, and both reuse paths un-archive the game: playing a game is
+asking for it back.
+
+`moduleId` is a **capability flag, not a redirection** — Scoreo's own score screen stays available
+for a game that has a module, which is what lets the host offer "play in Scoreo" _or_ "play on the
+module".
+
+The id never leaves the installation: it is absent from the v1.1 export, which travels to other
+installations where module ids mean nothing. `ImportMatchesUseCase` compensates by consulting the
+manifests after a failed name lookup, so a game bound to a module and then renamed is not imported a
+second time under its old name.
+
 ## What is deliberately _not_ shared
 
 Repository ports. Scoreo's `PlayerRepository` carries a `saveAll` that its `SyncUseCase` needs and a

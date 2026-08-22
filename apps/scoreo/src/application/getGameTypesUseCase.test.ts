@@ -10,6 +10,7 @@ function gt(id: string, name: string, winCondition: 'HIGHEST_SCORE' | 'LOWEST_SC
     tieBreakRule: 'NONE' as const,
     tieBreakCondition: 'HIGHEST_SCORE' as const,
     tieBreakLabel: null,
+    moduleId: null,
     active,
   }
 }

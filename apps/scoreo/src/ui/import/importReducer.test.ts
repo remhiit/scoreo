@@ -6,6 +6,7 @@ import { InMemoryMatchRepository } from '../../infrastructure/testing/inMemoryMa
 import { InMemoryPlayerRepository } from '../../infrastructure/testing/inMemoryPlayerRepository'
 import { importReducer, submitExecute, submitFileLoaded } from './importReducer'
 import { initialImportState } from './importTypes'
+import { MODULE_MANIFESTS } from '../../modules/registry'
 
 function buildUseCase(
   playerRepo = new InMemoryPlayerRepository(),
@@ -13,7 +14,7 @@ function buildUseCase(
   matchRepo = new InMemoryMatchRepository(),
   currentDate: () => number = () => 1767225600000,
 ) {
-  return { playerRepo, gameTypeRepo, matchRepo, importUseCase: new ImportMatchesUseCase(playerRepo, gameTypeRepo, matchRepo, currentDate) }
+  return { playerRepo, gameTypeRepo, matchRepo, importUseCase: new ImportMatchesUseCase(playerRepo, gameTypeRepo, matchRepo, currentDate, MODULE_MANIFESTS) }
 }
 
 describe('importReducer', () => {

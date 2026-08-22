@@ -43,6 +43,7 @@ function gameType(
     tieBreakRule,
     tieBreakCondition: 'HIGHEST_SCORE',
     tieBreakLabel,
+    moduleId: null,
     active: true,
   }
 }
