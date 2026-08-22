@@ -48,6 +48,20 @@ test('scoring a match on the Torī Valley module lands it in Scoreo history', as
   // Winners are bold: Alice alone, with the 2 VP her Torī series is worth.
   await expect(row.locator('strong')).toHaveCount(1)
   await expect(row.locator('strong')).toContainText(`${alice} 2`)
+
+  // Reopening goes back to the module, not to Scoreo's generic score screen,
+  // and the module's own grid comes back with it.
+  await row.getByRole('button', { name: 'Edit' }).click()
+  await page.getByRole('button', { name: 'Start match' }).click()
+  await expect(page.getByLabel(`${alice} green Torī count`)).toHaveValue('1')
+  await expect(page.getByLabel(`${alice} red Torī count`)).toHaveValue('1')
+
+  // Saving again updates that match instead of adding a second one.
+  await page.getByLabel(`${alice} blue Torī count`).fill('1')
+  await page.getByRole('button', { name: 'Save match' }).click()
+
+  await expect(page.locator('.list-item-row')).toHaveCount(1)
+  await expect(page.locator('.list-item-row').locator('strong')).toContainText(`${alice} 4`)
 })
 
 test('a game a module counts still offers Scoreo’s own score screen', async ({ page }) => {

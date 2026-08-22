@@ -246,9 +246,19 @@ function AppShell() {
   }, [])
   const handleEditMatch = useCallback(
     (gameTypeId: string, playerIds: string[], matchId: string) => {
+      // A match scored on a module reopens *there*, so its own grid comes back.
+      // Scoreo's generic screen would only know the totals the module handed
+      // over, and re-saving from it would drop the module's state.
+      const moduleId = services.matchRepository.findById(matchId)?.moduleData?.moduleId
+      // Falls through when the module has since been removed: the generic
+      // screen still shows the match rather than a dead end.
+      if (moduleId !== undefined && findManifest(moduleId) !== undefined) {
+        navigate(moduleScoreScreen(moduleId, gameTypeId, playerIds, matchId))
+        return
+      }
       navigate(scoreDetailScreen(gameTypeId, playerIds, matchId))
     },
-    [navigate],
+    [navigate, services],
   )
   const handleStartGame = useCallback(
     (gameTypeId: string, playerIds: string[]) => {

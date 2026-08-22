@@ -28,7 +28,14 @@
    - If banner present: click to resume previous incomplete match (returns to score entry with saved data)
    - If no banner: select ≥2 players → **New Match** (normal flow)
 2. **Game Selection** modal → pick or create a game type → **Start match**
+   - A game a **scoring module** can count offers both ways in: **Play in Scoreo** (the generic
+     score screen) or **Play on the module** (the module's own screen). A module augments a game,
+     it never replaces it.
+   - Modules with no game type of their own yet appear under **Available modules**, filtered to
+     those that accept the number of players selected. Picking one creates its game type on the
+     spot — nothing is created before that.
 3. **Score Detail** → enter rounds (auto-saved after each score) → **Finish match**
+   - A match scored on a module reopens **on that module**, with its own grid restored.
 4. If cancelling mid-match: confirmation modal asks to discard or resume
 5. Back to **Home** — stats and selection reset
 
@@ -52,6 +59,8 @@ Back button destinations:
 | `Stats` | player detail visible | leaderboard (clears selected player, no navigation) |
 | `ScoreDetail` | new match (`matchId == null`) | Home |
 | `ScoreDetail` | edit match (`matchId != null`) | History |
+| `ModuleScore` | new match (`matchId == null`) | Home |
+| `ModuleScore` | edit match (`matchId != null`) | History |
 
 Note: Save and Cancel buttons in `ScoreDetail` follow the same rule as `←` (History if editing, Home if new match).
 
@@ -81,6 +90,7 @@ Screens:
 | `Screen.Sync` | `/sync` | Google Drive cloud sync |
 | `Screen.HallOfFame` | `/hall-of-fame` | Playful trophies (streaks, volume, records, rivalry, monthly), per-game-type filter |
 | `Screen.ScoreDetail` | `/score/:gameType/:players` | Multi-round score entry |
+| `Screen.ModuleScore` | `/module/:moduleId/:gameType/:players[/:matchId]` | A scoring module's own screen, loaded on demand (see [`../technical/module-contract.md`](../technical/module-contract.md)) |
 
 ## Technical notes
 
