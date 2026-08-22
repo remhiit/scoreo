@@ -863,6 +863,13 @@ describe('GetTrophiesUseCase', () => {
   })
 
   describe('robustness', () => {
+    // Scoped like C3/F2/F3 above: releasing the clock on the last line of a test
+    // means a failing assertion leaves every later test frozen at that date, and
+    // the cause hidden behind the failures it causes.
+    afterEach(() => {
+      vi.useRealTimers()
+    })
+
     it('ignores matches referencing a non-existent game type', () => {
       const playerRepo = new InMemoryPlayerRepository()
       playerRepo.save(player('p1', 'Alice'))
@@ -908,8 +915,6 @@ describe('GetTrophiesUseCase', () => {
       const holders = trophy(buildUseCase(matchRepo, gameTypeRepo, playerRepo).invoke(), 'f3').holders
 
       expect(holders).toEqual([{ playerId: 'p1', name: 'Alice', value: 1, period: { kind: 'month', year: 2026, month: 6 } }])
-
-      vi.useRealTimers()
     })
   })
 })

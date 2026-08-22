@@ -420,6 +420,13 @@ describe('GoogleDriveSyncAdapter', () => {
   })
 
   describe('login', () => {
+    // login() resolves the account email through userinfo before it resolves, so
+    // every test here has to say what that lookup returns. Leaving it unstubbed
+    // used to mean a real HTTP call — see issue #325.
+    beforeEach(() => {
+      mockUserinfo(null)
+    })
+
     it('resolves and stores the access token in memory only (never persisted to SyncConfig)', async () => {
       installMockGis((respond) => respond({ ok: true, token: 'new-token-from-login' }))
       const authService = new GoogleAuthService()
