@@ -106,9 +106,10 @@ not anything was saved.
 `apps/scoreo/src/modules/registry.ts` is the only file in Scoreo that names a module. Removing one
 means deleting its folder, one import, one array entry, then `pnpm install`.
 
-The registry currently holds manifests (`MODULE_MANIFESTS`); it gains the matching `load` thunks when
-the module screen lands. A manifest must stay a plain object importing nothing but its type — the
-host reads it eagerly, so anything it pulled in would end up in Scoreo's main bundle.
+`MODULES` holds the full entries and `MODULE_MANIFESTS` derives from them, which is all most of the
+app needs. A manifest must stay a plain object importing nothing but its type — the host reads it
+eagerly, so anything it pulled in would end up in Scoreo's main bundle. The screen behind `load`
+becomes its own chunk, and a module's strings join the host's i18next instance when that chunk loads.
 
 ## Binding a module to a game
 
@@ -131,6 +132,26 @@ The id never leaves the installation: it is absent from the v1.1 export, which t
 installations where module ids mean nothing. `ImportMatchesUseCase` compensates by consulting the
 manifests after a failed name lookup, so a game bound to a module and then renamed is not imported a
 second time under its old name.
+
+## Playing on a module
+
+`#/module/<moduleId>/<gameTypeId>/<ids>[/<matchId>]` is the module's route. `ModuleScoreScreen`
+resolves the module from the registry, builds a `ModuleHostAdapter` bound to that module and game
+type, and renders the module's screen behind `React.lazy` + `Suspense` + an error boundary — a module
+that fails to load, or throws, must not take Scoreo down with it.
+
+The host side never trusts blindly:
+
+- `saveMatch` runs `assertRoundsSumToRanking` **before** writing. A self-contradicting match kept in
+  the history would never be noticed again.
+- `rank === 1` becomes a `manualWinner` through `rankingToMatch`, the same function the v1.1 import
+  uses. The module owns tie-breaks Scoreo knows nothing about, so the winners come from the announced
+  rank rather than from recomputing the top score.
+- The host stamps `moduleData.moduleId` itself, so a payload is never handed back to the wrong
+  module. Reopening a match scored elsewhere starts a fresh grid instead.
+- Re-saving a match keeps the evening it was played, not the evening it was corrected.
+
+Drafts live in `scoreo_module_draft_<moduleId>`, one per module.
 
 ## What is deliberately _not_ shared
 

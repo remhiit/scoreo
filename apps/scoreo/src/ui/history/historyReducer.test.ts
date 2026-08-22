@@ -43,7 +43,7 @@ function match(
   playerScores: Match['playerScores'],
   overrides: Partial<Match> = {},
 ): Match {
-  return { id, date, gameTypeId, playerScores, manualWinners: [], secondaryPlayerScores: [], rounds: [], ...overrides }
+  return { id, date, gameTypeId, playerScores, manualWinners: [], secondaryPlayerScores: [], rounds: [], moduleData: null, ...overrides }
 }
 
 function buildUseCases(
@@ -494,6 +494,7 @@ describe('buildRoundBreakdown', () => {
       playerLabels: {},
       match: match('m1', 1000, 'gt1', [{ playerId: 'p1', score: 10 }], {
         rounds: [[{ playerId: 'p1', score: 10 }]],
+        moduleData: null,
       }),
     })
 

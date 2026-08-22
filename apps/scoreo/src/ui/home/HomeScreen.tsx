@@ -32,6 +32,7 @@ export interface HomeScreenProps {
   getGameTypes: () => GameType[]
   onAddGameType: (name: string, winCondition: WinCondition) => GameType
   onStartGame: (gameTypeId: string, playerIds: string[]) => void
+  onStartModule: (moduleId: string, playerIds: string[]) => void
   matchDraftRepository?: MatchDraftRepository
   onResumeDraft?: (gameTypeId: string, playerIds: string[]) => void
   getMatchCount?: () => number
@@ -49,6 +50,7 @@ export function HomeScreen({
   getGameTypes,
   onAddGameType,
   onStartGame,
+  onStartModule,
   matchDraftRepository,
   onResumeDraft = () => {},
   getMatchCount = () => 0,
@@ -150,6 +152,7 @@ export function HomeScreen({
         getGameTypes={getGameTypes}
         onAddGameType={onAddGameType}
         onStartGame={onStartGame}
+        onStartModule={onStartModule}
         selectedPlayerIds={[...selectedPlayers]}
       />
 

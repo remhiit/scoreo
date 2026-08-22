@@ -7,6 +7,13 @@ export type Screen =
   | { type: 'Sync' }
   | { type: 'HallOfFame' }
   | { type: 'ScoreDetail'; gameTypeId: string; playerIds: string[]; matchId?: string }
+  | {
+      type: 'ModuleScore'
+      moduleId: string
+      gameTypeId: string
+      playerIds: string[]
+      matchId?: string
+    }
 
 export const HOME_SCREEN: Screen = { type: 'Home' }
 export const HISTORY_SCREEN: Screen = { type: 'History' }
@@ -18,4 +25,13 @@ export const HALL_OF_FAME_SCREEN: Screen = { type: 'HallOfFame' }
 
 export function scoreDetailScreen(gameTypeId: string, playerIds: string[], matchId?: string): Screen {
   return { type: 'ScoreDetail', gameTypeId, playerIds, matchId }
+}
+
+export function moduleScoreScreen(
+  moduleId: string,
+  gameTypeId: string,
+  playerIds: string[],
+  matchId?: string,
+): Screen {
+  return { type: 'ModuleScore', moduleId, gameTypeId, playerIds, matchId }
 }

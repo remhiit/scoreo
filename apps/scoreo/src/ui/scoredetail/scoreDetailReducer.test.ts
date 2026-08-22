@@ -235,6 +235,7 @@ function buildEditHarness(rounds: Match['rounds'], playerScores: Match['playerSc
     manualWinners: [],
     secondaryPlayerScores: [],
     rounds,
+    moduleData: null,
   })
   const mode: ScoreDetailMode = {
     type: 'Edit',
@@ -796,6 +797,7 @@ describe('scoreDetailReducer', () => {
       manualWinners: [],
       secondaryPlayerScores: [],
       rounds: [],
+      moduleData: null,
     }
     matchRepo.save(match)
 
@@ -835,6 +837,7 @@ describe('scoreDetailReducer', () => {
       manualWinners: [],
       secondaryPlayerScores: [],
       rounds: [],
+      moduleData: null,
     }
     matchRepo.save(match)
 
@@ -972,6 +975,7 @@ describe('scoreDetailReducer', () => {
       manualWinners: [],
       secondaryPlayerScores: [],
       rounds: [],
+      moduleData: null,
     })
 
     const mode: ScoreDetailMode = {
@@ -1013,6 +1017,7 @@ describe('scoreDetailReducer', () => {
       manualWinners: [],
       secondaryPlayerScores: [],
       rounds: [],
+      moduleData: null,
     })
 
     const mode: ScoreDetailMode = {
@@ -1057,6 +1062,7 @@ describe('scoreDetailReducer', () => {
       manualWinners: [],
       secondaryPlayerScores: [],
       rounds: [],
+      moduleData: null,
     })
 
     const mode: ScoreDetailMode = {
@@ -1095,6 +1101,7 @@ describe('scoreDetailReducer', () => {
       manualWinners: [],
       secondaryPlayerScores: [],
       rounds: [],
+      moduleData: null,
     })
 
     const mode: ScoreDetailMode = {
@@ -1133,6 +1140,7 @@ describe('scoreDetailReducer', () => {
       manualWinners: [],
       secondaryPlayerScores: [],
       rounds: [],
+      moduleData: null,
     })
 
     const mode: ScoreDetailMode = {

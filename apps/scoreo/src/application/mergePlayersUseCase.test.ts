@@ -14,6 +14,7 @@ function buildMatch(overrides: Partial<Match> = {}): Match {
     manualWinners: [],
     secondaryPlayerScores: [],
     rounds: [],
+    moduleData: null,
     ...overrides,
   }
 }

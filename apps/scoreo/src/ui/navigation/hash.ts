@@ -1,4 +1,4 @@
-import { type Screen, scoreDetailScreen } from './screen'
+import { moduleScoreScreen, type Screen, scoreDetailScreen } from './screen'
 
 /**
  * Parses a hash fragment (without leading #) into a Screen.
@@ -22,6 +22,13 @@ export function parseHash(hash: string): Screen {
       return { type: 'Sync' }
     case 'hall-of-fame':
       return { type: 'HallOfFame' }
+    case 'module':
+      // #/module/<moduleId>/<gameTypeId>/<ids>[/<matchId>]
+      if (parts.length >= 4) {
+        const playerIds = parts[3].split(',').filter((id) => id.length > 0)
+        return moduleScoreScreen(parts[1], parts[2], playerIds, parts[4])
+      }
+      return { type: 'Home' }
     case 'score':
       if (parts.length >= 3) {
         const gameTypeId = parts[1]
@@ -55,6 +62,10 @@ export function screenToHash(screen: Screen): string {
       return '#/hall-of-fame'
     case 'ScoreDetail': {
       const route = `#/score/${screen.gameTypeId}/${screen.playerIds.join(',')}`
+      return screen.matchId !== undefined ? `${route}/${screen.matchId}` : route
+    }
+    case 'ModuleScore': {
+      const route = `#/module/${screen.moduleId}/${screen.gameTypeId}/${screen.playerIds.join(',')}`
       return screen.matchId !== undefined ? `${route}/${screen.matchId}` : route
     }
   }

@@ -33,7 +33,7 @@ function players(...pairs: [string, string][]): Player[] {
 }
 
 function match(id: string, date: number, gameTypeId: string, playerScores: Match['playerScores'], overrides: Partial<Match> = {}): Match {
-  return { id, date, gameTypeId, playerScores, manualWinners: [], secondaryPlayerScores: [], rounds: [], ...overrides }
+  return { id, date, gameTypeId, playerScores, manualWinners: [], secondaryPlayerScores: [], rounds: [], moduleData: null, ...overrides }
 }
 
 function buildUseCase(playerList: Player[], gameTypes: GameType[], matches: Match[]): GetHeadToHeadUseCase {

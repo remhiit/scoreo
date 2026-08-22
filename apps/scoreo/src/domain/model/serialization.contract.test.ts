@@ -89,6 +89,7 @@ describe('serialization contract (backward compatibility)', () => {
       manualWinners: [],
       secondaryPlayerScores: [],
       rounds: [],
+      moduleData: null,
     }
     expect(roundTrip(MatchSchema, original)).toEqual(original)
   })
@@ -105,6 +106,7 @@ describe('serialization contract (backward compatibility)', () => {
       manualWinners: ['p1'],
       secondaryPlayerScores: [],
       rounds: [],
+      moduleData: null,
     }
     expect(roundTrip(MatchSchema, original)).toEqual(original)
   })
@@ -130,8 +132,44 @@ describe('serialization contract (backward compatibility)', () => {
           { playerId: 'p2', score: 7 },
         ],
       ],
+      moduleData: null,
     }
     expect(roundTrip(MatchSchema, original)).toEqual(original)
+  })
+
+  it('Match scored by a module keeps the module payload verbatim', () => {
+    const original = {
+      id: 'm5',
+      date: 5000000,
+      gameTypeId: 'gt1',
+      playerScores: [
+        { playerId: 'p1', score: 9 },
+        { playerId: 'p2', score: 5 },
+      ],
+      manualWinners: ['p1'],
+      secondaryPlayerScores: [],
+      rounds: [],
+      moduleData: {
+        moduleId: 'tori-valley',
+        version: 1,
+        // Scoreo never looks inside `data`; whatever the module wrote comes back.
+        data: { objectifCards: { bamboo: 'B' }, results: [{ playerId: 'p1', parcheminValue: 5 }] },
+      },
+    }
+    expect(roundTrip(MatchSchema, original)).toEqual(original)
+  })
+
+  it('Match saved before modules existed reads back without a module payload', () => {
+    const legacy = {
+      id: 'm6',
+      date: 6000000,
+      gameTypeId: 'gt1',
+      playerScores: [{ playerId: 'p1', score: 1 }],
+      manualWinners: [],
+      secondaryPlayerScores: [],
+      rounds: [],
+    }
+    expect(roundTrip(MatchSchema, legacy)).toEqual({ ...legacy, moduleData: null })
   })
 
   it('Match without rounds defaults to empty array (backward compat)', () => {
@@ -278,6 +316,7 @@ describe('serialization contract (backward compatibility)', () => {
         { playerId: 'p2', score: 75 },
       ],
       rounds: [],
+      moduleData: null,
     }
     expect(roundTrip(MatchSchema, original)).toEqual(original)
   })

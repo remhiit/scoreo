@@ -1,5 +1,5 @@
-import type { ScoringModuleManifest } from '@scoreboards/module-api'
-import { toriValleyManifest } from '@scoreboards/module-tori-valley'
+import type { ScoringModule, ScoringModuleManifest } from '@scoreboards/module-api'
+import { toriValleyModule } from '@scoreboards/module-tori-valley'
 
 /**
  * The only file in Scoreo that names a scoring module.
@@ -12,7 +12,18 @@ import { toriValleyManifest } from '@scoreboards/module-tori-valley'
  * Removing a module: delete its package, its import here, and its entry below,
  * then `pnpm install`.
  */
-export const MODULE_MANIFESTS: readonly ScoringModuleManifest[] = [toriValleyManifest]
+export const MODULES: readonly ScoringModule[] = [toriValleyModule]
+
+/**
+ * The manifests alone, which is all most of the app needs. They are plain
+ * objects: reading one costs nothing, opening a module's screen is what pulls
+ * in its chunk.
+ */
+export const MODULE_MANIFESTS: readonly ScoringModuleManifest[] = MODULES.map((m) => m.manifest)
+
+export function findModule(moduleId: string): ScoringModule | undefined {
+  return MODULES.find((m) => m.manifest.moduleId === moduleId)
+}
 
 export function findManifest(moduleId: string): ScoringModuleManifest | undefined {
   return MODULE_MANIFESTS.find((m) => m.moduleId === moduleId)

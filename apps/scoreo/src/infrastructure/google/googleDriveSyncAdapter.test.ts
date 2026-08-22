@@ -335,6 +335,7 @@ describe('GoogleDriveSyncAdapter', () => {
             manualWinners: [],
             secondaryPlayerScores: [],
             rounds: [],
+            moduleData: null,
           },
         ],
         lastModified: 1700000000,

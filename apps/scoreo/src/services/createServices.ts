@@ -5,6 +5,7 @@ import type { DataChangeNotifier } from '../domain/port/dataChangeNotifier'
 import type { GameTypeRepository } from '../domain/port/gameTypeRepository'
 import type { MatchDraftRepository } from '../domain/port/matchDraftRepository'
 import type { MatchRepository } from '../domain/port/matchRepository'
+import type { ModuleDraftRepository } from '../domain/port/moduleDraftRepository'
 import type { PlayerRepository } from '../domain/port/playerRepository'
 import { BrowserConnectivityChecker } from '../infrastructure/browser/browserConnectivityChecker'
 import { InMemoryDataChangeNotifier } from '../infrastructure/events/inMemoryDataChangeNotifier'
@@ -14,6 +15,7 @@ import { OAUTH_CLIENT_ID } from '../infrastructure/google/oauthConfig'
 import { LocalStorageGameTypeRepository } from '../infrastructure/localStorage/localStorageGameTypeRepository'
 import { LocalStorageMatchDraftRepository } from '../infrastructure/localStorage/localStorageMatchDraftRepository'
 import { LocalStorageMatchRepository } from '../infrastructure/localStorage/localStorageMatchRepository'
+import { LocalStorageModuleDraftRepository } from '../infrastructure/localStorage/localStorageModuleDraftRepository'
 import { LocalStoragePlayerRepository } from '../infrastructure/localStorage/localStoragePlayerRepository'
 
 /**
@@ -27,6 +29,8 @@ export interface Services {
   gameTypeRepository: GameTypeRepository
   matchRepository: MatchRepository
   matchDraftRepository: MatchDraftRepository
+  /** One slot per scoring module, unlike matchDraftRepository's single anonymous one. */
+  moduleDraftRepository: ModuleDraftRepository
   /** undefined when no Google OAuth client id is configured (equivalent of Kotlin's null CloudSyncRepository). */
   cloudSyncRepository: CloudSyncRepository | undefined
   /** undefined whenever cloudSyncRepository is, mirroring createSyncHandlerIfAvailable returning null. */
@@ -41,6 +45,7 @@ export interface CreateServicesOptions {
   gameTypeRepository?: GameTypeRepository
   matchRepository?: MatchRepository
   matchDraftRepository?: MatchDraftRepository
+  moduleDraftRepository?: ModuleDraftRepository
   cloudSyncRepository?: CloudSyncRepository
   dataChangeNotifier?: DataChangeNotifier
   currentDate?: () => number
@@ -57,6 +62,7 @@ export function createServices(options: CreateServicesOptions = {}): Services {
   const gameTypeRepository = options.gameTypeRepository ?? new LocalStorageGameTypeRepository(dataChangeNotifier)
   const matchRepository = options.matchRepository ?? new LocalStorageMatchRepository(dataChangeNotifier)
   const matchDraftRepository = options.matchDraftRepository ?? new LocalStorageMatchDraftRepository()
+  const moduleDraftRepository = options.moduleDraftRepository ?? new LocalStorageModuleDraftRepository()
   const currentDate = options.currentDate ?? (() => Date.now())
   const cloudSyncRepository = options.cloudSyncRepository ?? createDefaultCloudSyncRepository()
 
@@ -72,6 +78,7 @@ export function createServices(options: CreateServicesOptions = {}): Services {
     gameTypeRepository,
     matchRepository,
     matchDraftRepository,
+    moduleDraftRepository,
     cloudSyncRepository,
     syncUseCase,
     autoSyncCoordinator,

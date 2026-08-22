@@ -1,3 +1,4 @@
+import type { ScoringModuleManifest } from '@scoreboards/module-api'
 import { useTranslation } from 'react-i18next'
 import type { WinCondition } from '../../domain/model/enums'
 import { winConditionLabel } from '../../domain/model/enums'
@@ -22,6 +23,14 @@ export interface GameSelectModalProps {
   onChangeInlineGameWinCondition: (winCondition: WinCondition) => void
   inlineGameError: string | undefined
   onAddInlineGameType: () => void
+  /**
+   * Modules that can count this many players and have no game type of their own
+   * yet — a module already bound shows up in the list above instead.
+   */
+  availableModules: readonly ScoringModuleManifest[]
+  /** Set when the selected game type is one a module can count. */
+  moduleForSelectedGame: ScoringModuleManifest | undefined
+  onStartOnModule: (moduleId: string) => void
 }
 
 export function GameSelectModal({
@@ -40,6 +49,9 @@ export function GameSelectModal({
   onChangeInlineGameWinCondition,
   inlineGameError,
   onAddInlineGameType,
+  availableModules,
+  moduleForSelectedGame,
+  onStartOnModule,
 }: GameSelectModalProps) {
   const { t } = useTranslation()
 
@@ -51,7 +63,20 @@ export function GameSelectModal({
       footer={
         <>
           <LudoButton text={t('common.cancel')} variant="secondary" onClick={onClose} />
-          <LudoButton text={t('home.startMatch')} variant="primary" onClick={onStartMatch} />
+          <LudoButton
+            text={moduleForSelectedGame ? t('modules.playInScoreo') : t('home.startMatch')}
+            variant={moduleForSelectedGame ? 'secondary' : 'primary'}
+            onClick={onStartMatch}
+          />
+          {/* A module augments a game, it never replaces it: both ways in stay
+              offered for a game type that has one. */}
+          {moduleForSelectedGame && (
+            <LudoButton
+              text={t('modules.playOnModule')}
+              variant="primary"
+              onClick={() => onStartOnModule(moduleForSelectedGame.moduleId)}
+            />
+          )}
         </>
       }
     >
@@ -74,6 +99,24 @@ export function GameSelectModal({
               </option>
             ))}
           </select>
+        </div>
+      )}
+
+      {availableModules.length > 0 && (
+        <div className="module-section">
+          <div className="module-section-title">{t('modules.availableModules')}</div>
+          {availableModules.map((manifest) => (
+            <LudoButton
+              key={manifest.moduleId}
+              text={`${manifest.displayName} — ${t('modules.playerRange', {
+                min: manifest.minPlayers,
+                max: manifest.maxPlayers,
+              })}`}
+              variant="secondary"
+              className="ludo-btn--full"
+              onClick={() => onStartOnModule(manifest.moduleId)}
+            />
+          ))}
         </div>
       )}
 

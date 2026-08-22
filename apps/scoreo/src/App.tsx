@@ -49,6 +49,7 @@ import {
   HISTORY_SCREEN,
   HOME_SCREEN,
   IMPORT_SCREEN,
+  moduleScoreScreen,
   scoreDetailScreen,
   STATS_SCREEN,
   SYNC_SCREEN,
@@ -65,7 +66,9 @@ import { SyncScreen } from './ui/sync/SyncScreen'
 import { useAutoSync } from './ui/sync/useAutoSync'
 import { ThemeProvider } from './ui/theme/ThemeContext'
 import { ThemePickerDialog } from './ui/theme/ThemePickerDialog'
-import { MODULE_MANIFESTS } from './modules/registry'
+import { BindModuleUseCase } from './application/bindModuleUseCase'
+import { ModuleScoreScreen } from './modules/ModuleScoreScreen'
+import { findManifest, MODULE_MANIFESTS } from './modules/registry'
 
 function screenTitle(screen: Screen): string {
   switch (screen.type) {
@@ -84,6 +87,8 @@ function screenTitle(screen: Screen): string {
     case 'HallOfFame':
       return 'Hall of Fame'
     case 'ScoreDetail':
+      return screen.matchId !== undefined ? 'Edit match' : 'Score Detail'
+    case 'ModuleScore':
       return screen.matchId !== undefined ? 'Edit match' : 'Score Detail'
   }
 }
@@ -241,15 +246,38 @@ function AppShell() {
   }, [])
   const handleEditMatch = useCallback(
     (gameTypeId: string, playerIds: string[], matchId: string) => {
+      // A match scored on a module reopens *there*, so its own grid comes back.
+      // Scoreo's generic screen would only know the totals the module handed
+      // over, and re-saving from it would drop the module's state.
+      const moduleId = services.matchRepository.findById(matchId)?.moduleData?.moduleId
+      // Falls through when the module has since been removed: the generic
+      // screen still shows the match rather than a dead end.
+      if (moduleId !== undefined && findManifest(moduleId) !== undefined) {
+        navigate(moduleScoreScreen(moduleId, gameTypeId, playerIds, matchId))
+        return
+      }
       navigate(scoreDetailScreen(gameTypeId, playerIds, matchId))
     },
-    [navigate],
+    [navigate, services],
   )
   const handleStartGame = useCallback(
     (gameTypeId: string, playerIds: string[]) => {
       navigate(scoreDetailScreen(gameTypeId, playerIds))
     },
     [navigate],
+  )
+  /**
+   * Binding happens here, on the way in: no game type is created until someone
+   * actually chooses to play a module's game.
+   */
+  const handleStartModule = useCallback(
+    (moduleId: string, playerIds: string[]) => {
+      const manifest = findManifest(moduleId)
+      if (!manifest) return
+      const gameType = new BindModuleUseCase(services.gameTypeRepository).invoke(manifest)
+      navigate(moduleScoreScreen(moduleId, gameType.id, playerIds))
+    },
+    [navigate, services],
   )
   const homeGetGameTypes = useCallback(() => getGameTypes.invoke(), [getGameTypes])
   const homeOnAddGameType = useCallback(
@@ -308,6 +336,7 @@ function AppShell() {
             getGameTypes={homeGetGameTypes}
             onAddGameType={homeOnAddGameType}
             onStartGame={handleStartGame}
+            onStartModule={handleStartModule}
             matchDraftRepository={services.matchDraftRepository}
             onResumeDraft={handleStartGame}
             getMatchCount={homeGetMatchCount}
@@ -357,6 +386,13 @@ function AppShell() {
             onSaved={() => navigate(current.matchId !== undefined ? HISTORY_SCREEN : HOME_SCREEN)}
             onCancel={() => navigate(current.matchId !== undefined ? HISTORY_SCREEN : HOME_SCREEN)}
             onMissingGameType={() => navigate(HOME_SCREEN)}
+          />
+        )}
+        {current.type === 'ModuleScore' && (
+          <ModuleScoreScreen
+            screen={current}
+            services={services}
+            onExit={() => navigate(current.matchId !== undefined ? HISTORY_SCREEN : HOME_SCREEN)}
           />
         )}
       </div>

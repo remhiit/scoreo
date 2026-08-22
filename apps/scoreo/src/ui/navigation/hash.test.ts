@@ -244,3 +244,57 @@ describe('backward compatibility & schema evolution', () => {
     expect(detail.matchId).toBe('match999')
   })
 })
+
+describe('module score route', () => {
+  it('parses a new module match', () => {
+    expect(parseHash('/module/tori-valley/gt1/p1,p2')).toEqual({
+      type: 'ModuleScore',
+      moduleId: 'tori-valley',
+      gameTypeId: 'gt1',
+      playerIds: ['p1', 'p2'],
+      matchId: undefined,
+    })
+  })
+
+  it('parses a module match being reopened', () => {
+    expect(parseHash('/module/tori-valley/gt1/p1,p2/m9')).toEqual({
+      type: 'ModuleScore',
+      moduleId: 'tori-valley',
+      gameTypeId: 'gt1',
+      playerIds: ['p1', 'p2'],
+      matchId: 'm9',
+    })
+  })
+
+  it('falls back to Home when the route is incomplete', () => {
+    expect(parseHash('/module/tori-valley/gt1')).toEqual({ type: 'Home' })
+  })
+
+  it('renders a new module match', () => {
+    expect(
+      screenToHash({
+        type: 'ModuleScore',
+        moduleId: 'tori-valley',
+        gameTypeId: 'gt1',
+        playerIds: ['p1', 'p2'],
+      }),
+    ).toBe('#/module/tori-valley/gt1/p1,p2')
+  })
+
+  it('renders a module match being reopened', () => {
+    expect(
+      screenToHash({
+        type: 'ModuleScore',
+        moduleId: 'tori-valley',
+        gameTypeId: 'gt1',
+        playerIds: ['p1'],
+        matchId: 'm9',
+      }),
+    ).toBe('#/module/tori-valley/gt1/p1/m9')
+  })
+
+  it('round-trips', () => {
+    const hash = '#/module/tori-valley/gt1/p1,p2/m9'
+    expect(screenToHash(parseHash(hash.slice(1)))).toBe(hash)
+  })
+})

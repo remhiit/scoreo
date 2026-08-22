@@ -68,6 +68,7 @@ describe('SyncUseCase', () => {
       manualWinners: [],
       secondaryPlayerScores: [],
       rounds: [],
+      moduleData: null,
     })
     const cloudRepo = new InMemoryCloudSyncRepository()
     await cloudRepo.login()
@@ -114,6 +115,7 @@ describe('SyncUseCase', () => {
           manualWinners: [],
           secondaryPlayerScores: [],
           rounds: [],
+          moduleData: null,
         },
       ],
       lastModified: 1000,
@@ -163,6 +165,7 @@ describe('SyncUseCase', () => {
           manualWinners: [],
           secondaryPlayerScores: [],
           rounds: [],
+          moduleData: null,
         },
       ],
       lastModified: 1000,
@@ -189,6 +192,7 @@ describe('SyncUseCase', () => {
       manualWinners: [],
       secondaryPlayerScores: [],
       rounds: [],
+      moduleData: null,
     })
     const useCase = buildUseCase(cloudRepo, playerRepo, gameTypeRepo, matchRepo)
 
@@ -228,6 +232,7 @@ describe('SyncUseCase', () => {
           manualWinners: [],
           secondaryPlayerScores: [],
           rounds: [],
+          moduleData: null,
         },
       ],
       lastModified: 1000,
@@ -254,6 +259,7 @@ describe('SyncUseCase', () => {
       manualWinners: [],
       secondaryPlayerScores: [],
       rounds: [],
+      moduleData: null,
     })
     const useCase = buildUseCase(cloudRepo, playerRepo, gameTypeRepo, matchRepo)
 
@@ -296,6 +302,7 @@ describe('SyncUseCase', () => {
       manualWinners: [],
       secondaryPlayerScores: [],
       rounds: [],
+      moduleData: null,
     })
     const useCase = buildUseCase(cloudRepo, playerRepo, gameTypeRepo, matchRepo)
 
@@ -340,6 +347,7 @@ describe('SyncUseCase', () => {
           manualWinners: [],
           secondaryPlayerScores: [],
           rounds: [],
+          moduleData: null,
         },
       ],
       lastModified: 1000,
@@ -386,6 +394,7 @@ describe('SyncUseCase', () => {
           manualWinners: [],
           secondaryPlayerScores: [],
           rounds: [],
+          moduleData: null,
         },
       ],
       lastModified: 1000,
@@ -423,6 +432,7 @@ describe('SyncUseCase', () => {
       manualWinners: [],
       secondaryPlayerScores: [],
       rounds: [],
+      moduleData: null,
     })
     matchRepo.save({
       id: 'm2',
@@ -432,6 +442,7 @@ describe('SyncUseCase', () => {
       manualWinners: [],
       secondaryPlayerScores: [],
       rounds: [],
+      moduleData: null,
     })
     const useCase = buildUseCase(cloudRepo, playerRepo, gameTypeRepo, matchRepo)
 
@@ -491,6 +502,7 @@ describe('SyncUseCase', () => {
           manualWinners: [],
           secondaryPlayerScores: [],
           rounds: [],
+          moduleData: null,
         },
       ],
       lastModified: 2000,
@@ -517,6 +529,7 @@ describe('SyncUseCase', () => {
       manualWinners: [],
       secondaryPlayerScores: [],
       rounds: [],
+      moduleData: null,
     })
     const useCase = buildUseCase(cloudRepo, playerRepo, gameTypeRepo, matchRepo)
 

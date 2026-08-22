@@ -39,6 +39,7 @@ function seedStatsData() {
         manualWinners: [],
         secondaryPlayerScores: [],
         rounds: [],
+        moduleData: null,
       },
     ]),
   )
