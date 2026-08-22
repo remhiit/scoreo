@@ -28,6 +28,8 @@
    - If banner present: click to resume previous incomplete match (returns to score entry with saved data)
    - If no banner: select ≥2 players → **New Match** (normal flow)
 2. **Game Selection** modal → pick or create a game type → **Start match**
+   - A game type linked to a scoring module (`GameType.moduleId`) offers both **Play in Scoreo** and **Play on the module** instead of a single **Start match** button
+   - An **Available modules** section lists modules that can count the selected players but have no game type of their own yet; picking one binds a new game type to the module and starts the match there
 3. **Score Detail** → enter rounds (auto-saved after each score) → **Finish match**
 4. If cancelling mid-match: confirmation modal asks to discard or resume
 5. Back to **Home** — stats and selection reset
@@ -81,6 +83,7 @@ Screens:
 | `Screen.Sync` | `/sync` | Google Drive cloud sync |
 | `Screen.HallOfFame` | `/hall-of-fame` | Playful trophies (streaks, volume, records, rivalry, monthly), per-game-type filter |
 | `Screen.ScoreDetail` | `/score/:gameType/:players` | Multi-round score entry |
+| `Screen.ModuleScore` | `/module/:moduleId/:gameType/:players` | Score entry delegated to a scoring module (lazy-loaded), instead of `ScoreDetail` |
 
 ## Technical notes
 

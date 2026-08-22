@@ -381,8 +381,6 @@ Le cas 1 rend l'opération idempotente. Les cas 1 et 2 réactivent un jeu archiv
 
 ---
 
----
-
 ## Note technique : moteur de sérialisation (zod)
 
 **Contexte historique :** le projet était initialement écrit en Kotlin/JS avec `kotlinx.serialization` (`Json { ignoreUnknownKeys = true }` + valeurs par défaut sur les data class). La réécriture complète vers React/TypeScript (achevée) a changé le moteur de (dé)sérialisation sans jamais changer le format JSON stocké dans `localStorage` — mêmes clés, mêmes champs, mêmes valeurs par défaut, à chaque étape.

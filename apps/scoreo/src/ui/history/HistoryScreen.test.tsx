@@ -36,6 +36,7 @@ function match(
   gameTypeId: string,
   playerScores: Match['playerScores'],
   rounds: Match['rounds'] = [],
+  moduleData: Match['moduleData'] = null,
 ): Match {
   return {
     id,
@@ -45,7 +46,7 @@ function match(
     manualWinners: [],
     secondaryPlayerScores: [],
     rounds,
-    moduleData: null,
+    moduleData,
   }
 }
 
@@ -180,7 +181,44 @@ describe('HistoryScreen', () => {
 
     fireEvent.click(screen.getAllByLabelText('Edit')[0])
 
-    expect(onEditMatch).toHaveBeenCalledWith('gt1', ['p1', 'p2'], 'm1')
+    expect(onEditMatch).toHaveBeenCalledWith('gt1', ['p1', 'p2'], 'm1', undefined)
+  })
+
+  it('passes the module id to onEditMatch when the match was scored on a module', () => {
+    const onEditMatch = vi.fn()
+    const playerRepo = new InMemoryPlayerRepository()
+    playerRepo.save(player('p1', 'Alice'))
+    playerRepo.save(player('p2', 'Bob'))
+    const gameTypeRepo = new InMemoryGameTypeRepository()
+    gameTypeRepo.save(gameType('gt1', 'Chess'))
+    const matchRepo = new InMemoryMatchRepository()
+    matchRepo.save(
+      match(
+        'm1',
+        2000,
+        'gt1',
+        [
+          { playerId: 'p1', score: 10 },
+          { playerId: 'p2', score: 5 },
+        ],
+        [],
+        { moduleId: 'tori-valley', version: 1, data: {} },
+      ),
+    )
+
+    render(
+      <HistoryScreen
+        getMatches={new GetMatchesUseCase(matchRepo)}
+        getPlayers={new GetPlayersUseCase(playerRepo)}
+        getGameTypes={new GetGameTypesUseCase(gameTypeRepo)}
+        deleteMatchUseCase={new DeleteMatchUseCase(matchRepo)}
+        onEditMatch={onEditMatch}
+      />,
+    )
+
+    fireEvent.click(screen.getAllByLabelText('Edit')[0])
+
+    expect(onEditMatch).toHaveBeenCalledWith('gt1', ['p1', 'p2'], 'm1', 'tori-valley')
   })
 
   it('hides the Edit action when onEditMatch is not provided', () => {

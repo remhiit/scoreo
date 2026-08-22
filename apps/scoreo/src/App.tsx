@@ -245,8 +245,12 @@ function AppShell() {
     setStatsBackOverride(() => override)
   }, [])
   const handleEditMatch = useCallback(
-    (gameTypeId: string, playerIds: string[], matchId: string) => {
-      navigate(scoreDetailScreen(gameTypeId, playerIds, matchId))
+    (gameTypeId: string, playerIds: string[], matchId: string, moduleId?: string) => {
+      navigate(
+        moduleId !== undefined
+          ? moduleScoreScreen(moduleId, gameTypeId, playerIds, matchId)
+          : scoreDetailScreen(gameTypeId, playerIds, matchId),
+      )
     },
     [navigate],
   )

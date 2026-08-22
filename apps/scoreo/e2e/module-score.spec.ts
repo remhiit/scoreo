@@ -50,6 +50,37 @@ test('scoring a match on the Torī Valley module lands it in Scoreo history', as
   await expect(row.locator('strong')).toContainText(`${alice} 2`)
 })
 
+test('reopening a match saved on the module from history restores its grid', async ({ page }) => {
+  const alice = `Alice ${Date.now()}`
+  const bob = `Bob ${Date.now()}`
+
+  await addPlayer(page, alice)
+  await addPlayer(page, bob)
+  await startMatch(page, [alice, bob])
+
+  await page.getByRole('button', { name: /La Vallée des Torī/ }).click()
+  await page.getByRole('button', { name: 'Start match' }).click()
+  await page.getByLabel(`${alice} green Torī count`).fill('1')
+  await page.getByLabel(`${alice} red Torī count`).fill('1')
+  await page.getByRole('button', { name: 'Save match' }).click()
+
+  await page.getByRole('button', { name: 'Menu' }).click()
+  await page.getByRole('button', { name: 'History' }).click()
+  await page.getByLabel('Edit').click()
+
+  // Reopening a module match lands on its own first step (dealing the
+  // Objectif cards) before returning to score entry — that is where
+  // resolveEditing's payload actually restores the counts.
+  await expect(page.getByRole('button', { name: 'Start match' })).toBeVisible()
+  await page.getByRole('button', { name: 'Start match' }).click()
+  await expect(page.getByLabel(`${alice} green Torī count`)).toHaveValue('1')
+  await expect(page.getByLabel(`${alice} red Torī count`)).toHaveValue('1')
+
+  // Saving again updates the same match instead of creating a second one.
+  await page.getByRole('button', { name: 'Save match' }).click()
+  await expect(page.locator('.list-item-row')).toHaveCount(1)
+})
+
 test('a game a module counts still offers Scoreo’s own score screen', async ({ page }) => {
   const alice = `Alice ${Date.now()}`
   const bob = `Bob ${Date.now()}`

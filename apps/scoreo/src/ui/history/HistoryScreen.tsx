@@ -17,8 +17,8 @@ export interface HistoryScreenProps {
   getPlayers: GetPlayersUseCase
   getGameTypes: GetGameTypesUseCase
   deleteMatchUseCase: DeleteMatchUseCase
-  /** undefined = edit action hidden (no navigation wired up). */
-  onEditMatch?: (gameTypeId: string, playerIds: string[], matchId: string) => void
+  /** undefined = edit action hidden (no navigation wired up). moduleId is set only for a match scored on a module. */
+  onEditMatch?: (gameTypeId: string, playerIds: string[], matchId: string, moduleId?: string) => void
 }
 
 function uniqueGameTypes(displays: { gameType: GameType | undefined }[]): GameType[] {
@@ -127,6 +127,7 @@ export function HistoryScreen({
                           gameType.id,
                           display.match.playerScores.map((ps) => ps.playerId),
                           display.match.id,
+                          display.match.moduleData?.moduleId,
                         )
                     : undefined
                 }
