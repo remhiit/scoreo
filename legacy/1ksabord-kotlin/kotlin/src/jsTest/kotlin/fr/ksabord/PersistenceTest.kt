@@ -225,44 +225,12 @@ class PersistenceTest {
 }
 
 /**
- * Construit l'enveloppe d'export sans déclencher le téléchargement.
+ * Les tests appellent désormais le constructeur d'enveloppe **de production**
+ * (`construireEnveloppeExport`) et non une copie locale : une copie pouvait
+ * rester verte pendant que le chemin réellement livré divergeait.
  */
-internal fun construireExportJson(): ExportSabords {
-    val historique = obtenirHistoriqueParties()
-    val jeux = historique.map { p ->
-        val classement = p.classement.mapIndexed { i, j ->
-            ExportClassement(name = j.nom, score = j.score, rank = i + 1)
-        }
-        val joueurs = p.classement.map { it.nom }
-        val tailleManche = joueurs.size
-        val details = if (p.coups.isEmpty()) null
-        else {
-            val totaux = joueurs.associateWith { 0 }.toMutableMap()
-            p.coups.chunked(tailleManche).map { roundCoups ->
-                val avant = totaux.toMap()
-                for (coup in roundCoups) {
-                    for (nom in joueurs) {
-                        totaux[nom] = maxOf(0, totaux.getValue(nom) + coup.contributionPour(nom))
-                    }
-                }
-                RoundExport(scores = joueurs.map { nom ->
-                    ScoreExport(name = nom, score = totaux.getValue(nom) - avant.getValue(nom))
-                })
-            }
-        }
-        ExportPartie(
-            id      = p.uuid,
-            date    = p.horodatage,
-            ranking = classement,
-            details = details,
-        )
-    }
-    return ExportSabords(
-        version      = "1.1",
-        game         = "1000 Sabords",
-        exportedAt   = kotlin.js.Date.now().toLong(),
-        gameCount    = jeux.size,
-        winCondition = "HIGHEST_SCORE",
-        games        = jeux,
-    )
-}
+internal fun construireExportJson(): ExportSabords =
+    construireEnveloppeExport(obtenirHistoriqueParties(), EXPORTED_AT_FIGE)
+
+/** Horodatage figé : `Date.now()` rendrait toute comparaison golden impossible. */
+internal const val EXPORTED_AT_FIGE: Long = 1767225600000

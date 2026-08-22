@@ -90,6 +90,7 @@ standalone app for now, ahead of being wired in as a loaded module in a later ph
 └── packages/
     ├── module-api/                # the host ↔ module contract, no runtime dependency
     ├── shared-domain/             # Player, PlayerSchema, newId, isUuid, Result
+    ├── module-mille-sabords/      # 1000 Sabords, ported from Kotlin and checked against it
     └── module-tori-valley/        # absorbed score-counting module, still a standalone app
 legacy/
 └── 1ksabord-kotlin/               # TEMPORARY: the Kotlin/JS app, kept as a test oracle
@@ -100,6 +101,25 @@ legacy/
 whole workspace. The two packages are distinct on purpose — `shared-domain` is vocabulary both sides
 already had, `module-api` is the boundary between them. See
 [`module-contract.md`](module-contract.md).
+
+### The differential harness
+
+`packages/module-mille-sabords/tests/golden/` holds one corpus of finished games and the v1.1
+envelope the Kotlin implementation produces from it. Both sides replay it: `GoldenExportTest` on the
+Kotlin side, `exportScoreo.golden.test.ts` on the TypeScript side, comparing **byte for byte**.
+
+Neither can drift without the other going red, which is the only way to be sure 416 lines of scoring
+rules were *ported* and not reinvented. Reading the diff of a rewrite proves nothing; two
+implementations agreeing on a corpus proves something.
+
+The corpus deliberately includes a game where a Skull Island drives a player below zero, who then
+scores again: the clamp is applied at **every** coup, not on the total, so the player restarts at
+zero and never repays the debt. Clamp the total instead and the rounds stop summing to the ranking —
+which is exactly what Scoreo's import refuses.
+
+Extracting `construireEnveloppeExport` on the Kotlin side was part of this: the persistence tests
+kept their own copy of the export logic, so they could have stayed green while the shipped path
+diverged.
 
 `legacy/1ksabord-kotlin/` is outside the pnpm workspace on purpose: it is a Gradle project, not a
 package. It holds the Kotlin/JS implementation of 1000 Sabords, absorbed with its history and kept as
