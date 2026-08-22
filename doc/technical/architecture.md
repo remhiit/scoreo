@@ -91,6 +91,8 @@ standalone app for now, ahead of being wired in as a loaded module in a later ph
     ├── module-api/                # the host ↔ module contract, no runtime dependency
     ├── shared-domain/             # Player, PlayerSchema, newId, isUuid, Result
     └── module-tori-valley/        # absorbed score-counting module, still a standalone app
+legacy/
+└── 1ksabord-kotlin/               # TEMPORARY: the Kotlin/JS app, kept as a test oracle
 ```
 
 `module-api` and `shared-domain` are consumed as TypeScript source (their `exports` field points at
@@ -98,6 +100,13 @@ standalone app for now, ahead of being wired in as a loaded module in a later ph
 whole workspace. The two packages are distinct on purpose — `shared-domain` is vocabulary both sides
 already had, `module-api` is the boundary between them. See
 [`module-contract.md`](module-contract.md).
+
+`legacy/1ksabord-kotlin/` is outside the pnpm workspace on purpose: it is a Gradle project, not a
+package. It holds the Kotlin/JS implementation of 1000 Sabords, absorbed with its history and kept as
+the **oracle** the TypeScript port is checked against — porting 416 lines of scoring rules blind is
+how a scoring bug ships. `.github/workflows/kotlin-legacy.yml` runs its 107 tests on every pull
+request, which its own repository never did: its only workflow deployed to Pages. Both the tree and
+the workflow are deleted once the port lands.
 
 Every command still runs from the workspace root: `pnpm dev`, `pnpm build`, `pnpm test`,
 `pnpm typecheck`, `pnpm lint`, `pnpm test:e2e`. The root scripts fan out with `pnpm -r`

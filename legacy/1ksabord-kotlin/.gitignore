@@ -27,6 +27,10 @@ Thumbs.db
 
 # Binaires
 *.jar
+# …except the Gradle wrapper, which is the whole point of a wrapper: without it
+# `./gradlew` cannot run on a fresh clone. It was missing from this repository,
+# so the original CI regenerated it on every run.
+!kotlin/gradle/wrapper/gradle-wrapper.jar
 *.war
 *.ear
 *.aar
