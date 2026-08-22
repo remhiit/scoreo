@@ -1,6 +1,6 @@
 import type { ScoringModuleScreenProps } from '@scoreboards/module-api'
 import i18next from 'i18next'
-import { useMemo, useState } from 'react'
+import { useMemo, useState, type ReactNode } from 'react'
 import { registerTranslations } from '../../i18n'
 // Bundled with this chunk, so the module arrives styled and costs the host
 // nothing until someone opens it.
@@ -54,12 +54,14 @@ export default function ToriValleyModuleScreen({
 
   if (objectifCards === undefined) {
     return (
-      <MatchSetupScreen
-        playerIds={[...playerIds]}
-        initialSelection={restored?.objectifCards}
-        onConfirm={setObjectifCards}
-        onCancel={onExit}
-      />
+      <ModuleRoot>
+        <MatchSetupScreen
+          playerIds={[...playerIds]}
+          initialSelection={restored?.objectifCards}
+          onConfirm={setObjectifCards}
+          onCancel={onExit}
+        />
+      </ModuleRoot>
     )
   }
 
@@ -67,24 +69,40 @@ export default function ToriValleyModuleScreen({
     editing !== undefined ? { type: 'Edit', matchId: editing.matchId } : { type: 'Create' }
 
   return (
-    <ScoreDetailScreen
-      initialState={buildInitialState(players, mode, restored?.results ?? [], objectifCards)}
-      save={(results, cards) => {
-        host.saveMatch(
-          toModuleMatchResult({
-            playerIds: players.map((p) => p.id),
-            objectifCards: cards,
-            results,
-            // Present only when reopening: that is what turns the save into an
-            // update instead of a second match. No `playedAt` — the host's clock.
-            matchId: editing?.matchId,
-          }),
-        )
-      }}
-      onSaved={onExit}
-      onCancel={onExit}
-    />
+    <ModuleRoot>
+      <ScoreDetailScreen
+        initialState={buildInitialState(players, mode, restored?.results ?? [], objectifCards)}
+        save={(results, cards) => {
+          host.saveMatch(
+            toModuleMatchResult({
+              playerIds: players.map((p) => p.id),
+              objectifCards: cards,
+              results,
+              // Present only when reopening: that is what turns the save into an
+              // update instead of a second match. No `playedAt` — the host's clock.
+              matchId: editing?.matchId,
+            }),
+          )
+        }}
+        onSaved={onExit}
+        onCancel={onExit}
+      />
+    </ModuleRoot>
   )
+}
+
+/**
+ * Carries the module's own look, and confines it.
+ *
+ * Every rule in `styles.css` is scoped under this class, so the game keeps its
+ * identity — Torī Valley's warm washi palette, not Scoreo's flavor — without a
+ * single declaration escaping into the host. The names collide on purpose-built
+ * tokens (`--color-primary`, `--space-5`…), so an unscoped `:root` here would
+ * retint and re-space the whole application, and keep doing it after the player
+ * has left: a stylesheet is not unloaded on navigation.
+ */
+function ModuleRoot({ children }: { children: ReactNode }) {
+  return <div className="module-tori-valley">{children}</div>
 }
 
 /**

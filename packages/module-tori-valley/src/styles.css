@@ -1,4 +1,4 @@
-:root {
+.module-tori-valley {
   --color-bg: #fdf6ee;
   --color-surface: #ffffff;
   --color-surface-alt: #f5ebe0;
@@ -29,7 +29,7 @@
 }
 
 @media (prefers-color-scheme: dark) {
-  :root {
+  .module-tori-valley {
     --color-bg: #201a17;
     --color-surface: #2b231f;
     --color-surface-alt: #362c26;
@@ -42,18 +42,12 @@
   }
 }
 
-* {
+.module-tori-valley,
+.module-tori-valley * {
   box-sizing: border-box;
 }
 
-html,
-body {
-  margin: 0;
-  padding: 0;
-  height: 100%;
-}
-
-body {
+.module-tori-valley {
   background: var(--color-bg);
   color: var(--color-text);
   font-family:
@@ -66,19 +60,13 @@ body {
   line-height: 1.4;
 }
 
-h1,
-h2,
-h3 {
+.module-tori-valley h1,
+.module-tori-valley h2,
+.module-tori-valley h3 {
   margin: 0 0 var(--space-2);
 }
 
-#root {
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-}
-
-.app-header {
+.module-tori-valley .app-header {
   display: flex;
   align-items: center;
   gap: var(--space-2);
@@ -90,24 +78,24 @@ h3 {
   z-index: 10;
 }
 
-.app-title {
+.module-tori-valley .app-title {
   flex: 1;
   font-weight: 600;
   font-size: 1.1rem;
 }
 
-.app-title.clickable {
+.module-tori-valley .app-title.clickable {
   cursor: pointer;
 }
 
-.lang-select {
+.module-tori-valley .lang-select {
   width: auto;
   flex: none;
   padding: var(--space-1, 0.25rem) var(--space-2);
   font-size: 0.85rem;
 }
 
-.app-content {
+.module-tori-valley .app-content {
   flex: 1;
   padding: var(--space-4);
   max-width: 720px;
@@ -115,44 +103,8 @@ h3 {
   margin: 0 auto;
 }
 
-/* Splash */
-.splash {
-  position: fixed;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--color-bg);
-  z-index: 100;
-}
-
-.splash.hidden {
-  display: none;
-}
-
-.splash-content {
-  text-align: center;
-  color: var(--color-text);
-}
-
-.spinner {
-  width: 32px;
-  height: 32px;
-  margin: var(--space-3) auto;
-  border: 3px solid var(--color-border);
-  border-top-color: var(--color-primary);
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite;
-}
-
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
 /* Buttons */
-.button {
+.module-tori-valley .button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -167,35 +119,35 @@ h3 {
   color: var(--color-primary-contrast);
 }
 
-.button:disabled {
+.module-tori-valley .button:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
 
-.button.secondary {
+.module-tori-valley .button.secondary {
   background: var(--color-surface-alt);
   color: var(--color-text);
   border-color: var(--color-border);
 }
 
-.button.ghost {
+.module-tori-valley .button.ghost {
   background: transparent;
   color: var(--color-text);
   border-color: transparent;
 }
 
-.button.danger {
+.module-tori-valley .button.danger {
   background: var(--color-danger);
   color: #ffffff;
 }
 
-.button.icon-only {
+.module-tori-valley .button.icon-only {
   padding: var(--space-2);
 }
 
 /* Forms */
-input,
-select {
+.module-tori-valley input,
+.module-tori-valley select {
   font: inherit;
   padding: var(--space-2) var(--space-3);
   border-radius: var(--radius-sm);
@@ -204,13 +156,13 @@ select {
   color: var(--color-text);
 }
 
-input:focus,
-select:focus {
+.module-tori-valley input:focus,
+.module-tori-valley select:focus {
   outline: 2px solid var(--color-primary);
   outline-offset: 1px;
 }
 
-label {
+.module-tori-valley label {
   display: block;
   font-size: 0.85rem;
   color: var(--color-text-muted);
@@ -218,7 +170,7 @@ label {
 }
 
 /* Cards / lists */
-.card {
+.module-tori-valley .card {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
@@ -227,13 +179,13 @@ label {
   margin-bottom: var(--space-3);
 }
 
-.list {
+.module-tori-valley .list {
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
 }
 
-.list-item {
+.module-tori-valley .list-item {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -244,7 +196,7 @@ label {
   border-radius: var(--radius-md);
 }
 
-.empty {
+.module-tori-valley .empty {
   display: flex;
   align-items: center;
   gap: var(--space-2);
@@ -254,7 +206,7 @@ label {
 }
 
 /* Torī badges */
-.torii-badge {
+.module-tori-valley .torii-badge {
   display: inline-flex;
   align-items: center;
   gap: var(--space-1);
@@ -265,51 +217,51 @@ label {
   color: #ffffff;
 }
 
-.torii-badge.green {
+.module-tori-valley .torii-badge.green {
   background: var(--torii-green);
 }
 
-.torii-badge.red {
+.module-tori-valley .torii-badge.red {
   background: var(--torii-red);
 }
 
-.torii-badge.blue {
+.module-tori-valley .torii-badge.blue {
   background: var(--torii-blue);
 }
 
-.torii-badge.yellow {
+.module-tori-valley .torii-badge.yellow {
   background: var(--torii-yellow);
   color: #2b2320;
 }
 
-.torii-badge.purple {
+.module-tori-valley .torii-badge.purple {
   background: var(--torii-purple);
 }
 
 /* Score table */
-.score-table {
+.module-tori-valley .score-table {
   width: 100%;
   border-collapse: collapse;
 }
 
-.score-table th,
-.score-table td {
+.module-tori-valley .score-table th,
+.module-tori-valley .score-table td {
   padding: var(--space-2) var(--space-3);
   border-bottom: 1px solid var(--color-border);
   text-align: left;
 }
 
-.score-table th {
+.module-tori-valley .score-table th {
   color: var(--color-text-muted);
   font-weight: 600;
   font-size: 0.85rem;
 }
 
-.score-table tr.total-row td {
+.module-tori-valley .score-table tr.total-row td {
   font-weight: 700;
   border-top: 2px solid var(--color-border);
 }
 
-.score-table input[type='number'] {
+.module-tori-valley .score-table input[type='number'] {
   width: 4.5rem;
 }
