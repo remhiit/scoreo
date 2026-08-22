@@ -1,13 +1,6 @@
-import { LANDSCAPE_TYPES } from '../domain/model/landscape'
-import {
-  matchWinners,
-  PINCEAU_BONUS,
-  scorePlayerResult,
-  type Match,
-  type PlayerResult,
-} from '../domain/model/match'
+import type { Match } from '../domain/model/match'
+import { toModuleMatchResult } from '../domain/model/moduleResult'
 import type { Player } from '../domain/model/player'
-import { scoreTorii } from '../domain/model/torii'
 import type { MatchRepository } from '../domain/port/matchRepository'
 import type { PlayerRepository } from '../domain/port/playerRepository'
 import { toriValleyManifest } from '../module'
@@ -68,22 +61,6 @@ export interface ExportMatchesResult {
   skippedSoloMatches: number
 }
 
-/**
- * Torī Valley has no rounds, so the optional `details` breakdown is emitted as
- * pseudo-rounds — one per scoring category, in this fixed order. Scoreo's
- * contract has no label field on a round, so the order is the only thing
- * carrying meaning there (they show up as "round 1..7").
- *
- * The categories partition `scorePlayerResult()`, so each player's rounds sum
- * back to their `ranking` score — which is exactly what Scoreo's import
- * validates before accepting a match.
- */
-const SCORE_CATEGORIES: readonly ((result: PlayerResult) => number)[] = [
-  ...LANDSCAPE_TYPES.map((type) => (result: PlayerResult) => result.objectifPoints[type]),
-  (result) => scoreTorii(result.toriiCounts),
-  (result) => result.parcheminValue + (result.hasPinceau ? PINCEAU_BONUS : 0),
-]
-
 function shortId(playerId: string): string {
   return playerId.slice(0, 8)
 }
@@ -113,39 +90,32 @@ function buildNameMap(players: Player[]): Map<string, string> {
 }
 
 /**
- * Ranks by descending total score (standard competition ranking), then hands
- * rank 1 to the match's actual winner(s) only: Torī Valley breaks a top-score
- * tie by Torī count then Pinceau, a rule Scoreo doesn't know about, so the
- * exported rank is what carries it over.
+ * The file view of a finished match: the same ranking and the same category
+ * breakdown the in-process module result carries, with player ids swapped for
+ * the display names Scoreo resolves people by. The rank ordering and the
+ * category order both come from `toModuleMatchResult`, so the file and the
+ * module can never disagree about a score.
+ *
+ * Scoreo's file contract has no label on a round, so the category order is the
+ * only thing carrying meaning there (rounds show up as "round 1..7").
  */
-function buildRanking(match: Match, nameOf: (playerId: string) => string): ExportRankingEntry[] {
-  const winners = new Set(matchWinners(match))
-  const scored = match.results.map((result) => ({
-    playerId: result.playerId,
-    name: nameOf(result.playerId),
-    score: scorePlayerResult(result),
-  }))
-  const topScore = Math.max(...scored.map((s) => s.score))
-  const winnerCount = scored.filter((s) => winners.has(s.playerId)).length
-
-  return scored
-    .map((entry) => {
-      const tiedLoser = entry.score === topScore && !winners.has(entry.playerId)
-      const rank = tiedLoser
-        ? winnerCount + 1
-        : 1 + scored.filter((other) => other.score > entry.score).length
-      return { name: entry.name, score: entry.score, rank }
-    })
-    .sort((a, b) => a.rank - b.rank)
-}
-
-function buildDetails(match: Match, nameOf: (playerId: string) => string): ExportRound[] {
-  return SCORE_CATEGORIES.map((categoryScore) => ({
-    scores: match.results.map((result) => ({
-      name: nameOf(result.playerId),
-      score: categoryScore(result),
+function buildGame(match: Match, nameOf: (playerId: string) => string): ExportGame {
+  const result = toModuleMatchResult({ ...match, matchId: match.id })
+  return {
+    id: match.id,
+    date: match.playedAt,
+    ranking: result.ranking.map((entry) => ({
+      name: nameOf(entry.playerId),
+      score: entry.score,
+      rank: entry.rank,
     })),
-  }))
+    details: (result.rounds ?? []).map((round) => ({
+      scores: round.scores.map((score) => ({
+        name: nameOf(score.playerId),
+        score: score.score,
+      })),
+    })),
+  }
 }
 
 /**
@@ -170,12 +140,7 @@ export class ExportMatchesUseCase {
     const exportable = all.filter((match) => match.results.length >= MIN_EXPORTABLE_PLAYERS)
     const games = [...exportable]
       .sort((a, b) => a.playedAt - b.playedAt)
-      .map((match) => ({
-        id: match.id,
-        date: match.playedAt,
-        ranking: buildRanking(match, nameOf),
-        details: buildDetails(match, nameOf),
-      }))
+      .map((match) => buildGame(match, nameOf))
 
     return {
       payload: {

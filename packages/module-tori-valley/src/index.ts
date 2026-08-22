@@ -1,1 +1,1 @@
-export { toriValleyManifest } from './module'
+export { toriValleyManifest, toriValleyModule } from './module'

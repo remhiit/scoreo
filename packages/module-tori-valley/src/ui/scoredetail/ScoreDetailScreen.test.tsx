@@ -1,7 +1,6 @@
 import { fireEvent, render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import { CreateMatchUseCase } from '../../application/createMatchUseCase'
-import { UpdateMatchUseCase } from '../../application/updateMatchUseCase'
 import { InMemoryMatchRepository } from '../../infrastructure/testing/inMemoryMatchRepository'
 import { buildInitialState } from './scoreDetailReducer'
 import { ScoreDetailScreen } from './ScoreDetailScreen'
@@ -16,9 +15,14 @@ function renderWithCards(cards: Parameters<typeof buildInitialState>[3]) {
   render(
     <ScoreDetailScreen
       initialState={buildInitialState(players, { type: 'Create' }, [], cards)}
-      createMatch={new CreateMatchUseCase(matchRepository)}
-      updateMatch={new UpdateMatchUseCase(matchRepository)}
-      currentDate={() => 1000}
+      save={(results, objectifCards) =>
+        new CreateMatchUseCase(matchRepository).invoke(
+          players.map((p) => p.id),
+          results,
+          1000,
+          objectifCards,
+        )
+      }
       onSaved={vi.fn()}
       onCancel={vi.fn()}
     />,
@@ -28,7 +32,6 @@ function renderWithCards(cards: Parameters<typeof buildInitialState>[3]) {
 
 function renderScreen(matchRepository = new InMemoryMatchRepository()) {
   const createMatch = new CreateMatchUseCase(matchRepository)
-  const updateMatch = new UpdateMatchUseCase(matchRepository)
   const onSaved = vi.fn()
   const onCancel = vi.fn()
   const initialState = buildInitialState(players, { type: 'Create' })
@@ -36,9 +39,14 @@ function renderScreen(matchRepository = new InMemoryMatchRepository()) {
   render(
     <ScoreDetailScreen
       initialState={initialState}
-      createMatch={createMatch}
-      updateMatch={updateMatch}
-      currentDate={() => 1000}
+      save={(results, objectifCards) =>
+        createMatch.invoke(
+          players.map((p) => p.id),
+          results,
+          1000,
+          objectifCards,
+        )
+      }
       onSaved={onSaved}
       onCancel={onCancel}
     />,

@@ -110,9 +110,18 @@ function ScoreDetailRoute({ screen, onSaved, onCancel }: ScoreDetailRouteProps) 
   return (
     <ScoreDetailScreen
       initialState={initialState}
-      createMatch={createMatch}
-      updateMatch={updateMatch}
-      currentDate={services.currentDate}
+      save={(results, objectifCards) => {
+        if (mode.type === 'Create') {
+          createMatch.invoke(
+            players.map((p) => p.id),
+            results,
+            services.currentDate(),
+            objectifCards,
+          )
+        } else {
+          updateMatch.invoke(mode.matchId, results, objectifCards)
+        }
+      }}
       onSaved={onSaved}
       onCancel={onCancel}
     />
