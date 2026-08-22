@@ -34,10 +34,17 @@ test('scoring a match on the Torī Valley module lands it in Scoreo history', as
   await page.getByLabel(`${alice} green Torī count`).fill('1')
   await page.getByRole('button', { name: 'Save match' }).click()
 
-  // Back in Scoreo, under a game type the module's manifest named.
+  // Back in Scoreo: one match, under the game type the module's manifest named,
+  // with the winner the module ranked first. Scoped to the row, because the
+  // History filter carries the same game name in a hidden <option>.
   await page.getByRole('button', { name: 'Menu' }).click()
   await page.getByRole('button', { name: 'History' }).click()
-  await expect(page.getByText('La Vallée des Torī').first()).toBeVisible()
+
+  const row = page.locator('.list-item-row')
+  await expect(row).toHaveCount(1)
+  await expect(row.getByText('La Vallée des Torī')).toBeVisible()
+  // The winner is the one in bold — one green Torī beats nothing at all.
+  await expect(row.locator('strong')).toContainText(alice)
 })
 
 test('a game a module counts still offers Scoreo’s own score screen', async ({ page }) => {
