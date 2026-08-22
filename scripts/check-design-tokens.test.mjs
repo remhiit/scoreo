@@ -60,6 +60,18 @@ describe('findViolations', () => {
     expect(findViolations(css, 'f.css')).toEqual([])
   })
 
+  it('does not flag a token-matching literal used as a var(...) fallback', () => {
+    const css = '.badge { border-radius: var(--radius-pill, 999px); }'
+    expect(findViolations(css, 'f.css')).toEqual([])
+  })
+
+  it('still flags a bare literal sitting next to an unrelated var(...) in a shorthand', () => {
+    const css = '.box { padding: 12px var(--space-2, 8px); }'
+    expect(findViolations(css, 'f.css')).toEqual([
+      { file: 'f.css', line: 1, property: 'padding', found: '12px', expected: 'var(--space-3)' },
+    ])
+  })
+
   it('flags a transition duration that exactly equals --duration-fast', () => {
     const css = '.btn { transition: background 0.1s; }'
     expect(findViolations(css, 'f.css')).toEqual([

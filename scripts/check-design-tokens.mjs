@@ -1,8 +1,13 @@
 #!/usr/bin/env node
-// Fails if a raw px/duration/easing value in apps/scoreo/public/css/*.css exactly
+// Fails if a raw px/duration/easing value in a scanned CSS file exactly
 // matches a design token (apps/scoreo/public/css/tokens/), locking in the mechanical
 // var(...) substitution done for issue #238 (Ludo Design System adherence,
 // ds_temp/design_handoff_scoreo_ds). Modeled on check-doc-links.mjs.
+//
+// Scans apps/scoreo/public/css/ plus packages/module-tori-valley/src/styles.css:
+// the module doesn't import the tokens (issue #333), it only falls back to the
+// same literal values via var(--host-token, fallback), so a raw value there is
+// just as much a missed substitution as one in the host's own CSS.
 //
 // Only flags values for the properties the substitution actually covers
 // (spacing/text-size/radius/duration/easing) — width, height, border,
@@ -14,7 +19,7 @@ import { readFileSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 
-const CSS_ROOT = 'apps/scoreo/public/css'
+const CSS_ROOTS = ['apps/scoreo/public/css', 'packages/module-tori-valley/src']
 const TOKENS_DIR = 'tokens'
 
 // Keyed by the exact px integer a token resolves to.
@@ -91,9 +96,17 @@ function tokenForPxProperty(property, px) {
 const PX_RE = /(?<![.\d-])(\d+(?:\.\d+)?)px\b/g
 const DURATION_RE = /(?<![.\d])(\d+(?:\.\d+)?)(m?s)\b/g
 const DECLARATION_RE = /([a-zA-Z-]+)\s*:\s*([^;{}]+);/g
+const VAR_CALL_RE = /var\([^)]*\)/g
 
 function stripComments(text) {
   return text.replace(/\/\*[\s\S]*?\*\//g, (m) => m.replace(/[^\n]/g, ' '))
+}
+
+// A literal inside var(--token, literal) is a fallback for when the host
+// doesn't define --token — e.g. packages/module-tori-valley's var(--radius-pill, 999px)
+// — already the token reference the substitution wants, not a raw value to flag.
+function stripVarCalls(value) {
+  return value.replace(VAR_CALL_RE, '')
 }
 
 export function findViolations(cssText, filePath) {
@@ -102,7 +115,7 @@ export function findViolations(cssText, filePath) {
 
   for (const match of text.matchAll(DECLARATION_RE)) {
     const property = match[1].trim()
-    const rawValue = match[2]
+    const rawValue = stripVarCalls(match[2])
     const line = text.slice(0, match.index).split('\n').length
 
     if (DURATION_PROPS.has(property)) {
@@ -153,20 +166,22 @@ function findCssFiles(dir) {
 
 function main() {
   const violations = []
-  for (const file of findCssFiles(CSS_ROOT)) {
-    const content = readFileSync(file, 'utf-8')
-    violations.push(...findViolations(content, file))
+  for (const root of CSS_ROOTS) {
+    for (const file of findCssFiles(root)) {
+      const content = readFileSync(file, 'utf-8')
+      violations.push(...findViolations(content, file))
+    }
   }
 
   if (violations.length > 0) {
-    console.error(`Found ${violations.length} raw value(s) matching a design token in ${CSS_ROOT}/:\n`)
+    console.error(`Found ${violations.length} raw value(s) matching a design token:\n`)
     for (const v of violations) {
       console.error(`  - ${v.file}:${v.line} ${v.property}: ${v.found} -> use ${v.expected}`)
     }
     process.exit(1)
   }
 
-  console.log(`No raw px/duration/easing value under ${CSS_ROOT}/ matches a design token.`)
+  console.log(`No raw px/duration/easing value under ${CSS_ROOTS.join(', ')}/ matches a design token.`)
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {

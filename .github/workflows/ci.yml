@@ -166,7 +166,7 @@ jobs:
         with:
           node-version: 22
 
-      - name: Check apps/scoreo/public/css/ design token adherence
+      - name: Check design token adherence
         run: node scripts/check-design-tokens.mjs
 
   lighthouse:

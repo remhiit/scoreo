@@ -82,7 +82,7 @@ body {
     'Segoe UI',
     Roboto,
     sans-serif;
-  font-size: 16px;
+  font-size: var(--text-md, 16px);
   line-height: 1.4;
 }
 
@@ -279,7 +279,7 @@ label {
   align-items: center;
   gap: var(--space-1);
   padding: 2px var(--space-2);
-  border-radius: 999px;
+  border-radius: var(--radius-pill, 999px);
   font-size: 0.8rem;
   font-weight: 600;
   /* Paired with the Torī hues below, which are the game's colours and not the
