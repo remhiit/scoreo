@@ -84,6 +84,8 @@ Lire ces fichiers dans l'ordre. Tout le contexte nécessaire y est :
 
 Voir `doc/technical/automation-plan.md` pour l'architecture d'automatisation cible (labels comme bus d'événements, skills, phases de mise en autonomie).
 
+Ajouter un compteur de points pour un nouveau jeu : `.claude/skills/new-scoring-module/` — la checklist complète, du paquet aux gardes à étendre, avec les pièges qui ont coûté de vrais bugs ici. Le contrat lui-même est dans `doc/technical/module-contract.md`.
+
 ## Règles
 
 - Reducer dans `ui/*/`. Reçoit une `Action` → produit un `State`.

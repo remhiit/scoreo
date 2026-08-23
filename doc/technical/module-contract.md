@@ -103,6 +103,9 @@ not anything was saved.
 
 ## Adding a module
 
+`.claude/skills/new-scoring-module/` is the checklist for doing it, in order, with the traps that
+cost real bugs here. This section says what a module *is*; the skill says what to type.
+
 A module is a package, and **everything about the game it counts lives in that package** — its
 source, its stylesheet, its tests, and its documentation under `packages/module-<game>/doc/`: rules,
 user guide, resources, technical notes. The workspace's own `doc/` keeps what belongs to the
