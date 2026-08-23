@@ -55,8 +55,8 @@ Lire ces fichiers dans l'ordre. Tout le contexte nécessaire y est :
 
 | Dossier | Contenu |
 |---|---|
-| `apps/scoreo/` | L'app hôte : `index.html`, `public/`, `src/`, `e2e/`, ses configs Vite/Vitest/Playwright/TS et son `package.json` (React, zod, vite, vitest) |
-| `packages/` | Le contrat et les modules de comptage. `module-api/` (contrat hôte ↔ module, zéro dépendance runtime) et `shared-domain/` (`Player`, `PlayerSchema`, `newId`, `Result` — une seule définition pour tout le workspace) ; puis un dossier par module : `module-tori-valley/` (absorbé depuis `remhiit/toriValleyScoreBoard`, encore une app autonome le temps des phases suivantes) ; il a son propre `CLAUDE.md`. Voir `doc/technical/module-contract.md` |
+| `apps/scoreo/` | L'app hôte : `index.html`, `public/`, `src/`, `e2e/` (Playwright, comportement), `tests/visual/` (Playwright, pixels — voir `doc/technical/visual-testing.md`), `scripts/`, ses configs Vite/Vitest/Playwright/TS et son `package.json` (React, zod, vite, vitest) |
+| `packages/` | Le contrat et les modules de comptage. `module-api/` (contrat hôte ↔ module, zéro dépendance runtime) et `shared-domain/` (`Player`, `PlayerSchema`, `newId`, `Result` — une seule définition pour tout le workspace) ; puis un dossier par module : `module-tori-valley/` (absorbé depuis `remhiit/toriValleyScoreBoard`, sans coquille standalone depuis #330) ; il a son propre `CLAUDE.md`. Voir `doc/technical/module-contract.md` |
 | Racine | `package.json` privé (scripts `pnpm -r`, eslint/prettier/tsc), `tsconfig.base.json`, `eslint.config.js`, `vitest.config.ts` (tests de `scripts/` uniquement), `lighthouserc.json`, `doc/`, `schemas/`, `scripts/`, `.github/`, `.claude/` |
 | `apps/scoreo/src/domain/` | `model/` (types + schémas zod), `port/` (interfaces repository) |
 | `apps/scoreo/src/application/` | Use cases (opérations métier, zéro dépendance framework) |

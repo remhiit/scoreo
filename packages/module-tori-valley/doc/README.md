@@ -9,6 +9,5 @@
 | [`functional/features/history.md`](functional/features/history.md) | Match history                            |
 | [`technical/architecture.md`](technical/architecture.md)           | Tech stack, patterns, structure          |
 | [`technical/automation-plan.md`](technical/automation-plan.md)     | Automated dev pipeline (skills, labels, phasing) |
-| [`technical/visual-testing.md`](technical/visual-testing.md)       | Visual regression suite and baselines    |
 | [`glossary.md`](glossary.md)                                       | Project term definitions                 |
 | [`reference.md`](reference.md)                                     | Exhaustive reference tables              |

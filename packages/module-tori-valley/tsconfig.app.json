@@ -5,8 +5,7 @@
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "module": "ESNext",
     "skipLibCheck": true,
-    // Explicitly empty: @types/node exists for the Playwright config (see
-    // tsconfig.visual.json) and must not leak Node globals into browser code.
+    // Explicitly empty: no Node global has any business in browser code.
     "types": [],
 
     "moduleResolution": "bundler",

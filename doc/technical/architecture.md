@@ -70,9 +70,10 @@ The repository is a **pnpm workspace** (`pnpm-workspace.yaml`: `apps/*`, `packag
 host application and the only one deployed; the score-counting modules absorbed from the sibling
 repositories live under `packages/` and are loaded by Scoreo. Both are registered in
 `apps/scoreo/src/modules/registry.ts` and reached on demand: `packages/module-tori-valley/`
-(absorbed from `remhiit/toriValleyScoreBoard`, with its commit history preserved), which still
-carries its standalone shell for now, and `packages/module-mille-sabords/` (ported from the Kotlin
-app kept in `legacy/`), which never had one.
+(absorbed from `remhiit/toriValleyScoreBoard`, with its commit history preserved) and
+`packages/module-mille-sabords/` (ported from the Kotlin app kept in `legacy/`). Neither runs on
+its own: a module package has no `index.html`, no Vite config and nothing deployed — Scoreo builds
+it into a chunk loaded the first time someone opens it.
 
 ```
 .                                  # workspace root — no source of its own
@@ -85,15 +86,16 @@ app kept in `legacy/`), which never had one.
 ├── doc/  schemas/  scripts/  .github/  .claude/
 ├── apps/
 │   └── scoreo/                    # the deployed PWA
-│       ├── index.html  vite.config.ts  vitest.config.ts  playwright.config.ts
+│       ├── index.html  vite.config.ts  vitest.config.ts
+│       ├── playwright.config.ts  playwright.visual.config.ts
 │       ├── tsconfig.json  tsconfig.app.json  tsconfig.node.json
-│       ├── public/  src/  e2e/
+│       ├── public/  src/  e2e/  tests/visual/  scripts/
 │       └── package.json           # React/zod/vite/vitest deps live here
 └── packages/
     ├── module-api/                # the host ↔ module contract, no runtime dependency
     ├── shared-domain/             # Player, PlayerSchema, newId, isUuid, Result
     ├── module-mille-sabords/      # 1000 Sabords, ported from Kotlin and checked against it
-    └── module-tori-valley/        # absorbed score-counting module, still a standalone app too
+    └── module-tori-valley/        # absorbed score-counting module
 legacy/
 └── 1ksabord-kotlin/               # TEMPORARY: the Kotlin/JS app, kept as a test oracle
 ```
