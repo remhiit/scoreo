@@ -103,8 +103,8 @@ jobs:
     runs-on: ubuntu-latest
     # Screenshot baselines are font-rendering-sensitive, so this job must run in
     # the very image the baselines were recorded in — see
-    # packages/module-tori-valley/doc/technical/visual-testing.md.
-    # scripts/visual-in-container.sh runs the same image locally.
+    # doc/technical/visual-testing.md.
+    # apps/scoreo/scripts/visual-in-container.sh runs the same image locally.
     container:
       image: mcr.microsoft.com/playwright:v1.62.1-noble
       options: --user root
@@ -113,10 +113,10 @@ jobs:
 
       - name: Fail if the image drifted from @playwright/test
         run: |
-          installed="$(node -p "require('./packages/module-tori-valley/package.json').devDependencies['@playwright/test'].replace(/^\D*/, '')")"
+          installed="$(node -p "require('./apps/scoreo/package.json').devDependencies['@playwright/test'].replace(/^\D*/, '')")"
           if [ "$installed" != "1.62.1" ]; then
-            echo "::error::packages/module-tori-valley wants @playwright/test $installed but this workflow pins the v1.62.1 container image."
-            echo "Update the image tag above, then re-record baselines: pnpm --filter @scoreboards/module-tori-valley test:visual:container --update-snapshots"
+            echo "::error::apps/scoreo wants @playwright/test $installed but this workflow pins the v1.62.1 container image."
+            echo "Update the image tag above, then re-record baselines: pnpm --filter scoreo test:visual:container --update-snapshots"
             exit 1
           fi
 
@@ -128,10 +128,10 @@ jobs:
 
       # The suite screenshots the production build, not the dev server.
       - name: Build
-        run: pnpm --filter @scoreboards/module-tori-valley build
+        run: pnpm --filter scoreo build
 
       - name: Visual regression tests
-        run: pnpm --filter @scoreboards/module-tori-valley test:visual
+        run: pnpm --filter scoreo test:visual
 
       - name: Upload Playwright report
         if: failure()
@@ -139,8 +139,8 @@ jobs:
         with:
           name: playwright-report
           path: |
-            packages/module-tori-valley/playwright-report/
-            packages/module-tori-valley/test-results/
+            apps/scoreo/playwright-report/
+            apps/scoreo/test-results/
           retention-days: 30
 
   doc-links:

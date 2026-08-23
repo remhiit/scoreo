@@ -10,7 +10,9 @@ export default mergeConfig(
       setupFiles: ['./src/test/setup.ts'],
       // `dist/` holds a copy of public/sw.test.ts after a build; without this,
       // a local `pnpm build` then `pnpm test` runs that suite twice.
-      exclude: [...configDefaults.exclude, 'e2e/**', 'dist/**'],
+      // `tests/**` is the Playwright visual suite: its files end in
+      // `.visual.spec.ts`, which Vitest's default include would otherwise claim.
+      exclude: [...configDefaults.exclude, 'e2e/**', 'tests/**', 'dist/**'],
     },
   }),
 )

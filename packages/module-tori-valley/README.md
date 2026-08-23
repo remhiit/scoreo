@@ -1,14 +1,15 @@
 # Torī Valley Scoreboard
 
 > Absorbed from the standalone `remhiit/toriValleyScoreBoard` repository into the Scoreo workspace,
-> where it is becoming a scoring module Scoreo loads on demand. The commands below run as written
-> from this directory (`packages/module-tori-valley`); from the workspace root, prefix them with
+> where it is now a **scoring module Scoreo loads on demand**. It no longer runs on its own: the
+> standalone shell — `index.html`, the Vite config, the service worker — is gone, and Scoreo is the
+> only deployed app. The commands below run as written from this directory
+> (`packages/module-tori-valley`); from the workspace root, prefix them with
 > `pnpm --filter @scoreboards/module-tori-valley`. `pnpm install` is workspace-wide and belongs at
 > the root.
 
-A Progressive Web App (PWA) built with React + TypeScript for calculating scores for the board game _[La Vallée des Torī](https://www.origames.fr)_ (Origames).
-
-🔗 [Live app](https://remhiit.github.io/toriValleyScoreBoard/)
+React + TypeScript scoring module for the board game _[La Vallée des Torī](https://www.origames.fr)_
+(Origames), played inside [Scoreo](../../apps/scoreo).
 
 ## Repository structure
 
@@ -23,34 +24,20 @@ A Progressive Web App (PWA) built with React + TypeScript for calculating scores
 - Node.js 22+
 - pnpm (version pinned in `package.json`'s `packageManager` field — activate via `corepack prepare --activate`)
 
-### Development build
+### Development
+
+The module has no dev server of its own. Run the host from the workspace root and
+open a match on it:
 
 ```bash
 pnpm install
 pnpm dev
 ```
 
-Opens a dev server with hot reload.
-
-### Production build
-
-```bash
-pnpm build
-```
-
-Output lands in `dist/`. Preview it locally:
-
-```bash
-pnpm preview
-```
-
 ### Deployment
 
-The site is automatically deployed on every push to `main`:
-
-- **GitHub Pages** via GitHub Actions (`.github/workflows/deploy.yml`) → `https://remhiit.github.io/toriValleyScoreBoard/`
-
-> GitHub Pages: enable in _Settings → Pages → Source: GitHub Actions_.
+Nothing here is deployed on its own: the module ships inside Scoreo, as a chunk
+loaded the first time someone opens it.
 
 ### Run tests
 
@@ -60,17 +47,15 @@ pnpm test
 
 ### Run visual regression tests
 
-Screenshots every screen in Chromium and diffs it against committed baselines.
+They live in the host now, and photograph this module on Scoreo's own route —
+the package has no shell of its own to screenshot any more:
 
 ```bash
-pnpm exec playwright install chromium   # once
-pnpm build                              # the suite screenshots dist/
-pnpm test:visual
+pnpm --filter scoreo test:visual:container
 ```
 
 Baselines are recorded in the same container image CI uses, never on your own
-machine — `pnpm test:visual:container --update-snapshots`. See
-[`doc/technical/visual-testing.md`](doc/technical/visual-testing.md).
+machine. See the workspace's `doc/technical/visual-testing.md`.
 
 ### Typecheck / lint
 

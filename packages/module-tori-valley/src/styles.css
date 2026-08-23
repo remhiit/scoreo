@@ -170,7 +170,17 @@
 }
 
 /* Cards / lists */
+/*
+ * `display` is declared on purpose, though a div is a block already: Scoreo's
+ * own `theme.css` carries a generic `.card { display: flex }`, and a host rule
+ * lands on the module's markup like any other. Scoping protects the host from
+ * the module, never the module from the host — so a class name the two share
+ * must be re-declared here for every property the host sets. Until the module's
+ * own class names are prefixed like 1000 Sabords' (`ms-`), this line is what
+ * keeps a player card stacked instead of laid out in a row.
+ */
 .module-tori-valley .card {
+  display: block;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);

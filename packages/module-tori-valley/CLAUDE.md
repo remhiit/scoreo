@@ -10,20 +10,11 @@ them with `pnpm --filter @scoreboards/module-tori-valley`.
 
 # Torī Valley Scoreboard
 
-PWA React + TypeScript score calculator for the board game _La Vallée des Torī_ (Origames). MVI-style (reducer/action/state per screen, via `useReducer`). Hexagonal architecture (Ports & Adapters). 100% local-first (localStorage), no backend, no cloud sync.
+Scoring module for the board game _La Vallée des Torī_ (Origames), loaded by Scoreo. MVI-style (reducer/action/state per screen, via `useReducer`). Hexagonal architecture (Ports & Adapters). 100% local-first (localStorage), no backend, no cloud sync.
 
 ## Commands
 
 ```bash
-# Dev server (hot reload)
-pnpm dev
-
-# Production build (output: dist/)
-pnpm build
-
-# Preview a production build
-pnpm preview
-
 # All tests (Vitest, jsdom — no real browser needed)
 pnpm test
 
@@ -32,10 +23,13 @@ pnpm exec vitest run src/domain/model/torii.test.ts
 
 # Typecheck
 pnpm typecheck
-
-# Visual regression suite (Playwright, in the pinned container image)
-pnpm test:visual:container
 ```
+
+The package no longer runs on its own: it has no `index.html`, no Vite config and
+no dev server. To see it, run Scoreo (`pnpm dev` from the workspace root) and open
+a match on the module. Its visual regression suite moved to the host with the
+shell — `pnpm --filter scoreo test:visual:container`, see the workspace's
+`doc/technical/visual-testing.md`.
 
 Linting and formatting are workspace-wide: run `pnpm lint` / `pnpm format` from the repository root.
 

@@ -101,21 +101,11 @@ The package is both a standalone app and a scoring module Scoreo loads. What the
 
 ## Tests
 
-Two suites, answering different questions — see [`technical/visual-testing.md`](technical/visual-testing.md).
+**Behaviour** (`pnpm test`) — colocated `*.test.ts(x)` next to the file they cover, running under Vitest + `jsdom`. Every screen has a component test on top of its reducer's pure-function tests; `src/App.test.tsx` covers the full add-player → start-match → save → view-in-history flow end to end.
 
-**Behaviour** (`pnpm test`) — colocated `*.test.ts(x)` next to the file they cover, running under Vitest + `jsdom`. Every screen has a component test on top of its reducer's pure-function tests; `src/App.test.tsx` covers the full add-player → start-match → save → view-in-history flow end to end. One exception to colocation: `src/test/sw.test.ts` covers `public/sw.js` (loaded through `?raw` and evaluated with fake `self`/`caches`), because Vitest only collects `src/**`.
+**Visual regression** — moved to the host with the standalone shell it needed: `apps/scoreo/tests/visual/toriModule.visual.spec.ts` photographs this module through Scoreo's `#/module/tori-valley/…` route, at a phone and a desktop width, in light and dark. Baselines and the procedure for re-recording them live with it — see the workspace's `doc/technical/visual-testing.md`.
 
-**Visual regression** (`pnpm test:visual`) — Playwright + Chromium against the production build, in `tests/visual/`. Two viewport projects (`phone` 412×839, `desktop` 1280×800), so every row below is two committed PNGs. State is seeded straight into `localStorage` by `openApp()` and each screen is reached by its hash route, never by clicking through the previous one.
-
-| Spec file                                | Screen      | Captures                                                                       |
-| ---------------------------------------- | ----------- | ------------------------------------------------------------------------------ |
-| `tests/visual/home.visual.spec.ts`        | Home        | empty state, with players, an overlong player name, French labels               |
-| `tests/visual/matchSetup.visual.spec.ts`  | MatchSetup  | variant picker at defaults, and pre-filled from a stored match                  |
-| `tests/visual/scoreDetail.visual.spec.ts` | ScoreDetail | create mode (3 players and solo), edit mode populated from a stored match       |
-| `tests/visual/history.visual.spec.ts`     | History     | empty state, two matches incl. the winner highlight, a deleted-player fallback  |
-| `tests/visual/darkMode.visual.spec.ts`    | Home + ScoreDetail | the `prefers-color-scheme: dark` palette                                |
-
-Support files: `tests/visual/support/app.ts` (`openApp`, `expectScreenshot`, `routes`) and `tests/visual/support/fixtures.ts` (fixed `Player[]`/`Match[]`, typed against the domain models). Baselines live in `tests/visual/*-snapshots/` and **must be recorded through `pnpm test:visual:container`**, never on a developer machine.
+The Home and History screens of the standalone app are no longer photographed by anything: Scoreo owns those screens now, and this package's own copies are dead code awaiting removal.
 
 ## localStorage Keys
 
