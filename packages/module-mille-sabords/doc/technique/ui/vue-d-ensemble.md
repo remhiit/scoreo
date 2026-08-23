@@ -46,5 +46,9 @@ navigation : le module n'a pas de routeur, et n'en a pas besoin. Scoreo tient la
 `src/styles.css` est chargé par l'écran, donc voyage dans son chunk : le module arrive stylé et ne
 coûte rien tant que personne ne l'ouvre. Toutes les règles sont scopées sous
 `.module-mille-sabords`, toutes les classes préfixées `ms-`. Les deux, pas l'un ou l'autre — le
-scoping protège l'hôte du module, le préfixe protège le module de l'hôte. C'est vérifié par
-`scripts/check-module-styles.mjs`, et photographié par `apps/scoreo/tests/visual/`.
+scoping protège l'hôte du module, le préfixe protège le module de l'hôte. C'est vérifié
+statiquement par `scripts/check-module-styles.mjs`.
+
+Ce qu'un script ne peut pas voir — une mise en page qui casse sans qu'aucun sélecteur ne collisionne
+— est photographié par `apps/scoreo/tests/visual/`, qui ne couvre pour l'instant que Torī Valley.
+Étendre cette suite à 1000 Sabords est l'objet de l'issue #361.
