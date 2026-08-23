@@ -1,7 +1,7 @@
 import '@testing-library/jest-dom/vitest'
 import { cleanup } from '@testing-library/react'
 import { afterEach } from 'vitest'
-import i18n from '../i18n/standalone'
+import i18n from './i18n'
 
 // vitest.config.ts sets `globals: false`, so @testing-library/react's automatic
 // afterEach-based cleanup (which expects a global test framework) isn't wired up

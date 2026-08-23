@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { LANDSCAPE_TYPES, OBJECTIF_VARIANTS } from '../domain/model/landscape'
 import { objectifCard } from '../domain/model/objectifCard'
 import { SUPPORTED_LANGUAGES } from './index'
-import i18n from './standalone'
+import i18n from '../test/i18n'
 
 /**
  * The card descriptors carry i18n keys the UI will render. A typo there would
