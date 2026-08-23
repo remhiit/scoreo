@@ -8,8 +8,12 @@
 | [`technical/deployment.md`](technical/deployment.md) | CI/CD and deployment |
 | [`technical/migrations.md`](technical/migrations.md) | Data migration history |
 | [`glossary.md`](glossary.md) | Project term definitions |
-| [`modules/mille-sabords/`](modules/mille-sabords/) | 1000 Sabords: rules, user guide, and the Kotlin app's technical docs — copied from `remhiit/1kSaBord` so the monorepo no longer depends on it |
-| [`modules/mille-sabords/resources/`](modules/mille-sabords/resources/) | The 1000 Sabords rulebook (PDF) |
-| [`../packages/module-tori-valley/doc/`](../packages/module-tori-valley/doc/) | Torī Valley: the module's own functional and technical docs |
-| [`../packages/module-tori-valley/doc/resources/`](../packages/module-tori-valley/doc/resources/) | The Torī Valley rulebook (PDF) and photos of the 16 Objectif cards |
+| [`technical/visual-testing.md`](technical/visual-testing.md) | The visual regression suite and its baselines |
+| [`../packages/module-mille-sabords/doc/`](../packages/module-mille-sabords/doc/) | 1000 Sabords: rules, user guide, technical docs, and the rulebook PDF |
+| [`../packages/module-tori-valley/doc/`](../packages/module-tori-valley/doc/) | Torī Valley: rules, technical docs, the rulebook PDF and photos of the 16 Objectif cards |
 | `schemas/import/` | JSON schemas for import format (v1.0, v1.1) |
+
+**A game's documentation lives in its module's package**, next to the code that implements it —
+rules, user guide, resources and technical notes alike. This directory holds what belongs to the
+repository as a whole: the host app, the workspace, and the contract between them. See
+[`technical/module-contract.md`](technical/module-contract.md).

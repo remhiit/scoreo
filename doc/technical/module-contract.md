@@ -103,6 +103,12 @@ not anything was saved.
 
 ## Adding a module
 
+A module is a package, and **everything about the game it counts lives in that package** — its
+source, its stylesheet, its tests, and its documentation under `packages/module-<game>/doc/`: rules,
+user guide, resources, technical notes. The workspace's own `doc/` keeps what belongs to the
+repository as a whole. A module you delete takes its documentation with it, and nothing is left
+behind describing a game nobody can play.
+
 `apps/scoreo/src/modules/registry.ts` is the only file in Scoreo that names a module. Removing one
 means deleting its folder, one import, one array entry, then `pnpm install`.
 

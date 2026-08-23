@@ -83,7 +83,7 @@ it into a chunk loaded the first time someone opens it.
 ├── eslint.config.js               # one flat config for the whole repo
 ├── vitest.config.ts               # root project: only the scripts/ automation tests
 ├── lighthouserc.json              # asserts against apps/scoreo/dist/
-├── doc/  schemas/  scripts/  .github/  .claude/
+├── doc/  schemas/  scripts/  .github/  .claude/    # doc/ is the repo's; a game's lives in its package
 ├── apps/
 │   └── scoreo/                    # the deployed PWA
 │       ├── index.html  vite.config.ts  vitest.config.ts
