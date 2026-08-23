@@ -32,15 +32,15 @@ export function ObjectifLandscapeEntry({
   const points = result.objectifPoints[landscape]
 
   return (
-    <div className="objectif-entry">
-      <div className="list-item">
+    <div className="tv-objectif-entry">
+      <div className="tv-list-item">
         <strong>
           {landscapeLabel} {t('scoreDetail.objectifVariant', { variant })}
         </strong>
         <span>{t('scoreDetail.vp', { value: points })}</span>
       </div>
 
-      {!card.computable && <p className="empty">{t(card.notComputableReasonKey ?? '')}</p>}
+      {!card.computable && <p className="tv-empty">{t(card.notComputableReasonKey ?? '')}</p>}
 
       {isManual ? (
         <label>
@@ -69,7 +69,7 @@ export function ObjectifLandscapeEntry({
           const aria = `${playerName} — ${label}`
 
           return field.kind === 'flag' ? (
-            <label key={field.key} className="list-item">
+            <label key={field.key} className="tv-list-item">
               <span>{label}</span>
               <input
                 type="checkbox"
@@ -87,7 +87,7 @@ export function ObjectifLandscapeEntry({
               />
             </label>
           ) : (
-            <label key={field.key} className="list-item">
+            <label key={field.key} className="tv-list-item">
               <span>{label}</span>
               <input
                 type="number"
@@ -111,7 +111,7 @@ export function ObjectifLandscapeEntry({
       )}
 
       {card.computable && (
-        <label className="list-item">
+        <label className="tv-list-item">
           <span>{t('scoreDetail.manualToggle')}</span>
           <input
             type="checkbox"

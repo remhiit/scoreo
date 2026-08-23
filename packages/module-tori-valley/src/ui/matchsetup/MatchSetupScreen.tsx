@@ -32,13 +32,13 @@ export function MatchSetupScreen({
 
   return (
     <div>
-      <div className="card">
+      <div className="tv-card">
         <h2>{t('matchSetup.heading')}</h2>
-        <p className="empty">{t('matchSetup.intro')}</p>
+        <p className="tv-empty">{t('matchSetup.intro')}</p>
 
-        <div className="list">
+        <div className="tv-list">
           {LANDSCAPE_TYPES.map((landscape) => (
-            <div className="list-item" key={landscape}>
+            <div className="tv-list-item" key={landscape}>
               <span>{t(`landscape.${landscape}`)}</span>
               <span>
                 {OBJECTIF_VARIANTS.map((variant) => (
@@ -60,14 +60,14 @@ export function MatchSetupScreen({
             </div>
           ))}
 
-          <div className="list-item">
+          <div className="tv-list-item">
             <span>Torī</span>
-            <span className="empty">{t('matchSetup.toriiAlwaysInPlay')}</span>
+            <span className="tv-empty">{t('matchSetup.toriiAlwaysInPlay')}</span>
           </div>
         </div>
       </div>
 
-      <div className="list-item">
+      <div className="tv-list-item">
         <AppButton text={t('matchSetup.back')} variant="secondary" onClick={onCancel} />
         <AppButton text={t('matchSetup.start')} onClick={() => onConfirm(state.selection)} />
       </div>

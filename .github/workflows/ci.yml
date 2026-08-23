@@ -169,6 +169,9 @@ jobs:
       - name: Check apps/scoreo/public/css/ design token adherence
         run: node scripts/check-design-tokens.mjs
 
+      - name: Check module stylesheets stay on their side of the border
+        run: node scripts/check-module-styles.mjs
+
   lighthouse:
     runs-on: ubuntu-latest
     steps:

@@ -152,7 +152,7 @@ function AppShell() {
 
   return (
     <>
-      <div className="app-header">
+      <div className="tv-app-header">
         {onBack && (
           <AppButton
             text={<ArrowLeft size={20} />}
@@ -163,13 +163,13 @@ function AppShell() {
           />
         )}
         <span
-          className="app-title clickable"
+          className="tv-app-title tv-clickable"
           onClick={() => current.type !== 'Home' && navigate(HOME_SCREEN)}
         >
           {screenTitle(current, t)}
         </span>
         <select
-          className="lang-select"
+          className="tv-lang-select"
           aria-label={t('language.label')}
           value={i18n.language}
           onChange={(e) => void i18n.changeLanguage(e.target.value)}
@@ -182,7 +182,7 @@ function AppShell() {
         </select>
       </div>
 
-      <div className="app-content">
+      <div className="tv-app-content">
         {current.type === 'Home' && (
           <HomeScreen
             addPlayer={addPlayer}

@@ -15,10 +15,14 @@ export function AppButton({
   className,
   ...rest
 }: AppButtonProps) {
+  // Every class of ours carries the module's `tv-` prefix: the module renders
+  // inside Scoreo, whose own stylesheet claims plain names like `.card` and
+  // `.button`, and scoping keeps the module out of the host — never the host out
+  // of the module. See doc/technical/module-contract.md.
   const classes = [
-    'button',
-    variant !== 'primary' ? variant : '',
-    iconOnly ? 'icon-only' : '',
+    'tv-button',
+    variant !== 'primary' ? `tv-${variant}` : '',
+    iconOnly ? 'tv-icon-only' : '',
     className ?? '',
   ]
     .filter(Boolean)
