@@ -46,7 +46,7 @@ interface ResultatScore {
   readonly nombreCranes: number
   readonly penaliteIle: number
   readonly magiquePirate: boolean
-)
+}
 ```
 
 Retourné par `calculerScore()`. Non sérialisé directement (utilisé
@@ -62,7 +62,7 @@ interface PartieTerminee {
   readonly nombreManches: number
   readonly magiquePirate: boolean
   readonly coups: readonly EvenementCoup[]
-)
+}
 ```
 
 Structure archivée dans l'historique (20 dernières parties).

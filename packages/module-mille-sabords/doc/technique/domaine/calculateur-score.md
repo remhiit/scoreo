@@ -7,7 +7,7 @@ Fichier : `src/domain/calculateurScore.ts`
 ## Point d'entrée unique
 
 ```ts
-fun calculerScore(dés: LancerDes, carte: String): ResultatScore
+function calculerScore(des: LancerDes, carte: string): ResultatScore
 ```
 
 ## Algorithme (simplifié)

@@ -24,7 +24,7 @@ son retrait est l'objet de l'issue #358.
 
 | Propriété | Type | Description |
 |---|---|---|
-| `joueurs` | `ResultatJoueur[]` | Liste des joueurs (nom, score, couleur) |
+| `joueurs` | `string[]` | Les noms, dans l'ordre du tour. Les scores n'y sont pas : ils se dérivent du journal |
 | `historique` | `EvenementCoup[]` | Tous les coups joués (event sourcing) |
 | `indexJoueurActuel` | `number` | Index du joueur en train de jouer |
 | `dernierTour` | `boolean` | Vrai si c'est le dernier tour |
@@ -48,12 +48,15 @@ son retrait est l'objet de l'issue #358.
 
 | Méthode | Description |
 |---|---|
-| `totalJoueur(index): Int` | Score total d'un joueur par index |
-| `totalJoueurParNom(nom): Int` | Score total d'un joueur par nom |
-| `mancheActuelle(): Int` | Numéro de la manche en cours |
-| `totalMax(): Int` | Score maximum parmi les joueurs |
-| `manches(): Int` | Nombre de manches jouées |
-| `estTerminee(): Boolean` | Vrai si partie finie |
+| `totalJoueur(index): number` | Score total d'un joueur, par index |
+| `mancheActuelle(): number` | Numéro de la manche en cours |
+| `totalMax(): number` | Score maximum parmi les joueurs |
+| `manches(): EvenementCoup[][]` | Les coups **groupés par manche**, un tableau par manche |
+| `estTerminee(): boolean` | Vrai si la partie est finie |
+
+`totalJoueurParNom(nom)` est privée : c'est elle qui porte le repli à zéro à chaque événement
+(`Math.max(0, acc + contribution)`), l'invariant sans lequel les manches ne somment plus au
+classement.
 
 ## Invariants
 
