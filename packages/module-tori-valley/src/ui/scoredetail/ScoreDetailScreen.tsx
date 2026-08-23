@@ -59,12 +59,12 @@ export function ScoreDetailScreen({
   return (
     <div>
       {state.error && (
-        <div className="card" role="alert">
+        <div className="tv-card" role="alert">
           {state.error}
         </div>
       )}
 
-      <div className="card">
+      <div className="tv-card">
         <label htmlFor="pinceau-holder">{t('scoreDetail.pinceauHolderLabel')}</label>
         <select
           id="pinceau-holder"
@@ -88,16 +88,16 @@ export function ScoreDetailScreen({
         const total = scorePlayerResult(result)
 
         return (
-          <div className="card" key={player.id}>
+          <div className="tv-card" key={player.id}>
             <h2>{t('scoreDetail.playerTotal', { name: player.name, total })}</h2>
 
             <h3>{t('scoreDetail.toriiHeading')}</h3>
-            <table className="score-table">
+            <table className="tv-score-table">
               <tbody>
                 {TORII_COLORS.map((color) => (
                   <tr key={color}>
                     <th>
-                      <span className={`torii-badge ${color}`}>{t(`torii.${color}`)}</span>
+                      <span className={`tv-torii-badge tv-${color}`}>{t(`torii.${color}`)}</span>
                     </th>
                     <td>
                       <input
@@ -157,7 +157,7 @@ export function ScoreDetailScreen({
         )
       })}
 
-      <div className="list-item">
+      <div className="tv-list-item">
         <AppButton text={t('scoreDetail.cancel')} variant="secondary" onClick={onCancel} />
         <AppButton text={t('scoreDetail.save')} onClick={handleSave} />
       </div>

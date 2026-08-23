@@ -48,9 +48,9 @@ export function HomeScreen({
 
   return (
     <div>
-      <div className="card">
+      <div className="tv-card">
         <h2>{t('home.playersHeading')}</h2>
-        <div className="list-item">
+        <div className="tv-list-item">
           <input
             aria-label={t('home.newPlayerNameLabel')}
             value={state.inputName}
@@ -62,11 +62,11 @@ export function HomeScreen({
         {state.error && <p role="alert">{state.error}</p>}
 
         {state.players.length === 0 ? (
-          <p className="empty">{t('home.noPlayers')}</p>
+          <p className="tv-empty">{t('home.noPlayers')}</p>
         ) : (
-          <div className="list">
+          <div className="tv-list">
             {state.players.map((player) => (
-              <label className="list-item" key={player.id}>
+              <label className="tv-list-item" key={player.id}>
                 <span>
                   <input
                     type="checkbox"
@@ -88,7 +88,7 @@ export function HomeScreen({
         )}
       </div>
 
-      <div className="list-item">
+      <div className="tv-list-item">
         <AppButton text={t('home.viewHistory')} variant="secondary" onClick={onViewHistory} />
         <AppButton
           text={t('home.startMatch')}

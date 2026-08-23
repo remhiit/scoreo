@@ -1,3 +1,12 @@
+/*
+ * Every class here carries the `tv-` prefix, and every rule is scoped under
+ * `.module-tori-valley`. The two guard opposite directions of the same border:
+ * the scope keeps the module's declarations off the host, the prefix keeps the
+ * host's generic rules — `.card`, `.empty`, `.app-title` in its `theme.css` and
+ * `layout.css` — off the module's markup. Torī shipped for a while with every
+ * player card laid out in a row because it reused the plain name `.card` and
+ * never declared `display`. See doc/technical/module-contract.md.
+ */
 .module-tori-valley {
   --color-bg: #fdf6ee;
   --color-surface: #ffffff;
@@ -66,7 +75,7 @@
   margin: 0 0 var(--space-2);
 }
 
-.module-tori-valley .app-header {
+.module-tori-valley .tv-app-header {
   display: flex;
   align-items: center;
   gap: var(--space-2);
@@ -78,24 +87,24 @@
   z-index: 10;
 }
 
-.module-tori-valley .app-title {
+.module-tori-valley .tv-app-title {
   flex: 1;
   font-weight: 600;
   font-size: 1.1rem;
 }
 
-.module-tori-valley .app-title.clickable {
+.module-tori-valley .tv-app-title.tv-clickable {
   cursor: pointer;
 }
 
-.module-tori-valley .lang-select {
+.module-tori-valley .tv-lang-select {
   width: auto;
   flex: none;
   padding: var(--space-1, 0.25rem) var(--space-2);
   font-size: 0.85rem;
 }
 
-.module-tori-valley .app-content {
+.module-tori-valley .tv-app-content {
   flex: 1;
   padding: var(--space-4);
   max-width: 720px;
@@ -104,7 +113,7 @@
 }
 
 /* Buttons */
-.module-tori-valley .button {
+.module-tori-valley .tv-button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -119,29 +128,29 @@
   color: var(--color-primary-contrast);
 }
 
-.module-tori-valley .button:disabled {
+.module-tori-valley .tv-button:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
 
-.module-tori-valley .button.secondary {
+.module-tori-valley .tv-button.tv-secondary {
   background: var(--color-surface-alt);
   color: var(--color-text);
   border-color: var(--color-border);
 }
 
-.module-tori-valley .button.ghost {
+.module-tori-valley .tv-button.tv-ghost {
   background: transparent;
   color: var(--color-text);
   border-color: transparent;
 }
 
-.module-tori-valley .button.danger {
+.module-tori-valley .tv-button.tv-danger {
   background: var(--color-danger);
   color: #ffffff;
 }
 
-.module-tori-valley .button.icon-only {
+.module-tori-valley .tv-button.tv-icon-only {
   padding: var(--space-2);
 }
 
@@ -172,14 +181,14 @@
 /* Cards / lists */
 /*
  * `display` is declared on purpose, though a div is a block already: Scoreo's
- * own `theme.css` carries a generic `.card { display: flex }`, and a host rule
+ * own `theme.css` carries a generic `.tv-card { display: flex }`, and a host rule
  * lands on the module's markup like any other. Scoping protects the host from
  * the module, never the module from the host — so a class name the two share
  * must be re-declared here for every property the host sets. Until the module's
  * own class names are prefixed like 1000 Sabords' (`ms-`), this line is what
  * keeps a player card stacked instead of laid out in a row.
  */
-.module-tori-valley .card {
+.module-tori-valley .tv-card {
   display: block;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
@@ -189,13 +198,13 @@
   margin-bottom: var(--space-3);
 }
 
-.module-tori-valley .list {
+.module-tori-valley .tv-list {
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
 }
 
-.module-tori-valley .list-item {
+.module-tori-valley .tv-list-item {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -206,7 +215,7 @@
   border-radius: var(--radius-md);
 }
 
-.module-tori-valley .empty {
+.module-tori-valley .tv-empty {
   display: flex;
   align-items: center;
   gap: var(--space-2);
@@ -216,7 +225,7 @@
 }
 
 /* Torī badges */
-.module-tori-valley .torii-badge {
+.module-tori-valley .tv-torii-badge {
   display: inline-flex;
   align-items: center;
   gap: var(--space-1);
@@ -227,51 +236,51 @@
   color: #ffffff;
 }
 
-.module-tori-valley .torii-badge.green {
+.module-tori-valley .tv-torii-badge.tv-green {
   background: var(--torii-green);
 }
 
-.module-tori-valley .torii-badge.red {
+.module-tori-valley .tv-torii-badge.tv-red {
   background: var(--torii-red);
 }
 
-.module-tori-valley .torii-badge.blue {
+.module-tori-valley .tv-torii-badge.tv-blue {
   background: var(--torii-blue);
 }
 
-.module-tori-valley .torii-badge.yellow {
+.module-tori-valley .tv-torii-badge.tv-yellow {
   background: var(--torii-yellow);
   color: #2b2320;
 }
 
-.module-tori-valley .torii-badge.purple {
+.module-tori-valley .tv-torii-badge.tv-purple {
   background: var(--torii-purple);
 }
 
 /* Score table */
-.module-tori-valley .score-table {
+.module-tori-valley .tv-score-table {
   width: 100%;
   border-collapse: collapse;
 }
 
-.module-tori-valley .score-table th,
-.module-tori-valley .score-table td {
+.module-tori-valley .tv-score-table th,
+.module-tori-valley .tv-score-table td {
   padding: var(--space-2) var(--space-3);
   border-bottom: 1px solid var(--color-border);
   text-align: left;
 }
 
-.module-tori-valley .score-table th {
+.module-tori-valley .tv-score-table th {
   color: var(--color-text-muted);
   font-weight: 600;
   font-size: 0.85rem;
 }
 
-.module-tori-valley .score-table tr.total-row td {
+.module-tori-valley .tv-score-table tr.tv-total-row td {
   font-weight: 700;
   border-top: 2px solid var(--color-border);
 }
 
-.module-tori-valley .score-table input[type='number'] {
+.module-tori-valley .tv-score-table input[type='number'] {
   width: 4.5rem;
 }

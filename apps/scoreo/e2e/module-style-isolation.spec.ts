@@ -32,7 +32,7 @@ const MODULES: Record<string, ModuleUnderTest> = {
       await page.getByRole('button', { name: 'Start match' }).click()
       await expect(page.getByRole('button', { name: 'Save match' })).toBeVisible()
     },
-    surface: '.module-tori-valley .card',
+    surface: '.module-tori-valley .tv-card',
   },
   '1000 Sabords': {
     name: /1000 Sabords/,

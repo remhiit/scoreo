@@ -68,14 +68,14 @@ export function HistoryScreen({
   }
 
   if (matches.length === 0) {
-    return <p className="empty">{t('history.noMatches')}</p>
+    return <p className="tv-empty">{t('history.noMatches')}</p>
   }
 
   const sorted = [...matches].sort((a, b) => b.playedAt - a.playedAt)
 
   return (
-    <div className="list">
-      <div className="list-item">
+    <div className="tv-list">
+      <div className="tv-list-item">
         <AppButton
           text={
             <>
@@ -87,15 +87,15 @@ export function HistoryScreen({
         />
       </div>
       {exportNotice && (
-        <div className="card" role="status">
+        <div className="tv-card" role="status">
           {exportNotice}
         </div>
       )}
       {sorted.map((match) => {
         const winners = new Set(matchWinners(match))
         return (
-          <div className="card" key={match.id}>
-            <div className="list-item">
+          <div className="tv-card" key={match.id}>
+            <div className="tv-list-item">
               <span>{new Date(match.playedAt).toLocaleDateString()}</span>
               <span>
                 <AppButton
@@ -112,12 +112,12 @@ export function HistoryScreen({
                 />
               </span>
             </div>
-            <table className="score-table">
+            <table className="tv-score-table">
               <tbody>
                 {match.results.map((result) => (
                   <tr
                     key={result.playerId}
-                    className={winners.has(result.playerId) ? 'total-row' : ''}
+                    className={winners.has(result.playerId) ? 'tv-total-row' : ''}
                   >
                     <th>
                       {playerName(players, result.playerId, t)}
