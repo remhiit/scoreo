@@ -1,28 +1,29 @@
 # Domaine — Vue d'ensemble
 
-Le package `fr.ksabord.domaine` contient le **noyau métier** de
-l'application. Il est écrit en pur Kotlin multiplateforme, sans
-aucune dépendance vers une plateforme (DOM, Android, etc.).
+`src/domain/` contient le **noyau métier** du module. Il est écrit en TypeScript pur, sans aucune
+dépendance de plateforme : ni React, ni DOM, ni stockage. C'est la transposition ligne à ligne du
+domaine Kotlin, vérifiée contre lui par le test différentiel golden (voir
+[`../architecture.md`](../architecture.md)).
 
 ## Fichiers
 
 | Fichier | Rôle |
 |---|---|
-| `Constantes.kt` | Définitions des types de dés, cartes, bonus, couleurs |
-| `LancerDes.kt` | Objet valeur immutable représentant un jet de dés |
-| `Modeles.kt` | Tour, ResultatScore, EvenementCoup (event sourcing) |
-| `CalculateurScore.kt` | Pure fonction de calcul de score |
-| `Partie.kt` | Agrégat racine + singleton mutable |
+| `constantes.ts` | Définitions des types de dés, cartes, bonus, couleurs |
+| `lancerDes.ts` | Objet valeur immuable représentant un jet de dés |
+| `modeles.ts` | ResultatScore, EvenementCoup (event sourcing), PartieTerminee |
+| `calculateurScore.ts` | Fonction pure de calcul de score |
+| `partie.ts` | Agrégat racine, rejoué depuis le journal d'événements |
 
 ## Principes
 
-- **Immutabilité** — `LancerDes`, `Tour`, `ResultatScore` sont
-  immuables (data classes avec `copy()`)
+- **Immutabilité** — `LancerDes` et `ResultatScore` n'ont que des champs `readonly` : une
+  modification produit une copie
 - **Pureté** — `calculerScore()` n'a aucun effet de bord, aucun
   état global
 - **Event sourcing** — chaque action de jeu est un `EvenementCoup`
   stocké dans l'historique
-- **Sérialisation** — tous les objets métier sont `@Serializable`
-  (kotlinx-serialization) pour la persistance
+- **Sérialisation** — chaque objet métier a son schéma zod (`*Schema`), avec un `.default()` par
+  champ ajouté : c'est ce qui permet à un brouillon écrit par une version antérieure de se relire
 
 -

@@ -1,12 +1,12 @@
-# CalculateurScore — CalculateurScore.kt
+# CalculateurScore — calculateurScore.ts
 
-Fichier : `src/commonMain/kotlin/fr/ksabord/domaine/CalculateurScore.kt`
+Fichier : `src/domain/calculateurScore.ts`
 
 **Service domaine pur** : fonction sans état global ni effet de bord.
 
 ## Point d'entrée unique
 
-```kotlin
+```ts
 fun calculerScore(dés: LancerDes, carte: String): ResultatScore
 ```
 

@@ -1,20 +1,19 @@
-# LancerDes — LancerDes.kt
+# LancerDes — lancerDes.ts
 
-Fichier : `src/commonMain/kotlin/fr/ksabord/domaine/LancerDes.kt`
+Fichier : `src/domain/lancerDes.ts`
 
 Objet valeur **immutable** représentant un jet de 8 dés.
 
 ## Structure
 
-```kotlin
-@Serializable
-data class LancerDes(
-    val crânes: Int = 0,
-    val diamants: Int = 0,
-    val or: Int = 0,
-    val singes: Int = 0,
-    val perroquets: Int = 0,
-    val sabres: Int = 0
+```ts
+interface LancerDes {
+  readonly cranes: number
+  readonly diamants: number
+  readonly or: number
+  readonly singes: number
+  readonly perroquets: number
+  readonly sabres: number
 )
 ```
 
