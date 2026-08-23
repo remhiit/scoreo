@@ -10,7 +10,7 @@ them with `pnpm --filter @scoreboards/module-tori-valley`.
 
 # Torī Valley Scoreboard
 
-Scoring module for the board game _La Vallée des Torī_ (Origames), loaded by Scoreo. MVI-style (reducer/action/state per screen, via `useReducer`). Hexagonal architecture (Ports & Adapters). 100% local-first (localStorage), no backend, no cloud sync.
+Scoring module for the board game _La Vallée des Torī_ (Origames), loaded by Scoreo. MVI-style (reducer/action/state per screen, via `useReducer`). No port, no adapter, no storage of its own: the module owns the game's rules and its two screens, and everything persisted goes through `ModuleHost` — see the workspace's `doc/technical/module-contract.md`.
 
 ## Commands
 
@@ -40,9 +40,9 @@ Unit tests are colocated (`*.test.ts(x)`), running entirely under Vitest/jsdom �
 Read these files in order — all the necessary context is there:
 
 0. `doc/reference.md` — Reference tables (reducers, use cases, models, ports, adapters, navigation, tests)
-1. `doc/glossary.md` — Definitions (Reducer, Action, State, Port, Adapter, Use Case, and the game's own terms)
+1. `doc/glossary.md` — Definitions (Reducer, Action, State, Module, Host, and the game's own terms)
 2. `doc/technical/architecture.md` — Stack, patterns, persistence, backward compat
-3. `doc/functional/feature.md` — Full user flow, then `doc/functional/features/*.md` for scoring/players/history detail
+3. `doc/functional/feature.md` — The flow from the moment Scoreo opens the module to the moment it hands the result back, then `doc/functional/features/scoring.md` and `objectif-cards.md` for the game's rules. Players, history and export are Scoreo's, documented in the workspace's `doc/functional/`
 
 ## The game's rules
 

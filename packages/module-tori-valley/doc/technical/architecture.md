@@ -2,23 +2,26 @@
 
 ## Stack
 
-React 19 + TypeScript, Vite, Vitest + Testing Library (jsdom, no real browser needed) for behaviour and Playwright + Chromium for visual regression, Zod for schema validation, ESLint (typescript-eslint, react-hooks, react-refresh) + Prettier, pnpm. PWA shell (manifest, service worker) for installability; no backend — 100% local-first via `localStorage`. i18next + react-i18next for internationalization (English/French).
+React 19 + TypeScript, Vitest + Testing Library (jsdom, no real browser needed) for behaviour, Zod for schema validation, i18next + react-i18next for internationalization (English/French). Linting, formatting, the build and the visual regression suite are the workspace's and the host's — this package builds nothing of its own.
 
 ## Layering (hexagonal / ports & adapters)
 
 ```
-domain/        — model + port. No framework, no I/O.
-application/   — use cases. Business logic, depends only on domain ports.
-infrastructure/— adapters implementing domain ports (localStorage, in-memory test doubles).
-services/      — root DI: createServices() builds concrete adapters once; ServicesContext exposes them.
+domain/model/  — types, zod schemas, the game's scoring rules. No framework, no I/O.
 ui/            — one folder per screen: <Screen>Reducer.ts (+ test), <screen>Types.ts, <Screen>.tsx (+ test).
+ui/module/     — the screen the host renders, which strings the two others together.
 ```
 
-Dependency direction is strictly inward: `ui` → `services`/`application` → `domain` ← `infrastructure`. `domain` never imports from any other layer.
+Dependency direction is strictly inward: `ui` → `domain`, and `domain` imports from nothing else.
+
+The ports, adapters, use cases and DI container this package used to carry went with the standalone
+shell (#330, #350): a module owns no storage, so it has nothing to abstract. What it needs from the
+outside arrives through `ModuleHost` — see the workspace's
+[`doc/technical/module-contract.md`](../../../../doc/technical/module-contract.md).
 
 ## MVI-style screens
 
-Each screen owns a pure `(state, action) => state` reducer (`useReducer`), colocated under `src/ui/<screen>/`. Side-effecting work (use-case calls) happens in `submit*`/plain event-handler functions in the screen component, which then `dispatch()` the resulting action — the reducer itself never touches a repository or a use case. See [`doc/glossary.md`](../glossary.md) and [`doc/reference.md`](../reference.md) for the exhaustive per-screen tables.
+Each screen owns a pure `(state, action) => state` reducer (`useReducer`), colocated under `src/ui/<screen>/`. Side-effecting work happens in plain event-handler functions in the screen component, which then `dispatch()` the resulting action — the reducer itself never touches the host. See [`doc/glossary.md`](../glossary.md) and [`doc/reference.md`](../reference.md) for the exhaustive per-screen tables.
 
 ## Testing
 
@@ -39,38 +42,44 @@ Every domain model that gets persisted (`Player`, `Match`/`PlayerResult`) has a 
 
 ## Persistence
 
-`localStorage` only, no cloud sync in this MVP (see keys in [`doc/reference.md`](../reference.md)). If cloud sync is added later, follow scoreo's pattern: an optional `CloudSyncRepository` port, wired into `createServices()` only when configured, so the rest of the app is unaffected when it's absent.
+**None.** The module reaches storage only through `ModuleHost`: `host.saveMatch()` for a finished
+match, `host.saveDraft()`/`loadDraft()` for a game in progress, both stored by Scoreo under its own
+keys. The `tori_valley_*` keys the standalone app used are read by nothing since #350.
 
 ## Internationalization
 
-`src/i18n/index.ts` owns the module's dictionaries (English + French, bundled under `src/i18n/locales/`) and exposes them as an i18next **namespace**, `tori-valley`: `registerTranslations(i18n)` adds them to whatever instance the host provides, so that once Scoreo renders this module the two sets of strings share one instance without ever colliding. `src/i18n/standalone.ts` is the instance for running this app on its own — imported only by `main.tsx` and `src/test/setup.ts`. It mirrors Scoreo's own init: the language comes from `scoreo_lang` in `localStorage`, else from this app's former key `tori_valley_language` (read once, never written, so a language chosen before the merge survives it), else the browser's, else English; manual choices are written back to `scoreo_lang`. Both apps share the `remhiit.github.io` origin, so a language picked in either is the language the other starts in. Components read `useTranslation(TORI_VALLEY_NS)`'s `t()`; `domain/model/errors.ts`'s `ValidationError`/`NotFoundError` carry an optional stable `code` (and `params` for interpolation) that the `ui` layer translates at render/dispatch time — the domain layer itself has no i18n dependency, only a plain string key.
+`src/i18n/index.ts` owns the module's dictionaries (English + French, bundled under `src/i18n/locales/`) and exposes them as an i18next **namespace**, `tori-valley`: `registerTranslations(i18n)` adds them to whatever instance the host provides, called when the module's chunk loads, so the two sets of strings share one instance without ever colliding. Which language they render in is Scoreo's business — the module has no bootstrap and no storage key of its own, only `src/test/i18n.ts` for the Vitest suite. Components read `useTranslation(TORI_VALLEY_NS)`'s `t()`; `domain/model/errors.ts`'s `ValidationError`/`NotFoundError` carry an optional stable `code` (and `params` for interpolation) that the `ui` layer translates at render/dispatch time — the domain layer itself has no i18n dependency, only a plain string key.
 
 ## PWA shell
 
-`public/registerSw.js` registers `public/sw.js` on load (and unregisters any worker on `localhost`, so dev never serves a stale cache). `sw.js` precaches only the non-hashed entry points (`./`, `index.html`) — Vite's content-hashed bundles are unknown at write time and get cached on first fetch instead.
-
-**The Cache Storage API is scoped to the origin, not to the service worker's scope.** `remhiit.github.io` hosts several PWAs (scoreo, this app, 1kSaBord), so they all share one cache namespace: an `activate` handler that deletes every cache other than its own `CACHE_NAME` wipes the _neighbouring apps'_ offline caches. The purge is therefore restricted to names starting with `CACHE_PREFIX` (derived from `CACHE_NAME` by dropping its trailing `-v<n>`), which keeps the version purge intact while leaving `scoreo-*` / `ksabord-*` alone. `src/test/sw.test.ts` guards both halves of that rule.
+**None of its own.** The service worker, the manifest and the icons went with the standalone shell
+(#330); Scoreo is the installable app, and the module ships inside it as a chunk. Scoreo's own
+worker still scopes its cache purge by prefix, because `remhiit.github.io` hosts several PWAs on one
+origin — see the workspace's `doc/technical/architecture.md`.
 
 ## Styling
 
-Single `src/styles.css`, imported by both entry points rather than linked from `public/`: the
-standalone shell pulls it in through `main.tsx`, and the hosted module screen imports it too, so Vite
-emits it as a CSS chunk loaded alongside the module's JS chunk. That is what makes the module arrive
+Single `src/styles.css`, imported by the module's screen rather than linked from a shell: Vite emits
+it as a CSS chunk loaded alongside the module's JS chunk. That is what makes the module arrive
 **styled** inside Scoreo, at zero cost until someone opens it.
 
-**Every rule is scoped under `.module-tori-valley`**, and both entry points carry that class — the
-standalone on `<body>`, the hosted screen on a wrapper around whatever it renders. The module keeps
-the identity of the game it counts (Torī Valley's warm washi palette, its own spacing and radii),
-and none of it escapes into the host.
+**Every rule is scoped under `.module-tori-valley`**, carried by the wrapper the screen renders, and
+**every class is prefixed `tv-`**. The module keeps the identity of the game it counts (Torī Valley's
+warm washi palette, its own spacing and radii), and none of it escapes into the host.
 
 That scoping is not cosmetic. The two stylesheets name tokens alike with different values —
 `--color-primary` (Torī red vs Catppuccin mauve), `--space-5` (24px vs 20px), `--radius-lg` (16px vs
 14px), plus `--color-danger`, `--shadow-sm`, `--shadow-md` — and element selectors like `input`,
 `select` and `label` would have restyled the whole app. A stylesheet is not unloaded on navigation,
-so an unscoped rule would have followed the player for the rest of the session. `apps/scoreo/e2e/
-module-style-isolation.spec.ts` guards it.
+so an unscoped rule would have followed the player for the rest of the session.
 
-Anything that must paint before scripts run is inline in `index.html` — the splash, and the
-`html`/`#root` layout resets, which sit outside the module's scope and belong to the shell anyway.
+The prefix guards the other direction, which scoping cannot: Scoreo's `theme.css` styles plain
+`.card` and `.empty`, and this module shipped for a while with every player card laid out in a row
+because it reused the name (#349). `scripts/check-module-styles.mjs` fails on either breach,
+`apps/scoreo/e2e/module-style-isolation.spec.ts` and `apps/scoreo/tests/visual/` catch what it
+cannot see.
+
+Anything that must paint before scripts run belongs to the host: the stylesheet ships inside the JS
+chunk, so it arrives too late for a splash.
 
 It still defines its own colour custom properties for light/dark (`prefers-color-scheme`) rather than Scoreo's Catppuccin tokens — moving onto them is tracked separately, and needs the tokens to become a package first.

@@ -34,7 +34,7 @@ Only one physical Pinceau token exists in the game, so at most one player per ma
 
 ## Winner / tie-break
 
-`matchWinners(match)` (`src/domain/model/match.ts`) — highest total VP wins; ties are broken first by total Torī held, then by Pinceau possession; an unresolved tie is shared (multiple 🏆 in History).
+`matchWinners(match)` (`src/domain/model/match.ts`) — highest total VP wins; ties are broken first by total Torī held, then by Pinceau possession; an unresolved tie is shared, and the module hands every tied player rank 1 — which is what carries a rule Scoreo does not know into its history.
 
 ## Not modeled
 
