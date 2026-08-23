@@ -111,6 +111,13 @@ app needs. A manifest must stay a plain object importing nothing but its type �
 eagerly, so anything it pulled in would end up in Scoreo's main bundle. The screen behind `load`
 becomes its own chunk, and a module's strings join the host's i18next instance when that chunk loads.
 
+The same rule reaches one file further out: **a module package's entry point exports its manifest and
+its module, and nothing else.** The registry imports that entry point eagerly, so whatever it
+re-exports is reachable from the host's own graph — 1000 Sabords re-exported its domain there for a
+while and 8 kB of scoring rules rode into `index.js`, chunk or no chunk. The module's own code
+reaches its domain by relative path; a build is the check (`grep` the main bundle for a string only
+the module has).
+
 ## Binding a module to a game
 
 Nothing is materialized when the app starts: a fresh profile has no game types at all. A module's
@@ -164,8 +171,9 @@ element selector like `input` or `label`, applies to the whole document — and 
 unloaded on navigation, so the leak follows the player for the rest of the session.
 
 The names collide by design: both sides speak of `--color-primary`, `--space-5`, `--radius-lg`, with
-different values. `apps/scoreo/e2e/module-style-isolation.spec.ts` guards the boundary; a new module
-should extend it rather than assume.
+different values. `apps/scoreo/e2e/module-style-isolation.spec.ts` guards the boundary for **every**
+registered module — it runs its two checks over a table of them, so a new module is a row there, not
+a new test.
 
 Anything that must paint before scripts run belongs in the module's own shell, not in the
 stylesheet: the sheet ships inside the JS chunk, so it arrives too late for a splash.

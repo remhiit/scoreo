@@ -41,6 +41,9 @@ importers:
       '@scoreboards/module-api':
         specifier: workspace:*
         version: link:../../packages/module-api
+      '@scoreboards/module-mille-sabords':
+        specifier: workspace:*
+        version: link:../../packages/module-mille-sabords
       '@scoreboards/module-tori-valley':
         specifier: workspace:*
         version: link:../../packages/module-tori-valley

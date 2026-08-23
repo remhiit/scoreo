@@ -6,6 +6,10 @@ describe('module registry', () => {
     expect(MODULE_MANIFESTS.map((m) => m.moduleId)).toContain('tori-valley')
   })
 
+  it('lists the 1000 Sabords module', () => {
+    expect(MODULE_MANIFESTS.map((m) => m.moduleId)).toContain('mille-sabords')
+  })
+
   // A duplicate id would make `GameType.moduleId` ambiguous, and every binding
   // with it.
   it('gives every module a distinct moduleId', () => {
@@ -38,6 +42,10 @@ describe('module registry', () => {
       expect(findManifest('tori-valley')?.displayName).toBe('La Vallée des Torī')
     })
 
+    it('finds the 1000 Sabords module by its id', () => {
+      expect(findManifest('mille-sabords')?.displayName).toBe('1000 Sabords')
+    })
+
     it('returns undefined for an unknown id', () => {
       expect(findManifest('no-such-module')).toBeUndefined()
     })
@@ -46,6 +54,13 @@ describe('module registry', () => {
   describe('findManifestByGameName', () => {
     it('finds a module by the game name a v1.1 import would have created', () => {
       expect(findManifestByGameName('La Vallée des Torī')?.moduleId).toBe('tori-valley')
+    })
+
+    // The exact string the Kotlin app wrote in every export it ever produced:
+    // a history imported from it must bind to the module, not spawn a second
+    // game type beside it.
+    it('finds the module behind the game name 1kSaBord exported', () => {
+      expect(findManifestByGameName('1000 Sabords')?.moduleId).toBe('mille-sabords')
     })
 
     it('ignores case and surrounding blanks', () => {
