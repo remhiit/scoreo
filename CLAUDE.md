@@ -69,9 +69,9 @@ Lire ces fichiers dans l'ordre. Tout le contexte nécessaire y est :
 | `apps/scoreo/src/ui/navigation/` | `screen.ts` (union `Screen`), `hash.ts` (`parseHash`/`screenToHash`), `useHashRouter.ts` |
 | `apps/scoreo/public/` | `manifest.json`, `sw.js`, icônes PWA, `css/` (dont `css/tokens/`) |
 | `schemas/import/` | Schémas JSON du format d'import (versionnés, `v1.0`/`v1.1`) |
-| `packages/module-mille-sabords/` | 1000 Sabords porté du Kotlin. Son domaine est vérifié contre l'oracle `legacy/` par un test différentiel golden (`tests/golden/`), pas par relecture |
+| `packages/module-mille-sabords/` | 1000 Sabords porté du Kotlin, avec sa doc. Son domaine est vérifié contre l'oracle `legacy/` par un test différentiel golden (`tests/golden/`), pas par relecture |
 | `legacy/1ksabord-kotlin/` | **Temporaire.** L'app Kotlin/JS de 1000 Sabords absorbée avec son historique, gardée comme **oracle** du portage TypeScript : ses 107 tests tournent en CI (`kotlin-legacy.yml`) et doivent rester verts. Supprimée avec son workflow une fois le portage livré. Ne rien y développer |
-| `doc/modules/` | La doc des jeux comptés par un module, recopiée depuis les dépôts satellites pour que le monorepo se suffise à lui-même : `mille-sabords/` (règles, guide, doc technique de l'app Kotlin, PDF des règles). Celle de Torī vit dans son paquet, avec ses scans de cartes et son PDF (`packages/module-tori-valley/doc/resources/`) |
+| `packages/module-*/doc/` | La doc d'un jeu vit dans le paquet de son module, à côté du code qui l'implémente : règles, guide, doc technique et ressources (le PDF des règles de 1000 Sabords, celui de Torī et ses scans de cartes). `doc/` à la racine ne garde que ce qui concerne le dépôt entier |
 | `ds_temp/` | Référence temporaire du handoff design (Ludo Design System) : tokens, composants, mapping écran→fichiers. Source de vérité visuelle pour les issues de migration à venir ; à supprimer une fois la migration terminée. Voir `ds_temp/design_handoff_scoreo_ds/README.md` |
 
 ## Workflow

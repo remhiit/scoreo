@@ -64,8 +64,8 @@ The rulebook PDF and cropped photos of all 16 Objectif cards live in `doc/resour
 
 The backlog, the priority labels, the one-commit-per-issue rule and the automation skills are the
 workspace's, not this package's: see the workspace root's `CLAUDE.md` and its
-`doc/technical/automation-plan.md` (this package still carries its own stale copy of that document —
-the two get merged when the documentation is consolidated).
+`doc/technical/automation-plan.md`, which is now the only copy — this package's own stale one was
+deleted when the documentation was consolidated.
 Issues that belong to this module carry the `module:tori-valley` label.
 
 ## Rules
