@@ -13,7 +13,7 @@ React + TypeScript scoring module for the board game _[La Vallée des Torī](htt
 
 ## Repository structure
 
-- `src/domain`, `src/application`, `src/infrastructure`, `src/services`, `src/ui` — application source code
+- `src/domain`, `src/ui`, `src/i18n` — the module's source: the game's rules, its two screens, its strings
 - `doc/functional/` — functional documentation (features, user flows)
 - `doc/technical/` — technical documentation (architecture, design decisions)
 

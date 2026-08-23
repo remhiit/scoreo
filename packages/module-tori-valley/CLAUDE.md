@@ -50,16 +50,15 @@ The rulebook PDF and cropped photos of all 16 Objectif cards live in `doc/resour
 
 ## Key directory layout
 
-| Folder                | Content                                                                                           |
-| --------------------- | ------------------------------------------------------------------------------------------------- |
-| `src/domain/`         | `model/` (types + zod schemas + pure scoring logic), `port/` (repository interfaces)              |
-| `src/application/`    | Use cases (business operations, zero framework dependency)                                        |
-| `src/infrastructure/` | `localStorage/` (adapters), `testing/` (in-memory fakes for tests)                                |
-| `src/services/`       | `ServicesContext.tsx` — root DI (`useMemo`), `useServices()` hook                                 |
-| `src/ui/*/`           | One folder per screen: `<screen>Reducer.ts` (+ test), `<screen>Types.ts`, `<Screen>.tsx` (+ test) |
-| `src/ui/shared/`      | Shared React components (`AppButton`)                                                             |
-| `src/ui/navigation/`  | `screen.ts` (`Screen` union), `hash.ts` (`parseHash`/`screenToHash`), `useHashRouter.ts`          |
-| `public/`             | `manifest.json`, `sw.js`, PWA icons, `css/`                                                       |
+| Folder            | Content                                                                                           |
+| ----------------- | ------------------------------------------------------------------------------------------------- |
+| `src/domain/`     | `model/` — types, zod schemas and the pure scoring logic. All that is left of the hexagon: the module owns no port and no adapter, because it owns no storage |
+| `src/ui/*/`       | One folder per screen: `<screen>Reducer.ts` (+ test), `<screen>Types.ts`, `<Screen>.tsx` (+ test). Two screens — `matchsetup/` and `scoredetail/` — plus `module/`, which strings them together for the host |
+| `src/ui/shared/`  | Shared React components (`AppButton`)                                                             |
+| `src/i18n/`       | The `tori-valley` namespace and its dictionaries, added to the host's i18next instance            |
+| `src/module.ts`   | The manifest and the lazily-loaded module, the only things Scoreo imports                         |
+| `src/styles.css`  | The module's own look. Every rule scoped under `.module-tori-valley`, every class prefixed `tv-`  |
+| `src/test/`       | Vitest harness: `setup.ts` and the i18next instance the component tests render against            |
 
 ## Workflow
 
@@ -72,12 +71,12 @@ Issues that belong to this module carry the `module:tori-valley` label.
 ## Rules
 
 - Reducer lives in `ui/*/`. Takes an `Action` → produces a `State`.
-- Use Case lives in `application/`. Business operation, zero framework dependency.
-- Repository interface in `domain/port/`. Implementation in `infrastructure/`.
-- Every serialized model (`Player`, `PlayerResult`/`Match`) must be **backward-compatible**.
+- No storage, no port, no adapter: everything persisted goes through `ModuleHost`. See the
+  workspace's `doc/technical/module-contract.md`.
+- Every serialized model must be **backward-compatible**: `PlayerResult`/`Match` are what the module's `moduleData` payload is made of, and Scoreo hands that blob back untouched however old it is.
 - Adding a field? Always give it a `.default()` in the matching zod schema.
 - Removing/renaming a field? Add a migration note (create `doc/technical/migrations.md` if it doesn't exist yet) and a backward-compat test.
-- Any code change (new use case, reducer, model, screen, port) must update the matching doc under `doc/`.
+- Any code change (new reducer, model, screen) must update the matching doc under `doc/`.
 
 ## Pre-commit Checklist
 

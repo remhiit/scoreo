@@ -19,10 +19,9 @@ import type { ScoreDetailState } from './scoreDetailTypes'
 export interface ScoreDetailScreenProps {
   initialState: ScoreDetailState
   /**
-   * Persists the entered scores. Where they go is the caller's business: the
-   * standalone app writes them to its own repository, the hosted module hands
-   * them to Scoreo through `ModuleHost`. Throwing here surfaces as the screen's
-   * error message, exactly as a rejected use case used to.
+   * Persists the entered scores. Where they go is the caller's business — the
+   * module hands them to Scoreo through `ModuleHost`. Throwing here surfaces as
+   * the screen's error message.
    */
   save: (results: PlayerResult[], objectifCards: ObjectifCardSelection) => void
   onSaved: () => void

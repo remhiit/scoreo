@@ -1,7 +1,5 @@
 import { fireEvent, render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
-import { CreateMatchUseCase } from '../../application/createMatchUseCase'
-import { InMemoryMatchRepository } from '../../infrastructure/testing/inMemoryMatchRepository'
 import { buildInitialState } from './scoreDetailReducer'
 import { ScoreDetailScreen } from './ScoreDetailScreen'
 
@@ -10,49 +8,40 @@ const players = [
   { id: 'p2', name: 'Bob', active: true },
 ]
 
+/**
+ * The screen is handed a `save` callback and never learns where the match goes:
+ * inside Scoreo that callback is `host.saveMatch`. A spy is therefore the whole
+ * of what these tests need to observe — and the only thing left to observe since
+ * the module stopped owning a repository of its own.
+ */
 function renderWithCards(cards: Parameters<typeof buildInitialState>[3]) {
-  const matchRepository = new InMemoryMatchRepository()
+  const save = vi.fn()
   render(
     <ScoreDetailScreen
       initialState={buildInitialState(players, { type: 'Create' }, [], cards)}
-      save={(results, objectifCards) =>
-        new CreateMatchUseCase(matchRepository).invoke(
-          players.map((p) => p.id),
-          results,
-          1000,
-          objectifCards,
-        )
-      }
+      save={save}
       onSaved={vi.fn()}
       onCancel={vi.fn()}
     />,
   )
-  return { matchRepository }
+  return { save }
 }
 
-function renderScreen(matchRepository = new InMemoryMatchRepository()) {
-  const createMatch = new CreateMatchUseCase(matchRepository)
+function renderScreen() {
+  const save = vi.fn()
   const onSaved = vi.fn()
   const onCancel = vi.fn()
-  const initialState = buildInitialState(players, { type: 'Create' })
 
   render(
     <ScoreDetailScreen
-      initialState={initialState}
-      save={(results, objectifCards) =>
-        createMatch.invoke(
-          players.map((p) => p.id),
-          results,
-          1000,
-          objectifCards,
-        )
-      }
+      initialState={buildInitialState(players, { type: 'Create' })}
+      save={save}
       onSaved={onSaved}
       onCancel={onCancel}
     />,
   )
 
-  return { matchRepository, onSaved, onCancel }
+  return { save, onSaved, onCancel }
 }
 
 describe('ScoreDetailScreen', () => {
@@ -71,16 +60,16 @@ describe('ScoreDetailScreen', () => {
   })
 
   it('saves a new match and calls onSaved', () => {
-    const { matchRepository, onSaved } = renderScreen()
+    const { save, onSaved } = renderScreen()
     fireEvent.click(screen.getByText('Save match'))
-    expect(matchRepository.getAll()).toHaveLength(1)
+    expect(save).toHaveBeenCalledOnce()
     expect(onSaved).toHaveBeenCalledOnce()
   })
 
   it('calls onCancel without saving', () => {
-    const { matchRepository, onCancel } = renderScreen()
+    const { save, onCancel } = renderScreen()
     fireEvent.click(screen.getByText('Cancel'))
-    expect(matchRepository.getAll()).toHaveLength(0)
+    expect(save).not.toHaveBeenCalled()
     expect(onCancel).toHaveBeenCalledOnce()
   })
 
