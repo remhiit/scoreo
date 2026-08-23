@@ -10,7 +10,7 @@ them with `pnpm --filter @scoreboards/module-tori-valley`.
 
 # Torī Valley Scoreboard
 
-Scoring module for the board game _La Vallée des Torī_ (Origames), loaded by Scoreo. MVI-style (reducer/action/state per screen, via `useReducer`). Hexagonal architecture (Ports & Adapters). 100% local-first (localStorage), no backend, no cloud sync.
+Scoring module for the board game _La Vallée des Torī_ (Origames), loaded by Scoreo. MVI-style (reducer/action/state per screen, via `useReducer`). No port, no adapter, no storage of its own — everything persisted goes through `ModuleHost`.
 
 ## Commands
 
@@ -39,10 +39,10 @@ Unit tests are colocated (`*.test.ts(x)`), running entirely under Vitest/jsdom �
 
 Read these files in order — all the necessary context is there:
 
-0. `doc/reference.md` — Reference tables (reducers, use cases, models, ports, adapters, navigation, tests)
-1. `doc/glossary.md` — Definitions (Reducer, Action, State, Port, Adapter, Use Case, and the game's own terms)
+0. `doc/reference.md` — Reference tables (reducers, models, module exports, tests)
+1. `doc/glossary.md` — Definitions (Reducer, Action, State, Module, Host, and the game's own terms)
 2. `doc/technical/architecture.md` — Stack, patterns, persistence, backward compat
-3. `doc/functional/feature.md` — Full user flow, then `doc/functional/features/*.md` for scoring/players/history detail
+3. `doc/functional/feature.md` — Full user flow, then `doc/functional/features/scoring.md` and `objectif-cards.md` for the game's own rules
 
 ## The game's rules
 
@@ -80,7 +80,7 @@ Issues that belong to this module carry the `module:tori-valley` label.
 
 ## Pre-commit Checklist
 
-Before committing a Reducer/Action/State/UseCase/Model/Port change:
+Before committing a Reducer/Action/State/Model change:
 
 - [ ] Matching `.md` file updated (`doc/reference.md`, `doc/functional/feature.md`, `doc/functional/features/*.md`, or `doc/technical/*.md`)
 - [ ] If a new optional serialized field was added: covered by a backward-compat test
@@ -90,17 +90,17 @@ Before committing a Reducer/Action/State/UseCase/Model/Port change:
 **Good commit example:**
 
 ```
-Add rename-player action to Home screen
+Add manual Sceau bonus entry to ScoreDetail
 
-- Add startRename/updateRenameInput/renameSucceeded/renameFailed/cancelRename actions
-- Add renamingPlayerId/renameInput to HomeState
-- Inline rename UI in HomeScreen's player list rows
-- Updated doc/functional/features/players.md with the rename flow
-- RenamePlayerUseCase call path tested via homeReducer.test.ts
+- Add updateSceauBonus/sceauBonusFailed actions
+- Add sceauBonus to ScoreDetailState
+- Inline bonus input in ScoreDetailScreen's per-landscape row
+- Updated doc/functional/features/scoring.md with the Sceau bonus rule
+- Reducer branch tested via scoreDetailReducer.test.ts
 ```
 
 **Bad commit example:**
 
 ```
-Update home screen
+Update score screen
 ```
