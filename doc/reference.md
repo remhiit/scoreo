@@ -105,6 +105,7 @@ Notable design choices:
 | `LocalStorageMatchRepository` | `MatchRepository` | localStorage (`scoreo_matches`) — runs `migrateMatches()` once per instance before the first `getAll()` | `apps/scoreo/src/infrastructure/localStorage/localStorageMatchRepository.ts` |
 | `LocalStorageMatchDraftRepository` | `MatchDraftRepository` | localStorage (`scoreo_match_draft`, single object) | `apps/scoreo/src/infrastructure/localStorage/localStorageMatchDraftRepository.ts` |
 | `migrateMatches` | — (utility) | `migrateMatches(rawJson, generateId): string \| null` — v1 ISO date strings → epoch ms, non-UUID ids → `crypto.randomUUID()`, idempotent (returns `null` if nothing changed) | `apps/scoreo/src/infrastructure/migration/migrateMatches.ts` |
+| `migrateMilleSabordsKeys` | — (utility) | `migrateMilleSabordsKeys(storage): number` — moves 1kSaBord's unprefixed keys (`partie`, `joueurs_connus`, `historique_parties`, `theme`) under `sabords_`, returns how many moved. Idempotent, never overwrites a target holding something else, never throws. Called once from `main.tsx` | `apps/scoreo/src/infrastructure/migration/migrateMilleSabordsKeys.ts` |
 | `GoogleDriveClient` | — (Drive REST v3 wrapper) | find/create/update/read/upsert `scoreo-data.json`, exponential-backoff retry on `RateLimited`/`NetworkError` | `apps/scoreo/src/infrastructure/google/googleDriveClient.ts` (`Result<T, SyncException>`) |
 | `GoogleDriveSyncAdapter` | `CloudSyncRepository` | Google Drive App Data Folder (async/await) — "cloud wins" on pull, no local merge | `apps/scoreo/src/infrastructure/google/googleDriveSyncAdapter.ts` |
 | `GoogleAuthService` | — (GIS Token Model wrapper) | `accessToken`/`expiresAt`/`accountEmail` in memory; `login` (resolves the account email via the OIDC userinfo endpoint) / `refreshToken` (takes a `hint`) / `logout` | `apps/scoreo/src/infrastructure/google/googleAuthService.ts` |
@@ -217,6 +218,8 @@ Theme: Catppuccin tokens (`tokens/colors-*.css` + `tokens/semantic.css`), 4 flav
 | `scoreo_matches` | JSON `Match[]` |
 | `scoreo_match_draft` | JSON `MatchDraft` (gameTypeId, playerIds, rounds, updatedAt) |
 | `scoreo_sync_config` | JSON `SyncConfig` (lastSyncTimestamp, lastSyncFileId, accountEmail) — no OAuth token (kept in memory only, see #51). `accountEmail` is the GIS silent-refresh `hint`, not a connection signal (see #108 and #305) |
+| `scoreo_module_draft_<moduleId>` | JSON, opaque to the host: the turn a scoring module has in progress, one key per module (`LocalStorageModuleDraftRepository`) |
 | `scoreo_flavor` | `"latte"` \| `"frappe"` \| `"macchiato"` \| `"mocha"` (Catppuccin flavor, optional) |
 | `scoreo_accent` | one of the 14 Catppuccin hues, e.g. `"mauve"` (optional) |
 | `scoreo_theme` | **legacy**, pre-Catppuccin: `"dark"` or `"light"`. Only read once as a migration fallback when `scoreo_flavor` is absent (see `doc/technical/migrations.md`) — never written anymore. |
+| `sabords_partie`, `sabords_joueurs_connus`, `sabords_historique_parties`, `sabords_theme` | Written by nothing here: what the standalone 1kSaBord app left on the origin it shares with Scoreo on GitHub Pages, moved under a prefix at startup by `migrateMilleSabordsKeys` (see `doc/technical/migrations.md`). Scoreo never reads their content. |

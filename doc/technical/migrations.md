@@ -383,6 +383,40 @@ Le cas 1 rend l'opération idempotente. Les cas 1 et 2 réactivent un jeu archiv
 
 ---
 
+## Clés du 1kSaBord → préfixe `sabords_`
+
+**Contexte :** GitHub Pages sert Scoreo et l'app Kotlin autonome 1kSaBord depuis la **même origine**
+(`remhiit.github.io`), et `localStorage` est par origine, pas par chemin. Le 1kSaBord y écrit quatre
+clés sans aucun préfixe — `partie`, `joueurs_connus`, `historique_parties`, `theme` — là où Scoreo
+préfixe tout par `scoreo_`. Aucune collision ne s'est jamais produite, mais `theme` est un nom que
+n'importe quelle app de l'origine peut revendiquer. Même raisonnement que le `CACHE_PREFIX` du
+service worker, un étage plus bas.
+
+**Migration :** `apps/scoreo/src/infrastructure/migration/migrateMilleSabordsKeys.ts`, appelée une
+fois au démarrage depuis `apps/scoreo/src/main.tsx`, avant le rendu.
+
+**Logique :**
+
+1. Pour chacune des quatre clés, lire la valeur non préfixée ; absente → passer à la suivante
+2. La cible `sabords_<clé>` contient déjà une valeur **différente** → ne rien faire, la source reste
+   en place (rien ici n'a le droit de détruire une donnée)
+3. Cible absente → écrire la valeur sous `sabords_<clé>`, puis retirer la clé d'origine
+4. Cible identique à la source → déplacement interrompu entre les deux écritures : retirer la source
+
+**Idempotence :** une deuxième exécution ne trouve plus rien à déplacer et n'écrit pas. Tout accès au
+stockage est gardé : un `localStorage` indisponible (Safari privé, quota plein, données de site
+bloquées) ne doit jamais empêcher l'app de démarrer.
+
+**Ce que la migration ne fait pas :** Scoreo ne lit jamais le contenu de ces clés, et ne reprend pas
+l'historique du 1kSaBord dans ses propres matchs. Pour récupérer ses parties, il faut passer par le
+bouton Export du 1kSaBord puis l'import JSON de Scoreo.
+
+**Conséquence :** tant que l'app Kotlin reste déployée sur cette origine, elle ne retrouve plus ses
+données après un passage dans Scoreo — elle lit les noms non préfixés et repart d'un historique vide.
+Rien n'est perdu : tout est sous `sabords_*`.
+
+---
+
 ## Note technique : moteur de sérialisation (zod)
 
 **Contexte historique :** le projet était initialement écrit en Kotlin/JS avec `kotlinx.serialization` (`Json { ignoreUnknownKeys = true }` + valeurs par défaut sur les data class). La réécriture complète vers React/TypeScript (achevée) a changé le moteur de (dé)sérialisation sans jamais changer le format JSON stocké dans `localStorage` — mêmes clés, mêmes champs, mêmes valeurs par défaut, à chaque étape.
