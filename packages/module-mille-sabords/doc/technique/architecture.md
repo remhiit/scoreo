@@ -1,78 +1,86 @@
 # Architecture — 1000 Sabords
 
-Le projet applique conjointement l'**architecture hexagonale**
-(Ports & Adapters) et le **Domain-Driven Design (DDD)**.
+Ce paquet est un **module de comptage** que Scoreo charge à la demande. Il n'est pas une
+application : il n'a ni build, ni déploiement, ni stockage. Ce qu'il possède, c'est le jeu.
 
-## Principe
+## Les trois couches
 
 ```
-         ┌──────────────────────────────────────┐
-         │           ADAPTATEURS PRIMAIRES       │
-         │  (pilotent le domaine)                │
-         │                                       │
-         │   fr.ksabord.ui  (JS / Web)           │
-         │   fr.ksabord.GameViewModel (Android)  │
-         └───────────────┬──────────────────────┘
-                         │ appels via l'API publique
+         ┌────────────────────────────────────────────────┐
+         │  L'HÔTE — Scoreo                               │
+         │  joueurs · historique · statistiques · export  │
+         │  thème · persistance                           │
+         └───────────────┬────────────────────────────────┘
+                         │  ScoringModuleScreenProps
+                         │  (host, playerIds, editing, onExit)
                          ▼
-         ┌──────────────────────────────────────┐
-         │         HEXAGONE — DOMAINE PUR        │
-         │       fr.ksabord.domaine              │
-         │                                       │
-         │  Partie  ·  LancerDes  ·  Tour        │
-         │  ResultatScore  ·  calculerScore()    │
-         └───────────────┬──────────────────────┘
-                         │ appels sortants (persistence)
+         ┌────────────────────────────────────────────────┐
+         │  L'ÉCRAN — src/ui/module/                      │
+         │  réducteur MVI, état de tour, rendu React      │
+         └───────────────┬────────────────────────────────┘
+                         │  appels purs
                          ▼
-         ┌──────────────────────────────────────┐
-         │          ADAPTATEUR SECONDAIRE        │
-         │  (piloté par le domaine)              │
-         │                                       │
-         │   Persistence.kt  (localStorage)      │
-         └──────────────────────────────────────┘
+         ┌────────────────────────────────────────────────┐
+         │  LE DOMAINE — src/domain/                      │
+         │  calculerScore · Partie · LancerDes · Modeles  │
+         │  zéro dépendance : ni React, ni stockage       │
+         └────────────────────────────────────────────────┘
 ```
 
-**Règle fondamentale :** le domaine (`fr.ksabord.domaine`) ne dépend
-d'aucune plateforme. Il ne connaît ni le DOM, ni le localStorage,
-ni Android. Ce sont les adaptateurs qui dépendent du domaine,
-jamais l'inverse.
+**La règle tient en une phrase** : le domaine ne connaît rien, l'écran ne connaît que le domaine et
+le contrat, et l'hôte n'est joignable qu'à travers `ModuleHost`. Rien ici ne touche `localStorage` —
+voir [`module-contract.md`](../../../../doc/technical/module-contract.md) du workspace.
 
-## Concepts DDD appliqués
+## Ce que le module ne fait plus
 
-| Concept DDD | Implémentation |
+L'application Kotlin dont ce module est le portage faisait 1553 lignes d'UI. La plus grande partie
+n'a pas été portée, parce que l'hôte la fournit déjà :
+
+| Ce que faisait le Kotlin | Qui s'en charge |
 |---|---|
-| **Langage ubiquitaire** | Terminologie française dans tout le code (`Partie`, `Tour`, `LancerDes`) |
-| **Contexte borné — domaine** | `fr.ksabord.domaine` — logique métier pure, multiplateforme |
-| **Contexte borné — interface** | `fr.ksabord.ui` — UI, état du tour, persistence JS |
-| **Racine d'agrégat** | `Partie` — encapsule joueurs, historique et invariants |
-| **Objets valeur** | `LancerDes`, `Tour`, `ResultatScore` — immuables |
-| **Service domaine** | `calculerScore(dés, carte)` — pur, sans état global |
+| Gestion des joueurs, joueurs connus | Scoreo, via `host.getPlayers()` |
+| Historique des parties | L'historique de Scoreo |
+| Statistiques (`Stats.kt`) | L'écran Stats et le Hall of Fame de Scoreo |
+| Export v1.1, import, compression LZW | L'import/export de Scoreo — le module lui rend un `ModuleMatchResult` en processus |
+| Thème (`basculerTheme`) | Le thème de Scoreo ; le module garde sa propre identité visuelle, scopée |
+| Persistance de la partie (`Persistence.kt`) | `host.saveDraft` / `host.saveMatch` |
 
-## Arbre des dépendances
+Reste le cœur du jeu : saisir un tour, voir le score courant, annuler, terminer.
+
+## L'arbre des fichiers
 
 ```
-commonMain/                      ← partagé entre toutes les cibles
-  fr.ksabord.domaine/            ← ZÉRO dépendance externe
-    Constantes.kt
-    LancerDes.kt
-    Modeles.kt
-    CalculateurScore.kt
-    Partie.kt
-
-jsMain/                          ← dépend de commonMain + kotlinx.browser
-  fr.ksabord.ui/
-    Main.kt                      ← point d'entrée
-    EtatTour.kt                  ← état UI du tour
-    Actions.kt                   ← handlers utilisateur
-    Rendu.kt                     ← génération HTML
-    Persistence.kt               ← localStorage + export/import
-    Compression.kt               ← LZW pour export
-    Stats.kt                     ← statistiques
-
-commonTest/
-  ScoreCalculateurTest.kt
-  EtatTest.kt
-  RèglesTest.kt
+src/
+├── index.ts                  # n'exporte QUE le manifeste et le module
+├── module.ts                 # manifeste + import dynamique de l'écran
+├── styles.css                # scopé .module-mille-sabords, classes préfixées ms-
+├── domain/                   # le noyau, sans aucune dépendance de plateforme
+│   ├── constantes.ts
+│   ├── lancerDes.ts
+│   ├── modeles.ts
+│   ├── calculateurScore.ts
+│   └── partie.ts
+├── application/
+│   ├── moduleResult.ts       # ce que le module rend à l'hôte
+│   └── exportScoreo.ts       # l'enveloppe v1.1, vérifiée contre l'oracle Kotlin
+└── ui/module/                # l'écran et son réducteur
+    ├── milleSabordsModuleTypes.ts
+    ├── milleSabordsModuleReducer.ts
+    ├── scoresRapides.ts
+    └── MilleSabordsModuleScreen.tsx
 ```
 
--
+`index.ts` n'exporte que le manifeste et le module : le registre de Scoreo l'importe de façon
+*eager*, donc tout ce qu'il ré-exporterait voyagerait dans le bundle principal de l'hôte. Le domaine
+se rejoint par chemin relatif.
+
+## Le portage, et sa preuve
+
+Le domaine est une transposition ligne à ligne du Kotlin, pas une réécriture. C'est vérifié, pas
+relu : `tests/golden/` rejoue un corpus de parties terminées des deux côtés et compare l'enveloppe
+v1.1 **octet pour octet** (`GoldenExportTest` côté Kotlin, `exportScoreo.golden.test.ts` côté
+TypeScript). Aucun des deux ne peut dériver sans que l'autre passe au rouge.
+
+L'oracle vit dans `legacy/1ksabord-kotlin/` et ses 107 tests tournent en CI. Il disparaîtra une fois
+les dépôts satellites retirés ; les fixtures golden, elles, restent et continuent de garder le
+portage.

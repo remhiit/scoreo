@@ -1,30 +1,36 @@
-# Partie — Partie.kt
+# Partie — partie.ts
 
-Fichier : `src/commonMain/kotlin/fr/ksabord/domaine/Partie.kt`
+Fichier : `src/domain/partie.ts`
 
 **Racine d'agrégat** du domaine. Gère l'état global de la partie
 en cours.
 
-## Singleton
+## Une instance par état, pas un singleton
 
-```kotlin
-val partie = Partie()
+L'app Kotlin partageait un `val partie` global entre tous ses composants. Le module ne le fait pas :
+l'agrégat est **mutable**, et le garder dans l'état du réducteur ferait dépendre sa sortie de qui
+d'autre en détient une référence.
+
+L'écran garde donc le **journal d'événements** et rejoue l'agrégat quand il en a besoin :
+
+```ts
+const partie = partieDeLEtat(state) // replayPartie(joueurs, historique)
 ```
 
-Instance unique partagée entre tous les composants (domaine + UI).
-Les adaptateurs (Actions.kt, Persistence.kt) y accèdent directement.
+Le fichier exporte encore une instance `partie` héritée du portage, que plus rien n'utilise —
+son retrait est l'objet de l'issue #358.
 
 ## Propriétés
 
 | Propriété | Type | Description |
 |---|---|---|
-| `joueurs` | `MutableList<ResultatJoueur>` | Liste des joueurs (nom, score, couleur) |
-| `historique` | `MutableList<EvenementCoup>` | Tous les coups joués (event sourcing) |
-| `indexJoueurActuel` | `Int` | Index du joueur en train de jouer |
-| `dernierTour` | `Boolean` | Vrai si c'est le dernier tour |
-| `numeroDernierTour` | `Int` | Numéro de la manche de dernier tour |
-| `commencee` | `Boolean` | Vrai si la partie a démarré |
-| `magiquePirate` | `Boolean` | Vrai si victoire par pirate magique |
+| `joueurs` | `string[]` | Les noms, dans l'ordre du tour. Les scores n'y sont pas : ils se dérivent du journal |
+| `historique` | `EvenementCoup[]` | Tous les coups joués (event sourcing) |
+| `indexJoueurActuel` | `number` | Index du joueur en train de jouer |
+| `dernierTour` | `boolean` | Vrai si c'est le dernier tour |
+| `numeroDernierTour` | `number` | Numéro de la manche de dernier tour |
+| `commencee` | `boolean` | Vrai si la partie a démarré |
+| `magiquePirate` | `boolean` | Vrai si victoire par pirate magique |
 
 ## Méthodes publiques
 
@@ -42,12 +48,15 @@ Les adaptateurs (Actions.kt, Persistence.kt) y accèdent directement.
 
 | Méthode | Description |
 |---|---|
-| `totalJoueur(index): Int` | Score total d'un joueur par index |
-| `totalJoueurParNom(nom): Int` | Score total d'un joueur par nom |
-| `mancheActuelle(): Int` | Numéro de la manche en cours |
-| `totalMax(): Int` | Score maximum parmi les joueurs |
-| `manches(): Int` | Nombre de manches jouées |
-| `estTerminee(): Boolean` | Vrai si partie finie |
+| `totalJoueur(index): number` | Score total d'un joueur, par index |
+| `mancheActuelle(): number` | Numéro de la manche en cours |
+| `totalMax(): number` | Score maximum parmi les joueurs |
+| `manches(): EvenementCoup[][]` | Les coups **groupés par manche**, un tableau par manche |
+| `estTerminee(): boolean` | Vrai si la partie est finie |
+
+`totalJoueurParNom(nom)` est privée : c'est elle qui porte le repli à zéro à chaque événement
+(`Math.max(0, acc + contribution)`), l'invariant sans lequel les manches ne somment plus au
+classement.
 
 ## Invariants
 

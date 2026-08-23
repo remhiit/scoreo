@@ -1,30 +1,37 @@
-# Constantes — Constantes.kt
+# Constantes — constantes.ts
 
-Fichier : `src/commonMain/kotlin/fr/ksabord/domaine/Constantes.kt`
+Fichier : `src/domain/constantes.ts`
 
 Contient toutes les constantes du domaine. Pas de logique, que des
 déclarations.
 
 ## Couleurs des joueurs
 
-```kotlin
-val COULEURS_JOUEURS = arrayOf("#e74c3c", "#3498db", "#2ecc71", ...)
+```ts
+const COULEURS_JOUEURS = ['#e74c3c', '#3498db', '#2ecc71', ...]
 ```
 
 8 couleurs correspondant aux variables CSS `--c0` à `--c7`.
 
 ## Types de dés
 
-```kotlin
-data class TypeDé(val id: String, val icône: String, val label: String)
+```ts
+interface TypeDe {
+  readonly id: string
+  readonly icone: string
+  readonly label: string
+}
 ```
 
 6 types : crânes, diamants, or, singes, perroquets, sabres.
 
 ## Cartes
 
-```kotlin
-data class DéfCarte(val id: String, val label: String)
+```ts
+interface DefCarte {
+  readonly id: string
+  readonly label: string
+}
 ```
 
 10 cartes :
@@ -45,9 +52,10 @@ data class DéfCarte(val id: String, val label: String)
 
 ## Bonus de séries
 
-```kotlin
-val BONUS_SÉRIES = mapOf(3 to 100, 4 to 200, 5 to 500, 6 to 1000,
-                          7 to 2000, 8 to 4000, 9 to 4000)
+```ts
+const BONUS_SERIES: ReadonlyMap<number, number> = new Map([
+  [3, 100], [4, 200], [5, 500], [6, 1000], [7, 2000], [8, 4000], [9, 4000],
+])
 ```
 
 -
