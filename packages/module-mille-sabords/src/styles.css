@@ -1,0 +1,649 @@
+/*
+ * 1000 Sabords keeps its own look inside Scoreo: night sky, gold and parchment,
+ * whatever flavor the host is wearing. The game is the identity, not the app.
+ *
+ * Every rule below is scoped under `.module-mille-sabords`, and every selector
+ * of ours is prefixed `ms-`. That is not tidiness, it is the contract: a bare
+ * `:root`, or a bare `input` / `button` / `label`, would apply to the whole
+ * document — and the two sides name tokens alike (`--color-primary`, `--space-5`,
+ * `--radius-lg`) with different values. A stylesheet is never unloaded on
+ * navigation, so any leak would follow the player for the rest of the session.
+ * `apps/scoreo/e2e/module-style-isolation.spec.ts` guards that boundary.
+ *
+ * The palette is deliberately a single dark one: the game's own. It is not
+ * derived from `prefers-color-scheme`, which belongs to the host's theme.
+ */
+
+.module-mille-sabords {
+  --ms-bg: #0f0e17;
+  --ms-surface: #1a1932;
+  --ms-surface-2: #242347;
+  --ms-surface-3: #2e2d54;
+  --ms-gold: #e6a817;
+  --ms-gold-dark: #b8860b;
+  --ms-danger: #e74c3c;
+  --ms-success: #2ecc71;
+  --ms-accent: #ff6b35;
+  --ms-text: #f0e6d3;
+  --ms-text-dim: #8a8198;
+
+  --ms-radius: 10px;
+  --ms-gap-1: 4px;
+  --ms-gap-2: 8px;
+  --ms-gap-3: 12px;
+  --ms-gap-4: 16px;
+  --ms-gap-5: 24px;
+
+  background: var(--ms-bg);
+  color: var(--ms-text);
+  font-family:
+    system-ui,
+    -apple-system,
+    'Segoe UI',
+    Roboto,
+    sans-serif;
+  font-size: 16px;
+  line-height: 1.4;
+  min-height: 100%;
+}
+
+.module-mille-sabords *,
+.module-mille-sabords *::before,
+.module-mille-sabords *::after {
+  box-sizing: border-box;
+}
+
+.module-mille-sabords .ms-shell {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: var(--ms-gap-4);
+}
+
+/* ==================== Header ==================== */
+
+.module-mille-sabords .ms-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ms-gap-3);
+  flex-wrap: wrap;
+  margin-bottom: var(--ms-gap-4);
+}
+
+.module-mille-sabords .ms-title {
+  margin: 0;
+  font-size: 1.5rem;
+  color: var(--ms-gold);
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.module-mille-sabords .ms-badge {
+  padding: var(--ms-gap-1) var(--ms-gap-3);
+  border-radius: var(--ms-radius);
+  background: var(--ms-surface-2);
+  border: 1px solid var(--ms-surface-3);
+  font-size: 0.9rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.module-mille-sabords .ms-badge-final {
+  background: var(--ms-accent);
+  border-color: var(--ms-accent);
+  color: #14100c;
+}
+
+/* ==================== Layout ==================== */
+
+.module-mille-sabords .ms-layout {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--ms-gap-4);
+}
+
+@media (min-width: 900px) {
+  .module-mille-sabords .ms-layout {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    align-items: start;
+  }
+}
+
+.module-mille-sabords .ms-col {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ms-gap-3);
+  min-width: 0;
+}
+
+/* ==================== Buttons ==================== */
+
+.module-mille-sabords .ms-btn {
+  padding: 10px 16px;
+  border: 1px solid transparent;
+  border-radius: var(--ms-radius);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  background: var(--ms-surface-2);
+  color: var(--ms-text);
+}
+
+.module-mille-sabords .ms-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.module-mille-sabords .ms-btn-primary {
+  background: var(--ms-gold);
+  color: var(--ms-bg);
+}
+
+.module-mille-sabords .ms-btn-secondary {
+  background: var(--ms-surface-2);
+  border-color: var(--ms-surface-3);
+}
+
+.module-mille-sabords .ms-btn-ghost {
+  background: transparent;
+  border-color: var(--ms-surface-3);
+  color: var(--ms-text-dim);
+}
+
+.module-mille-sabords .ms-btn-danger {
+  background: var(--ms-danger);
+  color: #ffffff;
+}
+
+.module-mille-sabords .ms-btn-wide {
+  width: 100%;
+}
+
+.module-mille-sabords .ms-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ms-gap-2);
+}
+
+.module-mille-sabords .ms-btn:focus-visible,
+.module-mille-sabords .ms-step:focus-visible,
+.module-mille-sabords .ms-tab:focus-visible,
+.module-mille-sabords .ms-chip:focus-visible,
+.module-mille-sabords .ms-multiplier:focus-visible,
+.module-mille-sabords select:focus-visible,
+.module-mille-sabords input:focus-visible {
+  outline: 2px solid var(--ms-gold);
+  outline-offset: 2px;
+}
+
+/* ==================== Scoreboard ==================== */
+
+.module-mille-sabords .ms-table-wrap {
+  overflow-x: auto;
+  background: var(--ms-surface);
+  border: 1px solid var(--ms-surface-3);
+  border-radius: var(--ms-radius);
+}
+
+.module-mille-sabords .ms-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+}
+
+.module-mille-sabords .ms-table th,
+.module-mille-sabords .ms-table td {
+  padding: var(--ms-gap-2) var(--ms-gap-3);
+  text-align: center;
+  border-bottom: 1px solid var(--ms-surface-2);
+  white-space: nowrap;
+}
+
+.module-mille-sabords .ms-table thead th {
+  font-size: 0.9rem;
+  background: var(--ms-surface-2);
+}
+
+.module-mille-sabords .ms-table thead th.ms-current {
+  box-shadow: inset 0 -3px 0 var(--ms-gold);
+}
+
+.module-mille-sabords .ms-round-label {
+  color: var(--ms-text-dim);
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-align: left;
+}
+
+.module-mille-sabords .ms-cell-zero {
+  color: var(--ms-text-dim);
+}
+
+.module-mille-sabords .ms-cell-negative {
+  color: var(--ms-danger);
+}
+
+.module-mille-sabords .ms-cell-island {
+  color: var(--ms-accent);
+  font-weight: 600;
+}
+
+.module-mille-sabords .ms-empty {
+  color: var(--ms-text-dim);
+  font-style: italic;
+  padding: var(--ms-gap-4);
+}
+
+.module-mille-sabords .ms-table tfoot .ms-total {
+  font-weight: 700;
+  background: var(--ms-surface-2);
+}
+
+.module-mille-sabords .ms-leading {
+  color: var(--ms-gold);
+}
+
+.module-mille-sabords .ms-over-6000 {
+  color: var(--ms-success);
+}
+
+/* ==================== Turn panel ==================== */
+
+.module-mille-sabords .ms-turn {
+  background: var(--ms-surface);
+  border: 1px solid var(--ms-surface-3);
+  border-radius: var(--ms-radius);
+  padding: var(--ms-gap-3);
+  text-align: center;
+}
+
+.module-mille-sabords .ms-turn-label {
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ms-text-dim);
+}
+
+.module-mille-sabords .ms-turn-player {
+  font-size: 1.4rem;
+  font-weight: 700;
+}
+
+.module-mille-sabords .ms-tabs {
+  display: flex;
+  gap: var(--ms-gap-2);
+}
+
+.module-mille-sabords .ms-tab {
+  flex: 1;
+  padding: 10px 12px;
+  border: 1px solid var(--ms-surface-3);
+  border-radius: var(--ms-radius);
+  background: var(--ms-surface);
+  color: var(--ms-text-dim);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.module-mille-sabords .ms-tab-active {
+  background: var(--ms-surface-3);
+  color: var(--ms-text);
+  border-color: var(--ms-gold);
+}
+
+.module-mille-sabords .ms-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ms-gap-3);
+  background: var(--ms-surface);
+  border: 1px solid var(--ms-surface-3);
+  border-radius: var(--ms-radius);
+  padding: var(--ms-gap-3);
+}
+
+.module-mille-sabords .ms-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ms-gap-1);
+}
+
+.module-mille-sabords label {
+  font-size: 0.8rem;
+  color: var(--ms-text-dim);
+  font-weight: 600;
+}
+
+.module-mille-sabords select,
+.module-mille-sabords input {
+  font: inherit;
+  padding: 10px 12px;
+  border: 2px solid var(--ms-surface-3);
+  border-radius: var(--ms-radius);
+  background: var(--ms-surface-2);
+  color: var(--ms-text);
+  min-width: 0;
+}
+
+/* ==================== Dice counters ==================== */
+
+.module-mille-sabords .ms-dice {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ms-gap-1);
+}
+
+.module-mille-sabords .ms-dice-row {
+  display: flex;
+  align-items: center;
+  gap: var(--ms-gap-2);
+  padding: var(--ms-gap-1) var(--ms-gap-2);
+  background: var(--ms-surface-2);
+  border-radius: var(--ms-radius);
+}
+
+.module-mille-sabords .ms-dice-icon {
+  font-size: 1.2rem;
+}
+
+.module-mille-sabords .ms-dice-label {
+  flex: 1;
+  font-size: 0.9rem;
+}
+
+.module-mille-sabords .ms-dice-controls {
+  display: flex;
+  align-items: center;
+  gap: var(--ms-gap-2);
+}
+
+.module-mille-sabords .ms-step {
+  width: 38px;
+  height: 38px;
+  border: 1px solid var(--ms-surface-3);
+  border-radius: var(--ms-radius);
+  background: var(--ms-surface-3);
+  color: var(--ms-text);
+  font: inherit;
+  font-size: 1.2rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.module-mille-sabords .ms-dice-count {
+  min-width: 1.5rem;
+  text-align: center;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.module-mille-sabords .ms-dice-total {
+  text-align: center;
+  font-weight: 700;
+  padding: var(--ms-gap-2);
+  border-radius: var(--ms-radius);
+}
+
+.module-mille-sabords .ms-valid {
+  background: rgba(46, 204, 113, 0.15);
+  color: var(--ms-success);
+}
+
+.module-mille-sabords .ms-warning {
+  background: rgba(230, 168, 23, 0.15);
+  color: var(--ms-gold);
+}
+
+/* ==================== Score preview ==================== */
+
+.module-mille-sabords .ms-card-info {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--ms-text-dim);
+}
+
+.module-mille-sabords .ms-preview {
+  background: var(--ms-surface-2);
+  border-radius: var(--ms-radius);
+  padding: var(--ms-gap-3);
+}
+
+.module-mille-sabords .ms-preview-score {
+  font-size: 1.6rem;
+  font-weight: 700;
+  text-align: center;
+}
+
+.module-mille-sabords .ms-score-positive {
+  color: var(--ms-success);
+}
+
+.module-mille-sabords .ms-score-negative {
+  color: var(--ms-danger);
+}
+
+.module-mille-sabords .ms-score-zero {
+  color: var(--ms-text-dim);
+}
+
+.module-mille-sabords .ms-score-island {
+  color: var(--ms-accent);
+}
+
+.module-mille-sabords .ms-preview-details {
+  margin-top: var(--ms-gap-2);
+  font-size: 0.85rem;
+  color: var(--ms-text-dim);
+  /* `calculerScore` builds its breakdown as newline-separated lines. */
+  white-space: pre-line;
+  text-align: center;
+}
+
+.module-mille-sabords .ms-magie {
+  margin-top: var(--ms-gap-2);
+  padding: var(--ms-gap-2);
+  border-radius: var(--ms-radius);
+  background: var(--ms-accent);
+  color: #14100c;
+  font-weight: 700;
+  text-align: center;
+}
+
+.module-mille-sabords .ms-island {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ms-gap-1);
+  margin-top: var(--ms-gap-2);
+  padding: var(--ms-gap-2);
+  border: 1px solid var(--ms-accent);
+  border-radius: var(--ms-radius);
+  text-align: center;
+  font-size: 0.9rem;
+}
+
+/* ==================== Manual tab ==================== */
+
+.module-mille-sabords .ms-manual {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ms-gap-1);
+}
+
+.module-mille-sabords .ms-manual-row {
+  display: flex;
+  align-items: center;
+  gap: var(--ms-gap-2);
+  flex-wrap: wrap;
+}
+
+.module-mille-sabords .ms-manual-row input {
+  flex: 1;
+  min-width: 100px;
+}
+
+.module-mille-sabords .ms-multiplier {
+  padding: 6px 10px;
+  border: none;
+  border-radius: var(--ms-radius);
+  background: var(--ms-gold);
+  color: var(--ms-bg);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.module-mille-sabords .ms-quick {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ms-gap-3);
+}
+
+.module-mille-sabords .ms-quick-title {
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ms-text-dim);
+  margin-bottom: var(--ms-gap-1);
+}
+
+.module-mille-sabords .ms-quick-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ms-gap-1);
+}
+
+.module-mille-sabords .ms-chip {
+  padding: 6px 10px;
+  border: 1px solid var(--ms-surface-3);
+  border-radius: var(--ms-radius);
+  background: var(--ms-surface-2);
+  color: var(--ms-text);
+  font: inherit;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.module-mille-sabords .ms-chip-active {
+  background: var(--ms-gold);
+  border-color: var(--ms-gold);
+  color: var(--ms-bg);
+  font-weight: 700;
+}
+
+.module-mille-sabords .ms-chip-danger {
+  border-color: rgba(231, 76, 60, 0.5);
+  color: var(--ms-danger);
+}
+
+/* ==================== End screen ==================== */
+
+.module-mille-sabords .ms-end {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--ms-gap-3);
+  text-align: center;
+  background: var(--ms-surface);
+  border: 1px solid var(--ms-surface-3);
+  border-radius: var(--ms-radius);
+  padding: var(--ms-gap-5) var(--ms-gap-4);
+}
+
+.module-mille-sabords .ms-trophy {
+  font-size: 3.5rem;
+  line-height: 1;
+}
+
+.module-mille-sabords .ms-end h2 {
+  margin: 0;
+  font-size: 1.3rem;
+}
+
+.module-mille-sabords .ms-winner-score {
+  margin: 0;
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: var(--ms-gold);
+}
+
+.module-mille-sabords .ms-ranking {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  max-width: 420px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--ms-gap-1);
+}
+
+.module-mille-sabords .ms-ranking li {
+  display: flex;
+  align-items: center;
+  gap: var(--ms-gap-2);
+  padding: var(--ms-gap-2) var(--ms-gap-3);
+  background: var(--ms-surface-2);
+  border-radius: var(--ms-radius);
+}
+
+.module-mille-sabords .ms-rank-name {
+  flex: 1;
+  text-align: left;
+  font-weight: 600;
+}
+
+.module-mille-sabords .ms-rank-score {
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+}
+
+/* ==================== Modal ==================== */
+
+.module-mille-sabords .ms-modal-overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--ms-gap-4);
+  background: rgba(6, 5, 12, 0.75);
+  z-index: 100;
+}
+
+.module-mille-sabords .ms-modal {
+  background: var(--ms-surface);
+  border: 1px solid var(--ms-surface-3);
+  border-radius: var(--ms-radius);
+  padding: var(--ms-gap-4);
+  max-width: 420px;
+  width: 100%;
+}
+
+.module-mille-sabords .ms-modal h2 {
+  margin: 0 0 var(--ms-gap-2);
+  font-size: 1.1rem;
+}
+
+.module-mille-sabords .ms-modal p {
+  margin: 0 0 var(--ms-gap-4);
+  color: var(--ms-text-dim);
+  font-size: 0.9rem;
+}
+
+.module-mille-sabords .ms-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--ms-gap-2);
+  flex-wrap: wrap;
+}
+
+/* Visually hidden, still read out: the grid's empty corner header. */
+.module-mille-sabords .ms-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}

@@ -13,10 +13,16 @@
   },
   "dependencies": {
     "@scoreboards/module-api": "workspace:*",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@testing-library/react": "^16.1.0",
     "@types/node": "^26.2.0",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.4",
+    "jsdom": "^30.0.1",
     "typescript": "^6.0.3",
     "vitest": "^4.1.11"
   }

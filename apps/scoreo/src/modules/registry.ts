@@ -1,4 +1,5 @@
 import type { ScoringModule, ScoringModuleManifest } from '@scoreboards/module-api'
+import { milleSabordsModule } from '@scoreboards/module-mille-sabords'
 import { toriValleyModule } from '@scoreboards/module-tori-valley'
 
 /**
@@ -12,7 +13,7 @@ import { toriValleyModule } from '@scoreboards/module-tori-valley'
  * Removing a module: delete its package, its import here, and its entry below,
  * then `pnpm install`.
  */
-export const MODULES: readonly ScoringModule[] = [toriValleyModule]
+export const MODULES: readonly ScoringModule[] = [toriValleyModule, milleSabordsModule]
 
 /**
  * The manifests alone, which is all most of the app needs. They are plain

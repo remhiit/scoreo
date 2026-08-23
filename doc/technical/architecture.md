@@ -68,9 +68,11 @@ Two separate suites, run by different `pnpm` scripts and CI jobs:
 
 The repository is a **pnpm workspace** (`pnpm-workspace.yaml`: `apps/*`, `packages/*`). Scoreo is the
 host application and the only one deployed; the score-counting modules absorbed from the sibling
-repositories live under `packages/` and are loaded by Scoreo. `packages/module-tori-valley/` (absorbed
-from `remhiit/toriValleyScoreBoard`, with its commit history preserved) is the first one — still a
-standalone app for now, ahead of being wired in as a loaded module in a later phase.
+repositories live under `packages/` and are loaded by Scoreo. Both are registered in
+`apps/scoreo/src/modules/registry.ts` and reached on demand: `packages/module-tori-valley/`
+(absorbed from `remhiit/toriValleyScoreBoard`, with its commit history preserved), which still
+carries its standalone shell for now, and `packages/module-mille-sabords/` (ported from the Kotlin
+app kept in `legacy/`), which never had one.
 
 ```
 .                                  # workspace root — no source of its own
@@ -91,7 +93,7 @@ standalone app for now, ahead of being wired in as a loaded module in a later ph
     ├── module-api/                # the host ↔ module contract, no runtime dependency
     ├── shared-domain/             # Player, PlayerSchema, newId, isUuid, Result
     ├── module-mille-sabords/      # 1000 Sabords, ported from Kotlin and checked against it
-    └── module-tori-valley/        # absorbed score-counting module, still a standalone app
+    └── module-tori-valley/        # absorbed score-counting module, still a standalone app too
 legacy/
 └── 1ksabord-kotlin/               # TEMPORARY: the Kotlin/JS app, kept as a test oracle
 ```
