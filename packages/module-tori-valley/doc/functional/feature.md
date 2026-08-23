@@ -1,22 +1,40 @@
 # Features
 
-Torī Valley Scoreboard is a score calculator for the physical board game _La Vallée des Torī_ (Origames). It doesn't replace the game — you still play with the physical components — it just handles the end-of-game arithmetic, which involves a non-trivial combinatorial rule (Torī series scoring) that's easy to get wrong by hand.
+Torī Valley is a scoring module for the physical board game _La Vallée des Torī_ (Origames), played
+inside [Scoreo](../../../../apps/scoreo). It doesn't replace the game — you still play with the
+physical components — it just handles the end-of-game arithmetic, which involves a non-trivial
+combinatorial rule (Torī series scoring) that's easy to get wrong by hand.
 
-## User flow
+## Where the module starts and stops
 
-1. **Home** — add the players around the table (names only, reused across matches), then select 1–4 of them and tap **Start match**.
-2. **Match setup** (`MatchSetup`) — pick which Objectif card variant (A/B/C) was dealt for each of the 5 landscapes. Everything defaults to `A`, so the screen can be confirmed as-is. The Torī card is always in play and has nothing to pick. Tap **Start match**; **Back** returns to Home with the players still selected.
-3. **Score entry** (`ScoreDetail`) — for each selected player, enter what they ended the game with: Torī counts per color, their Parchemin value (if any), who (if anyone) holds the Pinceau, and for each landscape the counts its Objectif card asks for (the points are computed from them; any landscape can be switched to a hand-typed total). Each player's total VP updates live. Tap **Save match**.
-4. **History** — browse past matches, see final scores and the winner (🏆), edit a match's entered results, delete it, or export the whole history as a file for [Scoreo](https://github.com/remhiit/scoreo). Editing goes back through **Match setup** first, showing the variants that match was recorded with.
+Scoreo owns everything around the table: the players, the match history, the statistics, the export.
+The module owns the game.
+
+1. **Scoreo** — the player picks who is playing and starts a match on _La Vallée des Torī_. The
+   module is handed those player ids and nothing else; their names come from `host.getPlayers()`.
+2. **Match setup** (`MatchSetupScreen`) — pick which Objectif card variant (A/B/C) was dealt for each
+   of the 5 landscapes. Everything defaults to `A`, so the screen can be confirmed as-is. The Torī
+   card is always in play and has nothing to pick. **Start match** moves on; **Cancel** hands control
+   back to Scoreo.
+3. **Score entry** (`ScoreDetailScreen`) — for each player, enter what they ended the game with: Torī
+   counts per color, their Parchemin value (if any), who (if anyone) holds the Pinceau, and for each
+   landscape the counts its Objectif card asks for (the points are computed from them; any landscape
+   can be switched to a hand-typed total). Each player's total VP updates live. **Save match** hands
+   the result back to Scoreo.
+4. **Scoreo again** — the match lands in Scoreo's history under _La Vallée des Torī_, with the winner
+   the module ranked first. Reopening it from there comes back **on the module**, through Match setup
+   showing the variants that match was recorded with, and the grid restored.
+
+Reopening, editing, deleting, exporting, and looking up a player's stats are all Scoreo's — see the
+workspace's [`doc/functional/`](../../../../doc/functional/feature.md).
 
 ## Language
 
-The app is available in English and French. On first launch it follows the browser's language; a selector in the header (visible on every screen) lets the player switch at any time, and the choice is remembered in `localStorage` (`tori_valley_language`) for the next visit.
+The module's strings live in the `tori-valley` i18next namespace and join Scoreo's instance when the
+module loads. Which language they render in is Scoreo's choice, made once for the whole app.
 
 See the individual feature docs for detail:
 
-- [`features/players.md`](features/players.md)
 - [`features/scoring.md`](features/scoring.md)
-- [`features/objectif-cards.md`](features/objectif-cards.md) — transcription of the 16 physical cards; 13 of them are scored from the counts entered at score entry, the other two stay hand-typed
-- [`features/history.md`](features/history.md)
-- [`features/export.md`](features/export.md)
+- [`features/objectif-cards.md`](features/objectif-cards.md) — transcription of the 16 physical cards;
+  13 of them are scored from the counts entered at score entry, the other two stay hand-typed

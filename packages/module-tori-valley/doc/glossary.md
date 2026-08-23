@@ -7,11 +7,10 @@
 | **Reducer**   | Pure function `(state, action) => state` in `ui/*/`, colocated with its screen. Receives an **Action** and produces the next **State**. Contains the screen's business logic. |
 | **Action**    | Discriminated union representing a user event or an async result (click, input, use-case outcome, etc.). Dispatched to the reducer via `dispatch()`.                          |
 | **State**     | Plain object representing the complete state of a screen at a given moment. Produced by the reducer, read by the screen component via `useReducer`.                           |
-| **Use Case**  | Class in `application/` that encapsulates one business operation (e.g. `AddPlayerUseCase`, `CreateMatchUseCase`). No framework dependency.                                    |
-| **Port**      | TypeScript interface in `domain/port/` defining a data access contract (e.g. `PlayerRepository`).                                                                             |
-| **Adapter**   | Concrete implementation of a Port in `infrastructure/` (e.g. `LocalStoragePlayerRepository`).                                                                                 |
+| **Module**    | This package, as Scoreo loads it: a manifest and a screen. It owns the game's rules and nothing else — no storage, no players, no history. See the workspace's `doc/technical/module-contract.md`. |
+| **Host**      | Scoreo, reachable only through the `ModuleHost` the screen is handed: `getPlayers()`, `saveDraft()`, `saveMatch()`.                                                            |
 | **MVI-style** | Model-View-Intent-inspired unidirectional data flow: View → dispatch(Action) → reducer → State → View, via React's `useReducer`.                                              |
-| **Match**     | One recorded playthrough of the game: a set of players and their final `PlayerResult`.                                                                                        |
+| **Match**     | One recorded playthrough of the game: a set of players and their final `PlayerResult`. Stored by Scoreo; the module's own grid travels with it as an opaque `moduleData` payload. |
 
 ## Game terms (_La Vallée des Torī_, Origames)
 
