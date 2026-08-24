@@ -28,4 +28,11 @@ test('importing a JSON backup shows imported players and match', async ({ page }
   await page.goto('/#/history')
 
   await expect(page.locator('.list-item-name', { hasText: 'Uno E2E' })).toBeVisible()
+
+  await page.getByRole('button', { name: 'View details' }).click()
+
+  await expect(page.getByText('Round 1')).toBeVisible()
+  await expect(page.getByText('Round 2')).toBeVisible()
+  await expect(page.locator('.rounds-detail-round', { hasText: 'Round 1' })).toContainText('30')
+  await expect(page.locator('.rounds-detail-round', { hasText: 'Round 2' })).toContainText('12')
 })

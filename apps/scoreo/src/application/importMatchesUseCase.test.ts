@@ -207,9 +207,34 @@ describe('ImportMatchesUseCase', () => {
     })
 
     it('with detail verification passes when sums match', () => {
-      const result = useCase().execute(TestImportData.withDetailsJson)
+      const matchRepo = new InMemoryMatchRepository()
+      const result = useCase(undefined, undefined, matchRepo).execute(TestImportData.withDetailsJson)
       expect(result.ok).toBe(true)
       if (result.ok) expect(result.value.imported).toBe(1)
+    })
+
+    it('stores the imported rounds, resolved to player ids, in file order', () => {
+      const matchRepo = new InMemoryMatchRepository()
+      const playerRepo = new InMemoryPlayerRepository()
+      useCase(playerRepo, undefined, matchRepo).execute(TestImportData.withDetailsJson)
+      const alice = playerRepo.getAll().find((p) => p.name === 'Alice')!
+      const bob = playerRepo.getAll().find((p) => p.name === 'Bob')!
+      expect(matchRepo.getAll()[0].rounds).toEqual([
+        [
+          { playerId: alice.id, score: 10 },
+          { playerId: bob.id, score: 5 },
+        ],
+        [
+          { playerId: alice.id, score: 3 },
+          { playerId: bob.id, score: 2 },
+        ],
+      ])
+    })
+
+    it('leaves rounds empty when the game has no details', () => {
+      const matchRepo = new InMemoryMatchRepository()
+      useCase(undefined, undefined, matchRepo).execute(TestImportData.validJson)
+      expect(matchRepo.getAll()[0].rounds).toEqual([])
     })
 
     it('with detail verification fails when sums mismatch', () => {
@@ -289,6 +314,14 @@ describe('ImportMatchesUseCase', () => {
     it('accepts a valid 1.x version', () => {
       const json = '{"version": "1.5", "game": "X", "games": [{"id":"m1","ranking":[{"name":"A","score":1,"rank":1},{"name":"B","score":2,"rank":2}]}]}'
       expect(useCase().preview(json).ok).toBe(true)
+    })
+
+    it('imports a v1.0 file, which has neither a version nor a winCondition field', () => {
+      const matchRepo = new InMemoryMatchRepository()
+      const result = useCase(undefined, undefined, matchRepo).execute(TestImportData.v10Json)
+      expect(result.ok).toBe(true)
+      if (result.ok) expect(result.value.imported).toBe(1)
+      expect(matchRepo.getAll()[0].rounds).toEqual([])
     })
   })
 })

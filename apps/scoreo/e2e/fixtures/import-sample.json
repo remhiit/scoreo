@@ -14,8 +14,14 @@
       "details": [
         {
           "scores": [
-            { "name": "Alice E2E", "score": 42 },
-            { "name": "Bob E2E", "score": 17 }
+            { "name": "Alice E2E", "score": 30 },
+            { "name": "Bob E2E", "score": 10 }
+          ]
+        },
+        {
+          "scores": [
+            { "name": "Alice E2E", "score": 12 },
+            { "name": "Bob E2E", "score": 7 }
           ]
         }
       ]

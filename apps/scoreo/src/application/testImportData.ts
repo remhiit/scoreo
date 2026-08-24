@@ -128,6 +128,20 @@ export const withMultipleFailedDetailsJson = `{
     ]
 }`
 
+export const v10Json = `{
+    "game": "TestGame",
+    "games": [
+        {
+            "id": "m1",
+            "date": 1000000,
+            "ranking": [
+                {"name": "Alice", "score": 10, "rank": 1},
+                {"name": "Bob", "score": 5, "rank": 2}
+            ]
+        }
+    ]
+}`
+
 export const invalidJson = '{not valid json}'
 
 export const emptyGamesJson = `{
