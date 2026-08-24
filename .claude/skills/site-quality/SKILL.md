@@ -57,7 +57,7 @@ Check `apps/scoreo/public/manifest.json` and `apps/scoreo/public/sw.js` are stil
 consistent with the app: icon paths in the manifest resolve
 (`apps/scoreo/public/icon-192.png`, `apps/scoreo/public/icon-512.png`), `sw.js`'s cached asset list
 (if any) matches what `pnpm build` actually emits, and the deploy workflow's
-"verify all public/ assets are in the artifact" step (`deploy.yml`) still
+"Verify all apps/scoreo/public/ assets are in the artifact" step (`deploy.yml`) still
 passes conceptually — i.e. nothing new was added to `apps/scoreo/public/` without a
 corresponding reference.
 
