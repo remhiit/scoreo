@@ -54,7 +54,7 @@ Notable design choices:
 | `GetGameTypesUseCase` | `invoke(includeInactive = false)` | `GameType[]` |
 | `GetMatchesUseCase` | `invoke()` | `Match[]` |
 | `UpdateGameTypeUseCase` | `invoke(gameType: GameType)` | `void` |
-| `ImportMatchesUseCase` | `preview(jsonString)`, `execute(jsonString)` | `Result<ImportPreview, Error>`, `Result<ImportResult, Error>` — resolves the game type by name, then by `moduleId` through the installed manifests, then creates it |
+| `ImportMatchesUseCase` | `preview(jsonString)`, `execute(jsonString)` | `Result<ImportPreview, Error>`, `Result<ImportResult, Error>` — resolves the game type by name, then by `moduleId` through the installed manifests, then creates it. `version` defaults to `1.0` when absent (the v1.0 format predates that field). When a game's `details` sums match its `ranking` scores, the per-round detail is resolved from file player names to internal player ids and stored as `Match.rounds`, in file order — a mismatch still rejects the game into `failed` without storing it; a game without `details` gets `rounds: []` |
 | `rankingToMatch` | `rankingToMatch(input)` | `Match` — turns an outside ranking into a match; `rank === 1` becomes a `manualWinner`, because the source owns tie-breaks Scoreo does not know. Shared by the v1.1 import and by `ModuleHostAdapter` |
 | `BindModuleUseCase` | `invoke(manifest: ScoringModuleManifest)` | `GameType` — binds a scoring module to a game type on first use, idempotent: reuse by `moduleId`, else stamp a name match, else create from the manifest. Nothing is materialized at startup |
 | `SyncUseCase` | `async autoSync()` | `Promise<SyncOutcome>` (`{kind:'Synced', result} \| {kind:'Conflict', conflict}`) |
@@ -166,7 +166,7 @@ Notable coverage that goes beyond a 1:1 port of business logic:
 **E2E** (`apps/scoreo/e2e/`, Playwright + real Chromium, `pnpm test:e2e`): separate from the Vitest/jsdom suite above — runs the built app (`pnpm build` + `pnpm preview`) in an actual browser to catch rendering/CSS issues jsdom can't. Config: `apps/scoreo/playwright.config.ts` (root).
 
 - `apps/scoreo/e2e/add-player.spec.ts` — adding a player from Home.
-- `apps/scoreo/e2e/import-json.spec.ts` — the Import screen's 3-step wizard (select → aperçu → résultat) using `apps/scoreo/e2e/fixtures/import-sample.json` (v1.1 format), asserting the imported players appear on Home and the imported match appears in History.
+- `apps/scoreo/e2e/import-json.spec.ts` — the Import screen's 3-step wizard (select → aperçu → résultat) using `apps/scoreo/e2e/fixtures/import-sample.json` (v1.1 format, `details` across 2 rounds), asserting the imported players appear on Home, the imported match appears in History, and its round detail (View details) matches the file.
 - `apps/scoreo/e2e/full-match-flow.spec.ts` — full functional flow: create 2 players, create a game type inline, play a round with a clear (non-tied) winner, finish the match, and check the winner/loser's wins/losses and ELO on Stats.
 - `apps/scoreo/e2e/resume-draft.spec.ts` — starts a match, enters a partial round score, leaves ScoreDetail via the header "Back" button without finishing, checks the "Resume match in progress" banner appears on Home, then clicks it and asserts ScoreDetail reopens with the same players/game type and the partial score already filled in.
 - `apps/scoreo/e2e/archive-game-type.spec.ts` — plays a match with a game type, archives it from Games, checks it no longer appears in the "Select a game" dropdown for new matches while the already-played match stays visible and correct in History.

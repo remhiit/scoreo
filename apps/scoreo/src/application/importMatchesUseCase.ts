@@ -145,6 +145,7 @@ export class ImportMatchesUseCase {
           rankingMap.set(player.id, entry.rank)
         }
 
+        let rounds: PlayerScore[][] = []
         if (game.details) {
           const playerNameMap = new Map(existingPlayers.map((p) => [p.id, p.name]))
           let valid = true
@@ -162,10 +163,15 @@ export class ImportMatchesUseCase {
             }
           }
           if (!valid) continue
+          rounds = game.details.map((round) =>
+            playerIds.map((playerId) => {
+              const playerName = playerNameMap.get(playerId) ?? playerId
+              const found = round.scores.find((s) => s.name === playerName)
+              return { playerId, score: found?.score ?? 0 }
+            }),
+          )
         }
 
-        // `rounds` stays empty here: the file's round detail is validated above
-        // but not yet stored — a separate, known gap, not this use case's job.
         const match = rankingToMatch({
           id: game.id,
           date: game.date ?? this.currentDate(),
@@ -175,6 +181,7 @@ export class ImportMatchesUseCase {
             score: score.score,
             rank: rankingMap.get(score.playerId) ?? 0,
           })),
+          rounds,
         })
         this.matchRepository.save(match)
         imported++
@@ -190,8 +197,11 @@ export class ImportMatchesUseCase {
     const parsed: unknown = JSON.parse(jsonString)
     const element = asRecord(parsed, 'import root')
     const rawVersion = element.version
-    if (typeof rawVersion !== 'string') throw new Error("Missing 'version' field")
-    const version = parseSemanticVersion(rawVersion)
+    if (rawVersion !== undefined && typeof rawVersion !== 'string') {
+      throw new Error("Invalid 'version' field")
+    }
+    // The v1.0 format predates the `version` field itself (see schemas/import/v1.0.json-schema).
+    const version = parseSemanticVersion(rawVersion ?? '1.0')
     if (version.major === 1) return this.parseV1(element, version)
     throw new Error(`Unsupported version ${rawVersion}, expected ${ImportVersions.CURRENT.major}.x`)
   }

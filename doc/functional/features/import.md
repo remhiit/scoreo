@@ -46,7 +46,7 @@ Screen: `apps/scoreo/src/ui/import/ImportScreen.tsx`. See `doc/reference.md` for
 
 ## Import JSON Format
 
-Supports versions `1.0` and `1.1` (field `version` required).
+Supports versions `1.0` and `1.1`. `version` is optional and defaults to `1.0` when absent — the v1.0 format predates that field.
 
 ```json
 {
@@ -74,7 +74,7 @@ Supports versions `1.0` and `1.1` (field `version` required).
 
 | Field | Required | Description |
 |-------|----------|-------------|
-| `version` | yes | Schema version (`"1.0"` or `"1.1"`) |
+| `version` | no | Schema version (`"1.0"` or `"1.1"`); defaults to `"1.0"` when absent |
 | `game` | yes | Game type name (auto-created if new) |
 | `winCondition` | no | `HIGHEST_SCORE`, `LOWEST_SCORE`, or `MANUAL` (default: `MANUAL`) |
 | `games[]` | yes | Array of match objects |
@@ -86,7 +86,8 @@ Supports versions `1.0` and `1.1` (field `version` required).
 ### Validation
 
 - `details` scores must sum to the `ranking` score for each player
-- If mismatch → match marked as **Failed**
+- If mismatch → match marked as **Failed**, not stored
+- If the sums match, `details` is stored as the match's `rounds` (round detail, resolved to internal player ids, in file order) — displayed in History exactly like a match scored directly in Scoreo
 - Duplicate match ID → marked as **Skipped**
 - Unknown game type → auto-created
 - Unknown player name → auto-created
@@ -117,6 +118,14 @@ Then a second player "Jean Luc" is created (names are matched case-insensitively
 And the two can be folded back together from Home's "Merge" dialog — see players.md
 ```
 The same holds for the `game` field and game types — see [`games.md`](games.md#merge-dialog).
+
+### Round detail preserved
+```
+Given a JSON with ranking score 25 (Alice) and details summing to 25 across 2 rounds
+When I execute the import
+Then the match is Imported ✅
+And opening it from History shows both rounds, with each player's per-round score
+```
 
 ### Score mismatch detection
 ```
