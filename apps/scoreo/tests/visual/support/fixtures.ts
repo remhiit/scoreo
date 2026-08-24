@@ -142,3 +142,85 @@ export const MATCHES: Match[] = [
     },
   },
 ]
+
+
+// ─────────────────────────── 1000 Sabords ───────────────────────────
+
+/** Shaped exactly as `BindModuleUseCase` creates it from the module's manifest. */
+export const SABORDS_GAME_TYPE: GameType = {
+  id: 'gametype-sabords',
+  name: '1000 Sabords',
+  winCondition: 'HIGHEST_SCORE',
+  tieBreakRule: 'NONE',
+  tieBreakCondition: 'HIGHEST_SCORE',
+  tieBreakLabel: null,
+  moduleId: 'mille-sabords',
+  active: true,
+}
+
+/**
+ * A hand-entered move, which is all these baselines need: the calculator path
+ * produces the same `EvenementCoup`, and a dice-by-dice fixture would pin the
+ * scoring rules to a screenshot instead of to the golden test that owns them.
+ */
+function coupManuel(playerId: string, score: number) {
+  return { type: 'manuel', joueur: playerId, scoreEntre: score, multiplicateur: 1, score }
+}
+
+/**
+ * Four moves: a full round, then Akira opens the second. Nobody is near the
+ * 6000 threshold, so the module renders its playing screen with a populated
+ * scoreboard — and Mei on turn.
+ */
+const SABORDS_IN_PROGRESS = [
+  coupManuel('player-akira', 2000),
+  coupManuel('player-mei', 1500),
+  coupManuel('player-hiroshi', 1000),
+  coupManuel('player-akira', 2500),
+]
+
+/**
+ * Nine moves, three full rounds. Akira crosses 6000 on the seventh, which arms
+ * the last turn; the round then completes, so the module renders its **end**
+ * screen — final standings, Akira 6500, Mei 5800, Hiroshi 4500.
+ */
+const SABORDS_FINISHED = [
+  ...SABORDS_IN_PROGRESS.slice(0, 3),
+  coupManuel('player-akira', 2500),
+  coupManuel('player-mei', 2000),
+  coupManuel('player-hiroshi', 1500),
+  coupManuel('player-akira', 2000),
+  coupManuel('player-mei', 2300),
+  coupManuel('player-hiroshi', 2000),
+]
+
+/** Real UUIDs — see MATCH_ONE_ID for why a readable slug would not survive. */
+export const SABORDS_IN_PROGRESS_ID = '7b2e19c4-0d53-4f88-a1b6-c95e274308da'
+export const SABORDS_FINISHED_ID = 'c48d6a01-9f27-4e35-b0d2-16ae5b8c93f7'
+
+/** 2024-05-04T12:00:00Z and 2024-05-11T12:00:00Z. */
+const SABORDS_DATES = [1714824000000, 1715428800000]
+
+function sabordsMatch(id: string, date: number, historique: unknown[], scores: number[]): Match {
+  return {
+    id,
+    date,
+    gameTypeId: SABORDS_GAME_TYPE.id,
+    playerScores: PLAYER_IDS.map((playerId, index) => ({ playerId, score: scores[index] })),
+    manualWinners: [],
+    secondaryPlayerScores: [],
+    // Left empty on purpose: these baselines never open Scoreo's own history,
+    // and the module rebuilds its rounds from the event log anyway.
+    rounds: [],
+    moduleData: {
+      moduleId: 'mille-sabords',
+      version: 1,
+      data: { joueurs: PLAYER_IDS, historique },
+    },
+  }
+}
+
+export const SABORDS_MATCHES: Match[] = [
+  sabordsMatch(SABORDS_IN_PROGRESS_ID, SABORDS_DATES[0], SABORDS_IN_PROGRESS, [4500, 1500, 1000]),
+  sabordsMatch(SABORDS_FINISHED_ID, SABORDS_DATES[1], SABORDS_FINISHED, [6500, 5800, 4500]),
+]
