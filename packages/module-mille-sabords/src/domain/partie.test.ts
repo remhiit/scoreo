@@ -1,14 +1,20 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import { partie } from './partie'
+import { Partie } from './partie'
 import type { CoupIleCranes, CoupManuel } from './modeles'
 
 /**
  * Unit tests for the Partie methods — totalJoueur, mancheActuelle, manches,
  * totalMax — transposed one for one from the Kotlin EtatTest.
+ *
+ * The Kotlin original reset a shared `val partie` between tests, because that
+ * app had one. This port does not: each test gets its own aggregate, which is
+ * also how the module uses it — the reducer replays one from the event log.
  */
 describe('EtatTest', () => {
+  let partie: Partie
+
   beforeEach(() => {
-    partie.reinitialiser()
+    partie = new Partie()
   })
 
   const coup = (indexJoueur: number, score: number): CoupManuel => ({
@@ -247,12 +253,6 @@ describe('EtatTest', () => {
   })
 
   it('magiquePirate_faux_parDefaut', () => {
-    expect(partie.magiquePirate).toBe(false)
-  })
-
-  it('reinitialiser_reinitialise_magiquePirate', () => {
-    partie.terminerParMagiePirate()
-    partie.reinitialiser()
     expect(partie.magiquePirate).toBe(false)
   })
 
