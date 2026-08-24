@@ -20,7 +20,7 @@
     "@scoreboards/module-mille-sabords": "workspace:*",
     "@scoreboards/module-tori-valley": "workspace:*",
     "@scoreboards/shared-domain": "workspace:*",
-    "i18next": "^26.3.6",
+    "i18next": "^26.4.0",
     "lucide-react": "^1.32.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
