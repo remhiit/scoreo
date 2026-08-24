@@ -1,14 +1,14 @@
 # Documentation fonctionnelle
 
-Bienvenue dans la documentation fonctionnelle de l'application **1000 Sabords**.
+La documentation fonctionnelle du jeu **1000 Sabords**, tel que Scoreo le compte.
 
-Ce dossier est destiné aux **joueurs et utilisateurs** de l'application.
+Ce dossier est destiné aux **joueurs**.
 
 ## Fichiers
 
 | Fichier | Description |
 |---|---|
 | [Règles du jeu](regles-du-jeu.md) | Règles officielles du jeu de dés 1000 Sabords |
-| [Guide d'utilisation](guide-utilisation.md) | Prise en main et fonctionnement de l'application |
+| [Guide d'utilisation](guide-utilisation.md) | L'écran du module dans Scoreo : tableau de bord, saisie d'un tour, fin de partie |
 
 -
