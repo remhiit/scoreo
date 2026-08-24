@@ -1,84 +1,75 @@
 # Guide d'utilisation — 1000 Sabords
 
-## Écran de configuration
+1000 Sabords se joue **dans Scoreo**. Ce guide décrit l'écran du module ; tout ce qui l'entoure —
+les joueurs, l'historique, les statistiques, l'export, le thème — appartient à Scoreo et est
+documenté dans `doc/functional/` à la racine du dépôt.
 
-À l'ouverture de l'application, l'écran de configuration permet :
+## Ouvrir une partie
 
-- **Ajouter un joueur** — saisir son nom et cliquer sur "Ajouter"
-- **Joueurs connus** — cliquer sur un nom proposé pour l'ajouter
-  (mémorisés depuis les parties précédentes)
-- **Retirer un joueur** — cliquer sur la croix (✕) à côté du nom
-- **Supprimer un joueur connu** — cliquer sur la croix (✕) sur le
-  bouton du joueur connu
-- **Démarrer la partie** — cliquer sur "Démarrer" (minimum 2 joueurs)
+Depuis l'accueil de Scoreo : sélectionner les joueurs (2 à 8), **Nouvelle partie**, puis
+**1000 Sabords**. Le module s'ouvre directement sur l'écran de jeu — il n'a pas d'écran de
+configuration à lui, puisque les joueurs viennent de l'hôte.
 
-Boutons supplémentaires :
+Rouvrir une partie enregistrée depuis l'historique de Scoreo revient sur le module, sa grille
+restaurée.
 
-| Bouton | Action |
+## L'écran de jeu
+
+Deux colonnes : le tableau de bord à gauche, le tour en cours à droite. En tête, le nom du jeu et un
+badge qui dit où en est la partie — **Tour N**, **⚠️ Dernier tour !** une fois les 6000 points
+franchis, ou **🏁 Partie terminée**.
+
+### Le tableau de bord
+
+Une ligne par manche, une colonne par joueur, le score du coup dans chaque cellule et le total en
+bas. Les cellules se teintent selon ce qui s'est passé : un tour à zéro, une pénalité négative, une
+Île de la Tête de Mort. Le meneur est mis en avant, et le franchissement des 6000 points aussi.
+
+Quatre actions dessous :
+
+| Bouton | Ce qu'il fait |
 |---|---|
-| 📜 Historique | Consulter les 20 dernières parties archivées |
-| 📊 Statistiques | Voir les stats des joueurs connus |
-| 📤 Exporter | Ouvre une modale pour exporter l'historique (1kSaBord ou JSON) |
-| 📥 Importer | Importer un fichier `.sabords` |
+| ↩ Annuler le coup | Retire le dernier coup joué. La partie est rejouée depuis son journal pour recalculer les totaux |
+| 🏁 Terminer la partie | Arrête la partie avant les 6000 points, quand la table décide d'en rester là |
+| ⏸ Quitter (reprise plus tard) | Rend la main à Scoreo **sans rien perdre** : la partie reprend où elle en était |
+| 🗑 Abandonner | Jette la partie en cours, après confirmation. Rien n'est enregistré dans Scoreo |
 
-La modale d'export propose deux formats :
-- **📤 1kSaBord** — format compressé (LZW + base64, extension `.sabords`)
-- **📄 JSON** — format clair et lisible pour intégration externe
+### Le tour en cours
 
-## Écran de jeu
+Le joueur dont c'est le tour est annoncé en haut. Deux onglets, deux façons de compter le même tour.
 
-### Tableau des scores
+#### 🎲 Calculateur
 
-Colonnes par joueur, lignes par tour. Chaque cellule affiche le score
-du tour. Le score total est affiché en bas de chaque colonne.
-Les cellules changent de couleur selon la contribution de chaque type
-de coup.
+1. Choisir la **carte piochée** dans la liste (capitaine, sorcière, combat naval, animaux…).
+2. Ajuster les six compteurs de dés avec les boutons **−** et **+** : crâne, diamant, or, singe,
+   perroquet, sabre.
+3. Le score se calcule en direct, avec son détail, et un rappel indique combien de dés sont posés
+   sur les 8 attendus.
+4. **Valider le score** enregistre le tour et passe au joueur suivant.
 
-### Panneau du tour
+#### ✏️ Saisie rapide
 
-#### Onglet "Calcul" (mode calculatrice)
+Pour les tables qui comptent plus vite que l'application.
 
-1. Sélectionner la **carte** du tour dans la liste déroulante
-2. Ajuster les **dés** avec les boutons + / − (ou cliquer sur les
-   nombres pour utiliser les touches du clavier)
-3. Le **score** se met à jour automatiquement avec le détail
-4. Cliquer sur **"Valider le score"** pour enregistrer le tour
+1. Taper le score, ou l'assembler avec les **boutons de scores fréquents**.
+2. **🎩 ×2** applique le multiplicateur du capitaine ; il se retire d'un clic.
+3. **🗑** remet le score à zéro.
+4. **Valider** enregistre le tour.
 
-#### Onglet "Manuel" (mode saisie rapide)
+Le groupe **☠️ Île de la Tête de Mort** enregistre en un bouton un tour qui inflige la pénalité aux
+adversaires : choisir le nombre de crânes, la pénalité est appliquée à chacun d'eux.
 
-1. Sélectionner la **carte** du tour (le ×2 capitaine est géré ici)
-2. Utiliser les **boutons prédéfinis** pour entrer le score (100, 200,
-   300, 500, 1000, etc.)
-3. Le **multiplicateur** (×1 / ×2) double le score saisi
-4. Cliquer sur **"Valider"** pour enregistrer
+## L'écran de fin
 
-#### Bouton "☠️ Île" (pénalité)
+Il remplace l'écran de jeu dès que la partie est finie — 6000 points franchis et dernier tour joué,
+Magie Pirate, ou fin demandée par la table.
 
-Permet d'enregistrer un tour avec crânes multiples infligeant une
-pénalité aux adversaires. Sélectionner le nombre de crânes, valider.
+Il affiche le vainqueur, son score et le classement complet. **💾 Enregistrer la partie** la range
+dans l'historique de Scoreo et rend la main ; **↩ Annuler le dernier coup** revient en arrière si la
+partie s'est terminée par erreur.
 
-### Actions en cours de partie
+## La reprise après fermeture
 
-| Action | Bouton |
-|---|---|
-| Annuler dernier tour | ↩ |
-| Nouvelle partie | 🏁 |
-| Changer thème | 🌙 / ☀️ |
-
-## Écran de fin
-
-Affiche le podium avec le classement, les scores finaux et le nombre
-de manches jouées. Bouton "Nouvelle Partie" pour recommencer.
-
-## Sauvegarde automatique
-
-La partie en cours est automatiquement sauvegardée dans le
-**localStorage** du navigateur. Recharger la page restaure l'état
-exact (y compris le tour en cours).
-
-## Thème sombre / lumineux
-
-Cliquer sur l'icône 🌙 (nuit) ou ☀️ (jour) en haut à droite pour
-basculer. Le choix est mémorisé.
-
--
+Le module sauvegarde en continu, à travers Scoreo, **la partie et le tour en cours** : les dés
+saisis, l'onglet actif, le multiplicateur et la carte piochée. Fermer l'onglet en plein comptage ne
+perd rien — c'est précisément ce que l'application autonome perdait avant la fusion.
