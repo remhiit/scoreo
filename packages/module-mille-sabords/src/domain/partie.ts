@@ -100,16 +100,6 @@ export class Partie {
     }
   }
 
-  reinitialiser(): void {
-    this.joueurs.length = 0
-    this.historique.length = 0
-    this.indexJoueurActuel = 0
-    this.dernierTour = false
-    this.numeroDernierTour = -1
-    this.commencee = false
-    this.magiquePirate = false
-  }
-
   /** Triggers an immediate Magie Pirate win, without waiting for the round to end. */
   terminerParMagiePirate(): void {
     this.magiquePirate = true
@@ -125,6 +115,3 @@ export class Partie {
     )
   }
 }
-
-/** Singleton shared by every component of the active platform. */
-export const partie = new Partie()

@@ -17,9 +17,6 @@ L'écran garde donc le **journal d'événements** et rejoue l'agrégat quand il 
 const partie = partieDeLEtat(state) // replayPartie(joueurs, historique)
 ```
 
-Le fichier exporte encore une instance `partie` héritée du portage, que plus rien n'utilise —
-son retrait est l'objet de l'issue #358.
-
 ## Propriétés
 
 | Propriété | Type | Description |
@@ -41,7 +38,6 @@ son retrait est l'objet de l'issue #358.
 | `commencer()` | Initialise la partie avec les joueurs configurés |
 | `ajouterCoup(coup)` | Ajoute un coup, passe au joueur suivant |
 | `annulerDernier()` | Annule le dernier coup (défait le score) |
-| `reinitialiser()` | Remet la partie à zéro |
 | `terminerParMagiePirate()` | Flag victoire magique |
 
 ### Requêtes (lecture seule)
