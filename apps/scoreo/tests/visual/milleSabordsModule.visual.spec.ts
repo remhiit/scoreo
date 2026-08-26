@@ -11,7 +11,7 @@ import {
 
 /**
  * 1000 Sabords photographed where the players meet it: inside Scoreo, on the
- * host's own route, with the host's chrome around it.
+ * host's own route, full-screen — the host's chrome is skipped there (#388).
  *
  * This is the densest screen either module renders — six dice counters, two
  * tabs, a scoreboard and an end screen — and until #361 nothing looked at it.

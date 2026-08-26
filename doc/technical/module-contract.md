@@ -156,6 +156,16 @@ resolves the module from the registry, builds a `ModuleHostAdapter` bound to tha
 type, and renders the module's screen behind `React.lazy` + `Suspense` + an error boundary — a module
 that fails to load, or throws, must not take Scoreo down with it.
 
+The route is rendered full-screen: `AppShell` (`apps/scoreo/src/App.tsx`) skips `.app-header`
+entirely on `ModuleScore` and renders `ModuleScoreScreen` inside `.app-module-route` — a direct
+child of `#root`, `flex: 1`, with no `max-width` and no route padding, instead of `.app-content`'s
+600px-capped column. During a game the host's back arrow, title and burger menu would only
+duplicate the exit a module already draws itself; every other route keeps that chrome unchanged.
+`.app-module-route` carries `padding-top: env(safe-area-inset-top)`, the one thing `.app-header`
+was absorbing for this route. Until a dedicated exit ticket lands, the only ways out of a module
+are the one it draws itself (both installed modules have one) and the browser's own back — the
+`ModuleErrorBoundary` fallback offers neither.
+
 The host side never trusts blindly:
 
 - `saveMatch` runs `assertRoundsSumToRanking` **before** writing. A self-contradicting match kept in
