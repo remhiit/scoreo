@@ -4,7 +4,7 @@ import { MATCH_ONE_ID, MATCHES, PLAYER_IDS, PLAYERS, TORI_GAME_TYPE } from './su
 
 /**
  * Torī Valley photographed where the players actually meet it: inside Scoreo,
- * on the host's own route, with the host's chrome around it.
+ * on the host's own route, full-screen — the host's chrome is skipped there (#388).
  *
  * The module keeps two steps of its own — deal the Objectif cards, then enter
  * the scores — so the scoring screen is reached by confirming the first, not by

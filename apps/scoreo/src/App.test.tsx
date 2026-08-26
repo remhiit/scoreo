@@ -165,4 +165,25 @@ describe('App', () => {
     })
     expect(screen.getByText('Sync not available')).toBeInTheDocument()
   })
+
+  // A module plays behind its own controls — the host's back arrow, title and
+  // burger would only duplicate what it already draws.
+  it('ModuleScore: renders without the host chrome, on its own route', () => {
+    render(<App />)
+    act(() => {
+      window.history.replaceState(null, '', '#/module/not-installed/gt1/p1')
+      window.dispatchEvent(new PopStateEvent('popstate'))
+    })
+
+    expect(screen.queryByText('Scoreo')).not.toBeInTheDocument()
+    expect(screen.queryByLabelText('Back')).not.toBeInTheDocument()
+    expect(screen.queryByLabelText('Menu')).not.toBeInTheDocument()
+    expect(screen.getByText('This module is not installed.')).toBeInTheDocument()
+
+    act(() => {
+      window.history.replaceState(null, '', '#/')
+      window.dispatchEvent(new PopStateEvent('popstate'))
+    })
+    expect(screen.getByLabelText('Menu')).toBeInTheDocument()
+  })
 })

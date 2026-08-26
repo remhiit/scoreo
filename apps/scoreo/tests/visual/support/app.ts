@@ -69,7 +69,7 @@ export async function openApp(page: Page, hash: string, state: SeededState = {})
 
 /**
  * Waits for a screen's content to have settled, then captures the whole page —
- * the module and the host chrome around it.
+ * the module route renders full-screen, with no host chrome around it (#388).
  *
  * Scoreo scrolls its content inside the shell rather than the document, which is
  * why the visual projects run at a viewport tall enough to hold a whole screen:

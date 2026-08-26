@@ -18,8 +18,10 @@ against committed PNG baselines.
 ## What it covers, and why that is the module
 
 The suite lives in the host, `apps/scoreo/tests/visual/`, and photographs a
-**scoring module inside Scoreo** — on the host's own `#/module/…` route, with the
-host's chrome around it. That is what a player actually sees.
+**scoring module inside Scoreo** — on the host's own `#/module/…` route, which
+renders full-screen with no host chrome (`.app-header` is skipped, see
+`doc/technical/module-contract.md` § *Playing on a module*). That is what a
+player actually sees.
 
 It is the only guard of its kind, and it exists because a module's screen is the
 one part of the app whose look nothing else checks: the e2e specs assert

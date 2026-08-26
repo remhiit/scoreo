@@ -9,6 +9,18 @@
     margin: 0 auto;
 }
 
+/* ── Module route (immersive) ──
+   A module plays behind its own controls, so the route skips the host's
+   chrome entirely instead of showing it disabled or empty: no `.app-header`,
+   no `.app-content` cap. `env(safe-area-inset-top)` replaces the header's
+   fixed height as the guard against the notch/status bar. */
+
+.app-module-route {
+    flex: 1;
+    overflow-y: auto;
+    padding-top: env(safe-area-inset-top);
+}
+
 /* ── App header ── */
 
 .app-header {

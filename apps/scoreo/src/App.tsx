@@ -299,6 +299,18 @@ function AppShell() {
     }
   })()
 
+  if (current.type === 'ModuleScore') {
+    return (
+      <div className="app-module-route">
+        <ModuleScoreScreen
+          screen={current}
+          services={services}
+          onExit={() => navigate(current.matchId !== undefined ? HISTORY_SCREEN : HOME_SCREEN)}
+        />
+      </div>
+    )
+  }
+
   return (
     <>
       <div className="app-header">
@@ -386,13 +398,6 @@ function AppShell() {
             onSaved={() => navigate(current.matchId !== undefined ? HISTORY_SCREEN : HOME_SCREEN)}
             onCancel={() => navigate(current.matchId !== undefined ? HISTORY_SCREEN : HOME_SCREEN)}
             onMissingGameType={() => navigate(HOME_SCREEN)}
-          />
-        )}
-        {current.type === 'ModuleScore' && (
-          <ModuleScoreScreen
-            screen={current}
-            services={services}
-            onExit={() => navigate(current.matchId !== undefined ? HISTORY_SCREEN : HOME_SCREEN)}
           />
         )}
       </div>

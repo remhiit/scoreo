@@ -135,6 +135,7 @@ Notable design choices:
 | `Sync` | — | `SyncScreen` — Google Drive cloud backup, only reachable when `services.syncUseCase` is defined |
 | `HallOfFame` | — | `HallOfFameScreen` — playful trophies (streaks, volume, records, rivalry, monthly), one card per trophy, per-game-type filter (same mechanic as Stats) |
 | `ScoreDetail` | `gameTypeId`, `playerIds`, `matchId?` | `ScoreDetailScreen` — round entry, create or edit mode via `ScoreDetailMode`. gameType/players/mode resolution and the screen's `initialState` are built ad hoc in `App.tsx`'s `ScoreDetailRoute` via `useMemo` keyed on the route params |
+| `ModuleScore` | `moduleId`, `gameTypeId`, `playerIds`, `matchId?` | `ModuleScoreScreen` — a scoring module's own screen, lazy-loaded via the registry. Rendered full-screen: `AppShell` skips `.app-header` and renders it inside `.app-module-route` (direct child of `#root`, `flex: 1`, no `max-width`/route padding) instead of `.app-content` — see `doc/technical/module-contract.md` § *Playing on a module* |
 
 ## Shared Components
 
