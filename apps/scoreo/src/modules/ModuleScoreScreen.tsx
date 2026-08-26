@@ -1,5 +1,14 @@
 import type { ScoringModuleScreenProps } from '@scoreboards/module-api'
-import { Component, lazy, Suspense, useMemo, type ComponentType, type ReactNode } from 'react'
+import {
+  Component,
+  lazy,
+  Suspense,
+  useCallback,
+  useMemo,
+  useRef,
+  type ComponentType,
+  type ReactNode,
+} from 'react'
 import { useTranslation } from 'react-i18next'
 import type { Screen } from '../ui/navigation/screen'
 import type { Services } from '../services/createServices'
@@ -30,7 +39,12 @@ class ModuleErrorBoundary extends Component<
 export interface ModuleScoreRouteProps {
   screen: Extract<Screen, { type: 'ModuleScore' }>
   services: Services
-  onExit: () => void
+  /**
+   * Host-facing only — the module itself only ever sees a plain `() => void`
+   * (below). Carries the id of the last match saved during this session, so
+   * the host can land on it instead of guessing from the route.
+   */
+  onExit: (savedMatchId?: string) => void
 }
 
 export function ModuleScoreScreen({ screen, services, onExit }: ModuleScoreRouteProps) {
@@ -47,6 +61,10 @@ export function ModuleScoreScreen({ screen, services, onExit }: ModuleScoreRoute
     [module],
   )
 
+  // Not React state on purpose: recording it must never trigger a re-render
+  // of the module screen mid-session, only be read once, on exit.
+  const savedMatchIdRef = useRef<string | undefined>(undefined)
+
   const host = useMemo(
     () =>
       new ModuleHostAdapter(
@@ -56,9 +74,23 @@ export function ModuleScoreScreen({ screen, services, onExit }: ModuleScoreRoute
         services.matchRepository,
         services.moduleDraftRepository,
         services.currentDate,
+        // `saveMatch` only ever runs from a module's own event handler (both
+        // installed modules call it from a click, never during their own
+        // render), so this write always happens well outside render — React's
+        // compiler-oriented lint can't see that far, hence the disable.
+        // eslint-disable-next-line react-hooks/refs
+        (matchId) => {
+          savedMatchIdRef.current = matchId
+        },
       ),
     [screen.moduleId, screen.gameTypeId, services],
   )
+
+  // The module only ever gets `() => void`, per the contract: the id travels
+  // to the host, never to the module.
+  const handleExit = useCallback(() => {
+    onExit(savedMatchIdRef.current)
+  }, [onExit])
 
   const editing = useMemo(
     () =>
@@ -75,7 +107,7 @@ export function ModuleScoreScreen({ screen, services, onExit }: ModuleScoreRoute
   return (
     <ModuleErrorBoundary fallback={<div className="error-msg">{t('modules.failedToLoad')}</div>}>
       <Suspense fallback={<div className="empty-inline">{t('modules.loading')}</div>}>
-        <Screen host={host} playerIds={screen.playerIds} editing={editing} onExit={onExit} />
+        <Screen host={host} playerIds={screen.playerIds} editing={editing} onExit={handleExit} />
       </Suspense>
     </ModuleErrorBoundary>
   )

@@ -179,6 +179,28 @@ The host side never trusts blindly:
 
 Drafts live in `scoreo_module_draft_<moduleId>`, one per module.
 
+### Landing after exit
+
+`onExit` stays `() => void` on the module side of the contract — a module never learns whether, or
+where, saving landed it. The id travels host code to host code instead: `ModuleHostAdapter` takes an
+extra constructor argument, `onMatchSaved?: (matchId: string) => void`, called right after
+`matchRepository.save` (and before `saveMatch` returns). `ModuleScoreScreen` passes a callback that
+just stashes the id in a `useRef` — not React state, since recording it must never re-render the
+module screen mid-session — then wraps the module's `onExit` into the `(savedMatchId?: string) =>
+void` its own `onExit` prop expects, reading the ref once, on exit. `saveMatch` only ever runs from a
+module's own event handler, never synchronously during its render, so the write is always well past
+render by the time it happens — one `eslint-disable-next-line react-hooks/refs` marks the spot React's
+compiler-oriented lint can't verify that from.
+
+`AppShell` (`App.tsx`) decides where that lands: a defined `savedMatchId` navigates to `History` and
+sets `highlightMatchId`, a plain React state var owned by `AppShell` — never the hash, so a refresh
+always shows the plain, unhighlighted history. `HistoryScreen` takes it as a `highlightMatchId` prop
+and forwards `highlighted={match.id === highlightMatchId}` to that row's `ListItemRow`
+(`.list-item-row--highlighted`). `AppShell` drops the highlight the next time the screen leaves
+`History` for any reason other than that same module-exit navigation, so it never lingers into a
+later, unrelated visit. Exiting without having saved anything this session keeps the pre-#390
+behaviour: `History` when reopening an existing match, `Home` for a new one.
+
 ## A module's look is its own, and stays its own
 
 A module keeps the identity of the game it counts: Torī Valley wears its warm washi palette inside

@@ -21,6 +21,8 @@ export interface ListItemRowProps {
   isSelectable?: boolean
   /** ● if true, ○ if false. */
   isSelected?: boolean
+  /** Visually calls out the row — e.g. the match just saved from a module. */
+  highlighted?: boolean
   /** undefined = passive label zone (no pointer cursor). */
   onSelect?: () => void
   /** undefined = no Eye button. */
@@ -40,6 +42,7 @@ export function ListItemRow({
   badgeLabel,
   isSelectable = false,
   isSelected = false,
+  highlighted = false,
   onSelect,
   onView,
   onEdit,
@@ -49,8 +52,11 @@ export function ListItemRow({
   if (onSelect) labelClasses.push('list-item-label--selectable')
   if (isSelected) labelClasses.push('list-item-label--selected')
 
+  const rowClasses = ['list-item-row']
+  if (highlighted) rowClasses.push('list-item-row--highlighted')
+
   return (
-    <div className="list-item-row">
+    <div className={rowClasses.join(' ')}>
       <div className={labelClasses.join(' ')} onClick={onSelect}>
         {isSelectable && <span className="list-item-select-picto">{isSelected ? '●' : '○'}</span>}
         <div>

@@ -1,5 +1,5 @@
 import type { ModuleMatchResult } from '@scoreboards/module-api'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ModuleDraftRepository } from '../domain/port/moduleDraftRepository'
 import { InMemoryMatchRepository } from '../infrastructure/testing/inMemoryMatchRepository'
 import { InMemoryPlayerRepository } from '../infrastructure/testing/inMemoryPlayerRepository'
@@ -147,6 +147,28 @@ describe('ModuleHostAdapter', () => {
       host.saveMatch(result)
 
       expect(draftRepository.drafts.has('tori-valley')).toBe(false)
+    })
+
+    // Host code to host code, never surfaced to the module — lets whoever
+    // built the adapter (ModuleScoreScreen) know a match was written.
+    it('notifies onMatchSaved with the saved match id', () => {
+      const playerRepository = new InMemoryPlayerRepository()
+      const matchRepository = new InMemoryMatchRepository()
+      const draftRepository = new InMemoryModuleDraftRepository()
+      const onMatchSaved = vi.fn()
+      const host = new ModuleHostAdapter(
+        'tori-valley',
+        'gt1',
+        playerRepository,
+        matchRepository,
+        draftRepository,
+        () => NOW,
+        onMatchSaved,
+      )
+
+      const id = host.saveMatch(result)
+
+      expect(onMatchSaved).toHaveBeenCalledWith(id)
     })
 
     describe('updating a match', () => {
