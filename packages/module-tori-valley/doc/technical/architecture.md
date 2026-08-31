@@ -46,6 +46,21 @@ Every domain model that gets persisted (`Player`, `Match`/`PlayerResult`) has a 
 match, `host.saveDraft()`/`loadDraft()` for a game in progress, both stored by Scoreo under its own
 keys. The `tori_valley_*` keys the standalone app used are read by nothing since #350.
 
+`ToriValleyModuleScreen` writes a draft (`toDraft`/`ToriValleyDraftSchema` in
+`domain/model/moduleResult.ts`) on every change to `ScoreDetailScreen`'s state once the Objectif cards
+are confirmed — the state lives in that screen's own `useReducer`, and bubbles up through an
+`onChange` prop internal to this package (not part of `ScoringModuleScreenProps`) for the module screen
+to persist. `readDraft` is the only way back in: it rejects a payload the schema can't parse, one from
+an older `DRAFT_VERSION`, or one whose `playerIds` don't match the table exactly — the module scores by
+`playerId`, so a mismatched draft would silently hand another game's numbers to today's players.
+Reopening a match (`editing`) always wins over a draft for the same players; while `editing` is set,
+`onChange` is left `undefined` so a reedit never touches the slot at all — it is already durably saved
+on the host's side, and the slot belongs to a new match in progress, not to it (a reedit that wrote or
+cleared it could clobber, or later be mistaken for, an abandoned new-match draft for the same players).
+Saving clears the draft (`ModuleHostAdapter.saveMatch`, host-side); the screen's own **Cancel** button
+clears it too, but only for a new match — same `editing === undefined` guard — the only
+explicit way to discard a restored draft — leaving the module any other way keeps it, on purpose.
+
 ## Internationalization
 
 `src/i18n/index.ts` owns the module's dictionaries (English + French, bundled under `src/i18n/locales/`) and exposes them as an i18next **namespace**, `tori-valley`: `registerTranslations(i18n)` adds them to whatever instance the host provides, called when the module's chunk loads, so the two sets of strings share one instance without ever colliding. Which language they render in is Scoreo's business — the module has no bootstrap and no storage key of its own, only `src/test/i18n.ts` for the Vitest suite. Components read `useTranslation(TORI_VALLEY_NS)`'s `t()`; `domain/model/errors.ts`'s `ValidationError`/`NotFoundError` carry an optional stable `code` (and `params` for interpolation) that the `ui` layer translates at render/dispatch time — the domain layer itself has no i18n dependency, only a plain string key.

@@ -19,11 +19,17 @@ The module owns the game.
 3. **Score entry** (`ScoreDetailScreen`) — for each player, enter what they ended the game with: Torī
    counts per color, their Parchemin value (if any), who (if anyone) holds the Pinceau, and for each
    landscape the counts its Objectif card asks for (the points are computed from them; any landscape
-   can be switched to a hand-typed total). Each player's total VP updates live. **Save match** hands
-   the result back to Scoreo.
+   can be switched to a hand-typed total). Each player's total VP updates live. Every change is written
+   as a draft (`host.saveDraft`) so leaving mid-entry — today, the browser's back arrow; the module bar
+   has no ✕ of its own yet — doesn't lose the cards dealt or the scores already typed. **Save match**
+   hands the result back to Scoreo and clears the draft; **Cancel** clears it too and leaves without
+   saving, the explicit way to abandon the game in progress and start clean next time.
 4. **Scoreo again** — the match lands in Scoreo's history under _La Vallée des Torī_, with the winner
    the module ranked first. Reopening it from there comes back **on the module**, through Match setup
-   showing the variants that match was recorded with, and the grid restored.
+   showing the variants that match was recorded with, and the grid restored — a reopened match always
+   wins over a leftover draft for the same players. Coming back to the module without reopening a match
+   restores that draft instead, skipping Match setup: the cards were already dealt. A draft recorded for
+   a different set of players is ignored and the grid starts blank.
 
 Reopening, editing, deleting, exporting, and looking up a player's stats are all Scoreo's — see the
 workspace's [`doc/functional/`](../../../../doc/functional/feature.md).

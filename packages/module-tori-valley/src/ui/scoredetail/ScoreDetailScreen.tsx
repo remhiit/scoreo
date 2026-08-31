@@ -1,4 +1,4 @@
-import { useReducer } from 'react'
+import { useEffect, useReducer } from 'react'
 import { useTranslation } from 'react-i18next'
 import { TORI_VALLEY_NS } from '../../i18n'
 import type { ObjectifCardSelection } from '../../domain/model/landscape'
@@ -24,6 +24,13 @@ export interface ScoreDetailScreenProps {
    * the screen's error message.
    */
   save: (results: PlayerResult[], objectifCards: ObjectifCardSelection) => void
+  /**
+   * Internal to the module, not part of `ScoringModuleScreenProps`: the state
+   * lives in this screen's own `useReducer`, so it has to bubble up for
+   * `ToriValleyModuleScreen` to write it as a draft via `host.saveDraft`.
+   * Called after every grid change, including the first render.
+   */
+  onChange?: (results: PlayerResult[], objectifCards: ObjectifCardSelection) => void
   onSaved: () => void
   onCancel: () => void
 }
@@ -31,11 +38,16 @@ export interface ScoreDetailScreenProps {
 export function ScoreDetailScreen({
   initialState,
   save,
+  onChange,
   onSaved,
   onCancel,
 }: ScoreDetailScreenProps) {
   const { t } = useTranslation(TORI_VALLEY_NS)
   const [state, dispatch] = useReducer(scoreDetailReducer, initialState)
+
+  useEffect(() => {
+    onChange?.(state.results, state.objectifCards)
+  }, [onChange, state.results, state.objectifCards])
 
   function errorMessage(e: unknown): string {
     if (e instanceof ValidationError && e.code) return t(e.code, e.params)
