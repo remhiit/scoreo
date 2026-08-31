@@ -39,7 +39,11 @@ anyone scanning the backlog into thinking the issue is still unclaimed.
 
 1. **Read the spec fully** — context, acceptance criteria, impacted files,
    out-of-scope. If the spec is ambiguous or missing acceptance criteria,
-   stop and ask rather than guessing scope.
+   stop and ask rather than guessing scope. **As R2**, "ask" means posting a
+   comment on the issue naming exactly what's missing, then removing
+   `in-progress` (already claimed above) and adding `needs-human` — never
+   leave the issue silently stuck on `in-progress` with no PR and no comment.
+   See `doc/automation/state-machine.md` § Incomplete issue.
 2. **Branch from the latest default branch**: `feat/<issue-number>-<slug>`
    (slug = a few kebab-case words from the title).
 3. **Tests first.** Write the test(s) that encode the acceptance criteria

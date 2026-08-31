@@ -5,6 +5,8 @@
 | [`functional/feature.md`](functional/feature.md) | Features and user flows |
 | [`technical/architecture.md`](technical/architecture.md) | Tech stack, patterns, structure |
 | [`technical/module-contract.md`](technical/module-contract.md) | The contract between the host app and a scoring module |
+| [`technical/automation-plan.md`](technical/automation-plan.md) | Automation architecture: routines, phases, incidents |
+| [`automation/state-machine.md`](automation/state-machine.md) | The formal state machine backing the automation plan: labels, transitions, retry/failure rules |
 | [`technical/deployment.md`](technical/deployment.md) | CI/CD and deployment |
 | [`technical/migrations.md`](technical/migrations.md) | Data migration history |
 | [`glossary.md`](glossary.md) | Project term definitions |
