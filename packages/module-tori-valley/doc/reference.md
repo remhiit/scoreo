@@ -29,6 +29,7 @@ The package is a scoring module Scoreo loads — nothing else. What the host use
 | `ToriValleyModuleScreen` | `src/ui/module/ToriValleyModuleScreen.tsx` | Default export, implements `ScoringModuleScreenProps`. Reads players from `host.getPlayers()`, saves through `host.saveMatch()`, and **never touches `tori_valley_*`** — the host owns the storage |
 | `toModuleMatchResult` | `src/domain/model/moduleResult.ts` | The single description of a finished match, keyed by `playerId`. The v1.1 file export maps ids to names on top of it, so file and module can never disagree about a rank or a category |
 | `ToriValleyModuleDataSchema` | `src/domain/model/moduleResult.ts` | Validates the opaque payload the host hands back when a match is reopened; an unreadable one starts a fresh grid |
+| `ToriValleyDraftSchema` / `toDraft` / `readDraft` | `src/domain/model/moduleResult.ts` | The in-progress scoring session written to `host.saveDraft` after every grid change and read back via `host.loadDraft`. Same shape as `moduleData` plus `playerIds`: `readDraft` rejects an unreadable/older-shape payload or one written for a different player set, in which case `ToriValleyModuleScreen` starts a blank grid |
 
 `ScoreDetailScreen` takes a `save(results, objectifCards)` callback rather than a use case: where the scores go is the host's business, and the screen stays ignorant of it.
 
@@ -47,7 +48,12 @@ The package is a scoring module Scoreo loads — nothing else. What the host use
 ## localStorage Keys
 
 The module writes **none**. It reaches storage only through `ModuleHost`, which keeps its draft
-under Scoreo's own `scoreo_module_draft_tori-valley`.
+under Scoreo's own `scoreo_module_draft_tori-valley` — written by `ToriValleyModuleScreen` on every
+change to the grid once the Objectif cards are confirmed (not during card dealing: the grid doesn't
+exist yet), and cleared either by `ModuleHostAdapter.saveMatch` on a finished match or by the screen's
+own **Cancel** button, the explicit way to start over. The module bar's own exit (leaving mid-entry,
+today only the browser's back arrow) leaves the draft in place on purpose — it is what makes that exit
+recoverable.
 
 | Key                                                | Content                                                                              |
 | -------------------------------------------------- | ------------------------------------------------------------------------------------ |

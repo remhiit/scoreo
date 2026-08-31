@@ -27,6 +27,59 @@ export const ToriValleyModuleDataSchema = z.object({
 export type ToriValleyModuleData = z.infer<typeof ToriValleyModuleDataSchema>
 
 /**
+ * Bumped only when a draft stops being readable by this code. A draft written
+ * by another version fails the literal below, and the screen starts a clean
+ * grid rather than reviving half of an older shape.
+ */
+export const DRAFT_VERSION = 1
+
+/**
+ * A scoring session in progress: the same shape as `moduleData`, plus the
+ * `playerIds` it was written for. Scoring is keyed by `playerId` — see
+ * `buildInitialState` — so a draft restored against a different table would
+ * quietly hand another game's scores to whichever players happen to share an
+ * id.
+ */
+export const ToriValleyDraftSchema = z.object({
+  version: z.literal(DRAFT_VERSION),
+  playerIds: z.array(z.string()),
+  objectifCards: ObjectifCardSelectionSchema,
+  results: z.array(PlayerResultSchema),
+})
+
+export type ToriValleyDraft = z.infer<typeof ToriValleyDraftSchema>
+
+export function toDraft(
+  playerIds: readonly string[],
+  objectifCards: ObjectifCardSelection,
+  results: PlayerResult[],
+): ToriValleyDraft {
+  return { version: DRAFT_VERSION, playerIds: [...playerIds], objectifCards, results }
+}
+
+function samePlayerSet(restored: readonly string[], playerIds: readonly string[]): boolean {
+  if (restored.length !== playerIds.length) return false
+  const asSet = new Set(restored)
+  return playerIds.every((id) => asSet.has(id))
+}
+
+/**
+ * Reads a draft the host handed back, without ever trusting it: it may have
+ * been written by an older version of this module, hand-edited, or truncated
+ * by a browser that ran out of quota. Anything the schema rejects, or that
+ * was written for a different table, yields `undefined` — the caller starts a
+ * clean grid rather than serving another match's scores to today's players.
+ */
+export function readDraft(
+  data: unknown,
+  playerIds: readonly string[],
+): ToriValleyModuleData | undefined {
+  const parsed = ToriValleyDraftSchema.safeParse(data)
+  if (!parsed.success || !samePlayerSet(parsed.data.playerIds, playerIds)) return undefined
+  return { objectifCards: parsed.data.objectifCards, results: parsed.data.results }
+}
+
+/**
  * Torī Valley has no rounds, so a match's breakdown is emitted as pseudo-rounds
  * — one per scoring category, in this fixed order.
  *

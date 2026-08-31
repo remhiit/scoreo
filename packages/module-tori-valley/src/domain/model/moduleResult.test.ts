@@ -4,8 +4,11 @@ import { defaultObjectifCardSelection } from './landscape'
 import { emptyPlayerResult, scorePlayerResult, type PlayerResult } from './match'
 import type { ModuleMatchInput } from './moduleResult'
 import {
+  DRAFT_VERSION,
   MODULE_DATA_VERSION,
+  readDraft,
   SCORE_CATEGORIES,
+  toDraft,
   ToriValleyModuleDataSchema,
   toModuleMatchResult,
 } from './moduleResult'
@@ -133,5 +136,37 @@ describe('toModuleMatchResult', () => {
       const player = source.results.find((r) => r.playerId === entry.playerId)
       expect(entry.score).toBe(scorePlayerResult(player!))
     }
+  })
+})
+
+describe('readDraft', () => {
+  const playerIds = ['p1', 'p2']
+
+  it('reads back a valid draft written for these exact players', () => {
+    const draft = toDraft(playerIds, defaultObjectifCardSelection(), [alice, bob])
+
+    expect(readDraft(draft, playerIds)).toEqual({
+      objectifCards: defaultObjectifCardSelection(),
+      results: [alice, bob],
+    })
+  })
+
+  it('ignores an unreadable payload', () => {
+    expect(readDraft({ nonsense: true }, playerIds)).toBeUndefined()
+  })
+
+  it('ignores a payload from an older, incompatible draft shape', () => {
+    const olderShape = { ...toDraft(playerIds, defaultObjectifCardSelection(), [alice, bob]) }
+    expect(readDraft({ ...olderShape, version: DRAFT_VERSION + 1 }, playerIds)).toBeUndefined()
+  })
+
+  it('ignores a draft whose player set differs from the host-provided one', () => {
+    const draft = toDraft(['p1', 'p3'], defaultObjectifCardSelection(), [alice])
+    expect(readDraft(draft, playerIds)).toBeUndefined()
+  })
+
+  it('does not care about player order, only the set', () => {
+    const draft = toDraft(['p2', 'p1'], defaultObjectifCardSelection(), [alice, bob])
+    expect(readDraft(draft, playerIds)).toBeDefined()
   })
 })

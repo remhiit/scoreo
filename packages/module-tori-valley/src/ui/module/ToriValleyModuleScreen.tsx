@@ -7,6 +7,8 @@ import { registerTranslations } from '../../i18n'
 import '../../styles.css'
 import type { ObjectifCardSelection } from '../../domain/model/landscape'
 import {
+  readDraft,
+  toDraft,
   ToriValleyModuleDataSchema,
   toModuleMatchResult,
   type ToriValleyModuleData,
@@ -39,7 +41,16 @@ export default function ToriValleyModuleScreen({
   editing,
   onExit,
 }: ScoringModuleScreenProps) {
-  const restored = useMemo(() => (editing ? parseModuleData(editing.data) : undefined), [editing])
+  // Reopening a match wins over the draft: the host asked for *that* game.
+  // Read once, on mount — `host.loadDraft()` is not meant to be polled.
+  const [draft] = useState<ToriValleyModuleData | undefined>(() =>
+    editing === undefined ? readDraft(host.loadDraft(), playerIds) : undefined,
+  )
+
+  const restored = useMemo(
+    () => (editing ? parseModuleData(editing.data) : draft),
+    [editing, draft],
+  )
 
   // The scoring screen only ever reads id and name; `active` belongs to the
   // host's own roster and means nothing to a match in progress.
@@ -48,7 +59,12 @@ export default function ToriValleyModuleScreen({
     return playerIds.map((id) => ({ id, name: known.get(id) ?? '', active: true }))
   }, [host, playerIds])
 
-  const [objectifCards, setObjectifCards] = useState<ObjectifCardSelection | undefined>(undefined)
+  // A restored draft already has its cards confirmed: skip straight to the
+  // grid instead of asking again. Match setup itself has no draft of its own
+  // (out of scope — the grid doesn't exist yet at that step).
+  const [objectifCards, setObjectifCards] = useState<ObjectifCardSelection | undefined>(
+    () => draft?.objectifCards,
+  )
 
   if (players.length === 0) return null
 
@@ -72,6 +88,7 @@ export default function ToriValleyModuleScreen({
     <ModuleRoot>
       <ScoreDetailScreen
         initialState={buildInitialState(players, mode, restored?.results ?? [], objectifCards)}
+        onChange={(results, cards) => host.saveDraft(toDraft(playerIds, cards, results))}
         save={(results, cards) => {
           host.saveMatch(
             toModuleMatchResult({
@@ -85,7 +102,14 @@ export default function ToriValleyModuleScreen({
           )
         }}
         onSaved={onExit}
-        onCancel={onExit}
+        onCancel={() => {
+          // The ✕ in the module bar (#392) leaves the draft in place — it is
+          // the safety net a normal exit relies on. Cancelling from inside the
+          // grid is the only way to say "start over": without it, a restored
+          // draft would be impossible to escape.
+          host.clearDraft()
+          onExit()
+        }}
       />
     </ModuleRoot>
   )
