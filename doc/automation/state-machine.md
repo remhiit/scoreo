@@ -37,10 +37,10 @@ or a human intervenes. The PR's labels below are what actually cycles.
 | `in-progress` | Control | A routine currently owns this item ("claim the run") | R2 on an issue; R3 or R4 on a PR | The routine that set it, once its run ends (success, stop-and-ask, or escalation) |
 | `needs-review` | Control | PR queued for R3 — this is R3's trigger | `needs-review-label.yml` (PR opened/ready/synchronize) | R3 (`pr-review`), in its first action |
 | `attempt-1`/`attempt-2`/`attempt-3` | Control | R4's anti-loop retry counter on a PR | R4 (`address-feedback`), after a fix is pushed | R4 itself (old counter, before posting the new one), or R3 on `review-pass` (clears a stale counter) |
-| `review-pass` | Result | R3's verdict: PR conforms to its issue's spec | R3 | R3, if a later review overturns it to `needs-fix` |
-| `needs-fix` | Result **and** control | R3's verdict: PR needs changes — **also** R4's trigger (dual role, see below) | `needs-review-label.yml` (clears a stale one), R3 | R4, in its first action |
+| `review-pass` | Result | R3's verdict: PR conforms to its issue's spec | R3 | R3, if a later review overturns it to `needs-fix`; `needs-review-label.yml` (clears a stale one, on synchronize) |
+| `needs-fix` | Result **and** control | R3's verdict: PR needs changes — **also** R4's trigger (dual role, see below) | R3 | R4, in its first action; `needs-review-label.yml` (clears a stale one, on synchronize) |
 | `needs-human` | Result | Terminal escalation: automation cannot resolve this without a decision | R4 (attempt cap or scope mismatch on a PR) | Only a human, by removing it and re-queuing |
-| `auto` | Result | Eligible for auto-merge once required checks are green | R2 or R4, only when the diff matches the risk-Faible whitelist (`automation-plan.md` §5) | R4, on escalation to `needs-human` |
+| `auto` | Result | Eligible for auto-merge once required checks are green | R2 only, when the diff matches the risk-Faible whitelist (`automation-plan.md` §5) | R4, on escalation to `needs-human` |
 
 **`needs-fix` is deliberately dual-role**: it is both R3's verdict *and* the
 label whose presence is R4's GitHub trigger filter. There is no separate
