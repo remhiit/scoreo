@@ -88,7 +88,15 @@ export default function ToriValleyModuleScreen({
     <ModuleRoot>
       <ScoreDetailScreen
         initialState={buildInitialState(players, mode, restored?.results ?? [], objectifCards)}
-        onChange={(results, cards) => host.saveDraft(toDraft(playerIds, cards, results))}
+        // The single draft slot belongs to a new match in progress, never to a
+        // reedit: `editing` is already durably saved on the host's side, and
+        // writing here would let it clobber (or later be mistaken for) an
+        // abandoned new-match draft for the same players.
+        onChange={
+          editing === undefined
+            ? (results, cards) => host.saveDraft(toDraft(playerIds, cards, results))
+            : undefined
+        }
         save={(results, cards) => {
           host.saveMatch(
             toModuleMatchResult({
@@ -106,8 +114,9 @@ export default function ToriValleyModuleScreen({
           // The ✕ in the module bar (#392) leaves the draft in place — it is
           // the safety net a normal exit relies on. Cancelling from inside the
           // grid is the only way to say "start over": without it, a restored
-          // draft would be impossible to escape.
-          host.clearDraft()
+          // draft would be impossible to escape. Only for a new match, though:
+          // a reedit never wrote to that slot, so it must not clear it either.
+          if (editing === undefined) host.clearDraft()
           onExit()
         }}
       />

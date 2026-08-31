@@ -53,8 +53,12 @@ are confirmed — the state lives in that screen's own `useReducer`, and bubbles
 to persist. `readDraft` is the only way back in: it rejects a payload the schema can't parse, one from
 an older `DRAFT_VERSION`, or one whose `playerIds` don't match the table exactly — the module scores by
 `playerId`, so a mismatched draft would silently hand another game's numbers to today's players.
-Reopening a match (`editing`) always wins over a draft for the same players. Saving clears the draft
-(`ModuleHostAdapter.saveMatch`, host-side); the screen's own **Cancel** button clears it too, the only
+Reopening a match (`editing`) always wins over a draft for the same players; while `editing` is set,
+`onChange` is left `undefined` so a reedit never touches the slot at all — it is already durably saved
+on the host's side, and the slot belongs to a new match in progress, not to it (a reedit that wrote or
+cleared it could clobber, or later be mistaken for, an abandoned new-match draft for the same players).
+Saving clears the draft (`ModuleHostAdapter.saveMatch`, host-side); the screen's own **Cancel** button
+clears it too, but only for a new match — same `editing === undefined` guard — the only
 explicit way to discard a restored draft — leaving the module any other way keeps it, on purpose.
 
 ## Internationalization

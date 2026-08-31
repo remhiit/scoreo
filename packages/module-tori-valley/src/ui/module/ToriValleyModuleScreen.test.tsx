@@ -306,5 +306,55 @@ describe('ToriValleyModuleScreen', () => {
       expect(state.draft).toBeUndefined()
       expect(onExit).toHaveBeenCalledOnce()
     })
+
+    // The single draft slot belongs to a new match in progress. A reedit is
+    // already durably saved on the host's side, so touching that slot here
+    // would let it clobber — or later be mistaken for — an abandoned new-match
+    // draft for the very same players.
+    describe('reediting a saved match', () => {
+      const editing = {
+        matchId: 'existing-match',
+        version: MODULE_DATA_VERSION,
+        data: { objectifCards: DEFAULT_CARDS, results: [emptyResult('p1'), emptyResult('p2')] },
+      }
+
+      it('never writes to the draft slot, however many grid changes are made', () => {
+        const { drafts } = renderScreen({ editing })
+        confirmCards()
+
+        fireEvent.change(screen.getByLabelText('Alice red Torī count'), { target: { value: '1' } })
+
+        expect(drafts).toHaveLength(0)
+      })
+
+      it('does not clobber an unrelated new-match draft already sitting in that slot', () => {
+        const existingDraft = toDraft(
+          ['p1', 'p2'],
+          DEFAULT_CARDS,
+          [{ ...emptyResult('p1'), parcheminValue: 3 }, emptyResult('p2')],
+        )
+        const { state } = renderScreenWithDraft(existingDraft, { editing })
+        confirmCards()
+
+        fireEvent.change(screen.getByLabelText('Alice red Torī count'), { target: { value: '1' } })
+
+        expect(state.draft).toBe(existingDraft)
+      })
+
+      it('does not clear an unrelated new-match draft when cancelling', () => {
+        const existingDraft = toDraft(['p1', 'p2'], DEFAULT_CARDS, [
+          emptyResult('p1'),
+          emptyResult('p2'),
+        ])
+        const { state, onExit } = renderScreenWithDraft(existingDraft, { editing })
+        confirmCards()
+
+        fireEvent.click(screen.getByText('Cancel'))
+
+        expect(state.clearedCount).toBe(0)
+        expect(state.draft).toBe(existingDraft)
+        expect(onExit).toHaveBeenCalledOnce()
+      })
+    })
   })
 })
