@@ -244,6 +244,11 @@ que le déblocage d'une issue profite au dispatch du même run.
 
 ---
 
+Table complète des transitions état → événement → routine → état cible,
+catégorisation des labels (métier/contrôle/résultat) et règles de reprise/
+échec/retry : voir `doc/automation/state-machine.md`, le contrat formel
+dérivé de cette section et de la §4.
+
 ## 5. Labels (le bus d'événements)
 
 | Label | Rôle |

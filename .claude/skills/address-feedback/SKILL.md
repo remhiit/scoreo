@@ -87,7 +87,12 @@ because a human happened to invoke the skill this time.
 2. **Fix only that list.** If a fix reveals it can't be done without a
    larger change than the review anticipated, stop and flag that
    explicitly rather than expanding scope unilaterally — this is the one
-   case where checking in beats plowing ahead.
+   case where checking in beats plowing ahead. **As R4**, treat this the
+   same as exhausting the attempt cap (step 4 of "Attempt counter" above):
+   remove `in-progress`, remove `auto` if present, add `needs-human`, and
+   post a comment explaining the scope mismatch — don't spend a further
+   attempt guessing at a bigger change nobody asked for. See
+   `doc/automation/state-machine.md` § Contradictory feedback.
 3. **Re-run the full check suite** (`pnpm lint && pnpm typecheck && pnpm test
    && pnpm build && pnpm test:e2e`) before pushing — a fix for one flagged
    item shouldn't introduce a new failure elsewhere. Build before the e2e
