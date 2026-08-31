@@ -242,6 +242,41 @@ d'attente de `auto-merge-sync.yml` a expiré — voir Phase 5, incident PR
 #264/#273), puis `scripts/dispatch-ready.mjs`, dans cet ordre précis pour
 que le déblocage d'une issue profite au dispatch du même run.
 
+### Journal d'exécution idempotent
+
+Chaque passage d'une routine sur une issue/PR doit rester traçable et
+rejouable sans spammer la discussion (#376). `scripts/automation-log.mjs`
+tient, pour une routine et une issue/PR donnée, **un unique commentaire**
+retrouvé via un marqueur HTML caché en première ligne
+(`<!-- automation-log:<routine> -->`) : `upsertAutomationLog()` cherche ce
+marqueur parmi les commentaires existants et **met à jour** le commentaire
+trouvé (`PATCH`) au lieu d'en créer un nouveau ; s'il n'existe pas encore,
+il en poste un (`POST`). Le corps rendu suit le format cible de l'issue
+(routine, date de déclenchement, commit analysé, statut
+`running`/`succeeded`/`failed`/`manual-required`, itération, validations,
+lien vers le run GitHub Actions), suivi d'une synthèse en texte libre
+lisible par un humain. Comme `requeue-lost-events.mjs` et les autres
+scripts de `scripts/`, c'est un script déterministe (zéro LLM, §2 principe
+2) : `GH_TOKEN`/`REPO_OWNER`/`REPO_NAME` en entrée, `fetch()` brut vers
+l'API REST, testé indépendamment (`scripts/automation-log.test.mjs`).
+
+Comparer le SHA et le statut du journal existant à l'appel en cours
+détecte qu'un même commit a déjà été traité par cette routine
+(`alreadyProcessed` dans le retour de `upsertAutomationLog()`) — utile à
+un appelant qui veut éviter un travail redondant sur une relance qui ne
+change rien au HEAD SHA.
+
+`review-status-sync.yml` est le premier appelant : au verdict
+`review-pass`/`needs-fix` de R3, en plus du commit status `claude/review`
+(§ ci-dessus), il tient désormais le journal `pr-review` de la PR —
+itération lue depuis le label `attempt-N` courant s'il y en a un, lien
+vers son propre run comme résultat. Les autres routines (R2, R4, R5)
+n'écrivent pas encore leur propre journal ; les brancher suit le même
+patron (une Action zéro-LLM au point où la routine traduit déjà son
+verdict en signal GitHub — labels, commit status — plutôt que la routine
+elle-même, qui n'a accès qu'aux outils MCP GitHub habituels et pas à un
+appel script direct).
+
 ---
 
 Table complète des transitions état → événement → routine → état cible,
