@@ -19,6 +19,12 @@ export interface HistoryScreenProps {
   deleteMatchUseCase: DeleteMatchUseCase
   /** undefined = edit action hidden (no navigation wired up). */
   onEditMatch?: (gameTypeId: string, playerIds: string[], matchId: string) => void
+  /**
+   * The match to call out — e.g. just saved from a module. React state owned
+   * by the caller, not part of this screen's own state or the hash: a
+   * refresh always shows the plain, unhighlighted history.
+   */
+  highlightMatchId?: string
 }
 
 function uniqueGameTypes(displays: { gameType: GameType | undefined }[]): GameType[] {
@@ -39,6 +45,7 @@ export function HistoryScreen({
   getGameTypes,
   deleteMatchUseCase,
   onEditMatch,
+  highlightMatchId,
 }: HistoryScreenProps) {
   const { t } = useTranslation()
   const [state, dispatch] = useReducer(historyReducer, initialHistoryState)
@@ -108,6 +115,7 @@ export function HistoryScreen({
               <ListItemRow
                 key={display.match.id}
                 label={gameLabel}
+                highlighted={display.match.id === highlightMatchId}
                 players={
                   <>
                     {buildScoreSummary(display).map((part, i) => (

@@ -36,6 +36,9 @@
      spot — nothing is created before that.
 3. **Score Detail** → enter rounds (auto-saved after each score) → **Finish match**
    - A match scored on a module reopens **on that module**, with its own grid restored.
+   - Exiting a module after it saved a match lands on **History**, that match called out, instead of
+     Home — no burger + History detour needed to find it. Exiting without having saved anything keeps
+     the previous behavior: History when reopening an existing match, Home for a new one.
 4. If cancelling mid-match: confirmation modal asks to discard or resume
 5. Back to **Home** — stats and selection reset
 

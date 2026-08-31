@@ -5,7 +5,8 @@ import { addPlayer } from './helpers/players'
 /**
  * The target scenario of the whole module effort:
  * Home → pick players → New Match → the module's game → "Play on the module" →
- * score → save → the match is in Scoreo's history, with the module's own winner.
+ * score → save → the match is in Scoreo's history, with the module's own winner,
+ * landed on directly (no burger + History detour needed, see #390).
  */
 
 test.beforeEach(async ({ page }) => {
@@ -36,14 +37,13 @@ test('scoring a match on the Torī Valley module lands it in Scoreo history', as
   await page.getByLabel(`${alice} red Torī count`).fill('1')
   await page.getByRole('button', { name: 'Save match' }).click()
 
-  // Back in Scoreo: one match, under the game type the module's manifest named,
-  // with the winner the module ranked first. Scoped to the row, because the
-  // History filter carries the same game name in a hidden <option>.
-  await page.getByRole('button', { name: 'Menu' }).click()
-  await page.getByRole('button', { name: 'History' }).click()
+  // The module exits on save, and the host lands straight on History with
+  // that match called out — no burger + History detour needed.
+  await expect(page.getByRole('button', { name: 'Menu' })).toBeVisible()
 
   const row = page.locator('.list-item-row')
   await expect(row).toHaveCount(1)
+  await expect(row).toHaveClass(/list-item-row--highlighted/)
   await expect(row.getByText('La Vallée des Torī')).toBeVisible()
   // Winners are bold: Alice alone, with the 2 VP her Torī series is worth.
   await expect(row.locator('strong')).toHaveCount(1)
@@ -56,11 +56,14 @@ test('scoring a match on the Torī Valley module lands it in Scoreo history', as
   await expect(page.getByLabel(`${alice} green Torī count`)).toHaveValue('1')
   await expect(page.getByLabel(`${alice} red Torī count`)).toHaveValue('1')
 
-  // Saving again updates that match instead of adding a second one.
+  // Saving again updates that match instead of adding a second one, and lands
+  // back on that same row.
   await page.getByLabel(`${alice} blue Torī count`).fill('1')
   await page.getByRole('button', { name: 'Save match' }).click()
 
+  await expect(page.getByRole('button', { name: 'Menu' })).toBeVisible()
   await expect(page.locator('.list-item-row')).toHaveCount(1)
+  await expect(page.locator('.list-item-row')).toHaveClass(/list-item-row--highlighted/)
   await expect(page.locator('.list-item-row').locator('strong')).toContainText(`${alice} 4`)
 })
 

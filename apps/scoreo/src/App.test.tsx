@@ -1,6 +1,43 @@
+import type { ScoringModuleScreenProps } from '@scoreboards/module-api'
 import { act, fireEvent, render, screen } from '@testing-library/react'
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { App } from './App'
+
+// A minimal fake module, standing in for a real one (tori-valley, mille-sabords):
+// saves on click, exits separately — App.tsx's landing decision is what these
+// tests exercise, not any particular module's own scoring UI.
+function FakeModuleScreen({ host, onExit }: ScoringModuleScreenProps) {
+  return (
+    <div>
+      <button onClick={() => host.saveMatch({ ranking: [{ playerId: 'p1', score: 1, rank: 1 }] })}>
+        Save
+      </button>
+      <button onClick={onExit}>Exit</button>
+    </div>
+  )
+}
+
+vi.mock('./modules/registry', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('./modules/registry')>()
+  return {
+    ...actual,
+    findModule: (moduleId: string) =>
+      moduleId === 'fake'
+        ? {
+            manifest: {
+              moduleId: 'fake',
+              displayName: 'Fake',
+              gameNames: ['Fake'],
+              winCondition: 'HIGHEST_SCORE',
+              minPlayers: 1,
+              maxPlayers: 4,
+              dataVersion: 1,
+            },
+            load: () => Promise.resolve({ default: FakeModuleScreen }),
+          }
+        : actual.findModule(moduleId),
+  }
+})
 
 function seedStatsData() {
   localStorage.setItem(
@@ -185,5 +222,52 @@ describe('App', () => {
       window.dispatchEvent(new PopStateEvent('popstate'))
     })
     expect(screen.getByLabelText('Menu')).toBeInTheDocument()
+  })
+
+  // The target scenario of #390: no more burger + History detour needed to
+  // find the match just scored on a module.
+  it('ModuleScore: exiting after saving lands on History with that match highlighted', async () => {
+    render(<App />)
+    act(() => {
+      window.history.replaceState(null, '', '#/module/fake/gt1/p1')
+      window.dispatchEvent(new PopStateEvent('popstate'))
+    })
+
+    fireEvent.click(await screen.findByText('Save'))
+    fireEvent.click(screen.getByText('Exit'))
+
+    expect(screen.getByLabelText('Menu')).toBeInTheDocument()
+    const rows = document.querySelectorAll('.list-item-row')
+    expect(rows).toHaveLength(1)
+    expect(rows[0]).toHaveClass('list-item-row--highlighted')
+  })
+
+  it('ModuleScore: the highlight does not linger once History is left and revisited', async () => {
+    render(<App />)
+    act(() => {
+      window.history.replaceState(null, '', '#/module/fake/gt1/p1')
+      window.dispatchEvent(new PopStateEvent('popstate'))
+    })
+    fireEvent.click(await screen.findByText('Save'))
+    fireEvent.click(screen.getByText('Exit'))
+    expect(document.querySelector('.list-item-row--highlighted')).not.toBeNull()
+
+    fireEvent.click(screen.getByText('History', { selector: '.app-title' }))
+    fireEvent.click(screen.getByLabelText('Menu'))
+    fireEvent.click(screen.getByText('History'))
+
+    expect(document.querySelector('.list-item-row--highlighted')).toBeNull()
+  })
+
+  it('ModuleScore: exiting without saving keeps the current behaviour (Home for a new match)', async () => {
+    render(<App />)
+    act(() => {
+      window.history.replaceState(null, '', '#/module/fake/gt1/p1')
+      window.dispatchEvent(new PopStateEvent('popstate'))
+    })
+
+    fireEvent.click(await screen.findByText('Exit'))
+
+    expect(screen.getByText('Getting started')).toBeInTheDocument()
   })
 })

@@ -182,10 +182,17 @@ function AppShell() {
   const [themePickerOpen, setThemePickerOpen] = useState(false)
   const [languagePickerOpen, setLanguagePickerOpen] = useState(false)
   const [statsBackOverride, setStatsBackOverride] = useState<(() => void) | null>(null)
+  const [highlightMatchId, setHighlightMatchId] = useState<string | undefined>(undefined)
   const [prevScreenForStatsBack, setPrevScreenForStatsBack] = useState(current)
   if (prevScreenForStatsBack !== current) {
     setPrevScreenForStatsBack(current)
     setStatsBackOverride(null)
+    // Leaving History for any reason other than a fresh module save (which
+    // sets the highlight in the same batch as this navigation) drops it —
+    // reaching History again later otherwise shows a stale row.
+    if (prevScreenForStatsBack.type === 'History' && highlightMatchId !== undefined) {
+      setHighlightMatchId(undefined)
+    }
   }
   const getHeadToHead = useMemo(
     () => new GetHeadToHeadUseCase(services.matchRepository, services.gameTypeRepository, services.playerRepository),
@@ -305,7 +312,14 @@ function AppShell() {
         <ModuleScoreScreen
           screen={current}
           services={services}
-          onExit={() => navigate(current.matchId !== undefined ? HISTORY_SCREEN : HOME_SCREEN)}
+          onExit={(savedMatchId) => {
+            if (savedMatchId !== undefined) {
+              setHighlightMatchId(savedMatchId)
+              navigate(HISTORY_SCREEN)
+              return
+            }
+            navigate(current.matchId !== undefined ? HISTORY_SCREEN : HOME_SCREEN)
+          }}
         />
       </div>
     )
@@ -361,6 +375,7 @@ function AppShell() {
             getGameTypes={getGameTypes}
             deleteMatchUseCase={deleteMatchUseCase}
             onEditMatch={handleEditMatch}
+            highlightMatchId={highlightMatchId}
           />
         )}
         {current.type === 'Stats' && (

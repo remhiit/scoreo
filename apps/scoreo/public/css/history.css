@@ -1,5 +1,12 @@
 /* ── History screen ── */
 
+/* Row called out after landing here from a module's save — see
+   ModuleScoreScreen/App.tsx (React state, not the hash: a refresh drops it). */
+.list-item-row--highlighted {
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 2px var(--color-primary-tint);
+}
+
 /* ── Filter dropdown ── */
 
 .history-filter {

@@ -50,7 +50,10 @@ function match(
 }
 
 /** Chess (m1) is the most recent match, so it sorts first in the list. */
-function renderHistory(onEditMatch?: HistoryScreenProps['onEditMatch']) {
+function renderHistory(
+  onEditMatch?: HistoryScreenProps['onEditMatch'],
+  highlightMatchId?: HistoryScreenProps['highlightMatchId'],
+) {
   const playerRepo = new InMemoryPlayerRepository()
   playerRepo.save(player('p1', 'Alice'))
   playerRepo.save(player('p2', 'Bob'))
@@ -89,6 +92,7 @@ function renderHistory(onEditMatch?: HistoryScreenProps['onEditMatch']) {
       getGameTypes={new GetGameTypesUseCase(gameTypeRepo)}
       deleteMatchUseCase={new DeleteMatchUseCase(matchRepo)}
       onEditMatch={onEditMatch}
+      highlightMatchId={highlightMatchId}
     />,
   )
 }
@@ -140,6 +144,22 @@ describe('HistoryScreen', () => {
     const dateLine = chessRow!.querySelector('.list-item-date')
     expect(dateLine).toHaveTextContent(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/)
     expect(chessRow!.querySelector('.list-item-subtitle')).not.toBeInTheDocument()
+  })
+
+  // React state passed in by the caller (App.tsx, after a module exit) —
+  // e.g. calls out the match just saved on a module.
+  it('highlights the row named by highlightMatchId, and no other', () => {
+    renderHistory(undefined, 'm2')
+
+    expect(itemName('Chess').closest('.list-item-row')).not.toHaveClass('list-item-row--highlighted')
+    expect(itemName('Darts').closest('.list-item-row')).toHaveClass('list-item-row--highlighted')
+  })
+
+  it('highlights nothing when highlightMatchId is undefined', () => {
+    renderHistory()
+
+    expect(itemName('Chess').closest('.list-item-row')).not.toHaveClass('list-item-row--highlighted')
+    expect(itemName('Darts').closest('.list-item-row')).not.toHaveClass('list-item-row--highlighted')
   })
 
   it('shows the generic empty message once every match is deleted', () => {

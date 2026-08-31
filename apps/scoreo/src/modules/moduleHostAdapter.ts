@@ -25,6 +25,11 @@ export class ModuleHostAdapter implements ModuleHost {
     private readonly matchRepository: MatchRepository,
     private readonly moduleDraftRepository: ModuleDraftRepository,
     private readonly currentDate: () => number,
+    // Host code to host code, never surfaced to the module: lets the screen
+    // that owns this adapter know a match was written, for its own exit
+    // decision. `saveMatch`'s return value already tells the *caller*; this
+    // tells whoever built the adapter, without widening the module contract.
+    private readonly onMatchSaved?: (matchId: string) => void,
   ) {}
 
   getPlayers(): readonly ModulePlayer[] {
@@ -68,6 +73,7 @@ export class ModuleHostAdapter implements ModuleHost {
 
     this.matchRepository.save(match)
     this.moduleDraftRepository.clear(this.moduleId)
+    this.onMatchSaved?.(match.id)
     return match.id
   }
 
