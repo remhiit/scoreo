@@ -83,7 +83,7 @@ async function getProjectMeta() {
 
 // Closing state beats labels: an item closed as `completed` (issue) or
 // merged (PR, no native `stateReason` — treated as the same signal) always
-// reads as "Done", even while it still carries `in-progress` (never removed
+// reads as "Done", even while it still carries `automation:in-progress` (never removed
 // by close-linked-issues.mjs, cf. #195). A `not_planned` close (or a PR
 // closed without merging) imposes no status, consistent with the "unknown
 // label" case below.

@@ -2,7 +2,7 @@
 // Dispatcher : lisse le débit d'événements vers R2 (doc/technical/
 // automation-plan.md §3 — au-delà du plafond de runs, les events
 // excédentaires sont perdus, pas mis en file). Les specs validées par R1
-// attendent dans le label tampon `queued` ; ce script promeut en `ready`
+// attendent dans le label tampon `automation:queued` ; ce script promeut en `automation:ready`
 // **une seule issue à la fois**, seulement quand rien n'est déjà en vol.
 // Appelé par le même workflow que le balayeur horaire
 // (requeue-lost-events.yml) : cron horaire, plus les triggers `issues`
@@ -16,7 +16,7 @@ const API_ROOT = `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}`
 // le rapport R6, pas une intuition (cf. #155).
 const MAX_IN_FLIGHT = 1
 
-// Anti-rafale R5 : au-delà de ce nombre de PR ouvertes `needs-review`,
+// Anti-rafale R5 : au-delà de ce nombre de PR ouvertes `automation:needs-review`,
 // laisser R3 absorber la file avant d'y ajouter une PR de plus.
 const MAX_NEEDS_REVIEW_BACKLOG = 2
 
@@ -105,14 +105,14 @@ async function main() {
     readyIssues.filter((item) => !item.pull_request).length +
     inProgressIssues.filter((item) => !item.pull_request).length
   if (inFlight >= MAX_IN_FLIGHT) {
-    console.log(`${inFlight} issue(s) déjà ready/in-progress (plafond ${MAX_IN_FLIGHT}) — pas de dispatch ce run`)
+    console.log(`${inFlight} issue(s) déjà automation:ready/automation:in-progress (plafond ${MAX_IN_FLIGHT}) — pas de dispatch ce run`)
     return
   }
 
   const needsReviewPRs = (await listOpenWithLabel('automation:needs-review')).filter((item) => item.pull_request)
   if (needsReviewPRs.length > MAX_NEEDS_REVIEW_BACKLOG) {
     console.log(
-      `${needsReviewPRs.length} PR(s) needs-review ouvertes (> ${MAX_NEEDS_REVIEW_BACKLOG}) — laisse R3 absorber la file avant de dispatcher`,
+      `${needsReviewPRs.length} PR(s) automation:needs-review ouvertes (> ${MAX_NEEDS_REVIEW_BACKLOG}) — laisse R3 absorber la file avant de dispatcher`,
     )
     return
   }

@@ -65,6 +65,6 @@ corresponding reference.
 
 It does not touch `apps/scoreo/public/`, `apps/scoreo/src/domain/model/`, ports/adapters, or
 navigation as part of a "quick fix" — those are the same categories excluded
-from the `auto` whitelist in `automation-plan.md` §5 for a reason. If a
+from the `automation:enabled` whitelist in `automation-plan.md` §5 for a reason. If a
 hygiene pass surfaces something in those areas, open a normal issue via
 `issue-to-spec` instead of folding it into a hygiene PR.

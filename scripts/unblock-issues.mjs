@@ -1,8 +1,8 @@
 #!/usr/bin/env node
-// On `issues` `closed` (state_reason "completed"), promotes to `queued` every
+// On `issues` `closed` (state_reason "completed"), promotes to `automation:queued` every
 // issue the closed one was blocking, once ALL of that issue's native
 // `blocked_by` dependencies are closed. The dispatcher (scripts/dispatch-
-// ready.mjs) decides when a `queued` issue actually becomes `ready`.
+// ready.mjs) decides when a `automation:queued` issue actually becomes `automation:ready`.
 // Depends on the blocked_by link posed by sync-issue-dependencies.yml —
 // without data, this is a no-op. Zero LLM (doc/technical/automation-plan.md §2.2).
 import { readFileSync } from 'node:fs'
@@ -59,8 +59,8 @@ async function tryUnblock(issueNumber) {
   if (blocker) {
     console.log(
       blocker === 'automation:needs-human'
-        ? `#${issueNumber}: escalated to needs-human, skipping — a human must re-queue it`
-        : `#${issueNumber}: already queued/ready/in-progress, skipping`,
+        ? `#${issueNumber}: escalated to automation:needs-human, skipping — a human must re-queue it`
+        : `#${issueNumber}: already automation:queued/automation:ready/automation:in-progress, skipping`,
     )
     return
   }
