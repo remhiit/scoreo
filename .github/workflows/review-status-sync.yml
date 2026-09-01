@@ -6,15 +6,20 @@ on:
 
 permissions:
   statuses: write
+  issues: write
+  pull-requests: write
 
 jobs:
   sync:
     if: github.event.label.name == 'review-pass' || github.event.label.name == 'needs-fix'
     runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPO_OWNER: remhiit
+      REPO_NAME: scoreo
     steps:
       - name: Set claude/review commit status
         env:
-          GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
           SHA: ${{ github.event.pull_request.head.sha }}
           LABEL: ${{ github.event.label.name }}
@@ -30,3 +35,34 @@ jobs:
             -f state="$STATE" \
             -f context="claude/review" \
             -f description="$DESC"
+
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Update the pr-review automation log
+        env:
+          LABEL: ${{ github.event.label.name }}
+          LOG_NUMBER: ${{ github.event.pull_request.number }}
+          LOG_ROUTINE: pr-review
+          LOG_SHA: ${{ github.event.pull_request.head.sha }}
+          LOG_RESULT_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          PR_LABELS_JSON: ${{ toJson(github.event.pull_request.labels.*.name) }}
+        run: |
+          if [ "$LABEL" = "review-pass" ]; then
+            LOG_STATUS=succeeded
+            LOG_SUMMARY="pr-review : conforme à la spec."
+          else
+            LOG_STATUS=failed
+            LOG_SUMMARY="pr-review : needs-fix — voir les commentaires de la PR."
+          fi
+          ITERATION=$(node -e "
+            const labels = JSON.parse(process.env.PR_LABELS_JSON);
+            const attempt = labels.find((l) => /^attempt-\d+$/.test(l));
+            console.log(attempt ? Number(attempt.split('-')[1]) : 1);
+          ")
+          LOG_STATUS="$LOG_STATUS" LOG_SUMMARY="$LOG_SUMMARY" LOG_ITERATION="$ITERATION" \
+            node scripts/automation-log.mjs

@@ -71,7 +71,8 @@ judges anything subjective (`automation-plan.md` §2 principle 2).
 | R6 — report | Versioned routine, scheduled (not yet created — Phase 6 rodage pending, see `automation-plan.md` §7) | Cron, weekly (planned) | `.claude/skills/weekly-report/SKILL.md` |
 | `dispatch-ready.mjs` | Action | Same workflow as the sweeper below | Promotes one `queued` issue to `ready` |
 | `needs-review-label.yml` | Action | `pull_request` opened/ready_for_review/synchronize | Clears stale `review-pass`/`needs-fix`, poses `needs-review` |
-| `review-status-sync.yml` | Action | `pull_request` `labeled`, filter `review-pass`/`needs-fix` | Translates the label into the `claude/review` commit status |
+| `review-status-sync.yml` | Action | `pull_request` `labeled`, filter `review-pass`/`needs-fix` | Translates the label into the `claude/review` commit status; also upserts the PR's `pr-review` entry in `scripts/automation-log.mjs`'s idempotent journal |
+| `scripts/automation-log.mjs` | Helper (called by an Action, not a workflow of its own) | N/A | Finds/creates/updates a routine's single marked journal comment on an issue/PR (`automation-plan.md` § Journal d'exécution idempotent) |
 | `auto-merge-sync.yml` | Action | `pull_request` labeled/unlabeled, filter `auto` | Enables/disables native GitHub auto-merge; on success, closes linked issues in the same job |
 | `requeue-lost-events.yml` (`requeue-lost-events.mjs`) | Action | Cron hourly + `issues` unlabeled/closed | Re-poses an orphaned `ready`/`needs-review`/`needs-fix` still present > 30 min without `in-progress` |
 | `requeue-lost-events.yml` (`sweep-merged-prs.mjs`) | Action | Same workflow, runs after the sweeper above | Catch-up close of issues left open by a PR merged in the last 7 days |
