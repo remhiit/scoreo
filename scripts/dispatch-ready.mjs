@@ -78,7 +78,9 @@ function priorityRank(labelNames) {
 function pickNextQueued(queuedIssues) {
   const eligible = queuedIssues.filter((issue) => {
     const labelNames = labelNamesOf(issue)
-    const blockingLabel = ['blocked', 'needs-human', 'in-progress'].find((label) => labelNames.includes(label))
+    const blockingLabel = ['blocked', 'automation:needs-human', 'automation:in-progress'].find((label) =>
+      labelNames.includes(label),
+    )
     if (blockingLabel) {
       console.log(`#${issue.number}: porte "${blockingLabel}", ne peut pas être promue`)
       return false
@@ -96,8 +98,8 @@ function pickNextQueued(queuedIssues) {
 
 async function main() {
   const [readyIssues, inProgressIssues] = await Promise.all([
-    listOpenWithLabel('ready'),
-    listOpenWithLabel('in-progress'),
+    listOpenWithLabel('automation:ready'),
+    listOpenWithLabel('automation:in-progress'),
   ])
   const inFlight =
     readyIssues.filter((item) => !item.pull_request).length +
@@ -107,7 +109,7 @@ async function main() {
     return
   }
 
-  const needsReviewPRs = (await listOpenWithLabel('needs-review')).filter((item) => item.pull_request)
+  const needsReviewPRs = (await listOpenWithLabel('automation:needs-review')).filter((item) => item.pull_request)
   if (needsReviewPRs.length > MAX_NEEDS_REVIEW_BACKLOG) {
     console.log(
       `${needsReviewPRs.length} PR(s) needs-review ouvertes (> ${MAX_NEEDS_REVIEW_BACKLOG}) — laisse R3 absorber la file avant de dispatcher`,
@@ -115,16 +117,16 @@ async function main() {
     return
   }
 
-  const queuedIssues = (await listOpenWithLabel('queued')).filter((item) => !item.pull_request)
+  const queuedIssues = (await listOpenWithLabel('automation:queued')).filter((item) => !item.pull_request)
   const next = pickNextQueued(queuedIssues)
   if (!next) {
-    console.log('Aucune issue "queued" éligible à promouvoir')
+    console.log('Aucune issue "automation:queued" éligible à promouvoir')
     return
   }
 
-  console.log(`#${next.number}: queued -> ready`)
-  await removeLabel(next.number, 'queued')
-  await addLabel(next.number, 'ready')
+  console.log(`#${next.number}: automation:queued -> automation:ready`)
+  await removeLabel(next.number, 'automation:queued')
+  await addLabel(next.number, 'automation:ready')
 }
 
 main()

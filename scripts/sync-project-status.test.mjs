@@ -10,18 +10,18 @@ function open(labelNames) {
 
 describe('desiredStatus', () => {
   it('maps needs-human/needs-fix/in-progress to "In progress"', () => {
-    expect(desiredStatus(open(['needs-human']))).toBe('In progress')
-    expect(desiredStatus(open(['needs-fix']))).toBe('In progress')
-    expect(desiredStatus(open(['in-progress']))).toBe('In progress')
+    expect(desiredStatus(open(['automation:needs-human']))).toBe('In progress')
+    expect(desiredStatus(open(['automation:needs-fix']))).toBe('In progress')
+    expect(desiredStatus(open(['automation:in-progress']))).toBe('In progress')
   })
 
   it('maps ready to "Todo"', () => {
-    expect(desiredStatus(open(['ready']))).toBe('Todo')
+    expect(desiredStatus(open(['automation:ready']))).toBe('Todo')
   })
 
   it('maps needs-review and review-pass to "In progress"', () => {
-    expect(desiredStatus(open(['needs-review']))).toBe('In progress')
-    expect(desiredStatus(open(['review-pass']))).toBe('In progress')
+    expect(desiredStatus(open(['automation:needs-review']))).toBe('In progress')
+    expect(desiredStatus(open(['automation:review-pass']))).toBe('In progress')
   })
 
   it('maps blocked to "Todo"', () => {
@@ -29,27 +29,35 @@ describe('desiredStatus', () => {
   })
 
   it('returns null when no known label is present', () => {
-    expect(desiredStatus(open(['P3', 'auto']))).toBeNull()
+    expect(desiredStatus(open(['P3', 'automation:enabled']))).toBeNull()
   })
 
   it('first matching label in priority order wins over a co-present blocked/ready', () => {
-    expect(desiredStatus(open(['blocked', 'needs-human']))).toBe('In progress')
+    expect(desiredStatus(open(['blocked', 'automation:needs-human']))).toBe('In progress')
   })
 
   it('open item still carrying in-progress maps to "In progress" (non-régression)', () => {
-    expect(desiredStatus({ labelNames: ['in-progress'], state: 'OPEN', stateReason: null })).toBe('In progress')
+    expect(desiredStatus({ labelNames: ['automation:in-progress'], state: 'OPEN', stateReason: null })).toBe(
+      'In progress',
+    )
   })
 
   it('a closed item with state_reason completed maps to "Done", regardless of leftover labels', () => {
-    expect(desiredStatus({ labelNames: ['in-progress'], state: 'CLOSED', stateReason: 'COMPLETED' })).toBe('Done')
+    expect(desiredStatus({ labelNames: ['automation:in-progress'], state: 'CLOSED', stateReason: 'COMPLETED' })).toBe(
+      'Done',
+    )
   })
 
   it('a closed item with state_reason not_planned is not forced to "Done"', () => {
-    expect(desiredStatus({ labelNames: ['in-progress'], state: 'CLOSED', stateReason: 'NOT_PLANNED' })).toBeNull()
+    expect(
+      desiredStatus({ labelNames: ['automation:in-progress'], state: 'CLOSED', stateReason: 'NOT_PLANNED' }),
+    ).toBeNull()
   })
 
   it('a merged PR (no native stateReason, MERGED stands in for completed) maps to "Done"', () => {
-    expect(desiredStatus({ labelNames: ['review-pass'], state: 'MERGED', stateReason: 'COMPLETED' })).toBe('Done')
+    expect(desiredStatus({ labelNames: ['automation:review-pass'], state: 'MERGED', stateReason: 'COMPLETED' })).toBe(
+      'Done',
+    )
   })
 })
 

@@ -26,22 +26,22 @@ const RECENT_CLOSED_WINDOW_DAYS = 30
 
 // First matching label wins — order matters only for items carrying more
 // than one of these labels at once:
-//   - needs-human  → In progress (escalade, état terminal — priorité max)
-//   - needs-fix    → In progress (verdict R3 « à corriger », déclenche R4)
-//   - needs-review → In progress (file d'attente R3)
-//   - review-pass  → In progress (verdict R3 conforme, en attente de merge)
-//   - in-progress  → In progress (générique, une routine travaille dessus)
-//   - ready        → Todo (spec validée, en attente de R2)
-//   - blocked      → Todo (dépendance externe ouverte ; en pratique jamais
-//                    combiné à `ready`/`in-progress`, cf. unblock-issues.mjs
-//                    et dispatch-ready.mjs qui excluent l'un et l'autre)
+//   - automation:needs-human  → In progress (escalade, état terminal — priorité max)
+//   - automation:needs-fix    → In progress (verdict R3 « à corriger », déclenche R4)
+//   - automation:needs-review → In progress (file d'attente R3)
+//   - automation:review-pass  → In progress (verdict R3 conforme, en attente de merge)
+//   - automation:in-progress  → In progress (générique, une routine travaille dessus)
+//   - automation:ready        → Todo (spec validée, en attente de R2)
+//   - blocked                 → Todo (dépendance externe ouverte ; en pratique jamais
+//                    combiné à `automation:ready`/`automation:in-progress`, cf.
+//                    unblock-issues.mjs et dispatch-ready.mjs qui excluent l'un et l'autre)
 const LABEL_STATUS_PRIORITY = [
-  ['needs-human', 'In progress'],
-  ['needs-fix', 'In progress'],
-  ['needs-review', 'In progress'],
-  ['review-pass', 'In progress'],
-  ['in-progress', 'In progress'],
-  ['ready', 'Todo'],
+  ['automation:needs-human', 'In progress'],
+  ['automation:needs-fix', 'In progress'],
+  ['automation:needs-review', 'In progress'],
+  ['automation:review-pass', 'In progress'],
+  ['automation:in-progress', 'In progress'],
+  ['automation:ready', 'Todo'],
   ['blocked', 'Todo'],
 ]
 

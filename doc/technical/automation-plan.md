@@ -58,22 +58,33 @@ remettre en cause revient à refaire le plan.
 
 ## 4. Architecture cible
 
+> Depuis l'issue #415, tous les labels de la machine à états portent le
+> préfixe `automation:` (`automation:queued`, `automation:ready`,
+> `automation:in-progress`, `automation:needs-review`,
+> `automation:review-pass`, `automation:needs-fix`, `automation:needs-human`,
+> `automation:attempt-1/2/3`, `automation:enabled`). Le §7 « Phases et
+> critères de passage » ci-dessous est un journal historique : il documente
+> des événements passés avec les noms de labels qui étaient alors en vigueur
+> (souvent sans préfixe) et n'est pas mis à jour rétroactivement.
+
 **Principe « claim the run ».** Toute routine déclenchée par un label
 GitHub doit, en tout premier geste, **retirer ce label et poser
-`in-progress`** avant de faire quoi que ce soit d'autre — y compris avant
-de poser un label intermédiaire (`attempt-N`, etc.). Un trigger GitHub
-filtré sur « le label X est présent » matche n'importe quel événement
-`labeled` tant que X reste posé, y compris ceux que la routine elle-même
-déclenche en travaillant. Ne retirer X qu'à la toute fin (une fois le
-verdict final prêt) laisse une fenêtre où la routine peut se
-re-déclencher sur ses propres écritures de label. C'est exactement ce qui
-s'est produit sur la PR #111 (Phase 5) : R4 posait `attempt-1` sans
-retirer `needs-fix`, donc ce dépôt de label a lui-même re-déclenché R4,
-qui a reposé `attempt-2` (toujours sans retirer `needs-fix`), etc. — le
-compteur a grimpé jusqu'à `needs-human` en une minute, sans trois vrais
+`automation:in-progress`** avant de faire quoi que ce soit d'autre — y
+compris avant de poser un label intermédiaire (`automation:attempt-N`,
+etc.). Un trigger GitHub filtré sur « le label X est présent » matche
+n'importe quel événement `labeled` tant que X reste posé, y compris ceux
+que la routine elle-même déclenche en travaillant. Ne retirer X qu'à la
+toute fin (une fois le verdict final prêt) laisse une fenêtre où la routine
+peut se re-déclencher sur ses propres écritures de label. C'est exactement
+ce qui s'est produit sur la PR #111 (Phase 5, avec les noms de labels
+d'alors) : R4 posait le compteur d'attempt sans retirer le verdict
+« à corriger », donc ce dépôt de label a lui-même re-déclenché R4, qui a
+reposé le compteur suivant (toujours sans retirer le verdict), etc. — le
+compteur a grimpé jusqu'à l'escalade en une minute, sans trois vrais
 essais de correction. R2 suivait déjà ce principe (`implement-task`
-remplace `ready` par `in-progress` avant de commencer) ; R3 et R4 ont été
-corrigés pour faire de même (voir Phase 2 et Phase 5 ci-dessous).
+remplace `automation:ready` par `automation:in-progress` avant de
+commencer) ; R3 et R4 ont été corrigés pour faire de même (voir Phase 2 et
+Phase 5 ci-dessous).
 
 ```
 Issue créée
@@ -81,23 +92,23 @@ Issue créée
    ▼
 [R1 — GROOMING : session interactive, PAS une routine]
    │  skill issue-to-spec → critères d'acceptation, fichiers, catégorie de risque
-   │  pose le label `queued`
+   │  pose le label `automation:queued`
    ▼
       Cron horaire + GitHub trigger `issues.unlabeled`/`closed`
                                                  ▼
                               [DISPATCHER — zéro LLM, scripts/dispatch-ready.mjs]
                                                  │ si 0 issue ready/in-progress (MAX_IN_FLIGHT=1)
                                                  │ et ≤2 PR needs-review (anti-rafale R5)
-                                                 │ retire `queued`, pose `ready` seul, en dernier
+                                                 │ retire `automation:queued`, pose `automation:ready` seul, en dernier
                                                  ▼
-      GitHub trigger `issues.labeled`, filtre `ready`
+      GitHub trigger `issues.labeled`, filtre `automation:ready`
                                                  ▼
                                      [R2 — IMPLÉMENTATION]
                                                  │ skill implement-task
-                                                 │ retire `ready`, pose `in-progress`
+                                                 │ retire `automation:ready`, pose `automation:in-progress`
                                                  │ 1 run = 1 issue
                                                  │ branche + code + tests + PR
-                                                 │ pose `auto` si risque faible
+                                                 │ pose `automation:enabled` si risque faible
                                                  ▼
                                           PR ouverte
                                                  │
@@ -105,28 +116,30 @@ Issue créée
                                                  ▼
                                          [R3 — REVIEW]
                                           │ skill pr-review
-                                          │ retire `needs-review`, pose `in-progress`
+                                          │ retire `automation:needs-review`, pose `automation:in-progress`
                                           │ commentaires inline
                                           │ commit status claude/review ✅/❌
                                           ▼
                       ┌──────────────────┴──────────────────┐
                    ❌ failure                            ✅ success
-                      │ label `needs-fix`                    │
+                      │ label `automation:needs-fix`          │
                       ▼                                      │
       GitHub trigger `pull_request.labeled`, filtre          │
-      `needs-fix`                                            │
+      `automation:needs-fix`                                 │
                       ▼                                      │
                 [R4 — FIX]                                   │
                       │ skill address-feedback               │
-                      │ retire `needs-fix`, pose `in-progress`│
+                      │ retire `automation:needs-fix`, pose   │
+                      │ `automation:in-progress`              │
                       │ attempt-1 → 2 → 3 (géré par R4)       │
-                      │ à attempt-3 : STOP, retire `auto`,    │
-                      │ pose `needs-human`                    │
+                      │ à attempt-3 : STOP, retire            │
+                      │ `automation:enabled`, pose            │
+                      │ `automation:needs-human`              │
                       └──────────► repush ──► R3 (boucle,    │
                                     needs-review-label.yml    │
                                     requeue automatique)      │
                                                              ▼
-                                          Tous les checks verts + label `auto`
+                                          Tous les checks verts + label `automation:enabled`
                                                              │
                               Action auto-merge-sync.yml (zéro LLM)
                               → `gh pr merge --auto --squash`
@@ -140,14 +153,14 @@ Issue créée
 
 - **R5 — Hygiène** (hebdo) : deps, liens de doc, Lighthouse, sitemap. Ouvre une
   PR par catégorie. Passe par R3 comme n'importe quelle PR.
-- **R6 — Rapport** (lundi) : PR ouvertes > 3 jours, tickets `needs-human`, taux
+- **R6 — Rapport** (lundi) : PR ouvertes > 3 jours, tickets `automation:needs-human`, taux
   d'échec de `claude/review`, runs consommés. C'est ce rapport qui décide de
-  l'élargissement du périmètre `auto`.
+  l'élargissement du périmètre `automation:enabled`.
 
 ### Le merge n'est pas une routine
 
 Branch protection + checks requis + `gh pr merge --auto --squash`. La PR se
-merge seule quand la CI est verte et que le label `auto` est présent. Aucun LLM
+merge seule quand la CI est verte et que le label `automation:enabled` est présent. Aucun LLM
 dans la boucle.
 
 ### Dépendances entre issues (`blocked_by`)
@@ -164,7 +177,7 @@ chaque bloqueur cité, via `scripts/sync-issue-dependencies.mjs`. Idempotent
 job pour les autres). Ce lien natif est le préalable au déblocage
 automatique : une fois interrogeable par API, une automatisation peut
 détecter qu'une issue n'a plus de bloqueur ouvert et la faire passer en
-`queued`.
+`automation:queued`.
 
 ### Déblocage automatique des issues bloquées
 
@@ -174,62 +187,67 @@ si l'issue est fermée avec `state_reason: completed` (une fermeture « not
 planned » ne débloque rien). Il liste les issues que l'issue fermée
 bloquait (`GET .../dependencies/blocking`), puis pour chaque candidate
 vérifie via `GET .../dependencies/blocked_by` que **tous** ses bloqueurs
-natifs sont fermés avant de poser `queued` et de retirer `blocked` — c'est
-au dispatcher (ci-dessous) de décider quand cette issue `queued` devient
-`ready`. N'agit jamais sur une issue déjà `queued`/`ready`/`in-progress`
-(même classe de garde que l'incident double-fire #99, §4 « claim the run »)
-ni sur une issue `needs-human` : cet état est terminal pour
-l'automatisation (issue escaladée, plafond `attempt-3` atteint ou hors
-périmètre) — seul un humain la re-queue, jamais le déblocage automatique.
-Suppose que le lien
+natifs sont fermés avant de poser `automation:queued` et de retirer
+`blocked` — c'est au dispatcher (ci-dessous) de décider quand cette issue
+`automation:queued` devient `automation:ready`. N'agit jamais sur une issue
+déjà `automation:queued`/`automation:ready`/`automation:in-progress` (même
+classe de garde que l'incident double-fire #99, §4 « claim the run ») ni
+sur une issue `automation:needs-human` : cet état est terminal pour
+l'automatisation (issue escaladée, plafond `automation:attempt-3` atteint
+ou hors périmètre) — seul un humain la re-queue, jamais le déblocage
+automatique. Suppose que le lien
 natif `blocked_by` a été posé au préalable par
 `.github/workflows/sync-issue-dependencies.yml` ; sans donnée à traiter,
 c'est un no-op.
 
-### Dispatcher : promotion `queued` → `ready`
+### Dispatcher : promotion `automation:queued` → `automation:ready`
 
-Poser plusieurs `ready` d'un coup ferait partir autant d'événements vers R2
-simultanément — au-delà du plafond de runs (5/jour en Pro), les
-événements excédentaires sont perdus (§3). Plutôt que de compter sur le
-seul rattrapage a posteriori (balayeur ci-dessous), on lisse le débit en
-amont : R1 pose désormais `queued` (pas `ready`), et une Action
-déterministe (zéro LLM, §2.2) promeut en `ready` **une issue à la fois**,
-seulement quand rien n'est en cours.
+Poser plusieurs `automation:ready` d'un coup ferait partir autant
+d'événements vers R2 simultanément — au-delà du plafond de runs (5/jour en
+Pro), les événements excédentaires sont perdus (§3). Plutôt que de compter
+sur le seul rattrapage a posteriori (balayeur ci-dessous), on lisse le
+débit en amont : R1 pose désormais `automation:queued` (pas
+`automation:ready`), et une Action déterministe (zéro LLM, §2.2) promeut en
+`automation:ready` **une issue à la fois**, seulement quand rien n'est en
+cours.
 
 `scripts/dispatch-ready.mjs`, appelé par le même workflow que le balayeur
 horaire (`.github/workflows/requeue-lost-events.yml` — cron + les
 triggers `issues` `unlabeled`/`closed`, pour réagir vite à la fin d'un
-run) : si le nombre d'issues ouvertes portant `ready` ou `in-progress` est
-inférieur à `MAX_IN_FLIGHT` (1), sélectionne la plus ancienne issue
-`queued` de plus haute priorité (`P0` > `P1` > `P2` > `P3`, puis date de
-création croissante), retire `queued` puis pose `ready` **seul, dans son
-propre appel, en dernier** (leçon #99, §4 « claim the run »). Ne
-promeut jamais une issue portant `blocked`, `needs-human` ou
-`in-progress`. Garde anti-rafale R5 : si plus de `MAX_NEEDS_REVIEW_BACKLOG`
-(2) PR ouvertes portent `needs-review`, ne dispatche pas à ce run — laisse
-R3 absorber la file d'abord. Par construction, le débit d'événements vers
-R2 ne dépasse plus jamais le quota.
+run) : si le nombre d'issues ouvertes portant `automation:ready` ou
+`automation:in-progress` est inférieur à `MAX_IN_FLIGHT` (1), sélectionne
+la plus ancienne issue `automation:queued` de plus haute priorité (`P0` >
+`P1` > `P2` > `P3`, puis date de création croissante), retire
+`automation:queued` puis pose `automation:ready` **seul, dans son propre
+appel, en dernier** (leçon #99, §4 « claim the run »). Ne promeut jamais
+une issue portant `blocked`, `automation:needs-human` ou
+`automation:in-progress`. Garde anti-rafale R5 : si plus de
+`MAX_NEEDS_REVIEW_BACKLOG` (2) PR ouvertes portent
+`automation:needs-review`, ne dispatche pas à ce run — laisse R3 absorber
+la file d'abord. Par construction, le débit d'événements vers R2 ne dépasse
+plus jamais le quota.
 
 ### Balayeur horaire des événements de routine perdus
 
 Un event GitHub dépassant le plafond horaire d'une routine est ignoré, pas
 mis en file (§3). Grâce au principe « claim the run » (ci-dessus), ce run
-perdu se lit dans l'état des labels : le label déclencheur (`ready`,
-`needs-review`, `needs-fix`) n'a jamais été remplacé par `in-progress`. Un
-item qui porte encore son label déclencheur longtemps après sa pose est
-donc un événement perdu.
+perdu se lit dans l'état des labels : le label déclencheur
+(`automation:ready`, `automation:needs-review`, `automation:needs-fix`) n'a
+jamais été remplacé par `automation:in-progress`. Un item qui porte encore
+son label déclencheur longtemps après sa pose est donc un événement perdu.
 
 `.github/workflows/requeue-lost-events.yml` (cron horaire `0 * * * *` +
 `workflow_dispatch`) exécute `scripts/requeue-lost-events.mjs`, qui pour
-chaque issue ouverte labellisée `ready` et chaque PR ouverte labellisée
-`needs-review`/`needs-fix` : lit le dernier événement `labeled` pour ce
-label via l'API timeline (`GET .../issues/{n}/timeline`) et, si posé depuis
-plus de `ORPHAN_THRESHOLD_MINUTES` (30 min — le temps qu'une session
-démarre et claim le run), retire le label puis le repose **seul, dans son
-propre appel** (leçons #94/#99, §4 « claim the run ») pour régénérer
-l'événement `labeled` qui re-matche le trigger de la routine. Ne touche
-jamais un item portant `in-progress` (run en cours) ou `needs-human` (état
-terminal) ; chaque skip et chaque re-pose est journalisé, servant de
+chaque issue ouverte labellisée `automation:ready` et chaque PR ouverte
+labellisée `automation:needs-review`/`automation:needs-fix` : lit le
+dernier événement `labeled` pour ce label via l'API timeline
+(`GET .../issues/{n}/timeline`) et, si posé depuis plus de
+`ORPHAN_THRESHOLD_MINUTES` (30 min — le temps qu'une session démarre et
+claim le run), retire le label puis le repose **seul, dans son propre
+appel** (leçons #94/#99, §4 « claim the run ») pour régénérer l'événement
+`labeled` qui re-matche le trigger de la routine. Ne touche jamais un item
+portant `automation:in-progress` (run en cours) ou `automation:needs-human`
+(état terminal) ; chaque skip et chaque re-pose est journalisé, servant de
 donnée pour le rapport R6. Retry aveugle à coût nul et sans plafond : rien
 ne permet d'interroger le quota Claude depuis GitHub, donc si le quota est
 encore épuisé l'événement retombe dans le vide et le prochain passage
@@ -267,9 +285,10 @@ un appelant qui veut éviter un travail redondant sur une relance qui ne
 change rien au HEAD SHA.
 
 `review-status-sync.yml` est le premier appelant : au verdict
-`review-pass`/`needs-fix` de R3, en plus du commit status `claude/review`
-(§ ci-dessus), il tient désormais le journal `pr-review` de la PR —
-itération lue depuis le label `attempt-N` courant s'il y en a un, lien
+`automation:review-pass`/`automation:needs-fix` de R3, en plus du commit
+status `claude/review` (§ ci-dessus), il tient désormais le journal
+`pr-review` de la PR — itération lue depuis le label
+`automation:attempt-N` courant s'il y en a un, lien
 vers son propre run comme résultat. Les autres routines (R2, R4, R5)
 n'écrivent pas encore leur propre journal ; les brancher suit le même
 patron (une Action zéro-LLM au point où la routine traduit déjà son
@@ -286,21 +305,29 @@ dérivé de cette section et de la §4.
 
 ## 5. Labels (le bus d'événements)
 
+Tous les labels de la machine à états portent le préfixe `automation:`
+(issue #415 — table complète, catégories et combinaisons valides/interdites
+dans `doc/automation/state-machine.md` §2).
+
 | Label | Rôle |
 |---|---|
-| `queued` | Spec validée, en attente d'un créneau de routine — promue en `ready` une à la fois par le dispatcher (`scripts/dispatch-ready.mjs`) |
-| `ready` | Spec validée → déclenche R2 |
-| `in-progress` | Une routine travaille dessus |
-| `needs-review` | File d'attente pour `pr-review` (R3) — seul trigger GitHub possible sur une Routine, posé automatiquement à l'ouverture d'une PR, retiré par R3 en tout premier geste (« claim the run », §4) |
-| `review-pass` | Verdict `pr-review` (R3) : conforme → traduit en commit status `claude/review` succès |
-| `needs-fix` | Verdict `pr-review` (R3) : à corriger → traduit en commit status `claude/review` échec, déclenche R4 |
-| `needs-human` | Escalade : plafond d'itérations ou hors périmètre |
+| `automation:queued` | Spec validée, en attente d'un créneau de routine — promue en `automation:ready` une à la fois par le dispatcher (`scripts/dispatch-ready.mjs`) |
+| `automation:ready` | Spec validée → déclenche R2 |
+| `automation:in-progress` | Une routine travaille dessus |
+| `automation:needs-review` | File d'attente pour `pr-review` (R3) — seul trigger GitHub possible sur une Routine, posé automatiquement à l'ouverture d'une PR, retiré par R3 en tout premier geste (« claim the run », §4) |
+| `automation:review-pass` | Verdict `pr-review` (R3) : conforme → traduit en commit status `claude/review` succès |
+| `automation:needs-fix` | Verdict `pr-review` (R3) : à corriger → traduit en commit status `claude/review` échec, déclenche R4 |
+| `automation:needs-human` | Escalade : plafond d'itérations ou hors périmètre |
 | `blocked` | Dépendance externe — retiré automatiquement par `unblock-issues.yml` une fois tous les bloqueurs natifs fermés |
-| `auto` | Autorisé à l'auto-merge une fois les checks verts |
-| `attempt-1/2/3` | Compteur anti-boucle. **À `attempt-3` : stop.** |
+| `automation:enabled` | Autorisé à l'auto-merge une fois les checks verts |
+| `automation:attempt-1/2/3` | Compteur anti-boucle. **À `automation:attempt-3` : stop.** |
 | `P0`…`P3` | Priorité (reprise de la sémantique de `.task/`) |
 
-### Liste blanche `auto` (à élargir par la donnée, pas à l'intuition)
+Aucun label `automation:done` : la fermeture GitHub et son `state_reason`
+(`completed`/`not_planned`/`duplicate`) restent le seul signal de fin de vie
+d'une issue.
+
+### Liste blanche `automation:enabled` (à élargir par la donnée, pas à l'intuition)
 
 **Autorisé au départ :** contenu, documentation, dépendances, refacto local sans
 changement de comportement public.
@@ -318,12 +345,12 @@ changement de comportement public.
 | Skill | Contenu |
 |---|---|
 | `project-conventions` | Délègue au `CLAUDE.md` : stack, commandes pnpm, arbo, architecture hexagonale, conventions de commit |
-| `issue-to-spec` | Format de spec : contexte, critères d'acceptation testables, fichiers impactés, hors-scope, **catégorie de risque** (détermine le label `auto`) |
+| `issue-to-spec` | Format de spec : contexte, critères d'acceptation testables, fichiers impactés, hors-scope, **catégorie de risque** (détermine le label `automation:enabled`) |
 | `implement-task` | Branche `feat/<issue>-<slug>`, tests d'abord, `pnpm lint typecheck test build` vert, vérif visuelle, PR avec `Closes #N`, mise à jour de `doc/` (pre-commit checklist du `CLAUDE.md`) |
 | `pr-review` | Checklist **subjective uniquement** : conformité à la spec, respect de l'archi hexagonale, backward-compat des schémas zod, doc à jour, dette introduite. Le mécanisable est déjà en CI |
 | `address-feedback` | Corriger le périmètre signalé. Ne pas refondre |
 | `site-quality` | Deps, liens de doc, Lighthouse, PWA. Utilisée par R5 |
-| `weekly-report` | Rapport hebdo : PR ouvertes > 3 jours, issues `needs-human`, taux `review-pass`/`needs-fix`, incidents depuis le dernier rapport, recommandation sur la liste blanche `auto`. Utilisée par R6 |
+| `weekly-report` | Rapport hebdo : PR ouvertes > 3 jours, issues `automation:needs-human`, taux `automation:review-pass`/`automation:needs-fix`, incidents depuis le dernier rapport, recommandation sur la liste blanche `automation:enabled`. Utilisée par R6 |
 
 **Règle :** une skill non éprouvée en interactif ne passe pas en autonome.
 
@@ -793,11 +820,11 @@ R6 hebdo. C'est le rapport qui pilote l'élargissement de la liste blanche `auto
 
 | Risque | Mitigation |
 |---|---|
-| Boucle R3 ↔ R4 infinie | Plafond `attempt-3`, puis `needs-human` |
+| Boucle R3 ↔ R4 infinie | Plafond `automation:attempt-3`, puis `automation:needs-human` |
 | Quota de runs épuisé par une seule PR | Même plafond + `concurrency` dans la CI |
 | Review sans mordant (le modèle relit son propre travail) | Le mécanisable sort de la review et devient un job CI. `claude/review` ne juge que le subjectif |
 | Budget Lighthouse désactivé à la première PR rouge | Seuils `error` fixés depuis la baseline (accessibilité/bonnes pratiques/SEO, marge anti-bruit inter-runs) ou depuis des mesures directes sur le runner CI (performance, écart bien trop grand avec la baseline — voir §9), job toujours hors checks requis (#147) |
-| Régression de backward-compat sur les schémas zod | Hors liste blanche `auto` : merge manuel obligatoire |
+| Régression de backward-compat sur les schémas zod | Hors liste blanche `automation:enabled` : merge manuel obligatoire |
 | `pull_request_target` expose les secrets | Ne jamais y exécuter le code de la PR |
 | Événement de routine perdu par plafond de runs | Balayeur horaire (`requeue-lost-events.yml`) qui rejoue tout label déclencheur orphelin |
 | Boucle d'attente de `auto-merge-sync.yml` expirée avant la fin réelle du merge (#273) | `scripts/sweep-merged-prs.mjs`, exécuté par le même balayeur horaire, rattrape les issues encore ouvertes des PR mergées dans les 7 derniers jours |

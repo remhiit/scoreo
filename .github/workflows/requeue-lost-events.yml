@@ -26,7 +26,7 @@ jobs:
         with:
           node-version: 22
 
-      - name: Requeue orphaned ready/needs-review/needs-fix labels
+      - name: Requeue orphaned automation:ready/needs-review/needs-fix labels
         run: node scripts/requeue-lost-events.mjs
 
       - name: Catch up issues left open by auto-merged PRs

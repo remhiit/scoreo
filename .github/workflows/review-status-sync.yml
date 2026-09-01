@@ -11,7 +11,7 @@ permissions:
 
 jobs:
   sync:
-    if: github.event.label.name == 'review-pass' || github.event.label.name == 'needs-fix'
+    if: github.event.label.name == 'automation:review-pass' || github.event.label.name == 'automation:needs-fix'
     runs-on: ubuntu-latest
     env:
       GH_TOKEN: ${{ github.token }}
@@ -24,7 +24,7 @@ jobs:
           SHA: ${{ github.event.pull_request.head.sha }}
           LABEL: ${{ github.event.label.name }}
         run: |
-          if [ "$LABEL" = "review-pass" ]; then
+          if [ "$LABEL" = "automation:review-pass" ]; then
             STATE=success
             DESC="pr-review: conforme à la spec"
           else
@@ -52,7 +52,7 @@ jobs:
           LOG_RESULT_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           PR_LABELS_JSON: ${{ toJson(github.event.pull_request.labels.*.name) }}
         run: |
-          if [ "$LABEL" = "review-pass" ]; then
+          if [ "$LABEL" = "automation:review-pass" ]; then
             LOG_STATUS=succeeded
             LOG_SUMMARY="pr-review : conforme à la spec."
           else
@@ -61,7 +61,7 @@ jobs:
           fi
           ITERATION=$(node -e "
             const labels = JSON.parse(process.env.PR_LABELS_JSON);
-            const attempt = labels.find((l) => /^attempt-\d+$/.test(l));
+            const attempt = labels.find((l) => /^automation:attempt-\d+$/.test(l));
             console.log(attempt ? Number(attempt.split('-')[1]) : 1);
           ")
           LOG_STATUS="$LOG_STATUS" LOG_SUMMARY="$LOG_SUMMARY" LOG_ITERATION="$ITERATION" \

@@ -11,7 +11,7 @@ permissions:
 
 jobs:
   sync:
-    if: github.event.label.name == 'auto'
+    if: github.event.label.name == 'automation:enabled'
     runs-on: ubuntu-latest
     steps:
       - name: Enable or disable native auto-merge

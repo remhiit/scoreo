@@ -14,25 +14,26 @@ rules this checklist is built on.
 
 - **As R3** (fired by the routine's GitHub trigger): the PR is the one from
   your triggering context — the `pull_request` event that started this run.
-  Don't search for it (e.g. by scanning for `needs-review`); the trigger
-  context already identifies it precisely, including when several PRs carry
-  `needs-review` at once (each matching event starts its own independent
-  session, one PR each).
+  Don't search for it (e.g. by scanning for `automation:needs-review`); the
+  trigger context already identifies it precisely, including when several
+  PRs carry `automation:needs-review` at once (each matching event starts
+  its own independent session, one PR each).
 - **Interactive** (asked directly in a session): review the PR the user
   named. Ask for the number if it wasn't given.
 
 ## Claim the run (R3 only, first action)
 
-Before reading anything else: remove `needs-review` and add `in-progress`.
-Do this immediately, before the checklist below — not after. The routine's
-GitHub trigger fires on *any* `pull_request` action while `needs-review` is
-present (a Routine allows one GitHub trigger, not a multi-select of
-actions, so `needs-review` acts as the queue flag instead of picking
-specific event types). If `needs-review` is still there when this step
-posts *any* label, that label-add is itself a qualifying event and
-re-triggers R3 on the same PR — clearing it first closes that door before
-it can reopen. Skip this step for an ad hoc interactive review the user
-asked for directly (no labels to manage there).
+Before reading anything else: remove `automation:needs-review` and add
+`automation:in-progress`. Do this immediately, before the checklist below —
+not after. The routine's GitHub trigger fires on *any* `pull_request` action
+while `automation:needs-review` is present (a Routine allows one GitHub
+trigger, not a multi-select of actions, so `automation:needs-review` acts as
+the queue flag instead of picking specific event types). If
+`automation:needs-review` is still there when this step posts *any* label,
+that label-add is itself a qualifying event and re-triggers R3 on the same
+PR — clearing it first closes that door before it can reopen. Skip this step
+for an ad hoc interactive review the user asked for directly (no labels to
+manage there).
 
 At this same moment, note the PR's current HEAD SHA (`pull_request_read`).
 The checklist below reads the diff at this SHA — the guard just before
@@ -91,8 +92,8 @@ table: "Review sans mordant").
 
 Before posting any verdict label, re-read the PR's current HEAD SHA
 (`pull_request_read`) and compare it to the SHA noted in "Claim the run".
-If it differs, **do not post a verdict** — post `needs-review` back on its
-own, in its own call, and stop there.
+If it differs, **do not post a verdict** — post `automation:needs-review`
+back on its own, in its own call, and stop there.
 
 Why this matters: `review-status-sync.yml` stamps the `claude/review`
 commit status onto `github.event.pull_request.head.sha` at the moment its
@@ -113,21 +114,26 @@ translates it into the `claude/review` commit status. This step only
 applies when running as the automated R3 step; skip it for an ad hoc
 interactive review the user asked for directly.
 
-`needs-review` is already gone (removed in "Claim the run" above) — this
-step's job is to remove `in-progress` and post the terminal label:
+`automation:needs-review` is already gone (removed in "Claim the run"
+above) — this step's job is to remove `automation:in-progress` and post the
+terminal label:
 
-- **Conforms** → set labels to `review-pass`, removing `in-progress`,
-  `needs-fix`, and any `attempt-1`/`attempt-2`/`attempt-3` if present.
-  Clearing the attempt counter matters: it's what `address-feedback` (R4)
-  uses to cap retries on a *recurring* failure — leaving a stale
-  `attempt-N` from an already-resolved cycle would make R4 misread a
-  brand-new `needs-fix` (e.g. from a later rebase) as a continuation of
-  the old one, and escalate to `needs-human` after fewer genuine attempts
-  than the cap intends.
-- **Needs changes** → set labels to `needs-fix`, removing `in-progress` and
-  `review-pass` if present, and post a PR comment listing exactly what's
-  blocking (this is what `address-feedback` will act on).
+- **Conforms** → set labels to `automation:review-pass`, removing
+  `automation:in-progress`, `automation:needs-fix`, and any
+  `automation:attempt-1`/`automation:attempt-2`/`automation:attempt-3` if
+  present. Clearing the attempt counter matters: it's what
+  `address-feedback` (R4) uses to cap retries on a *recurring* failure —
+  leaving a stale `automation:attempt-N` from an already-resolved cycle
+  would make R4 misread a brand-new `automation:needs-fix` (e.g. from a
+  later rebase) as a continuation of the old one, and escalate to
+  `automation:needs-human` after fewer genuine attempts than the cap
+  intends.
+- **Needs changes** → set labels to `automation:needs-fix`, removing
+  `automation:in-progress` and `automation:review-pass` if present, and
+  post a PR comment listing exactly what's blocking (this is what
+  `address-feedback` will act on).
 
-Apply exactly one of `review-pass`/`needs-fix`, never both. Re-adding
-`needs-review` later (e.g. after a fix is pushed) queues another pass —
-that's the mechanism R4 uses to request re-review.
+Apply exactly one of `automation:review-pass`/`automation:needs-fix`, never
+both. Re-adding `automation:needs-review` later (e.g. after a fix is
+pushed) queues another pass — that's the mechanism R4 uses to request
+re-review.

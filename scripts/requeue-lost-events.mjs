@@ -70,12 +70,12 @@ async function minutesSinceLabeled(number, label) {
 }
 
 async function requeueIfOrphaned(number, label, labelNames) {
-  if (labelNames.includes('in-progress')) {
-    console.log(`#${number}: porte "in-progress", skip (run en cours)`)
+  if (labelNames.includes('automation:in-progress')) {
+    console.log(`#${number}: porte "automation:in-progress", skip (run en cours)`)
     return
   }
-  if (labelNames.includes('needs-human')) {
-    console.log(`#${number}: porte "needs-human", skip (état terminal)`)
+  if (labelNames.includes('automation:needs-human')) {
+    console.log(`#${number}: porte "automation:needs-human", skip (état terminal)`)
     return
   }
 
@@ -99,14 +99,14 @@ function labelNamesOf(item) {
 }
 
 async function sweepIssues() {
-  const issues = (await listOpenWithLabel('ready')).filter((item) => !item.pull_request)
+  const issues = (await listOpenWithLabel('automation:ready')).filter((item) => !item.pull_request)
   for (const issue of issues) {
-    await requeueIfOrphaned(issue.number, 'ready', labelNamesOf(issue))
+    await requeueIfOrphaned(issue.number, 'automation:ready', labelNamesOf(issue))
   }
 }
 
 async function sweepPullRequests() {
-  for (const label of ['needs-review', 'needs-fix']) {
+  for (const label of ['automation:needs-review', 'automation:needs-fix']) {
     const prs = (await listOpenWithLabel(label)).filter((item) => item.pull_request)
     for (const pr of prs) {
       await requeueIfOrphaned(pr.number, label, labelNamesOf(pr))

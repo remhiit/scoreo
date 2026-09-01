@@ -1,6 +1,6 @@
 ---
 name: issue-to-spec
-description: Turn a feature/fix description into a well-formed GitHub issue for the Scoreo repo — testable acceptance criteria, impacted files, out-of-scope, and a risk category that later determines eligibility for the "auto" label. Use when the user describes a feature or correctif and says to plan/turn it into a ticket ("Plan", "crée une issue", "crée un ticket"). This is the R1 grooming step in doc/technical/automation-plan.md — always run interactively, never as an autonomous routine.
+description: Turn a feature/fix description into a well-formed GitHub issue for the Scoreo repo — testable acceptance criteria, impacted files, out-of-scope, and a risk category that later determines eligibility for the "automation:enabled" label. Use when the user describes a feature or correctif and says to plan/turn it into a ticket ("Plan", "crée une issue", "crée un ticket"). This is the R1 grooming step in doc/technical/automation-plan.md — always run interactively, never as an autonomous routine.
 ---
 
 # Issue → Spec
@@ -73,10 +73,10 @@ automatisation ne sait que l'issue est bloquée.
 This is the one field that isn't free-form — it comes straight from the
 `auto` whitelist in `automation-plan.md` §5:
 
-- **Faible** (eligible for `auto` later, at `implement-task`'s discretion):
-  content/copy changes, documentation, dependency bumps, local refactors with
-  no public behavior change.
-- **Élevé** (never `auto`, always manual merge): serialized models and their
+- **Faible** (eligible for `automation:enabled` later, at `implement-task`'s
+  discretion): content/copy changes, documentation, dependency bumps, local
+  refactors with no public behavior change.
+- **Élevé** (never `automation:enabled`, always manual merge): serialized models and their
   migrations (`Player`/`GameType`/`Match`/`PlayerScore`), ports/adapters,
   `apps/scoreo/public/` (manifest, `sw.js`), Vite/TS config, navigation
   (`apps/scoreo/src/ui/navigation/`).
@@ -94,19 +94,22 @@ interactive grooming gate — don't skip it):
    imperative summary, not the full spec).
 2. Add the priority label (`P0`…`P3` — P0 most urgent; ask the user if not
    obvious from context) in its **own** `issue_write` call.
-3. **In a separate call**, add the `queued` label — not `ready` directly.
-   Posing several `ready` at once would fire that many R2 events
-   simultaneously; past the run cap (5/day on Pro), the excess events are
-   lost (`automation-plan.md` §3). The dispatcher (`scripts/dispatch-ready.mjs`,
-   zero LLM, same workflow as the hourly sweeper) promotes one `queued`
-   issue to `ready` at a time, only once nothing is already
-   `ready`/`in-progress` — this bounds the event rate into R2 by
-   construction. Pose `queued` alone, in its own call, last, for the same
-   reason `ready` used to be: GitHub fires one `labeled` webhook per label
-   added, and a routine's trigger filter matches on the issue's *current*
-   label state, not which label the event named (issue #99). The rule
-   "never `ready` with another label in the same call" still holds — it's
-   now the dispatcher's responsibility, not R1's.
+3. **In a separate call**, add the `automation:queued` label — not
+   `automation:ready` directly. Posing several `automation:ready` at once
+   would fire that many R2 events simultaneously; past the run cap (5/day
+   on Pro), the excess events are lost (`automation-plan.md` §3). The
+   dispatcher (`scripts/dispatch-ready.mjs`, zero LLM, same workflow as the
+   hourly sweeper) promotes one `automation:queued` issue to
+   `automation:ready` at a time, only once nothing is already
+   `automation:ready`/`automation:in-progress` — this bounds the event rate
+   into R2 by construction. Pose `automation:queued` alone, in its own
+   call, last, for the same reason `automation:ready` used to be: GitHub
+   fires one `labeled` webhook per label added, and a routine's trigger
+   filter matches on the issue's *current* label state, not which label the
+   event named (issue #99). The rule "never `automation:ready` with another
+   label in the same call" still holds — it's now the dispatcher's
+   responsibility, not R1's.
 
-Do not add `auto` here — that's `implement-task`'s call to make once the
-actual diff exists, not a prediction made before any code is written.
+Do not add `automation:enabled` here — that's `implement-task`'s call to
+make once the actual diff exists, not a prediction made before any code is
+written.

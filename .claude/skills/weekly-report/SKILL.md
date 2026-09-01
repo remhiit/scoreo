@@ -1,6 +1,6 @@
 ---
 name: weekly-report
-description: Build the weekly observability report for the Scoreo automation pipeline — open PR age, needs-human escalations, R3 pass/fail rate, incidents logged since last report, and a recommendation on the `auto` whitelist. Use for the scheduled Monday report, or when asked to check pipeline health. This is the R6 step in doc/technical/automation-plan.md.
+description: Build the weekly observability report for the Scoreo automation pipeline — open PR age, needs-human escalations, R3 pass/fail rate, incidents logged since last report, and a recommendation on the `automation:enabled` whitelist. Use for the scheduled Monday report, or when asked to check pipeline health. This is the R6 step in doc/technical/automation-plan.md.
 ---
 
 # Weekly Report
@@ -34,27 +34,28 @@ sorted by creation date descending. The window is from that issue's
 
 `list_pull_requests` (state `open`), filter to `created_at` older than 3
 days. For each: number, title, age in days, current labels (the label state
-is itself informative — e.g. still `needs-review` after 3 days signals a
-stuck R3, not just a slow human).
+is itself informative — e.g. still `automation:needs-review` after 3 days
+signals a stuck R3, not just a slow human).
 
-### 2. Issues `needs-human` ouvertes
+### 2. Issues `automation:needs-human` ouvertes
 
-`search_issues` with `is:issue is:open label:needs-human`. Each one is a
+`search_issues` with `is:issue is:open label:automation:needs-human`. Each one is a
 pipeline failure to document, not just a to-do: note which routine
-escalated it (R2/R3/R4, inferred from context — e.g. an `attempt-3` history
-implies R4) and why, if it's discoverable from the issue/PR comments.
+escalated it (R2/R3/R4, inferred from context — e.g. an
+`automation:attempt-3` history implies R4) and why, if it's discoverable
+from the issue/PR comments.
 
 ### 3. Verdicts R3 de la semaine écoulée
 
-Count `review-pass` vs `needs-fix` for the window, via
-`search_pull_requests` (`is:pr label:review-pass updated:>=<window-start>`
-and the same for `label:needs-fix`) or by reading PRs merged in the window
+Count `automation:review-pass` vs `automation:needs-fix` for the window, via
+`search_pull_requests` (`is:pr label:automation:review-pass updated:>=<window-start>`
+and the same for `label:automation:needs-fix`) or by reading PRs merged in the window
 and checking their final review label. **This is an approximation, not an
-exact count**: `needs-fix` is cleared once a fix lands (per
-`address-feedback/SKILL.md`), so a PR that cycled through `needs-fix` once
-before eventually passing shows up as `review-pass` only — the search
+exact count**: `automation:needs-fix` is cleared once a fix lands (per
+`address-feedback/SKILL.md`), so a PR that cycled through `automation:needs-fix` once
+before eventually passing shows up as `automation:review-pass` only — the search
 undercounts total review attempts, it does not undercount final outcomes.
-State the counts and the resulting `needs-fix` rate (the plan's main
+State the counts and the resulting `automation:needs-fix` rate (the plan's main
 indicator, per this issue's acceptance criteria) — this rate is what the
 recommendation in §5 leans on.
 
@@ -68,16 +69,17 @@ and which phase/routine it was found in.
 ### 5. Recommandation
 
 One explicit line: **élargir** / **maintenir** / **restreindre** la liste
-blanche `auto`, justified by §§1-4 above — not a vibe. A low `needs-fix`
-rate with zero new incidents supports élargir; any open `needs-human` from
-this window or a rising `needs-fix` rate supports maintenir/restreindre.
+blanche `automation:enabled`, justified by §§1-4 above — not a vibe. A low
+`automation:needs-fix` rate with zero new incidents supports élargir; any
+open `automation:needs-human` from this window or a rising
+`automation:needs-fix` rate supports maintenir/restreindre.
 
 ### Ce que ce rapport ne peut pas mesurer
 
 Le nombre de runs de routines consommés n'est pas exposé par l'API GitHub
 (aucun outil MCP ne liste les invocations d'une Routine). Il est approximé
-par le nombre d'événements de labels R2/R3/R4 de la semaine — `ready` posé
-(R2), `needs-review` posé (R3), `needs-fix` posé (R4) — compté via
+par le nombre d'événements de labels R2/R3/R4 de la semaine — `automation:ready` posé
+(R2), `automation:needs-review` posé (R3), `automation:needs-fix` posé (R4) — compté via
 `search_issues`/`search_pull_requests` sur ces labels et la fenêtre de
 dates. Dire explicitement dans le rapport que c'est une approximation, pas
 un décompte de runs.
@@ -90,7 +92,7 @@ Le rapport est une **issue GitHub**, jamais une PR ni un commentaire :
    jour du run), corps = les sections 1 à 5 ci-dessus plus la limite de
    mesure.
 2. Label `P3` dans son propre appel.
-3. Ne jamais poser `ready` — ce n'est pas un ticket à implémenter.
+3. Ne jamais poser `automation:ready` — ce n'est pas un ticket à implémenter.
 
 ## Which run
 
