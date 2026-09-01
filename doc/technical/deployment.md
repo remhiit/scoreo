@@ -71,6 +71,28 @@ unresolved conflict, run `.github/workflows/requeue-lost-events.yml`
 remove the old (unprefixed) labels from the repo via `setup-repo.sh`/`gh
 label delete` — they are not kept as permanent aliases.
 
+### Routine trigger filters — the one step no code change can do
+
+R2/R3/R4's GitHub trigger filters (`Labels is one of ready` /
+`needs-review` / `needs-fix`, see each Routine's "Creating the Routine"
+section below) live in the Routine's own configuration at
+[claude.ai/code/routines](https://claude.ai/code/routines) — **not** in
+this repo. `pull_request`-triggered workflows (`needs-review-label.yml`,
+etc.) run using the workflow file from the PR's own branch, so a PR that
+touches those files already posts the new `automation:`-prefixed labels
+before it even merges (observed on PR #416, the one that introduced this
+migration) — but once this PR merges to `main`, *every* subsequent PR/issue
+event starts posing `automation:ready`/`automation:needs-review`/
+`automation:needs-fix` exclusively. A Routine trigger filter still reading
+the old, unprefixed label name will simply never match again — R2/R3/R4 go
+silent, with no error anywhere, until a human edits each Routine's Trigger
+step at claude.ai/code/routines to filter on the new label name instead.
+**Do this immediately after merging** (or right before, if the merge
+itself is expected to bring in new activity) — don't wait for the label
+migration on open issues/PRs above; the trigger filters and the workflow
+code need to flip together, or R2/R3/R4 stall on every new item in the
+gap.
+
 ---
 
 ## Project Status Sync
