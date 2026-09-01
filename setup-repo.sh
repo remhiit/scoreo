@@ -13,15 +13,15 @@ REPO="${REPO:-remhiit/scoreo}"
 
 echo "== Labels =="
 declare -A LABELS=(
-  ["automation:queued"]="fef2c0:État/file — spec validée, en attente d'un créneau de routine — promue en automation:ready par le dispatcher"
+  ["automation:queued"]="fef2c0:État/file — spec validée, en attente d'un créneau — promue en automation:ready par le dispatcher"
   ["automation:ready"]="0e8a16:État/déclencheur R2 — spec validée, prête pour implémentation (déclenche R2)"
   ["automation:in-progress"]="fbca04:Contrôle/état — une routine travaille dessus"
-  ["automation:needs-review"]="1d76db:File/déclencheur R3 — en file d'attente pour pr-review (R3), pose ce label pour (re)déclencher une review"
+  ["automation:needs-review"]="1d76db:File/déclencheur R3 — en attente de pr-review (R3), pose ce label pour (re)déclencher une review"
   ["automation:review-pass"]="0e8a16:Verdict R3 — pr-review (R3) a validé la PR, claude/review passe au vert"
   ["automation:needs-fix"]="d93f0b:Verdict R3 + déclencheur R4 — claude/review a échoué (déclenche R4)"
   ["automation:needs-human"]="b60205:Escalade — plafond d'itérations ou hors périmètre, arbitrage humain requis"
   [blocked]="5319e7:Dépendance externe"
-  ["automation:enabled"]="0052cc:Autorisation — objet explicitement autorisé à être traité par les routines (auto-merge une fois les checks verts)"
+  ["automation:enabled"]="0052cc:Autorisation — objet autorisé à être traité par les routines (auto-merge une fois les checks verts)"
   ["automation:attempt-1"]="c5def5:Compteur R4 — première itération de correction"
   ["automation:attempt-2"]="c5def5:Compteur R4 — deuxième itération de correction"
   ["automation:attempt-3"]="c5def5:Compteur R4 — troisième et dernière itération autorisée, à ce stade : stop"
@@ -31,7 +31,7 @@ declare -A LABELS=(
   [P3]="cfd3d7:Priorité 3"
 )
 
-existing_labels="$(gh label list --repo "$REPO" --json name -q '.[].name')"
+existing_labels="$(gh label list --repo "$REPO" --limit 300 --json name -q '.[].name')"
 
 for name in "${!LABELS[@]}"; do
   IFS=':' read -r color desc <<< "${LABELS[$name]}"
