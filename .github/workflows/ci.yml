@@ -156,6 +156,19 @@ jobs:
       - name: Check doc/ relative links
         run: node scripts/check-doc-links.mjs
 
+  automation-config:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Validate .automation/routines.yml
+        run: node scripts/automation-dispatch.mjs
+
   design-tokens:
     runs-on: ubuntu-latest
     steps:

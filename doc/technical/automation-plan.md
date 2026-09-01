@@ -260,6 +260,44 @@ d'attente de `auto-merge-sync.yml` a expiré — voir Phase 5, incident PR
 #264/#273), puis `scripts/dispatch-ready.mjs`, dans cet ordre précis pour
 que le déblocage d'une issue profite au dispatch du même run.
 
+### Dispatcher déclaratif : `.automation/routines.yml`
+
+Le mapping label → routine → skill (table de `doc/automation/state-machine.md`
+§2) vivait jusqu'ici dupliqué en texte libre dans cette section, dans
+`state-machine.md` et dans chaque `SKILL.md`. `.automation/routines.yml`
+en devient la version machine-lisible : une entrée par routine (`entity`,
+`trigger_label`, `skill`, `concurrency_key`, plus `deduplicate_by`/
+`max_iterations` en option pour R3/R4). Une nouvelle routine se déclare en
+ajoutant une entrée ici, sans copier un workflow complet.
+
+Le contrat est documenté en JSON Schema sous
+`schemas/automation/routines.schema.json` — même statut que
+`schemas/import/` : référence lisible du format, pas branchée sur un moteur
+JSON Schema générique. La validation réelle est un validateur écrit à la
+main, `scripts/automation-dispatch.mjs` (testé, `automation-dispatch.test.mjs`),
+qui rejette entre autres deux routines déclarant le même couple
+`entity`/`trigger_label` — la classe d'erreur qui a causé le double-fire de
+R2 sur l'issue #99 (§4 ci-dessus). Ce script est appelé à deux endroits :
+
+- Le job `automation-config` de `ci.yml` le lance sans variables
+  d'environnement : il valide `.automation/routines.yml` et fait échouer la
+  CI clairement (`::error::` par erreur trouvée) sur toute PR qui casse le
+  fichier.
+- `.github/workflows/automation-dispatch.yml` (nouveau workflow, trigger
+  GitHub `issues`/`pull_request` `labeled`) le lance avec `EVENT_ENTITY`/
+  `EVENT_LABEL` déduits de l'événement : il résout quelle routine matche et
+  logue `routine`, `skill`, `entity`, `trigger_label` et `target_label`
+  (toujours `automation:in-progress`, la cible du « claim the run », §4) en
+  clair dans les logs du run.
+
+Ce nouveau workflow ne remplace **pas** le déclenchement réel des routines
+(toujours porté par les triggers configurés sur chaque routine
+claude.ai/code/routines, cf. Phases 2/4/5) ni les workflows existants
+(`requeue-lost-events.yml`, `needs-review-label.yml`, `dispatch-ready.mjs`,
+...), volontairement laissés inchangés (issue #378) : c'est une couche
+d'observabilité et de validation au-dessus du mapping existant, pas encore
+le mécanisme de dispatch lui-même.
+
 ### Journal d'exécution idempotent
 
 Chaque passage d'une routine sur une issue/PR doit rester traçable et
