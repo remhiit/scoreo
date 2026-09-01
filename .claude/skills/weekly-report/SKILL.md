@@ -1,11 +1,11 @@
 ---
 name: weekly-report
-description: Build the weekly observability report for the Scoreo automation pipeline — open PR age, needs-human escalations, R3 pass/fail rate, incidents logged since last report, and a recommendation on the `auto` whitelist. Use for the scheduled Monday report, or when asked to check pipeline health. This is the R6 step in doc/technical/automation-plan.md.
+description: Build the weekly observability report for the Scoreo automation pipeline — open PR age, needs-human escalations, R3 pass/fail rate, incidents logged since last report, and a recommendation on the `automation:enabled` whitelist. Use for the scheduled Monday report, or when asked to check pipeline health. This is the R6 step in doc/technical/automation-plan.md.
 ---
 
 # Weekly Report
 
-Builds the data-driven case for expanding, holding, or restricting the `auto`
+Builds the data-driven case for expanding, holding, or restricting the `automation:enabled`
 whitelist (`automation-plan.md` §5) — the plan explicitly forbids growing
 that whitelist "on intuition" (§1, Phase 6). This skill only reports; it
 never edits the whitelist itself. See `project-conventions` for repo layout
@@ -68,7 +68,7 @@ and which phase/routine it was found in.
 ### 5. Recommandation
 
 One explicit line: **élargir** / **maintenir** / **restreindre** la liste
-blanche `auto`, justified by §§1-4 above — not a vibe. A low `needs-fix`
+blanche `automation:enabled`, justified by §§1-4 above — not a vibe. A low `needs-fix`
 rate with zero new incidents supports élargir; any open `needs-human` from
 this window or a rising `needs-fix` rate supports maintenir/restreindre.
 
