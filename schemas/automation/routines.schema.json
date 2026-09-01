@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft-07/schema#",
+  "title": "Scoreo Automation Routines",
+  "description": "Contrat de .automation/routines.yml — mapping déclaratif label → routine → skill pour le dispatcher d'automatisation (doc/technical/automation-plan.md §4, doc/automation/state-machine.md). Documenté ici comme référence du contrat ; validé en pratique par le validateur écrit à la main scripts/automation-dispatch.mjs (même précédent que schemas/import/, cf. doc/technical/architecture.md).",
+  "type": "object",
+  "properties": {
+    "version": {
+      "type": "integer",
+      "description": "Version du format de ce fichier",
+      "const": 1
+    },
+    "routines": {
+      "type": "object",
+      "description": "Une entrée par routine (R2, R3, R4, ...), indexée par son nom de skill",
+      "minProperties": 1,
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "entity": {
+            "type": "string",
+            "description": "Type d'objet GitHub sur lequel la routine se déclenche",
+            "enum": ["issue", "pull_request"]
+          },
+          "trigger_label": {
+            "type": "string",
+            "description": "Label dont la pose déclenche la routine — doit être unique pour un même `entity` (deux routines sur le même couple entity/label matcheraient le même événement, cf. incident double-fire #99)",
+            "minLength": 1
+          },
+          "skill": {
+            "type": "string",
+            "description": "Nom de la skill dans .claude/skills/ que la routine exécute",
+            "minLength": 1
+          },
+          "concurrency_key": {
+            "type": "string",
+            "description": "Granularité de concurrence de la routine",
+            "enum": ["issue", "pull-request"]
+          },
+          "deduplicate_by": {
+            "type": "string",
+            "description": "Optionnel — critère de déduplication d'un déclenchement redondant (ex: head_sha)"
+          },
+          "max_iterations": {
+            "type": "integer",
+            "description": "Optionnel — plafond anti-boucle avant escalade en needs-human",
+            "minimum": 1
+          }
+        },
+        "required": ["entity", "trigger_label", "skill", "concurrency_key"],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": ["version", "routines"],
+  "additionalProperties": false
+}
