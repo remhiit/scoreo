@@ -71,7 +71,7 @@ automatisation ne sait que l'issue est bloquée.
 ## Determining the risk category
 
 This is the one field that isn't free-form — it comes straight from the
-`auto` whitelist in `automation-plan.md` §5:
+`automation:enabled` whitelist in `automation-plan.md` §5:
 
 - **Faible** (eligible for `auto` later, at `implement-task`'s discretion):
   content/copy changes, documentation, dependency bumps, local refactors with

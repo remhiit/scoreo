@@ -23,5 +23,5 @@ jobs:
         with:
           node-version: 22
 
-      - name: Promote unblocked issues to ready
+      - name: Promote unblocked issues to automation:queued
         run: node scripts/unblock-issues.mjs

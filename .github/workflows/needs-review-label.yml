@@ -22,7 +22,7 @@ jobs:
           gh api -X DELETE "repos/$REPO/issues/$NUMBER/labels/review-pass" || true
           gh api -X DELETE "repos/$REPO/issues/$NUMBER/labels/needs-fix" || true
 
-      - name: Add needs-review label
+      - name: Add automation:needs-review label
         env:
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}

@@ -5,8 +5,8 @@ description: Build the weekly observability report for the Scoreo automation pip
 
 # Weekly Report
 
-Builds the data-driven case for expanding, holding, or restricting the `auto`
-whitelist (`automation-plan.md` §5) — the plan explicitly forbids growing
+Builds the data-driven case for expanding, holding, or restricting the
+`automation:enabled` whitelist (`automation-plan.md` §5) — the plan explicitly forbids growing
 that whitelist "on intuition" (§1, Phase 6). This skill only reports; it
 never edits the whitelist itself. See `project-conventions` for repo layout
 conventions referenced below.
