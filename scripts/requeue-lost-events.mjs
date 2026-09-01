@@ -4,7 +4,7 @@
 // automation-plan.md §3 — les events dépassant le plafond sont ignorés, pas
 // mis en file). Principe « claim the run » (§4) : une routine retire son
 // label déclencheur dès qu'elle démarre. Un label déclencheur encore posé
-// longtemps après sa pose, sans `in-progress`, signale donc un événement
+// longtemps après sa pose, sans `automation:in-progress`, signale donc un événement
 // perdu. Le retirer puis le reposer seul régénère un événement `labeled`
 // qui re-matche le trigger de la routine — retry aveugle à coût nul, sans
 // moyen d'interroger le quota Claude depuis GitHub. Zéro LLM (§2.2).
@@ -13,7 +13,7 @@ const REPO_OWNER = process.env.REPO_OWNER
 const REPO_NAME = process.env.REPO_NAME
 const API_ROOT = `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}`
 
-// Temps qu'une session de routine prenne le run et pose `in-progress` — ne
+// Temps qu'une session de routine prenne le run et pose `automation:in-progress` — ne
 // pas balayer un label qui vient juste d'être posé.
 const ORPHAN_THRESHOLD_MINUTES = 30
 
@@ -70,12 +70,12 @@ async function minutesSinceLabeled(number, label) {
 }
 
 async function requeueIfOrphaned(number, label, labelNames) {
-  if (labelNames.includes('in-progress')) {
-    console.log(`#${number}: porte "in-progress", skip (run en cours)`)
+  if (labelNames.includes('automation:in-progress')) {
+    console.log(`#${number}: porte "automation:in-progress", skip (run en cours)`)
     return
   }
-  if (labelNames.includes('needs-human')) {
-    console.log(`#${number}: porte "needs-human", skip (état terminal)`)
+  if (labelNames.includes('automation:needs-human')) {
+    console.log(`#${number}: porte "automation:needs-human", skip (état terminal)`)
     return
   }
 
@@ -99,14 +99,14 @@ function labelNamesOf(item) {
 }
 
 async function sweepIssues() {
-  const issues = (await listOpenWithLabel('ready')).filter((item) => !item.pull_request)
+  const issues = (await listOpenWithLabel('automation:ready')).filter((item) => !item.pull_request)
   for (const issue of issues) {
-    await requeueIfOrphaned(issue.number, 'ready', labelNamesOf(issue))
+    await requeueIfOrphaned(issue.number, 'automation:ready', labelNamesOf(issue))
   }
 }
 
 async function sweepPullRequests() {
-  for (const label of ['needs-review', 'needs-fix']) {
+  for (const label of ['automation:needs-review', 'automation:needs-fix']) {
     const prs = (await listOpenWithLabel(label)).filter((item) => item.pull_request)
     for (const pr of prs) {
       await requeueIfOrphaned(pr.number, label, labelNamesOf(pr))

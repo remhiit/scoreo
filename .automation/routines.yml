@@ -11,18 +11,18 @@ version: 1
 routines:
   implement-task:
     entity: issue
-    trigger_label: ready
+    trigger_label: automation:ready
     skill: implement-task
     concurrency_key: issue
   pr-review:
     entity: pull_request
-    trigger_label: needs-review
+    trigger_label: automation:needs-review
     skill: pr-review
     concurrency_key: pull-request
     deduplicate_by: head_sha
   address-feedback:
     entity: pull_request
-    trigger_label: needs-fix
+    trigger_label: automation:needs-fix
     skill: address-feedback
     concurrency_key: pull-request
     max_iterations: 3

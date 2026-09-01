@@ -11,20 +11,20 @@ const VALID_CONFIG = {
   routines: {
     'implement-task': {
       entity: 'issue',
-      trigger_label: 'ready',
+      trigger_label: 'automation:ready',
       skill: 'implement-task',
       concurrency_key: 'issue',
     },
     'pr-review': {
       entity: 'pull_request',
-      trigger_label: 'needs-review',
+      trigger_label: 'automation:needs-review',
       skill: 'pr-review',
       concurrency_key: 'pull-request',
       deduplicate_by: 'head_sha',
     },
     'address-feedback': {
       entity: 'pull_request',
-      trigger_label: 'needs-fix',
+      trigger_label: 'automation:needs-fix',
       skill: 'address-feedback',
       concurrency_key: 'pull-request',
       max_iterations: 3,
@@ -39,12 +39,12 @@ version: 1
 routines:
   implement-task:
     entity: issue
-    trigger_label: ready
+    trigger_label: automation:ready
     skill: implement-task
     concurrency_key: issue
   pr-review:
     entity: pull_request
-    trigger_label: needs-review
+    trigger_label: automation:needs-review
     skill: pr-review
     concurrency_key: pull-request
     deduplicate_by: head_sha
@@ -54,19 +54,32 @@ routines:
       routines: {
         'implement-task': {
           entity: 'issue',
-          trigger_label: 'ready',
+          trigger_label: 'automation:ready',
           skill: 'implement-task',
           concurrency_key: 'issue',
         },
         'pr-review': {
           entity: 'pull_request',
-          trigger_label: 'needs-review',
+          trigger_label: 'automation:needs-review',
           skill: 'pr-review',
           concurrency_key: 'pull-request',
           deduplicate_by: 'head_sha',
         },
       },
     })
+  })
+
+  it('preserves a colon embedded in a scalar value (e.g. an automation:-prefixed label)', () => {
+    const yaml = `
+version: 1
+routines:
+  implement-task:
+    entity: issue
+    trigger_label: automation:ready
+    skill: implement-task
+    concurrency_key: issue
+`
+    expect(parseRoutinesYaml(yaml).routines['implement-task'].trigger_label).toBe('automation:ready')
   })
 
   it('ignores blank lines and comments', () => {
@@ -78,7 +91,7 @@ routines:
   implement-task:
     # nested comment
     entity: issue
-    trigger_label: ready
+    trigger_label: automation:ready
     skill: implement-task
     concurrency_key: issue
 `
@@ -124,7 +137,7 @@ describe('validateRoutinesConfig', () => {
       routines: {
         'implement-task': {
           entity: 'pr',
-          trigger_label: 'ready',
+          trigger_label: 'automation:ready',
           skill: 'implement-task',
           concurrency_key: 'issue',
         },
@@ -141,13 +154,13 @@ describe('validateRoutinesConfig', () => {
       routines: {
         'implement-task': {
           entity: 'issue',
-          trigger_label: 'ready',
+          trigger_label: 'automation:ready',
           skill: 'implement-task',
           concurrency_key: 'issue',
         },
         duplicate: {
           entity: 'issue',
-          trigger_label: 'ready',
+          trigger_label: 'automation:ready',
           skill: 'some-other-skill',
           concurrency_key: 'issue',
         },
@@ -168,16 +181,16 @@ describe('validateRoutinesConfig', () => {
 
 describe('resolveRoutine', () => {
   it('resolves the routine, skill and target label for a matching event', () => {
-    expect(resolveRoutine(VALID_CONFIG, { entity: 'issue', label: 'ready' })).toEqual({
+    expect(resolveRoutine(VALID_CONFIG, { entity: 'issue', label: 'automation:ready' })).toEqual({
       name: 'implement-task',
       skill: 'implement-task',
       entity: 'issue',
-      triggerLabel: 'ready',
-      targetLabel: 'in-progress',
+      triggerLabel: 'automation:ready',
+      targetLabel: 'automation:in-progress',
     })
   })
 
   it('returns null when no routine matches the entity/label pair', () => {
-    expect(resolveRoutine(VALID_CONFIG, { entity: 'issue', label: 'needs-review' })).toBeNull()
+    expect(resolveRoutine(VALID_CONFIG, { entity: 'issue', label: 'automation:needs-review' })).toBeNull()
   })
 })

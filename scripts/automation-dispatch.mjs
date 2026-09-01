@@ -129,10 +129,11 @@ export function validateRoutinesConfig(config) {
   return { valid: errors.length === 0, errors }
 }
 
-// Toute routine déclenchée par un label la retire et pose `in-progress` en
-// tout premier geste ("claim the run", automation-plan.md §4) — la cible est
-// donc toujours la même, quelle que soit la routine.
-export const CLAIM_LABEL = 'in-progress'
+// Toute routine déclenchée par un label la retire et pose
+// `automation:in-progress` en tout premier geste ("claim the run",
+// automation-plan.md §4) — la cible est donc toujours la même, quelle que
+// soit la routine.
+export const CLAIM_LABEL = 'automation:in-progress'
 
 export function resolveRoutine(config, { entity, label }) {
   const entry = Object.entries(config.routines).find(

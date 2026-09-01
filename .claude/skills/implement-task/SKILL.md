@@ -14,26 +14,29 @@ backward-compat rules referenced throughout.
 - **As R2** (fired by the routine's GitHub trigger): the issue is the one
   from your triggering context — the `issues` `labeled` event that started
   this run. Don't search for it; the trigger context already identifies it
-  precisely, including when several issues carry `ready` at once (each
-  matching event starts its own independent session, one issue each). If
-  that issue turns out not to be actionable any more (no longer `ready`,
-  already closed, etc.), **stop right there and do nothing else** — never
-  search for or pick a different `ready` issue instead, even if one exists.
-  Other `ready` issues waiting means other R2 sessions are already each
-  working their own (see #149: a session whose triggering issue wasn't
-  actionable searched and picked a different `ready` issue instead, risking
-  a duplicate PR on an issue another R2 session was already handling).
+  precisely, including when several issues carry `automation:ready` at once
+  (each matching event starts its own independent session, one issue each).
+  If that issue turns out not to be actionable any more (no longer
+  `automation:ready`, already closed, etc.), **stop right there and do
+  nothing else** — never search for or pick a different `automation:ready`
+  issue instead, even if one exists. Other `automation:ready` issues waiting
+  means other R2 sessions are already each working their own (see #149: a
+  session whose triggering issue wasn't actionable searched and picked a
+  different `automation:ready` issue instead, risking a duplicate PR on an
+  issue another R2 session was already handling).
 - **Interactive, no issue named**: use an explicit selection algorithm, not
-  "first in the listing" — list open issues labeled `ready`, group them by
-  priority label (`P0`…`P3`), take the highest-priority non-empty group, and
-  within that group break ties by the oldest issue (lowest issue number).
-  Don't just take the first result a `ready` listing happens to return
-  without checking its priority against the other candidates.
+  "first in the listing" — list open issues labeled `automation:ready`,
+  group them by priority label (`P0`…`P3`), take the highest-priority
+  non-empty group, and within that group break ties by the oldest issue
+  (lowest issue number). Don't just take the first result an
+  `automation:ready` listing happens to return without checking its
+  priority against the other candidates.
 - **Interactive, issue named**: use that one.
 
-Replace `ready` with `in-progress` before starting, in every case — remove
-`ready`, add `in-progress`. A stale `ready` left in place would mislead
-anyone scanning the backlog into thinking the issue is still unclaimed.
+Replace `automation:ready` with `automation:in-progress` before starting, in
+every case — remove `automation:ready`, add `automation:in-progress`. A
+stale `automation:ready` left in place would mislead anyone scanning the
+backlog into thinking the issue is still unclaimed.
 
 ## Workflow
 
@@ -41,9 +44,10 @@ anyone scanning the backlog into thinking the issue is still unclaimed.
    out-of-scope. If the spec is ambiguous or missing acceptance criteria,
    stop and ask rather than guessing scope. **As R2**, "ask" means posting a
    comment on the issue naming exactly what's missing, then removing
-   `in-progress` (already claimed above) and adding `needs-human` — never
-   leave the issue silently stuck on `in-progress` with no PR and no comment.
-   See `doc/automation/state-machine.md` § Incomplete issue.
+   `automation:in-progress` (already claimed above) and adding
+   `automation:needs-human` — never leave the issue silently stuck on
+   `automation:in-progress` with no PR and no comment. See
+   `doc/automation/state-machine.md` § Incomplete issue.
 2. **Branch from the latest default branch**: `feat/<issue-number>-<slug>`
    (slug = a few kebab-case words from the title).
 3. **Tests first.** Write the test(s) that encode the acceptance criteria
@@ -79,13 +83,14 @@ anyone scanning the backlog into thinking the issue is still unclaimed.
    commit examples — describe the *why*, not "Fix" or "Update").
 9. **Push and open a PR** with `Closes #N` in the body, so the issue closes
    automatically on merge.
-10. **Label `auto`** only if the issue's spec marked risk as **Faible**
-    *and* the actual diff still matches that (re-check: did this PR end up
-    touching a serialized model, a port/adapter, `apps/scoreo/public/`, Vite/TS config,
-    or navigation despite the spec's prediction? If so, don't add `auto` —
-    the diff overrides the prediction).
-11. Move to the next `ready` issue rather than batching multiple issues into
-    one PR.
+10. **Label `automation:enabled`** only if the issue's spec marked risk as
+    **Faible** *and* the actual diff still matches that (re-check: did this
+    PR end up touching a serialized model, a port/adapter,
+    `apps/scoreo/public/`, Vite/TS config, or navigation despite the spec's
+    prediction? If so, don't add `automation:enabled` — the diff overrides
+    the prediction).
+11. Move to the next `automation:ready` issue rather than batching multiple
+    issues into one PR.
 
 ## Guardrails
 
@@ -94,5 +99,5 @@ anyone scanning the backlog into thinking the issue is still unclaimed.
   different or much larger change than the spec described, stop and flag it
   rather than silently expanding scope.
 - Don't merge the PR yourself. Merging is deterministic tooling
-  (`gh pr merge --auto --squash` once checks are green and `auto` is
-  present), not part of this skill.
+  (`gh pr merge --auto --squash` once checks are green and `automation:enabled`
+  is present), not part of this skill.

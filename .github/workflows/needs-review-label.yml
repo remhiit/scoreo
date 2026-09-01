@@ -19,12 +19,12 @@ jobs:
           REPO: ${{ github.repository }}
           NUMBER: ${{ github.event.pull_request.number }}
         run: |
-          gh api -X DELETE "repos/$REPO/issues/$NUMBER/labels/review-pass" || true
-          gh api -X DELETE "repos/$REPO/issues/$NUMBER/labels/needs-fix" || true
+          gh api -X DELETE "repos/$REPO/issues/$NUMBER/labels/automation:review-pass" || true
+          gh api -X DELETE "repos/$REPO/issues/$NUMBER/labels/automation:needs-fix" || true
 
-      - name: Add needs-review label
+      - name: Add automation:needs-review label
         env:
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
           NUMBER: ${{ github.event.pull_request.number }}
-        run: gh api "repos/$REPO/issues/$NUMBER/labels" -f "labels[]=needs-review"
+        run: gh api "repos/$REPO/issues/$NUMBER/labels" -f "labels[]=automation:needs-review"
