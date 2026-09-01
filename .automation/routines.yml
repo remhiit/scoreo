@@ -1,0 +1,28 @@
+# Mapping déclaratif label → routine → skill pour le dispatcher d'automatisation.
+# Source de vérité machine-lisible du tableau documenté dans
+# doc/automation/state-machine.md §2 — toute nouvelle routine se déclare ici,
+# sans copier un workflow complet (issue #378).
+#
+# Validé en CI (job `automation-config` de ci.yml) et résolu à chaque
+# événement `labeled` par .github/workflows/automation-dispatch.yml, tous
+# deux via scripts/automation-dispatch.mjs. Schéma documenté :
+# schemas/automation/routines.schema.json.
+version: 1
+routines:
+  implement-task:
+    entity: issue
+    trigger_label: ready
+    skill: implement-task
+    concurrency_key: issue
+  pr-review:
+    entity: pull_request
+    trigger_label: needs-review
+    skill: pr-review
+    concurrency_key: pull-request
+    deduplicate_by: head_sha
+  address-feedback:
+    entity: pull_request
+    trigger_label: needs-fix
+    skill: address-feedback
+    concurrency_key: pull-request
+    max_iterations: 3
