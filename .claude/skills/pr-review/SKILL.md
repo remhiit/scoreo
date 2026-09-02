@@ -37,7 +37,34 @@ manage there).
 
 At this same moment, note the PR's current HEAD SHA (`pull_request_read`).
 The checklist below reads the diff at this SHA — the guard just before
-"Label the verdict" needs it to detect a HEAD that moved mid-review.
+"Post the review" needs it to detect a HEAD that moved mid-review, and the
+dedup check right below needs it to recognize a commit already reviewed.
+
+## Skip a duplicate review (R3 only, right after claiming)
+
+`.automation/routines.yml` declares `deduplicate_by: head_sha` for this
+routine — this step is what actually enforces it (the dispatcher itself is
+observability-only, `automation-plan.md` §4 "Dispatcher déclaratif"). Two
+`labeled(automation:needs-review)` deliveries for the same commit are
+possible even with "claim the run" in place (e.g. a duplicate webhook
+delivery, or `requeue-lost-events.mjs` re-posing the label on a run that was
+actually still in flight) — the class of double-fire behind incidents #94
+and #99 (`doc/automation/state-machine.md` §5).
+
+Read the PR's comments (`pull_request_read` `get_comments`) and find the one
+whose body starts with `<!-- automation-log:pr-review -->` — the journal
+`review-status-sync.yml` upserts after every verdict. If it exists, read its
+`Commit analysé` and `Statut` fields:
+
+- If `Commit analysé` equals the HEAD SHA just noted **and** `Statut` is not
+  `running`, this exact commit was already reviewed by a prior run. Don't
+  repeat the checklist or post a second review. Re-post the matching label
+  (`succeeded` → `automation:review-pass`, `failed` → `automation:needs-fix`),
+  remove `automation:in-progress`, and stop.
+- Otherwise (no log comment, a different SHA, or `Statut: running` — another
+  session's review is genuinely in flight right now) proceed with the
+  checklist below as normal. A different SHA means a new commit landed since
+  the last review, which is exactly the case that must get a fresh pass.
 
 ## Out of scope — don't re-check these
 
@@ -75,25 +102,52 @@ narrate it here.
    only works for the happy path from the issue's examples. Flag it even if
    it's not blocking — that's the point of a subjective review.
 
-## Output
+## Output: classify every finding
 
-State a verdict per item: conforms / doesn't conform / N/A, with a one-line
-reason. End with an overall verdict:
+Don't collapse the checklist into a binary conforms/doesn't-conform per
+item. For each issue actually found — whether it's one of the five
+checklist points above or something else noticed while reading the diff —
+record a **finding**: a one-line summary, a **severity**, and a **concrete
+recommendation** (what to change, specific enough that `address-feedback`
+or a human can act on it without re-deriving the spec — never "consider
+improving X", say what X becomes).
 
-- **Conforms** — nothing above blocks merge.
-- **Needs changes** — list exactly what, scoped tightly enough that
-  `address-feedback` can act on it without re-deriving the spec.
+Severity is one of:
 
-Don't soften a real blocker into a "nit" to avoid friction — a review that
-never says no isn't protecting anything (see `automation-plan.md`'s risk
-table: "Review sans mordant").
+- **`blocking`** — must be fixed before merge: doesn't satisfy an
+  acceptance criterion, a reducer calling a repository directly, a missing
+  zod `.default()`, an undocumented field removal.
+- **`important`** — should be fixed, meaningfully weakens the change, but
+  isn't on its own a reason to hold the merge open indefinitely — a stale
+  doc page, real debt that isn't the happy-path shortcut kind.
+- **`suggestion`** — worth doing, no material downside to merging without
+  it (naming, a nearby refactor opportunity, a nice-to-have test).
+- **`uncertain`** — can't be resolved from the diff alone; needs a human's
+  judgment call rather than a guess in either direction.
 
-## Guard against a moved HEAD (R3 only, just before labeling)
+Don't soften a real `blocking`/`important` finding into a `suggestion` to
+avoid friction — a review that never says no isn't protecting anything (see
+`automation-plan.md`'s risk table: "Review sans mordant"). Symmetrically,
+don't inflate a `suggestion` to `blocking` to make a point — the whole
+reason for four levels instead of two is so R4 (and a human reading the
+review) can tell "must fix" from "worth knowing" at a glance.
 
-Before posting any verdict label, re-read the PR's current HEAD SHA
+The overall verdict follows directly from the findings, not a separate
+judgment call:
+
+- **`automation:review-pass`** — no `blocking` or `important` finding.
+  `suggestion`/`uncertain` findings don't hold up merge on their own (issue
+  #379 — "ne pas déclencher R4 sur de simples suggestions"); still surface
+  them in the review so a human can act on them later if they choose to.
+- **`automation:needs-fix`** — at least one `blocking` or `important`
+  finding.
+
+## Guard against a moved HEAD (R3 only, just before posting the review)
+
+Before posting anything, re-read the PR's current HEAD SHA
 (`pull_request_read`) and compare it to the SHA noted in "Claim the run".
-If it differs, **do not post a verdict** — post `automation:needs-review`
-back on its own, in its own call, and stop there.
+If it differs, **do not post a review or a verdict label** — post
+`automation:needs-review` back on its own, in its own call, and stop there.
 
 Why this matters: `review-status-sync.yml` stamps the `claude/review`
 commit status onto `github.event.pull_request.head.sha` at the moment its
@@ -104,6 +158,29 @@ verdict's status stamped onto a commit this review never actually read.
 by re-queuing on every push, but webhook delivery order isn't guaranteed —
 so this check stays load-bearing even though the race is rare. Don't drop
 it as a "simplification" later.
+
+## Post the review (R3 only)
+
+One formal PR review is this commit's single synthesis — the dedup guard
+above is what keeps that to one per SHA, this step is just how it's shaped.
+Reserve inline comments for findings tied to a specific file/line that are
+actionable there and then; anything broader (spec conformance as a whole, a
+doc page that should have been updated, a pattern spanning several files)
+goes only in the review's summary body, not scattered as inline noise.
+
+1. `pull_request_review_write` `method: create`, no `event` — opens a
+   pending review at the noted HEAD SHA (`commitID`).
+2. For each localized, actionable finding, `add_comment_to_pending_review`
+   with the `path`/`line` it applies to, body starting with its severity
+   (e.g. `**blocking**: ...`) followed by the recommendation.
+3. `pull_request_review_write` `method: submit_pending`, `event: COMMENT` —
+   **never** `APPROVE` or `REQUEST_CHANGES` (no auto-approval mechanism,
+   `automation-plan.md` §3). The submit `body` is the synthesis: every
+   finding (inline ones too, so the review reads standalone) grouped by
+   severity, plus the overall verdict line from "Output" above.
+
+Skip this step for an ad hoc interactive review the user asked for
+directly — just report the findings and verdict in the conversation.
 
 ## Label the verdict (R3 only)
 
@@ -116,10 +193,11 @@ interactive review the user asked for directly.
 
 `automation:needs-review` is already gone (removed in "Claim the run"
 above) — this step's job is to remove `automation:in-progress` and post the
-terminal label:
+terminal label, right after the review from "Post the review" above is
+submitted:
 
-- **Conforms** → set labels to `automation:review-pass`, removing
-  `automation:in-progress`, `automation:needs-fix`, and any
+- **`automation:review-pass`** → removing `automation:in-progress`,
+  `automation:needs-fix`, and any
   `automation:attempt-1`/`automation:attempt-2`/`automation:attempt-3` if
   present. Clearing the attempt counter matters: it's what
   `address-feedback` (R4) uses to cap retries on a *recurring* failure —
@@ -128,10 +206,10 @@ terminal label:
   later rebase) as a continuation of the old one, and escalate to
   `automation:needs-human` after fewer genuine attempts than the cap
   intends.
-- **Needs changes** → set labels to `automation:needs-fix`, removing
-  `automation:in-progress` and `automation:review-pass` if present, and
-  post a PR comment listing exactly what's blocking (this is what
-  `address-feedback` will act on).
+- **`automation:needs-fix`** → removing `automation:in-progress` and
+  `automation:review-pass` if present. The submitted review already lists
+  every `blocking`/`important` finding with its recommendation — that's
+  what `address-feedback` acts on, nothing further to post here.
 
 Apply exactly one of `automation:review-pass`/`automation:needs-fix`, never
 both. Re-adding `automation:needs-review` later (e.g. after a fix is

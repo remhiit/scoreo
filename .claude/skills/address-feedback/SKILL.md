@@ -91,7 +91,13 @@ just because a human happened to invoke the skill this time.
 ## Workflow
 
 1. **Read every flagged item** from the review (or failing CI check) before
-   touching anything. Build the list of exactly what needs to change.
+   touching anything. `pr-review` submits a formal PR review classifying
+   each finding `blocking`/`important`/`suggestion`/`uncertain`
+   (`pr-review/SKILL.md` § Output) — `automation:needs-fix` only means at
+   least one `blocking`/`important` finding exists, so build the fix list
+   from those two severities only. A `suggestion`/`uncertain` finding
+   listed in the same review is visible context, not part of this scope —
+   leave it alone unless it's inseparable from a `blocking`/`important` fix.
 2. **Fix only that list.** If a fix reveals it can't be done without a
    larger change than the review anticipated, stop and flag that
    explicitly rather than expanding scope unilaterally — this is the one

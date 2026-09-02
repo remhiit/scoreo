@@ -334,6 +334,44 @@ verdict en signal GitHub — labels, commit status — plutôt que la routine
 elle-même, qui n'a accès qu'aux outils MCP GitHub habituels et pas à un
 appel script direct).
 
+### R3 idempotent : dédup par SHA et synthèse classifiée (#379)
+
+`.automation/routines.yml` déclare `deduplicate_by: head_sha` pour
+`pr-review` depuis #378, mais le dispatcher qui le valide reste
+observationnel (§ ci-dessus, « Ce nouveau workflow ne remplace pas le
+déclenchement réel des routines ») — le champ ne faisait donc rien tant
+qu'aucun composant ne le lisait. `pr-review/SKILL.md` § « Skip a duplicate
+review » est ce composant : en tout premier geste après avoir « claim » le
+run (avant même le checklist), R3 relit le journal idempotent `pr-review`
+de la PR (§ ci-dessus) et compare son `Commit analysé` au HEAD SHA courant.
+Même SHA et statut déjà terminal (`succeeded`/`failed`, pas `running`) →
+cette review a déjà eu lieu, R3 repose juste le label correspondant sans
+rejouer le checklist ni poster une seconde review. Ça couvre la classe de
+double-fire des incidents #94/#99 (`doc/automation/state-machine.md` §5)
+même quand deux déclenchements `automation:needs-review` sur le même commit
+survivent tous les deux au « claim the run » (livraison de webhook
+dupliquée, ou une relance de `requeue-lost-events.mjs` qui recouvre un run
+en fait toujours en vol).
+
+Le format de sortie change en même temps : R3 ne rend plus un verdict
+binaire conforme/à corriger par point de checklist, mais une liste de
+*findings* classés par sévérité (`blocking`/`important`/`suggestion`/
+`uncertain`), chacun avec une recommandation concrète
+(`pr-review/SKILL.md` § Output). Le verdict global en découle
+mécaniquement : `automation:needs-fix` seulement s'il existe au moins un
+finding `blocking`/`important` — une PR qui n'a que des `suggestion`/
+`uncertain` reste `automation:review-pass`, ces findings restant visibles
+dans la review pour un humain sans déclencher R4 (`address-feedback` ne
+lit d'ailleurs que les findings `blocking`/`important` de la review,
+`address-feedback/SKILL.md` § Workflow). R3 publie cette synthèse comme une
+vraie review PR (`pull_request_review_write`, `event: COMMENT` — jamais
+`APPROVE`/`REQUEST_CHANGES`, §3) plutôt qu'un commentaire libre : les
+findings localisés et actionnables deviennent des commentaires inline,
+tout le reste (conformité à la spec, doc à jour, dette) reste dans le corps
+de la review. Une seule review par SHA, garantie par le dédup ci-dessus —
+c'est ça, la « synthèse de review unique » de #379, pas un mécanisme
+séparé.
+
 ---
 
 Table complète des transitions état → événement → routine → état cible,
