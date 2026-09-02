@@ -175,16 +175,14 @@ describe('MilleSabordsModuleScreen', () => {
     expect(saved[0].matchId).toBe('match-7')
   })
 
-  it('drops the draft when the players abandon, and keeps it when they just step out', () => {
+  // Stepping out is no longer a button the module draws itself — that is the
+  // host's ✕ now (#389) — so from the module's side it is simply never calling
+  // `clearDraft`, unlike abandoning.
+  it('drops the draft when the players abandon', () => {
     const { host, brouillon } = hoteFactice()
-    const onExit = vi.fn()
-    render(<MilleSabordsModuleScreen host={host} playerIds={['p1', 'p2']} onExit={onExit} />)
+    render(<MilleSabordsModuleScreen host={host} playerIds={['p1', 'p2']} onExit={() => undefined} />)
 
     saisirScore('500')
-    expect(brouillon()).not.toBeUndefined()
-
-    fireEvent.click(screen.getByRole('button', { name: /Quitter/ }))
-    expect(onExit).toHaveBeenCalledOnce()
     expect(brouillon()).not.toBeUndefined()
 
     fireEvent.click(screen.getByRole('button', { name: /Abandonner$/ }))

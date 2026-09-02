@@ -44,7 +44,7 @@
 
 ## Navigation
 
-Top header bar (all screens):
+Top header bar (every screen except `ModuleScore`, which has none — see below):
 
 | Element | Action |
 |---------|--------|
@@ -66,6 +66,13 @@ Back button destinations:
 | `ModuleScore` | edit match (`matchId != null`) | History |
 
 Note: Save and Cancel buttons in `ScoreDetail` follow the same rule as `←` (History if editing, Home if new match).
+
+`ModuleScore` plays full-screen, with none of the header above — the host's back arrow, title and
+burger would only duplicate the exit a module already draws itself. In its place, a fine bar carries
+just the module's name and a ✕, always present even if the module fails to load or crashes. The ✕
+goes to the same destination as the `ModuleScore` rows above (History/Home), and to History with that
+match called out if it just saved one this session — see *Landing after exit* in
+[`../technical/module-contract.md`](../technical/module-contract.md).
 
 Burger menu items:
 

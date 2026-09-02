@@ -25,14 +25,18 @@ Une ligne par manche, une colonne par joueur, le score du coup dans chaque cellu
 bas. Les cellules se teintent selon ce qui s'est passé : un tour à zéro, une pénalité négative, une
 Île de la Tête de Mort. Le meneur est mis en avant, et le franchissement des 6000 points aussi.
 
-Quatre actions dessous :
+Trois actions dessous :
 
 | Bouton | Ce qu'il fait |
 |---|---|
 | ↩ Annuler le coup | Retire le dernier coup joué. La partie est rejouée depuis son journal pour recalculer les totaux |
 | 🏁 Terminer la partie | Arrête la partie avant les 6000 points, quand la table décide d'en rester là |
-| ⏸ Quitter (reprise plus tard) | Rend la main à Scoreo **sans rien perdre** : la partie reprend où elle en était |
 | 🗑 Abandonner | Jette la partie en cours, après confirmation. Rien n'est enregistré dans Scoreo |
+
+Rendre la main à Scoreo **sans rien perdre** — la partie reprend où elle en était — se fait avec le
+✕ de la barre du module, en tête d'écran : c'est l'hôte qui le dessine, identique pour tous les
+modules, et il ne jette jamais le brouillon (voir `doc/technical/module-contract.md` § *Playing on a
+module*).
 
 ### Le tour en cours
 

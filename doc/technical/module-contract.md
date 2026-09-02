@@ -162,9 +162,19 @@ child of `#root`, `flex: 1`, with no `max-width` and no route padding, instead o
 600px-capped column. During a game the host's back arrow, title and burger menu would only
 duplicate the exit a module already draws itself; every other route keeps that chrome unchanged.
 `.app-module-route` carries `padding-top: env(safe-area-inset-top)`, the one thing `.app-header`
-was absorbing for this route. Until a dedicated exit ticket lands, the only ways out of a module
-are the one it draws itself (both installed modules have one) and the browser's own back — the
-`ModuleErrorBoundary` fallback offers neither.
+was absorbing for this route.
+
+In its place, `ModuleScoreScreen` renders a fine `.app-module-bar` — the manifest's `displayName`
+and a ✕, nothing else — as a sibling of the `React.lazy` + `Suspense` + error-boundary tree, never a
+child of it: a module that fails to load, throws while rendering, or is unknown (`findModule` finds
+nothing) still leaves the ✕ standing, because none of those failures can unmount a sibling. The ✕
+calls the exact same `onExit` the module itself would call — reusing `handleExit`'s ref read, so a
+match saved this session is still landed on the same way (see *Landing after exit* below) — and
+carries a translated `aria-label` under `modules.exit`. This is the **one** visible way out of a
+module: `packages/module-mille-sabords` no longer draws its own "⏸ Quitter" now that the bar makes it
+redundant, keeping only "🗑 Abandonner" (which the bar does not replace — it clears the draft, the
+✕ never does). `packages/module-api` carries none of this: the bar is generic, asks nothing of the
+manifest beyond `displayName`, and no member was added to `ScoringModuleScreenProps` or `ModuleHost`.
 
 The host side never trusts blindly:
 

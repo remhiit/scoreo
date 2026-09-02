@@ -1,5 +1,5 @@
 import type { ScoringModuleScreenProps } from '@scoreboards/module-api'
-import { fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, within } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import type { Match } from '../domain/model/match'
 import { createServices } from '../services/createServices'
@@ -86,12 +86,13 @@ describe('resolveEditing', () => {
 })
 
 describe('ModuleScoreScreen', () => {
-  it('says so rather than crashing when the module is not installed', () => {
+  it('says so rather than crashing when the module is not installed, and still offers a way out', () => {
     const services = createServices({
       playerRepository: new InMemoryPlayerRepository(),
       gameTypeRepository: new InMemoryGameTypeRepository(),
       matchRepository: new InMemoryMatchRepository(),
     })
+    const onExit = vi.fn()
 
     render(
       <ModuleScoreScreen
@@ -102,11 +103,16 @@ describe('ModuleScoreScreen', () => {
           playerIds: ['p1'],
         }}
         services={services}
-        onExit={() => {}}
+        onExit={onExit}
       />,
     )
 
     expect(screen.getByText('This module is not installed.')).toBeInTheDocument()
+
+    // The bar renders outside the boundary that catches load/render failures,
+    // so an unknown module still leaves this the one way back to Scoreo (#389).
+    fireEvent.click(screen.getByRole('button', { name: 'Exit' }))
+    expect(onExit).toHaveBeenCalledWith(undefined)
   })
 
   function renderFakeModule(onExit = vi.fn()) {
@@ -148,4 +154,14 @@ describe('ModuleScoreScreen', () => {
     expect(onExit).toHaveBeenCalledWith(undefined)
   })
 
+  it('renders a host bar naming the module, whose own ✕ also exits', async () => {
+    const { onExit } = renderFakeModule()
+    await screen.findByText('Save')
+
+    const bar = screen.getByText('Fake').closest('.app-module-bar')
+    expect(bar).not.toBeNull()
+
+    fireEvent.click(within(bar as HTMLElement).getByRole('button', { name: 'Exit' }))
+    expect(onExit).toHaveBeenCalledWith(undefined)
+  })
 })

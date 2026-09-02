@@ -92,13 +92,7 @@ export default function MilleSabordsModuleScreen({
             onEnregistrer={enregistrer}
           />
         ) : (
-          <EcranJeu
-            state={state}
-            partie={partie}
-            noms={noms}
-            dispatch={dispatch}
-            onQuitter={onExit}
-          />
+          <EcranJeu state={state} partie={partie} noms={noms} dispatch={dispatch} />
         )}
 
         {state.confirmationAbandon && (
@@ -144,7 +138,7 @@ interface VueProps {
   dispatch: Dispatch
 }
 
-function EcranJeu({ onQuitter, ...props }: VueProps & { onQuitter: () => void }) {
+function EcranJeu(props: VueProps) {
   const { state, partie, noms, dispatch } = props
   const index = partie.indexJoueurActuel
 
@@ -168,9 +162,6 @@ function EcranJeu({ onQuitter, ...props }: VueProps & { onQuitter: () => void })
             onClick={() => dispatch({ type: 'requestEnd' })}
           >
             🏁 Terminer la partie
-          </button>
-          <button type="button" className="ms-btn ms-btn-ghost" onClick={onQuitter}>
-            ⏸ Quitter (reprise plus tard)
           </button>
           <button
             type="button"

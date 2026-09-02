@@ -13,12 +13,41 @@
    A module plays behind its own controls, so the route skips the host's
    chrome entirely instead of showing it disabled or empty: no `.app-header`,
    no `.app-content` cap. `env(safe-area-inset-top)` replaces the header's
-   fixed height as the guard against the notch/status bar. */
+   fixed height as the guard against the notch/status bar. In its place, a
+   fine `.app-module-bar` is the one way back to Scoreo — always present, even
+   if the module itself fails to load or render (#389). */
 
 .app-module-route {
     flex: 1;
-    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
     padding-top: env(safe-area-inset-top);
+}
+
+.app-module-bar {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-2);
+    padding: var(--space-2) var(--space-3);
+    border-bottom: 1px solid var(--border-default);
+    background: var(--surface-app);
+}
+
+.app-module-bar-title {
+    font-size: var(--text-sm);
+    font-weight: 600;
+    color: var(--text-heading);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.app-module-content {
+    flex: 1;
+    overflow-y: auto;
 }
 
 /* ── App header ── */
