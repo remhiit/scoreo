@@ -244,6 +244,7 @@
     "availableModules": "Available modules",
     "playInScoreo": "Play in Scoreo",
     "playOnModule": "Play on the module",
-    "playerRange": "{{min}}–{{max}} players"
+    "playerRange": "{{min}}–{{max}} players",
+    "exit": "Exit"
   }
 }

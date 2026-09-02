@@ -244,6 +244,7 @@
     "availableModules": "Modules disponibles",
     "playInScoreo": "Jouer dans Scoreo",
     "playOnModule": "Jouer sur le module",
-    "playerRange": "{{min}} à {{max}} joueurs"
+    "playerRange": "{{min}} à {{max}} joueurs",
+    "exit": "Quitter"
   }
 }

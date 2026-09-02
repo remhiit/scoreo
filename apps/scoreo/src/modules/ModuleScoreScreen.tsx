@@ -1,4 +1,5 @@
 import type { ScoringModuleScreenProps } from '@scoreboards/module-api'
+import { X } from 'lucide-react'
 import {
   Component,
   lazy,
@@ -12,6 +13,7 @@ import {
 import { useTranslation } from 'react-i18next'
 import type { Screen } from '../ui/navigation/screen'
 import type { Services } from '../services/createServices'
+import { LudoButton } from '../ui/shared/LudoButton'
 import { ModuleHostAdapter } from './moduleHostAdapter'
 import { findModule } from './registry'
 import { resolveEditing } from './resolveEditing'
@@ -100,15 +102,34 @@ export function ModuleScoreScreen({ screen, services, onExit }: ModuleScoreRoute
     [screen.matchId, screen.moduleId, services],
   )
 
-  if (module === undefined || Screen === undefined) {
-    return <div className="empty-inline">{t('modules.unknownModule')}</div>
-  }
-
   return (
-    <ModuleErrorBoundary fallback={<div className="error-msg">{t('modules.failedToLoad')}</div>}>
-      <Suspense fallback={<div className="empty-inline">{t('modules.loading')}</div>}>
-        <Screen host={host} playerIds={screen.playerIds} editing={editing} onExit={handleExit} />
-      </Suspense>
-    </ModuleErrorBoundary>
+    <>
+      {/*
+        Rendered as a sibling of the boundary/Suspense below, never a child: a
+        module that fails to load, throws while rendering, or is unknown must
+        still leave this the one visible way back to Scoreo (#389).
+      */}
+      <div className="app-module-bar">
+        <span className="app-module-bar-title">{module?.manifest.displayName ?? ''}</span>
+        <LudoButton
+          text={<X size={18} aria-hidden />}
+          variant="ghost"
+          iconOnly
+          ariaLabel={t('modules.exit')}
+          onClick={handleExit}
+        />
+      </div>
+      <div className="app-module-content">
+        {module === undefined || Screen === undefined ? (
+          <div className="empty-inline">{t('modules.unknownModule')}</div>
+        ) : (
+          <ModuleErrorBoundary fallback={<div className="error-msg">{t('modules.failedToLoad')}</div>}>
+            <Suspense fallback={<div className="empty-inline">{t('modules.loading')}</div>}>
+              <Screen host={host} playerIds={screen.playerIds} editing={editing} onExit={handleExit} />
+            </Suspense>
+          </ModuleErrorBoundary>
+        )}
+      </div>
+    </>
   )
 }
