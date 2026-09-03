@@ -80,17 +80,14 @@ just "already claimed, closed".
    should never promote a `blocked` issue to `automation:ready` in the first
    place), also stop if the issue still carries the `blocked` label — that
    combination means something upstream raced or broke, not that it's safe
-   to proceed. Any of these is the same stop condition (see "Escalade"
-   below): **as R2**, "ask" means posting a comment on the issue naming
-   exactly what's missing, then releasing the claim in this exact order: add
-   `automation:needs-human`, add `automation:queued`, and only then remove
-   `automation:in-progress` (already claimed above) — never leave the issue
-   silently stuck on `automation:in-progress` with no PR and no comment, and
-   never remove `automation:in-progress` before the other two are posed
-   (reversing the order would race the hourly requeue sweep into
-   re-dispatching the issue before `automation:needs-human` protects it —
-   see `doc/automation/state-machine.md` §6 "Escalation frees its slot").
-   See `doc/automation/state-machine.md` § Incomplete issue.
+   to proceed. Any of these is the same stop condition — release the claim
+   per "Escalade" below rather than leaving the issue silently stuck on
+   `automation:in-progress` with no PR and no comment. Releasing the claim
+   before posing the other two labels would race the hourly requeue sweep
+   into re-dispatching the issue before `automation:needs-human` protects it
+   (`doc/automation/state-machine.md` §6 "Escalation frees its slot"), which
+   is exactly why "Escalade" fixes the order. See `doc/automation/
+   state-machine.md` § Incomplete issue.
 2. **Branch from the latest default branch**: `feat/<issue-number>-<slug>`
    (slug = a few kebab-case words from the title). If that branch already
    exists remotely (an interrupted earlier run on this same issue, caught by
