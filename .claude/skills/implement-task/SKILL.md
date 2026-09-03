@@ -38,28 +38,57 @@ every case — remove `automation:ready`, add `automation:in-progress`. A
 stale `automation:ready` left in place would mislead anyone scanning the
 backlog into thinking the issue is still unclaimed.
 
+## Guard against a duplicate branch or PR (R2 only, before claiming)
+
+Before touching labels or code, read the issue (`issue_read` method `get`)
+and check `closed_by_pull_requests`. If it lists any **open** PR already
+referencing this issue (a previous run created one but the label state
+wasn't updated, or another session is already on it), **stop right there
+and do nothing else** — same treatment as an issue that's no longer
+actionable (see "Which issue" above): never open a second PR for the same
+issue. Only a PR that's closed without merging (abandoned) doesn't count —
+proceed normally in that case.
+
+This is the guard behind `doc/automation/state-machine.md` row #5: "not
+actionable" now explicitly includes "already has an open linked PR", not
+just "already claimed, closed".
+
 ## Workflow
 
 1. **Read the spec fully** — context, acceptance criteria, impacted files,
-   out-of-scope. If the spec is ambiguous or missing acceptance criteria,
-   stop and ask rather than guessing scope. **As R2**, "ask" means posting a
-   comment on the issue naming exactly what's missing, then removing
-   `automation:in-progress` (already claimed above) and adding
+   out-of-scope, and any `## Dépendances` section. If the spec is ambiguous,
+   missing acceptance criteria, or its definition of done can't be checked
+   against the stated scope, stop and ask rather than guessing. As a
+   defense-in-depth check (the dispatcher should never promote a `blocked`
+   issue to `automation:ready` in the first place), also stop if the issue
+   still carries the `blocked` label — that combination means something
+   upstream raced or broke, not that it's safe to proceed. **As R2**, "ask"
+   means posting a comment on the issue naming exactly what's missing, then
+   removing `automation:in-progress` (already claimed above) and adding
    `automation:needs-human` — never leave the issue silently stuck on
    `automation:in-progress` with no PR and no comment. See
    `doc/automation/state-machine.md` § Incomplete issue.
 2. **Branch from the latest default branch**: `feat/<issue-number>-<slug>`
-   (slug = a few kebab-case words from the title).
-3. **Tests first.** Write the test(s) that encode the acceptance criteria
+   (slug = a few kebab-case words from the title). If that branch already
+   exists remotely (an interrupted earlier run on this same issue, caught by
+   the duplicate-PR guard above finding no open PR yet), check it out and
+   continue on it instead of creating a second, differently-slugged branch
+   for the same issue.
+3. **Plan before touching code.** Once the branch is settled, write a short
+   plan — the files you expect to touch and the approach per file, in a
+   handful of bullets — before making any change. Keep it; it becomes the
+   PR body's plan section in step 10. This isn't a separate GitHub write, just
+   the thinking made explicit before implementation starts.
+4. **Tests first.** Write the test(s) that encode the acceptance criteria
    before the implementation — colocated `*.test.ts(x)` next to the file
-   under test, per repo convention. They should fail before step 4 and pass
+   under test, per repo convention. They should fail before step 5 and pass
    after.
-4. **Implement**, respecting layering: Reducer in `ui/*/` (pure), Use Case in
+5. **Implement**, respecting layering: Reducer in `ui/*/` (pure), Use Case in
    `application/` (zero framework dependency), Repository interface in
    `domain/port/`, implementation in `infrastructure/`. Any new field on a
    serialized model gets a zod `.default()`; any removal/rename gets a
    migration entry in `doc/technical/migrations.md`.
-5. **Verify green**: `pnpm lint && pnpm typecheck && pnpm test && pnpm build
+6. **Verify green**: `pnpm lint && pnpm typecheck && pnpm test && pnpm build
    && pnpm test:e2e` — all five, not a subset. This mirrors what `ci.yml`
    will run on the PR; catch failures here rather than in CI. Build before
    the e2e run — `playwright.config.ts` starts its server with `pnpm
@@ -68,28 +97,39 @@ backlog into thinking the issue is still unclaimed.
    do not run `playwright install`; locally, run `pnpm exec playwright
    install chromium` first if needed. If an e2e test fails in a way that
    looks unrelated to this diff, re-run once before concluding it's flaky —
-   don't "fix" a test at random just to make it pass.
-6. **Visual check for UI changes.** If the issue touches a screen
+   don't "fix" a test at random just to make it pass. If the suite still
+   can't be made green after a reasonable effort, don't push a PR you know
+   will be red: escalate exactly like step 1's ambiguous-spec case (comment
+   naming what's failing, swap `automation:in-progress` for
+   `automation:needs-human`) instead of leaving the branch dangling or
+   opening a PR that misrepresents its own state.
+7. **Visual check for UI changes.** If the issue touches a screen
    (`apps/scoreo/src/ui/*/`), start the dev server and exercise the actual flow in a
    browser — golden path and the edge cases named in the acceptance
    criteria. Don't claim a UI change works from tests alone.
-7. **Update `doc/`** per `CLAUDE.md`'s Pre-commit Checklist: the matching
+8. **Update `doc/`** per `CLAUDE.md`'s Pre-commit Checklist: the matching
    `doc/reference.md` table row, `doc/functional/feature.md` or
    `doc/functional/features/*.md` for user-facing behavior,
    `doc/technical/migrations.md` for schema changes. A diff that adds a
    reducer/use case/model/port/adapter/screen without a matching doc update
    is not done yet.
-8. **One commit.** Message = the issue's title (see `CLAUDE.md`'s good/bad
+9. **One commit.** Message = the issue's title (see `CLAUDE.md`'s good/bad
    commit examples — describe the *why*, not "Fix" or "Update").
-9. **Push and open a PR** with `Closes #N` in the body, so the issue closes
-   automatically on merge.
-10. **Label `automation:enabled`** only if the issue's spec marked risk as
+10. **Push and open a PR** with `Closes #N` in the body, plus two short
+    sections: the plan from step 3 (what changed and why, not a diff
+    restatement) and the validation results (which of step 6's five checks
+    ran green, plus the visual check outcome if step 7 applied). Open it
+    non-draft only once step 6 is actually green — R2 never opens the PR
+    itself as `automation:needs-review`; that label is posed automatically
+    by the deterministic `needs-review-label.yml` action on PR open, and it
+    should find a PR whose author-side checks already passed.
+11. **Label `automation:enabled`** only if the issue's spec marked risk as
     **Faible** *and* the actual diff still matches that (re-check: did this
     PR end up touching a serialized model, a port/adapter,
     `apps/scoreo/public/`, Vite/TS config, or navigation despite the spec's
     prediction? If so, don't add `automation:enabled` — the diff overrides
     the prediction).
-11. Move to the next `automation:ready` issue rather than batching multiple
+12. Move to the next `automation:ready` issue rather than batching multiple
     issues into one PR.
 
 ## Guardrails
