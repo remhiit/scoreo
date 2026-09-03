@@ -45,8 +45,8 @@ same PR (#111):
   can reopen it.
 - **Removing the old `automation:attempt-N` up front, not at the end.** If
   the new `automation:attempt-N` is only added later without clearing the
-  previous one first, both end up present. Since `pr-review`'s "Needs
-  changes" branch doesn't touch attempt labels, the *next*
+  previous one first, both end up present. Since `pr-review` doesn't touch
+  attempt labels when it posts `automation:needs-fix`, the *next*
   `address-feedback` run would then read the stale lower
   `automation:attempt-N` still sitting there and recompute the same
   attempt number instead of advancing — silently defeating the 3-attempt
