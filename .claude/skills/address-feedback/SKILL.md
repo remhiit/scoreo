@@ -204,19 +204,19 @@ Once these three issue-side labels are in place, a human only has to remove
 7. **Resolve every thread actually fixed** (`pull_request_review_write`
    method `resolve_thread`, or `resolve_review_thread`, with the thread's
    node ID from `get_review_comments`). Leave unresolved anything not
-   applied (nits skipped, items escalated) — an unresolved thread is exactly
-   the signal a later run (or a human) uses to know it's still open, and
-   what keeps this idempotent: a thread already resolved by an earlier run
-   is filtered out at step 1 of the *next* run, so it's never re-fixed,
-   re-flagged, or re-narrated.
+   applied (an out-of-scope `suggestion`/`uncertain` finding, items
+   escalated) — an unresolved thread is exactly the signal a later run (or a
+   human) uses to know it's still open, and what keeps this idempotent: a
+   thread already resolved by an earlier run is filtered out at step 1 of
+   the *next* run, so it's never re-fixed, re-flagged, or re-narrated.
 8. **Publish one synthesis, always** — whether this run finishes clean,
    partially, or escalates, and regardless of whether step 6 pushed anything.
    Post a single PR comment (`add_issue_comment`) structured as:
    - `✅ Corrigé` — the items actually fixed, pushed, and resolved (or
      "aucun" if none).
-   - `⏭️ Non appliqué` — items left alone, each with why: a nit skipped as
-     out of scope, a lower-priority item not reached, etc. Empty section if
-     nothing was skipped.
+   - `⏭️ Non appliqué` — items left alone, each with why: a `suggestion`/
+     `uncertain` finding out of scope, an `important` item not reached due
+     to the attempt cap, etc. Empty section if nothing was skipped.
    - `⚠️ Arbitrage requis` — only present when this run escalates to
      `automation:needs-human`: the contradictory/ambiguous items, the scope
      mismatch, or the still-red check, described precisely enough that a
