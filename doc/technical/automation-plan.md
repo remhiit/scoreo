@@ -106,8 +106,10 @@ Issue créée
                                      [R2 — IMPLÉMENTATION]
                                                  │ skill implement-task
                                                  │ retire `automation:ready`, pose `automation:in-progress`
+                                                 │ garde : PR déjà ouverte sur l'issue ? → stop
                                                  │ 1 run = 1 issue
-                                                 │ branche + code + tests + PR
+                                                 │ branche déterministe (créée ou réutilisée) + plan court + code + tests + PR
+                                                 │ PR : plan + résultat des validations, ouverte seulement si verte
                                                  │ pose `automation:enabled` si risque faible
                                                  ▼
                                           PR ouverte
@@ -651,6 +653,36 @@ mergés manuellement par Rémi (comme prévu par le gate — l'auto-merge reste
 Phase 5). Le critère qualitatif tient aussi : les PR couvrent des risques
 réels (dont trois **Élevé** — #100, #107 et #109 — touchant ports/adapters),
 pas seulement des changements triviaux.
+
+**Renfort (2026-09-03, issue #381) — R2 vers une exécution idempotente et
+traçable :** la Phase 4 avait rodé le chemin heureux (une issue, une PR) ;
+restaient trois angles morts pour un run interrompu ou rejoué sans
+nettoyage manuel. `implement-task/SKILL.md` gagne :
+
+- une garde en tout premier geste (avant même le claim du label) : si
+  `closed_by_pull_requests` de l'issue liste déjà une PR ouverte, R2
+  s'arrête net plutôt que d'en ouvrir une seconde ;
+- la réutilisation de la branche `feat/<issue>-<slug>` si elle existe déjà
+  sans PR associée (run précédent interrompu avant l'ouverture de la PR),
+  au lieu d'en créer une nouvelle avec un slug différent ;
+- un plan court écrit avant toute modification de code, repris tel quel
+  dans le corps de la PR, à côté d'un résumé des validations (les 5
+  contrôles de l'étape 6) — la PR documente désormais son propre plan et
+  son propre résultat de validation, pas seulement `Closes #N` ;
+- une issue de secours si la suite de contrôles reste rouge après
+  implémentation : même traitement que la spec ambiguë (commentaire +
+  `automation:needs-human`), plutôt qu'une PR poussée dans un état qu'on
+  sait cassé ou une issue laissée bloquée en silence sur
+  `automation:in-progress`.
+
+`doc/automation/state-machine.md` §4 (rows #4-#6) documente ces gardes
+comme le contrat formel ; `.automation/routines.yml` reste inchangé — la
+garde « une seule PR par issue » est une vérification sémantique du
+contenu de la skill, pas un critère déclaratif que le dispatcher peut
+exprimer (le fichier ne connaît que le mapping label → routine, pas l'état
+des PR d'une issue) ; `concurrency_key: issue` y bornait déjà l'exécution
+concurrente d'un seul run R2 par issue, ce qui reste la bonne granularité
+côté dispatch.
 
 **Incident (2026-07-15) — double-fire de R2 sur l'issue #99 :** même classe
 de cause que le double-fire de R3 (PR #94), côté labellisation cette fois.
