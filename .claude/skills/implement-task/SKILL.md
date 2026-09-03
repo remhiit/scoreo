@@ -209,6 +209,13 @@ meaning of "ask" — a person is present to answer.
 
 ## Guardrails
 
+Cross-cutting limits, per `skill-contract.md` §1.9 — each is defined once
+elsewhere in this file; this section is the single place a reader checks for
+all of them, not a redefinition:
+
+- Never pick a different issue when the triggering one isn't actionable
+  (see "Which issue").
+- Never batch more than one issue into a single PR (step 12).
 - Don't merge the PR yourself. Merging is deterministic tooling
   (`gh pr merge --auto --squash` once checks are green and `automation:enabled`
   is present), not part of this skill.
