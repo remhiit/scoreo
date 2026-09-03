@@ -49,6 +49,12 @@ describe('detectConflicts', () => {
     const conflicts = detectConflicts(['attempt-1', 'attempt-2', 'review-pass', 'needs-fix'])
     expect(conflicts.length).toBeGreaterThanOrEqual(2)
   })
+
+  it('does not flag automation:queued coexisting with automation:needs-human (issue #429, valid escalated-and-requeued combination)', async () => {
+    const { detectConflicts } = await import('./migrate-automation-labels.mjs')
+    expect(detectConflicts(['automation:queued', 'automation:needs-human'])).toEqual([])
+    expect(detectConflicts(['queued', 'needs-human'])).toEqual([])
+  })
 })
 
 describe('migrationsFor', () => {
