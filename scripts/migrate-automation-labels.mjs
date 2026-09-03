@@ -41,6 +41,10 @@ export const RENAME_TABLE = {
 }
 
 const ATTEMPT_COUNTER_REGEX = /^automation:attempt-[123]$/
+// `automation:queued` is deliberately absent here: `automation:queued` +
+// `automation:needs-human` is a *valid* combination (issue #429, the
+// escalated-and-requeued state — see `doc/automation/state-machine.md`
+// §2/§6), so it must never be flagged as a conflict below.
 const QUEUE_OR_TRIGGER_LABELS = ['automation:ready', 'automation:needs-review', 'automation:needs-fix']
 
 function effectiveLabel(label) {

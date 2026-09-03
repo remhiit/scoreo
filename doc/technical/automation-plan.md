@@ -351,13 +351,13 @@ dans `doc/automation/state-machine.md` §2).
 
 | Label | Rôle |
 |---|---|
-| `automation:queued` | Spec validée, en attente d'un créneau de routine — promue en `automation:ready` une à la fois par le dispatcher (`scripts/dispatch-ready.mjs`) |
+| `automation:queued` | Spec validée, en attente d'un créneau de routine — promue en `automation:ready` une à la fois par le dispatcher (`scripts/dispatch-ready.mjs`). Peut coexister avec `automation:needs-human` sur une issue (état escaladée-puis-remise-en-file, issue #429, voir `state-machine.md` §6) : un humain qui retire seulement `automation:needs-human` suffit alors à la redispatcher, sans reposer `automation:queued` |
 | `automation:ready` | Spec validée → déclenche R2 |
-| `automation:in-progress` | Une routine travaille dessus |
+| `automation:in-progress` | Une routine travaille dessus. Sur une issue, tient tout le cycle de vie de la PR liée (posé une fois par R2) jusqu'à la fermeture — ou jusqu'à ce qu'une escalade (R2 directement, ou R4 en miroir depuis la PR) la libère, toujours en dernier, après avoir posé `automation:needs-human` puis `automation:queued` (issue #429, `state-machine.md` §6) |
 | `automation:needs-review` | File d'attente pour `pr-review` (R3) — seul trigger GitHub possible sur une Routine, posé automatiquement à l'ouverture d'une PR, retiré par R3 en tout premier geste (« claim the run », §4) |
 | `automation:review-pass` | Verdict `pr-review` (R3) : conforme → traduit en commit status `claude/review` succès |
 | `automation:needs-fix` | Verdict `pr-review` (R3) : à corriger → traduit en commit status `claude/review` échec, déclenche R4 |
-| `automation:needs-human` | Escalade : plafond d'itérations ou hors périmètre |
+| `automation:needs-human` | Escalade : plafond d'itérations ou hors périmètre. Quand l'escalade part d'une PR (R4), posée aussi sur l'issue liée, accompagnée de `automation:queued`, pour libérer le pipeline sans geler tout le backlog (issue #429) |
 | `blocked` | Dépendance externe — retiré automatiquement par `unblock-issues.yml` une fois tous les bloqueurs natifs fermés |
 | `automation:enabled` | Autorisé à l'auto-merge une fois les checks verts |
 | `automation:attempt-1/2/3` | Compteur anti-boucle. **À `automation:attempt-3` : stop.** |

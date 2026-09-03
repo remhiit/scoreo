@@ -30,8 +30,15 @@ closed with `state_reason` `completed`/`not_planned`).
 
 A PR is always linked to the issue it closes (`Closes #N`); the issue's own
 `automation:in-progress` label persists for the PR's entire review/fix
-lifecycle — R2 sets it once and nothing touches it again until the PR merges
-(issue closes) or a human intervenes. The PR's labels below are what
+lifecycle **while automation still owns it** — R2 sets it once and neither
+R3 nor R4's normal review/fix cycling on the PR ever touches it. The two
+ways it stops persisting are the PR merging (issue closes) or the pipeline
+escalating: escalation is not "a human intervenes on the label live" — it's
+the escalating routine itself (R2 directly on the issue, row #6; or R4,
+mirroring from the PR, rows #19/#20) that clears the issue's
+`automation:in-progress`, in the same run, following the fixed three-step
+order in §6 below, so the pipeline's single in-flight slot is freed without
+waiting for a human to touch anything. The PR's labels below are what
 actually cycles.
 
 ## 2. Labels: six categories
@@ -42,12 +49,12 @@ actually cycles.
 | `blocked` | Business | Issue has an open native `blocked_by` dependency | R1 (human, alongside a `## Dépendances` section) — no automation ever sets it | `unblock-issues.yml`, once every native blocker is closed |
 | `automation:queued` | État/file | Spec validated, waiting for a dispatch slot | R1 (issue), `unblock-issues.yml` (dependent issue, once unblocked) | `dispatch-ready.mjs` |
 | `automation:ready` | État/déclencheur R2 | Dispatched, next in line for R2 — this is R2's trigger | `dispatch-ready.mjs`, `requeue-lost-events.mjs` (re-posing an orphaned one) | R2 (`implement-task`), in its first action |
-| `automation:in-progress` | Contrôle | A routine currently owns this item ("claim the run") | R2 on an issue; R3 or R4 on a PR | The routine that set it, once its run ends (success, stop-and-ask, or escalation) |
+| `automation:in-progress` | Contrôle | A routine currently owns this item ("claim the run") | R2 on an issue; R3 or R4 on a PR | On a PR: the routine that set it, once its run ends (success or escalation). On an issue: persists across R3/R4's entire review/fix cycling on the linked PR — cleared only by R2 itself on stop-and-ask (row #6), by the PR merging, or by R4 mirroring an escalation from the PR onto the issue (rows #19/#20), always as the last of three ordered steps (§6) |
 | `automation:needs-review` | File/déclencheur R3 | PR queued for R3 — this is R3's trigger | `needs-review-label.yml` (PR opened/ready/synchronize) | R3 (`pr-review`), in its first action |
 | `automation:attempt-1`/`automation:attempt-2`/`automation:attempt-3` | Compteur | R4's anti-loop retry counter on a PR | R4 (`address-feedback`), after a fix is pushed | R4 itself (old counter, before posting the new one), or R3 on `automation:review-pass` (clears a stale counter) |
 | `automation:review-pass` | Verdict | R3's verdict: PR conforms to its issue's spec | R3 | R3, if a later review overturns it to `automation:needs-fix`; `needs-review-label.yml` (clears a stale one, on synchronize) |
 | `automation:needs-fix` | Verdict **et** file/déclencheur R4 | R3's verdict: PR needs changes — **also** R4's trigger (dual role, see below) | R3 | R4, in its first action; `needs-review-label.yml` (clears a stale one, on synchronize) |
-| `automation:needs-human` | Escalade | Terminal escalation: automation cannot resolve this without a decision | R4 (attempt cap or scope mismatch on a PR); R2 (incomplete/ambiguous spec) | Only a human, by removing it and re-queuing |
+| `automation:needs-human` | Escalade | Terminal escalation: automation cannot resolve this without a decision | R4 (attempt cap or scope mismatch on a PR — also mirrored onto the linked issue, alongside `automation:queued`, so the escalation doesn't freeze the rest of the backlog, §6); R2 (incomplete/ambiguous spec, directly on the issue, alongside `automation:queued`) | Only a human, by removing it — on an issue this alone is enough to re-queue it, since `automation:queued` was already posed alongside it |
 | `automation:enabled` | Autorisation | Eligible for auto-merge once required checks are green | R2 only, when the diff matches the risk-Faible whitelist (`automation-plan.md` §5) | R4, on escalation to `automation:needs-human` |
 
 No `automation:done` label exists or is ever created: GitHub's own issue
@@ -58,13 +65,19 @@ remain the sole signal that an issue's lifecycle has ended.
 present on a given item at a time, except: a queue/state label
 (`automation:queued`/`automation:ready`/`automation:in-progress`/
 `automation:needs-review`) may coexist with at most one counter
-(`automation:attempt-N`) and/or `automation:enabled`. **Invalid
+(`automation:attempt-N`) and/or `automation:enabled`; and, on an issue only,
+`automation:queued` may coexist with `automation:needs-human` — the
+escalated-and-requeued state (issue #429, §6): an R2 or R4 escalation poses
+both together (in that order, `automation:needs-human` first), so that a
+human clearing `automation:needs-human` alone is enough to make the issue a
+dispatch candidate again, with no separate re-queuing step. **Invalid
 combinations**, which `scripts/migrate-automation-labels.mjs` refuses to
 resolve automatically (§5 below of `automation-plan.md`'s issue #415 spec):
 more than one `automation:attempt-N` at once; `automation:review-pass` and
 `automation:needs-fix` together; `automation:needs-human` together with any
-of `automation:ready`/`automation:needs-review`/`automation:needs-fix`; an
-old unprefixed label alongside its new prefixed equivalent past the cutover.
+of `automation:ready`/`automation:needs-review`/`automation:needs-fix`
+(`automation:queued` is not in this list — see above); an old unprefixed
+label alongside its new prefixed equivalent past the cutover.
 
 **`automation:needs-fix` is deliberately dual-role**: it is both R3's
 verdict *and* the label whose presence is R4's GitHub trigger filter. There
@@ -123,7 +136,7 @@ whether the transition fires without a human (**Auto**) or requires one
 | 3 | Issue | `automation:queued` | Sweeper fires but a slot is occupied, or the `automation:needs-review` backlog > 2 | `dispatch-ready.mjs` | `automation:queued` (no-op) | Auto |
 | 4 | Issue | `automation:ready` | `issues.labeled(automation:ready)` | R2 (`implement-task`) | `automation:in-progress`; deterministic branch (created or reused if a prior interrupted run left one), a short plan written before any change, code, tests, doc, PR opened with `Closes #N` plus the plan and validation results in its body; `automation:enabled` posed only if risk stays Faible | Auto |
 | 5 | Issue | `automation:ready` | `issues.labeled(automation:ready)` fires but the issue is no longer actionable (already claimed, closed, or an open PR already references it via `closed_by_pull_requests`) | R2 | `automation:ready` unchanged — R2 does nothing else, never picks a different issue, never opens a second PR | Auto (guard) |
-| 6 | Issue | `automation:ready` | Spec turns out ambiguous/incomplete (including an unverifiable definition of done, a `blocked` label that shouldn't have reached `automation:ready`, or a check suite that can't be made green) once R2 reads it fully or finishes implementing | R2 | `automation:in-progress` → `automation:needs-human`; comment naming what's missing or failing | Human (escalated) |
+| 6 | Issue | `automation:ready` | Spec turns out ambiguous/incomplete (including an unverifiable definition of done, a `blocked` label that shouldn't have reached `automation:ready`, or a check suite that can't be made green) once R2 reads it fully or finishes implementing | R2 | In this order: `automation:needs-human` posed, `automation:queued` posed, only then `automation:in-progress` removed (§6 — reversing this order would race the hourly requeue sweep); comment naming what's missing or failing | Human (escalated) |
 | 7 | Issue | Posed `automation:ready` > 30 min ago, still `automation:ready` (lost event, run-cap exceeded) | Hourly cron | `requeue-lost-events.mjs` | `automation:ready` removed then re-posed alone (regenerates the `labeled` event) | Auto |
 | 8 | Issue | `automation:in-progress`, PR linked | PR merges, `close-linked-issues.yml` or the same-job close in `auto-merge-sync.yml` runs | Action | Issue closed, `state_reason: completed` | Auto |
 | 9 | Issue | `automation:in-progress`, PR linked and merged, but the immediate close missed (wait loop expired) | Hourly cron, within the 7-day catch-up window | `sweep-merged-prs.mjs` | Issue closed | Auto (catch-up) |
@@ -136,8 +149,8 @@ whether the transition fires without a human (**Auto**) or requires one
 | 16 | PR | `automation:review-pass` (+ `automation:enabled` if eligible) | Every required check green | Native GitHub auto-merge (if `automation:enabled` present) | PR merges → issue closes (#8/#9) | Auto |
 | 17 | PR | `automation:needs-fix` | `pull_request.labeled` while `automation:needs-fix` present | R4 (`address-feedback`) | `automation:needs-fix` and any stale `automation:attempt-N` removed, `automation:in-progress` posed (claim) — all before deciding the attempt number | Auto |
 | 18 | PR | `automation:in-progress` (R4 claimed, attempt N ≤ 3) | Fix implemented, full check suite green, pushed | R4 | `automation:in-progress` removed, `automation:attempt-N` posed; push retriggers #12 | Auto |
-| 19 | PR | `automation:in-progress` (R4 claimed, would be attempt 4, i.e. `automation:attempt-3` was already present) | Attempt cap reached | R4 | `automation:in-progress` removed, `automation:enabled` removed if present, `automation:needs-human` posed; comment summarizing what's still wrong | Human (escalated) |
-| 20 | PR | `automation:in-progress` (R4 claimed, any attempt) | The flagged fix turns out to need a materially larger change than the review anticipated | R4 | Same as #19: `automation:needs-human`, `automation:enabled` removed, explanatory comment — treated as the cap regardless of the attempt number | Human (escalated) |
+| 19 | PR | `automation:in-progress` (R4 claimed, would be attempt 4, i.e. `automation:attempt-3` was already present) | Attempt cap reached | R4 | On the PR: `automation:in-progress` removed, `automation:enabled` removed if present, `automation:needs-human` posed. Mirrored on the **linked issue**, in this order: `automation:needs-human` posed, `automation:queued` posed, only then the issue's `automation:in-progress` removed (§6); comment on the PR summarizing what's still wrong | Human (escalated) |
+| 20 | PR | `automation:in-progress` (R4 claimed, any attempt) | The flagged fix turns out to need a materially larger change than the review anticipated | R4 | Same as #19, on both the PR and the linked issue — treated as the cap regardless of the attempt number | Human (escalated) |
 | 21 | PR | `automation:needs-review` again (re-queued by #18's push) | `pull_request` synchronize | `needs-review-label.yml` | `automation:needs-fix` removed (stale), `automation:needs-review` posed → back to #13 | Auto |
 | 22 | PR | `automation:review-pass` | Later review reopens it | R3 | `automation:attempt-*` cleared alongside the verdict, so a later unrelated `automation:needs-fix` starts its own cap fresh | Auto |
 | 23 | PR or Issue | Posed `automation:needs-review`/`automation:needs-fix` > 30 min ago, no `automation:in-progress` (lost event) | Hourly cron | `requeue-lost-events.mjs` | Label removed then re-posed alone | Auto |
@@ -208,13 +221,45 @@ survives a full review (merge path), or the attempt cap is hit
   before the dispatcher — re-closes any issue whose linked PR merged within
   the last 7 days, idempotently (never re-`PATCH`es an already-closed
   issue).
+- **Escalation frees its slot, in a fixed order (issue #429).**
+  `automation:needs-human` must not also freeze the rest of the backlog:
+  `dispatch-ready.mjs`'s `pickNextQueued` (row #2's filter) already excludes
+  any candidate carrying `blocked`, `automation:needs-human`, or
+  `automation:in-progress` — so once an escalated issue's
+  `automation:in-progress` is released, `MAX_IN_FLIGHT` (1) drops back to 0
+  and the next `automation:queued` issue is free to dispatch at the next
+  sweep, regardless of the escalated issue's own unresolved state. Every
+  escalation path that touches an issue (R2 directly, row #6; R4 mirroring
+  from a PR, rows #19/#20) must therefore always perform these three steps
+  on the issue, in this exact order: (1) add `automation:needs-human`, (2)
+  add `automation:queued`, (3) only then remove `automation:in-progress`.
+  Reversing steps (3) and (1)/(2) is not a harmless reordering: removing
+  `automation:in-progress` first is itself an `unlabeled` event that
+  `requeue-lost-events.yml` reacts to (triggered on `issues`
+  `unlabeled`/`closed`) by running `dispatch-ready.mjs` in the same pass. If
+  `automation:queued` were posed before `automation:needs-human`, that
+  exact window would let the dispatcher promote the issue straight to
+  `automation:ready` — undoing the escalation before it's even visible.
+  Posing `automation:needs-human` first closes that window before
+  `automation:queued` ever appears, and posing `automation:queued` before
+  releasing `automation:in-progress` means the issue is never without a
+  protecting label. R4's escalation originates on the PR — it additionally
+  removes the PR's own `automation:in-progress`, removes `automation:enabled`
+  if present, and poses `automation:needs-human` on the PR itself, but the
+  three-step sequence above on the linked issue is what actually matters for
+  the dispatcher: the issue's `automation:in-progress`, held since R2
+  claimed it (§1), not any PR label, is what `MAX_IN_FLIGHT` counts.
 - **`automation:needs-human` is terminal for every piece of automation that
   reads it.** `dispatch-ready.mjs` skips a candidate carrying it (row #3's
   eligibility filter, `pickNextQueued`); `unblock-issues.mjs` skips it too
   (`BLOCKING_LABELS`), logging that a human must re-queue. No workflow ever
-  removes `automation:needs-human` — only a human, by clearing it and
-  re-applying whatever control label restarts the pipeline
-  (`automation:queued` for an issue, `automation:needs-review` for a PR).
+  removes `automation:needs-human` — only a human does, by clearing it. On
+  an **issue**, the escalation itself already posed `automation:queued`
+  alongside it (previous bullet), so clearing `automation:needs-human` alone
+  is enough to make the issue a dispatch candidate again — no separate
+  re-queuing step. On a **PR**, there is no equivalent pre-posed queue
+  label: a human restarts its review/fix cycle by re-applying
+  `automation:needs-review` themselves.
 - **`automation:in-progress` is the one label three different routines (R2,
   R3, R4) all use as "I currently own this."** It never carries information
   about *which* routine claimed it — only the entity's other labels (still
@@ -297,11 +342,13 @@ escalates like any other item R4 can't safely finish.
 `implement-task/SKILL.md` step 1 requires R2 to stop rather than guess scope
 when the spec is ambiguous or missing acceptance criteria. As R2 (no human
 watching the session live), "stop" means: post a comment on the issue naming
-exactly what's missing, then release the claim taken in "Which issue" — swap
-`automation:in-progress` for `automation:needs-human` (row #6) — rather than
-leaving the issue silently parked on `automation:in-progress` with no PR and
-nothing watching it (a state none of the sweepers in §6 catch, since
+exactly what's missing, then release the claim taken in "Which issue" — in
+the fixed three-step order from §6 (row #6): add `automation:needs-human`,
+add `automation:queued`, only then remove `automation:in-progress` — rather
+than leaving the issue silently parked on `automation:in-progress` with no
+PR and nothing watching it (a state none of the sweepers in §6 catch, since
 `automation:in-progress` is precisely the "a run is legitimately using this"
-signal they're built to leave alone). The interactive path (a human runs
-`implement-task` directly) keeps its original meaning of "ask" — there's a
-person present to answer.
+signal they're built to leave alone), and without freezing the rest of the
+backlog behind it (§6's "Escalation frees its slot" rule). The interactive
+path (a human runs `implement-task` directly) keeps its original meaning of
+"ask" — there's a person present to answer.

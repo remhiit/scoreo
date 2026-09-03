@@ -64,9 +64,14 @@ just "already claimed, closed".
    still carries the `blocked` label — that combination means something
    upstream raced or broke, not that it's safe to proceed. **As R2**, "ask"
    means posting a comment on the issue naming exactly what's missing, then
-   removing `automation:in-progress` (already claimed above) and adding
-   `automation:needs-human` — never leave the issue silently stuck on
-   `automation:in-progress` with no PR and no comment. See
+   releasing the claim in this exact order: add `automation:needs-human`,
+   add `automation:queued`, and only then remove `automation:in-progress`
+   (already claimed above) — never leave the issue silently stuck on
+   `automation:in-progress` with no PR and no comment, and never remove
+   `automation:in-progress` before the other two are posed (reversing the
+   order would race the hourly requeue sweep into re-dispatching the issue
+   before `automation:needs-human` protects it — see
+   `doc/automation/state-machine.md` §6 "Escalation frees its slot"). See
    `doc/automation/state-machine.md` § Incomplete issue.
 2. **Branch from the latest default branch**: `feat/<issue-number>-<slug>`
    (slug = a few kebab-case words from the title). If that branch already
@@ -100,8 +105,9 @@ just "already claimed, closed".
    don't "fix" a test at random just to make it pass. If the suite still
    can't be made green after a reasonable effort, don't push a PR you know
    will be red: escalate exactly like step 1's ambiguous-spec case (comment
-   naming what's failing, swap `automation:in-progress` for
-   `automation:needs-human`) instead of leaving the branch dangling or
+   naming what's failing, then release the claim in the same order:
+   `automation:needs-human`, `automation:queued`, only then remove
+   `automation:in-progress`) instead of leaving the branch dangling or
    opening a PR that misrepresents its own state.
 7. **Visual check for UI changes.** If the issue touches a screen
    (`apps/scoreo/src/ui/*/`), start the dev server and exercise the actual flow in a
