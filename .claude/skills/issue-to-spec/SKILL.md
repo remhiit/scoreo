@@ -5,10 +5,28 @@ description: Turn a feature/fix description into a well-formed GitHub issue for 
 
 # Issue → Spec
 
+## Objectif
+
 Converts a feature/fix description into one GitHub issue with a spec tight
 enough that `implement-task` can execute it without coming back to ask
-clarifying questions. See `project-conventions` for repo layering/backward-compat
-rules referenced below.
+clarifying questions. This skill only produces the spec — it never
+implements it: `implement-task` (R2) takes over once the issue reaches
+`READY_FOR_IMPLEMENTATION`. See `project-conventions` for repo
+layering/backward-compat rules referenced below.
+
+## Entrées requises
+
+The user's direct description of a feature or fix, given interactively.
+There is no triggering issue or PR — this skill starts from conversation
+context, not a GitHub event.
+
+## Préconditions
+
+Always run interactively, never as an autonomous routine (see frontmatter
+description above). This skill has no GitHub trigger, so it has neither a
+"which issue/PR" rule nor a "claim the run" step
+(`doc/automation/skill-contract.md` §1.4) — both apply only to
+label-triggered routines.
 
 ## Sizing
 
@@ -17,7 +35,9 @@ ticket" principle). If the description covers more than one independent
 change, split it into multiple issues rather than writing one spec that spans
 several unrelated files.
 
-## Spec format
+## Procédure
+
+### Spec format
 
 Write the issue body as:
 
@@ -85,7 +105,7 @@ de quoi les écrire sans deviner.>
 de chacun et ce que ce verdict change au flow de labels.
 ```
 
-### Section « Dépendances » (optionnelle)
+#### Section « Dépendances » (optionnelle)
 
 Quand cette issue ne peut pas être implémentée avant qu'une autre soit
 fermée, ajoute une section `## Dépendances` juste après `## Hors scope` (ou
@@ -107,7 +127,7 @@ le lien natif GitHub `blocked_by` (zéro LLM, cf.
 `doc/technical/automation-plan.md` §2.2 et §4). Sans cette section, aucune
 automatisation ne sait que l'issue est bloquée.
 
-## Determining the risk category
+### Determining the risk category
 
 This is the one field that isn't free-form — it comes straight from the
 `automation:enabled` whitelist in `automation-plan.md` §5:
@@ -124,7 +144,7 @@ If a single issue's impacted files span both categories, classify it
 **Élevé** — the whole issue takes the stricter category, don't split risk
 across an issue's files after the fact.
 
-## Determining the readiness verdict
+### Determining the readiness verdict
 
 Before creating the issue, compute one verdict from the spec draft and state
 it to the user as part of your summary — this is the structured output
@@ -159,7 +179,7 @@ next. No implementation runs without a `READY_FOR_IMPLEMENTATION` verdict
   blocked; the dispatcher has no way to tell a premature `automation:queued`
   from a legitimate one.
 
-## Labels
+### Labels
 
 Once the spec is written, the verdict is `READY_FOR_IMPLEMENTATION` or
 `BLOCKED_BY_DEPENDENCY` (never `NEEDS_CLARIFICATION` — that verdict means no
@@ -172,10 +192,10 @@ grooming gate — don't skip it):
    obvious from context) in its **own** `issue_write` call.
 3. **In a separate call**, add the queue label: `automation:queued` when the
    verdict is `READY_FOR_IMPLEMENTATION`, `blocked` when it's
-   `BLOCKED_BY_DEPENDENCY` (see "Verdict de readiness" above) — never
-   `automation:ready` directly. Posing several `automation:ready` at once
-   would fire that many R2 events simultaneously; past the run cap (5/day
-   on Pro), the excess events are lost (`automation-plan.md` §3). The
+   `BLOCKED_BY_DEPENDENCY` (see "Determining the readiness verdict" above) —
+   never `automation:ready` directly. Posing several `automation:ready` at
+   once would fire that many R2 events simultaneously; past the run cap
+   (5/day on Pro), the excess events are lost (`automation-plan.md` §3). The
    dispatcher (`scripts/dispatch-ready.mjs`, zero LLM, same workflow as the
    hourly sweeper) promotes one `automation:queued` issue to
    `automation:ready` at a time, only once nothing is already
@@ -188,6 +208,45 @@ grooming gate — don't skip it):
    same call" still holds — it's now the dispatcher's responsibility, not
    R1's.
 
-Do not add `automation:enabled` here — that's `implement-task`'s call to
-make once the actual diff exists, not a prediction made before any code is
-written.
+## Sorties obligatoires
+
+- One GitHub issue created via `mcp__github__issue_write`, body in the spec
+  format above.
+- The priority label (`P0`…`P3`), added in its own call.
+- The queue label (`automation:queued` or `blocked`), added last, in its own
+  call, never combined with another label.
+- The readiness verdict stated out loud to the user, per "Determining the
+  readiness verdict" above — this skill's instance of `doc/automation/
+  skill-contract.md` §2's "Statut" field.
+- `automation:enabled` is never added here (see Limites).
+
+## Contrôles
+
+Before creating the issue: every acceptance criterion is testable, every
+section of the spec format holds something concrete (no placeholder), the
+risk category is justified per "Determining the risk category", the
+readiness verdict is computed per "Determining the readiness verdict", and
+— for `READY_FOR_IMPLEMENTATION`/`BLOCKED_BY_DEPENDENCY` — the user has
+confirmed the spec (the interactive grooming gate in "Labels" above). A
+`NEEDS_CLARIFICATION` verdict means these controls failed and the issue must
+not be created yet.
+
+## Escalade
+
+Per `doc/automation/skill-contract.md` §3, specialized to this skill's only
+possible stop condition (ambiguous/incomplete input): a `NEEDS_CLARIFICATION`
+verdict. Since this skill is interactive, escalating means asking the user
+directly rather than guessing — see "Determining the readiness verdict"
+above — never creating an issue with unresolved questions "documented" but
+unanswered.
+
+## Limites
+
+- Never creates the issue while the verdict is `NEEDS_CLARIFICATION`.
+- Never poses `automation:ready` directly — only `automation:queued` or
+  `blocked` (the dispatcher promotes to `automation:ready`).
+- Never poses `automation:enabled` — that's `implement-task`'s call to make
+  once the actual diff exists, not a prediction made before any code is
+  written.
+- Never batches more than one independent change into a single issue (see
+  "Sizing").
