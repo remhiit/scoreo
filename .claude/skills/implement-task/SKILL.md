@@ -77,7 +77,7 @@ just "already claimed, closed".
 3. **Plan before touching code.** Once the branch is settled, write a short
    plan — the files you expect to touch and the approach per file, in a
    handful of bullets — before making any change. Keep it; it becomes the
-   PR body's plan section in step 9. This isn't a separate GitHub write, just
+   PR body's plan section in step 10. This isn't a separate GitHub write, just
    the thinking made explicit before implementation starts.
 4. **Tests first.** Write the test(s) that encode the acceptance criteria
    before the implementation — colocated `*.test.ts(x)` next to the file
