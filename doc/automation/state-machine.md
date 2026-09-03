@@ -143,8 +143,8 @@ whether the transition fires without a human (**Auto**) or requires one
 | 10 | Issue | Closed, `state_reason: completed`, was blocking others | `issues.closed` | `unblock-issues.yml` | Each dependent with every native blocker now closed: `blocked` removed, `automation:queued` posed | Auto |
 | 11 | Issue | Any (new or edited body carries `## Dépendances`) | `issues` opened/edited | `sync-issue-dependencies.yml` | Native `blocked_by` link posed per cited blocker (own no-op on 422/not-found) | Auto |
 | 12 | PR | Opened (no control label yet) | `pull_request` opened/ready_for_review/synchronize | `needs-review-label.yml` | Stale `automation:review-pass`/`automation:needs-fix` cleared, then `automation:needs-review` posed | Auto |
-| 13 | PR | `automation:needs-review` | `pull_request` event while `automation:needs-review` present | R3 (`pr-review`) | `automation:in-progress` (claim), then either `automation:review-pass` (conforms) or `automation:needs-fix` (+ PR comment) once the diff at the noted HEAD SHA is reviewed | Auto |
-| 14 | PR | `automation:needs-review`, R3 about to label | HEAD SHA moved mid-review (a push landed) | R3 | `automation:needs-review` re-posed alone, no verdict | Auto (guard) |
+| 13 | PR | `automation:needs-review` | `pull_request` event while `automation:needs-review` present | R3 (`pr-review`) | `automation:in-progress` (claim), a dedup check against the `pr-review` journal (skip a re-review already logged for this SHA), then a PR review classifying findings `blocking`/`important`/`suggestion`/`uncertain`, and `automation:review-pass` (no `blocking`/`important` finding) or `automation:needs-fix` (at least one) once the diff at the noted HEAD SHA is reviewed | Auto |
+| 14 | PR | `automation:needs-review`, R3 about to post the review | HEAD SHA moved mid-review (a push landed) | R3 | `automation:needs-review` re-posed alone, no review, no verdict | Auto (guard) |
 | 15 | PR | `automation:review-pass` | Nothing — required checks (`lint`/`test`/`build`/`doc-links`/`e2e`/`claude/review`) still pending or red | *(none)* | `automation:review-pass` unchanged — native branch protection withholds merge independently of labels | Auto (native GitHub, no routine involved) |
 | 16 | PR | `automation:review-pass` (+ `automation:enabled` if eligible) | Every required check green | Native GitHub auto-merge (if `automation:enabled` present) | PR merges → issue closes (#8/#9) | Auto |
 | 17 | PR | `automation:needs-fix` | `pull_request.labeled` while `automation:needs-fix` present | R4 (`address-feedback`) | `automation:needs-fix` and any stale `automation:attempt-N` removed, `automation:in-progress` posed (claim) — all before deciding the attempt number | Auto |
@@ -171,6 +171,21 @@ survives a full review (merge path), or the attempt cap is hit
   produced a runaway `automation:attempt-1` → `automation:attempt-2` →
   `automation:attempt-3` chain in about a minute on PR #111
   (`automation-plan.md` §4, Phase 5) before the ordering rule was fixed.
+- **Claiming the label isn't enough to rule out two reviews on one SHA.** A
+  duplicate webhook delivery, or a sweeper requeue racing a run that's
+  actually still in flight, can get two sessions past "claim the run" for
+  the same commit (the class behind #94/#99). R3 closes that gap with its
+  own dedup check right after claiming (`pr-review/SKILL.md` §
+  "Skip a duplicate review", #379): it reads the PR's `pr-review` automation
+  log (`automation-plan.md` § "Journal d'exécution idempotent") and, if that
+  log's SHA already matches the current HEAD with a terminal status,
+  re-poses the recorded verdict label instead of reviewing again. The
+  journal itself is written only by `review-status-sync.yml` (a
+  deterministic Action) once a verdict label lands — R3 never writes or
+  edits it from inside a session; no MCP tool available to a session can
+  edit an existing comment, so a self-written `Statut: running` entry could
+  never be turned into a final verdict by the same session that wrote it
+  (the mistake behind PR #419's escalation and closure).
 - **The attempt counter is read before it's cleared.** R4 looks at whichever
   of `automation:attempt-1`/`automation:attempt-2`/`automation:attempt-3` is
   present *before* removing it, to compute this run's number (no label →

@@ -119,34 +119,41 @@ Once these three issue-side labels are in place, a human only has to remove
 ## Workflow
 
 1. **Gather feedback, excluding what's already handled.**
-   - Read the R3 verdict comment (`pr-review`'s "Needs changes" list) — this
-     is always in scope, every item on it is blocking by `pr-review`'s own
-     contract.
-   - Also read the PR's inline review threads: `pull_request_read` method
-     `get_review_comments` (paginate with `after` if `pageInfo.hasNextPage`).
-     Each thread carries `isResolved`. **Skip every thread where
+   - Read `pr-review`'s submitted review (`pull_request_read` method
+     `get_reviews` for the summary body, `get_review_comments` for its
+     inline comments) — every finding there carries an explicit severity
+     prefix, `blocking`/`important`/`suggestion`/`uncertain`
+     (`pr-review/SKILL.md` § Output). `automation:needs-fix` only means at
+     least one `blocking`/`important` finding exists in that review — build
+     the fix worklist from those two severities only. A `suggestion`/
+     `uncertain` finding in the same review is visible context, not part of
+     this run's scope — leave it alone unless it's inseparable from a
+     `blocking`/`important` fix.
+   - Each thread carries `isResolved`. **Skip every thread where
      `isResolved` is `true`** — a resolved thread was already acted on
      (fixed and resolved by a previous run of this skill, or resolved
      directly by a human as acknowledged/won't-fix). This is what keeps a
      comment from being retreated across attempts: resolution state lives on
      GitHub, not in this skill's memory, so it survives across runs and
      across the attempt counter resetting.
-   - Build the worklist from the R3 verdict items plus every *unresolved*
-     inline thread. An item with no corresponding open thread and not on the
-     verdict comment is not in scope — don't go looking for more to fix.
+   - Build the worklist from the review's `blocking`/`important` findings —
+     inline ones with an *unresolved* thread, plus any summary-body ones —
+     minus whatever a prior run already resolved. A finding with no
+     corresponding severity marker is not in scope — don't go looking for
+     more to fix, and don't infer severity from wording (`bloquant`, `must
+     fix`) on a plain, unmarked comment; that guessing is exactly what the
+     explicit severity prefix replaces.
 2. **Prioritize the worklist**, blocking first:
-   - **Blocking**: every item from the R3 verdict comment, plus any inline
-     thread from a review whose overall state is `REQUEST_CHANGES`
-     (`pull_request_read` method `get_reviews`) or whose text says so
-     explicitly (`blocking`, `bloquant`, `must fix`).
-   - **Important**: other inline threads raising a real, concrete concern.
-   - **Nit/optional**: threads explicitly marked as such (`nit`,
-     `suggestion`, `optionnel`) — fix only if trivial (one line, no design
-     judgment); otherwise leave the thread open and note it as not applied
-     in the synthesis (step 8) rather than expanding scope to chase it.
-   Work blocking items first, then important, then trivial nits, so a run
-   that has to stop partway (attempt cap, time) has already banked the
-   items that actually block merge.
+   - **Blocking**: every `blocking` finding from the review.
+   - **Important**: every `important` finding from the review.
+   - **Out of scope this run**: `suggestion`/`uncertain` findings, and any
+     plain PR comment/thread with no severity marker — leave those threads
+     open and don't act on them; note skipped `suggestion`/`uncertain`
+     findings in the synthesis (step 8) only if a human is likely to look
+     for them there, otherwise they're already visible on the review itself.
+   Work blocking items first, then important, so a run that has to stop
+   partway (attempt cap, time) has already banked the items that actually
+   block merge.
 3. **Check for contradiction or ambiguity before fixing anything.** Two
    items asking for opposite changes, or a single item too vague to act on
    without guessing the reviewer's intent, is not something to resolve by
