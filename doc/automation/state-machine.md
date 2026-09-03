@@ -117,7 +117,8 @@ whether the transition fires without a human (**Auto**) or requires one
 
 | # | Entity | Current state | Event | Actor | Target state | Owner |
 |---|---|---|---|---|---|---|
-| 1 | Issue | No control label | R1 grooming session confirms the spec | R1 (human) | `P0`…`P3` + `automation:queued` (own calls, `automation:queued` last) | Human |
+| 1 | Issue | No control label | R1 grooming session confirms the spec, readiness verdict `READY_FOR_IMPLEMENTATION` (`issue-to-spec/SKILL.md` § Determining the readiness verdict — a `NEEDS_CLARIFICATION` verdict never reaches this row, no issue is created until it clears) | R1 (human) | `P0`…`P3` + `automation:queued` (own calls, `automation:queued` last) | Human |
+| 1b | Issue | No control label | Same, but readiness verdict `BLOCKED_BY_DEPENDENCY` (spec complete, `## Dépendances` cites an open blocker) | R1 (human) | `P0`…`P3` + `blocked` (own calls, `blocked` last) instead of `automation:queued` — row #10 promotes it to `automation:queued` once every native blocker closes | Human |
 | 2 | Issue | `automation:queued` | Sweeper cron/trigger fires, nothing `automation:ready`/`automation:in-progress`, ≤2 PRs `automation:needs-review` | `dispatch-ready.mjs` | `automation:ready` (highest priority, oldest first) | Auto |
 | 3 | Issue | `automation:queued` | Sweeper fires but a slot is occupied, or the `automation:needs-review` backlog > 2 | `dispatch-ready.mjs` | `automation:queued` (no-op) | Auto |
 | 4 | Issue | `automation:ready` | `issues.labeled(automation:ready)` | R2 (`implement-task`) | `automation:in-progress`; deterministic branch (created or reused if a prior interrupted run left one), a short plan written before any change, code, tests, doc, PR opened with `Closes #N` plus the plan and validation results in its body; `automation:enabled` posed only if risk stays Faible | Auto |
