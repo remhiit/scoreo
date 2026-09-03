@@ -333,14 +333,18 @@ of spending a further attempt guessing at unrequested scope.
 
 Since #380, this extends one level down, to individual feedback items
 rather than only to the PR as a whole: `address-feedback/SKILL.md` step 1
-builds R4's worklist from the R3 verdict comment *plus* the PR's inline
-review threads (`pull_request_read` method `get_review_comments`),
-excluding any thread already `isResolved` — a thread a previous R4 run (or
-a human) already resolved is never re-fixed, re-flagged, or re-narrated,
-which is what makes repeated R4 runs on the same PR idempotent at the
-comment level, not just at the label level. Step 2 prioritizes the
-remaining worklist (`blocking` from the R3 verdict or a `REQUEST_CHANGES`
-review, `important` otherwise, `nit` last, fixed only if trivial). Step 3
+builds R4's worklist from `pr-review`'s submitted review (`pull_request_read`
+method `get_reviews` for the summary body, `get_review_comments` for its
+inline comments), filtered to the `blocking`/`important` findings (#379 —
+each finding carries an explicit severity marker, so R4 no longer infers it
+from free text or a review's `REQUEST_CHANGES` state), excluding any inline
+thread already `isResolved` — a thread a previous R4 run (or a human)
+already resolved is never re-fixed, re-flagged, or re-narrated, which is
+what makes repeated R4 runs on the same PR idempotent at the comment level,
+not just at the label level. Step 2 prioritizes the remaining worklist
+(`blocking` findings first, then `important`; `suggestion`/`uncertain`
+findings and any unmarked comment are out of scope for this run, not a
+lower-priority tier to fix if trivial). Step 3
 applies the same escalation as the scope-mismatch case above to two items
 that directly conflict, or a single item too vague to act on without
 guessing — before any code is touched, not after a failed attempt. Step 8

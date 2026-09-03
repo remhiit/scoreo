@@ -128,14 +128,14 @@ Once these three issue-side labels are in place, a human only has to remove
      the fix worklist from those two severities only. A `suggestion`/
      `uncertain` finding in the same review is visible context, not part of
      this run's scope — leave it alone unless it's inseparable from a
-     `blocking`/`important` fix.
-   - Each thread carries `isResolved`. **Skip every thread where
-     `isResolved` is `true`** — a resolved thread was already acted on
-     (fixed and resolved by a previous run of this skill, or resolved
-     directly by a human as acknowledged/won't-fix). This is what keeps a
-     comment from being retreated across attempts: resolution state lives on
-     GitHub, not in this skill's memory, so it survives across runs and
-     across the attempt counter resetting.
+     `blocking`/`important` fix. Each inline thread from `get_review_comments`
+     carries `isResolved`. **Skip every thread where `isResolved` is
+     `true`** — a resolved thread was already acted on (fixed and resolved
+     by a previous run of this skill, or resolved directly by a human as
+     acknowledged/won't-fix). This is what keeps a comment from being
+     retreated across attempts: resolution state lives on GitHub, not in
+     this skill's memory, so it survives across runs and across the attempt
+     counter resetting.
    - Build the worklist from the review's `blocking`/`important` findings —
      inline ones with an *unresolved* thread, plus any summary-body ones —
      minus whatever a prior run already resolved. A finding with no
