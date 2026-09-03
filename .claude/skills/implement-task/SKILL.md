@@ -198,6 +198,11 @@ only names where each one shows up in this skill's own workflow:
 3. **Validation cannot be made to pass** — step 6: the check suite stays red
    after a good-faith fix attempt.
 
+`skill-contract.md` §3's other two conditions — "Contradictory feedback" and
+"Retry cap exhausted" — don't apply to R2: this skill runs a single pass per
+issue with no review/fix loop to contradict or cap (that loop is R3/R4's,
+on the PR this step opens).
+
 Every one of these follows the same sequence as R2's escalation
 (`doc/automation/state-machine.md` row #6, § Incomplete issue): post a
 comment on the issue naming exactly what's blocking, then release the claim
