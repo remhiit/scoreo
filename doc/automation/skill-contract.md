@@ -93,19 +93,20 @@ being present and locatable, not about matching a heading string verbatim).
 A routine's user-visible report — a PR description, a review verdict
 comment, a fix synthesis comment — carries the same five fields, in this
 order, regardless of which routine produces it. This formalizes a pattern
-already in independent use (`pr-review`'s per-item verdict + overall
-Conforms/Needs changes, `address-feedback`'s `✅ Corrigé` /
-`⏭️ Non appliqué` / `⚠️ Arbitrage requis` synthesis, and the
+already in independent use (`pr-review`'s per-finding severity
+(`blocking`/`important`/`suggestion`/`uncertain`) + overall
+`automation:review-pass`/`automation:needs-fix` verdict, `address-feedback`'s
+`✅ Corrigé` / `⏭️ Non appliqué` / `⚠️ Arbitrage requis` synthesis, and the
 `routine`/`status`/`iteration`/`validation`/`resultUrl`/`summary` fields
 `scripts/automation-log.mjs` already renders into its idempotent journal
 comment) rather than inventing a new shape:
 
 | Field | Content | Existing precedent |
 |---|---|---|
-| **Statut** | One of a small closed set the routine defines (e.g. `implement-task`: PR opened / escalated; `pr-review`: Conforms / Needs changes; `address-feedback`: clean / partial / escalated) | `automation-log.mjs`'s `status` (`running`/`succeeded`/`failed`/`manual-required`) |
+| **Statut** | One of a small closed set the routine defines (e.g. `implement-task`: PR opened / escalated; `pr-review`: `automation:review-pass` / `automation:needs-fix`; `address-feedback`: clean / partial / escalated) | `automation-log.mjs`'s `status` (`running`/`succeeded`/`failed`/`manual-required`) |
 | **Résumé** | One or two sentences: what changed and why, not a restatement of the diff | Every routine's commit/PR description |
 | **Artefacts** | Links to what this run produced: commit(s), PR, doc files touched | `automation-log.mjs`'s `resultUrl` (link to the run) |
-| **Validations** | Which checks were run and their result — not "tests pass" without saying which suite | `pr-review`'s out-of-scope note (CI already covers lint/test/build/doc-links) + its own checklist verdicts; `automation-log.mjs`'s `validation` field |
+| **Validations** | Which checks were run and their result — not "tests pass" without saying which suite | `pr-review`'s out-of-scope note (CI already covers lint/test/build/doc-links) + its own per-finding severities; `automation-log.mjs`'s `validation` field |
 | **Questions non résolues** | What this run could not resolve and why, scoped precisely enough that a human (or the next run) doesn't have to reconstruct it from the diff and label history | `address-feedback`'s `⚠️ Arbitrage requis` section |
 
 A skill's "Sorties obligatoires" section (§1.6) should say which of a PR

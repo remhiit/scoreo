@@ -336,6 +336,56 @@ verdict en signal GitHub — labels, commit status — plutôt que la routine
 elle-même, qui n'a accès qu'aux outils MCP GitHub habituels et pas à un
 appel script direct).
 
+### R3 idempotent : dédup par SHA et synthèse classifiée (#379)
+
+`.automation/routines.yml` déclare `deduplicate_by: head_sha` pour
+`pr-review` depuis #378, mais le dispatcher qui le valide reste
+observationnel (§ ci-dessus, « Ce nouveau workflow ne remplace pas le
+déclenchement réel des routines ») — le champ ne faisait donc rien tant
+qu'aucun composant ne le lisait. `pr-review/SKILL.md` § « Skip a duplicate
+review » est ce composant : en tout premier geste après avoir « claim » le
+run (avant même le checklist), R3 relit le journal idempotent `pr-review`
+de la PR (§ ci-dessus) et compare son `Commit analysé` au HEAD SHA courant.
+Même SHA et statut déjà terminal (`succeeded`/`failed`, pas `running`) →
+cette review a déjà eu lieu, R3 repose juste le label correspondant sans
+rejouer le checklist ni poster une seconde review. Ça couvre la classe de
+double-fire des incidents #94/#99 (`doc/automation/state-machine.md` §5)
+même quand deux déclenchements `automation:needs-review` sur le même commit
+survivent tous les deux au « claim the run » (livraison de webhook
+dupliquée, ou une relance de `requeue-lost-events.mjs` qui recouvre un run
+en fait toujours en vol).
+
+Le journal reste écrit uniquement par `review-status-sync.yml`, une fois le
+verdict posé (§ ci-dessus) — R3 le lit, ne l'écrit ni ne l'édite jamais
+lui-même. Une première tentative (PR #419) s'était fait imposer, via un
+finding de review, l'écriture par R3 d'une entrée `Statut: running` en
+tout début de run pour couvrir la fenêtre où sa propre review est en cours ;
+`address-feedback` a montré que c'est infaisable (aucun outil MCP
+disponible à une session ne permet d'**éditer** un commentaire existant),
+ce qui a mené à une escalade `automation:needs-human` et à la fermeture de
+la PR sans merge. Ce n'a jamais fait partie de ce ticket et reste
+explicitement hors scope : la déduplication lit le journal, elle ne
+l'écrit pas.
+
+Le format de sortie change en même temps : R3 ne rend plus un verdict
+binaire conforme/à corriger par point de checklist, mais une liste de
+*findings* classés par sévérité (`blocking`/`important`/`suggestion`/
+`uncertain`), chacun avec une recommandation concrète
+(`pr-review/SKILL.md` § Output). Le verdict global en découle
+mécaniquement : `automation:needs-fix` seulement s'il existe au moins un
+finding `blocking`/`important` — une PR qui n'a que des `suggestion`/
+`uncertain` reste `automation:review-pass`, ces findings restant visibles
+dans la review pour un humain sans déclencher R4 (`address-feedback` ne
+lit d'ailleurs que les findings `blocking`/`important` de la review,
+`address-feedback/SKILL.md` § Workflow). R3 publie cette synthèse comme une
+vraie review PR (`pull_request_review_write`, `event: COMMENT` — jamais
+`APPROVE`/`REQUEST_CHANGES`, §3) plutôt qu'un commentaire libre : les
+findings localisés et actionnables deviennent des commentaires inline,
+tout le reste (conformité à la spec, doc à jour, dette) reste dans le corps
+de la review. Une seule review par SHA, garantie par le dédup ci-dessus —
+c'est ça, la « synthèse de review unique » de #379, pas un mécanisme
+séparé.
+
 ---
 
 Table complète des transitions état → événement → routine → état cible,
@@ -393,7 +443,7 @@ changement de comportement public.
 | `issue-to-spec` | Format de spec : contexte, périmètre/hors-scope, critères d'acceptation testables, comportements d'erreur/cas limites, stratégie de tests, fichiers impactés, risques/questions ouvertes, **catégorie de risque** (détermine le label `automation:enabled`), **verdict de readiness** (`READY_FOR_IMPLEMENTATION`/`NEEDS_CLARIFICATION`/`BLOCKED_BY_DEPENDENCY`, obligatoire) |
 | `implement-task` | Branche `feat/<issue>-<slug>`, tests d'abord, `pnpm lint typecheck test build` vert, vérif visuelle, PR avec `Closes #N`, mise à jour de `doc/` (pre-commit checklist du `CLAUDE.md`) |
 | `pr-review` | Checklist **subjective uniquement** : conformité à la spec, respect de l'archi hexagonale, backward-compat des schémas zod, doc à jour, dette introduite. Le mécanisable est déjà en CI |
-| `address-feedback` | Corriger le périmètre signalé. Ne pas refondre. Ne retraite jamais un thread de review déjà résolu, priorise `blocking` avant `important`/nit, bascule sur `automation:needs-human` en cas de retour contradictoire/ambigu ou de suite de checks qui reste rouge, publie une synthèse (corrigé / non appliqué / arbitrage requis) à chaque run (issue #380) |
+| `address-feedback` | Corriger le périmètre signalé. Ne pas refondre. Ne retraite jamais un thread de review déjà résolu, priorise `blocking` avant `important`, ignore `suggestion`/`uncertain` (#379), bascule sur `automation:needs-human` en cas de retour contradictoire/ambigu ou de suite de checks qui reste rouge, publie une synthèse (corrigé / non appliqué / arbitrage requis) à chaque run (issue #380) |
 | `site-quality` | Deps, liens de doc, Lighthouse, PWA. Utilisée par R5 |
 | `weekly-report` | Rapport hebdo : PR ouvertes > 3 jours, issues `automation:needs-human`, taux `automation:review-pass`/`automation:needs-fix`, incidents depuis le dernier rapport, recommandation sur la liste blanche `automation:enabled`. Utilisée par R6 |
 
