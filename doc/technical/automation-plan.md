@@ -380,6 +380,11 @@ changement de comportement public.
 
 ## 6. Skills (`.claude/skills/`)
 
+> Contrat de forme (template `SKILL.md`, format de sortie structuré des
+> routines, checklist de conformité, conditions d'escalade
+> `automation:needs-human`) : `doc/automation/skill-contract.md`. Ce
+> contrat n'est pas encore appliqué aux skills existantes (#426, #427).
+
 | Skill | Contenu |
 |---|---|
 | `project-conventions` | Délègue au `CLAUDE.md` : stack, commandes pnpm, arbo, architecture hexagonale, conventions de commit |
