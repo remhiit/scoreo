@@ -265,10 +265,31 @@ three tries, or that reveals a scope mismatch on the very first try
 indefinitely. There is no separate "conflict detection" step — three
 genuine attempts (or one attempt showing the ask is bigger than the review
 stated) is the operational definition of "this needs a human decision, not
-another guess." `address-feedback/SKILL.md` step 2 makes this explicit: a
+another guess." `address-feedback/SKILL.md` step 4 makes this explicit: a
 fix requiring a materially larger change than the review anticipated is
 escalated immediately, on the same terms as exhausting the counter, instead
 of spending a further attempt guessing at unrequested scope.
+
+Since #380, this extends one level down, to individual feedback items
+rather than only to the PR as a whole: `address-feedback/SKILL.md` step 1
+builds R4's worklist from the R3 verdict comment *plus* the PR's inline
+review threads (`pull_request_read` method `get_review_comments`),
+excluding any thread already `isResolved` — a thread a previous R4 run (or
+a human) already resolved is never re-fixed, re-flagged, or re-narrated,
+which is what makes repeated R4 runs on the same PR idempotent at the
+comment level, not just at the label level. Step 2 prioritizes the
+remaining worklist (`blocking` from the R3 verdict or a `REQUEST_CHANGES`
+review, `important` otherwise, `nit` last, fixed only if trivial). Step 3
+applies the same escalation as the scope-mismatch case above to two items
+that directly conflict, or a single item too vague to act on without
+guessing — before any code is touched, not after a failed attempt. Step 8
+requires every run (clean, partial, or escalated) to publish one synthesis
+comment (corrigé / non appliqué / arbitrage requis), so a human reading the
+PR never has to reconstruct what happened from the diff and label history
+alone. A full check suite that stays red after the fix is treated the same
+way (step 5): R4 never pushes a failing commit, and never leaves the PR
+silently parked on `automation:in-progress` — an unresolvable red suite
+escalates like any other item R4 can't safely finish.
 
 ### Incomplete issue
 

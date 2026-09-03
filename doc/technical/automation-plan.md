@@ -386,7 +386,7 @@ changement de comportement public.
 | `issue-to-spec` | Format de spec : contexte, critères d'acceptation testables, fichiers impactés, hors-scope, **catégorie de risque** (détermine le label `automation:enabled`) |
 | `implement-task` | Branche `feat/<issue>-<slug>`, tests d'abord, `pnpm lint typecheck test build` vert, vérif visuelle, PR avec `Closes #N`, mise à jour de `doc/` (pre-commit checklist du `CLAUDE.md`) |
 | `pr-review` | Checklist **subjective uniquement** : conformité à la spec, respect de l'archi hexagonale, backward-compat des schémas zod, doc à jour, dette introduite. Le mécanisable est déjà en CI |
-| `address-feedback` | Corriger le périmètre signalé. Ne pas refondre |
+| `address-feedback` | Corriger le périmètre signalé. Ne pas refondre. Ne retraite jamais un thread de review déjà résolu, priorise `blocking` avant `important`/nit, bascule sur `automation:needs-human` en cas de retour contradictoire/ambigu ou de suite de checks qui reste rouge, publie une synthèse (corrigé / non appliqué / arbitrage requis) à chaque run (issue #380) |
 | `site-quality` | Deps, liens de doc, Lighthouse, PWA. Utilisée par R5 |
 | `weekly-report` | Rapport hebdo : PR ouvertes > 3 jours, issues `automation:needs-human`, taux `automation:review-pass`/`automation:needs-fix`, incidents depuis le dernier rapport, recommandation sur la liste blanche `automation:enabled`. Utilisée par R6 |
 
