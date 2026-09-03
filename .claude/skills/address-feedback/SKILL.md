@@ -1,6 +1,6 @@
 ---
 name: address-feedback
-description: Fix exactly what a pr-review flagged on a Scoreo PR — nothing broader. Use when addressing review comments or CI failures on an open PR here. This is the R4 step in doc/technical/automation-plan.md.
+description: Fix exactly what's actually actionable in a Scoreo PR's outstanding feedback — nothing broader, nothing already handled. Use when addressing review comments or CI failures on an open PR here. This is the R4 step in doc/technical/automation-plan.md.
 ---
 
 # Address Feedback
@@ -90,38 +90,112 @@ just because a human happened to invoke the skill this time.
 
 ## Workflow
 
-1. **Read every flagged item** from the review (or failing CI check) before
-   touching anything. Build the list of exactly what needs to change.
-2. **Fix only that list.** If a fix reveals it can't be done without a
-   larger change than the review anticipated, stop and flag that
-   explicitly rather than expanding scope unilaterally — this is the one
-   case where checking in beats plowing ahead. **As R4**, treat this the
-   same as exhausting the attempt cap (step 4 of "Attempt counter" above):
-   remove `automation:in-progress`, remove `automation:enabled` if present,
-   add `automation:needs-human`, and post a comment explaining the scope
-   mismatch — don't spend a further attempt guessing at a bigger change
-   nobody asked for. See `doc/automation/state-machine.md` §
-   Contradictory feedback.
-3. **Re-run the full check suite** (`pnpm lint && pnpm typecheck && pnpm test
-   && pnpm build && pnpm test:e2e`) before pushing — a fix for one flagged
-   item shouldn't introduce a new failure elsewhere. Build before the e2e
-   run — `playwright.config.ts` starts its server with `pnpm preview`,
-   which serves `apps/scoreo/dist/`. In the Claude Code remote environment, Chromium is
-   preinstalled (`PLAYWRIGHT_BROWSERS_PATH=/opt/pw-browsers`) — do not run
-   `playwright install`; locally, run `pnpm --filter scoreo exec playwright install
+1. **Gather feedback, excluding what's already handled.**
+   - Read the R3 verdict comment (`pr-review`'s "Needs changes" list) — this
+     is always in scope, every item on it is blocking by `pr-review`'s own
+     contract.
+   - Also read the PR's inline review threads: `pull_request_read` method
+     `get_review_comments` (paginate with `after` if `pageInfo.hasNextPage`).
+     Each thread carries `isResolved`. **Skip every thread where
+     `isResolved` is `true`** — a resolved thread was already acted on
+     (fixed and resolved by a previous run of this skill, or resolved
+     directly by a human as acknowledged/won't-fix). This is what keeps a
+     comment from being retreated across attempts: resolution state lives on
+     GitHub, not in this skill's memory, so it survives across runs and
+     across the attempt counter resetting.
+   - Build the worklist from the R3 verdict items plus every *unresolved*
+     inline thread. An item with no corresponding open thread and not on the
+     verdict comment is not in scope — don't go looking for more to fix.
+2. **Prioritize the worklist**, blocking first:
+   - **Blocking**: every item from the R3 verdict comment, plus any inline
+     thread from a review whose overall state is `REQUEST_CHANGES`
+     (`pull_request_read` method `get_reviews`) or whose text says so
+     explicitly (`blocking`, `bloquant`, `must fix`).
+   - **Important**: other inline threads raising a real, concrete concern.
+   - **Nit/optional**: threads explicitly marked as such (`nit`,
+     `suggestion`, `optionnel`) — fix only if trivial (one line, no design
+     judgment); otherwise leave the thread open and note it as not applied
+     in the synthesis (step 8) rather than expanding scope to chase it.
+   Work blocking items first, then important, then trivial nits, so a run
+   that has to stop partway (attempt cap, time) has already banked the
+   items that actually block merge.
+3. **Check for contradiction or ambiguity before fixing anything.** Two
+   items asking for opposite changes, or a single item too vague to act on
+   without guessing the reviewer's intent, is not something to resolve by
+   picking one side. Treat this exactly like a scope mismatch discovered
+   mid-fix (below): stop, don't touch the code for the conflicting/ambiguous
+   items, and escalate. **As R4**: remove `automation:in-progress`, remove
+   `automation:enabled` if present, add `automation:needs-human`, and post
+   the synthesis (step 8) naming precisely which items conflict or are
+   unclear and why — leave their threads unresolved so a human finds them in
+   place. See `doc/automation/state-machine.md` § Contradictory feedback.
+4. **Fix only the prioritized, unambiguous list.** If a fix reveals it can't
+   be done without a larger change than the review anticipated, stop and
+   flag that explicitly rather than expanding scope unilaterally — this is
+   the one case where checking in beats plowing ahead. **As R4**, treat this
+   the same as exhausting the attempt cap (step 4 of "Attempt counter"
+   above): remove `automation:in-progress`, remove `automation:enabled` if
+   present, add `automation:needs-human`, and post the synthesis (step 8)
+   explaining the scope mismatch — don't spend a further attempt guessing at
+   a bigger change nobody asked for. While fixing, run fast targeted checks
+   after each item (`pnpm lint`, `pnpm typecheck`, and the specific
+   `*.test.ts(x)` file(s) touched) to catch mistakes early without paying
+   for a full suite run per item.
+5. **Never push on red.** Once every item to fix is actually fixed, re-run
+   the full check suite (`pnpm lint && pnpm typecheck && pnpm test && pnpm
+   build && pnpm test:e2e`) — a fix for one flagged item shouldn't introduce
+   a new failure elsewhere. Build before the e2e run — `playwright.config.ts`
+   starts its server with `pnpm preview`, which serves `apps/scoreo/dist/`.
+   In the Claude Code remote environment, Chromium is preinstalled
+   (`PLAYWRIGHT_BROWSERS_PATH=/opt/pw-browsers`) — do not run `playwright
+   install`; locally, run `pnpm --filter scoreo exec playwright install
    chromium` first if needed. If an e2e test fails in a way that looks
    unrelated to this diff, re-run once before concluding it's flaky — don't
-   "fix" a test at random just to make it pass.
-4. **Push to the same branch** (new commit, not an amend of history that's
+   "fix" a test at random just to make it pass. **If the suite still doesn't
+   pass, do not commit and do not push** — a red commit is worse than no
+   commit, and it would push a broken HEAD out for re-review. Treat a fix
+   that can't be made to pass validation the same as the contradiction/scope
+   cases above: escalate (remove `automation:in-progress`, remove
+   `automation:enabled` if present, add `automation:needs-human`) rather
+   than leaving the PR silently parked on `automation:in-progress` with
+   nothing watching it, and say in the synthesis (step 8) what's still red
+   and what was tried.
+6. **Push to the same branch** (new commit, not an amend of history that's
    already been reviewed — the reviewer should be able to see what changed
-   since their comment). Pushing triggers `needs-review-label.yml`
-   (`synchronize`), which re-queues R3 on its own — nothing else to do
-   here to get re-reviewed.
-5. **Remove `automation:in-progress` and add the attempt number remembered
+   since their comment), only once the full suite is green (step 5).
+   Pushing triggers `needs-review-label.yml` (`synchronize`), which clears
+   the stale `automation:needs-fix` and re-queues R3
+   (`automation:needs-review`) on its own — this is what returns the PR to
+   review after a successful fix; nothing else to do here to get
+   re-reviewed.
+7. **Resolve every thread actually fixed** (`pull_request_review_write`
+   method `resolve_thread`, or `resolve_review_thread`, with the thread's
+   node ID from `get_review_comments`). Leave unresolved anything not
+   applied (nits skipped, items escalated) — an unresolved thread is exactly
+   the signal a later run (or a human) uses to know it's still open, and
+   what keeps this idempotent: a thread already resolved by an earlier run
+   is filtered out at step 1 of the *next* run, so it's never re-fixed,
+   re-flagged, or re-narrated.
+8. **Publish one synthesis, always** — whether this run finishes clean,
+   partially, or escalates, and regardless of whether step 6 pushed anything.
+   Post a single PR comment (`add_issue_comment`) structured as:
+   - `✅ Corrigé` — the items actually fixed, pushed, and resolved (or
+     "aucun" if none).
+   - `⏭️ Non appliqué` — items left alone, each with why: a nit skipped as
+     out of scope, a lower-priority item not reached, etc. Empty section if
+     nothing was skipped.
+   - `⚠️ Arbitrage requis` — only present when this run escalates to
+     `automation:needs-human`: the contradictory/ambiguous items, the scope
+     mismatch, or the still-red check, described precisely enough that a
+     human doesn't have to reconstruct it from the diff and label history.
+   This replaces narrating each individual comment inline — the synthesis is
+   the one place a human (or the next run) looks for what happened, and the
+   diff plus resolved threads are the record of *how*.
+9. **Remove `automation:in-progress` and add the attempt number remembered
    from the counter step above** (`automation:attempt-1`/
    `automation:attempt-2`/`automation:attempt-3`) — the old attempt label
    was already cleared in "Claim the run", so this only adds the new one.
    This is the run's terminal label, posted only now that the fix is
-   actually done.
-6. Reply only if the fix resolves the thread or raises a genuine question —
-   don't narrate "done" on every single comment; the diff is the record.
+   actually done and pushed. Skip this step on the escalation paths (steps
+   3/4/5) — those already end in `automation:needs-human`, not an attempt
+   label.
