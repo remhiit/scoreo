@@ -460,6 +460,13 @@ changement de comportement public.
 > backward-compatible, toute suppression/renommage exige une migration. Ce n'est
 > pas un terrain pour une IA autonome.
 
+Cette liste blanche reste la seule porte d'entrée de `automation:enabled` ;
+le skill `change-risk` (§6) ne la remplace ni ne la recalcule — il opère sur
+une échelle à trois niveaux (`low`/`medium`/`high`), évaluée sur le diff
+réel plutôt que sur les seuls fichiers impactés prévus, dont le seul point
+de recoupement documenté est : toute surface listée « Exclu » ci-dessus fait
+toujours au moins `medium` chez `change-risk`, jamais `low`.
+
 ---
 
 ## 6. Skills (`.claude/skills/`)
@@ -479,6 +486,7 @@ changement de comportement public.
 | `site-quality` | Deps, liens de doc, Lighthouse, PWA. Utilisée par R5 |
 | `weekly-report` | Rapport hebdo : PR ouvertes > 3 jours, issues `automation:needs-human`, taux `automation:review-pass`/`automation:needs-fix`, incidents depuis le dernier rapport, recommandation sur la liste blanche `automation:enabled`. Utilisée par R6 |
 | `test-strategy` | Traduit les critères d'acceptation d'une spec en scénarios de test par niveau (unitaire/intégration/composant/e2e), classés nominal/erreur/limite/régression/invariant, séparés en obligatoires/recommandés/hors de proportion. Support skill, appelée en interactif ou depuis la procédure d'une autre skill — pas encore câblée dans `implement-task`/`pr-review`/`site-quality` (câblage réel hors scope, #386) |
+| `change-risk` | Détecte, depuis la spec et le diff, les surfaces à risque touchées (persistance/migrations, scoring, API/contrats, auth, secrets, configuration, déploiement, concurrence, aggravé par toute rupture de compat) et assigne un niveau `low`/`medium`/`high` (le plus sévère des surfaces touchées, jamais une moyenne) avec preuves et mitigations (tests renforcés, revue humaine, security/architecture review, blocage merge). Échelle distincte de la catégorie binaire **Faible**/**Élevé** d'`issue-to-spec` (qui gouverne `automation:enabled`) — les deux se recoupent (une surface Élevé ne peut jamais produire un `low` ici) sans fusionner. Support skill, appelée en interactif ou depuis la procédure d'une autre skill — pas encore câblée dans `implement-task`/`test-strategy`/`site-quality`/`pr-review` (câblage réel hors scope, #387) |
 
 **Règle :** une skill non éprouvée en interactif ne passe pas en autonome.
 
