@@ -228,17 +228,35 @@ cours.
 horaire (`.github/workflows/requeue-lost-events.yml` — cron + les
 triggers `issues` `unlabeled`/`closed`, pour réagir vite à la fin d'un
 run) : si le nombre d'issues ouvertes portant `automation:ready` ou
-`automation:in-progress` est inférieur à `MAX_IN_FLIGHT` (1), sélectionne
-la plus ancienne issue `automation:queued` de plus haute priorité (`P0` >
-`P1` > `P2` > `P3`, puis date de création croissante), retire
-`automation:queued` puis pose `automation:ready` **seul, dans son propre
-appel, en dernier** (leçon #99, §4 « claim the run »). Ne promeut jamais
-une issue portant `blocked`, `automation:needs-human` ou
-`automation:in-progress`. Garde anti-rafale R5 : si plus de
-`MAX_NEEDS_REVIEW_BACKLOG` (2) PR ouvertes portent
-`automation:needs-review`, ne dispatche pas à ce run — laisse R3 absorber
-la file d'abord. Par construction, le débit d'événements vers R2 ne dépasse
-plus jamais le quota.
+`automation:in-progress` est inférieur à `MAX_IN_FLIGHT` (1), passe en
+revue les issues `automation:queued`, triées par priorité (`P0` > `P1` >
+`P2` > `P3`) puis date de création croissante, retire `automation:queued`
+de la première **éligible** puis pose `automation:ready` **seul, dans son
+propre appel, en dernier** (leçon #99, §4 « claim the run »).
+
+L'éligibilité (`decideDispatchPromotion`, testée dans
+`scripts/dispatch-ready.test.mjs`) se décide en deux temps pour borner le
+nombre d'appels API (#432) : d'abord les labels, gratuits — jamais promue si
+elle porte `automation:needs-human` ou `automation:in-progress` — puis,
+seulement pour les issues encore candidates après ce filtre, une lecture de
+leur lien natif `GET .../dependencies/blocked_by` (posé par
+`sync-issue-dependencies.yml`), dans l'ordre de priorité, avec arrêt à la
+première dont tous les bloqueurs sont fermés. Le label `blocked` n'est
+**jamais** lu par cette décision : c'est un signal d'affichage dérivé
+(`doc/automation/state-machine.md` §2), pas la source de vérité — celle-ci
+est le lien natif, dans les deux sens (un `blocked` obsolète sans lien
+n'empêche rien ; un lien ouvert sans label bloque quand même). Une réponse
+404 ou une liste vide sur `blocked_by` vaut « non bloquée », jamais
+« bloquée » par défaut (même convention que `unblock-issues.mjs`) ; un échec
+d'appel (5xx, rate limit) fait remonter l'erreur et n'aboutit sur aucune
+promotion ce run plutôt que de promouvoir à l'aveugle — le rattrapage se
+fait au passage horaire suivant. Chaque candidate écartée (label ou
+dépendance) est journalisée avec le motif retenu.
+
+Garde anti-rafale R5 : si plus de `MAX_NEEDS_REVIEW_BACKLOG` (2) PR ouvertes
+portent `automation:needs-review`, ne dispatche pas à ce run — laisse R3
+absorber la file d'abord. Par construction, le débit d'événements vers R2 ne
+dépasse plus jamais le quota.
 
 ### Balayeur horaire des événements de routine perdus
 
@@ -440,7 +458,7 @@ dans `doc/automation/state-machine.md` §2).
 | `automation:review-pass` | Verdict `pr-review` (R3) : conforme → traduit en commit status `claude/review` succès |
 | `automation:needs-fix` | Verdict `pr-review` (R3) : à corriger → traduit en commit status `claude/review` échec, déclenche R4 |
 | `automation:needs-human` | Escalade : plafond d'itérations ou hors périmètre. Quand l'escalade part d'une PR (R4), posée aussi sur l'issue liée, accompagnée de `automation:queued`, pour libérer le pipeline sans geler tout le backlog (issue #429) |
-| `blocked` | Dépendance externe — retiré automatiquement par `unblock-issues.yml` une fois tous les bloqueurs natifs fermés |
+| `blocked` | Dépendance externe — signal d'affichage dérivé, jamais lu par le dispatcher (celui-ci décide sur le lien natif `blocked_by`, #432) ; retiré automatiquement par `unblock-issues.yml` une fois tous les bloqueurs natifs fermés |
 | `automation:enabled` | Autorisé à l'auto-merge une fois les checks verts |
 | `automation:attempt-1/2/3` | Compteur anti-boucle. **À `automation:attempt-3` : stop.** |
 | `P0`…`P3` | Priorité (reprise de la sémantique de `.task/`) |
