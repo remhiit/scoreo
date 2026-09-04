@@ -122,8 +122,17 @@ Once these three issue-side labels are in place, a human only has to remove
    - Read `pr-review`'s submitted review (`pull_request_read` method
      `get_reviews` for the summary body, `get_review_comments` for its
      inline comments) — every finding there carries an explicit severity
-     prefix, `blocking`/`important`/`suggestion`/`uncertain`
-     (`pr-review/SKILL.md` § Output). `automation:needs-fix` only means at
+     prefix, `blocking`/`important`/`suggestion`/`uncertain`, plus evidence,
+     impact, and a confidence level (`pr-review/SKILL.md` § Output).
+     **Severity alone decides scope here** — evidence/impact/confidence are
+     context for understanding *why* a finding was raised, not additional
+     filters to weigh: `pr-review` already folds confidence into severity
+     before posting (a `blocking`/`important` finding never carries low
+     confidence — low confidence there means the finding is `uncertain`
+     instead, `pr-review/SKILL.md` § "Confidence and `uncertain` severity"),
+     so this step never needs to re-derive that judgment call or second-guess
+     a finding's severity against its confidence field.
+     `automation:needs-fix` only means at
      least one `blocking`/`important` finding exists in that review — build
      the fix worklist from those two severities only. A `suggestion`/
      `uncertain` finding in the same review is visible context, not part of

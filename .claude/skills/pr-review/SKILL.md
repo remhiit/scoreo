@@ -111,10 +111,34 @@ narrate it here.
 Don't collapse the checklist into a binary conforms/doesn't-conform per
 item. For each issue actually found — whether it's one of the five
 checklist points above or something else noticed while reading the diff —
-record a **finding**: a one-line summary, a **severity**, and a **concrete
-recommendation** (what to change, specific enough that `address-feedback`
-or a human can act on it without re-deriving the spec — never "consider
-improving X", say what X becomes).
+record a **finding** with five parts:
+
+- a one-line **summary**;
+- a **severity** (below);
+- **evidence** — what in the diff or the spec actually establishes the
+  problem. Cite the file/line for a code-level finding. When the finding
+  isn't about a specific line — a missing behavior, a doc page nothing in
+  the diff touches, an acceptance criterion the diff never addresses — cite
+  the spec section or state the absence directly ("no file in this diff
+  touches X"); don't force a line reference onto a finding that isn't about
+  one.
+- **impact** — what actually goes wrong if this ships unfixed. A concrete
+  consequence (data loss on load, a broken flow, a `CLAUDE.md`/
+  `project-conventions` rule violated), not "this could be a problem".
+- **confidence** — `high`/`medium`/`low`, how sure the evidence above
+  actually establishes the problem. Independent of how serious the problem
+  would be if it does exist — see "Confidence and `uncertain` severity"
+  below for how the two interact.
+- a concrete **recommendation** (what to change, specific enough that
+  `address-feedback` or a human can act on it without re-deriving the spec
+  — never "consider improving X", say what X becomes).
+
+A finding whose only issue is something lint/prettier/typecheck would
+already catch isn't in scope — see "Out of scope" above; don't turn a
+stylistic nit CI already enforces into a finding. If the checklist turns up
+nothing, publish the review anyway with an explicit pass verdict (see
+"Post the review" below) — this template only applies to findings that
+exist, it's not a mandatory minimum count.
 
 Severity is one of:
 
@@ -135,6 +159,50 @@ avoid friction — a review that never says no isn't protecting anything (see
 don't inflate a `suggestion` to `blocking` to make a point — the whole
 reason for four levels instead of two is so R4 (and a human reading the
 review) can tell "must fix" from "worth knowing" at a glance.
+
+### Confidence and `uncertain` severity — which one wins
+
+Confidence isn't a second severity axis and doesn't create a fifth
+outcome. It constrains which severity you're allowed to assign, before the
+finding is posted: **`blocking`/`important` requires at least `medium`
+confidence.** If the evidence doesn't get you that far — it's
+circumstantial, or the spec is genuinely ambiguous about whether this is
+even the intended behavior — the finding is `uncertain`, not "blocking with
+low confidence". `uncertain` is already the bucket for "can't be resolved
+from the diff alone, needs a human's judgment call" (above); a
+low-confidence blocking claim is exactly that case by definition, so it
+belongs there instead of staying `blocking`.
+
+A finding classified `blocking`/`important` must therefore never carry
+`confidence: low` — if you're about to post that combination, that's the
+signal to reclassify the finding as `uncertain`, not to post it as-is.
+
+This is why `address-feedback` doesn't need to read the confidence field at
+all: **severity alone stays the sole authority for what R4 acts on**
+(`blocking`/`important` → in scope; `suggestion`/`uncertain` → left alone —
+`address-feedback/SKILL.md` § Workflow, unchanged by this). Confidence is
+there for a human reading the review to judge how much weight to give a
+`suggestion` or `uncertain` finding; it never overrides severity, and R4
+never has to cross-check the two.
+
+### Example finding
+
+```
+**blocking** — `PlayerScore.handicap` a un nouveau champ sans `.default()`
+zod.
+
+- Preuve : `apps/scoreo/src/domain/model/playerScore.schema.ts:34` déclare
+  `handicap: z.number()` sans `.default()`, et `git log` confirme que ce
+  champ est nouveau dans ce diff (absent de la version précédente du
+  schéma).
+- Impact : un `PlayerScore` sérialisé avant ce changement (localStorage
+  existant, import JSON v1.0) échoue au parse zod au chargement — perte
+  d'accès aux scores existants au premier lancement post-update.
+- Confiance : haute — la déclaration du schéma est sans ambiguïté possible
+  dans le diff.
+- Recommandation : ajouter `.default(0)` à la ligne 34, et documenter le
+  champ dans `doc/technical/migrations.md`.
+```
 
 The overall verdict follows directly from the findings, not a separate
 judgment call:
@@ -176,7 +244,9 @@ goes only in the review's summary body, not scattered as inline noise.
    pending review at the noted HEAD SHA (`commitID`).
 2. For each localized, actionable finding, `add_comment_to_pending_review`
    with the `path`/`line` it applies to, body starting with its severity
-   (e.g. `**blocking**: ...`) followed by the recommendation.
+   (e.g. `**blocking**: ...`) followed by evidence, impact, confidence, and
+   the recommendation — the same five-part shape as "Output" and the
+   example finding above, not a trimmed-down version of it.
 3. `pull_request_review_write` `method: submit_pending`, `event: COMMENT` —
    **never** `APPROVE` or `REQUEST_CHANGES` (no auto-approval mechanism,
    `automation-plan.md` §3). The submit `body` is the synthesis: every
