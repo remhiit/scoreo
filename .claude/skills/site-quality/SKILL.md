@@ -5,12 +5,34 @@ description: Weekly hygiene pass on the Scoreo repo — dependency updates, dead
 
 # Site Quality
 
+## Objectif
+
 Runs the routine hygiene checks the repo already has tooling for, and opens
 **one PR per category** — a combined PR mixing a dependency bump with a doc
 fix is harder to review and riskier to revert. Each PR goes through
-`ci.yml`/`pr-review` like any other PR; this skill doesn't bypass that.
+`ci.yml`/`pr-review` like any other PR; this skill doesn't bypass that. It
+only fixes what its four categories below cover — anything else it surfaces
+becomes a normal issue via `issue-to-spec` (see "What this skill does not
+do").
 
-## Categories
+## Entrées requises
+
+None beyond the repo itself at its current default-branch HEAD — this skill
+builds its own worklist each run from live tooling output (`pnpm outdated`,
+`check-doc-links.mjs`, recent Lighthouse CI artifacts, the current
+`apps/scoreo/public/` contents), not from a triggering issue or PR.
+
+## Préconditions
+
+None GitHub-specific: this skill's trigger is a weekly cron
+(`doc/automation/state-machine.md` §3, R5), not a `labeled` event on a
+specific issue/PR, so it has neither a "which issue/PR" rule nor a "claim
+the run" step (`doc/automation/skill-contract.md` §1.4) — both apply only to
+label-triggered routines. Each of the four categories below is independent;
+running the same category twice in the same week should find nothing new to
+fix if the previous run's PR already merged.
+
+## Procédure
 
 ### 1. Dependencies
 
@@ -61,7 +83,39 @@ consistent with the app: icon paths in the manifest resolve
 passes conceptually — i.e. nothing new was added to `apps/scoreo/public/` without a
 corresponding reference.
 
-## What this skill does not do
+## Sorties obligatoires
+
+Zero or more PRs, at most one per category actually touched this run — never
+a combined PR mixing categories (see Objectif). A category with nothing to
+fix (the common case for doc links and PWA validity) produces no PR at all;
+this skill has no obligation to open one every run. Each PR opened still
+goes through `ci.yml`/`pr-review` like any other PR — this skill's own
+"Contrôles" below is what it runs before opening one, not a substitute for
+that downstream review.
+
+## Contrôles
+
+Category-specific, per §1 above: a major/build-pipeline dependency bump
+requires the full check suite green (`pnpm lint && pnpm typecheck && pnpm
+test && pnpm build`) before it's judged safe to open as a PR; a doc-link fix
+or PWA-validity fix is verified by re-running the same tool that found the
+problem (`check-doc-links.mjs`, a manifest/service-worker re-check). A
+Lighthouse regression PR has no gate of its own beyond `ci.yml`'s own
+`warn`-mode job — the point of that PR is to investigate the regression, not
+to already have fixed it before opening.
+
+## Escalade
+
+Sans objet — this skill's categories are additive hygiene work, not a
+review/fix loop with a retry cap, and it has no triggering issue/PR to judge
+as ambiguous. When a category surfaces something outside its own scope (see
+"What this skill does not do" below), the response is to open a normal
+issue via `issue-to-spec`, not to escalate to `automation:needs-human` —
+there is no run to protect a backlog slot for (`doc/automation/
+skill-contract.md` §3 is about a routine that owns an in-flight claim; this
+skill never claims one).
+
+## Limites — what this skill does not do
 
 It does not touch `apps/scoreo/public/`, `apps/scoreo/src/domain/model/`, ports/adapters, or
 navigation as part of a "quick fix" — those are the same categories excluded

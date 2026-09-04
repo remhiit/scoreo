@@ -5,9 +5,13 @@ description: 'Implement one GitHub issue end-to-end for the Scoreo repo — bran
 
 # Implement Task
 
+## Objectif
+
 Executes a single GitHub issue's spec (written by `issue-to-spec`) as one
 branch, one commit, one PR. See `project-conventions` for the layering and
-backward-compat rules referenced throughout.
+backward-compat rules referenced throughout. This skill implements — it
+never reviews its own diff (that's `pr-review`/R3) and never merges its own
+PR (see Limites).
 
 ## Entrées requises
 
@@ -21,7 +25,9 @@ A `## Dépendances` section, if present, is expected to cite only blockers
 already closed (a `blocked` label would mean otherwise — step 1's
 defense-in-depth check).
 
-## Which issue
+## Préconditions
+
+### Which issue
 
 - **As R2** (fired by the routine's GitHub trigger): the issue is the one
   from your triggering context — the `issues` `labeled` event that started
@@ -45,12 +51,14 @@ defense-in-depth check).
   priority against the other candidates.
 - **Interactive, issue named**: use that one.
 
+### Claim the run (R2 only, first action)
+
 Replace `automation:ready` with `automation:in-progress` before starting, in
 every case — remove `automation:ready`, add `automation:in-progress`. A
 stale `automation:ready` left in place would mislead anyone scanning the
 backlog into thinking the issue is still unclaimed.
 
-## Guard against a duplicate branch or PR (R2 only, before claiming)
+### Guard against a duplicate branch or PR (R2 only, before claiming)
 
 Before touching labels or code, read the issue (`issue_read` method `get`)
 and check `closed_by_pull_requests`. If it lists any **open** PR already
@@ -65,7 +73,7 @@ This is the guard behind `doc/automation/state-machine.md` row #5: "not
 actionable" now explicitly includes "already has an open linked PR", not
 just "already claimed, closed".
 
-## Workflow
+## Procédure
 
 1. **Read the spec fully** — context, acceptance criteria, impacted files,
    out-of-scope, and any `## Dépendances` section. Also read the
@@ -178,11 +186,31 @@ just "already claimed, closed".
 12. Move to the next `automation:ready` issue rather than batching multiple
     issues into one PR.
 
+## Sorties obligatoires
+
+Once a run finishes successfully (never reached on the escalation path
+below):
+
+- One branch, `feat/<issue-number>-<slug>` (step 2).
+- One commit, message = the issue's title (step 9).
+- `doc/` updated per `CLAUDE.md`'s Pre-commit Checklist (step 8).
+- One PR, `Closes #N` in the body, structured per the five fields of
+  `doc/automation/skill-contract.md` §2 (step 10) — this is this skill's
+  instance of that structured output format.
+- `automation:enabled` posed only when risk stays Faible end to end
+  (step 11).
+
+## Contrôles
+
+Procédure step 6, before any PR is opened: `pnpm lint && pnpm typecheck &&
+pnpm test && pnpm build && pnpm test:e2e` — all five, not a subset — plus
+the visual check of step 7 for any screen touched. A run that can't get
+these green does not open a PR (see Escalade).
+
 ## Escalade
 
-The base stop conditions are defined once, in
-`doc/automation/skill-contract.md` §3 — this section doesn't re-derive them,
-only names where each one shows up in this skill's own workflow:
+Per `doc/automation/skill-contract.md` §3. This skill's own instances of
+those conditions:
 
 1. **Ambiguous or incomplete input** — step 1: missing/non-
    `READY_FOR_IMPLEMENTATION` readiness verdict, ambiguous spec, missing
@@ -209,7 +237,7 @@ parked on `automation:in-progress` with no PR and no comment. The
 interactive path (a human runs this skill directly) keeps its original
 meaning of "ask" — a person is present to answer.
 
-## Guardrails
+## Limites
 
 Cross-cutting limits, per `skill-contract.md` §1.9 — each is defined once
 elsewhere in this file; this section is the single place a reader checks for
@@ -217,7 +245,7 @@ all of them, not a redefinition:
 
 - Never pick a different issue when the triggering one isn't actionable
   (see "Which issue").
-- Never batch more than one issue into a single PR (step 12).
+- Never batch more than one issue into a single PR (Procédure step 12).
 - Don't merge the PR yourself. Merging is deterministic tooling
   (`gh pr merge --auto --squash` once checks are green and `automation:enabled`
   is present), not part of this skill.
