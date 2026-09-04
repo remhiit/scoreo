@@ -116,10 +116,11 @@ documentation (`low`) et un port (`high` potentiel) est `high` en entier.
   responsabilité.
 - **`high`** — au moins une des situations suivantes : suppression/
   renommage d'un champ sérialisé sans migration documentée (l'aggravation du
-  § 2) ; la surface **Secrets**, **Déploiement** ou **Concurrence** est
-  touchée de quelque façon que ce soit (ces trois-là n'ont pas de palier
-  `medium` — leur seul fait d'être touchées suffit, vu le coût d'un
-  incident) ; un contrat module-API modifié de façon non rétrocompatible ;
+  § 2) ; la surface **Secrets**, **Authentification & autorisations**,
+  **Déploiement** ou **Concurrence** est touchée de quelque façon que ce
+  soit (ces quatre-là n'ont pas de palier `medium` — leur seul fait d'être
+  touchées suffit, vu le coût d'un incident) ; un contrat module-API
+  modifié de façon non rétrocompatible ;
   un calcul de scoring déjà couvert par un test golden modifié sans que ce
   test golden le soit aussi. Le cas de plusieurs surfaces touchées
   simultanément n'est pas un déclencheur séparé : il retombe sur la règle
