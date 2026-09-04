@@ -478,6 +478,7 @@ changement de comportement public.
 | `address-feedback` | Corriger le périmètre signalé. Ne pas refondre. Ne retraite jamais un thread de review déjà résolu, priorise `blocking` avant `important`, ignore `suggestion`/`uncertain` (#379), bascule sur `automation:needs-human` en cas de retour contradictoire/ambigu ou de suite de checks qui reste rouge, publie une synthèse (corrigé / non appliqué / arbitrage requis) à chaque run (issue #380) |
 | `site-quality` | Deps, liens de doc, Lighthouse, PWA. Utilisée par R5 |
 | `weekly-report` | Rapport hebdo : PR ouvertes > 3 jours, issues `automation:needs-human`, taux `automation:review-pass`/`automation:needs-fix`, incidents depuis le dernier rapport, recommandation sur la liste blanche `automation:enabled`. Utilisée par R6 |
+| `test-strategy` | Traduit les critères d'acceptation d'une spec en scénarios de test par niveau (unitaire/intégration/composant/e2e), classés nominal/erreur/limite/régression/invariant, séparés en obligatoires/recommandés/hors de proportion. Support skill, appelée en interactif ou depuis la procédure d'une autre skill — pas encore câblée dans `implement-task`/`pr-review`/`site-quality` (câblage réel hors scope, #386) |
 
 **Règle :** une skill non éprouvée en interactif ne passe pas en autonome.
 
