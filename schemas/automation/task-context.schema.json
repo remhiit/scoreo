@@ -1,0 +1,195 @@
+{
+  "$schema": "https://json-schema.org/draft-07/schema#",
+  "title": "Scoreo Automation TaskContext",
+  "description": "Contrat du TaskContext versionné produit pour chaque run de routine (issue #401, doc/technical/automation-plan.md §4) : une vue stable de l'issue ou de la PR déclenchante, du code impacté et des dépendances connues, indépendante de la forme brute d'un événement GitHub. Documenté ici comme référence du contrat ; validé en pratique par le validateur écrit à la main scripts/task-context.mjs#validateTaskContext (même précédent que schemas/automation/routines.schema.json et schemas/import/, cf. doc/technical/architecture.md).",
+  "type": "object",
+  "properties": {
+    "version": {
+      "type": "integer",
+      "description": "Version du format de ce document",
+      "const": 1
+    },
+    "runId": {
+      "type": "string",
+      "description": "Identifiant du run (ex: GITHUB_RUN_ID)",
+      "minLength": 1
+    },
+    "routine": {
+      "type": "string",
+      "description": "Nom de la routine/skill qui a demandé ce contexte (ex: implement-task)",
+      "minLength": 1
+    },
+    "attempt": {
+      "type": "integer",
+      "description": "Numéro de tentative (1..3, cf. automation:attempt-N)",
+      "minimum": 1
+    },
+    "trigger": {
+      "type": "object",
+      "description": "Ce qui a déclenché ce run",
+      "properties": {
+        "event": { "type": "string", "description": "Événement GitHub à l'origine (ex: issues.labeled)" },
+        "label": { "type": ["string", "null"], "description": "Label déclencheur, s'il y en a un" },
+        "actor": { "type": ["string", "null"], "description": "Acteur GitHub à l'origine de l'événement" }
+      },
+      "required": ["event", "label", "actor"],
+      "additionalProperties": false
+    },
+    "entity": {
+      "type": "object",
+      "description": "L'issue ou la PR décrite par ce contexte",
+      "properties": {
+        "type": { "type": "string", "enum": ["issue", "pull_request"] },
+        "number": { "type": "integer" },
+        "title": { "type": "string", "description": "Titre, après redaction (§redaction)" },
+        "url": { "type": "string" },
+        "state": { "type": "string" },
+        "labels": { "type": "array", "items": { "type": "string" } },
+        "bodyExcerpt": {
+          "type": "string",
+          "description": "Corps de l'issue/PR après redaction, borné à constraints.maxBodyChars"
+        },
+        "draft": { "type": "boolean", "description": "PR uniquement" },
+        "merged": { "type": "boolean", "description": "PR uniquement" },
+        "headSha": { "type": ["string", "null"], "description": "PR uniquement" },
+        "baseRef": { "type": ["string", "null"], "description": "PR uniquement" }
+      },
+      "required": ["type", "number", "title", "url", "state", "labels", "bodyExcerpt"],
+      "additionalProperties": false
+    },
+    "repository": {
+      "type": "object",
+      "properties": {
+        "owner": { "type": ["string", "null"] },
+        "name": { "type": ["string", "null"] }
+      },
+      "required": ["owner", "name"],
+      "additionalProperties": false
+    },
+    "files": {
+      "type": "object",
+      "description": "Fichiers jugés pertinents (déclarés dans '## Fichiers impactés') et fichiers réellement modifiés (si fournis à ce run), chacun explicitement marqué disponible ou non plutôt qu'omis",
+      "properties": {
+        "relevant": { "$ref": "#/$defs/fileList" },
+        "changed": { "$ref": "#/$defs/fileList" }
+      },
+      "required": ["relevant", "changed"],
+      "additionalProperties": false
+    },
+    "packages": {
+      "type": "array",
+      "description": "Paquets du workspace affectés, dérivés des chemins de fichiers (apps/scoreo/ -> scoreo, packages/<nom>/ -> <nom>, sinon root)",
+      "items": { "type": "string" }
+    },
+    "dependencies": {
+      "type": "object",
+      "description": "Dépendances connues de l'issue/PR",
+      "properties": {
+        "declared": {
+          "type": "array",
+          "items": { "type": "integer" },
+          "description": "Numéros d'issue extraits de la section '## Dépendances' du corps"
+        },
+        "declaredAvailable": { "type": "boolean" },
+        "nativeBlockers": {
+          "type": "array",
+          "description": "Liens natifs blocked_by, si fournis à ce run (nécessite un appel API que ce script ne fait pas lui-même)"
+        },
+        "nativeBlockersAvailable": { "type": "boolean" }
+      },
+      "required": ["declared", "declaredAvailable", "nativeBlockers", "nativeBlockersAvailable"],
+      "additionalProperties": false
+    },
+    "diff": {
+      "type": "object",
+      "description": "Résumé du diff d'une PR (nombre de fichiers/additions/suppressions issus du payload webhook, pas un diff unifié complet). Toujours présent, jamais omis, même quand indisponible",
+      "properties": {
+        "available": { "type": "boolean" },
+        "summary": {
+          "type": ["object", "null"],
+          "properties": {
+            "changedFiles": { "type": "integer" },
+            "additions": { "type": "integer" },
+            "deletions": { "type": "integer" }
+          },
+          "required": ["changedFiles", "additions", "deletions"],
+          "additionalProperties": false
+        },
+        "unavailableReason": { "type": ["string", "null"] }
+      },
+      "required": ["available", "summary", "unavailableReason"],
+      "additionalProperties": false
+    },
+    "constraints": {
+      "type": "object",
+      "description": "Bornes de taille appliquées à la construction de ce contexte",
+      "properties": {
+        "maxRelevantFiles": { "type": "integer" },
+        "maxChangedFiles": { "type": "integer" },
+        "maxBodyChars": { "type": "integer" }
+      },
+      "required": ["maxRelevantFiles", "maxChangedFiles", "maxBodyChars"],
+      "additionalProperties": false
+    },
+    "truncation": {
+      "type": "object",
+      "description": "Stratégie de troncature observable : quels champs ont été bornés sur ce run",
+      "properties": {
+        "applied": { "type": "boolean" },
+        "fields": { "type": "array", "items": { "type": "string" } }
+      },
+      "required": ["applied", "fields"],
+      "additionalProperties": false
+    },
+    "redaction": {
+      "type": "object",
+      "description": "Trace (comptage seulement, jamais les valeurs) des motifs ressemblant à un secret retirés du titre/corps avant écriture de l'artefact",
+      "properties": {
+        "applied": { "type": "boolean" },
+        "occurrences": { "type": "integer", "minimum": 0 }
+      },
+      "required": ["applied", "occurrences"],
+      "additionalProperties": false
+    },
+    "resultUrl": {
+      "type": ["string", "null"],
+      "description": "Lien vers le run GitHub Actions ayant produit ce contexte, référencé depuis le journal d'automatisation (scripts/automation-log.mjs)"
+    },
+    "generatedAt": {
+      "type": "string",
+      "description": "Horodatage ISO 8601 de construction du contexte"
+    }
+  },
+  "required": [
+    "version",
+    "runId",
+    "routine",
+    "attempt",
+    "trigger",
+    "entity",
+    "repository",
+    "files",
+    "packages",
+    "dependencies",
+    "diff",
+    "constraints",
+    "truncation",
+    "redaction",
+    "resultUrl",
+    "generatedAt"
+  ],
+  "additionalProperties": false,
+  "$defs": {
+    "fileList": {
+      "type": "object",
+      "properties": {
+        "available": { "type": "boolean" },
+        "items": { "type": "array", "items": { "type": "string" } },
+        "truncated": { "type": "boolean" },
+        "unavailableReason": { "type": ["string", "null"] }
+      },
+      "required": ["available", "items", "truncated", "unavailableReason"],
+      "additionalProperties": false
+    }
+  }
+}

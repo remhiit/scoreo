@@ -41,6 +41,7 @@ export function renderAutomationLog({
   iteration,
   validation,
   resultUrl,
+  contextUrl,
   summary,
 }) {
   const label = ROUTINE_LABELS[routine] ?? routine
@@ -56,6 +57,12 @@ export function renderAutomationLog({
     `- Validation : ${validation}`,
     `- Résultat : ${resultUrl ? `[voir le run](${resultUrl})` : '_à venir_'}`,
   ]
+  // Optional: links this decision back to the TaskContext artifact it was
+  // made from (issue #401, doc/technical/automation-plan.md §4) — absent for
+  // callers that don't build one yet, so existing journals stay unchanged.
+  if (contextUrl) {
+    lines.push(`- Contexte : [voir l'artefact](${contextUrl})`)
+  }
   if (summary) {
     lines.push('', summary)
   }
@@ -100,6 +107,7 @@ export async function upsertAutomationLog({
   iteration = '1',
   validation = 'lint / typecheck / tests',
   resultUrl,
+  contextUrl,
   summary,
   triggeredAt = new Date().toISOString(),
 }) {
@@ -107,7 +115,17 @@ export async function upsertAutomationLog({
   const previous = existing ? parseAutomationLog(existing.body) : null
   const alreadyProcessed = Boolean(previous?.sha === sha && previous?.status && previous.status !== 'running')
 
-  const body = renderAutomationLog({ routine, triggeredAt, sha, status, iteration, validation, resultUrl, summary })
+  const body = renderAutomationLog({
+    routine,
+    triggeredAt,
+    sha,
+    status,
+    iteration,
+    validation,
+    resultUrl,
+    contextUrl,
+    summary,
+  })
 
   if (existing) {
     const res = await fetch(`${API_ROOT}/issues/comments/${existing.id}`, {
@@ -145,6 +163,7 @@ async function main() {
     iteration: process.env.LOG_ITERATION,
     validation: process.env.LOG_VALIDATION,
     resultUrl: process.env.LOG_RESULT_URL,
+    contextUrl: process.env.LOG_CONTEXT_URL,
     summary: process.env.LOG_SUMMARY,
     triggeredAt: process.env.LOG_TRIGGERED_AT,
   })

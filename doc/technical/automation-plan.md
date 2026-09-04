@@ -329,6 +329,63 @@ claude.ai/code/routines, cf. Phases 2/4/5) ni les workflows existants
 d'observabilité et de validation au-dessus du mapping existant, pas encore
 le mécanisme de dispatch lui-même.
 
+### `TaskContext` : le contexte d'exécution commun des routines (#401)
+
+Les décisions de complexité, de risque et de modèle (#402, #404, #405) ont
+besoin d'une vue stable de l'issue ou de la PR déclenchante — sans dépendre
+directement de la forme brute d'un événement GitHub. `TaskContext` est ce
+document versionné, documenté comme contrat dans
+`schemas/automation/task-context.schema.json` (même statut que
+`routines.schema.json` : référence lisible, pas branchée sur un moteur JSON
+Schema générique) et construit par `scripts/task-context.mjs`
+(`buildTaskContext`), un script déterministe et **zéro appel réseau**
+(principe directeur §2.2) : chaque champ vient soit du payload de
+l'événement `issues`/`pull_request` du dispatcher, soit d'un paramètre déjà
+en main de l'appelant (routine, run id, éventuellement une liste de
+fichiers modifiés ou les bloqueurs natifs déjà lus) — jamais d'un appel API
+supplémentaire depuis ce script. Il inclut : identifiants de run/routine/
+tentative/trigger, l'entité GitHub (issue ou PR, labels, corps borné et
+passé à la redaction), les métadonnées du dépôt, les fichiers pertinents
+(section `## Fichiers impactés` du corps) et modifiés (si fournis), les
+paquets affectés qui s'en déduisent (`derivePackages` : `apps/scoreo/` →
+`scoreo`, `packages/<nom>/` → `<nom>`, sinon `root`), les dépendances
+connues (section `## Dépendances`, même parseur que
+`sync-issue-dependencies.mjs`), un résumé de diff quand il existe, et les
+contraintes de taille appliquées.
+
+Donnée indisponible plutôt qu'inventée : chaque sous-section porte un champ
+`available`/`unavailableReason` explicite plutôt que d'omettre le champ —
+une issue sans PR, une liste de fichiers modifiés jamais fournie à ce run,
+ou une PR trop volumineuse pour être résumée (`changed_files` du payload
+webhook dépassant `constraints.maxChangedFiles`) donnent tous
+`diff.available: false` avec une raison, jamais un champ manquant. Un
+événement GitHub incomplet ou d'un type non géré (ni `issues` avec une
+issue, ni `pull_request` avec une PR) fait échouer `buildTaskContext`
+explicitement — aucun contexte partiel n'est produit ni écrit.
+
+Redaction : avant qu'ils n'entrent dans le contexte, le titre et le corps de
+l'entité passent par `redactSecrets`, qui retire les motifs de secrets
+usuels (jetons GitHub, clés AWS, blocs de clé privée PEM, en-têtes
+`Bearer`, et toute affectation `MA_CLE_SECRET=valeur`/`TOKEN: valeur`) —
+seul le nom de la variable reste visible, jamais la valeur. Le contexte
+n'expose que le compteur d'occurrences redactées (`redaction.occurrences`),
+jamais les valeurs retirées, y compris dans les logs de la CLI. Le corps est
+en plus borné à `constraints.maxBodyChars` (troncature signalée dans
+`truncation.fields`, jamais silencieuse) — même logique de stratégie de
+troncature observable que pour les listes de fichiers.
+
+`.github/workflows/automation-dispatch.yml` construit ce contexte juste
+après avoir résolu la routine (une routine résolue → `task-context.mjs`
+tourne, produit l'artefact JSON, publié via `actions/upload-artifact`) ;
+`scripts/automation-log.mjs` (§ ci-dessous) sait référencer cet artefact
+depuis le journal d'une routine via son champ optionnel `contextUrl`
+(rendu en ligne `- Contexte :` du commentaire), reliant ainsi une décision
+d'automatisation à son contexte source. Support uniquement pour l'instant :
+aucune routine ne consomme encore ce contexte pour router une décision
+(câblage réel hors scope de #401, dépend de #402/#404/#405) — cette brique
+reste déterministe et garde sa valeur d'observabilité quelle que soit
+l'option retenue pour ce câblage.
+
 ### Journal d'exécution idempotent
 
 Chaque passage d'une routine sur une issue/PR doit rester traçable et
@@ -341,7 +398,9 @@ trouvé (`PATCH`) au lieu d'en créer un nouveau ; s'il n'existe pas encore,
 il en poste un (`POST`). Le corps rendu suit le format cible de l'issue
 (routine, date de déclenchement, commit analysé, statut
 `running`/`succeeded`/`failed`/`manual-required`, itération, validations,
-lien vers le run GitHub Actions), suivi d'une synthèse en texte libre
+lien vers le run GitHub Actions, et — optionnel — lien vers l'artefact
+`TaskContext` de ce run via `contextUrl` (§ ci-dessus, #401), rendu en
+ligne `- Contexte :` quand fourni), suivi d'une synthèse en texte libre
 lisible par un humain. Comme `requeue-lost-events.mjs` et les autres
 scripts de `scripts/`, c'est un script déterministe (zéro LLM, §2 principe
 2) : `GH_TOKEN`/`REPO_OWNER`/`REPO_NAME` en entrée, `fetch()` brut vers

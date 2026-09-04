@@ -37,6 +37,35 @@ describe('renderAutomationLog / parseAutomationLog', () => {
     expect(parseAutomationLog(body)).toEqual({ sha: 'abc1234', status: 'succeeded', iteration: '1' })
   })
 
+  it('links back to the TaskContext artifact when a contextUrl is provided', async () => {
+    const { renderAutomationLog } = await import('./automation-log.mjs')
+    const body = renderAutomationLog({
+      routine: 'pr-review',
+      triggeredAt: '2026-08-31T10:00:00Z',
+      sha: 'abc1234',
+      status: 'succeeded',
+      iteration: '1',
+      validation: 'lint / typecheck / tests',
+      resultUrl: 'https://github.com/remhiit/scoreo/actions/runs/999',
+      contextUrl: 'https://github.com/remhiit/scoreo/actions/runs/999#artifacts',
+    })
+    expect(body).toContain("- Contexte : [voir l'artefact](https://github.com/remhiit/scoreo/actions/runs/999#artifacts)")
+  })
+
+  it('omits the Contexte line entirely when no contextUrl is provided', async () => {
+    const { renderAutomationLog } = await import('./automation-log.mjs')
+    const body = renderAutomationLog({
+      routine: 'pr-review',
+      triggeredAt: '2026-08-31T10:00:00Z',
+      sha: 'abc1234',
+      status: 'succeeded',
+      iteration: '1',
+      validation: 'lint / typecheck / tests',
+      resultUrl: 'https://github.com/remhiit/scoreo/actions/runs/999',
+    })
+    expect(body).not.toContain('Contexte')
+  })
+
   it('falls back to a placeholder when no result URL is available yet', async () => {
     const { renderAutomationLog } = await import('./automation-log.mjs')
     const body = renderAutomationLog({
