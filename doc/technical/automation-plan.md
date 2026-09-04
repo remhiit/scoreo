@@ -386,6 +386,27 @@ de la review. Une seule review par SHA, garantie par le dédup ci-dessus —
 c'est ça, la « synthèse de review unique » de #379, pas un mécanisme
 séparé.
 
+### Fiche de finding complète : preuve, impact, confiance (#385)
+
+#379 posait les quatre niveaux de sévérité et la recommandation ; #385
+complète la fiche avec trois champs supplémentaires, exigés pour chaque
+finding : la **preuve** (ce qui, dans le diff ou la spec, établit le
+problème — une ligne de diff, ou à défaut la section de spec ou l'absence
+constatée quand le finding ne porte pas sur une ligne précise), l'**impact**
+(la conséquence concrète si ce n'est pas corrigé) et le **niveau de
+confiance** (`high`/`medium`/`low`, indépendant de la sévérité). Ces trois
+champs et un exemple complet imitable sont dans `pr-review/SKILL.md` §
+Output.
+
+La confiance n'ajoute pas un cinquième niveau : elle contraint la sévérité
+plutôt que de s'y ajouter. Un finding `blocking`/`important` exige au moins
+une confiance `medium` — en dessous, c'est `uncertain`, pas « `blocking`
+avec confiance basse » (`uncertain` étant déjà le niveau « ne peut pas être
+tranché depuis le diff seul »). Conséquence directe : `address-feedback`
+n'a jamais besoin de lire le champ confiance, la sévérité seule reste
+l'unique signal qui détermine son périmètre — inchangé depuis #379/#380
+(`address-feedback/SKILL.md` § Workflow).
+
 ---
 
 Table complète des transitions état → événement → routine → état cible,
@@ -442,7 +463,7 @@ changement de comportement public.
 | `project-conventions` | Délègue au `CLAUDE.md` : stack, commandes pnpm, arbo, architecture hexagonale, conventions de commit |
 | `issue-to-spec` | Format de spec : contexte, périmètre/hors-scope, critères d'acceptation testables, comportements d'erreur/cas limites, stratégie de tests, fichiers impactés, risques/questions ouvertes, **catégorie de risque** (détermine le label `automation:enabled`), **verdict de readiness** (`READY_FOR_IMPLEMENTATION`/`NEEDS_CLARIFICATION`/`BLOCKED_BY_DEPENDENCY`, obligatoire) |
 | `implement-task` | Vérifie le verdict `READY_FOR_IMPLEMENTATION` avant de commencer, plan écrit avant tout code (fichiers, tests prévus, risques), recherche d'une abstraction existante avant d'en créer une nouvelle, budget de changement (aucun refactor hors périmètre sans justification explicite), branche `feat/<issue>-<slug>`, tests d'abord, `pnpm lint typecheck test build` vert, vérif visuelle, PR structurée en 5 champs (`doc/automation/skill-contract.md` §2) avec `Closes #N`, mise à jour de `doc/` (pre-commit checklist du `CLAUDE.md`), escalade vers `automation:needs-human` sur spec non prête, divergence majeure avec le plan ou validation qui reste rouge |
-| `pr-review` | Checklist **subjective uniquement** : conformité à la spec, respect de l'archi hexagonale, backward-compat des schémas zod, doc à jour, dette introduite. Le mécanisable est déjà en CI |
+| `pr-review` | Checklist **subjective uniquement** : conformité à la spec, respect de l'archi hexagonale, backward-compat des schémas zod, doc à jour, dette introduite. Le mécanisable est déjà en CI. Chaque finding porte gravité, preuve, impact, niveau de confiance et recommandation (#385) ; la confiance basse force la gravité `uncertain` plutôt que de coexister avec `blocking`/`important`, et `address-feedback` continue de ne lire que la gravité |
 | `address-feedback` | Corriger le périmètre signalé. Ne pas refondre. Ne retraite jamais un thread de review déjà résolu, priorise `blocking` avant `important`, ignore `suggestion`/`uncertain` (#379), bascule sur `automation:needs-human` en cas de retour contradictoire/ambigu ou de suite de checks qui reste rouge, publie une synthèse (corrigé / non appliqué / arbitrage requis) à chaque run (issue #380) |
 | `site-quality` | Deps, liens de doc, Lighthouse, PWA. Utilisée par R5 |
 | `weekly-report` | Rapport hebdo : PR ouvertes > 3 jours, issues `automation:needs-human`, taux `automation:review-pass`/`automation:needs-fix`, incidents depuis le dernier rapport, recommandation sur la liste blanche `automation:enabled`. Utilisée par R6 |
