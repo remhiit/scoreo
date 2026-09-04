@@ -55,9 +55,18 @@ const SECRET_PATTERNS = [
   {
     // Catches the general "SOMETHING_SECRET=value" / "SOMETHING_TOKEN: value"
     // shape (env-var-looking assignments) — the key name stays visible (it's
-    // what makes the redaction legible), only the value is dropped.
+    // what makes the redaction legible), only the value is dropped. Case
+    // insensitive and accepts snake_case/camelCase key names too (not just
+    // SCREAMING_SNAKE_CASE): `access_token=`, `apiKey:`, `password:` are at
+    // least as common in issue/PR prose as `GOOGLE_CLIENT_SECRET=`.
+    // Negative lookahead on the value keeps this from re-matching output
+    // already redacted by an earlier pattern in this same pass (e.g.
+    // "token: ghp_..." → github-token redacts the value first, and without
+    // the lookahead this pattern would then match "token: [REDACTED:...]"
+    // again, double-counting and re-mangling an already-safe value).
     name: 'sensitive-assignment',
-    regex: /\b([A-Z][A-Z0-9_]*(?:SECRET|TOKEN|PASSWORD|PASSWD|API_KEY|PRIVATE_KEY)[A-Z0-9_]*)\s*[:=]\s*("[^"\n]*"|'[^'\n]*'|\S+)/g,
+    regex:
+      /\b([A-Za-z0-9_]*(?:secret|token|password|passwd|api[_-]?key|private[_-]?key)[A-Za-z0-9_]*)\s*[:=]\s*(?!\[REDACTED)("[^"\n]*"|'[^'\n]*'|\S+)/gi,
     replace: (_match, key) => `${key}=[REDACTED]`,
   },
 ]
@@ -125,7 +134,9 @@ function buildFilesSection({ body, changedFiles, limits }) {
       available: relevantAvailable,
       items: relevantBounded.items,
       truncated: relevantAvailable && relevantBounded.truncated,
-      unavailableReason: relevantAvailable ? null : 'no "## Fichiers impactés" section in the entity body',
+      unavailableReason: relevantAvailable
+        ? null
+        : 'no "## Fichiers impactés" section in the entity body',
     },
     changed: {
       available: changedAvailable,
@@ -161,7 +172,11 @@ function buildDependenciesSection({ body, knownBlockers }) {
 // silently dropped.
 function buildDiffSection({ entityType, pullRequest, limits }) {
   if (entityType !== 'pull_request') {
-    return { available: false, summary: null, unavailableReason: 'entity is an issue, not a pull request' }
+    return {
+      available: false,
+      summary: null,
+      unavailableReason: 'entity is an issue, not a pull request',
+    }
   }
   const stats = pullRequest ?? {}
   if (
@@ -169,7 +184,11 @@ function buildDiffSection({ entityType, pullRequest, limits }) {
     typeof stats.additions !== 'number' ||
     typeof stats.deletions !== 'number'
   ) {
-    return { available: false, summary: null, unavailableReason: 'diff stats missing from the pull_request payload' }
+    return {
+      available: false,
+      summary: null,
+      unavailableReason: 'diff stats missing from the pull_request payload',
+    }
   }
   if (stats.changed_files > limits.maxChangedFiles) {
     return {
@@ -180,7 +199,11 @@ function buildDiffSection({ entityType, pullRequest, limits }) {
   }
   return {
     available: true,
-    summary: { changedFiles: stats.changed_files, additions: stats.additions, deletions: stats.deletions },
+    summary: {
+      changedFiles: stats.changed_files,
+      additions: stats.additions,
+      deletions: stats.deletions,
+    },
     unavailableReason: null,
   }
 }
@@ -259,12 +282,18 @@ export function buildTaskContext({
   const totalRedactions = titleRedaction.count + bodyRedaction.count
 
   const bodyTruncated = bodyRedaction.text.length > limits.maxBodyChars
-  const bodyExcerpt = bodyTruncated ? bodyRedaction.text.slice(0, limits.maxBodyChars) : bodyRedaction.text
+  const bodyExcerpt = bodyTruncated
+    ? bodyRedaction.text.slice(0, limits.maxBodyChars)
+    : bodyRedaction.text
 
   const files = buildFilesSection({ body: entity.body, changedFiles, limits })
   const packages = derivePackages([...files.relevant.items, ...files.changed.items])
   const dependencies = buildDependenciesSection({ body: entity.body, knownBlockers })
-  const diff = buildDiffSection({ entityType: entity.type, pullRequest: payload.pull_request, limits })
+  const diff = buildDiffSection({
+    entityType: entity.type,
+    pullRequest: payload.pull_request,
+    limits,
+  })
 
   const truncatedFields = []
   if (files.relevant.truncated) truncatedFields.push('files.relevant')
@@ -290,7 +319,12 @@ export function buildTaskContext({
       labels: entity.labels,
       bodyExcerpt,
       ...(entity.type === 'pull_request'
-        ? { draft: entity.draft, merged: entity.merged, headSha: entity.headSha, baseRef: entity.baseRef }
+        ? {
+            draft: entity.draft,
+            merged: entity.merged,
+            headSha: entity.headSha,
+            baseRef: entity.baseRef,
+          }
         : {}),
     },
     repository: repository ?? { owner: null, name: null },
@@ -321,6 +355,7 @@ const REQUIRED_TOP_FIELDS = [
   'constraints',
   'truncation',
   'redaction',
+  'resultUrl',
   'generatedAt',
 ]
 
@@ -340,12 +375,19 @@ export function validateTaskContext(context) {
     }
   }
   if (context.version !== TASK_CONTEXT_VERSION) {
-    errors.push(`task-context.version: doit être ${TASK_CONTEXT_VERSION} (valeur: ${JSON.stringify(context.version)})`)
+    errors.push(
+      `task-context.version: doit être ${TASK_CONTEXT_VERSION} (valeur: ${JSON.stringify(context.version)})`,
+    )
   }
   if (context.entity && !['issue', 'pull_request'].includes(context.entity.type)) {
-    errors.push(`task-context.entity.type: doit être "issue" ou "pull_request" (valeur: ${JSON.stringify(context.entity?.type)})`)
+    errors.push(
+      `task-context.entity.type: doit être "issue" ou "pull_request" (valeur: ${JSON.stringify(context.entity?.type)})`,
+    )
   }
-  if (context.attempt !== undefined && (!Number.isInteger(context.attempt) || context.attempt < 1)) {
+  if (
+    context.attempt !== undefined &&
+    (!Number.isInteger(context.attempt) || context.attempt < 1)
+  ) {
     errors.push('task-context.attempt: doit être un entier >= 1')
   }
   if (context.truncation && typeof context.truncation.applied !== 'boolean') {

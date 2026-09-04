@@ -96,6 +96,13 @@ describe('redactSecrets', () => {
     expect(text).not.toContain('s3cr3t-value-not-for-logs')
   })
 
+  it('redacts snake_case and camelCase sensitive assignments, not just SCREAMING_SNAKE_CASE', () => {
+    expect(redactSecrets('access_token=abcdef0123456789').text).not.toContain('abcdef0123456789')
+    expect(redactSecrets('apiKey: sk_live_abcdefghi').text).not.toContain('sk_live_abcdefghi')
+    expect(redactSecrets('password: hunter2').text).not.toContain('hunter2')
+    expect(redactSecrets('Client secret: abcdef0123456789').text).not.toContain('abcdef0123456789')
+  })
+
   it('redacts a PEM private key block', () => {
     const pem = '-----BEGIN PRIVATE KEY-----\nMIIBogIBAAJ...\n-----END PRIVATE KEY-----'
     const { text, count } = redactSecrets(`before\n${pem}\nafter`)
@@ -166,7 +173,12 @@ describe('buildTaskContext', () => {
     const second = buildTaskContext(args)
     expect(first).toEqual(second)
     expect(validateTaskContext(first)).toEqual({ valid: true, errors: [] })
-    expect(first.entity).toMatchObject({ type: 'pull_request', number: 402, headSha: 'abc123', baseRef: 'main' })
+    expect(first.entity).toMatchObject({
+      type: 'pull_request',
+      number: 402,
+      headSha: 'abc123',
+      baseRef: 'main',
+    })
     expect(first.diff).toEqual({
       available: true,
       summary: { changedFiles: 3, additions: 120, deletions: 4 },
@@ -176,14 +188,21 @@ describe('buildTaskContext', () => {
 
   describe('edge cases', () => {
     it('marks the diff explicitly unavailable for an issue (no PR at all)', () => {
-      const context = buildTaskContext({ eventName: 'issues', payload: ISSUE_PAYLOAD, ...BASE_ARGS })
+      const context = buildTaskContext({
+        eventName: 'issues',
+        payload: ISSUE_PAYLOAD,
+        ...BASE_ARGS,
+      })
       expect(context.diff.available).toBe(false)
       expect(context.diff.summary).toBeNull()
       expect(context.diff.unavailableReason).toBeTruthy()
     })
 
     it('marks the diff explicitly unavailable, not omitted, for an oversized pull request', () => {
-      const hugePr = { ...PR_PAYLOAD, pull_request: { ...PR_PAYLOAD.pull_request, changed_files: 999 } }
+      const hugePr = {
+        ...PR_PAYLOAD,
+        pull_request: { ...PR_PAYLOAD.pull_request, changed_files: 999 },
+      }
       const context = buildTaskContext({
         eventName: 'pull_request',
         payload: hugePr,
@@ -215,7 +234,11 @@ describe('buildTaskContext', () => {
 
     it('throws explicitly instead of producing a partial context for an unhandled event type', () => {
       expect(() =>
-        buildTaskContext({ eventName: 'release', payload: { release: { tag_name: 'v1' } }, ...BASE_ARGS }),
+        buildTaskContext({
+          eventName: 'release',
+          payload: { release: { tag_name: 'v1' } },
+          ...BASE_ARGS,
+        }),
       ).toThrow(/unhandled|incomplete/i)
     })
 
@@ -253,6 +276,14 @@ describe('validateTaskContext', () => {
     const { valid, errors } = validateTaskContext({ ...context, version: 2 })
     expect(valid).toBe(false)
     expect(errors).toEqual(expect.arrayContaining([expect.stringContaining('version')]))
+  })
+
+  it("rejects a context missing resultUrl, mirroring the schema's required list", () => {
+    const context = buildTaskContext({ eventName: 'issues', payload: ISSUE_PAYLOAD, ...BASE_ARGS })
+    const { resultUrl, ...withoutResultUrl } = context
+    const { valid, errors } = validateTaskContext(withoutResultUrl)
+    expect(valid).toBe(false)
+    expect(errors).toEqual(expect.arrayContaining([expect.stringContaining('resultUrl')]))
   })
 })
 
