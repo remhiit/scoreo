@@ -171,15 +171,26 @@ Les issues qui déclarent une section `## Dépendances` (format documenté dans
 `issue-to-spec/SKILL.md`, une ligne `Dépend de #N (raison)` par bloqueur) le
 font en texte libre — illisible par API. `.github/workflows/sync-issue-dependencies.yml`
 (zéro LLM, cohérent avec le principe directeur §2.2) se déclenche sur
-`issues` `opened`/`edited`, parse cette section et pose le lien natif GitHub
-`blocked_by` (`POST .../dependencies/blocked_by`, GA depuis août 2025) pour
-chaque bloqueur cité, via `scripts/sync-issue-dependencies.mjs`. Idempotent
-(un lien déjà posé renvoie 422, ignoré) et tolérant aux numéros invalides
-(un bloqueur introuvable est journalisé et ignoré, sans faire échouer le
-job pour les autres). Ce lien natif est le préalable au déblocage
-automatique : une fois interrogeable par API, une automatisation peut
-détecter qu'une issue n'a plus de bloqueur ouvert et la faire passer en
-`automation:queued`.
+`issues` `opened`/`edited` et **réconcilie** le lien natif GitHub `blocked_by`
+avec cette section, via `scripts/sync-issue-dependencies.mjs` : il lit l'état
+courant (`GET .../dependencies/blocked_by`), calcule la différence avec les
+`Dépend de #N` déclarés, puis pose ce qui manque (`POST
+.../dependencies/blocked_by`, GA depuis août 2025) et retire ce qui n'est
+plus déclaré (`DELETE .../dependencies/blocked_by/{issue_id}`) — retirer une
+ligne du corps retire donc le lien natif correspondant, et vider la section
+retire tous ses liens. Une issue **sans** section `## Dépendances` n'est
+jamais touchée, dans aucune direction : c'est ce qui protège les liens posés
+à la main. Le repérage de la section est ancré en début de ligne (une
+mention en prose de son nom, entre backticks ou dans un bloc de code — y
+compris l'exemple de format documenté dans `issue-to-spec/SKILL.md` lui-même
+— ne détourne pas le match) ; si plusieurs titres `## Dépendances` existent
+dans un même corps, le premier (de haut en bas) fait autorité, les suivants
+sont ignorés. Idempotent (un lien déjà posé renvoie 422, ignoré ; un lien
+déjà absent renvoie 404 au DELETE, ignoré) et tolérant aux numéros invalides
+(un bloqueur introuvable est journalisé et ignoré, sans faire échouer le job
+pour les autres). Ce lien natif est le préalable au déblocage automatique :
+une fois interrogeable par API, une automatisation peut détecter qu'une
+issue n'a plus de bloqueur ouvert et la faire passer en `automation:queued`.
 
 ### Déblocage automatique des issues bloquées
 
