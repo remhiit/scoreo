@@ -66,7 +66,7 @@ const SECRET_PATTERNS = [
     // again, double-counting and re-mangling an already-safe value).
     name: 'sensitive-assignment',
     regex:
-      /\b([A-Za-z0-9_]*(?:secret|token|password|passwd|api[_-]?key|private[_-]?key)[A-Za-z0-9_]*)\s*[:=]\s*(?!\[REDACTED)("[^"\n]*"|'[^'\n]*'|\S+)/gi,
+      /\b([A-Za-z0-9_]*(?:secret|token|password|passwd|api[_-]?key|private[_-]?key)[A-Za-z0-9_]*)\s*[:=]\s*(?!\[REDACTED)("[^"\n]*"|'[^'\n]*'|\S[^\n]*)/gi,
     replace: (_match, key) => `${key}=[REDACTED]`,
   },
 ]
@@ -286,7 +286,7 @@ export function buildTaskContext({
     ? bodyRedaction.text.slice(0, limits.maxBodyChars)
     : bodyRedaction.text
 
-  const files = buildFilesSection({ body: entity.body, changedFiles, limits })
+  const files = buildFilesSection({ body: bodyRedaction.text, changedFiles, limits })
   const packages = derivePackages([...files.relevant.items, ...files.changed.items])
   const dependencies = buildDependenciesSection({ body: entity.body, knownBlockers })
   const diff = buildDiffSection({

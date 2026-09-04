@@ -103,6 +103,13 @@ describe('redactSecrets', () => {
     expect(redactSecrets('Client secret: abcdef0123456789').text).not.toContain('abcdef0123456789')
   })
 
+  it('redacts a multi-word unquoted value, not just its first word', () => {
+    const { text, count } = redactSecrets('DB_PASSWORD=super secret avec des espaces')
+    expect(count).toBe(1)
+    expect(text).toBe('DB_PASSWORD=[REDACTED]')
+    expect(text).not.toContain('secret avec des espaces')
+  })
+
   it('redacts a PEM private key block', () => {
     const pem = '-----BEGIN PRIVATE KEY-----\nMIIBogIBAAJ...\n-----END PRIVATE KEY-----'
     const { text, count } = redactSecrets(`before\n${pem}\nafter`)
@@ -184,6 +191,20 @@ describe('buildTaskContext', () => {
       summary: { changedFiles: 3, additions: 120, deletions: 4 },
       unavailableReason: null,
     })
+  })
+
+  it('redacts secrets in "## Fichiers impactés" too, not just in title/bodyExcerpt', () => {
+    const payload = {
+      ...ISSUE_PAYLOAD,
+      issue: {
+        ...ISSUE_PAYLOAD.issue,
+        body: '## Fichiers impactés\n\n- `scripts/task-context.mjs`\n- `AKIA1234567890ABCDEF`\n',
+      },
+    }
+    const context = buildTaskContext({ eventName: 'issues', payload, ...BASE_ARGS })
+    expect(context.files.relevant.items).toContain('scripts/task-context.mjs')
+    expect(context.files.relevant.items.join('\n')).not.toContain('AKIA1234567890ABCDEF')
+    expect(context.files.relevant.items).toContain('[REDACTED:aws-key]')
   })
 
   describe('edge cases', () => {
