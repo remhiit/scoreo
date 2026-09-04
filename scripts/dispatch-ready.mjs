@@ -7,6 +7,15 @@
 // Appelé par le même workflow que le balayeur horaire
 // (requeue-lost-events.yml) : cron horaire, plus les triggers `issues`
 // `unlabeled`/`closed` pour réagir vite à la fin d'un run. Zéro LLM (§2.2).
+//
+// Le blocage par dépendance est décidé sur le lien natif GitHub
+// (`GET .../dependencies/blocked_by`, posé par sync-issue-dependencies.yml),
+// jamais sur le label `blocked` — dérivé, à but d'affichage seulement (#432).
+// Les labels, qui ne coûtent rien, filtrent d'abord ; seules les issues
+// encore candidates après ce filtre sont interrogées, dans l'ordre de
+// priorité, avec arrêt à la première éligible.
+import { pathToFileURL } from 'node:url'
+
 const GH_TOKEN = process.env.GH_TOKEN
 const REPO_OWNER = process.env.REPO_OWNER
 const REPO_NAME = process.env.REPO_NAME
@@ -75,25 +84,54 @@ function priorityRank(labelNames) {
   return index === -1 ? PRIORITY_ORDER.length : index
 }
 
-function pickNextQueued(queuedIssues) {
-  const eligible = queuedIssues.filter((issue) => {
-    const labelNames = labelNamesOf(issue)
-    const blockingLabel = ['blocked', 'automation:needs-human', 'automation:in-progress'].find((label) =>
-      labelNames.includes(label),
-    )
-    if (blockingLabel) {
-      console.log(`#${issue.number}: porte "${blockingLabel}", ne peut pas être promue`)
-      return false
-    }
-    return true
-  })
-  if (eligible.length === 0) return null
+// Pure decision: given a queued issue's labels and its native `blocked_by`
+// list (each with at least a `state`), decide whether it can be promoted to
+// `automation:ready`, or the reason it can't. Labels are checked first —
+// cheap, no network — so a caller can reject on labels alone before ever
+// fetching dependencies. `blocked` is deliberately absent from this check:
+// it's a derived display label (doc/automation/state-machine.md), never the
+// dispatch condition — only the native link decides.
+export function decideDispatchPromotion(labelNames, blockers) {
+  if (labelNames.includes('automation:needs-human')) {
+    return { promote: false, reason: 'porte automation:needs-human' }
+  }
+  if (labelNames.includes('automation:in-progress')) {
+    return { promote: false, reason: 'porte automation:in-progress' }
+  }
+  const openBlockers = blockers.filter((blocker) => blocker.state !== 'closed')
+  if (openBlockers.length > 0) {
+    const names = openBlockers.map((blocker) => `#${blocker.number}`).join(', ')
+    return { promote: false, reason: `bloquée par ${names} (dépendance native encore ouverte)` }
+  }
+  return { promote: true }
+}
 
-  return eligible.sort((a, b) => {
-    const rankDiff = priorityRank(labelNamesOf(a)) - priorityRank(labelNamesOf(b))
-    if (rankDiff !== 0) return rankDiff
-    return new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
-  })[0]
+export async function pickNextQueued(queuedIssues) {
+  const candidates = queuedIssues
+    .map((issue) => ({ issue, labelNames: labelNamesOf(issue) }))
+    .filter(({ issue, labelNames }) => {
+      const decision = decideDispatchPromotion(labelNames, [])
+      if (!decision.promote) {
+        console.log(`#${issue.number}: ${decision.reason}, ne peut pas être promue`)
+        return false
+      }
+      return true
+    })
+    .sort((a, b) => {
+      const rankDiff = priorityRank(a.labelNames) - priorityRank(b.labelNames)
+      if (rankDiff !== 0) return rankDiff
+      return new Date(a.issue.created_at).getTime() - new Date(b.issue.created_at).getTime()
+    })
+
+  for (const { issue, labelNames } of candidates) {
+    const blockers = await apiGet(`/issues/${issue.number}/dependencies/blocked_by`)
+    const decision = decideDispatchPromotion(labelNames, blockers)
+    if (decision.promote) {
+      return issue
+    }
+    console.log(`#${issue.number}: ${decision.reason}, ne peut pas être promue`)
+  }
+  return null
 }
 
 async function main() {
@@ -118,7 +156,7 @@ async function main() {
   }
 
   const queuedIssues = (await listOpenWithLabel('automation:queued')).filter((item) => !item.pull_request)
-  const next = pickNextQueued(queuedIssues)
+  const next = await pickNextQueued(queuedIssues)
   if (!next) {
     console.log('Aucune issue "automation:queued" éligible à promouvoir')
     return
@@ -129,4 +167,10 @@ async function main() {
   await addLabel(next.number, 'automation:ready')
 }
 
-main()
+// GITHUB_EVENT_PATH/GH_TOKEN are set for every step of every Actions job —
+// including `pnpm test` in ci.yml — so importing this module from its test
+// file must not run main() (same regression class as unblock-issues.mjs,
+// #161).
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  main()
+}
