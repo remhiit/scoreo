@@ -1,6 +1,6 @@
 ---
 name: issue-to-spec
-description: Turn a feature/fix description into a well-formed GitHub issue for the Scoreo repo — testable acceptance criteria, impacted files, out-of-scope, a risk category that later determines eligibility for the "automation:enabled" label, and a mandatory readiness verdict (READY_FOR_IMPLEMENTATION/NEEDS_CLARIFICATION/BLOCKED_BY_DEPENDENCY). Use when the user describes a feature or correctif and says to plan/turn it into a ticket ("Plan", "crée une issue", "crée un ticket"). This is the R1 grooming step in doc/technical/automation-plan.md — always run interactively, never as an autonomous routine.
+description: Turn a feature/fix description into a well-formed GitHub issue for the Scoreo repo — testable acceptance criteria, impacted files, out-of-scope, a risk category that later determines eligibility for the "automation:enabled" label, and a mandatory readiness verdict (READY_FOR_IMPLEMENTATION/NEEDS_CLARIFICATION) that states only whether the spec is complete, independent of dependency state. Use when the user describes a feature or correctif and says to plan/turn it into a ticket ("Plan", "crée une issue", "crée un ticket"). This is the R1 grooming step in doc/technical/automation-plan.md — always run interactively, never as an autonomous routine.
 ---
 
 # Issue → Spec
@@ -100,19 +100,23 @@ de quoi les écrire sans deviner.>
 
 ## Verdict de readiness
 
-`READY_FOR_IMPLEMENTATION` | `NEEDS_CLARIFICATION` | `BLOCKED_BY_DEPENDENCY`
-— voir « Determining the readiness verdict » ci-dessous pour la définition
-de chacun et ce que ce verdict change au flow de labels.
+`READY_FOR_IMPLEMENTATION` | `NEEDS_CLARIFICATION` — voir « Determining the
+readiness verdict » ci-dessous pour la définition de chacun. Ce verdict
+n'affirme qu'une chose, la complétude de la spec : il ne dit rien de l'état
+de blocage par dépendance, porté ailleurs (label `blocked` + lien natif
+`blocked_by`, voir la section « Dépendances » ci-dessous).
 ```
 
 #### Section « Dépendances » (optionnelle)
 
 Quand cette issue ne peut pas être implémentée avant qu'une autre soit
 fermée, ajoute une section `## Dépendances` juste après `## Hors scope` (ou
-`## Risques et questions ouvertes` si `Hors scope` est absent) — dans ce
-cas, le verdict de readiness est `BLOCKED_BY_DEPENDENCY` tant que le
-bloqueur cité reste ouvert (voir « Determining the readiness verdict »
-ci-dessous) :
+`## Risques et questions ouvertes` si `Hors scope` est absent). Cette
+section ne change pas le verdict de readiness — une spec par ailleurs
+complète reste `READY_FOR_IMPLEMENTATION` même bloquée (voir « Determining
+the readiness verdict » ci-dessous) — elle détermine seulement le label de
+file posé en **Labels** ci-dessous (`blocked` tant que le bloqueur cité
+reste ouvert, `automation:queued` sinon) :
 
 ```markdown
 ## Dépendances
@@ -166,11 +170,24 @@ next. No implementation runs without a `READY_FOR_IMPLEMENTATION` verdict
 — **preparing** that gate is this skill's job; **enforcing** it inside R2 is
 `implement-task`'s job (a later ticket), not done here.
 
+This verdict states one thing only: **is the spec complete and
+implementable as written**. It is independent of dependency state — whether
+`## Dépendances` cites a blocker, and whether that blocker is still open, is
+a separate, dynamic question, answered exclusively by the `blocked` label
+and the native `blocked_by` link (see "Labels" below), never by this field.
+Unlike this static text, those are actively maintained: `blocked` is cleared
+automatically the moment every cited blocker closes
+(`.github/workflows/unblock-issues.yml`, state-machine.md row #10). A verdict
+value can't update itself the same way, which is exactly why it must not
+duplicate that state.
+
 - **`READY_FOR_IMPLEMENTATION`** — every section above is filled in with
-  something concrete (not a placeholder), every acceptance criterion is
-  testable, every identified edge case and open question has an answer, and
-  any `## Dépendances` blocker cited is already closed. Proceed to
-  **Labels** below.
+  something concrete (not a placeholder), and every acceptance criterion is
+  testable, every identified edge case and open question has an answer. This
+  holds regardless of `## Dépendances`: a spec that is otherwise complete
+  keeps this verdict even while blocked — an open blocker cited there only
+  changes which queue label **Labels** below poses (`blocked` instead of
+  `automation:queued`), never this verdict. Proceed to **Labels** below.
 - **`NEEDS_CLARIFICATION`** — the spec is missing something only the user
   can supply: an untestable acceptance criterion, an unanswered question in
   `## Risques et questions ouvertes`, an error/edge-case behavior you can't
@@ -179,32 +196,28 @@ next. No implementation runs without a `READY_FOR_IMPLEMENTATION` verdict
   question to ask for each item, then ask the user directly — this is the
   interactive path of `doc/automation/skill-contract.md` §3: a human is
   present, so ask rather than guess. Re-run this verdict once they answer.
-- **`BLOCKED_BY_DEPENDENCY`** — the spec itself is otherwise complete, but
-  `## Dépendances` cites at least one blocker issue still open. Say which
-  issue(s) block it. Create the issue as normal, but in **Labels** step 3
-  pose `blocked` instead of `automation:queued` (state-machine.md's `blocked`
-  row: "Set by R1, alongside a `## Dépendances` section") — `.github/
-  workflows/unblock-issues.yml` removes `blocked` and poses
-  `automation:queued` itself once every native blocker closes (state-machine.md
-  row #10). Never pose `automation:queued` on an issue you know is still
-  blocked; the dispatcher has no way to tell a premature `automation:queued`
-  from a legitimate one.
+  This is the one case where incompleteness and blocking can coexist and
+  incompleteness still wins: a spec that is both incomplete and cites an open
+  blocker still gets `NEEDS_CLARIFICATION`, never the `blocked`-label
+  treatment below — incompleteness is the real obstacle, and it won't
+  resolve itself when the blocker closes.
 
 ### Labels
 
-Once the spec is written, the verdict is `READY_FOR_IMPLEMENTATION` or
-`BLOCKED_BY_DEPENDENCY` (never `NEEDS_CLARIFICATION` — that verdict means no
-issue exists yet), and the user has confirmed it (this is the interactive
-grooming gate — don't skip it):
+Once the spec is written, the verdict is `READY_FOR_IMPLEMENTATION` (never
+`NEEDS_CLARIFICATION` — that verdict means no issue exists yet), and the
+user has confirmed it (this is the interactive grooming gate — don't skip
+it):
 
 1. Create the issue with `mcp__github__issue_write` (title = a short
    imperative summary, not the full spec).
 2. Add the priority label (`P0`…`P3` — P0 most urgent; ask the user if not
    obvious from context) in its **own** `issue_write` call.
-3. **In a separate call**, add the queue label: `automation:queued` when the
-   verdict is `READY_FOR_IMPLEMENTATION`, `blocked` when it's
-   `BLOCKED_BY_DEPENDENCY` (see "Determining the readiness verdict" above) —
-   never `automation:ready` directly. Posing several `automation:ready` at
+3. **In a separate call**, add the queue label. This choice is about
+   dependency state, not the verdict (see "Determining the readiness
+   verdict" above): `blocked` when `## Dépendances` cites at least one
+   blocker issue still open, `automation:queued` otherwise — never
+   `automation:ready` directly. Posing several `automation:ready` at
    once would fire that many R2 events simultaneously; past the run cap
    (5/day on Pro), the excess events are lost (`automation-plan.md` §3). The
    dispatcher (`scripts/dispatch-ready.mjs`, zero LLM, same workflow as the
@@ -217,7 +230,11 @@ grooming gate — don't skip it):
    on the issue's *current* label state, not which label the event named
    (issue #99). The rule "never `automation:ready` with another label in the
    same call" still holds — it's now the dispatcher's responsibility, not
-   R1's.
+   R1's. `unblock-issues.yml` removes `blocked` and poses `automation:queued`
+   itself once every native blocker closes (state-machine.md row #10); never
+   pose `automation:queued` on an issue you know is still blocked — the
+   dispatcher has no way to tell a premature `automation:queued` from a
+   legitimate one.
 
 ## Sorties obligatoires
 
@@ -236,11 +253,10 @@ grooming gate — don't skip it):
 Before creating the issue: every acceptance criterion is testable, every
 section of the spec format holds something concrete (no placeholder), the
 risk category is justified per "Determining the risk category", the
-readiness verdict is computed per "Determining the readiness verdict", and
-— for `READY_FOR_IMPLEMENTATION`/`BLOCKED_BY_DEPENDENCY` — the user has
-confirmed the spec (the interactive grooming gate in "Labels" above). A
-`NEEDS_CLARIFICATION` verdict means these controls failed and the issue must
-not be created yet.
+readiness verdict is computed per "Determining the readiness verdict", and —
+for `READY_FOR_IMPLEMENTATION` — the user has confirmed the spec (the
+interactive grooming gate in "Labels" above). A `NEEDS_CLARIFICATION`
+verdict means these controls failed and the issue must not be created yet.
 
 ## Escalade
 
