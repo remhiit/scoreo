@@ -5,12 +5,26 @@ description: Review a Scoreo PR against its issue's spec — subjective checklis
 
 # PR Review
 
+## Objectif
+
 Reviews what CI structurally cannot: whether the diff actually satisfies the
 issue it claims to close, and whether it's honest about the repo's
 architecture and backward-compat rules. See `project-conventions` for the
-rules this checklist is built on.
+rules this checklist is built on. This skill never re-checks what `ci.yml`
+already verifies mechanically (see "Out of scope" below), and it never fixes
+what it finds — that's `address-feedback`/R4's job.
 
-## Which PR
+## Entrées requises
+
+The PR under review, and the issue it links via `Closes #N` — the spec this
+checklist reviews the diff against. As R3, also the routine's own journal
+comment on the PR if one already exists (`<!-- automation-log:pr-review -->`,
+written by `review-status-sync.yml`), read in "Skip a duplicate review"
+below to detect an already-reviewed commit.
+
+## Préconditions
+
+### Which PR
 
 - **As R3** (fired by the routine's GitHub trigger): the PR is the one from
   your triggering context — the `pull_request` event that started this run.
@@ -21,7 +35,7 @@ rules this checklist is built on.
 - **Interactive** (asked directly in a session): review the PR the user
   named. Ask for the number if it wasn't given.
 
-## Claim the run (R3 only, first action)
+### Claim the run (R3 only, first action)
 
 Before reading anything else: remove `automation:needs-review` and add
 `automation:in-progress`. Do this immediately, before the checklist below —
@@ -40,7 +54,7 @@ The checklist below reads the diff at this SHA — the guard just before
 "Post the review" needs it to detect a HEAD that moved mid-review, and the
 dedup check right below needs it to recognize a commit already reviewed.
 
-## Skip a duplicate review (R3 only, right after claiming)
+### Skip a duplicate review (R3 only, right after claiming)
 
 `.automation/routines.yml` declares `deduplicate_by: head_sha` for this
 routine — this step is what actually enforces it (the dispatcher itself is
@@ -77,7 +91,9 @@ that by eye wastes the review on things a machine already verified with
 certainty. If CI is red, that's a blocker on its own — no need to also
 narrate it here.
 
-## Checklist
+## Procédure
+
+### 1. Run the checklist
 
 1. **Spec conformance.** Open the linked issue (`Closes #N`). Does the diff
    satisfy every acceptance criterion? Is anything in the PR outside the
@@ -106,7 +122,7 @@ narrate it here.
    only works for the happy path from the issue's examples. Flag it even if
    it's not blocking — that's the point of a subjective review.
 
-## Output: classify every finding
+### 2. Classify every finding
 
 Don't collapse the checklist into a binary conforms/doesn't-conform per
 item. For each issue actually found — whether it's one of the five
@@ -160,7 +176,7 @@ don't inflate a `suggestion` to `blocking` to make a point — the whole
 reason for four levels instead of two is so R4 (and a human reading the
 review) can tell "must fix" from "worth knowing" at a glance.
 
-### Confidence and `uncertain` severity — which one wins
+#### Confidence and `uncertain` severity — which one wins
 
 Confidence isn't a second severity axis and doesn't create a fifth
 outcome. It constrains which severity you're allowed to assign, before the
@@ -185,7 +201,7 @@ there for a human reading the review to judge how much weight to give a
 `suggestion` or `uncertain` finding; it never overrides severity, and R4
 never has to cross-check the two.
 
-### Example finding
+#### Example finding
 
 ```
 **blocking** — `PlayerScore.handicap` a un nouveau champ sans `.default()`
@@ -214,7 +230,7 @@ judgment call:
 - **`automation:needs-fix`** — at least one `blocking` or `important`
   finding.
 
-## Guard against a moved HEAD (R3 only, just before posting the review)
+### 3. Guard against a moved HEAD (R3 only, just before posting the review)
 
 Before posting anything, re-read the PR's current HEAD SHA
 (`pull_request_read`) and compare it to the SHA noted in "Claim the run".
@@ -231,7 +247,7 @@ by re-queuing on every push, but webhook delivery order isn't guaranteed —
 so this check stays load-bearing even though the race is rare. Don't drop
 it as a "simplification" later.
 
-## Post the review (R3 only)
+### 4. Post the review (R3 only)
 
 One formal PR review is this commit's single synthesis — the dedup guard
 above is what keeps that to one per SHA, this step is just how it's shaped.
@@ -256,7 +272,7 @@ goes only in the review's summary body, not scattered as inline noise.
 Skip this step for an ad hoc interactive review the user asked for
 directly — just report the findings and verdict in the conversation.
 
-## Label the verdict (R3 only)
+### 5. Label the verdict (R3 only)
 
 No tool available to a Claude Code session here can post a raw commit
 status, so the verdict surfaces as a label instead — a separate,
@@ -289,3 +305,48 @@ Apply exactly one of `automation:review-pass`/`automation:needs-fix`, never
 both. Re-adding `automation:needs-review` later (e.g. after a fix is
 pushed) queues another pass — that's the mechanism R4 uses to request
 re-review.
+
+## Sorties obligatoires
+
+Once a run reaches a terminal outcome (not the dedup-skip or moved-HEAD
+guards, which stop earlier by design):
+
+- One formal PR review (Procédure §4) — this skill's instance of
+  `doc/automation/skill-contract.md` §2's structured output, its submitted
+  body carrying every finding grouped by severity plus the verdict line
+  (Statut/Résumé), each inline comment its own Artefact, and the checklist
+  itself the Validations record.
+- Exactly one verdict label, `automation:review-pass` or
+  `automation:needs-fix` (Procédure §5), never both.
+- `automation:in-progress` removed (Procédure §5).
+
+## Contrôles
+
+The checklist itself (Procédure §1–§2) is this skill's validation surface —
+every finding classified with severity/evidence/impact/confidence/
+recommendation before the verdict is derived (Procédure §2, "The overall
+verdict follows directly from the findings"). `ci.yml`'s own
+lint/test/build/doc-links runs are explicitly out of scope (see "Out of
+scope" above) — this skill never re-runs or re-judges those.
+
+## Escalade
+
+Sans objet — this skill always reaches a terminal verdict
+(`automation:review-pass` or `automation:needs-fix`) once the checklist
+runs; it never stops to ask a human. A finding that can't be resolved from
+the diff alone becomes an `uncertain` finding in the review (Procédure §2),
+not a stop condition. The two points where a run *does* stop early — "Skip
+a duplicate review" and "Guard against a moved HEAD" — are deduplication/
+race guards that re-pose the queue label for another pass, not escalations
+to `automation:needs-human` (`doc/automation/skill-contract.md` §3).
+
+## Limites
+
+- Never re-checks what `ci.yml` already verifies mechanically — lint, test,
+  build, doc-links (see "Out of scope").
+- Never posts `APPROVE` or `REQUEST_CHANGES` — only `COMMENT` (Procédure
+  §4) — there is no auto-approval mechanism.
+- Never reviews a PR other than the one named by its trigger context or by
+  the user (see "Which PR").
+- Never writes or edits the `pr-review` automation-log journal comment —
+  only `review-status-sync.yml` does (see "Skip a duplicate review").

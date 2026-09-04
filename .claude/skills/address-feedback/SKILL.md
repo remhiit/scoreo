@@ -5,18 +5,32 @@ description: Fix exactly what's actually actionable in a Scoreo PR's outstanding
 
 # Address Feedback
 
+## Objectif
+
 Fixes the scope a review actually flagged. Does not refactor, does not
 "while I'm here" clean up adjacent code, does not revisit decisions the
-review didn't raise.
+review didn't raise. It is the fix half of the R3 ↔ R4 loop — it never
+re-reviews, that's `pr-review`'s job.
 
-## Which PR
+## Entrées requises
+
+The PR under fix, and `pr-review`'s submitted review on it (summary body via
+`pull_request_read` `get_reviews`, inline comments via `get_review_comments`)
+— every finding there already carries an explicit severity marker
+(`blocking`/`important`/`suggestion`/`uncertain`) plus evidence, impact, and
+confidence (`pr-review/SKILL.md` § Output). As R4, also the PR's current
+labels, read in "Claim the run" below before anything else.
+
+## Préconditions
+
+### Which PR
 
 - **As R4** (fired by the routine's GitHub trigger): the PR is the one
   from your triggering context — the `pull_request` `labeled` event
   (label `automation:needs-fix`) that started this run. Don't search for it.
 - **Interactive** (asked directly in a session): the PR the user named.
 
-## Claim the run (R4 only, first action)
+### Claim the run (R4 only, first action)
 
 Before touching any code, in this exact order:
 
@@ -56,7 +70,7 @@ same PR (#111):
 Skip this step in interactive mode (no labels to manage there), but still
 apply the attempt-count decision below.
 
-## Attempt counter
+### Attempt counter
 
 `automation-plan.md` caps autonomous fix attempts at 3 per recurring
 `automation:needs-fix` cycle. Using the labels read in "Claim the run"
@@ -83,7 +97,14 @@ Even run interactively (no routine involved), apply the same check — an
 issue that's already at `automation:attempt-3` shouldn't get a fourth try
 just because a human happened to invoke the skill this time.
 
-## Escalating to a human (R4)
+## Escalade
+
+Per `doc/automation/skill-contract.md` §3, specialized to this skill's own
+stop conditions — the attempt cap in "Attempt counter" above, and steps
+3/4/5 of the Procédure below. As R4 (no human watching the session live),
+escalating means the sequence below, not asking in a session.
+
+### Escalating to a human (R4)
 
 Every path in this skill that ends in `automation:needs-human` — the
 attempt cap above, and steps 3/4/5 of the workflow below — follows the same
@@ -116,7 +137,7 @@ Once these three issue-side labels are in place, a human only has to remove
 `automation:needs-human` to make the issue a dispatch candidate again —
 `automation:queued` is already there, no separate re-queuing step.
 
-## Workflow
+## Procédure
 
 1. **Gather feedback, excluding what's already handled.**
    - Read `pr-review`'s submitted review (`pull_request_read` method
@@ -232,7 +253,10 @@ Once these three issue-side labels are in place, a human only has to remove
      human doesn't have to reconstruct it from the diff and label history.
    This replaces narrating each individual comment inline — the synthesis is
    the one place a human (or the next run) looks for what happened, and the
-   diff plus resolved threads are the record of *how*.
+   diff plus resolved threads are the record of *how*. This synthesis is
+   this skill's instance of `doc/automation/skill-contract.md` §2's
+   structured output (Statut = clean/partial/escalated; Résumé =
+   `✅ Corrigé`; Questions non résolues = `⚠️ Arbitrage requis`).
 9. **Remove `automation:in-progress` and add the attempt number remembered
    from the counter step above** (`automation:attempt-1`/
    `automation:attempt-2`/`automation:attempt-3`) — the old attempt label
@@ -241,3 +265,37 @@ Once these three issue-side labels are in place, a human only has to remove
    actually done and pushed. Skip this step on the escalation paths (steps
    3/4/5) — those already end in `automation:needs-human`, not an attempt
    label.
+
+## Sorties obligatoires
+
+Once a run reaches a clean or partial outcome (step 9; the escalation path
+above never reaches it):
+
+- A new commit pushed to the same branch (step 6), only once the full check
+  suite is green.
+- Every thread actually fixed resolved (step 7).
+- One synthesis comment, always (step 8) — `✅ Corrigé`/`⏭️ Non appliqué`/
+  `⚠️ Arbitrage requis`.
+- `automation:in-progress` removed and the current attempt's
+  `automation:attempt-N` posed (step 9).
+
+## Contrôles
+
+Step 5's full check suite, re-run after every fix and before any push:
+`pnpm lint && pnpm typecheck && pnpm test && pnpm build && pnpm test:e2e`.
+A run that can't get this green does not commit and does not push (step 5)
+— it escalates instead (see Escalade above).
+
+## Limites
+
+- Never fixes anything outside the review's `blocking`/`important` findings
+  — a `suggestion`/`uncertain` finding or an unmarked comment is left alone
+  (Procédure step 2).
+- Never refactors or cleans up adjacent code the review didn't flag (see
+  Objectif).
+- Never re-reviews — that verdict is `pr-review`'s alone; this skill only
+  reacts to an existing `automation:needs-fix` review.
+- Never pushes a commit while the full check suite is red (Procédure
+  step 5).
+- Never spends a fourth attempt, or a larger-than-flagged change, without
+  escalating first (see "Attempt counter" and Escalade above).

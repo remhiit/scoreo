@@ -473,8 +473,8 @@ toujours au moins `medium` chez `change-risk`, jamais `low`.
 
 > Contrat de forme (template `SKILL.md`, format de sortie structuré des
 > routines, checklist de conformité, conditions d'escalade
-> `automation:needs-human`) : `doc/automation/skill-contract.md`. Ce
-> contrat n'est pas encore appliqué aux skills existantes (#426, #427).
+> `automation:needs-human`) : `doc/automation/skill-contract.md`. Appliqué
+> aux skills interactifs (#426) puis aux cinq skills de routine (#427).
 
 | Skill | Contenu |
 |---|---|
