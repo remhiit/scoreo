@@ -62,7 +62,7 @@ resolved (highest wins, never averaged).
 | Surface | Déclencheurs (chemins/motifs) |
 |---|---|
 | **Persistance & migrations** | `apps/scoreo/src/infrastructure/localStorage/**`, `apps/scoreo/src/infrastructure/migration/**`, tout schéma zod dans `apps/scoreo/src/domain/model/**` |
-| **Règles de scoring** | `apps/scoreo/src/application/*Score*`, `apps/scoreo/src/application/EloCalculator*`, `packages/module-*/src/domain/**`, `packages/module-mille-sabords/tests/golden/**` (le diff différentiel contre l'oracle `legacy/`) |
+| **Règles de scoring** | `apps/scoreo/src/application/eloCalculator.ts`, `apps/scoreo/src/application/createMatchUseCase.ts`, `apps/scoreo/src/application/rankingToMatch.ts`, `packages/module-*/src/domain/**`, `packages/module-mille-sabords/tests/golden/**` (le diff différentiel contre l'oracle `legacy/`) |
 | **API / contrats** | `packages/module-api/**` (contrat hôte↔module), `packages/shared-domain/**`, `schemas/import/**` (format d'import versionné), `apps/scoreo/src/domain/port/**` |
 | **Authentification & autorisations** | `apps/scoreo/src/infrastructure/google/**` (OAuth, `DriveClient`, `SyncConfig`) — la seule surface d'auth du dépôt |
 | **Secrets** | toute variable d'environnement ou clé/jeton ajouté ou modifié, `.env*`, un secret référencé dans `.github/workflows/**`, une valeur qui ressemble à une clé API en dur dans le diff |
