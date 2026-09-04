@@ -78,17 +78,25 @@ just "already claimed, closed".
 1. **Read the spec fully** — context, acceptance criteria, impacted files,
    out-of-scope, and any `## Dépendances` section. Also read the
    `## Verdict de readiness` line: if it is anything other than
-   `READY_FOR_IMPLEMENTATION` — missing entirely, `NEEDS_CLARIFICATION`, or
-   `BLOCKED_BY_DEPENDENCY` — stop; the dispatcher should never have promoted
-   such an issue to `automation:ready`, but R2 must not proceed on it if it
-   somehow did (same defense-in-depth reasoning as the `blocked`-label check
-   below). If the spec is ambiguous, missing acceptance criteria, or its
+   `READY_FOR_IMPLEMENTATION` — missing entirely or `NEEDS_CLARIFICATION` —
+   stop; the dispatcher should never have promoted such an issue to
+   `automation:ready`, but R2 must not proceed on it if it somehow did (same
+   defense-in-depth reasoning as the `blocked`-label check below). The
+   verdict states only whether the spec is complete
+   (`issue-to-spec/SKILL.md` § Determining the readiness verdict) — it is
+   independent of dependency state, so a `## Dépendances` section on an
+   otherwise-`READY_FOR_IMPLEMENTATION` issue is never itself a stop
+   condition here. A stray `BLOCKED_BY_DEPENDENCY` value, from an issue
+   groomed before this rule existed, is informative only — never a reason to
+   stop. If the spec is ambiguous, missing acceptance criteria, or its
    definition of done can't be checked against the stated scope, stop and
    ask rather than guessing. As a defense-in-depth check (the dispatcher
    should never promote a `blocked` issue to `automation:ready` in the first
    place), also stop if the issue still carries the `blocked` label — that
    combination means something upstream raced or broke, not that it's safe
-   to proceed. Any of these is the same stop condition — release the claim
+   to proceed; this label (and the native `blocked_by` link behind it) is
+   the sole source of truth for dependency-blocking, never the verdict. Any
+   of these is the same stop condition — release the claim
    per "Escalade" below rather than leaving the issue silently stuck on
    `automation:in-progress` with no PR and no comment. Releasing the claim
    before posing the other two labels would race the hourly requeue sweep
