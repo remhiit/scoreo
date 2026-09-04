@@ -32,9 +32,10 @@ const RECENT_CLOSED_WINDOW_DAYS = 30
 //   - automation:review-pass  → In progress (verdict R3 conforme, en attente de merge)
 //   - automation:in-progress  → In progress (générique, une routine travaille dessus)
 //   - automation:ready        → Todo (spec validée, en attente de R2)
-//   - blocked                 → Todo (dépendance externe ouverte ; en pratique jamais
-//                    combiné à `automation:ready`/`automation:in-progress`, cf.
-//                    unblock-issues.mjs et dispatch-ready.mjs qui excluent l'un et l'autre)
+//   - blocked                 → Todo (dépendance externe ouverte ; peut temporairement
+//                    coexister avec n'importe quel label de file — `automation:queued`/
+//                    `automation:ready`/`automation:in-progress` — jusqu'à son retrait
+//                    par unblock-issues.mjs une fois tous les bloqueurs fermés, cf. #384)
 const LABEL_STATUS_PRIORITY = [
   ['automation:needs-human', 'In progress'],
   ['automation:needs-fix', 'In progress'],
