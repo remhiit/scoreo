@@ -122,10 +122,21 @@ Dépend de #117 (même raison)
 ```
 
 Une ligne par bloqueur, forme exacte `Dépend de #N (raison)` — c'est le
-format que `.github/workflows/sync-issue-dependencies.yml` parse pour poser
-le lien natif GitHub `blocked_by` (zéro LLM, cf.
+format que `.github/workflows/sync-issue-dependencies.yml` parse pour
+réconcilier le lien natif GitHub `blocked_by` avec cette section (pose ce
+qui manque, retire ce qui n'est plus déclaré — zéro LLM, cf.
 `doc/technical/automation-plan.md` §2.2 et §4). Sans cette section, aucune
-automatisation ne sait que l'issue est bloquée.
+automatisation ne sait que l'issue est bloquée, et aucun lien `blocked_by`
+n'est jamais touché — c'est ce qui protège un lien posé à la main.
+
+Cette section fait autorité : le parseur ancre son repérage en début de
+ligne (une vraie ligne `## Dépendances`, pas une occurrence ailleurs dans le
+corps), donc n'y cite jamais le nom de la section en prose ni dans un
+exemple de format (backticks ou bloc de code) en dehors de cette section
+elle-même — une telle mention ne détourne plus le parseur, mais reste
+trompeuse à la lecture. S'il existe plusieurs titres `## Dépendances` dans
+un même corps, seul le premier (de haut en bas) est pris en compte ; ne
+jamais en écrire plusieurs.
 
 ### Determining the risk category
 
