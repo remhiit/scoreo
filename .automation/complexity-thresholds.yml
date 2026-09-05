@@ -1,0 +1,25 @@
+# Seuils de bande de complexité (score 0-100) consommés par
+# scripts/complexity-assessment.mjs (issue #402, doc/technical/automation-plan.md §4).
+# Versionné séparément du calcul lui-même pour pouvoir ajuster les bandes
+# sans toucher au code — même logique que .automation/routines.yml pour le
+# mapping label → routine.
+#
+# Même sous-ensemble minimal de YAML que .automation/routines.yml (mappings
+# imbriqués de scalaires, pas de listes ni de chaînes multi-lignes) : analysé
+# par le même parseur générique, scripts/automation-dispatch.mjs#parseRoutinesYaml
+# (issue #402, pas de nouvelle dépendance ni de second parseur pour ça).
+#
+# Règle d'arrondi (fixée ici, jamais laissée à l'implémentation) : un score
+# exactement égal au `min` d'une bande appartient à CETTE bande, pas à la
+# précédente — comparaison >=, jamais >. Un score de 45 est donc "complex",
+# pas "standard".
+version: 1
+bands:
+  trivial:
+    min: 0
+  standard:
+    min: 20
+  complex:
+    min: 45
+  very-complex:
+    min: 70

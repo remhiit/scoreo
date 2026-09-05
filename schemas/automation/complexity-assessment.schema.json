@@ -1,0 +1,148 @@
+{
+  "$schema": "https://json-schema.org/draft-07/schema#",
+  "title": "Scoreo Automation ComplexityAssessment",
+  "description": "Contrat du ComplexityAssessment produit pour une issue ou une PR (issue #402, doc/technical/automation-plan.md §4) : un niveau de complexité explicable (effort de raisonnement/mise en œuvre), distinct du niveau de risque de change-risk (#387, gravité potentielle d'une erreur) qu'il ne remplace ni ne masque. Documenté ici comme référence du contrat ; validé en pratique par le validateur écrit à la main scripts/complexity-assessment.mjs#validateComplexityAssessment (même précédent que schemas/automation/task-context.schema.json et schemas/automation/routines.schema.json).",
+  "type": "object",
+  "properties": {
+    "version": {
+      "type": "integer",
+      "description": "Version du format de ce document",
+      "const": 1
+    },
+    "level": {
+      "type": "string",
+      "description": "Niveau retenu, après application d'un éventuel override manuel (§override) et de la règle plancher (une spec vide ou sans critère d'acceptation ne peut jamais ressortir 'trivial', voir scripts/complexity-assessment.mjs)",
+      "enum": ["trivial", "standard", "complex", "very-complex"]
+    },
+    "score": {
+      "type": "integer",
+      "description": "Score heuristique 0-100, toujours celui calculé par l'heuristique — jamais modifié par un override manuel (§override), qui ne change que `level`/`provenance`",
+      "minimum": 0,
+      "maximum": 100
+    },
+    "confidence": {
+      "type": "string",
+      "description": "Confiance dans l'évaluation heuristique — baisse quand des signaux sont indisponibles ou quand la spec est vide/incomplète, jamais un indicateur de gravité",
+      "enum": ["high", "medium", "low"]
+    },
+    "provenance": {
+      "type": "string",
+      "description": "Origine du niveau retenu : 'heuristic' (ce script), 'llm' (réservé à #403, non produit ici), 'manual' (override par label, §override)",
+      "enum": ["heuristic", "llm", "manual"]
+    },
+    "dimensions": {
+      "type": "object",
+      "description": "Détail par signal audité, chacun marqué disponible ou non plutôt qu'omis ou compté comme nul",
+      "properties": {
+        "dispersion": { "$ref": "#/$defs/dimension" },
+        "fileVolume": { "$ref": "#/$defs/dimension" },
+        "ambiguity": { "$ref": "#/$defs/dimension" },
+        "dependencies": { "$ref": "#/$defs/dimension" },
+        "changeVolume": { "$ref": "#/$defs/dimension" },
+        "validationLoad": { "$ref": "#/$defs/dimension" },
+        "novelty": { "$ref": "#/$defs/dimension" },
+        "crossCuttingSurfaces": { "$ref": "#/$defs/dimension" }
+      },
+      "required": [
+        "dispersion",
+        "fileVolume",
+        "ambiguity",
+        "dependencies",
+        "changeVolume",
+        "validationLoad",
+        "novelty",
+        "crossCuttingSurfaces"
+      ],
+      "additionalProperties": false
+    },
+    "reasons": {
+      "type": "array",
+      "description": "Une raison lisible par dimension, dans l'ordre de `dimensions` — jamais un score nu sans justification",
+      "items": { "type": "string" }
+    },
+    "limits": {
+      "type": "array",
+      "description": "Limites de l'heuristique déclarées explicitement pour ce run : signaux absents, cas de faible confiance, plancher de niveau appliqué, override ignoré pour ambiguïté — jamais un silence sur ce que l'heuristique n'a pas pu déterminer",
+      "items": { "type": "string" }
+    },
+    "override": {
+      "description": "Override manuel, s'il y en a un — visible sans détruire l'évaluation heuristique d'origine, qui reste dans `score`/`dimensions`/`reasons`/`confidence` ci-dessus (seuls `level`/`provenance` racine reflètent l'override)",
+      "oneOf": [
+        { "type": "null" },
+        {
+          "type": "object",
+          "properties": {
+            "level": {
+              "type": "string",
+              "enum": ["trivial", "standard", "complex", "very-complex"],
+              "description": "Niveau forcé par l'override, recopié dans `level` à la racine"
+            },
+            "heuristicLevel": {
+              "type": "string",
+              "enum": ["trivial", "standard", "complex", "very-complex"],
+              "description": "Niveau que l'heuristique seule aurait produit, conservé pour traçabilité"
+            },
+            "source": {
+              "type": "string",
+              "description": "Origine de l'override (ex: 'label:complexity:complex')"
+            }
+          },
+          "required": ["level", "heuristicLevel", "source"],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "thresholds": {
+      "type": "object",
+      "description": "Bandes de seuils utilisées pour ce run (.automation/complexity-thresholds.yml) — un score exactement égal au `min` d'une bande appartient à cette bande, jamais à la précédente",
+      "properties": {
+        "version": { "type": "integer" },
+        "bands": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "level": { "type": "string", "enum": ["trivial", "standard", "complex", "very-complex"] },
+              "min": { "type": "integer", "minimum": 0, "maximum": 100 }
+            },
+            "required": ["level", "min"],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": ["version", "bands"],
+      "additionalProperties": false
+    },
+    "generatedAt": {
+      "type": "string",
+      "description": "Horodatage ISO 8601 de construction de cette évaluation"
+    }
+  },
+  "required": [
+    "version",
+    "level",
+    "score",
+    "confidence",
+    "provenance",
+    "dimensions",
+    "reasons",
+    "limits",
+    "override",
+    "thresholds",
+    "generatedAt"
+  ],
+  "additionalProperties": false,
+  "$defs": {
+    "dimension": {
+      "type": "object",
+      "properties": {
+        "available": { "type": "boolean", "description": "false si le signal source manquait pour ce run (jamais compté comme un score nul silencieux dans ce cas)" },
+        "score": { "type": "integer", "minimum": 0 },
+        "max": { "type": "integer", "minimum": 0, "description": "Contribution maximale de cette dimension au score total" },
+        "reason": { "type": "string", "description": "Justification lisible du score (ou de l'indisponibilité) de cette dimension" }
+      },
+      "required": ["available", "score", "max", "reason"],
+      "additionalProperties": false
+    }
+  }
+}

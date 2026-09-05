@@ -386,6 +386,75 @@ aucune routine ne consomme encore ce contexte pour router une décision
 reste déterministe et garde sa valeur d'observabilité quelle que soit
 l'option retenue pour ce câblage.
 
+### `ComplexityAssessment` : évaluation déterministe de complexité (#402)
+
+Attribuer un modèle à une routine (#404) ne peut pas reposer sur un mapping
+fixe `trivial → modèle économique`, `complexe → modèle premium` : une tâche
+courte peut être risquée, une tâche longue surtout mécanique. `ComplexityAssessment`
+mesure l'effort de raisonnement et de mise en œuvre — dispersion dans le
+monorepo, volume de changement, ambiguïté de la spec — et reste une échelle
+**distincte** de `change-risk` (#387, gravité potentielle d'une erreur) :
+il ne les fusionne pas, ne les recalcule pas l'un depuis l'autre, et ne doit
+jamais servir à masquer ou contourner un niveau de risque `high`.
+
+Zéro LLM, zéro appel réseau (principe directeur §2, même statut que
+`task-context.mjs`) : `scripts/complexity-assessment.mjs#assessComplexity`
+prend en entrée un `TaskContext` déjà construit (#401) — dont il dérive
+chaque signal, sans jamais interroger l'API GitHub lui-même — et produit un
+`ComplexityAssessment` documenté comme contrat dans
+`schemas/automation/complexity-assessment.schema.json` (même statut de
+référence lisible que `task-context.schema.json`/`routines.schema.json`).
+
+Huit dimensions auditées, chacune bornée et justifiée (`dimensions.<clé>.reason`) :
+dispersion dans le monorepo (nombre de paquets touchés, `TaskContext.packages`),
+volume de fichiers pertinents/modifiés, ambiguïté de la spec (sections requises
+manquantes, section « Critères d'acceptation » vide de case à cocher),
+dépendances connues (déclarées + bloqueurs natifs), volume de changement
+estimé (résumé de diff du payload webhook), charge de validation
+(nombre de surfaces sensibles touchées — approximation grossière, propre à
+ce script, qui ne prétend pas produire un niveau de risque), nouveauté
+(fichiers marqués « (nouveau) » dans « ## Fichiers impactés ») et surfaces
+transverses (nombre de couches d'architecture distinctes touchées :
+domain/application/infrastructure/ui/scripts/schemas-doc/config-root).
+Chaque dimension porte un score et un maximum (somme des maximums = 100) et,
+quand le signal source manque (aucun fichier fourni, diff indisponible),
+`available: false` et un motif explicite plutôt qu'un score nul silencieux
+— la confiance globale (`high`/`medium`/`low`, même échelle que les findings
+de `pr-review`) en tient compte : elle descend d'un cran par signal
+indisponible, et tombe à `low` quand la spec n'apporte aucun critère
+d'acceptation exploitable (corps vide, section absente, ou section présente
+sans case à cocher).
+
+Bandes de score versionnées séparément du calcul, `.automation/complexity-thresholds.yml`
+(même sous-ensemble minimal de YAML — mappings imbriqués de scalaires, pas de
+listes — analysé par le même parseur générique que `.automation/routines.yml`,
+`scripts/automation-dispatch.mjs#parseRoutinesYaml`) : `trivial` (score ≥ 0),
+`standard` (≥ 20), `complex` (≥ 45), `very-complex` (≥ 70). Règle d'arrondi
+fixée, pas laissée à l'implémentation : un score exactement égal au `min`
+d'une bande appartient à cette bande, jamais à la précédente. Cas limite
+documenté et testé (issue #402) : une spec vide ou sans critère d'acceptation
+exploitable ne peut jamais ressortir `trivial`, quel que soit le score — un
+plancher explicite la fait remonter à `standard` au minimum, journalisé dans
+`limits`.
+
+Override humain via un label `complexity:<niveau>` sur l'issue/PR (déjà
+présent dans `TaskContext.entity.labels`, aucun appel API supplémentaire) :
+un label reconnu bascule `level`/`provenance` (`heuristic` → `manual`) sans
+jamais toucher `score`/`dimensions`/`confidence`/`reasons`, qui restent
+l'évaluation heuristique d'origine — visible à côté de l'override
+(`override.heuristicLevel`), jamais détruite. Plusieurs labels
+`complexity:*` contradictoires sur la même entité désactivent l'override
+(la spec ne tranche pas laquelle retenir) et le signalent dans `limits`
+plutôt que d'en choisir un arbitrairement.
+
+Publié dans le journal idempotent d'une routine (§ ci-dessous) via le champ
+optionnel `complexity` de `renderAutomationLog`/`upsertAutomationLog`
+(`scripts/automation-log.mjs`) — une ligne `- Complexité : `<niveau>` (score
+.../100, confiance ..., provenance ...)`, plus l'override et les raisons
+quand présents — même statut « support uniquement » que `contextUrl` pour
+`TaskContext` : aucune routine ne consomme encore cette évaluation pour
+router une décision (câblage réel hors scope de #402, dépend de #404/#405).
+
 ### Journal d'exécution idempotent
 
 Chaque passage d'une routine sur une issue/PR doit rester traçable et
