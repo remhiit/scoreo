@@ -261,7 +261,18 @@ function computeDimensions(taskContext, spec) {
     dimensions.ambiguity = { available: true, score, max: 15, reason: `Ambiguïté : ${parts.join(' ; ')} → ${score}/15` }
   }
 
-  // Dépendances connues (déclarées + bloqueurs natifs si fournis).
+  // Dépendances connues (déclarées + bloqueurs natifs si fournis). Cette
+  // dimension reste toujours `available: true`, contrairement aux autres :
+  // `dependencies.declaredAvailable === false` signifie seulement qu'aucune
+  // section "## Dépendances" n'existe dans le corps, ce que
+  // sync-issue-dependencies.mjs#extractBlockerNumbers (et le §4 de
+  // automation-plan.md qui en découle) traite déjà comme "zéro dépendance
+  // déclarée", jamais comme "signal inconnu" — à la différence de `novelty`
+  // ou `fileVolume`, où l'absence de section rend le compte proprement
+  // indéterminable (rien à compter). `declaredAvailable` n'est donc
+  // délibérément pas lu ici ; seul `nativeBlockersAvailable` (un vrai trou de
+  // donnée : la liste des bloqueurs natifs n'a simplement pas été fournie à
+  // ce run) est signalé, dans `limits` ci-dessous.
   const declaredCount = taskContext.dependencies.declared.length
   const nativeAvailable = taskContext.dependencies.nativeBlockersAvailable
   const nativeCount = nativeAvailable ? taskContext.dependencies.nativeBlockers.length : 0
