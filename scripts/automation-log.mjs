@@ -8,6 +8,7 @@
 // les Actions qui traduisent déjà un verdict de routine en signal GitHub
 // (ex. review-status-sync.yml → commit status `claude/review`) puissent
 // aussi tenir ce journal, sans dépendre du texte libre d'une session Claude.
+import { readFileSync } from 'node:fs'
 import { pathToFileURL } from 'node:url'
 
 const GH_TOKEN = process.env.GH_TOKEN
@@ -42,6 +43,7 @@ export function renderAutomationLog({
   validation,
   resultUrl,
   contextUrl,
+  complexity,
   summary,
 }) {
   const label = ROUTINE_LABELS[routine] ?? routine
@@ -62,6 +64,23 @@ export function renderAutomationLog({
   // callers that don't build one yet, so existing journals stay unchanged.
   if (contextUrl) {
     lines.push(`- Contexte : [voir l'artefact](${contextUrl})`)
+  }
+  // Optional: publie le ComplexityAssessment (issue #402, §4) sous une forme
+  // lisible — jamais un niveau de risque, jamais un blocage : la complexité
+  // ne remplace ni ne masque le résultat de change-risk (#387). Absent pour
+  // les appelants qui n'en produisent pas encore, comme contextUrl ci-dessus.
+  if (complexity) {
+    lines.push(
+      `- Complexité : \`${complexity.level}\` (score ${complexity.score}/100, confiance \`${complexity.confidence}\`, provenance \`${complexity.provenance}\`)`,
+    )
+    if (complexity.override) {
+      lines.push(
+        `  - Override manuel : \`${complexity.override.level}\` (heuristique : \`${complexity.override.heuristicLevel}\`, source : ${complexity.override.source})`,
+      )
+    }
+    if (complexity.reasons?.length) {
+      lines.push(`  - Raisons : ${complexity.reasons.join(' ; ')}`)
+    }
   }
   if (summary) {
     lines.push('', summary)
@@ -108,6 +127,7 @@ export async function upsertAutomationLog({
   validation = 'lint / typecheck / tests',
   resultUrl,
   contextUrl,
+  complexity,
   summary,
   triggeredAt = new Date().toISOString(),
 }) {
@@ -124,6 +144,7 @@ export async function upsertAutomationLog({
     validation,
     resultUrl,
     contextUrl,
+    complexity,
     summary,
   })
 
@@ -151,6 +172,20 @@ export async function upsertAutomationLog({
   return { commentId: created.id, created: true, alreadyProcessed: false, previous: null }
 }
 
+// Le ComplexityAssessment (issue #402) est lu depuis son artefact JSON, même
+// convention que LOG_CONTEXT_URL pour TaskContext : un fichier absent ou
+// invalide ne fait jamais échouer le journal lui-même, juste omet la ligne
+// Complexité de ce run.
+function loadComplexityAssessment(path) {
+  if (!path) return undefined
+  try {
+    return JSON.parse(readFileSync(path, 'utf8'))
+  } catch (err) {
+    console.warn(`automation-log: impossible de lire l'artefact de complexité "${path}" (${err.message}) — ligne omise`)
+    return undefined
+  }
+}
+
 async function main() {
   const number = Number(process.env.LOG_NUMBER)
   const routine = process.env.LOG_ROUTINE
@@ -164,6 +199,7 @@ async function main() {
     validation: process.env.LOG_VALIDATION,
     resultUrl: process.env.LOG_RESULT_URL,
     contextUrl: process.env.LOG_CONTEXT_URL,
+    complexity: loadComplexityAssessment(process.env.LOG_COMPLEXITY_PATH),
     summary: process.env.LOG_SUMMARY,
     triggeredAt: process.env.LOG_TRIGGERED_AT,
   })

@@ -52,6 +52,66 @@ describe('renderAutomationLog / parseAutomationLog', () => {
     expect(body).toContain("- Contexte : [voir l'artefact](https://github.com/remhiit/scoreo/actions/runs/999#artifacts)")
   })
 
+  it('publishes the ComplexityAssessment in a structured readable form when provided', async () => {
+    const { renderAutomationLog } = await import('./automation-log.mjs')
+    const body = renderAutomationLog({
+      routine: 'implement-task',
+      triggeredAt: '2026-09-05T10:00:00Z',
+      sha: 'abc1234',
+      status: 'running',
+      iteration: '1',
+      validation: 'lint / typecheck / tests',
+      resultUrl: 'https://github.com/remhiit/scoreo/actions/runs/999',
+      complexity: {
+        level: 'complex',
+        score: 52,
+        confidence: 'medium',
+        provenance: 'heuristic',
+        reasons: ['Dispersion : 3 paquets touchés (root, scoreo, module-tori-valley) → 20/20'],
+      },
+    })
+    expect(body).toContain('- Complexité : `complex` (score 52/100, confiance `medium`, provenance `heuristic`)')
+    expect(body).toContain('- Raisons : Dispersion : 3 paquets touchés (root, scoreo, module-tori-valley) → 20/20')
+    expect(body).not.toContain('Override manuel')
+  })
+
+  it('surfaces a manual complexity override without hiding the underlying heuristic level', async () => {
+    const { renderAutomationLog } = await import('./automation-log.mjs')
+    const body = renderAutomationLog({
+      routine: 'implement-task',
+      triggeredAt: '2026-09-05T10:00:00Z',
+      sha: 'abc1234',
+      status: 'running',
+      iteration: '1',
+      validation: 'lint / typecheck / tests',
+      resultUrl: 'https://github.com/remhiit/scoreo/actions/runs/999',
+      complexity: {
+        level: 'very-complex',
+        score: 10,
+        confidence: 'high',
+        provenance: 'manual',
+        override: { level: 'very-complex', heuristicLevel: 'trivial', source: 'label:complexity:very-complex' },
+        reasons: [],
+      },
+    })
+    expect(body).toContain('- Complexité : `very-complex` (score 10/100, confiance `high`, provenance `manual`)')
+    expect(body).toContain('- Override manuel : `very-complex` (heuristique : `trivial`, source : label:complexity:very-complex)')
+  })
+
+  it('omits the Complexité line entirely when no complexity assessment is provided', async () => {
+    const { renderAutomationLog } = await import('./automation-log.mjs')
+    const body = renderAutomationLog({
+      routine: 'implement-task',
+      triggeredAt: '2026-09-05T10:00:00Z',
+      sha: 'abc1234',
+      status: 'running',
+      iteration: '1',
+      validation: 'lint / typecheck / tests',
+      resultUrl: 'https://github.com/remhiit/scoreo/actions/runs/999',
+    })
+    expect(body).not.toContain('Complexité')
+  })
+
   it('omits the Contexte line entirely when no contextUrl is provided', async () => {
     const { renderAutomationLog } = await import('./automation-log.mjs')
     const body = renderAutomationLog({
