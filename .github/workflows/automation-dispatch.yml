@@ -6,6 +6,12 @@ name: Automation dispatch
 # des routines Claude Code elles-mêmes (doc/technical/automation-plan.md §2,
 # §4) : les workflows existants (requeue-lost-events.yml, needs-review-label.yml,
 # ...) restent la logique métier en place, inchangée (issue #378).
+#
+# Construit aussi, quand une routine matche, le TaskContext versionné de ce
+# run (scripts/task-context.mjs, issue #401, automation-plan.md §4) et le
+# publie comme artefact du workflow — la référence que
+# scripts/automation-log.mjs peut ensuite lier depuis le journal
+# d'exécution de la routine (LOG_CONTEXT_URL).
 
 on:
   issues:
@@ -19,6 +25,8 @@ permissions:
 jobs:
   resolve:
     runs-on: ubuntu-latest
+    outputs:
+      routine: ${{ steps.resolve.outputs.routine }}
     steps:
       - uses: actions/checkout@v4
 
@@ -28,7 +36,28 @@ jobs:
           node-version: 22
 
       - name: Resolve routine for this label event
+        id: resolve
         env:
           EVENT_ENTITY: ${{ github.event_name == 'issues' && 'issue' || 'pull_request' }}
           EVENT_LABEL: ${{ github.event.label.name }}
-        run: node scripts/automation-dispatch.mjs
+        run: |
+          node scripts/automation-dispatch.mjs | tee dispatch-output.txt
+          routine=$(grep -oP '(?<=routine=")[^"]+' dispatch-output.txt || true)
+          echo "routine=$routine" >> "$GITHUB_OUTPUT"
+
+      - name: Build the TaskContext artifact for this run
+        if: steps.resolve.outputs.routine != ''
+        env:
+          TASK_CONTEXT_ROUTINE: ${{ steps.resolve.outputs.routine }}
+          TASK_CONTEXT_OUTPUT_PATH: task-context.json
+          REPO_OWNER: ${{ github.repository_owner }}
+          REPO_NAME: ${{ github.event.repository.name }}
+        run: node scripts/task-context.mjs
+
+      - name: Upload the TaskContext artifact
+        if: steps.resolve.outputs.routine != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: task-context-${{ github.event_name == 'issues' && 'issue' || 'pr' }}-${{ github.event.issue.number || github.event.pull_request.number }}-${{ github.run_id }}
+          path: task-context.json
+          retention-days: 30
