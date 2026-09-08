@@ -11,12 +11,29 @@
 # `routing_policy` référence une entrée de .automation/routing-policy.yml
 # (contrat de routage par sous-agent, doc/automation/model-routing.md,
 # issue #400) — jamais la politique complète dupliquée ici.
+#
+# `coordinator` (issue #469) fusionne R2/R3/R4 en une session unique pour le
+# déclencheur issue/automation:ready — il remplace ici l'ancienne entrée
+# `implement-task` sur ce même couple entity/trigger_label plutôt que de la
+# doubler (un même événement ne peut matcher qu'une seule routine, cf. la
+# garde anti-double-fire de `scripts/automation-dispatch.mjs`, exécutée en CI
+# par le job `automation-config`). `routing_policy: implement-task` reste
+# la politique référencée en attendant le câblage réel du routage par
+# sous-agent à l'intérieur du coordinateur (hors scope de #469, cf.
+# `.claude/skills/coordinator/SKILL.md` § Limites) — `implement-task.md`,
+# `pr-review.md` et `address-feedback.md` restent par ailleurs invocables
+# directement (interactif, ou comme sous-agent du coordinateur), même sans
+# leur propre entrée de déclenchement ici. Ce fichier ne bascule pas à lui
+# seul le déclencheur GitHub réel de la Routine — cette activation reste,
+# comme pour R2/R3/R4/R5 historiquement, un geste manuel séparé
+# (claude.ai/code/routines) ; voir `coordinator/SKILL.md` § « Préalables
+# vérifiés » pour ce que ce changement déclaratif n'implique pas encore.
 version: 1
 routines:
-  implement-task:
+  coordinator:
     entity: issue
     trigger_label: automation:ready
-    skill: implement-task
+    skill: coordinator
     concurrency_key: issue
     routing_policy: implement-task
   pr-review:

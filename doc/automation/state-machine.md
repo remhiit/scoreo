@@ -48,15 +48,15 @@ actually cycles.
 | `P0`…`P3` | Business | Priority, independent of pipeline state | R1 (human, at grooming) | Never automatically |
 | `blocked` | Business | Issue has an open native `blocked_by` dependency — **derived display signal only** (visible in the UI and the Project view); never read as a dispatch condition. The native `blocked_by` link is what `dispatch-ready.mjs` and `unblock-issues.mjs` actually decide on, so this label can lag or go stale (a leftover `blocked` with every native blocker closed doesn't hold up a promotion; a missing `blocked` with an open native blocker doesn't let one through, #432). This label plus the native link are the **sole** carriers of dependency-blocking state (#449) — the issue's readiness verdict never duplicates it, so a blocked issue with a spec-complete `READY_FOR_IMPLEMENTATION` verdict is the expected nominal case, not a contradiction | R1 (human, alongside a `## Dépendances` section) — no automation ever sets it | `unblock-issues.yml`, once every native blocker is closed — this cleanup is independent of whether a queue label (`automation:queued`/`automation:ready`/`automation:in-progress`) is already present, so a dependent that reached the queue before its blockers closed still gets `blocked` cleared; only `automation:needs-human` (terminal escalation) suppresses it |
 | `automation:queued` | État/file | Spec validated, waiting for a dispatch slot | R1 (issue), `unblock-issues.yml` (dependent issue, once unblocked) | `dispatch-ready.mjs` |
-| `automation:ready` | État/déclencheur R2 | Dispatched, next in line for R2 — this is R2's trigger | `dispatch-ready.mjs`, `requeue-lost-events.mjs` (re-posing an orphaned one) | R2 (`implement-task`), in its first action |
-| `automation:in-progress` | Contrôle | A routine currently owns this item ("claim the run") | R2 on an issue; R3 or R4 on a PR | On a PR: the routine that set it, once its run ends (success or escalation), or the hourly sweeper (`requeue-lost-events.mjs`) once it's been posed for more than `STALE_OWNERSHIP_THRESHOLD_MINUTES` (180 min — the routine died without ever resuming, row #25). On an issue: persists across R3/R4's entire review/fix cycling on the linked PR — cleared only by R2 itself on stop-and-ask (row #6), by the PR merging, by R4 mirroring an escalation from the PR onto the issue (rows #19/#20), or by the same stale-ownership sweeper (row #25), always as the last of three ordered steps (§6) |
+| `automation:ready` | État/déclencheur R2 | Dispatched, next in line for R2 — this is R2's trigger. `.automation/routines.yml` currently declares this trigger against the `coordinator` skill rather than `implement-task` (#469) — see § "The coordinator" below; `implement-task` remains what actually runs, as that skill's own sub-agent | `dispatch-ready.mjs`, `requeue-lost-events.mjs` (re-posing an orphaned one) | R2/the coordinator (`implement-task`), in its first action |
+| `automation:in-progress` | Contrôle | A routine currently owns this item ("claim the run") | R2 on an issue (or the coordinator, on an issue, for its own run's entire lifetime — § "The coordinator" below); R3 or R4 on a PR | On a PR: the routine that set it, once its run ends (success or escalation), or the hourly sweeper (`requeue-lost-events.mjs`) once it's been posed for more than `STALE_OWNERSHIP_THRESHOLD_MINUTES` (180 min — the routine died without ever resuming, row #25). On an issue: persists across R3/R4's entire review/fix cycling on the linked PR (or across the coordinator's own review/fix rounds) — cleared only by R2/the coordinator itself on stop-and-ask (row #6), by the PR merging, by R4 mirroring an escalation from the PR onto the issue (rows #19/#20), or by the same stale-ownership sweeper (row #25), always as the last of three ordered steps (§6) |
 | `automation:coordinator-owned` | Contrôle | The coordinator owns this PR and is already driving its own review/fix loop in-session — guards `needs-review-label.yml` from also queuing it for R3, which would otherwise double-review every push the coordinator makes on its own PR | The coordinator, at the start of its run | The coordinator, at the end of its run — a mark left behind by a dead run is not cleared automatically (the safety net is the stale-ownership escalation, row #25/#467, not this guard) |
 | `automation:needs-review` | File/déclencheur R3 | PR queued for R3 — this is R3's trigger | `needs-review-label.yml` (PR opened/ready/synchronize) | R3 (`pr-review`), in its first action |
-| `automation:attempt-1`/`automation:attempt-2`/`automation:attempt-3` | Compteur | R4's anti-loop retry counter on a PR | R4 (`address-feedback`), after a fix is pushed | R4 itself (old counter, before posting the new one), or R3 on `automation:review-pass` (clears a stale counter) |
-| `automation:review-pass` | Verdict | R3's verdict: PR conforms to its issue's spec | R3 | R3, if a later review overturns it to `automation:needs-fix`; `needs-review-label.yml` (clears a stale one, on synchronize) |
-| `automation:needs-fix` | Verdict **et** file/déclencheur R4 | R3's verdict: PR needs changes — **also** R4's trigger (dual role, see below) | R3 | R4, in its first action; `needs-review-label.yml` (clears a stale one, on synchronize) |
-| `automation:needs-human` | Escalade | Terminal escalation: automation cannot resolve this without a decision | R4 (attempt cap or scope mismatch on a PR — also mirrored onto the linked issue, alongside `automation:queued`, so the escalation doesn't freeze the rest of the backlog, §6); R2 (incomplete/ambiguous spec, directly on the issue, alongside `automation:queued`) | Only a human, by removing it — on an issue this alone is enough to re-queue it, since `automation:queued` was already posed alongside it |
-| `automation:enabled` | Autorisation | Eligible for auto-merge once required checks are green | R2 only, when the diff matches the risk-Faible whitelist (`automation-plan.md` §5) | R4, on escalation to `automation:needs-human` |
+| `automation:attempt-1`/`automation:attempt-2`/`automation:attempt-3` | Compteur | R4's anti-loop retry counter on a PR — also the coordinator's own fix-round counter on a PR it owns, posed the same way, since posting `automation:attempt-N` alone matches no routine's GitHub trigger (safe to reuse; `automation:needs-fix` isn't, § "The coordinator" below) | R4 (`address-feedback`), after a fix is pushed; the coordinator, before launching its fix sub-agent | R4 itself (old counter, before posting the new one), or R3 on `automation:review-pass` (clears a stale counter); the coordinator, the same way, once it reaches its own `automation:review-pass` |
+| `automation:review-pass` | Verdict | R3's verdict: PR conforms to its issue's spec — also the coordinator's own terminal verdict once a round finds nothing left to fix (never an interim one) | R3; the coordinator | R3, if a later review overturns it to `automation:needs-fix`; `needs-review-label.yml` (clears a stale one, on synchronize) |
+| `automation:needs-fix` | Verdict **et** file/déclencheur R4 | R3's verdict: PR needs changes — **also** R4's trigger (dual role, see below). **Never posted by the coordinator** on a PR it owns (§ "The coordinator" below): it's a live routine trigger it can't guard the way `automation:coordinator-owned` guards `needs-review-label.yml`, so posting it would start an independent, uncoordinated R4 session on the same branch | R3 | R4, in its first action; `needs-review-label.yml` (clears a stale one, on synchronize) |
+| `automation:needs-human` | Escalade | Terminal escalation: automation cannot resolve this without a decision | R4 (attempt cap or scope mismatch on a PR — also mirrored onto the linked issue, alongside `automation:queued`, so the escalation doesn't freeze the rest of the backlog, §6); R2 (incomplete/ambiguous spec, directly on the issue, alongside `automation:queued`); the coordinator, same conditions and sequence as R2/R4 combined (§ "The coordinator" below) | Only a human, by removing it — on an issue this alone is enough to re-queue it, since `automation:queued` was already posed alongside it |
+| `automation:enabled` | Autorisation | Eligible for auto-merge once required checks are green | R2 only, when the diff matches the risk-Faible whitelist (`automation-plan.md` §5) — the coordinator, the same way, re-checked against the PR's final diff once it converges | R4, on escalation to `automation:needs-human`; the coordinator, on its own escalation |
 
 No `automation:done` label exists or is ever created: GitHub's own issue
 closure and its `state_reason` (`completed`, `not_planned`, `duplicate`)
@@ -103,17 +103,19 @@ judges anything subjective (`automation-plan.md` §2 principle 2).
 | Component | Kind | Trigger | Implementation |
 |---|---|---|---|
 | R1 — grooming | Interactive only, never a routine | A human says "Plan"/"crée une issue" | `.claude/skills/issue-to-spec/SKILL.md` |
-| R2 — implementation | Versioned routine | `issues` `labeled`, filter `automation:ready` | `.claude/skills/implement-task/SKILL.md` |
-| R3 — review | Versioned routine | `pull_request`, any action, filter `automation:needs-review` | `.claude/skills/pr-review/SKILL.md` |
-| R4 — fix | Versioned routine | `pull_request` `labeled`, filter `automation:needs-fix` | `.claude/skills/address-feedback/SKILL.md` |
+| R2 — implementation | Versioned routine | `issues` `labeled`, filter `automation:ready` | `.claude/skills/implement-task/SKILL.md`. `.automation/routines.yml` currently declares this trigger against the coordinator instead (below) — `implement-task` still runs, as the coordinator's implementation sub-agent, not as its own directly-triggered routine, pending live activation of the coordinator (#469, `automation-plan.md` § "Le coordinateur") |
+| R3 — review | Versioned routine | `pull_request`, any action, filter `automation:needs-review` | `.claude/skills/pr-review/SKILL.md` — also invoked as the coordinator's isolated review sub-agent (§ "The coordinator" below), same checklist, no GitHub trigger of its own in that mode |
+| R4 — fix | Versioned routine | `pull_request` `labeled`, filter `automation:needs-fix` | `.claude/skills/address-feedback/SKILL.md` — also invoked as the coordinator's fix sub-agent (§ "The coordinator" below), same procedure, no GitHub trigger of its own in that mode |
 | R5 — hygiene | Versioned routine, scheduled | Cron, weekly (Monday 06:00 UTC) | `.claude/skills/site-quality/SKILL.md` |
 | R6 — report | Versioned routine, scheduled (not yet created — Phase 6 rodage pending, see `automation-plan.md` §7) | Cron, weekly (planned) | `.claude/skills/weekly-report/SKILL.md` |
+| Coordinator | Versioned routine (declared; live activation pending — #469) | `issues` `labeled`, filter `automation:ready` | `.claude/skills/coordinator/SKILL.md` — fuses R2/R3/R4 into one run, each step a sub-agent of `implement-task`/`pr-review`/`address-feedback`. See § "The coordinator" below |
 | `automation-dispatch.yml` (`scripts/automation-dispatch.mjs`) | Action | `issues`/`pull_request` `labeled` | Resolves and logs which routine/skill/entity/target_label matches the event, per the declarative mapping in `.automation/routines.yml` (documented by `schemas/automation/routines.schema.json`) — read-only, doesn't replace the routines' own triggers or any workflow below |
 | `automation-config` (job in `ci.yml`, same script) | Action | `pull_request` (CI) | Validates `.automation/routines.yml` against the same resolver — an invalid config (e.g. two routines on the same `entity`/`trigger_label`, the class of bug behind #99) fails CI clearly |
 | `dispatch-ready.mjs` | Action | Same workflow as the sweeper below | Promotes one `automation:queued` issue to `automation:ready` |
 | `needs-review-label.yml` | Action | `pull_request` opened/ready_for_review/synchronize | Clears stale `automation:review-pass`/`automation:needs-fix`, poses `automation:needs-review` — both steps skipped, on top of the existing `draft == false` guard, when the PR carries `automation:coordinator-owned` (read straight off the `pull_request` event's own labels, no extra API call) |
-| `review-status-sync.yml` | Action | `pull_request` `labeled`, filter `automation:review-pass`/`automation:needs-fix` | Translates the label into the `claude/review` commit status; also upserts the PR's `pr-review` entry in `scripts/automation-log.mjs`'s idempotent journal |
-| `scripts/automation-log.mjs` | Helper (called by an Action, not a workflow of its own) | N/A | Finds/creates/updates a routine's single marked journal comment on an issue/PR (`automation-plan.md` § Journal d'exécution idempotent) |
+| `review-status-sync.yml` | Action | `pull_request` `labeled`, filter `automation:review-pass`/`automation:needs-fix` | Translates the label into the `claude/review` commit status; also upserts the PR's `pr-review` entry in `scripts/automation-log.mjs`'s idempotent journal — this same Action is what the coordinator's own final `automation:review-pass` drives too (§ "The coordinator" below), no separate mechanism needed for that role |
+| `coordinator-log-sync.yml` (new, #469) | Action | `pull_request` `labeled`, filter `automation:coordinator-owned`, or `automation:attempt-1`/`-2`/`-3`, `automation:review-pass`, `automation:needs-human` on a PR that carries `automation:coordinator-owned` | Upserts the coordinator's own per-role journal entries (`coordinator-implement` on the first label, `coordinator-fix` as `running` on each attempt label, then closed as `succeeded`/`failed` on the run's final verdict label) via `scripts/automation-log.mjs` — the same mechanism `review-status-sync.yml` already uses for the `pr-review` role, kept separate here so a standalone R3/R4's own labels on a non-coordinator PR never get mislabeled as a coordinator round |
+| `scripts/automation-log.mjs` | Helper (called by an Action, not a workflow of its own) | N/A | Finds/creates/updates a routine's single marked journal comment on an issue/PR (`automation-plan.md` § Journal d'exécution idempotent); `routine` values `coordinator-implement`/`coordinator-fix` (#469) get their own marker via the same mechanism, and an optional `metrics` field renders a run's round count/compaction/usage-limit signals, and `onlyIfRunning` closes a journal left in `running` without ever creating one for a step that never happened |
 | `auto-merge-sync.yml` | Action | `pull_request` labeled/unlabeled, filter `automation:enabled` | Enables/disables native GitHub auto-merge; on success, closes linked issues in the same job |
 | `requeue-lost-events.yml` (`requeue-lost-events.mjs`) | Action | Cron hourly + `issues` unlabeled/closed | Re-poses an orphaned `automation:ready`/`automation:needs-review`/`automation:needs-fix` still present > 30 min without `automation:in-progress`; separately, escalates any `automation:in-progress` still present > 180 min (stale ownership — the routine died without resuming) to `automation:needs-human` (+ `automation:queued` on an issue) |
 | `requeue-lost-events.yml` (`sweep-merged-prs.mjs`) | Action | Same workflow, runs after the sweeper above | Catch-up close of issues left open by a PR merged in the last 7 days |
@@ -392,3 +394,68 @@ signal they're built to leave alone), and without freezing the rest of the
 backlog behind it (§6's "Escalation frees its slot" rule). The interactive
 path (a human runs `implement-task` directly) keeps its original meaning of
 "ask" — there's a person present to answer.
+
+## 8. The coordinator (#469)
+
+Full narrative in `automation-plan.md` § "Le coordinateur : R2+R3+R4
+fusionnés en un run" — this section states only the label contract, the
+same shape as §4-§7 above, for an issue/PR the coordinator owns.
+
+**Claim.** Same as row #4: `automation:ready` → `automation:in-progress` on
+the issue, held for the coordinator's entire run (implementation + every
+review/fix round), cleared only at the very end — converged (§ below) or
+escalated (same three-step sequence as row #6), never in between. A dead
+coordinator run is recovered exactly like a dead R2/R4 run: row #25's
+stale-ownership sweep, nothing new.
+
+**Implementation round.** Its own sub-agent runs `implement-task`
+unmodified (row #4's own guards/steps apply — duplicate-PR guard, branch
+reuse, plan-before-code, checks). On PR open, `automation:coordinator-owned`
+is added (guards row #12's `needs-review-label.yml` from ever posing
+`automation:needs-review` on this PR, #468) — the coordinator never posts
+that label itself either.
+
+**Review round.** A freshly-launched, isolated sub-agent runs `pr-review`'s
+checklist (§1-§2 of that skill) with no `automation:needs-review` to claim
+(none was posted) and no verdict label to post — it returns its findings'
+severities to the coordinator, which applies row #13's own verdict rule
+mechanically (`blocking`/`important` present → fix round; none → converged).
+It still submits the real formal PR review (`pull_request_review_write`),
+same as standalone R3.
+
+**Fix round (0-3).** Before launching, the coordinator posts
+`automation:attempt-N` (safe — no routine's trigger filters on this label
+alone) using the same counter logic as row #17's R4 (read whichever
+`automation:attempt-*` was last posted, or 1 if none). The sub-agent runs
+`address-feedback` unmodified except it never claims/posts labels itself
+(the coordinator already did). **The coordinator never posts
+`automation:needs-fix`** on a PR it owns, at any point, including at the
+attempt cap — unlike `automation:needs-review` (guarded by
+`automation:coordinator-owned` at the Action level, row #12), R4's GitHub
+trigger is the routine's own native filter with no equivalent Action-level
+guard available; posting `automation:needs-fix` here would start an
+independent, uncoordinated R4 session on the same branch. A fixed, green
+round returns to a fresh review round above; attempt 3 already spent →
+escalate (below) instead of a 4th round.
+
+**Converged.** No `blocking`/`important` finding on a round: post
+`automation:review-pass` (clears any `automation:attempt-*`, same as row
+#22 — drives `review-status-sync.yml` exactly as it would for standalone
+R3: `claude/review` commit status, `pr-review` journal entry), re-check
+`automation:enabled` eligibility against the final diff (same whitelist row
+#4 uses), remove `automation:coordinator-owned`, then remove the issue's
+`automation:in-progress` — in that order, last two last, so the pipeline's
+one in-flight slot frees only once the PR is actually left in a stable
+state for a human or native auto-merge to pick up.
+
+**Escalation.** Same conditions as rows #6/#19/#20 (ambiguous/incomplete
+spec, attempt cap, scope mismatch, a check suite that stays red, or a
+sub-agent reporting it can't proceed), same three-step sequence on the
+issue (§6: `automation:needs-human`, `automation:queued`, only then remove
+`automation:in-progress`) plus, on the PR: remove `automation:in-progress`
+if posed, remove `automation:enabled` if present, add
+`automation:needs-human` — never `automation:needs-fix` (same reasoning as
+the fix-round rule above: the PR is done with automation, not queued for
+another round). `automation:coordinator-owned` is also removed here (a
+graceful stop, not a dead run) so a human taking over gets the normal
+standalone R3/R4 loop back on their own next push.

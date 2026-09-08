@@ -186,6 +186,66 @@ describe('renderAutomationLog / parseAutomationLog', () => {
     expect(body).not.toContain('Contexte')
   })
 
+  it('uses a distinct marker per coordinator role (#469)', async () => {
+    const { renderAutomationLog, markerFor } = await import('./automation-log.mjs')
+    const implementBody = renderAutomationLog({
+      routine: 'coordinator-implement',
+      triggeredAt: '2026-09-08T10:00:00Z',
+      sha: 'abc1234',
+      status: 'succeeded',
+      iteration: '1',
+      validation: 'lint / typecheck / tests',
+      resultUrl: 'https://github.com/remhiit/scoreo/actions/runs/999',
+    })
+    const fixBody = renderAutomationLog({
+      routine: 'coordinator-fix',
+      triggeredAt: '2026-09-08T10:05:00Z',
+      sha: 'def5678',
+      status: 'succeeded',
+      iteration: '2',
+      validation: 'lint / typecheck / tests',
+      resultUrl: 'https://github.com/remhiit/scoreo/actions/runs/999',
+    })
+
+    expect(markerFor('coordinator-implement')).toBe('<!-- automation-log:coordinator-implement -->')
+    expect(markerFor('coordinator-fix')).toBe('<!-- automation-log:coordinator-fix -->')
+    expect(implementBody.startsWith(markerFor('coordinator-implement'))).toBe(true)
+    expect(fixBody.startsWith(markerFor('coordinator-fix'))).toBe(true)
+    expect(implementBody).toContain('## Automation — Coordinateur — implémentation')
+    expect(fixBody).toContain('## Automation — Coordinateur — correctif')
+  })
+
+  it('publishes the coordinator metrics fields when provided (#469)', async () => {
+    const { renderAutomationLog } = await import('./automation-log.mjs')
+    const body = renderAutomationLog({
+      routine: 'coordinator-fix',
+      triggeredAt: '2026-09-08T10:00:00Z',
+      sha: 'abc1234',
+      status: 'succeeded',
+      iteration: '2',
+      validation: 'lint / typecheck / tests',
+      resultUrl: 'https://github.com/remhiit/scoreo/actions/runs/999',
+      metrics: { fixIterations: 2, compactionObserved: false, usageLimitApproached: true },
+    })
+    expect(body).toContain(
+      "- Métriques : itérations de correction : 2, compaction observée : non, limite d'usage approchée : oui",
+    )
+  })
+
+  it('omits the Métriques line entirely when no metrics are provided', async () => {
+    const { renderAutomationLog } = await import('./automation-log.mjs')
+    const body = renderAutomationLog({
+      routine: 'pr-review',
+      triggeredAt: '2026-08-31T10:00:00Z',
+      sha: 'abc1234',
+      status: 'succeeded',
+      iteration: '1',
+      validation: 'lint / typecheck / tests',
+      resultUrl: 'https://github.com/remhiit/scoreo/actions/runs/999',
+    })
+    expect(body).not.toContain('Métriques')
+  })
+
   it('falls back to a placeholder when no result URL is available yet', async () => {
     const { renderAutomationLog } = await import('./automation-log.mjs')
     const body = renderAutomationLog({
@@ -226,7 +286,7 @@ describe('upsertAutomationLog', () => {
       triggeredAt: '2026-08-31T10:00:00Z',
     })
 
-    expect(result).toEqual({ commentId: 555, created: true, alreadyProcessed: false, previous: null })
+    expect(result).toEqual({ commentId: 555, created: true, alreadyProcessed: false, previous: null, skipped: false })
     expect(fetchSpy).toHaveBeenCalledWith(
       'https://api.github.com/repos/remhiit/scoreo/issues/42/comments',
       expect.objectContaining({ method: 'POST' }),
@@ -272,6 +332,75 @@ describe('upsertAutomationLog', () => {
       expect.objectContaining({ method: 'PATCH' }),
     )
     expect(fetchSpy).not.toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ method: 'POST' }))
+  })
+
+  it('closes a fix journal left in `running`, reusing its own iteration (#473)', async () => {
+    stubEnv()
+    const existingBody = [
+      '<!-- automation-log:coordinator-fix -->',
+      '## Automation — Coordinateur — correctif',
+      '',
+      '- Routine : `coordinator-fix`',
+      '- Commit analysé : `abc1234`',
+      '- Statut : `running`',
+      '- Itération : `2`',
+    ].join('\n')
+
+    let patchedBody = null
+    vi.spyOn(globalThis, 'fetch').mockImplementation((url, opts) => {
+      if (url === COMMENTS_URL && !opts?.method) {
+        return Promise.resolve({ ok: true, json: async () => [{ id: 111, body: existingBody }] })
+      }
+      if (url === 'https://api.github.com/repos/remhiit/scoreo/issues/comments/111' && opts?.method === 'PATCH') {
+        patchedBody = JSON.parse(opts.body).body
+        return Promise.resolve({ ok: true, json: async () => ({}) })
+      }
+      return Promise.reject(new Error(`unexpected fetch: ${url}`))
+    })
+
+    vi.resetModules()
+    const { upsertAutomationLog } = await import('./automation-log.mjs')
+    const result = await upsertAutomationLog({
+      number: 42,
+      routine: 'coordinator-fix',
+      sha: 'abc1234',
+      status: 'succeeded',
+      onlyIfRunning: true,
+      summary: 'Coordinateur : dernier tour de correction terminé, PR convergée.',
+    })
+
+    expect(result.skipped).toBe(false)
+    // L'événement de clôture (label de verdict) ne porte pas le numéro du
+    // tour : il est repris du journal ouvert, pas remis au défaut `1`.
+    expect(patchedBody).toContain('- Itération : `2`')
+    expect(patchedBody).toContain('- Statut : `succeeded`')
+  })
+
+  it('writes nothing when there is no fix journal to close (#473)', async () => {
+    stubEnv()
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation((url, opts) => {
+      if (url === COMMENTS_URL && !opts?.method) {
+        return Promise.resolve({ ok: true, json: async () => [] })
+      }
+      return Promise.reject(new Error(`unexpected fetch: ${url}`))
+    })
+
+    vi.resetModules()
+    const { upsertAutomationLog } = await import('./automation-log.mjs')
+    const result = await upsertAutomationLog({
+      number: 42,
+      routine: 'coordinator-fix',
+      sha: 'abc1234',
+      status: 'succeeded',
+      onlyIfRunning: true,
+    })
+
+    // Un run convergé dès la première review n'a eu aucun tour de correctif :
+    // aucun journal « correctif » ne doit apparaître rétroactivement.
+    expect(result.skipped).toBe(true)
+    expect(result.created).toBe(false)
+    expect(fetchSpy).not.toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ method: 'POST' }))
+    expect(fetchSpy).not.toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ method: 'PATCH' }))
   })
 
   it('flags a rerun on the same already-completed SHA as already processed', async () => {
@@ -376,5 +505,31 @@ describe('entry-point guard', () => {
     await new Promise((resolve) => setTimeout(resolve, 0))
 
     expect(fetchSpy).not.toHaveBeenCalled()
+  })
+})
+
+describe('loadMetricsFromEnv', () => {
+  afterEach(resetAll)
+
+  it('reads the three coordinator metrics from the environment (#469)', async () => {
+    vi.stubEnv('LOG_METRIC_FIX_ITERATIONS', '2')
+    vi.stubEnv('LOG_METRIC_COMPACTION_OBSERVED', 'false')
+    vi.stubEnv('LOG_METRIC_USAGE_LIMIT_APPROACHED', 'true')
+
+    vi.resetModules()
+    const { loadMetricsFromEnv } = await import('./automation-log.mjs')
+
+    expect(loadMetricsFromEnv()).toEqual({
+      fixIterations: 2,
+      compactionObserved: false,
+      usageLimitApproached: true,
+    })
+  })
+
+  it('returns undefined when no metric variable is set', async () => {
+    vi.resetModules()
+    const { loadMetricsFromEnv } = await import('./automation-log.mjs')
+
+    expect(loadMetricsFromEnv()).toBeUndefined()
   })
 })

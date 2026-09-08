@@ -1,6 +1,6 @@
 ---
 name: implement-task
-description: 'Implement one GitHub issue end-to-end for the Scoreo repo — branch, tests first, pnpm lint/typecheck/test/build green, visual check for UI changes, doc updates, PR referencing "Closes #N". Use when told to "développe" / implement a ticket. This is the R2 step in doc/technical/automation-plan.md — one run, one issue, never a batch.'
+description: 'Implement one GitHub issue end-to-end for the Scoreo repo — branch, tests first, pnpm lint/typecheck/test/build green, visual check for UI changes, doc updates, PR referencing "Closes #N". Use when told to "développe" / implement a ticket. This is the R2 step in doc/technical/automation-plan.md — one run, one issue, never a batch. Also invoked, procedure unchanged, as the coordinator''s implementation sub-agent (`.claude/skills/coordinator/SKILL.md`, #469) — see the "As the coordinator''s sub-agent" notes below for the two deltas that mode requires.'
 ---
 
 # Implement Task
@@ -12,6 +12,22 @@ branch, one commit, one PR. See `project-conventions` for the layering and
 backward-compat rules referenced throughout. This skill implements — it
 never reviews its own diff (that's `pr-review`/R3) and never merges its own
 PR (see Limites).
+
+### As the coordinator's sub-agent
+
+When launched by `.claude/skills/coordinator/SKILL.md` (#469) rather than by
+the routine's own GitHub trigger, this procedure runs unchanged except for
+two deltas, both stated again at the exact step they replace below: the
+`automation:ready` → `automation:in-progress` claim (§ "Claim the run") is
+already done by the coordinator before this sub-agent starts, and once the
+PR opens (step 10) this sub-agent adds `automation:coordinator-owned` to it
+as its last action, before returning. Whatever this sub-agent writes here —
+its plan, this run's own reasoning, the PR description — is never relayed to
+the coordinator's review sub-agent of the same run; that isolation is the
+coordinator's responsibility to maintain (`coordinator/SKILL.md` § "Review
+(isolated sub-agent)"), not something this skill enforces by withholding
+output, since it has no direct channel to another sub-agent to withhold it
+from in the first place.
 
 ## Entrées requises
 
@@ -57,6 +73,10 @@ Replace `automation:ready` with `automation:in-progress` before starting, in
 every case — remove `automation:ready`, add `automation:in-progress`. A
 stale `automation:ready` left in place would mislead anyone scanning the
 backlog into thinking the issue is still unclaimed.
+
+**As the coordinator's sub-agent** (#469): skip this step — the coordinator
+already claimed the issue before launching this sub-agent. Proceed straight
+to "Guard against a duplicate branch or PR" below.
 
 ### Guard against a duplicate branch or PR (R2 only, before claiming)
 
@@ -185,6 +205,12 @@ just "already claimed, closed".
     the PR itself as `automation:needs-review`; that label is posed
     automatically by the deterministic `needs-review-label.yml` action on PR
     open, and it should find a PR whose author-side checks already passed.
+    **As the coordinator's sub-agent** (#469): immediately after opening the
+    PR, add `automation:coordinator-owned` to it, in its own call, as this
+    step's last action — that label is what keeps `needs-review-label.yml`
+    from ever queuing this PR for standalone R3 (#468). The coordinator, not
+    this sub-agent, decides afterwards whether/when `automation:needs-review`
+    ever applies to this PR.
 11. **Label `automation:enabled`** only if the issue's spec marked risk as
     **Faible** *and* the actual diff still matches that (re-check: did this
     PR end up touching a serialized model, a port/adapter,
@@ -245,6 +271,12 @@ parked on `automation:in-progress` with no PR and no comment. The
 interactive path (a human runs this skill directly) keeps its original
 meaning of "ask" — a person is present to answer.
 
+**As the coordinator's sub-agent** (#469): skip the label sequence above —
+this sub-agent never claimed the issue itself, so it never releases that
+claim either. Report the stop reason back to the coordinator instead; the
+coordinator (`coordinator/SKILL.md` § Escalade) performs the label sequence,
+since it's the one holding the claim for this run's entire lifetime.
+
 ## Limites
 
 Cross-cutting limits, per `skill-contract.md` §1.9 — each is defined once
@@ -257,3 +289,7 @@ all of them, not a redefinition:
 - Don't merge the PR yourself. Merging is deterministic tooling
   (`gh pr merge --auto --squash` once checks are green and `automation:enabled`
   is present), not part of this skill.
+- As the coordinator's sub-agent (#469): never forward this run's own plan,
+  reasoning, or PR description narrative to another sub-agent — this skill
+  has no direct channel to the coordinator's review sub-agent, and it's the
+  coordinator's job, not this skill's, to keep that channel empty.

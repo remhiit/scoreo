@@ -1,0 +1,102 @@
+name: Coordinator Log Sync
+
+on:
+  pull_request:
+    types: [labeled]
+
+permissions:
+  issues: write
+  pull-requests: write
+
+jobs:
+  sync:
+    # The coordinator (#469) posts `automation:coordinator-owned` once, at PR
+    # creation (implementation round done), and `automation:attempt-N` before
+    # each fix sub-agent it launches — see doc/technical/automation-plan.md
+    # § "Le coordinateur" and doc/automation/state-machine.md §8. It then ends
+    # the run on `automation:review-pass` (converged, § "Converged" step 1) or
+    # `automation:needs-human` (escalated, § Escalade step 1), both posted
+    # while `automation:coordinator-owned` is still on the PR — those two are
+    # what closes the fix journal this job left open (see below).
+    # Standalone R4 (address-feedback) posts the same `automation:attempt-N`
+    # labels, and standalone R3 the same verdict labels, on PRs they own
+    # directly, so this job only reacts when the PR also carries
+    # `automation:coordinator-owned` — otherwise a standalone round would get
+    # mislabeled as a coordinator round below.
+    if: |
+      github.event.label.name == 'automation:coordinator-owned' ||
+      (
+        (
+          startsWith(github.event.label.name, 'automation:attempt-') ||
+          github.event.label.name == 'automation:review-pass' ||
+          github.event.label.name == 'automation:needs-human'
+        ) &&
+        contains(github.event.pull_request.labels.*.name, 'automation:coordinator-owned')
+      )
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPO_OWNER: remhiit
+      REPO_NAME: scoreo
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Update the coordinator's per-role automation log
+        env:
+          LABEL: ${{ github.event.label.name }}
+          LOG_NUMBER: ${{ github.event.pull_request.number }}
+          LOG_SHA: ${{ github.event.pull_request.head.sha }}
+          LOG_RESULT_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          LOG_ONLY_IF_RUNNING=false
+          case "$LABEL" in
+            automation:coordinator-owned)
+              LOG_ROUTINE=coordinator-implement
+              LOG_ITERATION=1
+              LOG_STATUS=succeeded
+              LOG_SUMMARY="Coordinateur : implémentation terminée, PR ouverte."
+              ;;
+            automation:review-pass|automation:needs-human)
+              # End of run. The fix journal below was opened as `running` and
+              # nothing else ever reaches it — the converged path posts
+              # `automation:review-pass` (clearing the attempt labels), the
+              # escalated path `automation:needs-human`, neither of them an
+              # `automation:attempt-N`. `LOG_ONLY_IF_RUNNING` makes this a
+              # no-op when there is no open fix journal to close (a run that
+              # converged on the first review, with zero fix rounds), and
+              # reuses the open journal's own iteration number, which this
+              # event does not carry.
+              LOG_ROUTINE=coordinator-fix
+              LOG_ONLY_IF_RUNNING=true
+              if [ "$LABEL" = "automation:review-pass" ]; then
+                LOG_STATUS=succeeded
+                LOG_SUMMARY="Coordinateur : dernier tour de correction terminé, PR convergée."
+              else
+                LOG_STATUS=failed
+                LOG_SUMMARY="Coordinateur : tour de correction interrompu, escalade vers un humain."
+              fi
+              ;;
+            *)
+              # `automation:attempt-N` is posted by the coordinator *before*
+              # launching the fix sub-agent (coordinator/SKILL.md § "Fix"), so
+              # this event fires before the round has done anything — never
+              # claim `succeeded` here, only that round N started. `running` is
+              # the non-terminal status upsertAutomationLog already recognizes
+              # (scripts/automation-log.mjs, `alreadyProcessed`) precisely for
+              # this case; the next `automation:attempt-N+1`, or the end-of-run
+              # branch above, overwrites this same journal comment via its
+              # shared marker.
+              LOG_ROUTINE=coordinator-fix
+              LOG_ITERATION="${LABEL##*-}"
+              LOG_STATUS=running
+              LOG_SUMMARY="Coordinateur : tour de correction $LOG_ITERATION démarré."
+              ;;
+          esac
+          LOG_ROUTINE="$LOG_ROUTINE" LOG_STATUS="$LOG_STATUS" LOG_ITERATION="$LOG_ITERATION" \
+            LOG_SUMMARY="$LOG_SUMMARY" LOG_ONLY_IF_RUNNING="$LOG_ONLY_IF_RUNNING" \
+            node scripts/automation-log.mjs
