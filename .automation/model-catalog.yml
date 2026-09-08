@@ -1,0 +1,80 @@
+# Catalogue versionné des modèles disponibles pour le routage par sous-agent
+# (issue #400, option C tranchée en #423 — doc/technical/automation-plan.md
+# § « Routage par sous-agent »). Décrit d'abord les modèles de sous-agent
+# Claude Code utilisables par le futur skill coordinateur (#430) : `provider`
+# et `model` restent génériques pour qu'un fournisseur compatible OpenAI ou
+# local s'ajoute plus tard sans changer le schéma (voir
+# doc/automation/model-routing.md pour un exemple), mais aucun champ
+# d'endpoint/secret n'est nécessaire aujourd'hui — hors scope tant que le
+# routage reste interne aux sous-agents Claude Code.
+#
+# `agent_alias`, quand présent, est la valeur utilisable telle quelle dans le
+# frontmatter `model:` d'une définition d'agent (`.claude/agents/<nom>.md`)
+# ou dans le paramètre `model` de l'outil Agent.
+#
+# Même sous-ensemble minimal de YAML que .automation/routines.yml (mappings
+# imbriqués de scalaires, pas de listes) — analysé par le même parseur
+# générique, scripts/automation-dispatch.mjs#parseRoutinesYaml. Validé en CI
+# par le job `automation-config` de ci.yml. Schéma documenté :
+# schemas/automation/model-catalog.schema.json.
+version: 1
+models:
+  haiku-4-5:
+    provider: anthropic
+    model: claude-haiku-4-5-20251001
+    agent_alias: haiku
+    enabled: true
+    capabilities:
+      tools: true
+      structured_output: true
+      long_context: true
+    quality_score: 55
+    cost_tier: low
+    latency_tier: fast
+    max_risk: medium
+    max_complexity: standard
+    fallback: sonnet-5
+  sonnet-5:
+    provider: anthropic
+    model: claude-sonnet-5
+    agent_alias: sonnet
+    enabled: true
+    capabilities:
+      tools: true
+      structured_output: true
+      long_context: true
+    quality_score: 80
+    cost_tier: medium
+    latency_tier: medium
+    max_risk: high
+    max_complexity: very-complex
+    fallback: opus-5
+  opus-5:
+    provider: anthropic
+    model: claude-opus-5
+    agent_alias: opus
+    enabled: true
+    capabilities:
+      tools: true
+      structured_output: true
+      long_context: true
+    quality_score: 95
+    cost_tier: high
+    latency_tier: slow
+    max_risk: high
+    max_complexity: very-complex
+  fable-5-1:
+    provider: anthropic
+    model: claude-fable-5-1
+    agent_alias: fable
+    enabled: false
+    capabilities:
+      tools: false
+      structured_output: false
+      long_context: true
+    quality_score: 50
+    cost_tier: medium
+    latency_tier: medium
+    max_risk: low
+    max_complexity: trivial
+    fallback: sonnet-5

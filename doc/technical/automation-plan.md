@@ -500,7 +500,7 @@ par commit status via label, déclencheurs disponibles — ne bougent pas.
 
 | Issue | Sort | Raison |
 |---|---|---|
-| #400 catalogue + politique | Conservée, spec révisée | Le contrat reste valable ; le catalogue se réduit d'abord aux modèles de sous-agent disponibles dans Claude Code, sans champ de secret ni endpoint |
+| #400 catalogue + politique | Livrée | Le contrat reste valable ; le catalogue se réduit d'abord aux modèles de sous-agent disponibles dans Claude Code, sans champ de secret ni endpoint |
 | #401 `TaskContext` | Livrée | Inchangée, consommée par le coordinateur |
 | #402 `ComplexityAssessment` | Livrée | Inchangée, entrée du routage |
 | #403 fallback LLM de complexité | Conservée, spec révisée, non prioritaire | Sous C l'appel devient un sous-agent classifieur : plus de secret, plus d'adapter, plus de budget fournisseur — la spec actuelle (API, `Secrets`) est caduque |
@@ -526,6 +526,33 @@ présent plan. Ordre de grandeur : **15 à 25 PR et plusieurs semaines**, plus u
 coût récurrent facturé au token — contre une poignée de PR pour C, qui réutilise
 l'existant. Le rapport est d'environ un ordre de grandeur, ce qui suffit à
 justifier l'ordre C puis B.
+
+### `ModelCatalog` et `RoutingPolicy` : le contrat de routage (#400)
+
+Livre le socle de configuration décrit ci-dessus : `.automation/model-catalog.yml`
+(un modèle de sous-agent par entrée — `provider`/`model` génériques,
+capacités, paliers de qualité/coût/latence, limites de risque/complexité,
+`fallback` optionnel) et `.automation/routing-policy.yml` (une politique par
+routine — capacités requises, candidats pondérés par bande de complexité,
+`min_score`, `fallback` de bande, `risk_overrides`). `.automation/routines.yml`
+référence désormais une `routing_policy` par routine plutôt que de dupliquer
+la politique. Contrat documenté dans `doc/automation/model-routing.md`
+(exemple multi-provider, exemple de fallback circulaire) et en JSON Schema
+(`schemas/automation/model-catalog.schema.json`,
+`schemas/automation/routing-policy.schema.json`), validé en pratique par
+`scripts/automation-dispatch.mjs#validateModelCatalog`/`#validateRoutingPolicy`/
+`#validateRoutingPolicyCoverage` — même précédent « validateur écrit à la
+main » que `validateRoutinesConfig`, et même sous-ensemble minimal de YAML
+(`parseRoutinesYaml`, désormais étendu aux scalaires booléens `true`/`false`
+qu'aucun fichier `.automation/` n'utilisait avant ce contrat).
+
+Zéro appel fournisseur, zéro secret versionné : conforme au périmètre révisé
+par #423 (§ ci-dessus), le catalogue ne décrit que des modèles de sous-agent
+Claude Code aujourd'hui. Même statut « support uniquement » que `TaskContext`
+et `ComplexityAssessment` — le job `automation-config` de `ci.yml` valide les
+trois fichiers `.automation/*.yml` à chaque exécution, mais aucune routine ne
+résout encore de politique pour router une décision réelle (câblage réel
+hors scope de #400, dépend du skill coordinateur, #430).
 
 ### Journal d'exécution idempotent
 

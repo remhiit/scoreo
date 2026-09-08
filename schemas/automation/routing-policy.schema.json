@@ -1,0 +1,117 @@
+{
+  "$schema": "https://json-schema.org/draft-07/schema#",
+  "title": "Scoreo Automation Routing Policy",
+  "description": "Contrat de .automation/routing-policy.yml — politique de routage par sous-agent : routine × bande de complexité (.automation/complexity-thresholds.yml) → modèle candidat du catalogue (.automation/model-catalog.yml). Issue #400, option C tranchée en #423, doc/technical/automation-plan.md § « Routage par sous-agent ». Résoluble sans connaître un nom de fournisseur : seul le composant qui route (le futur skill coordinateur, #430) interprète cette politique. Documenté ici comme référence du contrat ; validé en pratique par le validateur écrit à la main scripts/automation-dispatch.mjs#validateRoutingPolicy (même précédent que schemas/automation/model-catalog.schema.json).",
+  "type": "object",
+  "properties": {
+    "version": {
+      "type": "integer",
+      "description": "Version du format de ce fichier",
+      "const": 1
+    },
+    "routines": {
+      "type": "object",
+      "description": "Une politique par nom de routine — chaque routine de .automation/routines.yml doit référencer une entrée ici via son champ `routing_policy`",
+      "minProperties": 1,
+      "additionalProperties": { "$ref": "#/$defs/routinePolicy" }
+    }
+  },
+  "required": ["version", "routines"],
+  "additionalProperties": false,
+  "$defs": {
+    "routinePolicy": {
+      "type": "object",
+      "properties": {
+        "required_capabilities": {
+          "type": "object",
+          "description": "Capacités indispensables pour cette routine — un candidat qui n'en couvre pas une (voir model-catalog.schema.json#capabilities) est refusé à la validation",
+          "properties": {
+            "tools": { "type": "boolean" },
+            "structured_output": { "type": "boolean" },
+            "long_context": { "type": "boolean" }
+          },
+          "required": ["tools", "structured_output", "long_context"],
+          "additionalProperties": false
+        },
+        "bands": {
+          "type": "object",
+          "description": "Une entrée pour chacune des quatre bandes de .automation/complexity-thresholds.yml — une bande manquante est un trou de couverture refusé à la validation, jamais une valeur par défaut silencieuse",
+          "properties": {
+            "trivial": { "$ref": "#/$defs/band" },
+            "standard": { "$ref": "#/$defs/band" },
+            "complex": { "$ref": "#/$defs/band" },
+            "very-complex": { "$ref": "#/$defs/band" }
+          },
+          "required": ["trivial", "standard", "complex", "very-complex"],
+          "additionalProperties": false
+        },
+        "risk_overrides": {
+          "description": "Optionnel — force un modèle quel que soit `bands` quand le niveau de risque (change-risk, #387, support uniquement pour l'instant) atteint le niveau donné. Le modèle retenu doit couvrir ce niveau via son `max_risk` de catalogue.",
+          "type": "object",
+          "properties": {
+            "low": { "$ref": "#/$defs/riskOverride" },
+            "medium": { "$ref": "#/$defs/riskOverride" },
+            "high": { "$ref": "#/$defs/riskOverride" }
+          },
+          "additionalProperties": false
+        }
+      },
+      "required": ["required_capabilities", "bands"],
+      "additionalProperties": false
+    },
+    "band": {
+      "type": "object",
+      "properties": {
+        "candidates": {
+          "type": "object",
+          "description": "Candidats pondérés pour cette bande — poids en somme à 100, jamais négatifs (voir §candidate)",
+          "minProperties": 1,
+          "additionalProperties": { "$ref": "#/$defs/candidate" }
+        },
+        "min_score": {
+          "type": "integer",
+          "description": "Score de qualité minimal (model-catalog.schema.json#quality_score) qu'un candidat de cette bande doit atteindre",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "fallback": {
+          "type": "string",
+          "description": "Identifiant d'un modèle du catalogue utilisé en secours si tous les candidats de cette bande sont désactivés",
+          "minLength": 1
+        }
+      },
+      "required": ["candidates", "min_score", "fallback"],
+      "additionalProperties": false
+    },
+    "candidate": {
+      "type": "object",
+      "properties": {
+        "model": {
+          "type": "string",
+          "description": "Identifiant d'un modèle de .automation/model-catalog.yml — un identifiant absent du catalogue, ou référençant un modèle désactivé, est refusé à la validation",
+          "minLength": 1
+        },
+        "weight": {
+          "type": "integer",
+          "description": "Poids de décision de ce candidat au sein de sa bande — la somme des poids d'une bande doit être exactement 100",
+          "minimum": 1,
+          "maximum": 100
+        }
+      },
+      "required": ["model", "weight"],
+      "additionalProperties": false
+    },
+    "riskOverride": {
+      "type": "object",
+      "properties": {
+        "model": {
+          "type": "string",
+          "description": "Identifiant d'un modèle du catalogue dont le `max_risk` doit couvrir ce niveau de risque",
+          "minLength": 1
+        }
+      },
+      "required": ["model"],
+      "additionalProperties": false
+    }
+  }
+}

@@ -1,0 +1,152 @@
+# Politique de routage par sous-agent : routine × bande de complexité (bandes
+# de .automation/complexity-thresholds.yml) → modèle candidat, résolu par le
+# futur skill coordinateur (#430) via le routeur pur scripts/model-router.mjs
+# (#404, hors scope ici). Issue #400, option C tranchée en #423 —
+# doc/technical/automation-plan.md § « Routage par sous-agent ».
+#
+# Chaque bande porte des `candidates` pondérés (poids en somme à 100, jamais
+# négatifs) et un `min_score` : un candidat dont le `quality_score` du
+# catalogue (.automation/model-catalog.yml) est sous ce plancher est refusé à
+# la validation, tout comme un candidat désactivé, absent du catalogue, ou ne
+# couvrant pas une capacité requise par la routine (`required_capabilities`).
+# `fallback` est le modèle de secours si tous les candidats d'une bande sont
+# désactivés. `risk_overrides`, optionnel, force un modèle quel que soit la
+# bande de complexité quand le niveau de risque (change-risk, #387, support
+# uniquement pour l'instant) atteint le niveau donné — le modèle retenu doit
+# couvrir ce niveau via son `max_risk`.
+#
+# Même sous-ensemble minimal de YAML que .automation/routines.yml (mappings
+# imbriqués de scalaires, pas de listes). Validé en CI par le job
+# `automation-config` de ci.yml. Schéma documenté :
+# schemas/automation/routing-policy.schema.json.
+version: 1
+routines:
+  implement-task:
+    required_capabilities:
+      tools: true
+      structured_output: false
+      long_context: true
+    bands:
+      trivial:
+        candidates:
+          primary:
+            model: haiku-4-5
+            weight: 70
+          secondary:
+            model: sonnet-5
+            weight: 30
+        min_score: 40
+        fallback: opus-5
+      standard:
+        candidates:
+          primary:
+            model: sonnet-5
+            weight: 100
+        min_score: 60
+        fallback: opus-5
+      complex:
+        candidates:
+          primary:
+            model: sonnet-5
+            weight: 60
+          secondary:
+            model: opus-5
+            weight: 40
+        min_score: 75
+        fallback: opus-5
+      very-complex:
+        candidates:
+          primary:
+            model: opus-5
+            weight: 100
+        min_score: 90
+        fallback: opus-5
+    risk_overrides:
+      high:
+        model: opus-5
+  pr-review:
+    required_capabilities:
+      tools: true
+      structured_output: true
+      long_context: true
+    bands:
+      trivial:
+        candidates:
+          primary:
+            model: haiku-4-5
+            weight: 70
+          secondary:
+            model: sonnet-5
+            weight: 30
+        min_score: 40
+        fallback: opus-5
+      standard:
+        candidates:
+          primary:
+            model: sonnet-5
+            weight: 100
+        min_score: 60
+        fallback: opus-5
+      complex:
+        candidates:
+          primary:
+            model: sonnet-5
+            weight: 60
+          secondary:
+            model: opus-5
+            weight: 40
+        min_score: 75
+        fallback: opus-5
+      very-complex:
+        candidates:
+          primary:
+            model: opus-5
+            weight: 100
+        min_score: 90
+        fallback: opus-5
+    risk_overrides:
+      high:
+        model: opus-5
+  address-feedback:
+    required_capabilities:
+      tools: true
+      structured_output: false
+      long_context: true
+    bands:
+      trivial:
+        candidates:
+          primary:
+            model: haiku-4-5
+            weight: 70
+          secondary:
+            model: sonnet-5
+            weight: 30
+        min_score: 40
+        fallback: opus-5
+      standard:
+        candidates:
+          primary:
+            model: sonnet-5
+            weight: 100
+        min_score: 60
+        fallback: opus-5
+      complex:
+        candidates:
+          primary:
+            model: sonnet-5
+            weight: 60
+          secondary:
+            model: opus-5
+            weight: 40
+        min_score: 75
+        fallback: opus-5
+      very-complex:
+        candidates:
+          primary:
+            model: opus-5
+            weight: 100
+        min_score: 90
+        fallback: opus-5
+    risk_overrides:
+      high:
+        model: opus-5
