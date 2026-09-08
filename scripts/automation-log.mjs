@@ -131,10 +131,46 @@ async function listComments(number) {
   return items
 }
 
-export async function findAutomationLogComment(number, routine) {
-  const marker = markerFor(routine)
+// Generic idempotent-comment-by-marker mechanism, shared by every caller
+// that needs a single tracked comment on an issue/PR (routine journals
+// below, and `requeue-lost-events.mjs`'s stale-ownership escalation).
+export async function findCommentByMarker(number, marker) {
   const comments = await listComments(number)
   return comments.find((comment) => comment.body?.startsWith(marker)) ?? null
+}
+
+async function writeComment(number, existing, body) {
+  if (existing) {
+    const res = await fetch(`${API_ROOT}/issues/comments/${existing.id}`, {
+      method: 'PATCH',
+      headers: { ...headers, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ body }),
+    })
+    if (!res.ok) {
+      throw new Error(`PATCH comment ${existing.id} -> ${res.status}: ${await res.text()}`)
+    }
+    return { commentId: existing.id, created: false }
+  }
+
+  const res = await fetch(`${API_ROOT}/issues/${number}/comments`, {
+    method: 'POST',
+    headers: { ...headers, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ body }),
+  })
+  if (!res.ok) {
+    throw new Error(`POST /issues/${number}/comments -> ${res.status}: ${await res.text()}`)
+  }
+  const created = await res.json()
+  return { commentId: created.id, created: true }
+}
+
+export async function upsertMarkedComment(number, marker, body) {
+  const existing = await findCommentByMarker(number, marker)
+  return writeComment(number, existing, body)
+}
+
+export async function findAutomationLogComment(number, routine) {
+  return findCommentByMarker(number, markerFor(routine))
 }
 
 // Un journal existant sur ce même SHA, déjà sorti de l'état `running`, est
@@ -173,28 +209,8 @@ export async function upsertAutomationLog({
     summary,
   })
 
-  if (existing) {
-    const res = await fetch(`${API_ROOT}/issues/comments/${existing.id}`, {
-      method: 'PATCH',
-      headers: { ...headers, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ body }),
-    })
-    if (!res.ok) {
-      throw new Error(`PATCH comment ${existing.id} -> ${res.status}: ${await res.text()}`)
-    }
-    return { commentId: existing.id, created: false, alreadyProcessed, previous }
-  }
-
-  const res = await fetch(`${API_ROOT}/issues/${number}/comments`, {
-    method: 'POST',
-    headers: { ...headers, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ body }),
-  })
-  if (!res.ok) {
-    throw new Error(`POST /issues/${number}/comments -> ${res.status}: ${await res.text()}`)
-  }
-  const created = await res.json()
-  return { commentId: created.id, created: true, alreadyProcessed: false, previous: null }
+  const { commentId, created } = await writeComment(number, existing, body)
+  return { commentId, created, alreadyProcessed, previous }
 }
 
 // Le ComplexityAssessment (issue #402) est lu depuis son artefact JSON, même

@@ -291,6 +291,31 @@ d'attente de `auto-merge-sync.yml` a expiré — voir Phase 5, incident PR
 #264/#273), puis `scripts/dispatch-ready.mjs`, dans cet ordre précis pour
 que le déblocage d'une issue profite au dispatch du même run.
 
+`requeue-lost-events.mjs` porte un second rôle, distinct du rejeu
+ci-dessus : une routine qui a bien claim le run (`automation:in-progress`
+posé) peut mourir sans jamais reprendre — limite d'usage, compaction, crash
+— et laisser l'item gelé indéfiniment, sans aucun signal (#379). Contrairement
+à un label déclencheur orphelin, rejouer aveuglément serait dangereux ici :
+la routine a pu laisser un état partiel (une branche, une PR ouverte), et une
+deuxième session reprenant le même item pousserait sur la même branche.
+`sweepStaleOwnership()` (même script, exécuté après les deux sweeps
+ci-dessus dans `main()`) traite donc toute possession `automation:in-progress`
+posée depuis plus de `STALE_OWNERSHIP_THRESHOLD_MINUTES` (180 min, mesurée
+sur le dernier événement `labeled` de la timeline, comme `minutesSinceLabeled`
+ci-dessus) comme périmée et escalade : sur une issue, `automation:needs-human`
+puis `automation:queued` sont posés avant que `automation:in-progress` ne
+soit retiré, dans cet ordre (§6, même règle que R2/R4) ; sur une PR,
+`automation:needs-human` seul. Le label déclencheur, s'il est encore présent
+sur le même item, n'est jamais touché — ni retiré ni reposé, l'escalade
+l'emporte sur le rejeu. Un item déjà porteur de `automation:needs-human` est
+laissé strictement intact (état terminal). L'exécution après les deux sweeps
+existants garantit l'ordre : `requeueIfOrphaned` a déjà sauté l'item tant que
+`automation:in-progress` y était encore posé, donc aucun rejeu du
+déclencheur ne peut avoir lieu avant l'escalade. Un commentaire idempotent
+(marqueur `<!-- automation-log:stale-ownership -->`, via le mécanisme
+générique de `scripts/automation-log.mjs`) nomme le label périmé, son âge et
+l'action effectuée.
+
 ### Dispatcher déclaratif : `.automation/routines.yml`
 
 Le mapping label → routine → skill (table de `doc/automation/state-machine.md`
@@ -1239,6 +1264,7 @@ R6 hebdo. C'est le rapport qui pilote l'élargissement de la liste blanche `auto
 | Régression de backward-compat sur les schémas zod | Hors liste blanche `automation:enabled` : merge manuel obligatoire |
 | `pull_request_target` expose les secrets | Ne jamais y exécuter le code de la PR |
 | Événement de routine perdu par plafond de runs | Balayeur horaire (`requeue-lost-events.yml`) qui rejoue tout label déclencheur orphelin |
+| Possession (`automation:in-progress`) figée par une routine morte sans reprendre (#379) | Même balayeur horaire, escalade vers `automation:needs-human` (+ `automation:queued` sur une issue) au lieu de rejouer — rejouer collisionnerait avec l'état partiel (branche/PR) laissé par la routine morte |
 | Boucle d'attente de `auto-merge-sync.yml` expirée avant la fin réelle du merge (#273) | `scripts/sweep-merged-prs.mjs`, exécuté par le même balayeur horaire, rattrape les issues encore ouvertes des PR mergées dans les 7 derniers jours |
 
 ## 9. Décisions ouvertes
