@@ -14,6 +14,7 @@ output once the background task notification arrives — don't poll it
 yourself in a tight loop.
 """
 import json
+import os
 import sys
 import time
 import urllib.request
@@ -27,10 +28,19 @@ INTERVAL = int(sys.argv[2]) if len(sys.argv) > 2 else 90
 DEADLINE = time.time() + 45 * 60
 API = "https://api.github.com/repos/remhiit/scoreo"
 
+# Anonymous requests are capped at 60/hour — easy to blow through when this
+# skill chains several PRs, each polling two endpoints every INTERVAL
+# seconds. A token (already present in the routines' execution environment)
+# raises that to 5000/hour, which is what makes the batch use case safe.
+TOKEN = os.environ.get("GITHUB_TOKEN") or os.environ.get("GH_TOKEN")
+
 
 def get(url):
+    req = urllib.request.Request(url)
+    if TOKEN:
+        req.add_header("Authorization", f"Bearer {TOKEN}")
     try:
-        with urllib.request.urlopen(url, timeout=30) as r:
+        with urllib.request.urlopen(req, timeout=30) as r:
             return json.load(r)
     except Exception as e:
         print("api error:", e, flush=True)

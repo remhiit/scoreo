@@ -1,6 +1,6 @@
 ---
 name: merge-review-pass
-description: Merge les PR ouvertes de remhiit/scoreo passées en review-pass (label `automation:review-pass`), une par une par ordre d'ancienneté, en rebasant chacune sur main avant de la merger et en attendant la CI + claude/review à chaque fois. Utiliser quand on demande de merger les PR review-pass, de "passer une passe" de merge, ou après une vague de PR Dependabot/site-quality (R5) en attente. Comble le trou du pipeline documenté dans doc/technical/automation-plan.md : ces PR n'ont pas le label `auto`, donc l'auto-merge natif (auto-merge-sync.yml) ne les prend jamais automatiquement.
+description: Merge les PR ouvertes de remhiit/scoreo passées en review-pass (label `automation:review-pass`), une par une par ordre d'ancienneté, en rebasant chacune sur main avant de la merger et en attendant la CI + claude/review à chaque fois. Utiliser quand on demande de merger les PR review-pass, de "passer une passe" de merge, ou après une vague de PR Dependabot/site-quality (R5) en attente. Comble le trou du pipeline documenté dans doc/technical/automation-plan.md : ces PR n'ont pas le label `automation:enabled`, donc l'auto-merge natif (auto-merge-sync.yml) ne les prend jamais automatiquement.
 ---
 
 # Merge review-pass
@@ -8,7 +8,7 @@ description: Merge les PR ouvertes de remhiit/scoreo passées en review-pass (la
 Ce skill merge, une par une, les PR qui ont passé la review automatique (R3,
 `pr-review`) mais que rien ne merge tout seul. `automation-plan.md` §4 confie
 le merge à `auto-merge-sync.yml`, une Action zéro-LLM qui n'agit que sur les
-PR portant le label `auto` — un label que seul `implement-task` (R2) pose,
+PR portant le label `automation:enabled` — un label que seul `implement-task` (R2) pose,
 sur ses propres PR à risque faible. Les PR de Dependabot et celles de
 `site-quality` (R5) n'ont jamais ce label : review-passées, elles
 s'accumulent sans que rien ne les fasse avancer. C'est le trou que ce skill
@@ -119,6 +119,12 @@ Il rend un code de sortie 0 (tout vert), 1 (un check a vraiment échoué), 2
 (CI verte mais `claude/review` pas encore `success`) ou 3 (timeout à 45
 min). Le lancer en tâche de fond et reprendre la main quand la notification
 arrive plutôt que de sonder soi-même en boucle.
+
+Le script s'authentifie automatiquement auprès de l'API GitHub si
+`GITHUB_TOKEN` (ou `GH_TOKEN`) est présent dans l'environnement — sans ça,
+le quota anonyme (60 requêtes/heure) peut s'épuiser en une seule attente
+quand on enchaîne plusieurs PR dans la même passe, chacune relançant le
+script.
 
 ### 6. Si la CI échoue — ce n'est pas le rôle de ce skill de corriger
 
