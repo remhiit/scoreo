@@ -49,7 +49,7 @@ actually cycles.
 | `blocked` | Business | Issue has an open native `blocked_by` dependency — **derived display signal only** (visible in the UI and the Project view); never read as a dispatch condition. The native `blocked_by` link is what `dispatch-ready.mjs` and `unblock-issues.mjs` actually decide on, so this label can lag or go stale (a leftover `blocked` with every native blocker closed doesn't hold up a promotion; a missing `blocked` with an open native blocker doesn't let one through, #432). This label plus the native link are the **sole** carriers of dependency-blocking state (#449) — the issue's readiness verdict never duplicates it, so a blocked issue with a spec-complete `READY_FOR_IMPLEMENTATION` verdict is the expected nominal case, not a contradiction | R1 (human, alongside a `## Dépendances` section) — no automation ever sets it | `unblock-issues.yml`, once every native blocker is closed — this cleanup is independent of whether a queue label (`automation:queued`/`automation:ready`/`automation:in-progress`) is already present, so a dependent that reached the queue before its blockers closed still gets `blocked` cleared; only `automation:needs-human` (terminal escalation) suppresses it |
 | `automation:queued` | État/file | Spec validated, waiting for a dispatch slot | R1 (issue), `unblock-issues.yml` (dependent issue, once unblocked) | `dispatch-ready.mjs` |
 | `automation:ready` | État/déclencheur R2 | Dispatched, next in line for R2 — this is R2's trigger | `dispatch-ready.mjs`, `requeue-lost-events.mjs` (re-posing an orphaned one) | R2 (`implement-task`), in its first action |
-| `automation:in-progress` | Contrôle | A routine currently owns this item ("claim the run") | R2 on an issue; R3 or R4 on a PR | On a PR: the routine that set it, once its run ends (success or escalation). On an issue: persists across R3/R4's entire review/fix cycling on the linked PR — cleared only by R2 itself on stop-and-ask (row #6), by the PR merging, or by R4 mirroring an escalation from the PR onto the issue (rows #19/#20), always as the last of three ordered steps (§6) |
+| `automation:in-progress` | Contrôle | A routine currently owns this item ("claim the run") | R2 on an issue; R3 or R4 on a PR | On a PR: the routine that set it, once its run ends (success or escalation), or the hourly sweeper (`requeue-lost-events.mjs`) once it's been posed for more than `STALE_OWNERSHIP_THRESHOLD_MINUTES` (180 min — the routine died without ever resuming, row #25). On an issue: persists across R3/R4's entire review/fix cycling on the linked PR — cleared only by R2 itself on stop-and-ask (row #6), by the PR merging, by R4 mirroring an escalation from the PR onto the issue (rows #19/#20), or by the same stale-ownership sweeper (row #25), always as the last of three ordered steps (§6) |
 | `automation:needs-review` | File/déclencheur R3 | PR queued for R3 — this is R3's trigger | `needs-review-label.yml` (PR opened/ready/synchronize) | R3 (`pr-review`), in its first action |
 | `automation:attempt-1`/`automation:attempt-2`/`automation:attempt-3` | Compteur | R4's anti-loop retry counter on a PR | R4 (`address-feedback`), after a fix is pushed | R4 itself (old counter, before posting the new one), or R3 on `automation:review-pass` (clears a stale counter) |
 | `automation:review-pass` | Verdict | R3's verdict: PR conforms to its issue's spec | R3 | R3, if a later review overturns it to `automation:needs-fix`; `needs-review-label.yml` (clears a stale one, on synchronize) |
@@ -114,7 +114,7 @@ judges anything subjective (`automation-plan.md` §2 principle 2).
 | `review-status-sync.yml` | Action | `pull_request` `labeled`, filter `automation:review-pass`/`automation:needs-fix` | Translates the label into the `claude/review` commit status; also upserts the PR's `pr-review` entry in `scripts/automation-log.mjs`'s idempotent journal |
 | `scripts/automation-log.mjs` | Helper (called by an Action, not a workflow of its own) | N/A | Finds/creates/updates a routine's single marked journal comment on an issue/PR (`automation-plan.md` § Journal d'exécution idempotent) |
 | `auto-merge-sync.yml` | Action | `pull_request` labeled/unlabeled, filter `automation:enabled` | Enables/disables native GitHub auto-merge; on success, closes linked issues in the same job |
-| `requeue-lost-events.yml` (`requeue-lost-events.mjs`) | Action | Cron hourly + `issues` unlabeled/closed | Re-poses an orphaned `automation:ready`/`automation:needs-review`/`automation:needs-fix` still present > 30 min without `automation:in-progress` |
+| `requeue-lost-events.yml` (`requeue-lost-events.mjs`) | Action | Cron hourly + `issues` unlabeled/closed | Re-poses an orphaned `automation:ready`/`automation:needs-review`/`automation:needs-fix` still present > 30 min without `automation:in-progress`; separately, escalates any `automation:in-progress` still present > 180 min (stale ownership — the routine died without resuming) to `automation:needs-human` (+ `automation:queued` on an issue) |
 | `requeue-lost-events.yml` (`sweep-merged-prs.mjs`) | Action | Same workflow, runs after the sweeper above | Catch-up close of issues left open by a PR merged in the last 7 days |
 | `unblock-issues.yml` | Action | `issues` `closed`, filter `state_reason == completed` | Promotes dependents to `automation:queued` once every native blocker is closed |
 | `sync-issue-dependencies.yml` | Action | `issues` opened/edited | Parses `## Dépendances` and reconciles the native `blocked_by` links against it — posts what's missing, removes what's no longer declared; untouched when the section is absent |
@@ -155,6 +155,7 @@ whether the transition fires without a human (**Auto**) or requires one
 | 22 | PR | `automation:review-pass` | Later review reopens it | R3 | `automation:attempt-*` cleared alongside the verdict, so a later unrelated `automation:needs-fix` starts its own cap fresh | Auto |
 | 23 | PR or Issue | Posed `automation:needs-review`/`automation:needs-fix` > 30 min ago, no `automation:in-progress` (lost event) | Hourly cron | `requeue-lost-events.mjs` | Label removed then re-posed alone | Auto |
 | 24 | PR or Issue | `automation:needs-human` | — | — | Terminal: `unblock-issues.mjs` and `dispatch-ready.mjs` both explicitly skip any item carrying it | Human only, by removing it and re-queuing |
+| 25 | PR or Issue | `automation:in-progress` present, last `labeled` event for it > `STALE_OWNERSHIP_THRESHOLD_MINUTES` (180 min) ago, no `automation:needs-human` (stale ownership — the routine died without resuming, #379) | Hourly cron | `requeue-lost-events.mjs` | On a PR: `automation:needs-human` posed, then `automation:in-progress` removed. On an issue: same three-step order as §6 — `automation:needs-human` posed, `automation:queued` posed, only then `automation:in-progress` removed. Either way, the trigger label (if one happens to still be present) is never touched — no re-trigger, escalation wins; an idempotent comment (marker `<!-- automation-log:stale-ownership -->`) names the label, its age, and what was done | Human (escalated) |
 
 ## 5. The R3 ↔ R4 loop
 
@@ -225,6 +226,24 @@ survives a full review (merge path), or the attempt cap is hit
   still-exhausted quota just leaves the label for the next hourly pass. An
   item stuck for days is a signal for R6 to flag a broken routine, not a
   quota problem.
+- **A claimed run that never resumes is a stale ownership, not a lost
+  event — it escalates instead of being replayed** (row #25, #467). A lost
+  trigger-label event above is safe to blindly retry because the routine
+  never actually started; a routine that claimed the run
+  (`automation:in-progress` posed) but then died mid-flight (usage limit,
+  compaction, crash) may have left partial state — a branch, an open PR —
+  that a second session picking the same item back up would collide with
+  (two runs pushing to the same PR branch). So `requeue-lost-events.mjs`
+  treats `automation:in-progress` past `STALE_OWNERSHIP_THRESHOLD_MINUTES`
+  (180 min, measured the same way as `minutesSinceLabeled` above) as
+  requiring a human, following the same three-step order as the rest of
+  this section on an issue, `automation:needs-human` alone on a PR, and
+  never touching the trigger label either way (no re-trigger races the
+  escalation). `automation:needs-human` already present is left strictly
+  alone — terminal, no re-escalation, no second comment. A missing `labeled`
+  event for `automation:in-progress` (label predates the timeline window, or
+  was set by hand) is an unknown age, not an assumed-stale one: skipped,
+  logged.
 - **A merge whose close-out never lands gets a 7-day catch-up window.**
   `auto-merge-sync.yml` waits, in the same job, for its own auto-merge to
   complete (poll, ~20 min cap) before closing linked issues — a workaround
