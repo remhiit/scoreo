@@ -107,6 +107,50 @@ routines:
     risk_overrides:
       high:
         model: opus-5
+  # Politique du sous-agent classifieur de complexité (#403,
+  # .claude/agents/complexity-classifier.md), pas d'une routine de
+  # .automation/routines.yml : ce fichier accepte des entrées non référencées
+  # par une routine dispatchée (scripts/automation-dispatch.mjs#validateRoutingPolicyCoverage
+  # ne vérifie qu'une seule direction — chaque routine référence une entrée
+  # existante, jamais l'inverse). Les quatre bandes portent volontairement le
+  # même candidat unique à poids 100 : la classification n'est jamais routée
+  # par bande de complexité (ce serait circulaire — le classifieur existe pour
+  # déterminer cette bande), donc jamais relancée sur un modèle plus coûteux
+  # quel que soit son résultat (issue #403, critère d'acceptation).
+  classification:
+    required_capabilities:
+      tools: false
+      structured_output: true
+      long_context: false
+    bands:
+      trivial:
+        candidates:
+          primary:
+            model: haiku-4-5
+            weight: 100
+        min_score: 40
+        fallback: sonnet-5
+      standard:
+        candidates:
+          primary:
+            model: haiku-4-5
+            weight: 100
+        min_score: 40
+        fallback: sonnet-5
+      complex:
+        candidates:
+          primary:
+            model: haiku-4-5
+            weight: 100
+        min_score: 40
+        fallback: sonnet-5
+      very-complex:
+        candidates:
+          primary:
+            model: haiku-4-5
+            weight: 100
+        min_score: 40
+        fallback: sonnet-5
   address-feedback:
     required_capabilities:
       tools: true

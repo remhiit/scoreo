@@ -480,6 +480,82 @@ quand présents — même statut « support uniquement » que `contextUrl` pour
 `TaskContext` : aucune routine ne consomme encore cette évaluation pour
 router une décision (câblage réel hors scope de #402, dépend de #404/#405).
 
+### Fallback LLM de complexité, sous-agent classifieur (#403)
+
+L'heuristique déterministe (#402) décroche sur les issues peu structurées ou
+transverses : sa `confidence` tombe à `low`, ou plusieurs dimensions
+ressortent `available: false`. `scripts/complexity-llm.mjs` ajoute une
+seconde lecture, sémantique, pour ces cas-là — jamais un remplacement, jamais
+la voie par défaut. Spec révisée après l'arbitrage de #423 (option C, § ci-
+dessous) : ce n'est pas une Action appelant une API de fournisseur, mais un
+**sous-agent classifieur** (`.claude/agents/complexity-classifier.md`) lancé
+par le futur skill coordinateur (#430) — ce câblage reste hors scope de
+#403, qui ne fournit que les règles et le contrat qu'il consommera.
+
+Trois fonctions pures, zéro effet de bord, zéro réseau, comme le reste de
+`scripts/complexity-*.mjs` :
+
+- `shouldRunLlmFallback(assessment, labels)` — vrai exactement dans trois
+  cas (`confidence === 'low'` ; au moins deux dimensions `available: false` ;
+  le label `complexity:llm` posé sur l'entité), faux sinon, et **jamais**
+  vrai quand `assessment.override` est non nul : un humain a déjà tranché,
+  le fallback ne le contredit pas.
+- `validateLlmComplexityResponse(response)` — valide la réponse du
+  classifieur contre `schemas/automation/complexity-llm-response.schema.json`
+  (`level`, `confidence`, `reasons`, `uncertainties`, `promptVersion`), même
+  précédent que `validateComplexityAssessment`/`validateTaskContext` : une
+  réponse non conforme, absente (sous-agent indisponible) ou partielle (run
+  interrompu) n'est jamais consommée — l'heuristique fait foi, et l'incident
+  est consigné dans `limits`.
+- `consolidateComplexity(heuristic, llm)` — fusionne les deux lectures sans
+  jugement discrétionnaire : même niveau des deux côtés → `level` inchangé,
+  `provenance` reste `heuristic`, `confidence` = la plus basse des deux ;
+  écart d'exactement une bande → `level` = celui du LLM, `provenance` =
+  `llm`, `confidence` = la plus basse des deux ; écart de deux bandes ou
+  plus → `confidence` forcée à `low` **et** `escalationRequired` forcé à
+  `true`, `level` restant celui de l'heuristique. `score`/`dimensions`/
+  `reasons`/`override`/`thresholds`/`generatedAt` ne bougent jamais, comme
+  pour un override manuel ; seuls `level`/`provenance`/`confidence`/
+  `escalationRequired` peuvent changer.
+  `escalationRequired` (booléen, `complexity-assessment.schema.json`) est le
+  signal structuré que ce désaccord franc exige une escalade vers
+  `automation:needs-human` plutôt qu'une décision de modèle silencieuse —
+  **distinct** d'une `confidence: 'low'` ordinaire (celle que l'heuristique
+  #402 produit nativement sur une spec ambiguë, où `escalationRequired`
+  reste `false` : `assessComplexity` ne le pose jamais à `true` par
+  elle-même). C'est la distinction qui manquait à la première version de ce
+  contrat : `scripts/model-router.mjs#routeModel` traite déjà tout
+  `confidence === 'low'` comme « majorer la bande, prudence, continuer »
+  (`bumpBandForLowConfidence`), jamais comme un arrêt — un futur appelant
+  (#430) doit tester `escalationRequired === true` explicitement pour
+  distinguer ce cas, jamais grep-parser le texte libre de `limits`. Le
+  détail du passage (niveau heuristique, niveau LLM, niveau consolidé,
+  confiance finale, version de prompt) reste, lui, journalisé comme une
+  entrée de plus dans `limits` — pas de champ dédié pour ce détail narratif,
+  seul le booléen d'escalade en a un. `scripts/automation-log.mjs` publie
+  `limits` sous la ligne Complexité du journal idempotent
+  (`- Limites : ...`) et, quand `escalationRequired` est vrai, une ligne
+  dédiée (`- ⚠️ Escalade requise : ...`) distincte de cette confiance basse
+  ordinaire.
+- `resolveClassifierModel(routingPolicy, modelCatalog)` — résout le modèle
+  de sous-agent déclaré par `.automation/routing-policy.yml` pour la clé
+  `routines.classification` (une entrée hors du jeu des routines dispatchées,
+  voir `doc/automation/model-routing.md`) : un seul candidat par bande, à
+  poids 100, **jamais** une escalade par bande de complexité (circulaire :
+  le classifieur existe pour déterminer cette bande). Cas limite spécifié
+  (#403) : une politique ne nommant aucun modèle de classification est un
+  refus explicite nommant le fichier et la clé manquante, jamais un repli
+  implicite sur le modèle du coordinateur.
+
+Le sous-agent lui-même (`.claude/agents/complexity-classifier.md`) déclare
+son modèle en frontmatter (`model: haiku`, résolu ci-dessus), n'a que des
+outils en lecture seule (`Read`, `Grep`, `Glob` — aucune écriture GitHub,
+aucun outil d'édition), et un prompt versionné (`CLASSIFIER_PROMPT_VERSION`)
+qui répond en un seul JSON conforme au schéma ci-dessus, sans poser de
+question, sans démarrer d'implémentation. Au plus un appel par run, y
+compris après une réponse invalide — pas de seconde tentative (garantie du
+futur appelant, #430, pas de ce fichier lui-même, qui n'orchestre rien).
+
 ### Routage par sous-agent : où s'applique le choix de modèle (#423)
 
 **Tranché le 2026-09-07 : option C — routage par sous-agent, à l'intérieur du

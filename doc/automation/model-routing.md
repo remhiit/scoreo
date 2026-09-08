@@ -48,9 +48,16 @@ Un modèle par entrée, indexé par un identifiant de catalogue stable :
 
 ## `.automation/routing-policy.yml`
 
-Une politique par routine (`implement-task`, `pr-review`,
-`address-feedback` — doit couvrir exactement les routines de
-`.automation/routines.yml`) :
+Une politique par routine dispatchée (`implement-task`, `pr-review`,
+`address-feedback` — chaque routine de `.automation/routines.yml` doit en
+référencer une via son champ `routing_policy`, vérifié par
+`scripts/automation-dispatch.mjs#validateRoutingPolicyCoverage`). Une entrée
+supplémentaire, non référencée par aucune routine, reste valide : c'est le
+cas de `classification` (#403, sous-agent classifieur de complexité,
+`.claude/agents/complexity-classifier.md`), consommé directement par un
+sous-agent plutôt que par le dispatcher de labels — la vérification ne porte
+que sur la direction « chaque routine référence une politique existante »,
+jamais l'inverse. Chaque politique porte :
 
 - `required_capabilities` : capacités indispensables pour cette routine. Un
   candidat qui n'en couvre pas une est refusé à la validation.

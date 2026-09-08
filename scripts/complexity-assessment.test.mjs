@@ -348,6 +348,14 @@ describe('assessComplexity — override manuel', () => {
     expect(result.provenance).toBe('heuristic')
     expect(result.limits.some((l) => l.includes('override ignoré'))).toBe(true)
   })
+
+  it("n'appelle jamais d'escalade structurelle par elle-même, même avec une confiance basse", () => {
+    const ctx = buildCtx({ body: '', changedFiles: [], knownBlockers: [] })
+    const result = assessComplexity(ctx, { generatedAt: GENERATED_AT })
+
+    expect(result.confidence).toBe('low')
+    expect(result.escalationRequired).toBe(false)
+  })
 })
 
 describe('validateComplexityAssessment', () => {

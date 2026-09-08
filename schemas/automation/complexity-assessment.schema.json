@@ -116,6 +116,10 @@
     "generatedAt": {
       "type": "string",
       "description": "Horodatage ISO 8601 de construction de cette évaluation"
+    },
+    "escalationRequired": {
+      "type": "boolean",
+      "description": "Vrai quand cette évaluation appelle une escalade explicite vers automation:needs-human plutôt qu'une décision de modèle silencieuse — structurellement distinct d'une `confidence: 'low'` ordinaire, que scripts/model-router.mjs#routeModel traite comme 'majorer la bande, prudence, continuer'. Toujours false quand l'heuristique #402 seule produit l'évaluation (scripts/complexity-assessment.mjs#assessComplexity) ; posé à true uniquement sur un désaccord franc (2 bandes ou plus) entre l'heuristique et le fallback LLM #403 (scripts/complexity-llm.mjs#consolidateComplexity)."
     }
   },
   "required": [
@@ -129,7 +133,8 @@
     "limits",
     "override",
     "thresholds",
-    "generatedAt"
+    "generatedAt",
+    "escalationRequired"
   ],
   "additionalProperties": false,
   "$defs": {

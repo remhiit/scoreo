@@ -450,6 +450,10 @@ export function assessComplexity(taskContext, { thresholds = DEFAULT_THRESHOLDS,
     override,
     thresholds: { version: thresholds.version, bands: thresholds.bands },
     generatedAt,
+    // Toujours false ici : l'heuristique seule ne demande jamais d'escalade
+    // structurelle — seul le fallback LLM (#403) le fait, sur un désaccord
+    // franc, via scripts/complexity-llm.mjs#consolidateComplexity.
+    escalationRequired: false,
   }
 }
 
@@ -466,6 +470,7 @@ const REQUIRED_TOP_FIELDS = [
   'override',
   'thresholds',
   'generatedAt',
+  'escalationRequired',
 ]
 
 // Miroir à la main du contrat schemas/automation/complexity-assessment.schema.json
@@ -500,6 +505,9 @@ export function validateComplexityAssessment(assessment) {
   }
   if (assessment.override && !VALID_LEVELS.includes(assessment.override.level)) {
     errors.push('complexity-assessment.override.level: doit être un niveau valide')
+  }
+  if (assessment.escalationRequired !== undefined && typeof assessment.escalationRequired !== 'boolean') {
+    errors.push('complexity-assessment.escalationRequired: doit être un booléen')
   }
 
   return { valid: errors.length === 0, errors }

@@ -98,6 +98,26 @@ export function renderAutomationLog({
     if (complexity.reasons?.length) {
       lines.push(`  - Raisons : ${complexity.reasons.join(' ; ')}`)
     }
+    // Le détail du passage fallback LLM (#403) — niveau heuristique, niveau
+    // LLM, niveau consolidé, confiance finale, version de prompt — n'a pas de
+    // champ dédié et est journalisé comme une entrée de plus dans `limits`
+    // (scripts/complexity-llm.mjs#consolidateComplexity), au même titre que
+    // le plancher "jamais trivial" ou l'override ignoré du §402. `limits`
+    // n'était pas encore publié dans le journal avant #403 ; il l'est
+    // maintenant systématiquement, pour ce cas comme pour les autres.
+    if (complexity.limits?.length) {
+      lines.push(`  - Limites : ${complexity.limits.join(' ; ')}`)
+    }
+    // `escalationRequired`, lui, a un champ dédié dans ComplexityAssessment
+    // (#403) — structurellement distinct d'une `confidence: 'low'` ordinaire,
+    // que scripts/model-router.mjs#routeModel traite déjà comme « majorer la
+    // bande, prudence, continuer ». Rendu ici comme une ligne à part, visible
+    // sans avoir à parser le texte libre de `limits` ci-dessus.
+    if (complexity.escalationRequired) {
+      lines.push(
+        '  - ⚠️ Escalade requise : désaccord structurel entre l\'heuristique et le fallback LLM (voir Limites) — distinct d\'une confiance basse ordinaire',
+      )
+    }
   }
   // Optional: publie la RoutingDecision (issue #404, doc/automation/model-routing.md
   // § Algorithme du routeur) — le modèle retenu, son origine et la chaîne de
