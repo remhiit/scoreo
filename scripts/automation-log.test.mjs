@@ -75,6 +75,48 @@ describe('renderAutomationLog / parseAutomationLog', () => {
     expect(body).not.toContain('Override manuel')
   })
 
+  it('surfaces the LLM fallback trail (heuristic/LLM/consolidated levels, confidence, prompt version) via limits', async () => {
+    const { renderAutomationLog } = await import('./automation-log.mjs')
+    const { consolidateComplexity } = await import('./complexity-llm.mjs')
+    const heuristic = {
+      level: 'complex',
+      score: 52,
+      confidence: 'high',
+      provenance: 'heuristic',
+      override: null,
+      dimensions: {},
+      reasons: [],
+      limits: [],
+      thresholds: { version: 1, bands: [] },
+      generatedAt: '2026-09-08T10:00:00Z',
+    }
+    const consolidated = consolidateComplexity(heuristic, {
+      level: 'standard',
+      confidence: 'medium',
+      reasons: ['spec claire une fois lue en entier'],
+      uncertainties: [],
+      promptVersion: 1,
+    })
+
+    const body = renderAutomationLog({
+      routine: 'implement-task',
+      triggeredAt: '2026-09-08T10:00:00Z',
+      sha: 'abc1234',
+      status: 'running',
+      iteration: '1',
+      validation: 'lint / typecheck / tests',
+      resultUrl: 'https://github.com/remhiit/scoreo/actions/runs/999',
+      complexity: consolidated,
+    })
+
+    expect(body).toContain('- Complexité : `standard` (score 52/100, confiance `medium`, provenance `llm`)')
+    expect(body).toContain('- Limites : fallback LLM (version de prompt 1)')
+    expect(body).toContain('heuristique "complex"')
+    expect(body).toContain('LLM "standard"')
+    expect(body).toContain('niveau retenu "standard"')
+    expect(body).toContain('confiance consolidée "medium"')
+  })
+
   it('surfaces a manual complexity override without hiding the underlying heuristic level', async () => {
     const { renderAutomationLog } = await import('./automation-log.mjs')
     const body = renderAutomationLog({

@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft-07/schema#",
+  "title": "Scoreo Automation ComplexityLlmResponse",
+  "description": "Contrat de la réponse du sous-agent classifieur de complexité (issue #403, doc/technical/automation-plan.md §4 « Fallback LLM de complexité »). Consommée uniquement après validation stricte par scripts/complexity-llm.mjs#validateLlmComplexityResponse — jamais partiellement, jamais sans passer ce schéma — puis fusionnée avec le ComplexityAssessment heuristique (#402) par scripts/complexity-llm.mjs#consolidateComplexity. Documentée ici comme référence du contrat ; validée en pratique par le validateur écrit à la main (même précédent que schemas/automation/complexity-assessment.schema.json).",
+  "type": "object",
+  "properties": {
+    "level": {
+      "type": "string",
+      "description": "Niveau de complexité perçu par le classifieur, même échelle que ComplexityAssessment.level",
+      "enum": ["trivial", "standard", "complex", "very-complex"]
+    },
+    "confidence": {
+      "type": "string",
+      "description": "Confiance du classifieur dans sa propre lecture — jamais un niveau de risque",
+      "enum": ["high", "medium", "low"]
+    },
+    "reasons": {
+      "type": "array",
+      "description": "Au moins une justification lisible du niveau retenu — jamais un niveau nu sans explication",
+      "items": { "type": "string" },
+      "minItems": 1
+    },
+    "uncertainties": {
+      "type": "array",
+      "description": "Points d'incertitude explicitement signalés par le classifieur (peut être vide, jamais omis)",
+      "items": { "type": "string" }
+    },
+    "promptVersion": {
+      "type": "integer",
+      "description": "Version du prompt versionné qui a produit cette réponse (scripts/complexity-llm.mjs#CLASSIFIER_PROMPT_VERSION, .claude/agents/complexity-classifier.md) — journalisée pour traçabilité, jamais utilisée pour arbitrer le niveau retenu",
+      "minimum": 1
+    }
+  },
+  "required": ["level", "confidence", "reasons", "uncertainties", "promptVersion"],
+  "additionalProperties": false
+}

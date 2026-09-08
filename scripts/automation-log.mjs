@@ -98,6 +98,17 @@ export function renderAutomationLog({
     if (complexity.reasons?.length) {
       lines.push(`  - Raisons : ${complexity.reasons.join(' ; ')}`)
     }
+    // Le fallback LLM (#403) n'a pas de champ dédié — la contrainte
+    // « le résultat consolidé reste conforme au contrat existant » interdit
+    // d'ajouter un champ au ComplexityAssessment (schéma additionalProperties:
+    // false) — il journalise plutôt une entrée dans `limits`
+    // (scripts/complexity-llm.mjs#consolidateComplexity), au même titre que
+    // le plancher "jamais trivial" ou l'override ignoré du §402. `limits`
+    // n'était pas encore publié dans le journal avant #403 ; il l'est
+    // maintenant systématiquement, pour ce cas comme pour les autres.
+    if (complexity.limits?.length) {
+      lines.push(`  - Limites : ${complexity.limits.join(' ; ')}`)
+    }
   }
   // Optional: publie la RoutingDecision (issue #404, doc/automation/model-routing.md
   // § Algorithme du routeur) — le modèle retenu, son origine et la chaîne de
