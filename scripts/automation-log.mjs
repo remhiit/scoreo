@@ -211,6 +211,7 @@ export async function upsertAutomationLog({
   sha,
   status,
   iteration = '1',
+  onlyIfRunning = false,
   validation = 'lint / typecheck / tests',
   resultUrl,
   contextUrl,
@@ -224,12 +225,26 @@ export async function upsertAutomationLog({
   const previous = existing ? parseAutomationLog(existing.body) : null
   const alreadyProcessed = Boolean(previous?.sha === sha && previous?.status && previous.status !== 'running')
 
+  // `onlyIfRunning` sert à *clore* un journal laissé en `running` par un
+  // appelant qui écrivait le début d'une étape sans savoir comment elle
+  // finirait (#473 : le rôle « correctif » du coordinateur, dont le label
+  // `automation:attempt-N` arrive avant que le sous-agent démarre). Sans
+  // journal existant, ou déjà sorti de `running`, il n'y a rien à clore :
+  // on ne crée pas d'entrée pour une étape qui n'a jamais eu lieu.
+  if (onlyIfRunning && previous?.status !== 'running') {
+    return { skipped: true, commentId: existing?.id ?? null, created: false, alreadyProcessed, previous }
+  }
+  // L'itération à clore est celle du journal en cours, pas celle que
+  // l'appelant croit connaître : l'événement de clôture (convergence,
+  // escalade) ne porte pas le numéro du tour.
+  const effectiveIteration = onlyIfRunning ? (previous.iteration ?? iteration) : iteration
+
   const body = renderAutomationLog({
     routine,
     triggeredAt,
     sha,
     status,
-    iteration,
+    iteration: effectiveIteration,
     validation,
     resultUrl,
     contextUrl,
@@ -240,7 +255,7 @@ export async function upsertAutomationLog({
   })
 
   const { commentId, created } = await writeComment(number, existing, body)
-  return { commentId, created, alreadyProcessed, previous }
+  return { commentId, created, alreadyProcessed, previous, skipped: false }
 }
 
 // Le ComplexityAssessment (issue #402) est lu depuis son artefact JSON, même
@@ -276,7 +291,7 @@ function loadRoutingDecision(path) {
 // pas un document structuré à part entière. Chaque variable absente omet
 // juste sa ligne (renderAutomationLog ci-dessus) ; aucune n'étant fournie,
 // `metrics` reste `undefined` et la section entière est omise.
-function loadMetricsFromEnv() {
+export function loadMetricsFromEnv() {
   const fixIterations = process.env.LOG_METRIC_FIX_ITERATIONS
   const compactionObserved = process.env.LOG_METRIC_COMPACTION_OBSERVED
   const usageLimitApproached = process.env.LOG_METRIC_USAGE_LIMIT_APPROACHED
@@ -308,7 +323,13 @@ async function main() {
     metrics: loadMetricsFromEnv(),
     summary: process.env.LOG_SUMMARY,
     triggeredAt: process.env.LOG_TRIGGERED_AT,
+    onlyIfRunning: process.env.LOG_ONLY_IF_RUNNING === 'true',
   })
+
+  if (result.skipped) {
+    console.log(`#${number}: aucun journal "${routine}" en cours à clore — rien à écrire`)
+    return
+  }
 
   console.log(
     `#${number}: journal "${routine}" ${result.created ? 'créé' : 'mis à jour'} (commentaire ${result.commentId})`,

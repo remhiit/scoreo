@@ -281,10 +281,8 @@ On a converged run (§ 4):
   (converged / escalated), Résumé (rounds run, final verdict), Artefacts
   (PR, commits, review(s)), Validations (which of `implement-task`'s five
   checks passed, on which round), Questions non résolues (any
-  `suggestion`/`uncertain` finding left for a human, plus the token-per-run
-  metric #469 asks for and this version doesn't collect — see "Métriques"
-  below — "aucune" otherwise). Includes the metrics named in "Métriques"
-  below.
+  `suggestion`/`uncertain` finding left for a human, "aucune" otherwise).
+  Includes the metrics named in "Métriques" below.
 
 On an escalated run: no PR review-pass/enabled labels — see § Escalade.
 
@@ -301,30 +299,28 @@ the first run any of them are collected for, which is the acceptance
 criterion (#469: "collectées dès cette première version"), not a promise
 that a dashboard already aggregates them.
 
-#469 names a fourth metric, tokens per run, that this version does **not**
-collect — flagged here explicitly, and in the run's own "Questions non
-résolues", rather than silently omitted. The other three are discrete
-events a session can observe about itself (a compaction notice, a
-usage-cutoff signal) and self-report as a boolean/count; nothing available
-to a Claude Code session today exposes a comparable, reliable token count
-for its own run. Collecting it needs a signal this skill doesn't have yet
-(e.g. usage reporting surfaced by the Claude Agent SDK), not a missing line
-of self-reporting code — deferred rather than approximated with a number
-this skill can't actually vouch for.
+These three **are** the metric set. #469 originally named a fourth, tokens
+per run; it was dropped from the acceptance criteria by an explicit human
+call on #473 rather than carried as an open gap: the other three are
+discrete events a session can observe about itself and self-report as a
+boolean/count, whereas nothing available to a Claude Code session today
+exposes a comparable, reliable token count for its own run. Should such a
+signal appear (e.g. usage reporting surfaced by the Claude Agent SDK), it
+takes a new ticket, not a silent line here.
 
-The three metrics that are collected today live only in the synthesis
-comment — `scripts/automation-log.mjs`'s optional `metrics` field (added by
-this same change) is **not** fed by `coordinator-log-sync.yml`: that Action
-fires off the label events this skill posts mid-run
-(`automation:coordinator-owned`, each `automation:attempt-N`), before the
-session has anything to report for the round in progress, and a session has
-no tool to edit a comment it already posted (same limitation `pr-review`'s
-own journal already lives with, `automation-plan.md` § "R3 idempotent"). A
-real channel — this skill posting a structured metrics line the Action then
-parses — is left for a follow-up; until then, `renderAutomationLog`'s
-`metrics` rendering is exercised only by its own unit tests, never by a live
-workflow run, and a human or `weekly-report`/R6 reads the numbers from the
-synthesis comment, not from the per-round journal.
+The three metrics live only in the synthesis comment —
+`scripts/automation-log.mjs`'s optional `metrics` field (added by this same
+change) is **not** fed by `coordinator-log-sync.yml`: that Action fires off
+the label events this skill posts mid-run (`automation:coordinator-owned`,
+each `automation:attempt-N`, then the end-of-run verdict label), and a
+session has no tool to edit a comment it already posted (same limitation
+`pr-review`'s own journal already lives with, `automation-plan.md` § "R3
+idempotent"). A real channel — this skill posting a structured metrics line
+the Action then parses — is left for a follow-up; until then,
+`renderAutomationLog`'s `metrics` rendering is exercised only by its own
+unit tests, never by a live workflow run, and a human or `weekly-report`/R6
+reads the numbers from the synthesis comment, not from the per-round
+journal.
 
 ## Contrôles
 

@@ -16,7 +16,8 @@
 # déclencheur issue/automation:ready — il remplace ici l'ancienne entrée
 # `implement-task` sur ce même couple entity/trigger_label plutôt que de la
 # doubler (un même événement ne peut matcher qu'une seule routine, cf. la
-# garde anti-double-fire ci-dessous). `routing_policy: implement-task` reste
+# garde anti-double-fire de `scripts/automation-dispatch.mjs`, exécutée en CI
+# par le job `automation-config`). `routing_policy: implement-task` reste
 # la politique référencée en attendant le câblage réel du routage par
 # sous-agent à l'intérieur du coordinateur (hors scope de #469, cf.
 # `.claude/skills/coordinator/SKILL.md` § Limites) — `implement-task.md`,

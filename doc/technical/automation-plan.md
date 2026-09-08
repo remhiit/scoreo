@@ -667,23 +667,38 @@ distinct par rôle via son mécanisme existant (`markerFor`). Le rôle
 que le coordinateur effectue lui-même à la convergence) — aucun nouveau
 mécanisme nécessaire pour ce rôle-là.
 
+`automation:attempt-N` étant posé *avant* que le sous-agent de correctif
+démarre, le journal « correctif » s'ouvre en `running` : il ne peut pas
+annoncer une réussite que personne n'a encore constatée. Il faut donc un
+événement pour le refermer, et le tour de correctif lui-même n'en produit
+aucun — la convergence pose `automation:review-pass` (en retirant les
+labels `attempt-*`), l'escalade `automation:needs-human`, jamais un nouvel
+`attempt-N`. Ces deux labels de fin de run, observés tant que la PR porte
+encore `automation:coordinator-owned`, closent donc le journal en
+`succeeded`/`failed` ; l'option `onlyIfRunning` de `automation-log.mjs`
+reprend l'itération du journal ouvert (l'événement de clôture ne la porte
+pas) et ne fait rien du tout quand il n'y a aucun journal à clore — un run
+convergé dès la première review n'a eu aucun tour de correctif et n'en
+inventera pas un. Sans cela, toute PR coordinateur ayant eu au moins un
+tour de correctif laisserait un journal « correctif en cours » visible
+indéfiniment après le merge.
+
 **Métriques**, collectées dès cette version (#469) : nombre de tours de
 review/correctif réellement exécutés (0 à 3), et deux signaux auto-déclarés
 par la session elle-même (compaction de contexte observée, run approchant
 une limite d'usage) — publiés uniquement dans le commentaire de synthèse du
-coordinateur, lu au fil des runs par un humain ou par R6. #469 en nomme une
-quatrième, les tokens par run, que cette version ne collecte pas : à la
-différence des deux signaux ci-dessus, rien de disponible aujourd'hui côté
-session n'expose un décompte de tokens fiable pour son propre run — écart
-consigné explicitement (`coordinator/SKILL.md` § « Métriques »), pas passé
-sous silence. Le champ optionnel `metrics` de `scripts/automation-log.mjs`
-existe (testé unitairement) mais n'est alimenté par aucun workflow réel :
-`coordinator-log-sync.yml` se déclenche sur les labels que le coordinateur
-pose en cours de run, avant que la session ait quoi que ce soit à
-rapporter pour le tour en cours, et une session ne peut éditer aucun
-commentaire qu'elle a déjà posté (§ « R3 idempotent » ci-dessous) — un vrai
-canal (la session posant une ligne de métriques structurée que l'Action
-relit) reste à construire.
+coordinateur, lu au fil des runs par un humain ou par R6. #469 en nommait
+une quatrième, les tokens par run, **retirée des critères d'acceptation par
+arbitrage humain sur #473** : à la différence des trois ci-dessus, rien de
+disponible aujourd'hui côté session n'expose un décompte de tokens fiable
+pour son propre run. Si un tel signal apparaît, il fera l'objet d'un ticket
+dédié, pas d'un ajout silencieux. Le champ optionnel `metrics` de
+`scripts/automation-log.mjs` existe (testé unitairement) mais n'est
+alimenté par aucun workflow réel : `coordinator-log-sync.yml` se déclenche
+sur des labels, et une session ne peut éditer aucun commentaire qu'elle a
+déjà posté (§ « R3 idempotent » ci-dessous) — un vrai canal (la session
+posant une ligne de métriques structurée que l'Action relit) reste à
+construire.
 
 **Deux préalables vérifiés avant mise en service, résultat consigné dans la
 PR de #469** (`coordinator/SKILL.md` § « Préalables vérifiés ») :
@@ -1383,7 +1398,10 @@ escalade la possession périmée au lieu de geler l'item) et #468 (garde
       `pr-review` existant pour le rôle review), champ `metrics` optionnel
       (testé, mais pas encore alimenté par un workflow réel — voir §4
       « Métriques »). `.github/workflows/coordinator-log-sync.yml` (nouveau)
-      pose ces marqueurs de journal par rôle, pas encore les métriques.
+      pose ces marqueurs de journal par rôle, pas encore les métriques, et
+      referme le journal « correctif » sur le label de fin de run
+      (`automation:review-pass`/`automation:needs-human`) plutôt que de le
+      laisser en `running`.
 - [x] Les deux préalables de mise en service vérifiés, résultat consigné en
       §4 : sous-agents lançables depuis une session — oui, vérifié ;
       comportement au dépassement de durée d'un run — non documenté.
