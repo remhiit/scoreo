@@ -98,6 +98,66 @@ describe('renderAutomationLog / parseAutomationLog', () => {
     expect(body).toContain('- Override manuel : `very-complex` (heuristique : `trivial`, source : label:complexity:very-complex)')
   })
 
+  it('publishes the RoutingDecision in a structured readable form when provided', async () => {
+    const { renderAutomationLog } = await import('./automation-log.mjs')
+    const body = renderAutomationLog({
+      routine: 'implement-task',
+      triggeredAt: '2026-09-08T10:00:00Z',
+      sha: 'abc1234',
+      status: 'running',
+      iteration: '1',
+      validation: 'lint / typecheck / tests',
+      resultUrl: 'https://github.com/remhiit/scoreo/actions/runs/999',
+      routing: {
+        status: 'selected',
+        selectedModel: { id: 'sonnet-5', provider: 'anthropic', model: 'claude-sonnet-5', agentAlias: 'sonnet', origin: 'band' },
+        fallbacks: [{ id: 'opus-5', provider: 'anthropic', model: 'claude-opus-5', agentAlias: 'opus', origin: 'band_fallback' }],
+        input: { complexity: { level: 'standard', effectiveLevel: 'standard', confidence: 'high' }, risk: { level: 'medium' } },
+        rulesApplied: ['candidat retenu : "sonnet-5" (origine: band)'],
+        limits: [],
+      },
+    })
+    expect(body).toContain('- Routage : `sonnet-5` (origine `band`, risque `medium`, bande `standard`)')
+    expect(body).toContain('  - Fallbacks : opus-5')
+    expect(body).toContain('  - Règles appliquées : candidat retenu : "sonnet-5" (origine: band)')
+  })
+
+  it('publishes a "no candidate" RoutingDecision explicitly rather than omitting it', async () => {
+    const { renderAutomationLog } = await import('./automation-log.mjs')
+    const body = renderAutomationLog({
+      routine: 'implement-task',
+      triggeredAt: '2026-09-08T10:00:00Z',
+      sha: 'abc1234',
+      status: 'running',
+      iteration: '1',
+      validation: 'lint / typecheck / tests',
+      resultUrl: 'https://github.com/remhiit/scoreo/actions/runs/999',
+      routing: {
+        status: 'no-candidate',
+        selectedModel: null,
+        fallbacks: [],
+        input: { complexity: { level: 'complex', effectiveLevel: 'complex', confidence: 'high' }, risk: { level: 'high' } },
+        rulesApplied: ['aucun candidat éligible sur toute la chaîne (bande, fallback de bande, fallback de catalogue) → no-candidate'],
+        limits: [],
+      },
+    })
+    expect(body).toContain('- Routage : `aucun candidat` (risque `high`, bande `complex`)')
+  })
+
+  it('omits the Routage line entirely when no routing decision is provided', async () => {
+    const { renderAutomationLog } = await import('./automation-log.mjs')
+    const body = renderAutomationLog({
+      routine: 'implement-task',
+      triggeredAt: '2026-09-08T10:00:00Z',
+      sha: 'abc1234',
+      status: 'running',
+      iteration: '1',
+      validation: 'lint / typecheck / tests',
+      resultUrl: 'https://github.com/remhiit/scoreo/actions/runs/999',
+    })
+    expect(body).not.toContain('Routage')
+  })
+
   it('omits the Complexité line entirely when no complexity assessment is provided', async () => {
     const { renderAutomationLog } = await import('./automation-log.mjs')
     const body = renderAutomationLog({

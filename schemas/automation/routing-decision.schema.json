@@ -1,0 +1,144 @@
+{
+  "$schema": "https://json-schema.org/draft-07/schema#",
+  "title": "Scoreo Automation Routing Decision",
+  "description": "Contrat de la décision produite par le routeur pur scripts/model-router.mjs#routeModel (issue #404, doc/automation/model-routing.md § Algorithme du routeur). Une décision par run : le modèle sélectionné (ou l'absence de candidat), la chaîne de fallback ordonnée restante, et chaque candidat évalué avec ses raisons d'exclusion — jamais un score nu sans justification. Documenté ici comme référence du contrat ; validé en pratique par le validateur écrit à la main scripts/model-router.mjs#validateRoutingDecision (même précédent que schemas/automation/complexity-assessment.schema.json).",
+  "type": "object",
+  "properties": {
+    "version": {
+      "type": "integer",
+      "description": "Version du format de ce document",
+      "const": 1
+    },
+    "routine": {
+      "type": "string",
+      "description": "Nom de la routine routée (clé de .automation/routines.yml)"
+    },
+    "entity": {
+      "description": "Entité (issue/PR) à l'origine de ce run, si un TaskContext a été fourni au routeur — null sinon",
+      "oneOf": [
+        { "type": "null" },
+        {
+          "type": "object",
+          "properties": {
+            "type": { "type": "string", "enum": ["issue", "pull_request"] },
+            "number": { "type": "integer" }
+          },
+          "required": ["type", "number"],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "input": {
+      "type": "object",
+      "description": "Résumé des entrées de décision, pour que la reproductibilité soit vérifiable sans rejouer tout le run",
+      "properties": {
+        "complexity": {
+          "type": "object",
+          "properties": {
+            "level": { "type": "string", "enum": ["trivial", "standard", "complex", "very-complex"] },
+            "effectiveLevel": { "type": "string", "enum": ["trivial", "standard", "complex", "very-complex"], "description": "Bande réellement utilisée pour le routage, après majoration éventuelle pour confiance basse (§ Algorithme du routeur)" },
+            "confidence": { "type": "string", "enum": ["high", "medium", "low"] }
+          },
+          "required": ["level", "effectiveLevel", "confidence"],
+          "additionalProperties": false
+        },
+        "risk": {
+          "type": "object",
+          "properties": {
+            "level": { "type": "string", "enum": ["low", "medium", "high"] }
+          },
+          "required": ["level"],
+          "additionalProperties": false
+        },
+        "catalogVersion": { "type": "integer" },
+        "policyVersion": { "type": "integer" }
+      },
+      "required": ["complexity", "risk", "catalogVersion", "policyVersion"],
+      "additionalProperties": false
+    },
+    "status": {
+      "type": "string",
+      "description": "'selected' quand au moins un candidat éligible existe, 'no-candidate' sinon (aucun candidat initial, ou chaîne de fallback épuisée — même sortie dans les deux cas)",
+      "enum": ["selected", "no-candidate"]
+    },
+    "selectedModel": {
+      "description": "Modèle retenu — null si status='no-candidate'",
+      "oneOf": [
+        { "type": "null" },
+        {
+          "type": "object",
+          "properties": {
+            "id": { "type": "string", "description": "Identifiant de catalogue (.automation/model-catalog.yml)" },
+            "provider": { "type": "string" },
+            "model": { "type": "string" },
+            "agentAlias": { "type": ["string", "null"] },
+            "origin": { "type": "string", "enum": ["manual_override", "risk_override", "band", "band_fallback", "catalog_fallback"] }
+          },
+          "required": ["id", "provider", "model", "agentAlias", "origin"],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "fallbacks": {
+      "type": "array",
+      "description": "Chaîne ordonnée des candidats restants, éligibles mais non retenus, dans l'ordre où ils seraient essayés si le modèle sélectionné devenait indisponible en cours de run",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "provider": { "type": "string" },
+          "model": { "type": "string" },
+          "agentAlias": { "type": ["string", "null"] },
+          "origin": { "type": "string", "enum": ["manual_override", "risk_override", "band", "band_fallback", "catalog_fallback"] }
+        },
+        "required": ["id", "provider", "model", "agentAlias", "origin"],
+        "additionalProperties": false
+      }
+    },
+    "candidates": {
+      "type": "array",
+      "description": "Trace complète de l'évaluation, dans l'ordre de précédence — un candidat non éligible porte toujours au moins une raison d'exclusion, jamais un rejet silencieux",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "origin": { "type": "string", "enum": ["manual_override", "risk_override", "band", "band_fallback", "catalog_fallback"] },
+          "eligible": { "type": "boolean" },
+          "exclusionReasons": { "type": "array", "items": { "type": "string" } },
+          "score": { "type": ["number", "null"] },
+          "scoreBreakdown": { "type": ["object", "null"] }
+        },
+        "required": ["id", "origin", "eligible", "exclusionReasons", "score", "scoreBreakdown"],
+        "additionalProperties": false
+      }
+    },
+    "rulesApplied": {
+      "type": "array",
+      "description": "Règles de décision effectivement déclenchées pour ce run (override manuel, override de risque, majoration de bande pour confiance basse, fallback...), lisibles sans rejouer l'algorithme",
+      "items": { "type": "string" }
+    },
+    "limits": {
+      "type": "array",
+      "description": "Limites déclarées explicitement pour ce run (métriques historiques absentes, poids neutralisé...) — jamais un silence sur ce que le routeur n'a pas pu déterminer",
+      "items": { "type": "string" }
+    },
+    "generatedAt": {
+      "type": "string",
+      "description": "Horodatage ISO 8601 de construction de cette décision"
+    }
+  },
+  "required": [
+    "version",
+    "routine",
+    "entity",
+    "input",
+    "status",
+    "selectedModel",
+    "fallbacks",
+    "candidates",
+    "rulesApplied",
+    "limits",
+    "generatedAt"
+  ],
+  "additionalProperties": false
+}
