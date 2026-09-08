@@ -47,11 +47,23 @@ jobs:
           if [ "$LABEL" = "automation:coordinator-owned" ]; then
             LOG_ROUTINE=coordinator-implement
             LOG_ITERATION=1
+            LOG_STATUS=succeeded
             LOG_SUMMARY="Coordinateur : implémentation terminée, PR ouverte."
           else
+            # `automation:attempt-N` is posted by the coordinator *before*
+            # launching the fix sub-agent (coordinator/SKILL.md § "Fix"), so
+            # this event fires before the round has done anything — never
+            # claim `succeeded` here, only that round N started. `running` is
+            # the non-terminal status upsertAutomationLog already recognizes
+            # (scripts/automation-log.mjs, `alreadyProcessed`) precisely for
+            # this case; whichever label the round ends on later (a further
+            # `automation:attempt-N+1`, or the escalation path, which posts
+            # no label this workflow reacts to) overwrites this same journal
+            # comment via its shared marker.
             LOG_ROUTINE=coordinator-fix
             LOG_ITERATION="${LABEL##*-}"
-            LOG_SUMMARY="Coordinateur : tour de correction $LOG_ITERATION poussé."
+            LOG_STATUS=running
+            LOG_SUMMARY="Coordinateur : tour de correction $LOG_ITERATION démarré."
           fi
-          LOG_ROUTINE="$LOG_ROUTINE" LOG_STATUS=succeeded LOG_ITERATION="$LOG_ITERATION" LOG_SUMMARY="$LOG_SUMMARY" \
+          LOG_ROUTINE="$LOG_ROUTINE" LOG_STATUS="$LOG_STATUS" LOG_ITERATION="$LOG_ITERATION" LOG_SUMMARY="$LOG_SUMMARY" \
             node scripts/automation-log.mjs
