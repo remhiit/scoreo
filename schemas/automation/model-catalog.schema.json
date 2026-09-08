@@ -1,0 +1,98 @@
+{
+  "$schema": "https://json-schema.org/draft-07/schema#",
+  "title": "Scoreo Automation Model Catalog",
+  "description": "Contrat de .automation/model-catalog.yml — catalogue versionné des modèles disponibles pour le routage par sous-agent (issue #400, option C tranchée en #423, doc/technical/automation-plan.md § « Routage par sous-agent »). `provider`/`model` restent génériques (pas de format fixé à Anthropic) afin qu'un fournisseur compatible OpenAI ou local s'ajoute plus tard sans changer ce schéma ; aucun champ d'endpoint/secret n'est requis aujourd'hui, le routage restant interne aux sous-agents Claude Code. Documenté ici comme référence du contrat ; validé en pratique par le validateur écrit à la main scripts/automation-dispatch.mjs#validateModelCatalog (même précédent que schemas/automation/routines.schema.json).",
+  "type": "object",
+  "properties": {
+    "version": {
+      "type": "integer",
+      "description": "Version du format de ce fichier",
+      "const": 1
+    },
+    "models": {
+      "type": "object",
+      "description": "Un modèle par entrée, indexé par un identifiant de catalogue stable (référencé depuis .automation/routing-policy.yml)",
+      "minProperties": 1,
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "provider": {
+            "type": "string",
+            "description": "Fournisseur du modèle — chaîne libre en kebab-case (ex: anthropic, openai-compatible, local) pour rester ouvert au multi-provider sans changer ce schéma",
+            "pattern": "^[a-z][a-z0-9-]*$"
+          },
+          "model": {
+            "type": "string",
+            "description": "Identifiant du modèle côté fournisseur (ex: claude-sonnet-5)",
+            "minLength": 1
+          },
+          "agent_alias": {
+            "type": "string",
+            "description": "Optionnel — valeur utilisable telle quelle dans le frontmatter `model:` d'un agent Claude Code (.claude/agents/<nom>.md) ou le paramètre `model` de l'outil Agent",
+            "minLength": 1
+          },
+          "enabled": {
+            "type": "boolean",
+            "description": "Un modèle désactivé ne peut être candidat d'aucune politique de routage (schemas/automation/routing-policy.schema.json)"
+          },
+          "capabilities": {
+            "type": "object",
+            "description": "Capacités du modèle, confrontées à `required_capabilities` d'une politique de routage",
+            "properties": {
+              "tools": { "type": "boolean", "description": "Support de l'appel d'outils" },
+              "structured_output": { "type": "boolean", "description": "Support d'une sortie structurée (schéma/JSON)" },
+              "long_context": { "type": "boolean", "description": "Support d'un contexte long (grand volume de code/diff)" }
+            },
+            "required": ["tools", "structured_output", "long_context"],
+            "additionalProperties": false
+          },
+          "quality_score": {
+            "type": "integer",
+            "description": "Palier de qualité 0-100, confronté au `min_score` d'une bande de complexité dans une politique de routage",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "cost_tier": {
+            "type": "string",
+            "description": "Palier de coût relatif",
+            "enum": ["low", "medium", "high"]
+          },
+          "latency_tier": {
+            "type": "string",
+            "description": "Palier de latence relative",
+            "enum": ["fast", "medium", "slow"]
+          },
+          "max_risk": {
+            "type": "string",
+            "description": "Niveau de risque maximal (échelle change-risk, low/medium/high) que ce modèle peut couvrir — confronté à `risk_overrides` d'une politique de routage",
+            "enum": ["low", "medium", "high"]
+          },
+          "max_complexity": {
+            "type": "string",
+            "description": "Bande de complexité maximale (.automation/complexity-thresholds.yml) pour laquelle ce modèle est jugé pertinent — informatif, consommé par le futur routeur (#404)",
+            "enum": ["trivial", "standard", "complex", "very-complex"]
+          },
+          "fallback": {
+            "type": "string",
+            "description": "Optionnel — identifiant d'un autre modèle de ce catalogue utilisé en secours quand celui-ci est désactivé. Une chaîne de fallback circulaire est refusée à la validation.",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "provider",
+          "model",
+          "enabled",
+          "capabilities",
+          "quality_score",
+          "cost_tier",
+          "latency_tier",
+          "max_risk",
+          "max_complexity"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": ["version", "models"],
+  "additionalProperties": false
+}

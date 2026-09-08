@@ -7,6 +7,10 @@
 # événement `labeled` par .github/workflows/automation-dispatch.yml, tous
 # deux via scripts/automation-dispatch.mjs. Schéma documenté :
 # schemas/automation/routines.schema.json.
+#
+# `routing_policy` référence une entrée de .automation/routing-policy.yml
+# (contrat de routage par sous-agent, doc/automation/model-routing.md,
+# issue #400) — jamais la politique complète dupliquée ici.
 version: 1
 routines:
   implement-task:
@@ -14,15 +18,18 @@ routines:
     trigger_label: automation:ready
     skill: implement-task
     concurrency_key: issue
+    routing_policy: implement-task
   pr-review:
     entity: pull_request
     trigger_label: automation:needs-review
     skill: pr-review
     concurrency_key: pull-request
     deduplicate_by: head_sha
+    routing_policy: pr-review
   address-feedback:
     entity: pull_request
     trigger_label: automation:needs-fix
     skill: address-feedback
     concurrency_key: pull-request
     max_iterations: 3
+    routing_policy: address-feedback

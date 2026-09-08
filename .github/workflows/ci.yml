@@ -166,7 +166,7 @@ jobs:
         with:
           node-version: 22
 
-      - name: Validate .automation/routines.yml
+      - name: Validate .automation/routines.yml, model-catalog.yml and routing-policy.yml
         run: node scripts/automation-dispatch.mjs
 
   design-tokens:

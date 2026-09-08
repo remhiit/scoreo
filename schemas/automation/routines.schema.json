@@ -44,9 +44,14 @@
             "type": "integer",
             "description": "Optionnel — plafond anti-boucle avant escalade en needs-human",
             "minimum": 1
+          },
+          "routing_policy": {
+            "type": "string",
+            "description": "Nom d'une entrée de routines dans schemas/automation/routing-policy.schema.json (.automation/routing-policy.yml) — jamais la politique complète dupliquée ici (issue #400)",
+            "minLength": 1
           }
         },
-        "required": ["entity", "trigger_label", "skill", "concurrency_key"],
+        "required": ["entity", "trigger_label", "skill", "concurrency_key", "routing_policy"],
         "additionalProperties": false
       }
     }
