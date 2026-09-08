@@ -10,7 +10,7 @@ permissions:
 
 jobs:
   label:
-    if: github.event.pull_request.draft == false
+    if: github.event.pull_request.draft == false && !contains(github.event.pull_request.labels.*.name, 'automation:coordinator-owned')
     runs-on: ubuntu-latest
     steps:
       - name: Remove stale verdict labels
