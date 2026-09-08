@@ -1,190 +1,249 @@
 ---
 name: merge-review-pass
-description: Merge les PR ouvertes de remhiit/scoreo passées en review-pass (label `automation:review-pass`), une par une par ordre d'ancienneté, en rebasant chacune sur main avant de la merger et en attendant la CI + claude/review à chaque fois. Utiliser quand on demande de merger les PR review-pass, de "passer une passe" de merge, ou après une vague de PR Dependabot/site-quality (R5) en attente. Comble le trou du pipeline documenté dans doc/technical/automation-plan.md : ces PR n'ont pas le label `automation:enabled`, donc l'auto-merge natif (auto-merge-sync.yml) ne les prend jamais automatiquement.
+description: Merges open remhiit/scoreo pull requests that passed review (label `automation:review-pass`), one at a time in oldest-created-first order, rebasing each onto main and waiting for CI + `claude/review` before merging. Use when asked to merge review-pass PRs, run a merge pass, or after a wave of Dependabot/site-quality (R5) PRs is waiting. Fills a gap in the pipeline documented in doc/technical/automation-plan.md: these PRs never carry the `automation:enabled` label, so the native auto-merge (auto-merge-sync.yml) never picks them up on its own.
 ---
 
-# Merge review-pass
+# Merge Review Pass
 
-Ce skill merge, une par une, les PR qui ont passé la review automatique (R3,
-`pr-review`) mais que rien ne merge tout seul. `automation-plan.md` §4 confie
-le merge à `auto-merge-sync.yml`, une Action zéro-LLM qui n'agit que sur les
-PR portant le label `automation:enabled` — un label que seul `implement-task` (R2) pose,
-sur ses propres PR à risque faible. Les PR de Dependabot et celles de
-`site-quality` (R5) n'ont jamais ce label : review-passées, elles
-s'accumulent sans que rien ne les fasse avancer. C'est le trou que ce skill
-comble, à la main, jusqu'à ce que le périmètre de `auto` soit un jour élargi.
+## Objectif
 
-Voir `project-conventions` pour les commandes pnpm de base et la structure
-du monorepo.
+Merges, one at a time, the PRs that passed automated review (R3,
+`pr-review`) but that nothing else merges on its own. `automation-plan.md`
+§4 hands merging to `auto-merge-sync.yml`, a zero-LLM Action that only acts
+on PRs carrying the `automation:enabled` label — a label only
+`implement-task` (R2) poses, and only on its own low-risk PRs. Dependabot
+PRs and `site-quality` (R5) PRs never carry it: once review-passed, they
+just accumulate. This skill fills that gap by hand, until
+`automation:enabled`'s scope is widened enough to cover them natively.
 
-## Périmètre
+See `project-conventions` for the monorepo's base pnpm commands and layout.
 
-Une PR compte si elle porte le label **exact** `automation:review-pass`,
-sur ouverte (`state: open`). N'importe quelle autre étiquette de verdict —
-`automation:needs-fix`, `automation:needs-human`, `in-progress` — l'exclut :
-ce n'est pas un jugement à porter, c'est un filtre à respecter. Si la
-recherche par label ne renvoie rien, ne pas conclure trop vite qu'il n'y a
-rien à faire : les noms de label ont déjà bougé une fois dans ce repo (`review-pass`
-→ `automation:review-pass`), vérifier la liste des labels du repo avant de
-rapporter "rien en attente".
+## Entrées requises
 
-Traiter les PR **une par une, dans l'ordre de création croissante** (la plus
-ancienne d'abord), jamais en lot. Une fois une PR mergée, main a bougé —
-c'est pourquoi chaque PR suivante se rebase à nouveau juste avant son tour,
-plutôt que de rebaser tout le lot d'un coup au début.
+- Read access to the repo's open pull requests and their labels (via
+  whichever GitHub interface the session has — MCP tools or `gh`).
+- A local git clone with push access to the PR branches being merged (they
+  belong to the same repo — Dependabot branches and human-authored
+  branches alike).
+- `scripts/wait_pr.py` (bundled) needs `GITHUB_TOKEN` or `GH_TOKEN` in the
+  environment to avoid GitHub's 60-request/hour anonymous rate limit — see
+  § Procédure step 5.
 
-## Avant de commencer
+## Préconditions
 
-Vérifier que le clone local n'est pas superficiel :
-`git rev-parse --is-shallow-repository`. S'il répond `true`, lancer
-`git fetch --unshallow origin` avant tout rebase — un clone superficiel fait
-échouer un rebase sur un faux conflit dès le tout premier commit de
-l'historique, ce qui n'a rien à voir avec la PR en cours et fait perdre du
-temps à diagnostiquer.
+Not GitHub-triggered by a single event: this skill searches for its own
+work (every open `automation:review-pass` PR) rather than reacting to one
+named PR, so it has neither a "which PR" rule nor a "claim the run" step
+(`doc/automation/skill-contract.md` §1.4 — both apply only to
+label-triggered routines reacting to one item; this skill discovers a set
+itself, and is explicitly "not yet a routine" per its `automation-plan.md`
+§6 entry).
 
-## Séquence, pour chaque PR (de la plus ancienne à la plus récente)
+Before rebasing anything:
 
-### 1. Rebaser
+- **Shallow clone** — `git rev-parse --is-shallow-repository`. If `true`,
+  run `git fetch --unshallow origin` first. A shallow clone makes the very
+  first rebase fail on a false conflict at the oldest commit in history,
+  which has nothing to do with the PR at hand and wastes time diagnosing.
+- **Label drift** — filter on the exact label `automation:review-pass`. If
+  the search returns nothing, don't conclude too fast that there's nothing
+  to do: label names have already shifted once in this repo (`review-pass`
+  → `automation:review-pass`, `auto` → `automation:enabled`) — check the
+  repo's actual label list before reporting "nothing pending".
+
+## Procédure
+
+Process PRs **one at a time, oldest created first**, never as a batch.
+Once one PR merges, main has moved — that's why each PR is rebased again
+right before its own turn rather than rebasing the whole batch up front.
+
+### 1. Rebase
 
 ```
-git fetch origin main <branche-de-la-PR>
-git checkout -B tmp-<numéro> origin/<branche-de-la-PR>
+git fetch origin main <pr-branch>
+git checkout -B tmp-<number> origin/<pr-branch>
 git rebase origin/main
 ```
 
-La branche temporaire locale (`tmp-<numéro>`) évite de piétiner une branche
-de travail existante et se supprime en fin de passage sur cette PR.
+A local temporary branch (`tmp-<number>`) avoids stepping on an existing
+working branch and is deleted once this PR is done.
 
-### 2. Conflits — résolution mécanique uniquement
+### 2. Conflicts — mechanical resolution only
 
-Un rebase qui traîne peut entrer en conflit avec une autre PR déjà mergée
-entre-temps. Ce skill ne résout que ce qui est mécanique — jamais un
-arbitrage fonctionnel :
+A rebase that's been waiting can conflict with another PR merged in the
+meantime. This skill resolves only what's mechanical — never a functional
+call:
 
-- **`package.json`** (racine, `apps/scoreo/`, ou `packages/*/`) : le conflit
-  est presque toujours une version de dépendance déjà bumpée par une autre
-  PR mergée dans l'intervalle. Garder la version la plus haute des deux
-  côtés du conflit, nettoyer les marqueurs `<<<<<<<`/`=======`/`>>>>>>>`.
-- **`pnpm-lock.yaml`** : ne jamais l'éditer à la main — un lockfile modifié
-  à la main dérive silencieusement du contenu réel des paquets.
-  `git checkout --ours pnpm-lock.yaml`, puis `pnpm install --lockfile-only`
-  pour le régénérer proprement, puis `git add pnpm-lock.yaml`.
-- **Tout le reste** (un conflit dans du code applicatif, une logique de
-  reducer, un test) : ce n'est pas à ce skill de trancher. `git rebase
-  --abort`, laisser cette PR de côté sans la merger, noter la raison pour le
-  résumé final, et passer à la suivante. Un skill de merge qui se met à
-  arbitrer du code perd la propriété qui le rend sûr à lancer sans
-  supervision.
+- **`package.json`** (root, `apps/scoreo/`, or any `packages/*/`) — the
+  conflict is almost always a dependency version already bumped by another
+  PR merged in between. Keep the higher of the two versions, clean up the
+  `<<<<<<<`/`=======`/`>>>>>>>` markers.
+- **`pnpm-lock.yaml`** — never hand-edit it: a hand-edited lockfile
+  silently drifts from what's actually installed. `git checkout --ours
+  pnpm-lock.yaml`, then `pnpm install --lockfile-only` to regenerate it
+  cleanly, then `git add pnpm-lock.yaml`.
+- **Anything else** (application code, reducer logic, a test) — not this
+  skill's call to make. `git rebase --abort`, leave this PR aside
+  unmerged, note why in the final summary, and move to the next one. A
+  merge skill that starts arbitrating code loses the property that makes
+  it safe to run unsupervised.
 
-Une fois les fichiers en conflit résolus (ou aucun conflit) :
-`git rebase --continue` jusqu'à ce que le rebase se termine.
+Once conflicting files are resolved (or there were none): `git rebase
+--continue` until the rebase finishes.
 
-### 3. Valider le lockfile
+### 3. Validate the lockfile
 
-`pnpm install --frozen-lockfile` — jamais `pnpm install` seul, qui peut
-modifier le lockfile en silence si une résolution a dérivé. Un
-`--frozen-lockfile` qui échoue après un rebase signale presque toujours un
-conflit `pnpm-lock.yaml` mal résolu à l'étape précédente ; le corriger avant
-de continuer.
+`pnpm install --frozen-lockfile` — never plain `pnpm install`, which can
+silently rewrite the lockfile if resolution drifted. A `--frozen-lockfile`
+failure right after a rebase almost always means a `pnpm-lock.yaml`
+conflict was resolved wrong in the previous step; fix that before moving
+on.
 
-Un bump touchant l'outillage de build ou de test (`vite`, `vitest`,
-`typescript`, `eslint`, un `@types/*` de poids) mérite en plus un
-`pnpm lint && pnpm typecheck` avant de pousser — un bump majeur (ex. vitest
-4→5) justifie carrément un `pnpm test && pnpm build` complet en local avant
-de pousser, exactement comme `site-quality` le fait déjà à l'ouverture de
-ce type de PR.
+A bump touching build or test tooling (`vite`, `vitest`, `typescript`,
+`eslint`, a heavyweight `@types/*`) also deserves `pnpm lint && pnpm
+typecheck` before pushing — a major bump (e.g. vitest 4→5) is worth a full
+local `pnpm test && pnpm build` before pushing, exactly like `site-quality`
+already does when it opens this kind of PR.
 
-### 4. Pousser
+### 4. Push
 
-`git push --force-with-lease origin tmp-<numéro>:<branche-de-la-PR>` —
-jamais un force tout court, qui écraserait sans prévenir un commit poussé
-entre-temps par quelqu'un (ou quelque chose) d'autre.
+`git push --force-with-lease origin tmp-<number>:<pr-branch>` — never a
+plain force, which would silently overwrite a commit pushed by someone (or
+something) else in the meantime.
 
-### 5. Attendre la CI et la review
+### 5. Wait for CI and review
 
-Le push déclenche `needs-review-label.yml`, qui repasse la PR par R3 sur le
-nouveau SHA. Attendre que tous les check-runs soient au vert **et** que le
-statut `claude/review` soit `success` avant de merger — ne jamais merger sur
-la seule apparence "PR verte" dans l'UI, qui peut retarder d'un cycle sur un
-check encore en cours.
+The push triggers `needs-review-label.yml`, which sends the PR back
+through R3 on the new SHA. Wait until every check-run is green **and** the
+`claude/review` status is `success` before merging — never merge on a PR
+looking green in the UI alone, which can lag a check still in flight.
 
-Ne pas interroger l'API en boucle serrée. Utiliser `scripts/wait_pr.py` de
-ce skill, lancé en arrière-plan :
+Don't poll the API in a tight loop. Use this skill's bundled
+`scripts/wait_pr.py`, launched in the background:
 
 ```
-python3 <chemin-du-skill>/scripts/wait_pr.py <sha> 90
+python3 <skill-path>/scripts/wait_pr.py <sha> 90
 ```
 
-Il rend un code de sortie 0 (tout vert), 1 (un check a vraiment échoué), 2
-(CI verte mais `claude/review` pas encore `success`) ou 3 (timeout à 45
-min). Le lancer en tâche de fond et reprendre la main quand la notification
-arrive plutôt que de sonder soi-même en boucle.
+It exits 0 (everything green), 1 (a check genuinely failed), 2 (CI green
+but `claude/review` not yet `success`), or 3 (timeout at 45 min). Launch it
+in the background and resume once the notification arrives rather than
+polling it yourself.
 
-Le script s'authentifie automatiquement auprès de l'API GitHub si
-`GITHUB_TOKEN` (ou `GH_TOKEN`) est présent dans l'environnement — sans ça,
-le quota anonyme (60 requêtes/heure) peut s'épuiser en une seule attente
-quand on enchaîne plusieurs PR dans la même passe, chacune relançant le
-script.
+The script authenticates automatically when `GITHUB_TOKEN` or `GH_TOKEN` is
+present in the environment — without it, the anonymous quota (60
+requests/hour) can be exhausted by a single wait when several PRs are
+chained in the same pass, each relaunching the script.
 
-### 6. Si la CI échoue — ce n'est pas le rôle de ce skill de corriger
+### 6. If CI fails — not this skill's job to fix
 
-Un code de sortie 1 (ou une review qui redevient `needs-fix`) signifie
-qu'un check a vraiment échoué, pas seulement qu'il tourne encore. Dans ce
-cas, **ne pas diagnostiquer ni corriger** : ce n'est pas cette étape du
-pipeline. Laisser la PR ouverte, non mergée — elle porte déjà (ou reprendra
-via `needs-review-label.yml`) le label qui la fait retomber dans le circuit
-R3/R4, et `address-feedback` (R4) est le skill dont c'est le travail de la
-corriger. Noter dans le résumé final pourquoi cette PR a été laissée de
-côté, avec le check qui a échoué, puis passer à la PR suivante — un échec
-CI sur une PR n'a aucune raison de bloquer les autres, sans rapport entre
-elles.
+Exit code 1 (or a review that comes back `needs-fix`) means a check
+genuinely failed, not just that it's still running. In that case, **don't
+diagnose or fix anything** — that's not this step of the pipeline. Leave
+the PR open, unmerged — it already carries (or will regain, via
+`needs-review-label.yml`) the label that routes it back through R3/R4, and
+`address-feedback` (R4) is the skill whose job it is to fix it. Note in the
+final summary why this PR was set aside, with the check that failed, then
+move to the next PR — a CI failure on one PR has no reason to block
+unrelated ones.
 
-Exemple vécu dans ce repo : une PR de bump `@playwright/test` a fait
-échouer le job `visual`, qui épingle volontairement la version d'image
-Docker attendue et refuse un mismatch — un vrai garde-fou, pas un flake.
-Cette PR est restée ouverte, une autre PR a corrigé le pin séparément, et le
-bump a pu être re-tenté (et fusionné) ensuite. C'est exactement le
-comportement attendu : constater, ne pas forcer, passer à la suivante.
+Real example from this repo: a `@playwright/test` bump PR failed the
+`visual` job, which deliberately pins the expected Docker image version and
+rejects a mismatch — a real guard, not a flake. That PR stayed open, a
+separate PR fixed the pin, and the bump was retried (and merged)
+afterward. That's exactly the expected behavior: notice, don't force, move
+on.
 
-### 7. Race avec Dependabot
+### 7. Dependabot races
 
-Dependabot peut repousser un nouveau commit sur sa propre branche pendant
-qu'on rebase, ou juste après qu'on ait poussé — par exemple si une version
-plus récente du paquet sort entretemps. Les symptômes : un
-`--force-with-lease` rejeté ("stale info"), ou des check-runs qui
-apparaissent `cancelled` sur le SHA qu'on vient de pousser. Dans ce cas, ce
-n'est pas une erreur à contourner : re-`git fetch` la branche, reconstruire
-`tmp-<numéro>` depuis la nouvelle tête distante, refaire le rebase depuis le
-début pour cette PR, et reprendre la séquence à l'étape 1.
+Dependabot can push a new commit to its own branch while this skill is
+mid-rebase, or right after a push — for instance if a newer package
+version is released in between. Symptoms: a `--force-with-lease` rejected
+("stale info"), or check-runs showing `cancelled` on the SHA just pushed.
+This isn't an error to work around: re-`git fetch` the branch, rebuild
+`tmp-<number>` from the new remote head, redo the rebase from scratch for
+this PR, and resume the sequence at step 1.
 
-### 8. Merger
+### 8. Merge
 
-Juste avant de merger, relire l'état actuel de la PR (SHA de tête, labels,
-`mergeable_state`) plutôt que de faire confiance à ce qu'on savait il y a
-quelques minutes — un autre push a pu arriver entretemps (Dependabot,
-`needs-review-label.yml`, ou un humain). Merger en squash, avec un titre de
-commit `<titre de la PR> (#<numéro>)`.
+Right before merging, re-read the PR's current state (head SHA, labels,
+`mergeable_state`) instead of trusting what was known a few minutes ago —
+another push may have landed in between (Dependabot,
+`needs-review-label.yml`, or a human). Merge with squash, with a commit
+title of `<PR title> (#<number>)`.
 
-Une erreur transitoire au moment du merge (502, timeout réseau) ne veut pas
-dire que le merge a échoué côté serveur — GitHub peut avoir traité la
-requête avant que la réponse ne revienne. Avant de retenter, relire l'état
-réel de la PR (`merged: true/false`) : merger deux fois la même PR n'est pas
-possible côté GitHub, mais retenter sur une fausse hypothèse d'échec fait
-perdre du temps et peut semer le doute sur ce qui s'est vraiment passé.
+A transient error at merge time (502, a network timeout) doesn't
+necessarily mean the merge failed server-side — GitHub may have processed
+the request before the response came back. Before retrying, re-read the
+PR's actual state (`merged: true/false`): GitHub itself won't double-merge
+a PR, but retrying on a false assumption of failure wastes time and can
+muddy what actually happened.
 
-### 9. Nettoyer
+### 9. Clean up
 
-Supprimer la branche temporaire locale (`git branch -D tmp-<numéro>`),
-revenir sur la branche de travail avant de passer à la PR suivante.
+Delete the local temporary branch (`git branch -D tmp-<number>`), return to
+the working branch before moving to the next PR.
 
-## Répéter
+## Repeat
 
-Reprendre à l'étape 1 pour la PR suivante par ordre d'ancienneté, jusqu'à
-épuisement de la liste des PR `automation:review-pass` ouvertes.
+Resume at step 1 for the next PR in creation order, until the list of open
+`automation:review-pass` PRs is exhausted.
 
-## Résumé final
+## Sorties obligatoires
 
-Toujours en français (convention du repo, voir `CLAUDE.md` racine). Un
-tableau : numéro de PR, sujet, résultat du rebase (à jour / sans conflit /
-conflit résolu / abandonné), résultat CI, et statut final (mergée, ou
-laissée de côté avec la raison précise).
+- Every `automation:review-pass` PR open at the start of the run is either
+  merged, or explicitly left aside with a stated reason (a functional
+  rebase conflict, a genuine CI failure, an unresolved Dependabot race) —
+  never silently skipped.
+- A final summary, always in French per `CLAUDE.md`'s "Toujours répondre en
+  français dans le chat" — a table: PR number, subject, rebase outcome (up
+  to date / no conflict / conflict resolved / abandoned), CI outcome, and
+  final status (merged, or left aside with the precise reason).
+- Every temporary local branch (`tmp-<number>`) created during the run is
+  deleted before the run ends, whether that PR was merged or left aside.
+
+## Contrôles
+
+Before merging any PR: `pnpm install --frozen-lockfile` passed after the
+rebase (§3); for a build/test-tooling bump, `pnpm lint && pnpm typecheck`
+(and, for a major bump, `pnpm test && pnpm build`) came back clean; every
+check-run on the final SHA is green and `claude/review` is `success`
+(`scripts/wait_pr.py` exit 0); the PR's state was re-read fresh immediately
+before the merge call (§8). A PR that fails any of these checks is not
+merged — it's left aside per §6/§7, never forced through.
+
+## Escalade
+
+Per `doc/automation/skill-contract.md` §3. This skill never poses
+`automation:needs-human` itself — it has no claim step (§ Préconditions)
+and a CI failure or functional conflict already has its own owner
+(`address-feedback`/R4, §6). It stops and reports, rather than guessing,
+when:
+
+- **A rebase conflict falls outside package.json/pnpm-lock.yaml** (§2) —
+  abort, leave the PR aside, note it in the summary; this is not a
+  judgment call this skill is allowed to make.
+- **A Dependabot race (§7) doesn't converge after a couple of retries** —
+  don't loop indefinitely on the same PR; leave it aside and note the
+  repeated race in the summary so a human can look at why the branch keeps
+  moving.
+- **A merge-time transient error (§8) recurs after a re-verified retry** —
+  don't keep retrying blindly; report the PR's actual state and stop
+  rather than risk a double action.
+
+## Limites
+
+- Never resolves a rebase conflict outside a dependency version bump or the
+  lockfile (§2) — any functional conflict is left for a human or a future
+  rebase, never guessed at.
+- Never diagnoses or fixes a CI failure (§6) — that's `address-feedback`
+  (R4)'s job, not this skill's.
+- Never merges more than one PR at a time, and never rebases the whole
+  batch up front — each PR is rebased right before its own turn
+  (`automation-plan.md` §2 principle 6, "one run, one item").
+- Never force-pushes without `--lease` — a plain force could silently
+  discard a commit pushed by Dependabot or a human in between.
+- Never poses or removes a GitHub label itself beyond what pushing
+  naturally triggers (`needs-review-label.yml`'s automatic
+  `automation:needs-review`) — it has no claim step of its own (§
+  Préconditions).
