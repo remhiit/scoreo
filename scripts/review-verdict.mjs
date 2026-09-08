@@ -24,7 +24,13 @@ function normalizeSummary(summary) {
 // le journal (une seule ligne) et pour l'arbitrage (une seule sévérité). La
 // clé de déduplication est le résumé normalisé : les relecteurs n'ont
 // aucun autre identifiant commun à leur disposition (#470, cas limite « les
-// deux rendent le même finding »).
+// deux rendent le même finding »). Doit tourner sur l'ensemble des findings
+// (en corpus et hors corpus mélangés) *avant* le tri par corpus dans
+// `computeReviewVerdict` — sinon un même résumé tagué `corpus: 'in'` par un
+// relecteur et `corpus: 'out'` par l'autre finirait dupliqué dans les deux
+// listes de sortie au lieu d'être fusionné en une entrée : si l'un des deux
+// exemplaires fusionnés est en corpus, le résultat l'est aussi (formé
+// valablement par au moins un relecteur sur ses propres entrées).
 export function dedupeFindings(findings) {
   const byKey = new Map()
   for (const finding of findings) {
@@ -35,6 +41,7 @@ export function dedupeFindings(findings) {
       continue
     }
     existing.severity = moreSevere(existing.severity, finding.severity)
+    if (existing.corpus === 'out' && finding.corpus !== 'out') existing.corpus = finding.corpus
     for (const reviewer of finding.reviewers) {
       if (!existing.reviewers.includes(reviewer)) existing.reviewers.push(reviewer)
     }
@@ -61,11 +68,10 @@ export function computeReviewVerdict({ functional, technical }) {
   }
 
   const allFindings = [...attribute('functional', functional), ...attribute('technical', technical)]
-  const inCorpus = allFindings.filter((f) => f.corpus !== 'out')
-  const outOfCorpus = allFindings.filter((f) => f.corpus === 'out')
+  const deduped = dedupeFindings(allFindings)
 
-  const findings = dedupeFindings(inCorpus)
-  const outOfCorpusFindings = dedupeFindings(outOfCorpus)
+  const findings = deduped.filter((f) => f.corpus !== 'out')
+  const outOfCorpusFindings = deduped.filter((f) => f.corpus === 'out')
 
   const hasBlockingOrImportant = findings.some((f) => f.severity === 'blocking' || f.severity === 'important')
 

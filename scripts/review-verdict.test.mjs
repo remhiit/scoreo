@@ -61,6 +61,18 @@ describe('computeReviewVerdict — cas limites (#470)', () => {
     expect(result.outOfCorpusFindings[0].severity).toBe('blocking')
   })
 
+  it('fusionne un même résumé tagué in-corpus par un relecteur et out-corpus par l’autre en une seule entrée in-corpus', () => {
+    const result = computeReviewVerdict({
+      functional: ok([{ summary: 'Reducer appelle un repository', severity: 'blocking', corpus: 'in' }]),
+      technical: ok([{ summary: 'reducer appelle un repository', severity: 'blocking', corpus: 'out' }]),
+    })
+    expect(result.verdict).toBe('needs-fix')
+    expect(result.findings).toHaveLength(1)
+    expect(result.findings[0].corpus).toBe('in')
+    expect(result.outOfCorpusFindings).toEqual([])
+    expect(result.findings[0].reviewers.sort()).toEqual(['functional', 'technical'])
+  })
+
   it('un relecteur manquant escalade au lieu de conclure sur le seul relecteur restant', () => {
     const result = computeReviewVerdict({ functional: missing, technical: ok() })
     expect(result).toEqual({ verdict: 'needs-human', reason: 'missing-reviewer', missingReviewers: ['functional'] })

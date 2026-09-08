@@ -123,9 +123,9 @@ A finding can surface that doesn't belong to this run's corpus — the
 technical reviewer noticing the diff doesn't satisfy an acceptance
 criterion, or the functional reviewer noticing a reducer calling a
 repository directly. Don't discard it and don't silently downgrade it: tag
-it `corpus: out` (in the structured findings reply, § "Output" below)
-instead of `corpus: in`, with a one-line note on why it falls outside this
-run's own corpus. `coordinator/SKILL.md`'s arbitration rule
+it `corpus: out` (in the structured findings reply, § "Classify every
+finding" below) instead of `corpus: in`, with a one-line note on why it
+falls outside this run's own corpus. `coordinator/SKILL.md`'s arbitration rule
 (`scripts/review-verdict.mjs`) excludes it from the mechanical verdict —
 "formed on the wrong inputs" is exactly the case #470 documents for this —
 but it's still recorded, never dropped.
