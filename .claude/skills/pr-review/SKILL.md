@@ -301,6 +301,19 @@ by re-queuing on every push, but webhook delivery order isn't guaranteed —
 so this check stays load-bearing even though the race is rare. Don't drop
 it as a "simplification" later.
 
+**As the coordinator's review sub-agent** (#469): the same re-check applies,
+but posting `automation:needs-review` here is exactly what this mode must
+never do — that label is standalone R3's own live GitHub trigger, and
+posting it on a PR the coordinator owns would start an independent,
+uncoordinated second `pr-review` session on the same branch
+(`coordinator/SKILL.md` § Limites). If the HEAD SHA differs from the one
+noted in "Claim the run", **do not post anything** — no label, no review —
+and report back to the coordinator that the HEAD moved before this
+sub-agent could finish, naming the old and new SHA, then stop. The
+coordinator, not this sub-agent, decides what happens next (typically:
+launch a fresh review sub-agent on the new SHA, going back to § 2 of
+`coordinator/SKILL.md`).
+
 ### 4. Post the review (R3 only)
 
 One formal PR review is this commit's single synthesis — the dedup guard
@@ -427,4 +440,6 @@ to `automation:needs-human` (`doc/automation/skill-contract.md` §3).
   what the coordinator's own launch prompt supplied — never the PR
   description's own narrative, never a comment from the same run, never any
   journal (see "Context isolation (coordinator sub-agent only)"); never
-  posts a verdict label itself (see step 5).
+  posts a verdict label itself (see step 5), and never posts
+  `automation:needs-review` either, including on a moved HEAD (see § 3) —
+  report back to the coordinator and stop instead.

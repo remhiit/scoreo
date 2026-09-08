@@ -172,6 +172,15 @@ does **not** claim any label (nothing to claim — this run's issue already
 holds `automation:in-progress`) and does **not** post a verdict label
 itself; it returns its findings and their severities to this skill instead.
 
+If the sub-agent instead reports that the PR's HEAD moved mid-review
+(`pr-review/SKILL.md` § 3, "as the coordinator's review sub-agent" —
+another push landed on this branch, e.g. a human's, while this round was
+reading the diff), that is not an escalation: launch a fresh review
+sub-agent on the PR's new current HEAD SHA, discarding this round's
+findings entirely (they were read against a diff this PR no longer has).
+Fetch the current HEAD SHA (`pull_request_read`) before relaunching, the
+same way "Claim the run" first noted it.
+
 #### The review verdict is mechanical
 
 Exactly `pr-review/SKILL.md`'s own rule, applied by this skill instead of
@@ -272,8 +281,10 @@ On a converged run (§ 4):
   (converged / escalated), Résumé (rounds run, final verdict), Artefacts
   (PR, commits, review(s)), Validations (which of `implement-task`'s five
   checks passed, on which round), Questions non résolues (any
-  `suggestion`/`uncertain` finding left for a human, "aucune" otherwise).
-  Includes the metrics named in "Métriques" below.
+  `suggestion`/`uncertain` finding left for a human, plus the token-per-run
+  metric #469 asks for and this version doesn't collect — see "Métriques"
+  below — "aucune" otherwise). Includes the metrics named in "Métriques"
+  below.
 
 On an escalated run: no PR review-pass/enabled labels — see § Escalade.
 
@@ -288,12 +299,32 @@ cutoff at any point. These three are self-reported by the session, not
 pulled from an external metrics store — no such store exists yet; this is
 the first run any of them are collected for, which is the acceptance
 criterion (#469: "collectées dès cette première version"), not a promise
-that a dashboard already aggregates them. `scripts/automation-log.mjs`'s
-`metrics` field (added by this same change) is the machine-readable form of
-the same numbers, written by `coordinator-log-sync.yml` (§ below) at each
-step boundary — a human or `weekly-report`/R6 reads the journal comments
-across runs to see the distribution rather than this skill computing one
-itself.
+that a dashboard already aggregates them.
+
+#469 names a fourth metric, tokens per run, that this version does **not**
+collect — flagged here explicitly, and in the run's own "Questions non
+résolues", rather than silently omitted. The other three are discrete
+events a session can observe about itself (a compaction notice, a
+usage-cutoff signal) and self-report as a boolean/count; nothing available
+to a Claude Code session today exposes a comparable, reliable token count
+for its own run. Collecting it needs a signal this skill doesn't have yet
+(e.g. usage reporting surfaced by the Claude Agent SDK), not a missing line
+of self-reporting code — deferred rather than approximated with a number
+this skill can't actually vouch for.
+
+The three metrics that are collected today live only in the synthesis
+comment — `scripts/automation-log.mjs`'s optional `metrics` field (added by
+this same change) is **not** fed by `coordinator-log-sync.yml`: that Action
+fires off the label events this skill posts mid-run
+(`automation:coordinator-owned`, each `automation:attempt-N`), before the
+session has anything to report for the round in progress, and a session has
+no tool to edit a comment it already posted (same limitation `pr-review`'s
+own journal already lives with, `automation-plan.md` § "R3 idempotent"). A
+real channel — this skill posting a structured metrics line the Action then
+parses — is left for a follow-up; until then, `renderAutomationLog`'s
+`metrics` rendering is exercised only by its own unit tests, never by a live
+workflow run, and a human or `weekly-report`/R6 reads the numbers from the
+synthesis comment, not from the per-round journal.
 
 ## Contrôles
 
