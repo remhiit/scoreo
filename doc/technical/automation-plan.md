@@ -8,7 +8,7 @@ via les **routines Claude Code**.
 > lire en premier. Il indique la phase en cours et le critère de passage à la
 > suivante. Ne pas sauter de phase : chaque gate protège la suivante.
 
-**Phase en cours : 5 bis — Coordinateur R2+R3+R4 (#469 livre le skill ; mise en service non faite, préalable de durée de run non documenté — voir §7 Phase 5 bis), en parallèle de la Phase 5 — R4 et auto-merge (routine opérationnelle depuis le 2026-07-16, gate de 2 semaines démarré). Premier cycle needs-fix→R4 observé et corrigé le jour même (chaîne de déclenchements sur PR #111, cf. §4 « claim the run » et Phase 5). Phase 4 close : gate franchi (2026-07-16, 5/5 tickets mergés). Phases 0 à 3 closes : gate Phase 2 franchi (2026-07-14, PR #90) et premier run réel de R5 observé (2026-07-14, PR #84-89).**
+**Phase en cours : 5 bis — Coordinateur R2+R3+R4 (#469 livre le skill ; mise en service non faite, préalable de durée de run non documenté — voir §7 Phase 5 bis), en parallèle de la Phase 5 — R4 et auto-merge (routine opérationnelle depuis le 2026-07-16, gate de 2 semaines démarré). Tranche 4/4 de #430 (#470, séparation en deux relecteurs) livrée en avance sur le gate normalement posé en §7 Phase 5 bis (« un lot de tickets réels traités... avant d'envisager la tranche 4 ») — décision explicite portée par l'issue #470 elle-même (readiness `READY_FOR_IMPLEMENTATION`, dépendance #469 seule, close), pas un contournement silencieux ; même mise en service non faite que la tranche 3, pour la même raison (préalable de durée de run non documenté). Premier cycle needs-fix→R4 observé et corrigé le jour même (chaîne de déclenchements sur PR #111, cf. §4 « claim the run » et Phase 5). Phase 4 close : gate franchi (2026-07-16, 5/5 tickets mergés). Phases 0 à 3 closes : gate Phase 2 franchi (2026-07-14, PR #90) et premier run réel de R5 observé (2026-07-14, PR #84-89).**
 
 ---
 
@@ -596,26 +596,45 @@ fire de l'incident #99) ; les trois skills restent invocables directement
 (interactif, ou comme sous-agent du coordinateur), simplement sans leur
 propre entrée de déclenchement séparée pour ce couple.
 
-**Isolation du sous-agent de review.** Le point dur de la fusion : la
+**Isolation des sous-agents de review.** Le point dur de la fusion : la
 review doit rester indépendante du récit que l'implémenteur fait de son
-propre travail, pas seulement de son code. Le coordinateur lance un
-sous-agent **frais** (jamais une reprise du sous-agent d'implémentation) et
-ne lui transmet que le numéro de l'issue, le numéro de la PR et le SHA à
-relire — jamais le plan, le raisonnement ou la description de PR de
-l'implémenteur, jamais un commentaire posté pendant ce même run. La ligne
-de partage est la provenance du contexte, pas son volume : un résumé du
-raisonnement de l'implémenteur est aussi interdit que sa sortie brute.
-L'interdiction est écrite des deux côtés — `coordinator/SKILL.md` (ce que le
-coordinateur transmet) et `pr-review/SKILL.md` § « Context isolation
-(coordinator sub-agent only) » (ce que le sous-agent de review va lire de
-lui-même) — pour qu'un sous-agent de review qui irait chercher plus de
+propre travail, pas seulement de son code. Depuis la tranche 4 (#470), elle
+est en plus scindée en **deux** sous-agents aux corpus disjoints — un
+relecteur **fonctionnel** (spec de l'issue, diff, `doc/functional/`) et un
+relecteur **technique** (diff, `doc/technical/architecture.md`,
+`project-conventions`, jamais la spec de l'issue). Le découpage ne se
+justifie que par cette disjonction : deux relecteurs lisant les mêmes
+entrées ne seraient qu'un seul relecteur en double. Le coordinateur lance
+**deux** sous-agents **frais** (jamais une reprise du sous-agent
+d'implémentation, jamais l'un lisant l'autre) et ne transmet à chacun que ce
+que son propre corpus autorise — jamais le plan, le raisonnement ou la
+description de PR de l'implémenteur, jamais un commentaire posté pendant ce
+même run, et jamais la sortie de l'autre relecteur. La ligne de partage est
+la provenance du contexte, pas son volume : un résumé du raisonnement de
+l'implémenteur (ou de l'autre relecteur) est aussi interdit que sa sortie
+brute. L'interdiction est écrite des deux côtés — `coordinator/SKILL.md` (ce
+que le coordinateur transmet à chacun) et `pr-review/SKILL.md` § « Context
+isolation (coordinator sub-agent only) », qui porte désormais une variante
+par corpus — pour qu'un sous-agent de review qui irait chercher plus de
 contexte de sa propre initiative ne perce pas l'isolation par la porte de
-derrière.
+derrière. Un finding formé hors du corpus assigné (le relecteur technique
+commentant la conformité à la spec, par exemple) est journalisé mais tagué
+`corpus: out` — il n'entre jamais dans l'arbitrage, faute d'avoir été formé
+sur les bonnes entrées.
 
 **Le verdict découle mécaniquement des findings**, comme pour R3 (§ « R3
-idempotent » ci-dessous) : au moins un finding `blocking`/`important` →
-un tour de correctif ; aucun → convergé. Le coordinateur n'arbitre jamais ce
-verdict lui-même.
+idempotent » ci-dessous), mais calculé maintenant à partir des **deux**
+relecteurs par une fonction pure et testée, `scripts/review-verdict.mjs`
+(`computeReviewVerdict`) : au moins un finding `blocking`/`important` en
+corpus, une fois les deux relecteurs combinés et un éventuel doublon
+dédupliqué → un tour de correctif ; aucun → convergé. Un désaccord entre les
+deux relecteurs (l'un passe, l'autre bloque) est tranché par ce « ou »
+mécanique, jamais par une lecture des deux review par le coordinateur. Si
+l'un des deux relecteurs échoue ou ne rend rien, le verdict n'est **jamais**
+calculé sur le seul relecteur restant — la fonction rend `needs-human` et
+nomme le ou les relecteurs manquants, ce qui déclenche l'escalade
+(`coordinator/SKILL.md` § Escalade) plutôt qu'une conclusion hâtive. Le
+coordinateur n'arbitre jamais ce verdict lui-même dans les deux cas.
 
 **Labels réutilisés, et un piège structurel évité.** Le coordinateur pose
 `automation:coordinator-owned` sur sa PR dès sa création (garde
@@ -666,6 +685,20 @@ distinct par rôle via son mécanisme existant (`markerFor`). Le rôle
 (`review-status-sync.yml`, déclenché par la pose d'`automation:review-pass`
 que le coordinateur effectue lui-même à la convergence) — aucun nouveau
 mécanisme nécessaire pour ce rôle-là.
+
+Depuis #470, `scripts/automation-log.mjs` porte en plus deux marqueurs par
+relecteur (`coordinator-review-functional`, `coordinator-review-technical`)
+et un champ optionnel `findings` qui rend chaque finding avec sa sévérité,
+le ou les relecteurs qui l'ont rendu, et un tag « hors corpus » le cas
+échéant — ce qui permet au journal d'une PR d'attribuer chaque finding à
+son relecteur (critère d'acceptation #470). Comme pour `metrics`
+ci-dessous, ces deux marqueurs et ce champ sont testés unitairement mais ne
+sont **pas encore** alimentés par un workflow réel : aucune Action ne les
+pose aujourd'hui, faute d'événement de label dédié à « ce relecteur a
+terminé son tour ». Le canal actuellement disponible pour l'attribution est
+le commentaire de synthèse du coordinateur (`coordinator/SKILL.md` §
+« Attribution des findings ») ; le câblage d'une Action réelle vers ces deux
+marqueurs reste un suivi, pas une régression de cette livraison.
 
 `automation:attempt-N` étant posé *avant* que le sous-agent de correctif
 démarre, le journal « correctif » s'ouvre en `running` : il ne peut pas
@@ -893,14 +926,14 @@ toujours au moins `medium` chez `change-risk`, jamais `low`.
 | `project-conventions` | Délègue au `CLAUDE.md` : stack, commandes pnpm, arbo, architecture hexagonale, conventions de commit |
 | `issue-to-spec` | Format de spec : contexte, périmètre/hors-scope, critères d'acceptation testables, comportements d'erreur/cas limites, stratégie de tests, fichiers impactés, risques/questions ouvertes, **catégorie de risque** (détermine le label `automation:enabled`), **verdict de readiness** (`READY_FOR_IMPLEMENTATION`/`NEEDS_CLARIFICATION`, obligatoire, n'affirme que la complétude de la spec — l'état de blocage par dépendance est porté exclusivement par le label `blocked` et le lien natif `blocked_by`, #449) |
 | `implement-task` | Vérifie le verdict `READY_FOR_IMPLEMENTATION` avant de commencer, plan écrit avant tout code (fichiers, tests prévus, risques), recherche d'une abstraction existante avant d'en créer une nouvelle, budget de changement (aucun refactor hors périmètre sans justification explicite), branche `feat/<issue>-<slug>`, tests d'abord, `pnpm lint typecheck test build` vert, vérif visuelle, PR structurée en 5 champs (`doc/automation/skill-contract.md` §2) avec `Closes #N`, mise à jour de `doc/` (pre-commit checklist du `CLAUDE.md`), escalade vers `automation:needs-human` sur spec non prête, divergence majeure avec le plan ou validation qui reste rouge |
-| `pr-review` | Checklist **subjective uniquement** : conformité à la spec, respect de l'archi hexagonale, backward-compat des schémas zod, doc à jour, dette introduite. Le mécanisable est déjà en CI. Chaque finding porte gravité, preuve, impact, niveau de confiance et recommandation (#385) ; la confiance basse force la gravité `uncertain` plutôt que de coexister avec `blocking`/`important`, et `address-feedback` continue de ne lire que la gravité |
+| `pr-review` | Checklist **subjective uniquement** : conformité à la spec, respect de l'archi hexagonale, backward-compat des schémas zod, doc à jour, dette introduite. Le mécanisable est déjà en CI. Chaque finding porte gravité, preuve, impact, niveau de confiance et recommandation (#385) ; la confiance basse force la gravité `uncertain` plutôt que de coexister avec `blocking`/`important`, et `address-feedback` continue de ne lire que la gravité. Comme sous-agent du coordinateur, tourne en deux instances aux corpus disjoints — fonctionnelle (spec + `doc/functional/`) et technique (`doc/technical/architecture.md` + `project-conventions`, jamais la spec) — chaque finding portant alors un sixième champ `corpus` (`in`/`out`, #470) |
 | `address-feedback` | Corriger le périmètre signalé. Ne pas refondre. Ne retraite jamais un thread de review déjà résolu, priorise `blocking` avant `important`, ignore `suggestion`/`uncertain` (#379), bascule sur `automation:needs-human` en cas de retour contradictoire/ambigu ou de suite de checks qui reste rouge, publie une synthèse (corrigé / non appliqué / arbitrage requis) à chaque run (issue #380) |
 | `site-quality` | Deps, liens de doc, Lighthouse, PWA. Utilisée par R5 |
 | `weekly-report` | Rapport hebdo : PR ouvertes > 3 jours, issues `automation:needs-human`, taux `automation:review-pass`/`automation:needs-fix`, incidents depuis le dernier rapport, recommandation sur la liste blanche `automation:enabled`. Utilisée par R6 |
 | `test-strategy` | Traduit les critères d'acceptation d'une spec en scénarios de test par niveau (unitaire/intégration/composant/e2e), classés nominal/erreur/limite/régression/invariant, séparés en obligatoires/recommandés/hors de proportion. Support skill, appelée en interactif ou depuis la procédure d'une autre skill — pas encore câblée dans `implement-task`/`pr-review`/`site-quality` (câblage réel hors scope, #386) |
 | `change-risk` | Détecte, depuis la spec et le diff, les surfaces à risque touchées (persistance/migrations, scoring, API/contrats, auth, secrets, configuration, déploiement, concurrence, aggravé par toute rupture de compat) et assigne un niveau `low`/`medium`/`high` (le plus sévère des surfaces touchées, jamais une moyenne) avec preuves et mitigations (tests renforcés, revue humaine, security/architecture review, blocage merge). Échelle distincte de la catégorie binaire **Faible**/**Élevé** d'`issue-to-spec` (qui gouverne `automation:enabled`) — les deux se recoupent (une surface Élevé ne peut jamais produire un `low` ici) sans fusionner. Support skill, appelée en interactif ou depuis la procédure d'une autre skill — pas encore câblée dans `implement-task`/`test-strategy`/`site-quality`/`pr-review` (câblage réel hors scope, #387) |
 | `merge-review-pass` | Merge les PR `automation:review-pass` une par une (rebase, résolution mécanique des conflits, attente CI), pour les PR sans label `automation:enabled` (Dependabot, R5) que l'auto-merge natif ne prend jamais. Interactif, pas encore une routine |
-| `coordinator` | Fusionne implémentation/review/correctif (#469) en sous-agents d'un même run — délègue à `implement-task`/`pr-review`/`address-feedback` sans en changer la procédure. Le sous-agent de review ne reçoit du coordinateur que l'issue, la PR et le SHA — jamais la sortie de l'implémenteur (§4 « Le coordinateur »). Verdict mécanique depuis les findings, jamais discrétionnaire. Déclarée dans `.automation/routines.yml` sur le couple `issue`/`automation:ready` (remplace `implement-task` sur ce couple) ; activation du déclencheur GitHub réel non faite par cette livraison (préalable de durée de run non vérifié — §4) |
+| `coordinator` | Fusionne implémentation/review/correctif (#469) en sous-agents d'un même run — délègue à `implement-task`/`pr-review`/`address-feedback` sans en changer la procédure. La review tourne en **deux** sous-agents `pr-review` isolés aux corpus disjoints, fonctionnel et technique, qui ne se lisent jamais l'un l'autre (#470) ; chacun ne reçoit du coordinateur que ce que son propre corpus autorise — jamais la sortie de l'implémenteur ni celle de l'autre relecteur (§4 « Le coordinateur »). Verdict mécanique calculé par `scripts/review-verdict.mjs` depuis les findings combinés des deux relecteurs, jamais discrétionnaire — `automation:needs-human` si l'un des deux manque, jamais conclu sur le seul relecteur restant. Déclarée dans `.automation/routines.yml` sur le couple `issue`/`automation:ready` (remplace `implement-task` sur ce couple) ; activation du déclencheur GitHub réel non faite par cette livraison (préalable de durée de run non vérifié — §4) |
 
 **Règle :** une skill non éprouvée en interactif ne passe pas en autonome.
 
@@ -1420,6 +1453,56 @@ tickets réels traités de bout en bout par le coordinateur, sans réveil de R3
 sur ses propres push, avant d'envisager la tranche 4 (#430 : séparation en
 deux relecteurs). Non commencé — voir le point de mise en service ci-dessus.
 
+### Phase 5 ter — Deux relecteurs (#430/#470)
+
+Tranche 4/4 de #430, livrée par cette même modification, **avant** que le
+gate ci-dessus soit franchi — décision explicite portée par l'issue #470
+(readiness `READY_FOR_IMPLEMENTATION`, seule dépendance #469 déjà close et
+mergée) plutôt qu'un contournement du gate. Le gate reste néanmoins
+pertinent pour la **mise en service** : tant qu'un lot réel n'a pas validé
+le coordinateur à un seul relecteur, activer le déclencheur GitHub avec deux
+relecteurs n'est pas plus justifié qu'avec un seul (même préalable non
+vérifié qu'en Phase 5 bis, voir ci-dessous).
+
+- [x] `.claude/skills/pr-review/SKILL.md` : la section « Context isolation
+      (coordinator sub-agent only) » porte désormais une variante
+      **fonctionnelle** (spec + diff + `doc/functional/`) et une variante
+      **technique** (diff + `doc/technical/architecture.md` +
+      `project-conventions`, jamais la spec) ; le checklist §1 tague chaque
+      item par corpus ; chaque finding porte un sixième champ, `corpus`
+      (`in`/`out`), pour qu'un finding hors corpus reste journalisé sans
+      entrer dans l'arbitrage.
+- [x] `.claude/skills/coordinator/SKILL.md` § 2 : lance les deux sous-agents
+      de review isolés (jamais l'un lisant l'autre), collecte leurs findings
+      structurés, et calcule le verdict via `scripts/review-verdict.mjs` —
+      jamais par sa propre lecture des deux review. Un HEAD déplacé pendant
+      l'un des deux tours relance les **deux** sous-agents, jamais un seul.
+      Escalade étendue au cas « relecteur manquant ».
+- [x] `scripts/review-verdict.mjs` (nouveau) : règle d'arbitrage pure,
+      testée unitairement (`scripts/review-verdict.test.mjs`) sur les quatre
+      combinaisons de sévérité, la déduplication d'un finding identique
+      rendu par les deux relecteurs, le finding hors corpus qui n'influe pas
+      sur le verdict, et le relecteur manquant qui escalade plutôt que de
+      conclure sur le seul relecteur restant.
+- [x] `scripts/automation-log.mjs` : marqueurs `coordinator-review-functional`/
+      `coordinator-review-technical` (§4 « Journaux par rôle » ci-dessus) et
+      champ `findings` optionnel attribuant chaque finding à son ou ses
+      relecteurs — testés (`scripts/automation-log.test.mjs`), pas encore
+      alimentés par un workflow réel (même statut que `metrics`, #469).
+- [x] R3 (PR humaines/R5) continue d'utiliser `pr-review/SKILL.md` sans
+      changement de comportement — les deux nouvelles variantes ne
+      s'activent que sous instruction explicite « as the coordinator's
+      functional/technical-corpus review sub-agent ».
+- [ ] **Mise en service non faite par cette livraison**, pour la même raison
+      qu'en Phase 5 bis (préalable de durée de run non documenté) — reste à
+      la main d'un humain, après le gate de la Phase 5 bis.
+- [ ] Vérification d'isolation en relecture humaine de la PR (propriété de
+      prompt, pas de code — non commencé, à faire lors de la review de la PR
+      qui livre cette tranche).
+- [ ] Run réel sur une PR de test portant un défaut fonctionnel et un défaut
+      technique, chacun trouvé par le relecteur dont c'est le corpus — non
+      commencé, dépend de la mise en service du coordinateur lui-même.
+
 ### Phase 6 — Observabilité
 
 R6 hebdo. C'est le rapport qui pilote l'élargissement de la liste blanche `auto`.
@@ -1445,7 +1528,7 @@ R6 hebdo. C'est le rapport qui pilote l'élargissement de la liste blanche `auto
 |---|---|
 | Boucle R3 ↔ R4 infinie | Plafond `automation:attempt-3`, puis `automation:needs-human` |
 | Quota de runs épuisé par une seule PR | Même plafond + `concurrency` dans la CI |
-| Review sans mordant (le modèle relit son propre travail) | Le mécanisable sort de la review et devient un job CI. `claude/review` ne juge que le subjectif |
+| Review sans mordant (le modèle relit son propre travail) | Le mécanisable sort de la review et devient un job CI. `claude/review` ne juge que le subjectif. Dans le coordinateur, la review est en plus scindée en deux relecteurs aux corpus disjoints, arbitrés par une règle mécanique (« ou », #470) plutôt que par un seul relecteur ou par le jugement du coordinateur lui-même |
 | Budget Lighthouse désactivé à la première PR rouge | Seuils `error` fixés depuis la baseline (accessibilité/bonnes pratiques/SEO, marge anti-bruit inter-runs) ou depuis des mesures directes sur le runner CI (performance, écart bien trop grand avec la baseline — voir §9), job toujours hors checks requis (#147) |
 | Régression de backward-compat sur les schémas zod | Hors liste blanche `automation:enabled` : merge manuel obligatoire |
 | `pull_request_target` expose les secrets | Ne jamais y exécuter le code de la PR |

@@ -35,6 +35,12 @@ const ROUTINE_LABELS = {
   // `review-status-sync.yml`, même sémantique) : rien à ajouter ici pour lui.
   'coordinator-implement': 'Coordinateur — implémentation',
   'coordinator-fix': 'Coordinateur — correctif',
+  // Les deux relecteurs aux corpus disjoints (#470,
+  // doc/automation/state-machine.md §8) : un marqueur distinct par relecteur,
+  // pour que le journal d'une PR permette d'attribuer chaque finding à son
+  // relecteur sans les mélanger dans une seule entrée.
+  'coordinator-review-functional': 'Coordinateur — review fonctionnelle',
+  'coordinator-review-technical': 'Coordinateur — review technique',
 }
 
 export function markerFor(routine) {
@@ -53,6 +59,8 @@ export function renderAutomationLog({
   complexity,
   routing,
   metrics,
+  findings,
+  missingReviewers,
   summary,
 }) {
   const label = ROUTINE_LABELS[routine] ?? routine
@@ -132,6 +140,25 @@ export function renderAutomationLog({
     if (parts.length) {
       lines.push(`- Métriques : ${parts.join(', ')}`)
     }
+  }
+  // Optional: attribue chaque finding des deux relecteurs à corpus disjoints
+  // (#470) à celui ou ceux qui l'ont rendu, et marque un finding hors corpus
+  // comme tel plutôt que de le faire disparaître — c'est ce qui permet au
+  // journal d'une PR d'attribuer chaque finding à son relecteur (critère
+  // d'acceptation #470). Absent pour tout appelant qui n'en produit pas,
+  // comme les champs optionnels ci-dessus.
+  if (findings?.length) {
+    lines.push('- Findings :')
+    for (const finding of findings) {
+      const reviewers = finding.reviewers?.join(' + ') ?? '?'
+      const corpusTag = finding.corpus === 'out' ? ' _(hors corpus — exclu de l\'arbitrage)_' : ''
+      lines.push(`  - **${finding.severity}** (${reviewers}) : ${finding.summary}${corpusTag}`)
+    }
+  }
+  // Optional: nomme le ou les relecteurs manquants quand l'arbitrage (#470)
+  // n'a pas pu se calculer — jamais conclu sur le seul relecteur restant.
+  if (missingReviewers?.length) {
+    lines.push(`- Relecteur(s) manquant(s) : ${missingReviewers.join(', ')}`)
   }
   if (summary) {
     lines.push('', summary)
@@ -218,6 +245,8 @@ export async function upsertAutomationLog({
   complexity,
   routing,
   metrics,
+  findings,
+  missingReviewers,
   summary,
   triggeredAt = new Date().toISOString(),
 }) {
@@ -251,6 +280,8 @@ export async function upsertAutomationLog({
     complexity,
     routing,
     metrics,
+    findings,
+    missingReviewers,
     summary,
   })
 
