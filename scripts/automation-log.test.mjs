@@ -186,6 +186,66 @@ describe('renderAutomationLog / parseAutomationLog', () => {
     expect(body).not.toContain('Contexte')
   })
 
+  it('uses a distinct marker per coordinator role (#469)', async () => {
+    const { renderAutomationLog, markerFor } = await import('./automation-log.mjs')
+    const implementBody = renderAutomationLog({
+      routine: 'coordinator-implement',
+      triggeredAt: '2026-09-08T10:00:00Z',
+      sha: 'abc1234',
+      status: 'succeeded',
+      iteration: '1',
+      validation: 'lint / typecheck / tests',
+      resultUrl: 'https://github.com/remhiit/scoreo/actions/runs/999',
+    })
+    const fixBody = renderAutomationLog({
+      routine: 'coordinator-fix',
+      triggeredAt: '2026-09-08T10:05:00Z',
+      sha: 'def5678',
+      status: 'succeeded',
+      iteration: '2',
+      validation: 'lint / typecheck / tests',
+      resultUrl: 'https://github.com/remhiit/scoreo/actions/runs/999',
+    })
+
+    expect(markerFor('coordinator-implement')).toBe('<!-- automation-log:coordinator-implement -->')
+    expect(markerFor('coordinator-fix')).toBe('<!-- automation-log:coordinator-fix -->')
+    expect(implementBody.startsWith(markerFor('coordinator-implement'))).toBe(true)
+    expect(fixBody.startsWith(markerFor('coordinator-fix'))).toBe(true)
+    expect(implementBody).toContain('## Automation — Coordinateur — implémentation')
+    expect(fixBody).toContain('## Automation — Coordinateur — correctif')
+  })
+
+  it('publishes the coordinator metrics fields when provided (#469)', async () => {
+    const { renderAutomationLog } = await import('./automation-log.mjs')
+    const body = renderAutomationLog({
+      routine: 'coordinator-fix',
+      triggeredAt: '2026-09-08T10:00:00Z',
+      sha: 'abc1234',
+      status: 'succeeded',
+      iteration: '2',
+      validation: 'lint / typecheck / tests',
+      resultUrl: 'https://github.com/remhiit/scoreo/actions/runs/999',
+      metrics: { fixIterations: 2, compactionObserved: false, usageLimitApproached: true },
+    })
+    expect(body).toContain(
+      "- Métriques : itérations de correction : 2, compaction observée : non, limite d'usage approchée : oui",
+    )
+  })
+
+  it('omits the Métriques line entirely when no metrics are provided', async () => {
+    const { renderAutomationLog } = await import('./automation-log.mjs')
+    const body = renderAutomationLog({
+      routine: 'pr-review',
+      triggeredAt: '2026-08-31T10:00:00Z',
+      sha: 'abc1234',
+      status: 'succeeded',
+      iteration: '1',
+      validation: 'lint / typecheck / tests',
+      resultUrl: 'https://github.com/remhiit/scoreo/actions/runs/999',
+    })
+    expect(body).not.toContain('Métriques')
+  })
+
   it('falls back to a placeholder when no result URL is available yet', async () => {
     const { renderAutomationLog } = await import('./automation-log.mjs')
     const body = renderAutomationLog({

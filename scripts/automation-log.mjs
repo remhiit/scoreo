@@ -28,6 +28,13 @@ const ROUTINE_LABELS = {
   'address-feedback': 'Correctif',
   'site-quality': 'Hygiène',
   'weekly-report': 'Rapport',
+  // Rôles du coordinateur (#469, doc/technical/automation-plan.md §4 « Le
+  // coordinateur ») — un marqueur distinct par rôle via le même mécanisme
+  // `markerFor(routine)` que les autres routines ci-dessus. Le rôle review
+  // réutilise directement le marqueur `pr-review` existant (même
+  // `review-status-sync.yml`, même sémantique) : rien à ajouter ici pour lui.
+  'coordinator-implement': 'Coordinateur — implémentation',
+  'coordinator-fix': 'Coordinateur — correctif',
 }
 
 export function markerFor(routine) {
@@ -45,6 +52,7 @@ export function renderAutomationLog({
   contextUrl,
   complexity,
   routing,
+  metrics,
   summary,
 }) {
   const label = ROUTINE_LABELS[routine] ?? routine
@@ -103,6 +111,26 @@ export function renderAutomationLog({
     }
     if (routing.limits?.length) {
       lines.push(`  - Limites : ${routing.limits.join(' ; ')}`)
+    }
+  }
+  // Optional: métriques d'un run du coordinateur (issue #469,
+  // doc/technical/automation-plan.md § « Le coordinateur »,
+  // acceptance criterion « collectées dès cette première version ») —
+  // auto-déclarées par la session, pas mesurées par ce script. Absent pour
+  // tout appelant qui n'en produit pas, comme les champs optionnels ci-dessus.
+  if (metrics) {
+    const parts = []
+    if (metrics.fixIterations !== undefined) {
+      parts.push(`itérations de correction : ${metrics.fixIterations}`)
+    }
+    if (metrics.compactionObserved !== undefined) {
+      parts.push(`compaction observée : ${metrics.compactionObserved ? 'oui' : 'non'}`)
+    }
+    if (metrics.usageLimitApproached !== undefined) {
+      parts.push(`limite d'usage approchée : ${metrics.usageLimitApproached ? 'oui' : 'non'}`)
+    }
+    if (parts.length) {
+      lines.push(`- Métriques : ${parts.join(', ')}`)
     }
   }
   if (summary) {
@@ -188,6 +216,7 @@ export async function upsertAutomationLog({
   contextUrl,
   complexity,
   routing,
+  metrics,
   summary,
   triggeredAt = new Date().toISOString(),
 }) {
@@ -206,6 +235,7 @@ export async function upsertAutomationLog({
     contextUrl,
     complexity,
     routing,
+    metrics,
     summary,
   })
 
@@ -240,6 +270,26 @@ function loadRoutingDecision(path) {
   }
 }
 
+// Les métriques du coordinateur (#469) viennent de variables d'env
+// individuelles plutôt que d'un artefact JSON, comme complexity/routing
+// ci-dessus — un run de coordinateur n'a que trois valeurs à transmettre,
+// pas un document structuré à part entière. Chaque variable absente omet
+// juste sa ligne (renderAutomationLog ci-dessus) ; aucune n'étant fournie,
+// `metrics` reste `undefined` et la section entière est omise.
+function loadMetricsFromEnv() {
+  const fixIterations = process.env.LOG_METRIC_FIX_ITERATIONS
+  const compactionObserved = process.env.LOG_METRIC_COMPACTION_OBSERVED
+  const usageLimitApproached = process.env.LOG_METRIC_USAGE_LIMIT_APPROACHED
+  if (fixIterations === undefined && compactionObserved === undefined && usageLimitApproached === undefined) {
+    return undefined
+  }
+  return {
+    ...(fixIterations !== undefined && { fixIterations: Number(fixIterations) }),
+    ...(compactionObserved !== undefined && { compactionObserved: compactionObserved === 'true' }),
+    ...(usageLimitApproached !== undefined && { usageLimitApproached: usageLimitApproached === 'true' }),
+  }
+}
+
 async function main() {
   const number = Number(process.env.LOG_NUMBER)
   const routine = process.env.LOG_ROUTINE
@@ -255,6 +305,7 @@ async function main() {
     contextUrl: process.env.LOG_CONTEXT_URL,
     complexity: loadComplexityAssessment(process.env.LOG_COMPLEXITY_PATH),
     routing: loadRoutingDecision(process.env.LOG_ROUTING_PATH),
+    metrics: loadMetricsFromEnv(),
     summary: process.env.LOG_SUMMARY,
     triggeredAt: process.env.LOG_TRIGGERED_AT,
   })

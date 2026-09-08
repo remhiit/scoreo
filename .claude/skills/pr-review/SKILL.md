@@ -1,6 +1,6 @@
 ---
 name: pr-review
-description: Review a Scoreo PR against its issue's spec — subjective checklist only (spec conformance, hexagonal architecture, zod backward-compat, doc freshness, debt introduced). Everything mechanical is already covered by ci.yml (lint/test/build/doc-links) — do not re-check those. Use when asked to review a PR in this repo, or as the R3 step in doc/technical/automation-plan.md.
+description: Review a Scoreo PR against its issue's spec — subjective checklist only (spec conformance, hexagonal architecture, zod backward-compat, doc freshness, debt introduced). Everything mechanical is already covered by ci.yml (lint/test/build/doc-links) — do not re-check those. Use when asked to review a PR in this repo, or as the R3 step in doc/technical/automation-plan.md. Also invoked, checklist unchanged, as the coordinator's isolated review sub-agent (`.claude/skills/coordinator/SKILL.md`, #469) — see "Context isolation (coordinator sub-agent only)" below for the one hard rule that mode adds.
 ---
 
 # PR Review
@@ -22,6 +22,11 @@ comment on the PR if one already exists (`<!-- automation-log:pr-review -->`,
 written by `review-status-sync.yml`), read in "Skip a duplicate review"
 below to detect an already-reviewed commit.
 
+As the coordinator's review sub-agent (#469), the coordinator's own prompt
+is the *only* input in context — no separate GitHub trigger event, no
+journal to check. See "Context isolation (coordinator sub-agent only)"
+below before reading anything else.
+
 ## Préconditions
 
 ### Which PR
@@ -34,6 +39,43 @@ below to detect an already-reviewed commit.
   its own independent session, one PR each).
 - **Interactive** (asked directly in a session): review the PR the user
   named. Ask for the number if it wasn't given.
+- **As the coordinator's review sub-agent** (#469): the PR number and the
+  exact HEAD SHA to review are given directly in this sub-agent's own launch
+  prompt — nothing to search for, nothing to infer from a GitHub trigger
+  event (there isn't one; this session was launched by the coordinator's
+  own `Agent` call).
+
+### Context isolation (coordinator sub-agent only)
+
+The whole reason the coordinator launches a *fresh* sub-agent for this step
+instead of reusing the one that just finished implementing is that this
+review has to be independent of the implementer's own account of what it
+did. That only holds if this session's context stays limited to exactly
+what the coordinator's prompt supplied: the issue number, the PR number, and
+the HEAD SHA. From there:
+
+- Fetch the issue's spec yourself (`issue_read`) — never accept a
+  paraphrase of it from the prompt beyond the number.
+- Read the diff yourself (`pull_request_read`) — never the PR description's
+  own narrative (its "Résumé"/plan/"Questions non résolues" text) as
+  evidence for or against a finding; that text is the implementer's own
+  account of its work, exactly what this isolation exists to keep out.
+  It's fine to note the PR *exists* and *what it claims to close* — the
+  restriction is on treating the implementer's own reasoning as evidence.
+- Never read any issue/PR comment posted during this same coordinator run —
+  in particular, never look for or read a `coordinator-implement` journal
+  entry (`<!-- automation-log:coordinator-implement -->`) even if one
+  exists on this PR. That comment is exactly "the implementer's GitHub
+  journal" #469 names as the backdoor this isolation has to close, not an
+  exception to it.
+- Ground every finding in the diff itself, `doc/functional/`,
+  `doc/technical/architecture.md`, and `project-conventions` — the same
+  checklist below, just without the implementer's own framing available to
+  lean on.
+
+This section has no equivalent for standalone R3: a human/R5-opened PR
+carries no separate "implementer sub-agent" to be isolated from, so nothing
+here changes how R3 already reads a PR normally.
 
 ### Claim the run (R3 only, first action)
 
@@ -47,12 +89,17 @@ the queue flag instead of picking specific event types). If
 that label-add is itself a qualifying event and re-triggers R3 on the same
 PR — clearing it first closes that door before it can reopen. Skip this step
 for an ad hoc interactive review the user asked for directly (no labels to
-manage there).
+manage there), **and as the coordinator's review sub-agent** (#469) — that
+label was never posted on a coordinator-owned PR in the first place (the
+coordinator never posts `automation:needs-review` on a PR it owns,
+`coordinator/SKILL.md` § Limites), so there's nothing to claim here.
 
-At this same moment, note the PR's current HEAD SHA (`pull_request_read`).
-The checklist below reads the diff at this SHA — the guard just before
-"Post the review" needs it to detect a HEAD that moved mid-review, and the
-dedup check right below needs it to recognize a commit already reviewed.
+At this same moment, note the PR's current HEAD SHA (`pull_request_read`) —
+as the coordinator's sub-agent, this is simply the SHA given in the launch
+prompt. The checklist below reads the diff at this SHA — the guard just
+before "Post the review" needs it to detect a HEAD that moved mid-review,
+and the dedup check right below needs it to recognize a commit already
+reviewed.
 
 ### Skip a duplicate review (R3 only, right after claiming)
 
@@ -64,6 +111,13 @@ possible even with "claim the run" in place (e.g. a duplicate webhook
 delivery, or `requeue-lost-events.mjs` re-posing the label on a run that was
 actually still in flight) — the class of double-fire behind incidents #94
 and #99 (`doc/automation/state-machine.md` §5).
+
+**As the coordinator's review sub-agent** (#469): skip this step too — the
+`pr-review` journal only exists once the coordinator posts a real
+`automation:review-pass` verdict (§ "Label the verdict" below), which never
+happens mid-loop; there's no journal to dedupe against, and the coordinator
+itself, not this sub-agent, is what bounds how many review rounds a PR gets
+(three, same cap as `address-feedback`'s).
 
 Read the PR's comments (`pull_request_read` `get_comments`) and find the one
 whose body starts with `<!-- automation-log:pr-review -->` — the journal
@@ -272,6 +326,11 @@ goes only in the review's summary body, not scattered as inline noise.
 Skip this step for an ad hoc interactive review the user asked for
 directly — just report the findings and verdict in the conversation.
 
+**As the coordinator's review sub-agent** (#469): this step still applies —
+submit the real formal review the same way. It's the durable GitHub
+artifact both a human and `address-feedback`'s fix sub-agent (if this round
+needs one) read from; only step 5 below changes for this mode.
+
 ### 5. Label the verdict (R3 only)
 
 No tool available to a Claude Code session here can post a raw commit
@@ -279,7 +338,16 @@ status, so the verdict surfaces as a label instead — a separate,
 deterministic GitHub Action (`.github/workflows/review-status-sync.yml`)
 translates it into the `claude/review` commit status. This step only
 applies when running as the automated R3 step; skip it for an ad hoc
-interactive review the user asked for directly.
+interactive review the user asked for directly, **and skip it as the
+coordinator's review sub-agent** (#469) — report the verdict (which
+severities were found, if any) back to the coordinator in this sub-agent's
+final reply instead of posting any label. The coordinator alone decides
+label writes for a PR it owns: it never applies `automation:needs-fix`
+(that label is `address-feedback`'s own live GitHub trigger, and posting it
+here would start an independent, uncoordinated second `address-feedback`
+session racing this run on the same branch — `coordinator/SKILL.md` §
+Limites), and it only ever applies `automation:review-pass` once a round
+finds nothing left to fix.
 
 `automation:needs-review` is already gone (removed in "Claim the run"
 above) — this step's job is to remove `automation:in-progress` and post the
@@ -320,6 +388,11 @@ guards, which stop earlier by design):
   `automation:needs-fix` (Procédure §5), never both.
 - `automation:in-progress` removed (Procédure §5).
 
+As the coordinator's review sub-agent (#469): the formal PR review (first
+bullet) still applies; the last two don't — no label is posted by this
+sub-agent (Procédure §5), the verdict is reported back to the coordinator
+instead.
+
 ## Contrôles
 
 The checklist itself (Procédure §1–§2) is this skill's validation surface —
@@ -350,3 +423,8 @@ to `automation:needs-human` (`doc/automation/skill-contract.md` §3).
   the user (see "Which PR").
 - Never writes or edits the `pr-review` automation-log journal comment —
   only `review-status-sync.yml` does (see "Skip a duplicate review").
+- As the coordinator's review sub-agent (#469): never reads anything beyond
+  what the coordinator's own launch prompt supplied — never the PR
+  description's own narrative, never a comment from the same run, never any
+  journal (see "Context isolation (coordinator sub-agent only)"); never
+  posts a verdict label itself (see step 5).

@@ -8,7 +8,7 @@ via les **routines Claude Code**.
 > lire en premier. Il indique la phase en cours et le critère de passage à la
 > suivante. Ne pas sauter de phase : chaque gate protège la suivante.
 
-**Phase en cours : 5 — R4 et auto-merge (routine opérationnelle depuis le 2026-07-16, gate de 2 semaines démarré). Premier cycle needs-fix→R4 observé et corrigé le jour même (chaîne de déclenchements sur PR #111, cf. §4 « claim the run » et Phase 5). Phase 4 close : gate franchi (2026-07-16, 5/5 tickets mergés). Phases 0 à 3 closes : gate Phase 2 franchi (2026-07-14, PR #90) et premier run réel de R5 observé (2026-07-14, PR #84-89).**
+**Phase en cours : 5 bis — Coordinateur R2+R3+R4 (#469 livre le skill ; mise en service non faite, préalable de durée de run non documenté — voir §7 Phase 5 bis), en parallèle de la Phase 5 — R4 et auto-merge (routine opérationnelle depuis le 2026-07-16, gate de 2 semaines démarré). Premier cycle needs-fix→R4 observé et corrigé le jour même (chaîne de déclenchements sur PR #111, cf. §4 « claim the run » et Phase 5). Phase 4 close : gate franchi (2026-07-16, 5/5 tickets mergés). Phases 0 à 3 closes : gate Phase 2 franchi (2026-07-14, PR #90) et premier run réel de R5 observé (2026-07-14, PR #84-89).**
 
 ---
 
@@ -579,6 +579,123 @@ trois fichiers `.automation/*.yml` à chaque exécution, mais aucune routine ne
 résout encore de politique pour router une décision réelle (câblage réel
 hors scope de #400, dépend du skill coordinateur, #430).
 
+### Le coordinateur : R2+R3+R4 fusionnés en un run (#469)
+
+Tranche 3/4 de #430, livrée par `.claude/skills/coordinator/SKILL.md`. Un
+run remplace la chaîne R2 → (R3 ↔ R4)* qui coûte aujourd'hui jusqu'à six
+runs de routine pour deux tours de correction (§4 « claim the run » ci-
+dessus documente déjà pourquoi cette chaîne existe) : implémentation,
+review, correctif tournent comme trois sous-agents d'une seule session
+(`Agent` tool), chacun exécutant, procédure inchangée, le skill qui portait
+déjà ce rôle — `implement-task`, `pr-review`, `address-feedback`. La
+déclaration `.automation/routines.yml` reflète ce remplacement : l'entrée
+`coordinator` occupe désormais le couple `issue`/`automation:ready` qu'
+`implement-task` occupait seule (un même couple ne peut être déclaré deux
+fois — validé par `scripts/automation-dispatch.mjs`, la garde anti-double-
+fire de l'incident #99) ; les trois skills restent invocables directement
+(interactif, ou comme sous-agent du coordinateur), simplement sans leur
+propre entrée de déclenchement séparée pour ce couple.
+
+**Isolation du sous-agent de review.** Le point dur de la fusion : la
+review doit rester indépendante du récit que l'implémenteur fait de son
+propre travail, pas seulement de son code. Le coordinateur lance un
+sous-agent **frais** (jamais une reprise du sous-agent d'implémentation) et
+ne lui transmet que le numéro de l'issue, le numéro de la PR et le SHA à
+relire — jamais le plan, le raisonnement ou la description de PR de
+l'implémenteur, jamais un commentaire posté pendant ce même run. La ligne
+de partage est la provenance du contexte, pas son volume : un résumé du
+raisonnement de l'implémenteur est aussi interdit que sa sortie brute.
+L'interdiction est écrite des deux côtés — `coordinator/SKILL.md` (ce que le
+coordinateur transmet) et `pr-review/SKILL.md` § « Context isolation
+(coordinator sub-agent only) » (ce que le sous-agent de review va lire de
+lui-même) — pour qu'un sous-agent de review qui irait chercher plus de
+contexte de sa propre initiative ne perce pas l'isolation par la porte de
+derrière.
+
+**Le verdict découle mécaniquement des findings**, comme pour R3 (§ « R3
+idempotent » ci-dessous) : au moins un finding `blocking`/`important` →
+un tour de correctif ; aucun → convergé. Le coordinateur n'arbitre jamais ce
+verdict lui-même.
+
+**Labels réutilisés, et un piège structurel évité.** Le coordinateur pose
+`automation:coordinator-owned` sur sa PR dès sa création (garde
+`needs-review-label.yml`, #468, déjà livrée) et le retire à la fin de son
+run, succès ou escalade. Pour le compteur de tours de correctif, il pose
+`automation:attempt-N` (label sûr — aucun déclencheur GitHub n'y filtre) et,
+une fois convergé, `automation:review-pass` (ce qui fait tourner
+`review-status-sync.yml` normalement : statut `claude/review`, journal
+`pr-review`). Il ne pose en revanche **jamais** `automation:needs-review` ni
+`automation:needs-fix` sur une PR qu'il possède — ces deux labels sont les
+déclencheurs GitHub natifs de R3 et R4 respectivement, configurés au niveau
+de la Routine elle-même (pas d'une Action qu'on pourrait garder par une
+condition `if:`, à la différence de `needs-review-label.yml`) ; les poser
+démarrerait une session R3 ou R4 indépendante, non coordonnée, sur la même
+branche — exactement la classe de double-fire que « claim the run »
+(§4 ci-dessus) documente déjà pour R2/R3/R4 entre eux. C'est pour cette
+raison structurelle, pas seulement par choix de conception, que le
+coordinateur gère son propre compteur de tentatives et son propre verdict
+plutôt que de les faire transiter par les labels déclencheurs existants.
+
+**Reprise après un run mort.** Le coordinateur tient
+`automation:in-progress` sur l'**issue** pendant toute la durée du run
+(implémentation + jusqu'à trois tours de review/correctif), exactement
+comme R2 le fait aujourd'hui pour la durée du cycle R3 ↔ R4 (§1 de
+`doc/automation/state-machine.md`). Un crash en cours de run se lit donc
+dans l'état des labels de la même façon qu'un R2/R4 mort aujourd'hui, et se
+rattrape par le même mécanisme, sans rien construire de nouveau : le
+balayeur de possession périmée (`requeue-lost-events.mjs`,
+`STALE_OWNERSHIP_THRESHOLD_MINUTES`, #467, déjà livré) escalade vers
+`automation:needs-human` après 180 minutes. La reprise passe donc toujours
+par l'escalade, jamais par un re-déclenchement automatique — cohérent avec
+le hors-scope explicite de #469 sur #429 (libération du pipeline à
+l'escalade).
+
+**Journaux par rôle.** Aucun outil MCP disponible à une session ne permet
+d'éditer un commentaire existant (§ « R3 idempotent » ci-dessous) — le
+coordinateur ne peut donc pas tenir lui-même un commentaire marqué mis à
+jour en place. Comme pour R3, ce travail reste celui d'une Action
+déterministe : `.github/workflows/coordinator-log-sync.yml` (nouveau)
+observe les mêmes labels que le coordinateur pose déjà ci-dessus —
+`automation:coordinator-owned` (une fois, à l'ouverture de la PR : journal
+de rôle « implémentation ») et `automation:attempt-1/2/3` sur une PR
+`coordinator-owned` (à chaque tour : journal de rôle « correctif ») — et
+appelle `scripts/automation-log.mjs` avec un nom de routine distinct par
+rôle (`coordinator-implement`, `coordinator-fix`), donc un marqueur HTML
+distinct par rôle via son mécanisme existant (`markerFor`). Le rôle
+« review » réutilise tel quel le journal `pr-review` existant
+(`review-status-sync.yml`, déclenché par la pose d'`automation:review-pass`
+que le coordinateur effectue lui-même à la convergence) — aucun nouveau
+mécanisme nécessaire pour ce rôle-là.
+
+**Métriques**, collectées dès cette version (#469) : nombre de tours de
+review/correctif réellement exécutés (0 à 3), et deux signaux auto-déclarés
+par la session elle-même (compaction de contexte observée, run approchant
+une limite d'usage) — publiés dans le commentaire de synthèse du
+coordinateur et dans le champ optionnel `metrics` de
+`scripts/automation-log.mjs` (§ ci-dessous), lu au fil des runs par un
+humain ou par R6 plutôt que calculé par ce skill lui-même.
+
+**Deux préalables vérifiés avant mise en service, résultat consigné dans la
+PR de #469** (`coordinator/SKILL.md` § « Préalables vérifiés ») :
+
+1. Une session peut lancer un sous-agent (`Agent` tool) et lire sa réponse —
+   **vérifié empiriquement**, une session tournant sous le même déclencheur
+   webhook qu'une Routine a lancé un sous-agent de test et reçu sa réponse.
+2. Ce qui se produit au dépassement de durée d'un run — **non vérifié,
+   non documenté** : la documentation publique des Routines Claude Code les
+   qualifie de « research preview » sans énoncer de plafond de durée, de
+   comportement de coupure, ni de signal permettant de distinguer après
+   coup un run coupé d'un run terminé normalement.
+
+Conséquence directe (cas d'arrêt explicite de #469, pas un détail à
+contourner) : cette livraison écrit le skill, les règles d'isolation dans
+les trois skills enveloppés, et la config déclarative, mais **ne bascule
+pas** elle-même un déclencheur GitHub réel dessus — exactement comme pour
+R2/R3/R4/R5 historiquement (§7, « Routine créée/finalisée par Rémi » à
+chaque phase), l'activation reste un geste manuel séparé, avec la question
+du plafond de durée non résolue signalée ici pour que ce geste soit informé
+plutôt que découvert en incident.
+
 ### Journal d'exécution idempotent
 
 Chaque passage d'une routine sur une issue/PR doit rester traçable et
@@ -758,6 +875,7 @@ toujours au moins `medium` chez `change-risk`, jamais `low`.
 | `test-strategy` | Traduit les critères d'acceptation d'une spec en scénarios de test par niveau (unitaire/intégration/composant/e2e), classés nominal/erreur/limite/régression/invariant, séparés en obligatoires/recommandés/hors de proportion. Support skill, appelée en interactif ou depuis la procédure d'une autre skill — pas encore câblée dans `implement-task`/`pr-review`/`site-quality` (câblage réel hors scope, #386) |
 | `change-risk` | Détecte, depuis la spec et le diff, les surfaces à risque touchées (persistance/migrations, scoring, API/contrats, auth, secrets, configuration, déploiement, concurrence, aggravé par toute rupture de compat) et assigne un niveau `low`/`medium`/`high` (le plus sévère des surfaces touchées, jamais une moyenne) avec preuves et mitigations (tests renforcés, revue humaine, security/architecture review, blocage merge). Échelle distincte de la catégorie binaire **Faible**/**Élevé** d'`issue-to-spec` (qui gouverne `automation:enabled`) — les deux se recoupent (une surface Élevé ne peut jamais produire un `low` ici) sans fusionner. Support skill, appelée en interactif ou depuis la procédure d'une autre skill — pas encore câblée dans `implement-task`/`test-strategy`/`site-quality`/`pr-review` (câblage réel hors scope, #387) |
 | `merge-review-pass` | Merge les PR `automation:review-pass` une par une (rebase, résolution mécanique des conflits, attente CI), pour les PR sans label `automation:enabled` (Dependabot, R5) que l'auto-merge natif ne prend jamais. Interactif, pas encore une routine |
+| `coordinator` | Fusionne implémentation/review/correctif (#469) en sous-agents d'un même run — délègue à `implement-task`/`pr-review`/`address-feedback` sans en changer la procédure. Le sous-agent de review ne reçoit du coordinateur que l'issue, la PR et le SHA — jamais la sortie de l'implémenteur (§4 « Le coordinateur »). Verdict mécanique depuis les findings, jamais discrétionnaire. Déclarée dans `.automation/routines.yml` sur le couple `issue`/`automation:ready` (remplace `implement-task` sur ce couple) ; activation du déclencheur GitHub réel non faite par cette livraison (préalable de durée de run non vérifié — §4) |
 
 **Règle :** une skill non éprouvée en interactif ne passe pas en autonome.
 
@@ -1233,6 +1351,44 @@ nominal (fermeture immédiate, pas d'attente jusqu'au prochain passage
 horaire) ; ce rattrapage la rend simplement non critique — son expiration
 n'est plus un point de défaillance unique, seulement un délai de rattrapage
 d'au plus une heure.
+
+### Phase 5 bis — Coordinateur R2+R3+R4 (#430/#469)
+
+Tranches 1 et 2 de #430 livrées et mergées avant celle-ci : #467 (balayeur —
+escalade la possession périmée au lieu de geler l'item) et #468 (garde
+`automation:coordinator-owned` sur `needs-review-label.yml`). Tranche 3
+(#469, ce ticket) livre le skill coordinateur lui-même — détail complet en
+§4 « Le coordinateur : R2+R3+R4 fusionnés en un run ».
+
+- [x] `.claude/skills/coordinator/SKILL.md` écrite.
+- [x] Isolation du sous-agent de review écrite des deux côtés
+      (`coordinator/SKILL.md` et `pr-review/SKILL.md` § « Context isolation
+      (coordinator sub-agent only) »), et les deltas de sous-agent écrits
+      dans `implement-task/SKILL.md`/`address-feedback/SKILL.md`.
+- [x] `.automation/routines.yml` : `coordinator` déclaré sur le couple
+      `issue`/`automation:ready`, en remplacement de l'entrée
+      `implement-task` sur ce même couple.
+- [x] `scripts/automation-log.mjs` : marqueurs de journal distincts par rôle
+      (`coordinator-implement`/`coordinator-fix`, réutilisation du marqueur
+      `pr-review` existant pour le rôle review), champ `metrics` optionnel ;
+      `.github/workflows/coordinator-log-sync.yml` (nouveau) les alimente.
+- [x] Les deux préalables de mise en service vérifiés, résultat consigné en
+      §4 : sous-agents lançables depuis une session — oui, vérifié ;
+      comportement au dépassement de durée d'un run — non documenté.
+- [ ] **Mise en service non faite par cette livraison** (préalable 2
+      non vérifié — cas d'arrêt explicite de #469, pas un détail à
+      contourner). Reste à la main d'un humain : configurer le déclencheur
+      GitHub réel de la Routine coordinateur (comme pour R2/R3/R4/R5
+      historiquement), après lecture de la question de durée non résolue
+      ci-dessus.
+- [ ] Rodage interactif ou en conditions réelles avant de considérer la
+      skill éprouvée (règle §6 « une skill non éprouvée en interactif ne
+      passe pas en autonome ») — non commencé, dépend du point précédent.
+
+**Gate :** identique dans l'esprit à celui de R2 (Phase 4) — un lot de
+tickets réels traités de bout en bout par le coordinateur, sans réveil de R3
+sur ses propres push, avant d'envisager la tranche 4 (#430 : séparation en
+deux relecteurs). Non commencé — voir le point de mise en service ci-dessus.
 
 ### Phase 6 — Observabilité
 

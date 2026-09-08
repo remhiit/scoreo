@@ -1,0 +1,57 @@
+name: Coordinator Log Sync
+
+on:
+  pull_request:
+    types: [labeled]
+
+permissions:
+  issues: write
+  pull-requests: write
+
+jobs:
+  sync:
+    # The coordinator (#469) posts `automation:coordinator-owned` once, at PR
+    # creation (implementation round done), and `automation:attempt-N` before
+    # each fix sub-agent it launches — see doc/technical/automation-plan.md
+    # § "Le coordinateur" and doc/automation/state-machine.md §8. Standalone
+    # R4 (address-feedback) posts the same `automation:attempt-N` labels on
+    # PRs it owns directly, so this job only reacts to an attempt label when
+    # the PR also carries `automation:coordinator-owned` — otherwise a
+    # standalone R4 round would get mislabeled as a coordinator round below.
+    if: |
+      github.event.label.name == 'automation:coordinator-owned' ||
+      (
+        startsWith(github.event.label.name, 'automation:attempt-') &&
+        contains(github.event.pull_request.labels.*.name, 'automation:coordinator-owned')
+      )
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPO_OWNER: remhiit
+      REPO_NAME: scoreo
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Update the coordinator's per-role automation log
+        env:
+          LABEL: ${{ github.event.label.name }}
+          LOG_NUMBER: ${{ github.event.pull_request.number }}
+          LOG_SHA: ${{ github.event.pull_request.head.sha }}
+          LOG_RESULT_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          if [ "$LABEL" = "automation:coordinator-owned" ]; then
+            LOG_ROUTINE=coordinator-implement
+            LOG_ITERATION=1
+            LOG_SUMMARY="Coordinateur : implémentation terminée, PR ouverte."
+          else
+            LOG_ROUTINE=coordinator-fix
+            LOG_ITERATION="${LABEL##*-}"
+            LOG_SUMMARY="Coordinateur : tour de correction $LOG_ITERATION poussé."
+          fi
+          LOG_ROUTINE="$LOG_ROUTINE" LOG_STATUS=succeeded LOG_ITERATION="$LOG_ITERATION" LOG_SUMMARY="$LOG_SUMMARY" \
+            node scripts/automation-log.mjs
