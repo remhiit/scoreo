@@ -232,6 +232,69 @@ describe('renderAutomationLog / parseAutomationLog', () => {
     )
   })
 
+  it('uses a distinct marker per reviewer corpus (#470)', async () => {
+    const { markerFor } = await import('./automation-log.mjs')
+    expect(markerFor('coordinator-review-functional')).toBe('<!-- automation-log:coordinator-review-functional -->')
+    expect(markerFor('coordinator-review-technical')).toBe('<!-- automation-log:coordinator-review-technical -->')
+  })
+
+  it('attributes each finding to the reviewer(s) that raised it (#470)', async () => {
+    const { renderAutomationLog } = await import('./automation-log.mjs')
+    const body = renderAutomationLog({
+      routine: 'pr-review',
+      triggeredAt: '2026-09-08T10:00:00Z',
+      sha: 'abc1234',
+      status: 'succeeded',
+      iteration: '1',
+      validation: 'lint / typecheck / tests',
+      resultUrl: 'https://github.com/remhiit/scoreo/actions/runs/999',
+      findings: [
+        { summary: 'Critère non satisfait', severity: 'blocking', reviewers: ['functional'] },
+        {
+          summary: 'Champ sans .default() zod',
+          severity: 'blocking',
+          reviewers: ['functional', 'technical'],
+        },
+        { summary: 'La spec ne demande pas ce champ', severity: 'important', reviewers: ['technical'], corpus: 'out' },
+      ],
+    })
+    expect(body).toContain('- Findings :')
+    expect(body).toContain('  - **blocking** (functional) : Critère non satisfait')
+    expect(body).toContain('  - **blocking** (functional + technical) : Champ sans .default() zod')
+    expect(body).toContain(
+      "  - **important** (technical) : La spec ne demande pas ce champ _(hors corpus — exclu de l'arbitrage)_",
+    )
+  })
+
+  it('omits the Findings line entirely when no findings are provided', async () => {
+    const { renderAutomationLog } = await import('./automation-log.mjs')
+    const body = renderAutomationLog({
+      routine: 'pr-review',
+      triggeredAt: '2026-09-08T10:00:00Z',
+      sha: 'abc1234',
+      status: 'succeeded',
+      iteration: '1',
+      validation: 'lint / typecheck / tests',
+      resultUrl: 'https://github.com/remhiit/scoreo/actions/runs/999',
+    })
+    expect(body).not.toContain('Findings')
+  })
+
+  it('names the missing reviewer(s) instead of a computed verdict (#470)', async () => {
+    const { renderAutomationLog } = await import('./automation-log.mjs')
+    const body = renderAutomationLog({
+      routine: 'pr-review',
+      triggeredAt: '2026-09-08T10:00:00Z',
+      sha: 'abc1234',
+      status: 'failed',
+      iteration: '1',
+      validation: 'lint / typecheck / tests',
+      resultUrl: 'https://github.com/remhiit/scoreo/actions/runs/999',
+      missingReviewers: ['technical'],
+    })
+    expect(body).toContain('- Relecteur(s) manquant(s) : technical')
+  })
+
   it('omits the Métriques line entirely when no metrics are provided', async () => {
     const { renderAutomationLog } = await import('./automation-log.mjs')
     const body = renderAutomationLog({

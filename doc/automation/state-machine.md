@@ -104,18 +104,19 @@ judges anything subjective (`automation-plan.md` §2 principle 2).
 |---|---|---|---|
 | R1 — grooming | Interactive only, never a routine | A human says "Plan"/"crée une issue" | `.claude/skills/issue-to-spec/SKILL.md` |
 | R2 — implementation | Versioned routine | `issues` `labeled`, filter `automation:ready` | `.claude/skills/implement-task/SKILL.md`. `.automation/routines.yml` currently declares this trigger against the coordinator instead (below) — `implement-task` still runs, as the coordinator's implementation sub-agent, not as its own directly-triggered routine, pending live activation of the coordinator (#469, `automation-plan.md` § "Le coordinateur") |
-| R3 — review | Versioned routine | `pull_request`, any action, filter `automation:needs-review` | `.claude/skills/pr-review/SKILL.md` — also invoked as the coordinator's isolated review sub-agent (§ "The coordinator" below), same checklist, no GitHub trigger of its own in that mode |
+| R3 — review | Versioned routine | `pull_request`, any action, filter `automation:needs-review` | `.claude/skills/pr-review/SKILL.md` — also invoked, unchanged, as **two** of the coordinator's isolated review sub-agents (#469/#470, § "The coordinator" below), one per disjoint corpus (functional/technical), same checklist split by corpus tag, no GitHub trigger of its own in that mode |
 | R4 — fix | Versioned routine | `pull_request` `labeled`, filter `automation:needs-fix` | `.claude/skills/address-feedback/SKILL.md` — also invoked as the coordinator's fix sub-agent (§ "The coordinator" below), same procedure, no GitHub trigger of its own in that mode |
 | R5 — hygiene | Versioned routine, scheduled | Cron, weekly (Monday 06:00 UTC) | `.claude/skills/site-quality/SKILL.md` |
 | R6 — report | Versioned routine, scheduled (not yet created — Phase 6 rodage pending, see `automation-plan.md` §7) | Cron, weekly (planned) | `.claude/skills/weekly-report/SKILL.md` |
-| Coordinator | Versioned routine (declared; live activation pending — #469) | `issues` `labeled`, filter `automation:ready` | `.claude/skills/coordinator/SKILL.md` — fuses R2/R3/R4 into one run, each step a sub-agent of `implement-task`/`pr-review`/`address-feedback`. See § "The coordinator" below |
+| Coordinator | Versioned routine (declared; live activation pending — #469/#470) | `issues` `labeled`, filter `automation:ready` | `.claude/skills/coordinator/SKILL.md` — fuses R2/R3/R4 into one run, review split into two disjoint-corpus sub-agents of `pr-review` (functional/technical, #470), implementation and fix each a sub-agent of `implement-task`/`address-feedback`. See § "The coordinator" below |
 | `automation-dispatch.yml` (`scripts/automation-dispatch.mjs`) | Action | `issues`/`pull_request` `labeled` | Resolves and logs which routine/skill/entity/target_label matches the event, per the declarative mapping in `.automation/routines.yml` (documented by `schemas/automation/routines.schema.json`) — read-only, doesn't replace the routines' own triggers or any workflow below |
 | `automation-config` (job in `ci.yml`, same script) | Action | `pull_request` (CI) | Validates `.automation/routines.yml` against the same resolver — an invalid config (e.g. two routines on the same `entity`/`trigger_label`, the class of bug behind #99) fails CI clearly |
 | `dispatch-ready.mjs` | Action | Same workflow as the sweeper below | Promotes one `automation:queued` issue to `automation:ready` |
 | `needs-review-label.yml` | Action | `pull_request` opened/ready_for_review/synchronize | Clears stale `automation:review-pass`/`automation:needs-fix`, poses `automation:needs-review` — both steps skipped, on top of the existing `draft == false` guard, when the PR carries `automation:coordinator-owned` (read straight off the `pull_request` event's own labels, no extra API call) |
 | `review-status-sync.yml` | Action | `pull_request` `labeled`, filter `automation:review-pass`/`automation:needs-fix` | Translates the label into the `claude/review` commit status; also upserts the PR's `pr-review` entry in `scripts/automation-log.mjs`'s idempotent journal — this same Action is what the coordinator's own final `automation:review-pass` drives too (§ "The coordinator" below), no separate mechanism needed for that role |
 | `coordinator-log-sync.yml` (new, #469) | Action | `pull_request` `labeled`, filter `automation:coordinator-owned`, or `automation:attempt-1`/`-2`/`-3`, `automation:review-pass`, `automation:needs-human` on a PR that carries `automation:coordinator-owned` | Upserts the coordinator's own per-role journal entries (`coordinator-implement` on the first label, `coordinator-fix` as `running` on each attempt label, then closed as `succeeded`/`failed` on the run's final verdict label) via `scripts/automation-log.mjs` — the same mechanism `review-status-sync.yml` already uses for the `pr-review` role, kept separate here so a standalone R3/R4's own labels on a non-coordinator PR never get mislabeled as a coordinator round |
-| `scripts/automation-log.mjs` | Helper (called by an Action, not a workflow of its own) | N/A | Finds/creates/updates a routine's single marked journal comment on an issue/PR (`automation-plan.md` § Journal d'exécution idempotent); `routine` values `coordinator-implement`/`coordinator-fix` (#469) get their own marker via the same mechanism, and an optional `metrics` field renders a run's round count/compaction/usage-limit signals, and `onlyIfRunning` closes a journal left in `running` without ever creating one for a step that never happened |
+| `scripts/automation-log.mjs` | Helper (called by an Action, not a workflow of its own) | N/A | Finds/creates/updates a routine's single marked journal comment on an issue/PR (`automation-plan.md` § Journal d'exécution idempotent); `routine` values `coordinator-implement`/`coordinator-fix` (#469) and `coordinator-review-functional`/`coordinator-review-technical` (#470) get their own marker via the same mechanism, an optional `metrics` field renders a run's round count/compaction/usage-limit signals, an optional `findings` field renders each finding attributed to its reviewer(s) with an out-of-corpus tag (#470 — not yet fed by a real workflow, same status as `metrics`), and `onlyIfRunning` closes a journal left in `running` without ever creating one for a step that never happened |
+| `scripts/review-verdict.mjs` | Helper (called by the coordinator session itself via `Bash`, not a workflow) | N/A | Pure function (#470): `computeReviewVerdict({ functional, technical })` combines the two review sub-agents' structured findings into one mechanical verdict — `needs-human` if either reviewer's status isn't `ok`, else `needs-fix`/`review-pass` from the deduplicated, in-corpus findings only. Never invoked by an Action; this is the coordinator's own arbitration step, not GitHub-triggered |
 | `auto-merge-sync.yml` | Action | `pull_request` labeled/unlabeled, filter `automation:enabled` | Enables/disables native GitHub auto-merge; on success, closes linked issues in the same job |
 | `requeue-lost-events.yml` (`requeue-lost-events.mjs`) | Action | Cron hourly + `issues` unlabeled/closed | Re-poses an orphaned `automation:ready`/`automation:needs-review`/`automation:needs-fix` still present > 30 min without `automation:in-progress`; separately, escalates any `automation:in-progress` still present > 180 min (stale ownership — the routine died without resuming) to `automation:needs-human` (+ `automation:queued` on an issue) |
 | `requeue-lost-events.yml` (`sweep-merged-prs.mjs`) | Action | Same workflow, runs after the sweeper above | Catch-up close of issues left open by a PR merged in the last 7 days |
@@ -395,7 +396,7 @@ backlog behind it (§6's "Escalation frees its slot" rule). The interactive
 path (a human runs `implement-task` directly) keeps its original meaning of
 "ask" — there's a person present to answer.
 
-## 8. The coordinator (#469)
+## 8. The coordinator (#469/#470)
 
 Full narrative in `automation-plan.md` § "Le coordinateur : R2+R3+R4
 fusionnés en un run" — this section states only the label contract, the
@@ -415,13 +416,24 @@ is added (guards row #12's `needs-review-label.yml` from ever posing
 `automation:needs-review` on this PR, #468) — the coordinator never posts
 that label itself either.
 
-**Review round.** A freshly-launched, isolated sub-agent runs `pr-review`'s
-checklist (§1-§2 of that skill) with no `automation:needs-review` to claim
-(none was posted) and no verdict label to post — it returns its findings'
-severities to the coordinator, which applies row #13's own verdict rule
-mechanically (`blocking`/`important` present → fix round; none → converged).
-It still submits the real formal PR review (`pull_request_review_write`),
-same as standalone R3.
+**Review round (#470).** Two freshly-launched, isolated sub-agents run
+`pr-review`'s checklist (§1-§2 of that skill), each restricted to its own
+disjoint corpus — functional (issue spec, diff, `doc/functional/`) and
+technical (diff, `doc/technical/architecture.md`, `project-conventions`,
+never the issue spec) — neither reading the other's prompt, reply, or PR
+review. Neither claims `automation:needs-review` (none was posted) nor
+posts a verdict label — each returns its own findings (severity, and
+`corpus: in`/`out` for anything formed outside its assigned corpus) to the
+coordinator. The coordinator combines both through
+`scripts/review-verdict.mjs`'s pure `computeReviewVerdict` — never its own
+reading of the two reviews: `needs-human` if either reviewer's status isn't
+`ok` (never concluded from the one that did answer), else `needs-fix` if at
+least one deduplicated, in-corpus `blocking`/`important` finding survives,
+else `review-pass`. Both sub-agents still submit their own real formal PR
+review (`pull_request_review_write`), same mechanism as standalone R3, just
+two independent submissions instead of one. A HEAD moved mid-review
+discards **both** rounds, never just the one that noticed, and relaunches
+fresh functional/technical sub-agents together on the new SHA.
 
 **Fix round (0-3).** Before launching, the coordinator posts
 `automation:attempt-N` (safe — no routine's trigger filters on this label
@@ -450,8 +462,12 @@ state for a human or native auto-merge to pick up.
 
 **Escalation.** Same conditions as rows #6/#19/#20 (ambiguous/incomplete
 spec, attempt cap, scope mismatch, a check suite that stays red, or a
-sub-agent reporting it can't proceed), same three-step sequence on the
-issue (§6: `automation:needs-human`, `automation:queued`, only then remove
+sub-agent reporting it can't proceed) plus one new to #470 — either review
+sub-agent failing outright or returning no usable structured reply, read
+off `computeReviewVerdict`'s `needs-human` result rather than inferred by
+the coordinator itself; the escalation comment names exactly which
+corpus/corpora (`missingReviewers`) never answered — same three-step
+sequence on the issue (§6: `automation:needs-human`, `automation:queued`, only then remove
 `automation:in-progress`) plus, on the PR: remove `automation:in-progress`
 if posed, remove `automation:enabled` if present, add
 `automation:needs-human` — never `automation:needs-fix` (same reasoning as
