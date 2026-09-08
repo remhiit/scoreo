@@ -43,7 +43,7 @@ Un modèle par entrée, indexé par un identifiant de catalogue stable :
 | `quality_score` (0-100) | Confronté au `min_score` d'une bande de complexité |
 | `cost_tier` / `latency_tier` | Paliers relatifs (`low`/`medium`/`high` et `fast`/`medium`/`slow`) |
 | `max_risk` | Niveau de risque maximal (échelle `change-risk` : `low`/`medium`/`high`) que ce modèle peut couvrir — confronté à `risk_overrides` |
-| `max_complexity` | Bande de complexité maximale pour laquelle ce modèle est jugé pertinent — informatif, consommé par le futur routeur (#404) |
+| `max_complexity` | Bande de complexité maximale pour laquelle ce modèle est jugé pertinent — filtre dur appliqué par `scripts/model-router.mjs` (#404, § Algorithme du routeur) : un candidat sous la bande cible n'est jamais éligible |
 | `fallback` | Optionnel — identifiant d'un autre modèle de ce catalogue, utilisé en secours quand celui-ci est désactivé. Une chaîne de fallback circulaire est refusée à la validation |
 
 ## `.automation/routing-policy.yml`
@@ -141,6 +141,121 @@ appel réel à un fournisseur externe (endpoint, secret, adapter) reste hors
 scope de ce contrat — voir `doc/technical/automation-plan.md` § « Routage
 par sous-agent », option B.
 
+## Algorithme du routeur (`scripts/model-router.mjs`, issue #404)
+
+Fonction pure `routeModel` : mêmes entrées (y compris les versions de
+catalogue/politique) → même décision, zéro appel réseau, zéro branchement
+spécifique à un fournisseur — le code ne lit jamais `provider === "..."`,
+seulement les champs génériques du contrat ci-dessus. Elle prend en entrée
+un `TaskContext` (#401, uniquement pour tracer l'entité d'origine dans la
+décision), un `ComplexityAssessment` (#402), un `RiskAssessment` (produit
+par le skill `change-risk`, #387 — support uniquement pour l'instant, donc
+réduit ici à `{ level: 'low'|'medium'|'high' }`), la définition de la
+routine (`.automation/routines.yml`) et le catalogue/politique ci-dessus.
+Elle ne pose et ne retire elle-même aucun label GitHub : c'est à son
+appelant (le futur skill coordinateur, #430) de traduire `status:
+"no-candidate"` en `automation:needs-human`.
+
+### Ordre de résolution — sécurité avant score
+
+Les contraintes de risque et de complexité sont des **filtres durs**,
+résolus avant tout calcul de score, jamais un critère qu'un score élevé
+pourrait compenser :
+
+1. **Bande effective.** La bande de `ComplexityAssessment.level` est
+   utilisée telle quelle, sauf si `confidence === 'low'` : elle est alors
+   majorée d'un cran (jamais au-delà de `very-complex`) — une évaluation peu
+   fiable ne doit jamais mener à sous-router.
+2. **`risk_override` applicable.** Résolu par seuil, pas par égalité
+   stricte : le palier retenu est le plus sévère de ceux que le risque réel
+   atteint (« atteint » = risque réel ≥ palier). Un override désigne un
+   candidat forcé, mais qui reste soumis à l'étape 3 comme tout autre
+   candidat — un override ne contourne jamais un filtre de sécurité.
+3. **Filtre unique, appliqué identiquement à tout candidat** (override
+   manuel, override de risque, candidat de bande, fallback de bande,
+   fallback de catalogue — un seul chemin de code, jamais une variante
+   allégée pour les fallbacks, ce qui garantit qu'« un fallback conserve les
+   mêmes contraintes de sécurité que le choix initial ») :
+   - modèle présent dans le catalogue et `enabled: true` ;
+   - chaque capacité de `required_capabilities` couverte ;
+   - `max_complexity` du modèle ≥ bande effective ;
+   - `max_risk` du modèle ≥ niveau de risque réel — **jamais contournable
+     pour réduire le coût**, y compris pour un override manuel ou de
+     risque ;
+   - `quality_score` du modèle ≥ `min_score` de la bande ;
+   - contraintes de fournisseur (`allowedProviders`/`deniedProviders`),
+     de budget (`maxCostTier`) et de latence (`maxLatencyTier`), quand la
+     routine en déclare ;
+   - fournisseur non signalé indisponible (`providerStatus`) pour ce run ;
+   - identifiant non explicitement exclu par l'appelant
+     (`excludedModelIds` — ex: un échec transitoire déjà tenté dans ce même
+     run).
+
+   Un candidat qui échoue à l'un de ces filtres porte toujours au moins une
+   raison d'exclusion lisible — jamais un rejet silencieux.
+
+### Score pondéré
+
+Une fois filtrés, les candidats d'une même bande sont classés par un score
+0–1 combinant, avec les poids par défaut de
+`DEFAULT_SCORE_WEIGHTS` (somme 100) :
+
+| Dimension | Poids par défaut | Calcul |
+|---|---|---|
+| `policyPreference` | 30 | Poids déclaré du candidat dans la bande (`routing-policy.yml#candidates.*.weight` / 100) |
+| `quality` | 25 | `quality_score` du catalogue / 100 |
+| `contextFit` | 15 | 1 − distance normalisée entre `max_complexity` du modèle et la bande effective (pénalise la sur-qualification, jamais la sous-qualification déjà exclue au filtrage) |
+| `cost` | 10 | `cost_tier` inversé (`low`→1, `medium`→0.5, `high`→0) |
+| `latency` | 10 | `latency_tier` inversé (`fast`→1, `medium`→0.5, `slow`→0) |
+| `providerAvailability` | 5 | `providerStatus[provider].uptime` si fourni, sinon 1 (disponibilité pleine par défaut) |
+| `historicalPerformance` | 5 | `historicalMetrics[modèle].successRate` si connu |
+
+**Métriques historiques absentes** (cas normal tant qu'aucun historique
+n'est encore collecté) : la dimension `historicalPerformance` est retirée
+pour ce candidat et les poids restants sont renormalisés à 100 — jamais
+traitée comme un score nul, qui pénaliserait injustement un candidat pour
+une donnée simplement indisponible. Le même principe s'applique à
+`policyPreference` pour un candidat de fallback (qui ne porte pas de poids
+de bande). La décision consigne cette neutralisation dans `limits`.
+
+**Égalité de score** (départage déterministe, pour que la reproductibilité
+tienne) : le candidat retenu est, dans l'ordre, celui du score le plus
+élevé, puis du `quality_score` de catalogue le plus élevé, puis de
+l'identifiant de catalogue le plus petit par ordre alphabétique.
+
+Un override manuel ou de risque, une fois jugé éligible, est retenu
+directement — il n'est jamais mis en concurrence par score avec les
+candidats de bande.
+
+### Chaîne de fallback
+
+La séquence complète évaluée, dans l'ordre de précédence, est : override
+manuel → override de risque → candidats de bande (classés par score une
+fois éligibles) → fallback de bande → chaîne de fallback de catalogue
+(`model-catalog.yml#fallback`, suivie de proche en proche, dédupliquée).
+Le premier candidat éligible de cette séquence est sélectionné ; tous les
+autres candidats éligibles qui le suivent forment `fallbacks`, la liste
+ordonnée que l'appelant peut réessayer si le modèle sélectionné échoue en
+cours de run (fournisseur indisponible, erreur transitoire, budget
+dépassé — l'appelant relance alors `routeModel` avec ce modèle ajouté à
+`excludedModelIds`, jamais un état conservé côté routeur).
+
+**Absence de candidat** — aucun candidat éligible sur toute la séquence, y
+compris après épuisement de la chaîne de fallback : `status:
+"no-candidate"`, `selectedModel: null`, `fallbacks: []`. Les deux cas
+(aucun candidat dès le départ, ou chaîne épuisée) produisent exactement la
+même forme de décision, jamais un choix par défaut. C'est ce que
+l'appelant doit traduire en `automation:needs-human`.
+
+### Décision journalisée
+
+Le contrat de sortie est documenté dans
+`schemas/automation/routing-decision.schema.json` et publié dans le
+journal de routine (`scripts/automation-log.mjs`, ligne « Routage ») sous
+la même convention que `TaskContext`/`ComplexityAssessment` : optionnel,
+absent tant qu'aucun appelant ne le fournit, jamais un blocage du journal
+lui-même si l'artefact est manquant ou invalide.
+
 ## Exemple : chaîne de fallback circulaire refusée
 
 ```yaml
@@ -156,5 +271,5 @@ models:
 
 `scripts/automation-dispatch.mjs#validateModelCatalog` refuse cette
 configuration avec `chaîne de fallback circulaire : model-a -> model-b ->
-model-a`, plutôt que de laisser le futur routeur (#404) boucler à
-l'exécution.
+model-a`, plutôt que de laisser le routeur (`scripts/model-router.mjs`,
+#404, § Algorithme du routeur) boucler à l'exécution.

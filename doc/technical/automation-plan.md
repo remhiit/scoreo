@@ -504,7 +504,7 @@ par commit status via label, déclencheurs disponibles — ne bougent pas.
 | #401 `TaskContext` | Livrée | Inchangée, consommée par le coordinateur |
 | #402 `ComplexityAssessment` | Livrée | Inchangée, entrée du routage |
 | #403 fallback LLM de complexité | Conservée, spec révisée, non prioritaire | Sous C l'appel devient un sous-agent classifieur : plus de secret, plus d'adapter, plus de budget fournisseur — la spec actuelle (API, `Secrets`) est caduque |
-| #404 moteur de routage | Conservée, spec révisée | Fonction pure inchangée dans son principe ; sa sortie est un modèle de sous-agent, ses fallbacks perdent la dimension « disponibilité fournisseur » |
+| #404 moteur de routage | Livrée | `scripts/model-router.mjs#routeModel` — voir `doc/automation/model-routing.md` § Algorithme du routeur. Fonction pure inchangée dans son principe ; la dimension « disponibilité fournisseur » reste dans le score/les filtres pour rester générique au contrat #400, mais reste neutre (défaut : disponible) tant qu'aucun appelant ne fournit de signal réel sous le routage par sous-agent |
 | #405 adapters multi-provider | **Fermée** | Sous C, aucun appelant dans le dépôt. À rouvrir avec le mode API ou le chantier d'extraction, pas avant |
 | #406 dry-run | Conservée, spec révisée | Le chaînage appartient au coordinateur, pas au dispatcher : le dry-run journalise la décision de modèle sans changer le sous-agent réellement lancé |
 | #407 activation progressive | Conservée, à découper après #430 | Reste `NEEDS_CLARIFICATION` : huit chantiers, dimensionnement conditionné par le coordinateur |

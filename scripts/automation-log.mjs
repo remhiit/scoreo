@@ -44,6 +44,7 @@ export function renderAutomationLog({
   resultUrl,
   contextUrl,
   complexity,
+  routing,
   summary,
 }) {
   const label = ROUTINE_LABELS[routine] ?? routine
@@ -80,6 +81,28 @@ export function renderAutomationLog({
     }
     if (complexity.reasons?.length) {
       lines.push(`  - Raisons : ${complexity.reasons.join(' ; ')}`)
+    }
+  }
+  // Optional: publie la RoutingDecision (issue #404, doc/automation/model-routing.md
+  // § Algorithme du routeur) — le modèle retenu, son origine et la chaîne de
+  // fallback restante, jamais un choix silencieux. Absent pour les appelants
+  // qui n'en produisent pas encore, comme complexity/contextUrl ci-dessus.
+  if (routing) {
+    if (routing.status === 'selected') {
+      lines.push(
+        `- Routage : \`${routing.selectedModel.id}\` (origine \`${routing.selectedModel.origin}\`, risque \`${routing.input.risk.level}\`, bande \`${routing.input.complexity.effectiveLevel}\`)`,
+      )
+      if (routing.fallbacks?.length) {
+        lines.push(`  - Fallbacks : ${routing.fallbacks.map((f) => f.id).join(' → ')}`)
+      }
+    } else {
+      lines.push(`- Routage : \`aucun candidat\` (risque \`${routing.input.risk.level}\`, bande \`${routing.input.complexity.effectiveLevel}\`)`)
+    }
+    if (routing.rulesApplied?.length) {
+      lines.push(`  - Règles appliquées : ${routing.rulesApplied.join(' ; ')}`)
+    }
+    if (routing.limits?.length) {
+      lines.push(`  - Limites : ${routing.limits.join(' ; ')}`)
     }
   }
   if (summary) {
@@ -128,6 +151,7 @@ export async function upsertAutomationLog({
   resultUrl,
   contextUrl,
   complexity,
+  routing,
   summary,
   triggeredAt = new Date().toISOString(),
 }) {
@@ -145,6 +169,7 @@ export async function upsertAutomationLog({
     resultUrl,
     contextUrl,
     complexity,
+    routing,
     summary,
   })
 
@@ -186,6 +211,19 @@ function loadComplexityAssessment(path) {
   }
 }
 
+// La RoutingDecision (issue #404) est lue depuis son artefact JSON, même
+// convention tolérante qu'au-dessus : un fichier absent ou invalide omet
+// juste la ligne Routage, sans faire échouer le journal.
+function loadRoutingDecision(path) {
+  if (!path) return undefined
+  try {
+    return JSON.parse(readFileSync(path, 'utf8'))
+  } catch (err) {
+    console.warn(`automation-log: impossible de lire l'artefact de routage "${path}" (${err.message}) — ligne omise`)
+    return undefined
+  }
+}
+
 async function main() {
   const number = Number(process.env.LOG_NUMBER)
   const routine = process.env.LOG_ROUTINE
@@ -200,6 +238,7 @@ async function main() {
     resultUrl: process.env.LOG_RESULT_URL,
     contextUrl: process.env.LOG_CONTEXT_URL,
     complexity: loadComplexityAssessment(process.env.LOG_COMPLEXITY_PATH),
+    routing: loadRoutingDecision(process.env.LOG_ROUTING_PATH),
     summary: process.env.LOG_SUMMARY,
     triggeredAt: process.env.LOG_TRIGGERED_AT,
   })
