@@ -89,6 +89,7 @@ describe('renderAutomationLog / parseAutomationLog', () => {
       limits: [],
       thresholds: { version: 1, bands: [] },
       generatedAt: '2026-09-08T10:00:00Z',
+      escalationRequired: false,
     }
     const consolidated = consolidateComplexity(heuristic, {
       level: 'standard',
@@ -115,6 +116,46 @@ describe('renderAutomationLog / parseAutomationLog', () => {
     expect(body).toContain('LLM "standard"')
     expect(body).toContain('niveau retenu "standard"')
     expect(body).toContain('confiance consolidée "medium"')
+    expect(body).not.toContain('Escalade requise')
+  })
+
+  it('surfaces a dedicated escalation line when the LLM fallback disagrees by two or more bands, distinct from an ordinary low confidence', async () => {
+    const { renderAutomationLog } = await import('./automation-log.mjs')
+    const { consolidateComplexity } = await import('./complexity-llm.mjs')
+    const heuristic = {
+      level: 'trivial',
+      score: 5,
+      confidence: 'high',
+      provenance: 'heuristic',
+      override: null,
+      dimensions: {},
+      reasons: [],
+      limits: [],
+      thresholds: { version: 1, bands: [] },
+      generatedAt: '2026-09-08T10:00:00Z',
+      escalationRequired: false,
+    }
+    const consolidated = consolidateComplexity(heuristic, {
+      level: 'very-complex',
+      confidence: 'high',
+      reasons: ['spec sous-estimée par le score heuristique'],
+      uncertainties: [],
+      promptVersion: 1,
+    })
+
+    const body = renderAutomationLog({
+      routine: 'implement-task',
+      triggeredAt: '2026-09-08T10:00:00Z',
+      sha: 'abc1234',
+      status: 'running',
+      iteration: '1',
+      validation: 'lint / typecheck / tests',
+      resultUrl: 'https://github.com/remhiit/scoreo/actions/runs/999',
+      complexity: consolidated,
+    })
+
+    expect(body).toContain('confiance `low`')
+    expect(body).toContain('⚠️ Escalade requise')
   })
 
   it('surfaces a manual complexity override without hiding the underlying heuristic level', async () => {

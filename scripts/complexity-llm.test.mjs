@@ -31,6 +31,7 @@ function baseAssessment(overrides = {}) {
     override: null,
     thresholds: { version: 1, bands: [] },
     generatedAt: '2026-09-08T10:00:00Z',
+    escalationRequired: false,
     ...overrides,
   }
 }
@@ -134,6 +135,7 @@ describe('consolidateComplexity', () => {
     expect(result.level).toBe('standard')
     expect(result.provenance).toBe('heuristic')
     expect(result.confidence).toBe('medium')
+    expect(result.escalationRequired).toBe(false)
   })
 
   it('adopts the LLM level and provenance on a one-band gap, taking the lower confidence', () => {
@@ -142,14 +144,23 @@ describe('consolidateComplexity', () => {
     expect(result.level).toBe('complex')
     expect(result.provenance).toBe('llm')
     expect(result.confidence).toBe('medium')
+    expect(result.escalationRequired).toBe(false)
   })
 
-  it('forces low confidence and keeps the heuristic level on a two-or-more-band disagreement', () => {
+  it('forces low confidence and keeps the heuristic level on a two-or-more-band disagreement, setting a structural escalationRequired flag distinct from an ordinary low confidence', () => {
     const heuristic = baseAssessment({ level: 'trivial', confidence: 'high' })
     const result = consolidateComplexity(heuristic, baseLlmResponse({ level: 'very-complex', confidence: 'high' }))
     expect(result.level).toBe('trivial')
     expect(result.provenance).toBe('heuristic')
     expect(result.confidence).toBe('low')
+    expect(result.escalationRequired).toBe(true)
+  })
+
+  it('never sets escalationRequired on an ordinary low confidence carried over from either side, only on an actual two-or-more-band gap', () => {
+    const heuristic = baseAssessment({ level: 'standard', confidence: 'low' })
+    const result = consolidateComplexity(heuristic, baseLlmResponse({ level: 'standard', confidence: 'low' }))
+    expect(result.confidence).toBe('low')
+    expect(result.escalationRequired).toBe(false)
   })
 
   it('never touches score/dimensions/reasons/override/thresholds, whatever the outcome', () => {

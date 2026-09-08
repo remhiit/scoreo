@@ -512,18 +512,31 @@ Trois fonctions pures, zéro effet de bord, zéro réseau, comme le reste de
   `provenance` reste `heuristic`, `confidence` = la plus basse des deux ;
   écart d'exactement une bande → `level` = celui du LLM, `provenance` =
   `llm`, `confidence` = la plus basse des deux ; écart de deux bandes ou
-  plus → `confidence` forcée à `low` (escalade requise vers
-  `automation:needs-human`, jamais une décision de modèle silencieuse),
-  `level` restant celui de l'heuristique. Le résultat reste conforme au
-  contrat `complexity-assessment.schema.json` existant (`additionalProperties:
-  false`) : `score`/`dimensions`/`reasons`/`override`/`thresholds`/`generatedAt`
-  ne bougent jamais, seuls `level`/`provenance`/`confidence` changent, et le
+  plus → `confidence` forcée à `low` **et** `escalationRequired` forcé à
+  `true`, `level` restant celui de l'heuristique. `score`/`dimensions`/
+  `reasons`/`override`/`thresholds`/`generatedAt` ne bougent jamais, comme
+  pour un override manuel ; seuls `level`/`provenance`/`confidence`/
+  `escalationRequired` peuvent changer.
+  `escalationRequired` (booléen, `complexity-assessment.schema.json`) est le
+  signal structuré que ce désaccord franc exige une escalade vers
+  `automation:needs-human` plutôt qu'une décision de modèle silencieuse —
+  **distinct** d'une `confidence: 'low'` ordinaire (celle que l'heuristique
+  #402 produit nativement sur une spec ambiguë, où `escalationRequired`
+  reste `false` : `assessComplexity` ne le pose jamais à `true` par
+  elle-même). C'est la distinction qui manquait à la première version de ce
+  contrat : `scripts/model-router.mjs#routeModel` traite déjà tout
+  `confidence === 'low'` comme « majorer la bande, prudence, continuer »
+  (`bumpBandForLowConfidence`), jamais comme un arrêt — un futur appelant
+  (#430) doit tester `escalationRequired === true` explicitement pour
+  distinguer ce cas, jamais grep-parser le texte libre de `limits`. Le
   détail du passage (niveau heuristique, niveau LLM, niveau consolidé,
-  confiance finale, version de prompt) est journalisé comme une entrée de
-  plus dans `limits` — le seul canal disponible sans étendre le schéma.
-  `scripts/automation-log.mjs` publie désormais aussi `limits` sous la ligne
-  Complexité du journal idempotent (`- Limites : ...`), pour que ce détail y
-  soit lisible.
+  confiance finale, version de prompt) reste, lui, journalisé comme une
+  entrée de plus dans `limits` — pas de champ dédié pour ce détail narratif,
+  seul le booléen d'escalade en a un. `scripts/automation-log.mjs` publie
+  `limits` sous la ligne Complexité du journal idempotent
+  (`- Limites : ...`) et, quand `escalationRequired` est vrai, une ligne
+  dédiée (`- ⚠️ Escalade requise : ...`) distincte de cette confiance basse
+  ordinaire.
 - `resolveClassifierModel(routingPolicy, modelCatalog)` — résout le modèle
   de sous-agent déclaré par `.automation/routing-policy.yml` pour la clé
   `routines.classification` (une entrée hors du jeu des routines dispatchées,

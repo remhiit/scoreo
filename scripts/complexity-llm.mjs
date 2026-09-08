@@ -103,10 +103,10 @@ export function validateLlmComplexityResponse(response) {
 // ComplexityLlmResponse déjà validée (précondition : l'appelant a vérifié
 // shouldRunLlmFallback puis validateLlmComplexityResponse — cette fonction ne
 // revalide ni ne re-décide l'activation, elle applique uniquement les règles
-// de fusion). Seuls `level`/`provenance`/`confidence`/`limits` peuvent
-// bouger : `score`/`dimensions`/`reasons`/`override`/`thresholds`/`generatedAt`
-// restent tels quels, comme pour un override manuel (issue #403, critère
-// d'acceptation « conforme au contrat existant »).
+// de fusion). Seuls `level`/`provenance`/`confidence`/`escalationRequired`/
+// `limits` peuvent bouger : `score`/`dimensions`/`reasons`/`override`/
+// `thresholds`/`generatedAt` restent tels quels, comme pour un override
+// manuel (issue #403, critère d'acceptation « conforme au contrat existant »).
 export function consolidateComplexity(heuristic, llm) {
   const heuristicIndex = LEVELS.indexOf(heuristic.level)
   const llmIndex = LEVELS.indexOf(llm.level)
@@ -116,6 +116,12 @@ export function consolidateComplexity(heuristic, llm) {
   let level = heuristic.level
   let provenance = 'heuristic'
   let confidence = lowerConfidence(heuristic.confidence, llm.confidence)
+  // Distingue structurellement le désaccord franc (branche `else` ci-dessous)
+  // d'une `confidence: 'low'` ordinaire : scripts/model-router.mjs#routeModel
+  // traite déjà tout `confidence === 'low'` comme « majorer la bande, prudence,
+  // continuer », jamais comme un signal d'arrêt — un futur appelant (#430) doit
+  // pouvoir tester ce champ dédié plutôt que grep-parser `limits`.
+  let escalationRequired = heuristic.escalationRequired ?? false
 
   if (gap === 0) {
     limits.push(
@@ -129,8 +135,9 @@ export function consolidateComplexity(heuristic, llm) {
     )
   } else {
     confidence = 'low'
+    escalationRequired = true
     limits.push(
-      `fallback LLM (version de prompt ${llm.promptVersion}) : désaccord franc de ${gap} bande(s) (heuristique "${heuristic.level}", LLM "${llm.level}") → confiance forcée à "low", niveau heuristique conservé ("${level}"), escalade vers automation:needs-human requise plutôt qu'une décision de modèle silencieuse`,
+      `fallback LLM (version de prompt ${llm.promptVersion}) : désaccord franc de ${gap} bande(s) (heuristique "${heuristic.level}", LLM "${llm.level}") → confiance forcée à "low", niveau heuristique conservé ("${level}"), escalade vers automation:needs-human requise (escalationRequired: true) plutôt qu'une décision de modèle silencieuse`,
     )
   }
 
@@ -139,6 +146,7 @@ export function consolidateComplexity(heuristic, llm) {
     level,
     provenance,
     confidence,
+    escalationRequired,
     limits,
   }
 }
