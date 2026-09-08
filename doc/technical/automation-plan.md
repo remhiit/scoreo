@@ -455,6 +455,78 @@ quand présents — même statut « support uniquement » que `contextUrl` pour
 `TaskContext` : aucune routine ne consomme encore cette évaluation pour
 router une décision (câblage réel hors scope de #402, dépend de #404/#405).
 
+### Routage par sous-agent : où s'applique le choix de modèle (#423)
+
+**Tranché le 2026-09-07 : option C — routage par sous-agent, à l'intérieur du
+coordinateur (#430).** Les routines restent des Routines Claude Code
+déclenchées par un événement GitHub ; rien ne bascule vers une exécution par
+GitHub Actions appelant des APIs de fournisseurs (option B), et le dispatcher
+déclaratif (#378) reste ce qu'il dit être : une couche d'observabilité et de
+validation, pas le mécanisme d'exécution.
+
+**L'hypothèse dont dépend l'option a été vérifiée concrètement** (2026-09-07,
+session interactive) : depuis une session tournant sur Opus 5, un sous-agent
+lancé avec un modèle déclaré rapporte bien ce modèle dans son propre prompt
+système — « You are powered by the model named Haiku 4.5. The exact model ID is
+`claude-haiku-4-5-20251001` ». Le modèle est donc une propriété du sous-agent,
+pas de la session : un coordinateur sur modèle fort peut déléguer une étape
+légère à un modèle moins cher, **sans clé API et sans réécrire l'exécution**.
+
+Deux façons de le déclarer, toutes deux disponibles :
+
+- le frontmatter `model:` d'une définition d'agent, `.claude/agents/<nom>.md` —
+  c'est le fichier qui déclare le modèle d'un sous-agent ;
+- le paramètre `model` de l'outil `Agent`, qui prime sur le frontmatter et
+  permet de choisir à l'exécution, en fonction de la bande de complexité.
+
+**Point d'insertion.** Le composant qui lit `.automation/routing-policy.yml`
+(#400) et applique le choix est le **skill du coordinateur** (#430,
+`.claude/skills/`) : il tient déjà `TaskContext` (#401) et
+`ComplexityAssessment` (#402), il est le seul à lancer des sous-agents, et il
+est donc le seul appelant du routeur pur `scripts/model-router.mjs` (#404). La
+politique associe `routine` × bande de complexité → modèle de sous-agent, et
+elle est validée en CI par le job `automation-config` comme le reste de
+`.automation/`. Aucun secret, aucun fichier de workflow modifié.
+
+**Conformité aux principes §2 et aux contraintes §3.** Le prompt d'une routine
+reste une ligne pointant vers une skill versionnée (principe 5) : c'est la
+skill du coordinateur qui route, pas la configuration de la Routine. Le choix
+de modèle est déterministe et sans LLM (principe 2, comme `ComplexityAssessment`).
+Le déclenchement reste événementiel (principe 3) et le bus de labels est
+inchangé (principe 4), donc les contraintes §3 — pas d'auto-approbation, verdict
+par commit status via label, déclencheurs disponibles — ne bougent pas.
+
+**Périmètre de l'épic après arbitrage** (2026-09-07) :
+
+| Issue | Sort | Raison |
+|---|---|---|
+| #400 catalogue + politique | Conservée, spec révisée | Le contrat reste valable ; le catalogue se réduit d'abord aux modèles de sous-agent disponibles dans Claude Code, sans champ de secret ni endpoint |
+| #401 `TaskContext` | Livrée | Inchangée, consommée par le coordinateur |
+| #402 `ComplexityAssessment` | Livrée | Inchangée, entrée du routage |
+| #403 fallback LLM de complexité | Conservée, spec révisée, non prioritaire | Sous C l'appel devient un sous-agent classifieur : plus de secret, plus d'adapter, plus de budget fournisseur — la spec actuelle (API, `Secrets`) est caduque |
+| #404 moteur de routage | Conservée, spec révisée | Fonction pure inchangée dans son principe ; sa sortie est un modèle de sous-agent, ses fallbacks perdent la dimension « disponibilité fournisseur » |
+| #405 adapters multi-provider | **Fermée** | Sous C, aucun appelant dans le dépôt. À rouvrir avec le mode API ou le chantier d'extraction, pas avant |
+| #406 dry-run | Conservée, spec révisée | Le chaînage appartient au coordinateur, pas au dispatcher : le dry-run journalise la décision de modèle sans changer le sous-agent réellement lancé |
+| #407 activation progressive | Conservée, à découper après #430 | Reste `NEEDS_CLARIFICATION` : huit chantiers, dimensionnement conditionné par le coordinateur |
+
+**Échéance de l'option B.** B n'est plus un préalable au routage. Elle est
+rattachée à l'**objectif d'extraction de l'automatisation hors de Scoreo**, et
+n'a de sens qu'au moment où l'un des deux déclencheurs suivants se présente :
+le passage à la consommation de crédits API pour dépasser le plafond de
+l'abonnement, ou le premier utilisateur externe sans abonnement Claude Code.
+Tant qu'aucun des deux n'existe, B ne s'instruit pas.
+
+**Coût de B, estimé grossièrement**, pour que ce report soit argumenté et pas
+implicite : la boucle agentique (outils fichiers, git, GitHub, reprise sur
+erreur) est aujourd'hui fournie gratuitement par le harnais Claude Code et
+devrait être réécrite ; s'y ajoutent la gestion des secrets et sa revue de
+sécurité, les adapters et leurs tests contractuels, le portage des skills en
+prompts d'API avec sorties structurées, et la reprise des phases 0 à 5 du
+présent plan. Ordre de grandeur : **15 à 25 PR et plusieurs semaines**, plus un
+coût récurrent facturé au token — contre une poignée de PR pour C, qui réutilise
+l'existant. Le rapport est d'environ un ordre de grandeur, ce qui suffit à
+justifier l'ordre C puis B.
+
 ### Journal d'exécution idempotent
 
 Chaque passage d'une routine sur une issue/PR doit rester traçable et
@@ -1168,3 +1240,15 @@ R6 hebdo. C'est le rapport qui pilote l'élargissement de la liste blanche `auto
   quelques semaines de recul sans faux positif (bruit inter-runs faisant
   chuter un score sous le seuil sans régression réelle) — à revoir alors via
   `setup-repo.sh`, hors scope de #147.
+
+- **Qui exécute les routines, et où s'applique le choix de modèle — tranché
+  (#423, 2026-09-07).** Option C : routage par sous-agent à l'intérieur du
+  coordinateur (#430). Les Routines Claude Code restent l'exécutant, le
+  dispatcher déclaratif reste une couche d'observabilité, et le choix de
+  modèle devient une propriété du sous-agent lancé par le coordinateur.
+  L'hypothèse a été vérifiée concrètement avant d'être retenue (§4, « Routage
+  par sous-agent »). L'option B (Actions appelant des APIs de fournisseurs)
+  n'est pas abandonnée mais cesse d'être un préalable : elle est rattachée à
+  l'extraction de l'automatisation hors de Scoreo, avec un coût estimé à 15-25
+  PR. Détail de l'arbitrage, point d'insertion et sort de chaque issue de
+  l'épic : §4.
