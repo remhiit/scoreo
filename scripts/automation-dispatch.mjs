@@ -331,6 +331,12 @@ const KNOWN_ROUTINE_POLICY_FIELDS = ['required_capabilities', 'bands', 'risk_ove
 const KNOWN_BAND_FIELDS = ['candidates', 'min_score', 'fallback']
 const KNOWN_CANDIDATE_FIELDS = ['model', 'weight']
 const REQUIRED_WEIGHT_TOTAL = 100
+// Modes valides de la matrice d'activation (issue #476, tranche 1/6 de
+// #407) — même paire que scripts/routing-activation.mjs#resolveActivation,
+// dupliquée ici sans import croisé pour rester cohérente avec le reste de
+// ce fichier (chaque module de scripts/ mirrore ses propres constantes,
+// voir COMPLEXITY_BANDS ci-dessus).
+const VALID_ACTIVATION_MODES = ['observe', 'apply']
 
 // Miroir à la main de schemas/automation/routing-policy.schema.json. Prend
 // le catalogue déjà validé pour croiser les candidats/fallbacks/overrides
@@ -344,22 +350,50 @@ export function validateRoutingPolicy(policy, catalog) {
     errors.push(`version: doit être 1 (valeur: ${JSON.stringify(policy.version)})`)
   }
   for (const key of Object.keys(policy)) {
-    if (key !== 'version' && key !== 'routines' && key !== 'dry_run') {
+    if (key !== 'version' && key !== 'routines' && key !== 'activation') {
       errors.push(`champ inconnu à la racine : "${key}"`)
     }
-  }
-  // Optionnel (issue #406) : absent traité comme `true` par
-  // scripts/routing-dry-run.mjs#resolveRoutingDryRun (mode le plus prudent),
-  // jamais comme `false` implicite — seule sa présence explicite en tant que
-  // booléen est validée ici.
-  if (policy.dry_run !== undefined && typeof policy.dry_run !== 'boolean') {
-    errors.push(`dry_run: doit être un booléen (valeur: ${JSON.stringify(policy.dry_run)})`)
   }
 
   const routines = policy.routines
   if (!routines || typeof routines !== 'object' || Object.keys(routines).length === 0) {
     errors.push('routines: doit être un objet non vide')
     return { valid: false, errors }
+  }
+
+  // Optionnel (issue #476) : absente, traitée comme une matrice vide par
+  // scripts/routing-activation.mjs#resolveActivation ("observe" partout),
+  // jamais une erreur en soi — seul son contenu, quand elle est présente,
+  // est validé ici. Les clés `activation.<routine>` réutilisent le même
+  // espace de noms que `routines` ci-dessus (jamais celui de
+  // .automation/routines.yml), donc validées contre ce même objet plutôt
+  // que par un fichier externe supplémentaire.
+  const activation = policy.activation
+  if (activation !== undefined) {
+    if (typeof activation !== 'object' || activation === null || Array.isArray(activation)) {
+      errors.push('activation: doit être un objet')
+    } else {
+      for (const [routineName, bandsForRoutine] of Object.entries(activation)) {
+        const activationPath = `activation.${routineName}`
+        if (!routines[routineName]) {
+          errors.push(`${activationPath}: routine inconnue — absente de "routines"`)
+        }
+        if (!bandsForRoutine || typeof bandsForRoutine !== 'object' || Array.isArray(bandsForRoutine)) {
+          errors.push(`${activationPath}: doit être un objet`)
+          continue
+        }
+        for (const [band, mode] of Object.entries(bandsForRoutine)) {
+          const modePath = `${activationPath}.${band}`
+          if (!COMPLEXITY_BANDS.includes(band)) {
+            errors.push(`${modePath}: bande inconnue — absente de .automation/complexity-thresholds.yml`)
+            continue
+          }
+          if (!VALID_ACTIVATION_MODES.includes(mode)) {
+            errors.push(`${modePath}: mode inconnu (valeur: ${JSON.stringify(mode)}) — doit être "observe" ou "apply"`)
+          }
+        }
+      }
+    }
   }
 
   for (const [name, routinePolicy] of Object.entries(routines)) {

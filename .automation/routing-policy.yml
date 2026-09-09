@@ -20,15 +20,47 @@
 # `automation-config` de ci.yml. Schéma documenté :
 # schemas/automation/routing-policy.schema.json.
 #
-# `dry_run: true` (issue #406) : le skill du coordinateur calcule et
-# journalise la décision de routage ci-dessous sans jamais l'appliquer — tout
-# appel `Agent` part sans override `model` tant que ce drapeau vaut `true`.
-# Absent, il serait traité comme `true` (mode le plus prudent) par
-# scripts/routing-dry-run.mjs#resolveRoutingDryRun, jamais comme `false`
-# implicite. Le passage à `false` est le protocole d'activation contrôlée
-# décrit par doc/technical/automation-plan.md §5 (#407, hors scope ici).
+# La section `activation` (issue #476, tranche 1/6 de #407) remplace
+# l'ancien drapeau global `dry_run` (#406) par une matrice déclarative fine :
+# pour un triplet (routine × bande de complexité × niveau de risque), le
+# skill du coordinateur calcule et journalise la décision de routage
+# ci-dessus, puis résout ici si elle doit rester observée (`observe`, le
+# skill continue de lancer ses `Agent` sans override `model`) ou appliquée
+# (`apply`). Les clés `activation.<routine>` réutilisent le même espace de
+# noms que `routines:` ci-dessous, jamais ceux de .automation/routines.yml.
+# Résolue par la fonction pure scripts/routing-activation.mjs#resolveActivation,
+# consommée par scripts/routing-dry-run.mjs#resolveRoutingDryRun (#406) à la
+# place de l'ancien `dry_run`. Deux garde-fous non contournables par cette
+# déclaration : un triplet non couvert résout toujours `observe`, et un
+# risque `high` résout toujours `observe` quelle que soit la déclaration
+# (l'activation sur risque élevé a sa propre tranche, avec ses propres
+# garde-fous). La matrice ci-dessous déclare `observe` partout : cette
+# tranche ne change le modèle d'aucune routine, elle ne fait que remplacer
+# le mécanisme — le passage réel de tel triplet à `apply` reste un geste de
+# configuration séparé et ultérieur (doc/technical/automation-plan.md §5
+# « Passage du dry-run à l'activation contrôlée »).
 version: 1
-dry_run: true
+activation:
+  implement-task:
+    trivial: observe
+    standard: observe
+    complex: observe
+    very-complex: observe
+  pr-review:
+    trivial: observe
+    standard: observe
+    complex: observe
+    very-complex: observe
+  classification:
+    trivial: observe
+    standard: observe
+    complex: observe
+    very-complex: observe
+  address-feedback:
+    trivial: observe
+    standard: observe
+    complex: observe
+    very-complex: observe
 routines:
   implement-task:
     required_capabilities:

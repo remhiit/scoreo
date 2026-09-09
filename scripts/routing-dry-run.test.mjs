@@ -75,10 +75,28 @@ function baseCatalog(overrides = {}) {
   }
 }
 
-function basePolicy({ dryRun = true, band = 'trivial', model = 'haiku-4-5', fallback = 'sonnet-5', minScore = 0 } = {}) {
+function basePolicy({
+  activationMode = 'observe',
+  includeActivation = true,
+  band = 'trivial',
+  model = 'haiku-4-5',
+  fallback = 'sonnet-5',
+  minScore = 0,
+} = {}) {
   return {
     version: 1,
-    ...(dryRun === undefined ? {} : { dry_run: dryRun }),
+    ...(includeActivation
+      ? {
+          activation: {
+            'implement-task': {
+              trivial: activationMode,
+              standard: activationMode,
+              complex: activationMode,
+              'very-complex': activationMode,
+            },
+          },
+        }
+      : {}),
     routines: {
       'implement-task': {
         required_capabilities: { tools: false, structured_output: false, long_context: false },
@@ -215,10 +233,9 @@ describe('resolveRoutingDryRun', () => {
     ).toThrow(/version de catalogue inattendue/)
   })
 
-  it('treats an absent dry_run flag as true (most cautious mode) and says so in limits', () => {
+  it('treats an absent "activation" section as observe everywhere (issue #476) and says so in limits', () => {
     const taskContext = baseTaskContext()
-    const policy = basePolicy({ dryRun: undefined })
-    delete policy.dry_run
+    const policy = basePolicy({ includeActivation: false })
     const result = resolveRoutingDryRun({
       taskContext,
       issueBody: issueBody(),
@@ -227,19 +244,35 @@ describe('resolveRoutingDryRun', () => {
       modelCatalog: baseCatalog(),
     })
     expect(result.applied).toBe(false)
-    expect(result.limits).toEqual(expect.arrayContaining([expect.stringContaining('dry_run" absent')]))
+    expect(result.activation).toEqual({ mode: 'observe', reason: expect.stringContaining('absente') })
+    expect(result.limits).toEqual(expect.arrayContaining([expect.stringContaining('"activation" absente ou vide')]))
   })
 
-  it('reflects applied:true once dry_run is set to false in the policy', () => {
+  it('reflects applied:true once the activation matrix declares "apply" for this triplet (issue #476)', () => {
     const taskContext = baseTaskContext()
     const result = resolveRoutingDryRun({
       taskContext,
       issueBody: issueBody(),
       routines: baseRoutines(),
-      routingPolicy: basePolicy({ dryRun: false }),
+      routingPolicy: basePolicy({ activationMode: 'apply' }),
       modelCatalog: baseCatalog(),
     })
     expect(result.applied).toBe(true)
+    expect(result.activation.mode).toBe('apply')
+  })
+
+  it('keeps applied:false ("observe") when risk is high even if the matrix declares "apply" (issue #476, garde-fou risque élevé)', () => {
+    const taskContext = baseTaskContext({ body: issueBody({ risk: '**Élevé** — touche un port' }) })
+    const result = resolveRoutingDryRun({
+      taskContext,
+      issueBody: issueBody({ risk: '**Élevé** — touche un port' }),
+      routines: baseRoutines(),
+      routingPolicy: basePolicy({ activationMode: 'apply' }),
+      modelCatalog: baseCatalog(),
+    })
+    expect(result.applied).toBe(false)
+    expect(result.activation.mode).toBe('observe')
+    expect(result.activation.reason).toContain('écartée')
   })
 
   describe('LLM fallback chaining', () => {

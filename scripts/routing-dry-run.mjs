@@ -1,18 +1,22 @@
 #!/usr/bin/env node
-// Chaîne, en observation seulement, les briques de routage déjà livrées
-// (issue #406, spec révisée après l'arbitrage de #423 — doc/technical/
-// automation-plan.md § « Routage par sous-agent ») : TaskContext (#401) →
-// ComplexityAssessment (#402) → fallback LLM (#403) → RoutingDecision
-// (#404). Deux fonctions pures, zéro effet de bord, zéro appel réseau —
-// exactement comme les modules qu'elles composent. Le seul appelant prévu
-// est le skill du coordinateur (.claude/skills/coordinator/SKILL.md), qui
-// journalise la décision calculée ici sans jamais lancer de sous-agent sur
-// le modèle proposé tant que `.automation/routing-policy.yml` porte
-// `dry_run: true` (le cas par défaut, y compris quand le drapeau est
-// simplement absent — voir `applied` ci-dessous).
+// Chaîne, en observation ou en application selon la matrice d'activation,
+// les briques de routage déjà livrées (issue #406, spec révisée après
+// l'arbitrage de #423 — doc/technical/automation-plan.md § « Routage par
+// sous-agent ») : TaskContext (#401) → ComplexityAssessment (#402) →
+// fallback LLM (#403) → RoutingDecision (#404) → matrice d'activation
+// (#476, scripts/routing-activation.mjs#resolveActivation). Fonctions
+// pures, zéro effet de bord, zéro appel réseau — exactement comme les
+// modules qu'elles composent. Le seul appelant prévu est le skill du
+// coordinateur (.claude/skills/coordinator/SKILL.md), qui journalise la
+// décision calculée ici et ne lance un sous-agent sur le modèle proposé que
+// lorsque `.automation/routing-policy.yml#activation` résout `apply` pour
+// ce triplet (routine × bande × risque) — `observe` (le cas par défaut, y
+// compris quand la section `activation` est absente) le cas échéant, voir
+// `applied` ci-dessous.
 import { DEFAULT_THRESHOLDS, assessComplexity } from './complexity-assessment.mjs'
 import { consolidateComplexity, shouldRunLlmFallback, validateLlmComplexityResponse } from './complexity-llm.mjs'
 import { routeModel } from './model-router.mjs'
+import { resolveActivation } from './routing-activation.mjs'
 
 export const ROUTING_DRY_RUN_VERSION = 1
 
@@ -44,13 +48,14 @@ export function extractRiskLevel(issueBody) {
 }
 
 // Enchaîne assessComplexity (#402) → shouldRunLlmFallback/consolidateComplexity
-// (#403, uniquement quand `llmResponse` est fourni) → routeModel (#404), et
-// renvoie une décision annotée `applied: false` tant que la politique de
-// routage porte `dry_run: true` (le cas par défaut, y compris drapeau
-// absent). Ne lance jamais elle-même de sous-agent classifieur ni de
-// sous-agent d'implémentation — c'est au seul appelant (le skill du
-// coordinateur) de fournir `llmResponse` s'il a déjà obtenu une réponse du
-// classifieur, jamais à cette fonction d'en solliciter une.
+// (#403, uniquement quand `llmResponse` est fourni) → routeModel (#404) →
+// resolveActivation (#476), et renvoie une décision dont `applied` reflète
+// le mode résolu par la matrice d'activation pour ce triplet — `false` tant
+// que ce mode est `observe` (le cas par défaut, y compris quand la section
+// `activation` est absente). Ne lance jamais elle-même de sous-agent
+// classifieur ni de sous-agent d'implémentation — c'est au seul appelant
+// (le skill du coordinateur) de fournir `llmResponse` s'il a déjà obtenu
+// une réponse du classifieur, jamais à cette fonction d'en solliciter une.
 export function resolveRoutingDryRun({
   taskContext,
   issueBody,
@@ -113,16 +118,25 @@ export function resolveRoutingDryRun({
     generatedAt,
   })
 
-  let dryRun = routingPolicy?.dry_run
-  if (dryRun === undefined) {
-    limits.push('routing-policy.yml: drapeau "dry_run" absent — traité comme true (mode le plus prudent)')
-    dryRun = true
+  // Section `activation` absente ou vide : resolveActivation résout déjà
+  // "observe" pour n'importe quel triplet dans ce cas (issue #476, cas
+  // limite « section activation entièrement absente »), mais le signale ici
+  // dans `limits` en plus de sa propre `reason`, même précédent que
+  // l'ancien drapeau `dry_run` absent qu'elle remplace.
+  if (!routingPolicy?.activation || Object.keys(routingPolicy.activation).length === 0) {
+    limits.push('routing-policy.yml: section "activation" absente ou vide — traitée comme une matrice vide, "observe" partout')
   }
+
+  const activation = resolveActivation(routingPolicy, {
+    routine: routineDefinition?.routing_policy,
+    band: routing.input.complexity.effectiveLevel,
+    riskLevel: risk.level,
+  })
 
   // Jamais un modèle par défaut ni une bande de repli : l'absence de
   // candidat éligible se traduit toujours par la même escalade que le reste
   // du pipeline (issue #406, critère d'acceptation « aucun candidat »).
   const escalation = routing.status === 'no-candidate' ? 'automation:needs-human' : null
 
-  return { complexity, routing, applied: dryRun !== true, escalation, missing: [], limits }
+  return { complexity, routing, applied: activation.mode === 'apply', activation, escalation, missing: [], limits }
 }

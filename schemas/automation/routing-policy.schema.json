@@ -15,9 +15,10 @@
       "minProperties": 1,
       "additionalProperties": { "$ref": "#/$defs/routinePolicy" }
     },
-    "dry_run": {
-      "type": "boolean",
-      "description": "Optionnel (issue #406). Quand vrai, le skill du coordinateur (.claude/skills/coordinator/SKILL.md) calcule et journalise la décision de routage sans jamais l'appliquer — tout appel `Agent` part sans override `model`. Absent, traité comme `true` (mode le plus prudent) par scripts/routing-dry-run.mjs#resolveRoutingDryRun, jamais comme `false` implicite. Passer à `false` fait partie du protocole d'activation contrôlée décrit par doc/technical/automation-plan.md §5 et n'est pas encore livré (#407)."
+    "activation": {
+      "type": "object",
+      "description": "Optionnel (issue #476, tranche 1/6 de #407). Matrice d'activation par routine × bande de complexité, remplaçant l'ancien drapeau global `dry_run` (#406) : pour un triplet (routine, bande, niveau de risque), résolue par scripts/routing-activation.mjs#resolveActivation en `observe` (le skill du coordinateur calcule et journalise la décision sans l'appliquer — tout appel `Agent` part sans override `model`) ou `apply`. Les clés de premier niveau réutilisent le même espace de noms que `routines` ci-dessus, jamais celui de .automation/routines.yml. Un triplet non couvert par la matrice, ou une section `activation` absente, résout toujours `observe` — l'absence de déclaration n'active jamais rien. Un niveau de risque `high` résout toujours `observe`, quelle que soit la déclaration — l'activation sur risque élevé a sa propre tranche, hors scope ici.",
+      "additionalProperties": { "$ref": "#/$defs/activationRoutine" }
     }
   },
   "required": ["version", "routines"],
@@ -116,6 +117,21 @@
       },
       "required": ["model"],
       "additionalProperties": false
+    },
+    "activationRoutine": {
+      "type": "object",
+      "description": "Mode d'activation par bande pour une routine — chaque clé doit être une des quatre bandes de .automation/complexity-thresholds.yml, chaque valeur `observe` ou `apply`. Une bande omise pour cette routine résout `observe`, comme une routine absente de `activation`.",
+      "properties": {
+        "trivial": { "$ref": "#/$defs/activationMode" },
+        "standard": { "$ref": "#/$defs/activationMode" },
+        "complex": { "$ref": "#/$defs/activationMode" },
+        "very-complex": { "$ref": "#/$defs/activationMode" }
+      },
+      "additionalProperties": false
+    },
+    "activationMode": {
+      "type": "string",
+      "enum": ["observe", "apply"]
     }
   }
 }
