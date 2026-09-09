@@ -20,9 +20,13 @@ précédent que `schemas/automation/routines.schema.json`) :
 
 ## Ce que ce contrat n'est pas (encore)
 
-Aucune routine ne consomme aujourd'hui ce contrat pour router réellement une
-décision — même statut « support uniquement » que `TaskContext` (#401) et
-`ComplexityAssessment` (#402) tant qu'ils ne sont pas câblés. Aucun appel
+Le skill du coordinateur consomme désormais ce contrat pour calculer et
+journaliser une décision de routage à chaque run (§ « Mode dry-run »
+ci-dessous, issue #406) — mais jamais encore pour router réellement un
+sous-agent sur le modèle choisi : tant que `.automation/routing-policy.yml`
+porte `dry_run: true` (le cas aujourd'hui), chaque `Agent` continue de
+partir sans override `model`. Router une décision réelle reste le périmètre
+de #407. Aucun appel
 fournisseur n'est fait ici : `.automation/model-catalog.yml` décrit d'abord
 les modèles de sous-agent disponibles dans Claude Code (déclarables en
 frontmatter `model:` d'une définition d'agent, `.claude/agents/<nom>.md`, ou
@@ -262,6 +266,81 @@ journal de routine (`scripts/automation-log.mjs`, ligne « Routage ») sous
 la même convention que `TaskContext`/`ComplexityAssessment` : optionnel,
 absent tant qu'aucun appelant ne le fournit, jamais un blocage du journal
 lui-même si l'artefact est manquant ou invalide.
+
+## Mode dry-run (`scripts/routing-dry-run.mjs`, issue #406)
+
+Câble la chaîne ci-dessus — `TaskContext` → `ComplexityAssessment` →
+fallback LLM → `RoutingDecision` — à l'intérieur du skill du coordinateur
+(`.claude/skills/coordinator/SKILL.md`) sans jamais appliquer la décision
+calculée : chaque `Agent` que ce skill lance continue de partir sans
+override `model` tant que `.automation/routing-policy.yml` porte
+`dry_run: true` (le cas par défaut, y compris quand le drapeau est
+simplement absent). Deux fonctions pures, zéro effet de bord, zéro appel
+réseau — même précédent que le reste de ce contrat.
+
+### `extractRiskLevel(issueBody)`
+
+Lit la section `## Catégorie de risque` du corps d'une issue — même format
+que `issue-to-spec/SKILL.md` produit, `**Faible**` ou `**Élevé**` en tête de
+section — et renvoie `{ level: 'low' | 'high', source }`. Section absente,
+vide, ou portant un libellé qui n'est ni l'un ni l'autre → `null`, jamais un
+niveau deviné : un appelant ne doit jamais traiter `null` comme `'low'` par
+défaut.
+
+### `resolveRoutingDryRun(...)`
+
+```
+resolveRoutingDryRun({
+  taskContext,     // TaskContext (#401)
+  issueBody,       // corps complet, non tronqué — pas TaskContext.entity.bodyExcerpt
+  labels,          // TaskContext.entity.labels, passé séparément (même convention que shouldRunLlmFallback)
+  routines,        // .automation/routines.yml chargé
+  routingPolicy,   // .automation/routing-policy.yml chargé
+  modelCatalog,    // .automation/model-catalog.yml chargé
+  llmResponse,     // optionnel — réponse déjà obtenue du sous-agent classifieur
+})
+// → { complexity, routing, applied, escalation, missing, limits }
+```
+
+Enchaîne `assessComplexity` → (`shouldRunLlmFallback` puis
+`consolidateComplexity`, uniquement quand `llmResponse` est fourni) →
+`routeModel`, sans jamais lancer elle-même de sous-agent — c'est à
+l'appelant de fournir `llmResponse` s'il en a déjà une, jamais à cette
+fonction d'aller la chercher.
+
+- **Entrée amont manquante.** `taskContext` absent, ou `extractRiskLevel`
+  renvoyant `null` : `routeModel` n'est jamais appelé, `missing` nomme
+  l'entrée manquante (`"taskContext"`/`"riskLevel"`), `complexity`/`routing`
+  restent `null`.
+- **Fallback LLM.** Une réponse valide (`validateLlmComplexityResponse`) est
+  consolidée dans la décision ; une réponse invalide, ou l'absence de
+  réponse alors que `shouldRunLlmFallback` en aurait voulu une, laisse la
+  complexité heuristique inchangée et le dit dans `limits`.
+- **Configuration invalide.** Une version de catalogue/politique inattendue,
+  une politique absente pour la routine, ou une bande absente font échouer
+  `routeModel` avec son propre message — jamais intercepté, jamais traduit
+  en décision partielle.
+- **`status: 'no-candidate'`** produit systématiquement
+  `escalation: 'automation:needs-human'`, jamais un modèle par défaut.
+- **`applied`** reflète `routingPolicy.dry_run` : `false` tant qu'il vaut
+  `true` (ou est absent — traité comme `true`, le mode le plus prudent,
+  jamais comme `false` implicite ; `limits` le signale quand c'est le cas).
+
+### Décision journalisée (dry-run)
+
+`coordinator/SKILL.md` § « Routage (dry-run, #406) » appelle cette fonction
+une fois par run et journalise le résultat sur l'**issue**
+(`scripts/automation-log.mjs#upsertAutomationLog`, routine
+`coordinator-implement`) — une relance sur la même issue met à jour ce même
+commentaire via son marqueur, jamais un second. Au-delà des lignes
+`complexity`/`routing` déjà décrites plus haut, le journal publie les trois
+versions de configuration lues (`TASK_CONTEXT_VERSION`, la version de
+politique et de catalogue, ces deux dernières déjà portées par
+`RoutingDecision.input`) et une mention explicite de non-application —
+champs optionnels `taskContextVersion`/`routingApplied` de
+`renderAutomationLog`/`upsertAutomationLog`, comme `metrics`/`findings`
+avant eux exercés pour l'instant par leurs seuls tests unitaires, aucun
+workflow ne les alimentant encore.
 
 ## Exemple : chaîne de fallback circulaire refusée
 

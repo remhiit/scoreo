@@ -14,6 +14,10 @@
       "description": "Une politique par nom de routine — chaque routine de .automation/routines.yml doit référencer une entrée ici via son champ `routing_policy`",
       "minProperties": 1,
       "additionalProperties": { "$ref": "#/$defs/routinePolicy" }
+    },
+    "dry_run": {
+      "type": "boolean",
+      "description": "Optionnel (issue #406). Quand vrai, le skill du coordinateur (.claude/skills/coordinator/SKILL.md) calcule et journalise la décision de routage sans jamais l'appliquer — tout appel `Agent` part sans override `model`. Absent, traité comme `true` (mode le plus prudent) par scripts/routing-dry-run.mjs#resolveRoutingDryRun, jamais comme `false` implicite. Passer à `false` fait partie du protocole d'activation contrôlée décrit par doc/technical/automation-plan.md §5 et n'est pas encore livré (#407)."
     }
   },
   "required": ["version", "routines"],

@@ -62,6 +62,8 @@ export function renderAutomationLog({
   findings,
   missingReviewers,
   summary,
+  taskContextVersion,
+  routingApplied,
 }) {
   const label = ROUTINE_LABELS[routine] ?? routine
   const lines = [
@@ -139,6 +141,25 @@ export function renderAutomationLog({
     }
     if (routing.limits?.length) {
       lines.push(`  - Limites : ${routing.limits.join(' ; ')}`)
+    }
+    // Optional: publie, pour une décision de dry-run (issue #406,
+    // scripts/routing-dry-run.mjs#resolveRoutingDryRun), les trois versions
+    // de configuration lues — TASK_CONTEXT_VERSION (task-context.mjs),
+    // policyVersion/catalogVersion (déjà portées par RoutingDecision.input,
+    // #404) — et une mention explicite de non-application, plutôt que de
+    // laisser un opérateur le déduire du seul `dry_run` de
+    // .automation/routing-policy.yml. `routingApplied` gate ce bloc entier :
+    // absent (tout appelant qui n'a pas encore ce champ, comme avant #406),
+    // aucune de ces deux lignes n'apparaît.
+    if (routingApplied !== undefined) {
+      lines.push(
+        `  - Configuration : TaskContext v${taskContextVersion ?? '?'}, politique v${routing.input?.policyVersion ?? '?'}, catalogue v${routing.input?.catalogVersion ?? '?'}`,
+      )
+      lines.push(
+        routingApplied
+          ? '  - Modèle appliqué : oui — le sous-agent a été lancé avec ce modèle'
+          : '  - Modèle appliqué : non (mode dry-run) — le sous-agent réel a été lancé sans override de modèle',
+      )
     }
   }
   // Optional: métriques d'un run du coordinateur (issue #469,
@@ -269,6 +290,8 @@ export async function upsertAutomationLog({
   missingReviewers,
   summary,
   triggeredAt = new Date().toISOString(),
+  taskContextVersion,
+  routingApplied,
 }) {
   const existing = await findAutomationLogComment(number, routine)
   const previous = existing ? parseAutomationLog(existing.body) : null
@@ -303,6 +326,8 @@ export async function upsertAutomationLog({
     findings,
     missingReviewers,
     summary,
+    taskContextVersion,
+    routingApplied,
   })
 
   const { commentId, created } = await writeComment(number, existing, body)

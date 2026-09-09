@@ -19,7 +19,16 @@
 # imbriqués de scalaires, pas de listes). Validé en CI par le job
 # `automation-config` de ci.yml. Schéma documenté :
 # schemas/automation/routing-policy.schema.json.
+#
+# `dry_run: true` (issue #406) : le skill du coordinateur calcule et
+# journalise la décision de routage ci-dessous sans jamais l'appliquer — tout
+# appel `Agent` part sans override `model` tant que ce drapeau vaut `true`.
+# Absent, il serait traité comme `true` (mode le plus prudent) par
+# scripts/routing-dry-run.mjs#resolveRoutingDryRun, jamais comme `false`
+# implicite. Le passage à `false` est le protocole d'activation contrôlée
+# décrit par doc/technical/automation-plan.md §5 (#407, hors scope ici).
 version: 1
+dry_run: true
 routines:
   implement-task:
     required_capabilities:

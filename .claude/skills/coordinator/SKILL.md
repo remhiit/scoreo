@@ -121,6 +121,60 @@ discovered mid-incident. A long coordinator run (implementation + up to
 three review/fix rounds) is exactly the shape most exposed to an
 undocumented cutoff, which is why this isn't a formality to wave through.
 
+## Routage (dry-run, #406)
+
+Runs once, right after "Claim the run" above and before § 1 below —
+observation only. It computes and journals the sub-agent model this run
+*would* route to; it never changes which model § 1's `Agent` call actually
+launches on. `.automation/routing-policy.yml` carries `dry_run: true` (or
+simply omits the flag, treated identically — see below); every `Agent` call
+in this skill keeps launching without an explicit `model` override for as
+long as that holds, exactly as `## Limites` already states.
+
+1. Build a `TaskContext` (`scripts/task-context.mjs#buildTaskContext`) from
+   the issue already read while claiming the run — `eventName: 'issues'`, a
+   payload built from that same issue, `routine: 'coordinator'` (the key
+   this run's entry actually has in `.automation/routines.yml`, not
+   `coordinator-implement` — that name is only the automation-log marker for
+   this step's journal entry, below), this run's id.
+2. Load `.automation/routines.yml`, `.automation/model-catalog.yml`,
+   `.automation/routing-policy.yml`
+   (`scripts/automation-dispatch.mjs#loadRoutinesConfig`/`#loadModelCatalog`/`#loadRoutingPolicy`).
+3. Call `scripts/routing-dry-run.mjs#resolveRoutingDryRun` with that
+   `TaskContext`, the issue's **full, untruncated** body as `issueBody`
+   (never `TaskContext.entity.bodyExcerpt` — `## Catégorie de risque` sits
+   near the end of a long spec and `task-context.mjs`'s own truncation could
+   silently drop it), the issue's labels, the three loaded configs, and no
+   `llmResponse` — this step never launches the classification sub-agent
+   itself (#403's own wiring into this skill is a separate, later change).
+   When `resolveRoutingDryRun`'s internal `shouldRunLlmFallback` check would
+   have warranted one, the chain continues on the heuristic assessment alone
+   and says so in the returned `limits`, exactly as
+   `scripts/routing-dry-run.mjs` already handles that case on its own.
+4. A non-empty `missing`, or an error thrown by `resolveRoutingDryRun`
+   through `routeModel` (invalid catalog/policy version, no policy for this
+   routine, a missing band) — **never** caught or turned into a partial
+   decision — go straight to § Escalade below, naming exactly what's
+   missing or invalid. Nothing has launched yet at this point, so this is
+   the same kind of precondition failure as "Verify readiness" above, just
+   discovered one step later.
+5. Otherwise, upsert the **issue's** own journal
+   (`scripts/automation-log.mjs#upsertAutomationLog`, `number` = the issue,
+   routine `coordinator-implement`, `status: 'running'`), passing this
+   decision's `complexity`, `routing`, and the new `routingApplied`
+   (`resolveRoutingDryRun`'s own `applied` field) /
+   `taskContextVersion` (`TaskContext.version`) fields — so the rendered
+   journal (`scripts/automation-log.mjs` § dry-run rendering) lets an
+   operator compare the proposed model, the model actually used (unchanged,
+   per this section's opening line), and the routine's eventual result. A
+   relaunch of this skill on the same issue updates this same comment via
+   its marker (`markerFor('coordinator-implement')`) — never a second one,
+   same guarantee `upsertAutomationLog` already gives every other caller.
+
+This step reads three config files, builds one `TaskContext`, and upserts
+one comment — no model choice is ever applied here, and no `Agent` call in
+§ 1–§ 3 below reads this decision's `selectedModel` back.
+
 ## Procédure
 
 ### 1. Implementation
@@ -447,6 +501,13 @@ instead of by a standalone R2/R4:
 4. **A review or fix sub-agent itself reports it cannot proceed** for a
    reason not covered above (e.g. it lost access to a tool mid-run) —
    treated the same as 1/2/3, never silently retried.
+5. **§ "Routage (dry-run, #406)" can't produce a decision** — a non-empty
+   `missing` from `resolveRoutingDryRun` (no `TaskContext`, or no readable
+   `## Catégorie de risque`), or an error it let through from `routeModel`
+   (invalid catalog/policy version, no policy for this routine, a missing
+   band). Reached before § 1 launches anything, so step 1 of the sequence
+   below (removing labels from a PR "if one exists") finds none yet, same as
+   condition 1.
 
 In every case, this skill performs the full escalation sequence itself
 (rather than delegating it to a sub-agent, since only this skill holds the
@@ -499,7 +560,15 @@ issue's `automation:in-progress` for the whole run):
   same as every other skill in this pipeline.
 - Never batches more than one issue per run (`automation-plan.md` §2
   principle 6) — same as `implement-task`.
-- Does not implement the multi-model routing itself (#403/#404/#406/#407) —
-  it's the vehicle for a future wiring of `.automation/routing-policy.yml`
-  per sub-agent step, not that wiring. Every `Agent` call above launches
-  without an explicit `model` override until that's wired.
+- Does not itself apply the multi-model routing decision it now computes and
+  journals (§ "Routage (dry-run, #406)") — only #407 wires an actual `model`
+  override onto an `Agent` call from it. Every `Agent` call above (§ 1–§ 3)
+  keeps launching without an explicit `model` override for as long as
+  `.automation/routing-policy.yml` carries `dry_run: true` (or omits the
+  flag — treated the same, see `scripts/routing-dry-run.mjs`), which is the
+  case today.
+- Never launches the classification sub-agent (#403) itself from the
+  "Routage (dry-run, #406)" step — that step calls `resolveRoutingDryRun`
+  without an `llmResponse`, so the routing decision it journals always rests
+  on the heuristic `ComplexityAssessment` alone; wiring an actual classifier
+  sub-agent call into this step is a separate, later change.
