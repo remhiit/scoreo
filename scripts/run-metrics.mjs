@@ -87,8 +87,16 @@ export function buildRunMetrics({
   if (!routing) {
     missingFields.push('routing')
   } else {
-    if (routing.proposedModel == null) missingFields.push('routing.proposedModel')
-    if (routing.actualModel == null) missingFields.push('routing.actualModel')
+    // `status` (miroir de RoutingDecision.status, scripts/model-router.mjs) est
+    // l'unique façon de distinguer un `proposedModel`/`actualModel` réellement
+    // manquant d'un `null` légitime : `no-candidate` signifie qu'aucun modèle
+    // n'a été routé faute de candidat éligible, pas que la collecte a échoué.
+    // Un statut absent ou inconnu (`undefined`, valeur hors énumération) ne
+    // vaut jamais `no-candidate` — la nullité reste alors traitée comme
+    // manquante, le comportement d'origine.
+    const isNoCandidate = routing.status === 'no-candidate'
+    if (routing.proposedModel == null && !isNoCandidate) missingFields.push('routing.proposedModel')
+    if (routing.actualModel == null && !isNoCandidate) missingFields.push('routing.actualModel')
     if (routing.activationMode == null) missingFields.push('routing.activationMode')
     routingRecord = {
       proposedModel: routing.proposedModel ?? null,
