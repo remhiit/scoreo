@@ -833,15 +833,18 @@ plutôt que découvert en incident.
 
 ### Mode dry-run (#406) : le coordinateur calcule et journalise, sans appliquer
 
-Câble, en observation seulement, la chaîne existante — `TaskContext` (#401)
-→ `ComplexityAssessment` (#402) → fallback LLM (#403) → `RoutingDecision`
-(#404) — à l'intérieur du skill du coordinateur (§ ci-dessus), sans en
-changer le comportement réel : chaque `Agent` lancé par ce skill (§ 1-3 de
-`coordinator/SKILL.md`) continue de partir sur le modèle courant, sans
-override `model`, tant que `.automation/routing-policy.yml` porte
-`dry_run: true` — le cas par défaut, y compris quand le drapeau est
-simplement absent (traité comme `true`, le mode le plus prudent, jamais
-comme `false` implicite).
+Câble la chaîne existante — `TaskContext` (#401) → `ComplexityAssessment`
+(#402) → fallback LLM (#403) → `RoutingDecision` (#404) → matrice
+d'activation (#476, ci-dessous) — à l'intérieur du skill du coordinateur (§
+ci-dessus) : chaque `Agent` lancé par ce skill (§ 1-3 de
+`coordinator/SKILL.md`) ne part avec un override `model` que si la matrice
+d'activation de `.automation/routing-policy.yml#activation` résout `apply`
+pour le triplet (routine × bande de complexité × niveau de risque) de ce
+run ; il continue de partir sur le modèle courant tant qu'elle résout
+`observe` — le cas par défaut, y compris quand la section `activation` est
+simplement absente (traitée comme une matrice vide, `observe` partout,
+jamais `apply` implicite). Voir « Matrice d'activation (#476) » ci-dessous
+pour cette résolution.
 
 Le chaînage lui-même vit dans `scripts/routing-dry-run.mjs`, deux fonctions
 pures, zéro effet de bord, zéro appel réseau — même précédent que les
@@ -877,14 +880,15 @@ même issue met à jour ce même commentaire via son marqueur, jamais un
 second. Le journal publie, en plus des lignes déjà existantes pour
 `complexity`/`routing`, les trois versions de configuration lues
 (`TASK_CONTEXT_VERSION`, la version de politique et de catalogue — ces deux
-dernières déjà portées par `RoutingDecision.input`) et une mention
-explicite que le modèle proposé n'a pas été appliqué
+dernières déjà portées par `RoutingDecision.input`), le mode d'activation
+résolu par la matrice (§ « Matrice d'activation (#476) » ci-dessous) et sa
+raison, et une mention explicite que le modèle proposé n'a pas été appliqué
 (`scripts/automation-log.mjs`, champs optionnels `taskContextVersion`/
-`routingApplied` de `renderAutomationLog`/`upsertAutomationLog` — comme
-`metrics`/`findings` avant eux, exercés pour l'instant par leurs seuls
-tests unitaires, aucun workflow ne les alimentant encore), pour qu'un
-opérateur puisse comparer modèle proposé, modèle réel et résultat de la
-routine sans deviner l'un des trois.
+`routingApplied`/`activation` de `renderAutomationLog`/`upsertAutomationLog`
+— comme `metrics`/`findings` avant eux, exercés pour l'instant par leurs
+seuls tests unitaires, aucun workflow ne les alimentant encore), pour qu'un
+opérateur puisse comparer modèle proposé, mode d'activation résolu, modèle
+réel et résultat de la routine sans deviner aucun des quatre.
 
 Ce journal s'ouvre en `status: 'running'` et ne le reste pas jusqu'à la fin
 du run : `coordinator/SKILL.md` § « Converged » et § Escalade referment ce
@@ -898,13 +902,50 @@ viderait de son sens la comparaison que ce journal existe pour permettre.
 `upsertAutomationLog` réécrit le corps entier à chaque appel sans jamais le
 fusionner avec la version précédente : les deux fermetures ci-dessus
 re-transmettent donc les mêmes `complexity`/`routing`/`taskContextVersion`/
-`routingApplied` capturés à l'ouverture, sous peine de faire disparaître les
-lignes Complexité/Routage/Configuration/Modèle appliqué au moment
-`succeeded`/`failed` — l'état que cette comparaison regarde en pratique le
-plus souvent.
+`routingApplied`/`activation` capturés à l'ouverture, sous peine de faire
+disparaître les lignes Complexité/Routage/Configuration/Activation/Modèle
+appliqué au moment `succeeded`/`failed` — l'état que cette comparaison
+regarde en pratique le plus souvent.
 
 Protocole de passage vers l'activation contrôlée : voir §5, « Passage du
 dry-run à l'activation contrôlée (#406 → #407) ».
+
+### Matrice d'activation (#476) : par routine, bande et risque plutôt qu'un drapeau global
+
+Passer d'un coup à l'activation réelle, pour toutes les routines et toutes
+les bandes, serait exactement ce que le plan interdit : l'activation doit
+commencer par les tâches réversibles et peu risquées, puis s'étendre.
+`scripts/routing-activation.mjs#resolveActivation(policy, { routine, band,
+riskLevel })` remplace donc le drapeau global `dry_run` de #406 par une
+résolution fine, déclarée dans `.automation/routing-policy.yml#activation` —
+même espace de noms que `routines:` du même fichier, jamais celui de
+`.automation/routines.yml` — et renvoie `{ mode: 'observe' | 'apply',
+reason }`, `reason` nommant toujours la règle qui a tranché. Fonction pure,
+zéro effet de bord.
+
+Deux garde-fous non contournables par la déclaration de la matrice
+elle-même : un triplet non couvert (routine absente, bande absente pour une
+routine présente, ou section `activation` entièrement absente) résout
+toujours `observe` ; un risque `high` résout toujours `observe`, quelle que
+soit la déclaration — même une déclaration `apply` explicite est écartée et
+la `reason` le dit. L'activation sur risque élevé a sa propre tranche de
+#407, avec ses propres garde-fous, hors scope ici. Une matrice incohérente
+— mode inconnu, routine absente de `routines`, bande absente de
+`.automation/complexity-thresholds.yml` — est refusée avec une erreur
+nommant le fichier et la clé fautive, à deux niveaux : le job CI
+`automation-config` refuse toute la matrice à la validation de
+configuration (`scripts/automation-dispatch.mjs#validateRoutingPolicy`,
+schéma `schemas/automation/routing-policy.schema.json`), et
+`resolveActivation` revalide en défense en profondeur le seul triplet qu'on
+lui demande de résoudre.
+
+`scripts/routing-dry-run.mjs#resolveRoutingDryRun` (#406) est le seul
+appelant prévu : son `applied` reflète désormais le mode résolu par cette
+matrice plutôt que l'ancien drapeau, et le résultat porte aussi ce détail
+complet sous un nouveau champ `activation`. La matrice livrée par cette
+tranche déclare `observe` partout : elle ne change le modèle d'aucune
+routine, elle remplace uniquement le mécanisme — voir §5 ci-dessous pour le
+protocole de passage réel d'un triplet à `apply`.
 
 ### Journal d'exécution idempotent
 
@@ -1068,25 +1109,35 @@ toujours au moins `medium` chez `change-risk`, jamais `low`.
 
 Le routage par sous-agent (§4, « Mode dry-run », #406) n'est pas gardé par
 un label du tableau ci-dessus — la bascule n'est pas un événement du bus,
-c'est un seul drapeau de configuration, `dry_run` dans
-`.automation/routing-policy.yml`, revu comme n'importe quel autre changement
-de `.automation/` (validé en CI par le job `automation-config`, jamais posé
-ni retiré par une routine elle-même). Tant qu'il vaut `true` — ou est
-simplement absent, traité de façon identique, le mode le plus prudent — le
-skill du coordinateur continue de calculer et journaliser la décision de
-routage sans jamais la traduire en override `model` sur un appel `Agent`
-(§4 ci-dessus, `coordinator/SKILL.md` § « Routage (dry-run, #406) »).
+c'est de la configuration versionnée, revue comme n'importe quel autre
+changement de `.automation/` (validé en CI par le job `automation-config`,
+jamais posée ni retirée par une routine elle-même). Jusqu'à #476 (tranche
+1/6 de #407, livrée), cette configuration était un seul drapeau global,
+`dry_run` — activer une routine, même une seule bande de complexité d'une
+seule routine, aurait forcé à activer les trois autres bandes et toutes les
+autres routines du même geste, exactement ce que ce protocole interdit.
 
-Le passage à `false` est le périmètre de #407, pas de ce fichier : à
-découper après une lecture des journaux de dry-run accumulés sur de vraies
-issues (les décisions qu'un opérateur aurait vues, comparées au modèle
-réellement utilisé et au résultat de la routine), palier par palier plutôt
-que d'un coup — une routine ou une bande de complexité à la fois, jamais les
-quatre bandes de toutes les routines simultanément. Ce protocole n'est pas
-encore écrit en détail : #407 reste `NEEDS_CLARIFICATION` (§4, tableau
-« Périmètre de l'épic après arbitrage ») précisément parce que son
-dimensionnement dépend de ce que ces journaux de dry-run auront montré, pas
-d'une estimation a priori.
+**#476 remplace ce drapeau par la matrice d'activation** (§4, « Matrice
+d'activation (#476) » ci-dessus) : `.automation/routing-policy.yml#activation`
+déclare, par routine et par bande de complexité, `observe` ou `apply`
+séparément — le passage à `apply` d'un seul triplet (une routine, une bande)
+ne bascule plus les autres. La matrice livrée par #476 déclare `observe`
+partout : cette tranche livre uniquement le mécanisme de résolution fine et
+ses deux garde-fous (triplet non couvert → `observe` ; risque `high` →
+`observe` toujours), elle n'active elle-même aucune routine.
+
+Le passage réel de tel triplet à `apply` reste le périmètre des tranches
+suivantes de #407, pas de ce fichier : à décider après une lecture des
+journaux de dry-run accumulés sur de vraies issues (les décisions qu'un
+opérateur aurait vues, comparées au modèle réellement utilisé et au résultat
+de la routine), palier par palier plutôt que d'un coup — une routine ou une
+bande de complexité à la fois, jamais les quatre bandes de toutes les
+routines simultanément, et jamais sur un risque `high` (garde-fou propre à
+sa propre tranche, hors #476). Ce protocole n'est pas encore écrit en
+détail au-delà de ce que #476 livre : #407 reste `NEEDS_CLARIFICATION`
+(§4, tableau « Périmètre de l'épic après arbitrage ») précisément parce que
+le dimensionnement de ses tranches restantes dépend de ce que ces journaux
+de dry-run auront montré, pas d'une estimation a priori.
 
 ---
 

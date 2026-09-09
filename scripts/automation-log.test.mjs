@@ -227,7 +227,7 @@ describe('renderAutomationLog / parseAutomationLog', () => {
     expect(body).toContain('- Routage : `aucun candidat` (risque `high`, bande `complex`)')
   })
 
-  it('renders the three config versions and an explicit "not applied" mention for a dry-run routing decision (#406)', async () => {
+  it('renders the three config versions and an explicit "not applied" mention for an observed routing decision (#406)', async () => {
     const { renderAutomationLog } = await import('./automation-log.mjs')
     const body = renderAutomationLog({
       routine: 'coordinator-implement',
@@ -254,7 +254,7 @@ describe('renderAutomationLog / parseAutomationLog', () => {
       },
     })
     expect(body).toContain('- Configuration : TaskContext v1, politique v1, catalogue v1')
-    expect(body).toContain('- Modèle appliqué : non (mode dry-run) — le sous-agent réel a été lancé sans override de modèle')
+    expect(body).toContain('- Modèle appliqué : non (mode observation) — le sous-agent réel a été lancé sans override de modèle')
   })
 
   it('renders "Modèle appliqué : oui" once routingApplied is true', async () => {
@@ -284,6 +284,65 @@ describe('renderAutomationLog / parseAutomationLog', () => {
       },
     })
     expect(body).toContain('- Modèle appliqué : oui — le sous-agent a été lancé avec ce modèle')
+  })
+
+  it('renders the resolved activation mode and its reason next to the proposed model (issue #476)', async () => {
+    const { renderAutomationLog } = await import('./automation-log.mjs')
+    const body = renderAutomationLog({
+      routine: 'coordinator-implement',
+      triggeredAt: '2026-09-09T10:00:00Z',
+      sha: 'abc1234',
+      status: 'running',
+      iteration: '1',
+      validation: 'lint / typecheck / tests',
+      resultUrl: 'https://github.com/remhiit/scoreo/actions/runs/999',
+      taskContextVersion: 1,
+      routingApplied: false,
+      activation: { mode: 'observe', reason: 'activation.implement-task.standard déclare "observe"' },
+      routing: {
+        status: 'selected',
+        selectedModel: { id: 'sonnet-5', provider: 'anthropic', model: 'claude-sonnet-5', agentAlias: 'sonnet', origin: 'band' },
+        fallbacks: [],
+        input: {
+          complexity: { level: 'standard', effectiveLevel: 'standard', confidence: 'high' },
+          risk: { level: 'low' },
+          catalogVersion: 1,
+          policyVersion: 1,
+        },
+        rulesApplied: [],
+        limits: [],
+      },
+    })
+    expect(body).toContain('  - Activation : `observe` — activation.implement-task.standard déclare "observe"')
+  })
+
+  it('omits the Activation line when no activation decision is provided (pre-#476 callers)', async () => {
+    const { renderAutomationLog } = await import('./automation-log.mjs')
+    const body = renderAutomationLog({
+      routine: 'coordinator-implement',
+      triggeredAt: '2026-09-09T10:00:00Z',
+      sha: 'abc1234',
+      status: 'running',
+      iteration: '1',
+      validation: 'lint / typecheck / tests',
+      resultUrl: 'https://github.com/remhiit/scoreo/actions/runs/999',
+      taskContextVersion: 1,
+      routingApplied: false,
+      routing: {
+        status: 'selected',
+        selectedModel: { id: 'sonnet-5', provider: 'anthropic', model: 'claude-sonnet-5', agentAlias: 'sonnet', origin: 'band' },
+        fallbacks: [],
+        input: {
+          complexity: { level: 'standard', effectiveLevel: 'standard', confidence: 'high' },
+          risk: { level: 'low' },
+          catalogVersion: 1,
+          policyVersion: 1,
+        },
+        rulesApplied: [],
+        limits: [],
+      },
+    })
+    expect(body).not.toContain('Activation :')
   })
 
   it('omits the config-versions/applied lines entirely when routingApplied is not provided (pre-#406 callers)', async () => {

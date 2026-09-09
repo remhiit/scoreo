@@ -123,13 +123,20 @@ undocumented cutoff, which is why this isn't a formality to wave through.
 
 ## Routage (dry-run, #406)
 
-Runs once, right after "Claim the run" above and before § 1 below —
-observation only. It computes and journals the sub-agent model this run
-*would* route to; it never changes which model § 1's `Agent` call actually
-launches on. `.automation/routing-policy.yml` carries `dry_run: true` (or
-simply omits the flag, treated identically — see below); every `Agent` call
-in this skill keeps launching without an explicit `model` override for as
-long as that holds, exactly as `## Limites` already states.
+Runs once, right after "Claim the run" above and before § 1 below. It
+computes and journals the sub-agent model this run *would* route to, and the
+matrix decides whether that model is actually applied to § 1's `Agent` call:
+`.automation/routing-policy.yml#activation` (#476) resolves a mode per
+triplet (routine × complexity band × risk level) via
+`scripts/routing-activation.mjs#resolveActivation` — `observe` (a triplet
+missing from the matrix, or the matrix itself absent, always resolves
+`observe`; so does any triplet whose risk is `high`, whatever the matrix
+declares) or `apply`. The matrix this skill ships with (and every matrix
+until a human deliberately flips a triplet, per `automation-plan.md` §5
+"Passage du dry-run à l'activation contrôlée") declares `observe`
+everywhere, so every `Agent` call in this skill keeps launching without an
+explicit `model` override for as long as that holds, exactly as
+`## Limites` already states.
 
 1. Build a `TaskContext` (`scripts/task-context.mjs#buildTaskContext`) from
    the issue already read while claiming the run — `eventName: 'issues'`, a
@@ -153,7 +160,10 @@ long as that holds, exactly as `## Limites` already states.
    `scripts/routing-dry-run.mjs` already handles that case on its own.
 4. A non-empty `missing`, or an error thrown by `resolveRoutingDryRun`
    through `routeModel` (invalid catalog/policy version, no policy for this
-   routine, a missing band) — **never** caught or turned into a partial
+   routine, a missing band) or through `resolveActivation` (a matrix entry
+   naming an unknown mode/routine/band — the CI job `automation-config`
+   already refuses such a matrix at merge time, so this is defense in depth,
+   not the expected path) — **never** caught or turned into a partial
    decision — go straight to § Escalade below, naming exactly what's
    missing or invalid. Nothing has launched yet at this point, so this is
    the same kind of precondition failure as "Verify readiness" above, just
@@ -161,19 +171,22 @@ long as that holds, exactly as `## Limites` already states.
 5. Otherwise, upsert the **issue's** own journal
    (`scripts/automation-log.mjs#upsertAutomationLog`, `number` = the issue,
    routine `coordinator-implement`, `status: 'running'`), passing this
-   decision's `complexity`, `routing`, and the new `routingApplied`
-   (`resolveRoutingDryRun`'s own `applied` field) /
-   `taskContextVersion` (`TaskContext.version`) fields — so the rendered
-   journal (`scripts/automation-log.mjs` § dry-run rendering) lets an
-   operator compare the proposed model, the model actually used (unchanged,
-   per this section's opening line), and the routine's eventual result. A
-   relaunch of this skill on the same issue updates this same comment via
-   its marker (`markerFor('coordinator-implement')`) — never a second one,
-   same guarantee `upsertAutomationLog` already gives every other caller.
-   This `status: 'running'` is not left standing once the run finishes:
-   § "Converged" step 4 and § Escalade step 3 below close this same journal
-   with the run's real outcome, so the comparison this journal exists for
-   actually includes the routine's result, not just its starting snapshot.
+   decision's `complexity`, `routing`, the new `routingApplied`
+   (`resolveRoutingDryRun`'s own `applied` field), `activation`
+   (`resolveRoutingDryRun`'s own `activation` field — the resolved mode and
+   its reason) and `taskContextVersion` (`TaskContext.version`) fields — so
+   the rendered journal (`scripts/automation-log.mjs` § dry-run rendering)
+   lets an operator compare the proposed model, the resolved activation mode
+   and why, the model actually used (unchanged as long as that mode is
+   `observe`, per this section's opening line), and the routine's eventual
+   result. A relaunch of this skill on the same issue updates this same
+   comment via its marker (`markerFor('coordinator-implement')`) — never a
+   second one, same guarantee `upsertAutomationLog` already gives every
+   other caller. This `status: 'running'` is not left standing once the run
+   finishes: § "Converged" step 4 and § Escalade step 3 below close this
+   same journal with the run's real outcome, so the comparison this journal
+   exists for actually includes the routine's result, not just its starting
+   snapshot.
 
 This step reads three config files, builds one `TaskContext`, and upserts
 one comment — no model choice is ever applied here, and no `Agent` call in
@@ -388,12 +401,13 @@ Reached when a review round (§ 2, first pass or after a fix round) finds no
    on this path (§ "Routage" always reaches its own step 5 before § 1 can
    launch anything), so this is never a no-op here the way it can be in §
    Escalade below. **Re-pass the same `complexity`, `routing`,
-   `taskContextVersion` and `routingApplied` values § "Routage" step 5
-   captured** — still in memory in this session at this point — on this
-   call: `upsertAutomationLog` re-renders the whole comment body from
+   `taskContextVersion`, `routingApplied` and `activation` values § "Routage"
+   step 5 captured** — still in memory in this session at this point — on
+   this call: `upsertAutomationLog` re-renders the whole comment body from
    scratch and never merges it with the previous one, so omitting them here
-   would wipe the Complexité/Routage/Configuration/Modèle appliqué lines the
-   `running` journal carried, right as the run reaches the steady state an
+   would wipe the Complexité/Routage/Configuration/Activation/Modèle
+   appliqué lines the `running` journal carried, right as the run reaches
+   the steady state an
    operator actually reads.
 5. Remove the issue's `automation:in-progress` — last, only after the four
    steps above, so the pipeline's one in-flight slot frees exactly when
@@ -551,8 +565,9 @@ issue's `automation:in-progress` for the whole run):
    (`scripts/automation-log.mjs#upsertAutomationLog`, `onlyIfRunning: true`,
    `number` = the issue, routine `coordinator-implement`,
    `status: 'failed'`), **re-passing the same `complexity`, `routing`,
-   `taskContextVersion` and `routingApplied` values § "Routage" step 5
-   captured**, for the same reason § "Converged" step 4 does: this call
+   `taskContextVersion`, `routingApplied` and `activation` values §
+   "Routage" step 5 captured**, for the same reason § "Converged" step 4
+   does: this call
    re-renders the whole comment body from scratch, so omitting them would
    wipe those lines instead of leaving them showing the run's real outcome.
    A no-op when this is condition 5 itself (§ "Routage" never reached its
@@ -597,12 +612,15 @@ issue's `automation:in-progress` for the whole run):
 - Never batches more than one issue per run (`automation-plan.md` §2
   principle 6) — same as `implement-task`.
 - Does not itself apply the multi-model routing decision it now computes and
-  journals (§ "Routage (dry-run, #406)") — only #407 wires an actual `model`
-  override onto an `Agent` call from it. Every `Agent` call above (§ 1–§ 3)
-  keeps launching without an explicit `model` override for as long as
-  `.automation/routing-policy.yml` carries `dry_run: true` (or omits the
-  flag — treated the same, see `scripts/routing-dry-run.mjs`), which is the
-  case today.
+  journals (§ "Routage (dry-run, #406)") — wiring an actual `model` override
+  onto an `Agent` call from a resolved `apply` mode is a later tranche of
+  #407, not this one (#476 only replaces the mechanism that decides
+  `observe`/`apply`, it never consumes the result). Every `Agent` call above
+  (§ 1–§ 3) keeps launching without an explicit `model` override for as long
+  as `.automation/routing-policy.yml#activation` resolves `observe` for the
+  triplet at hand — which every triplet does today, since the matrix this
+  skill ships with declares `observe` everywhere (see
+  `scripts/routing-activation.mjs`).
 - Never launches the classification sub-agent (#403) itself from the
   "Routage (dry-run, #406)" step — that step calls `resolveRoutingDryRun`
   without an `llmResponse`, so the routing decision it journals always rests

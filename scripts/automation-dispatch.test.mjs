@@ -445,6 +445,55 @@ describe('validateRoutingPolicy', () => {
     expect(valid).toBe(false)
     expect(errors).toEqual(expect.arrayContaining([expect.stringContaining('sous le niveau de risque requis')]))
   })
+
+  it('accepts a well-formed "activation" section (issue #476)', () => {
+    const policy = structuredClone(VALID_POLICY)
+    policy.activation = {
+      'implement-task': { trivial: 'observe', standard: 'apply', complex: 'observe', 'very-complex': 'observe' },
+    }
+    expect(validateRoutingPolicy(policy, VALID_CATALOG)).toEqual({ valid: true, errors: [] })
+  })
+
+  it('accepts a missing "activation" section (optional, issue #476)', () => {
+    const policy = structuredClone(VALID_POLICY)
+    delete policy.activation
+    expect(validateRoutingPolicy(policy, VALID_CATALOG)).toEqual({ valid: true, errors: [] })
+  })
+
+  it('rejects an "activation" entry naming a routine absent from "routines"', () => {
+    const policy = structuredClone(VALID_POLICY)
+    policy.activation = { 'does-not-exist': { trivial: 'observe' } }
+    const { valid, errors } = validateRoutingPolicy(policy, VALID_CATALOG)
+    expect(valid).toBe(false)
+    expect(errors).toEqual(expect.arrayContaining([expect.stringContaining('activation.does-not-exist: routine inconnue')]))
+  })
+
+  it('rejects an "activation" entry naming a band absent from complexity-thresholds.yml', () => {
+    const policy = structuredClone(VALID_POLICY)
+    policy.activation = { 'implement-task': { medium: 'observe' } }
+    const { valid, errors } = validateRoutingPolicy(policy, VALID_CATALOG)
+    expect(valid).toBe(false)
+    expect(errors).toEqual(
+      expect.arrayContaining([expect.stringContaining('activation.implement-task.medium: bande inconnue')]),
+    )
+  })
+
+  it('rejects an "activation" entry with an unknown mode', () => {
+    const policy = structuredClone(VALID_POLICY)
+    policy.activation = { 'implement-task': { trivial: 'sometimes' } }
+    const { valid, errors } = validateRoutingPolicy(policy, VALID_CATALOG)
+    expect(valid).toBe(false)
+    expect(errors).toEqual(
+      expect.arrayContaining([expect.stringContaining('activation.implement-task.trivial: mode inconnu')]),
+    )
+  })
+
+  it('rejects the removed global "dry_run" flag as an unknown top-level field (issue #476)', () => {
+    const policy = { ...structuredClone(VALID_POLICY), dry_run: true }
+    const { valid, errors } = validateRoutingPolicy(policy, VALID_CATALOG)
+    expect(valid).toBe(false)
+    expect(errors).toEqual(expect.arrayContaining([expect.stringContaining('champ inconnu à la racine : "dry_run"')]))
+  })
 })
 
 describe('validateRoutingPolicyCoverage', () => {

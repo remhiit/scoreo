@@ -23,8 +23,10 @@ précédent que `schemas/automation/routines.schema.json`) :
 Le skill du coordinateur consomme désormais ce contrat pour calculer et
 journaliser une décision de routage à chaque run (§ « Mode dry-run »
 ci-dessous, issue #406) — mais jamais encore pour router réellement un
-sous-agent sur le modèle choisi : tant que `.automation/routing-policy.yml`
-porte `dry_run: true` (le cas aujourd'hui), chaque `Agent` continue de
+sous-agent sur le modèle choisi : la matrice d'activation (§ « Matrice
+d'activation » ci-dessous, issue #476) résout `observe` ou `apply` pour
+chaque triplet routine × bande × risque, et tant qu'elle résout `observe`
+(le cas aujourd'hui, pour tous les triplets), chaque `Agent` continue de
 partir sans override `model`. Router une décision réelle reste le périmètre
 de #407. Aucun appel
 fournisseur n'est fait ici : `.automation/model-catalog.yml` décrit d'abord
@@ -270,13 +272,14 @@ lui-même si l'artefact est manquant ou invalide.
 ## Mode dry-run (`scripts/routing-dry-run.mjs`, issue #406)
 
 Câble la chaîne ci-dessus — `TaskContext` → `ComplexityAssessment` →
-fallback LLM → `RoutingDecision` — à l'intérieur du skill du coordinateur
-(`.claude/skills/coordinator/SKILL.md`) sans jamais appliquer la décision
-calculée : chaque `Agent` que ce skill lance continue de partir sans
-override `model` tant que `.automation/routing-policy.yml` porte
-`dry_run: true` (le cas par défaut, y compris quand le drapeau est
-simplement absent). Deux fonctions pures, zéro effet de bord, zéro appel
-réseau — même précédent que le reste de ce contrat.
+fallback LLM → `RoutingDecision` → matrice d'activation (§ ci-dessous,
+issue #476) — à l'intérieur du skill du coordinateur
+(`.claude/skills/coordinator/SKILL.md`) : chaque `Agent` que ce skill lance
+ne part avec un override `model` que si la matrice d'activation résout
+`apply` pour le triplet (routine × bande × risque) de ce run — `observe`
+tant qu'elle ne le fait pas, le cas par défaut, y compris quand la section
+`activation` est simplement absente. Fonctions pures, zéro effet de bord,
+zéro appel réseau — même précédent que le reste de ce contrat.
 
 ### `extractRiskLevel(issueBody)`
 
@@ -322,9 +325,14 @@ fonction d'aller la chercher.
   en décision partielle.
 - **`status: 'no-candidate'`** produit systématiquement
   `escalation: 'automation:needs-human'`, jamais un modèle par défaut.
-- **`applied`** reflète `routingPolicy.dry_run` : `false` tant qu'il vaut
-  `true` (ou est absent — traité comme `true`, le mode le plus prudent,
-  jamais comme `false` implicite ; `limits` le signale quand c'est le cas).
+- **`applied`** reflète le mode résolu par la matrice d'activation (§
+  « Matrice d'activation » ci-dessous, issue #476) pour ce triplet routine ×
+  bande × risque : `true` uniquement si `resolveActivation` résout `apply`,
+  `false` tant qu'elle résout `observe` — le cas par défaut d'un triplet non
+  couvert ou d'une section `activation` absente, jamais un `false` implicite
+  non justifié (`limits` le signale dans ce dernier cas, en plus de la
+  `reason` que `resolveActivation` renvoie elle-même). Le résultat porte
+  aussi ce détail complet sous le champ `activation` (`{ mode, reason }`).
 
 ### Décision journalisée (dry-run)
 
@@ -336,11 +344,12 @@ commentaire via son marqueur, jamais un second. Au-delà des lignes
 `complexity`/`routing` déjà décrites plus haut, le journal publie les trois
 versions de configuration lues (`TASK_CONTEXT_VERSION`, la version de
 politique et de catalogue, ces deux dernières déjà portées par
-`RoutingDecision.input`) et une mention explicite de non-application —
-champs optionnels `taskContextVersion`/`routingApplied` de
-`renderAutomationLog`/`upsertAutomationLog`, comme `metrics`/`findings`
-avant eux exercés pour l'instant par leurs seuls tests unitaires, aucun
-workflow ne les alimentant encore.
+`RoutingDecision.input`), le mode d'activation résolu et sa raison (§
+« Matrice d'activation » ci-dessous), et une mention explicite de
+non-application — champs optionnels `taskContextVersion`/`routingApplied`/
+`activation` de `renderAutomationLog`/`upsertAutomationLog`, comme
+`metrics`/`findings` avant eux exercés pour l'instant par leurs seuls tests
+unitaires, aucun workflow ne les alimentant encore.
 
 Ce journal est ouvert avec `status: 'running'` et ne le reste pas jusqu'à la
 fin du run : `coordinator/SKILL.md` § « Converged » et § Escalade referment
@@ -354,10 +363,75 @@ proposé / modèle réel / résultat de la routine » que ce journal existe pour
 permettre. `upsertAutomationLog` réécrit le corps entier du commentaire à
 chaque appel, sans jamais fusionner avec la version précédente : ces deux
 fermetures re-transmettent donc les mêmes `complexity`/`routing`/
-`taskContextVersion`/`routingApplied` capturés à l'ouverture, sous peine de
-faire disparaître les lignes Complexité/Routage/Configuration/Modèle
-appliqué au moment `succeeded`/`failed` — l'état que la comparaison
-ci-dessus regarde en pratique le plus souvent.
+`taskContextVersion`/`routingApplied`/`activation` capturés à l'ouverture,
+sous peine de faire disparaître les lignes
+Complexité/Routage/Configuration/Activation/Modèle appliqué au moment
+`succeeded`/`failed` — l'état que la comparaison ci-dessus regarde en
+pratique le plus souvent.
+
+## Matrice d'activation (`scripts/routing-activation.mjs`, issue #476)
+
+Remplace le drapeau global `dry_run` de #406 par une résolution fine, un
+triplet à la fois plutôt que toutes les routines et toutes les bandes d'un
+coup — l'activation réelle du routage doit commencer par les tâches
+réversibles et peu risquées, puis s'étendre (doc/technical/automation-plan.md
+§5 « Passage du dry-run à l'activation contrôlée »), jamais basculer d'un
+seul geste.
+
+```
+resolveActivation(policy, { routine, band, riskLevel })
+// → { mode: 'observe' | 'apply', reason }
+```
+
+`policy` est `.automation/routing-policy.yml` déjà chargé — `routine` doit
+être une clé de `policy.routines` (le même espace de noms que la section
+`activation`, jamais celui de `.automation/routines.yml`), `band` une des
+quatre bandes de `.automation/complexity-thresholds.yml`. Fonction pure,
+zéro effet de bord, zéro appel réseau.
+
+```yaml
+activation:
+  implement-task:
+    trivial: observe
+    standard: observe
+    complex: observe
+    very-complex: observe
+  # ... une entrée par politique de routines:, ci-dessus
+```
+
+Deux garde-fous non contournables par la déclaration de la matrice
+elle-même :
+
+- **Triplet non couvert.** Une routine absente de `activation`, ou une
+  bande absente pour une routine présente, résout `observe` — l'absence de
+  déclaration n'active jamais rien. Une section `activation` entièrement
+  absente est traitée comme une matrice vide, donc `observe` partout ;
+  `scripts/routing-dry-run.mjs#resolveRoutingDryRun` le signale alors dans
+  `limits`, en plus de la `reason` que `resolveActivation` renvoie
+  elle-même.
+- **Risque `high`.** Résout toujours `observe`, quelle que soit la
+  déclaration de la matrice pour ce triplet — même une déclaration `apply`
+  explicite est écartée, et la `reason` le dit. L'activation sur risque
+  élevé est traitée par sa propre tranche de #407, avec ses propres
+  garde-fous, hors scope ici.
+
+**Refus au démarrage.** Une matrice incohérente — mode inconnu (ni
+`observe` ni `apply`), routine absente de `policy.routines`, bande absente
+des quatre bandes de `.automation/complexity-thresholds.yml` — est refusée
+avec une erreur nommant `.automation/routing-policy.yml` et la clé fautive
+(`activation.<routine>.<bande>` ou `routines.<routine>`), jamais résolue
+implicitement. Deux niveaux : le job CI `automation-config` refuse toute la
+matrice à la validation de configuration
+(`scripts/automation-dispatch.mjs#validateRoutingPolicy`, schéma
+`schemas/automation/routing-policy.schema.json`) ; `resolveActivation`
+revalide en défense en profondeur le seul triplet qu'on lui demande de
+résoudre, avec le même message.
+
+La matrice livrée par cette tranche (#476) déclare `observe` partout : elle
+ne change le modèle d'aucune routine, elle ne fait que remplacer le
+mécanisme qui en décidera. `scripts/routing-dry-run.mjs#resolveRoutingDryRun`
+est le seul appelant prévu de `resolveActivation` — voir § « Mode dry-run »
+ci-dessus pour comment son `applied` en dépend désormais.
 
 ## Exemple : chaîne de fallback circulaire refusée
 

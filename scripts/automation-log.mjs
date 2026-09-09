@@ -64,6 +64,7 @@ export function renderAutomationLog({
   summary,
   taskContextVersion,
   routingApplied,
+  activation,
 }) {
   const label = ROUTINE_LABELS[routine] ?? routine
   const lines = [
@@ -142,23 +143,32 @@ export function renderAutomationLog({
     if (routing.limits?.length) {
       lines.push(`  - Limites : ${routing.limits.join(' ; ')}`)
     }
-    // Optional: publie, pour une décision de dry-run (issue #406,
-    // scripts/routing-dry-run.mjs#resolveRoutingDryRun), les trois versions
-    // de configuration lues — TASK_CONTEXT_VERSION (task-context.mjs),
-    // policyVersion/catalogVersion (déjà portées par RoutingDecision.input,
-    // #404) — et une mention explicite de non-application, plutôt que de
-    // laisser un opérateur le déduire du seul `dry_run` de
-    // .automation/routing-policy.yml. `routingApplied` gate ce bloc entier :
-    // absent (tout appelant qui n'a pas encore ce champ, comme avant #406),
-    // aucune de ces deux lignes n'apparaît.
+    // Optional: publie, pour une décision de routage résolue par le
+    // coordinateur (scripts/routing-dry-run.mjs#resolveRoutingDryRun,
+    // #406), les trois versions de configuration lues —
+    // TASK_CONTEXT_VERSION (task-context.mjs), policyVersion/catalogVersion
+    // (déjà portées par RoutingDecision.input, #404) —, le mode
+    // d'activation résolu et sa raison (matrice d'activation, #476,
+    // scripts/routing-activation.mjs#resolveActivation, à côté du modèle
+    // proposé), et une mention explicite de non-application, plutôt que de
+    // laisser un opérateur le déduire du seul champ `applied`.
+    // `routingApplied` gate ce bloc entier : absent (tout appelant qui n'a
+    // pas encore ce champ, comme avant #406), aucune de ces lignes
+    // n'apparaît.
     if (routingApplied !== undefined) {
       lines.push(
         `  - Configuration : TaskContext v${taskContextVersion ?? '?'}, politique v${routing.input?.policyVersion ?? '?'}, catalogue v${routing.input?.catalogVersion ?? '?'}`,
       )
+      // Optional dans ce bloc lui-même : absent pour tout appelant antérieur
+      // à #476 qui ne fournit encore que `routingApplied` sans le détail de
+      // la matrice d'activation qui l'a produit.
+      if (activation) {
+        lines.push(`  - Activation : \`${activation.mode}\` — ${activation.reason}`)
+      }
       lines.push(
         routingApplied
           ? '  - Modèle appliqué : oui — le sous-agent a été lancé avec ce modèle'
-          : '  - Modèle appliqué : non (mode dry-run) — le sous-agent réel a été lancé sans override de modèle',
+          : '  - Modèle appliqué : non (mode observation) — le sous-agent réel a été lancé sans override de modèle',
       )
     }
   }
@@ -292,6 +302,7 @@ export async function upsertAutomationLog({
   triggeredAt = new Date().toISOString(),
   taskContextVersion,
   routingApplied,
+  activation,
 }) {
   const existing = await findAutomationLogComment(number, routine)
   const previous = existing ? parseAutomationLog(existing.body) : null
@@ -328,6 +339,7 @@ export async function upsertAutomationLog({
     summary,
     taskContextVersion,
     routingApplied,
+    activation,
   })
 
   const { commentId, created } = await writeComment(number, existing, body)
