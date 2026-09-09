@@ -607,7 +607,7 @@ par commit status via label, déclencheurs disponibles — ne bougent pas.
 | #403 fallback LLM de complexité | Conservée, spec révisée, non prioritaire | Sous C l'appel devient un sous-agent classifieur : plus de secret, plus d'adapter, plus de budget fournisseur — la spec actuelle (API, `Secrets`) est caduque |
 | #404 moteur de routage | Livrée | `scripts/model-router.mjs#routeModel` — voir `doc/automation/model-routing.md` § Algorithme du routeur. Fonction pure inchangée dans son principe ; la dimension « disponibilité fournisseur » reste dans le score/les filtres pour rester générique au contrat #400, mais reste neutre (défaut : disponible) tant qu'aucun appelant ne fournit de signal réel sous le routage par sous-agent |
 | #405 adapters multi-provider | **Fermée** | Sous C, aucun appelant dans le dépôt. À rouvrir avec le mode API ou le chantier d'extraction, pas avant |
-| #406 dry-run | Conservée, spec révisée | Le chaînage appartient au coordinateur, pas au dispatcher : le dry-run journalise la décision de modèle sans changer le sous-agent réellement lancé |
+| #406 dry-run | Livrée | Le chaînage appartient au coordinateur, pas au dispatcher : le dry-run journalise la décision de modèle sans changer le sous-agent réellement lancé — voir § « Mode dry-run » ci-dessous |
 | #407 activation progressive | Conservée, à découper après #430 | Reste `NEEDS_CLARIFICATION` : huit chantiers, dimensionnement conditionné par le coordinateur |
 
 **Échéance de l'option B.** B n'est plus un préalable au routage. Elle est
@@ -651,9 +651,10 @@ Zéro appel fournisseur, zéro secret versionné : conforme au périmètre révi
 par #423 (§ ci-dessus), le catalogue ne décrit que des modèles de sous-agent
 Claude Code aujourd'hui. Même statut « support uniquement » que `TaskContext`
 et `ComplexityAssessment` — le job `automation-config` de `ci.yml` valide les
-trois fichiers `.automation/*.yml` à chaque exécution, mais aucune routine ne
-résout encore de politique pour router une décision réelle (câblage réel
-hors scope de #400, dépend du skill coordinateur, #430).
+trois fichiers `.automation/*.yml` à chaque exécution. Le skill coordinateur
+résout désormais une politique à chaque run (§ « Mode dry-run » ci-dessous,
+#406), mais toujours sans en appliquer la décision — router une décision
+réelle reste le périmètre de #407.
 
 ### Le coordinateur : R2+R3+R4 fusionnés en un run (#469)
 
@@ -830,6 +831,81 @@ chaque phase), l'activation reste un geste manuel séparé, avec la question
 du plafond de durée non résolue signalée ici pour que ce geste soit informé
 plutôt que découvert en incident.
 
+### Mode dry-run (#406) : le coordinateur calcule et journalise, sans appliquer
+
+Câble, en observation seulement, la chaîne existante — `TaskContext` (#401)
+→ `ComplexityAssessment` (#402) → fallback LLM (#403) → `RoutingDecision`
+(#404) — à l'intérieur du skill du coordinateur (§ ci-dessus), sans en
+changer le comportement réel : chaque `Agent` lancé par ce skill (§ 1-3 de
+`coordinator/SKILL.md`) continue de partir sur le modèle courant, sans
+override `model`, tant que `.automation/routing-policy.yml` porte
+`dry_run: true` — le cas par défaut, y compris quand le drapeau est
+simplement absent (traité comme `true`, le mode le plus prudent, jamais
+comme `false` implicite).
+
+Le chaînage lui-même vit dans `scripts/routing-dry-run.mjs`, deux fonctions
+pures, zéro effet de bord, zéro appel réseau — même précédent que les
+modules qu'elles composent :
+
+- `extractRiskLevel(issueBody)` lit la section `## Catégorie de risque` du
+  corps d'une issue (même format que celui produit par
+  `issue-to-spec/SKILL.md` : `**Faible**`/`**Élevé**` en tête de section) et
+  renvoie `{ level, source }` — section absente, vide, ou portant un
+  libellé qui n'est ni l'un ni l'autre → `null`, jamais un niveau deviné.
+- `resolveRoutingDryRun({ taskContext, issueBody, labels, routines,
+  routingPolicy, modelCatalog, llmResponse })` enchaîne `assessComplexity`,
+  puis `shouldRunLlmFallback`/`consolidateComplexity` quand un `llmResponse`
+  est fourni (le skill du coordinateur n'en fournit pas encore lui-même —
+  le câblage d'un véritable sous-agent classifieur dans cette étape reste un
+  chantier séparé, #403 restant support), puis `routeModel`, et renvoie
+  `{ complexity, routing, applied, escalation, missing, limits }`. Une
+  entrée amont manquante (`taskContext` absent, ou `extractRiskLevel`
+  renvoyant `null`) court-circuite tout : `routeModel` n'est jamais appelé,
+  `missing` nomme ce qui manquait. Une configuration invalide (version de
+  catalogue/politique inattendue, politique ou bande absente) fait échouer
+  `routeModel` avec son propre message explicite, qui remonte tel quel —
+  jamais traduit en décision partielle. Un `status: 'no-candidate'` produit
+  systématiquement `escalation: 'automation:needs-human'`, jamais un modèle
+  par défaut.
+
+Le skill du coordinateur (`coordinator/SKILL.md` § « Routage (dry-run,
+#406) ») appelle cette fonction une fois par run, juste après avoir claim
+l'issue et avant de lancer le premier sous-agent d'implémentation, puis
+journalise la décision (`scripts/automation-log.mjs#upsertAutomationLog`,
+sur l'**issue**, routine `coordinator-implement`) — un relancement sur la
+même issue met à jour ce même commentaire via son marqueur, jamais un
+second. Le journal publie, en plus des lignes déjà existantes pour
+`complexity`/`routing`, les trois versions de configuration lues
+(`TASK_CONTEXT_VERSION`, la version de politique et de catalogue — ces deux
+dernières déjà portées par `RoutingDecision.input`) et une mention
+explicite que le modèle proposé n'a pas été appliqué
+(`scripts/automation-log.mjs`, champs optionnels `taskContextVersion`/
+`routingApplied` de `renderAutomationLog`/`upsertAutomationLog` — comme
+`metrics`/`findings` avant eux, exercés pour l'instant par leurs seuls
+tests unitaires, aucun workflow ne les alimentant encore), pour qu'un
+opérateur puisse comparer modèle proposé, modèle réel et résultat de la
+routine sans deviner l'un des trois.
+
+Ce journal s'ouvre en `status: 'running'` et ne le reste pas jusqu'à la fin
+du run : `coordinator/SKILL.md` § « Converged » et § Escalade referment ce
+même commentaire (`upsertAutomationLog`, `onlyIfRunning: true`, même
+`number`/routine) avec le résultat réel — `succeeded`/`failed` — une fois le
+run convergé ou escaladé, exactement le même mécanisme `onlyIfRunning` que
+`coordinator-log-sync.yml` (§ ci-dessous) utilise déjà pour clore le journal
+`coordinator-fix` côté PR. Sans cette fermeture, ce commentaire afficherait
+indéfiniment `Statut : running`, même une fois la routine terminée — ce qui
+viderait de son sens la comparaison que ce journal existe pour permettre.
+`upsertAutomationLog` réécrit le corps entier à chaque appel sans jamais le
+fusionner avec la version précédente : les deux fermetures ci-dessus
+re-transmettent donc les mêmes `complexity`/`routing`/`taskContextVersion`/
+`routingApplied` capturés à l'ouverture, sous peine de faire disparaître les
+lignes Complexité/Routage/Configuration/Modèle appliqué au moment
+`succeeded`/`failed` — l'état que cette comparaison regarde en pratique le
+plus souvent.
+
+Protocole de passage vers l'activation contrôlée : voir §5, « Passage du
+dry-run à l'activation contrôlée (#406 → #407) ».
+
 ### Journal d'exécution idempotent
 
 Chaque passage d'une routine sur une issue/PR doit rester traçable et
@@ -987,6 +1063,30 @@ une échelle à trois niveaux (`low`/`medium`/`high`), évaluée sur le diff
 réel plutôt que sur les seuls fichiers impactés prévus, dont le seul point
 de recoupement documenté est : toute surface listée « Exclu » ci-dessus fait
 toujours au moins `medium` chez `change-risk`, jamais `low`.
+
+### Passage du dry-run à l'activation contrôlée (#406 → #407)
+
+Le routage par sous-agent (§4, « Mode dry-run », #406) n'est pas gardé par
+un label du tableau ci-dessus — la bascule n'est pas un événement du bus,
+c'est un seul drapeau de configuration, `dry_run` dans
+`.automation/routing-policy.yml`, revu comme n'importe quel autre changement
+de `.automation/` (validé en CI par le job `automation-config`, jamais posé
+ni retiré par une routine elle-même). Tant qu'il vaut `true` — ou est
+simplement absent, traité de façon identique, le mode le plus prudent — le
+skill du coordinateur continue de calculer et journaliser la décision de
+routage sans jamais la traduire en override `model` sur un appel `Agent`
+(§4 ci-dessus, `coordinator/SKILL.md` § « Routage (dry-run, #406) »).
+
+Le passage à `false` est le périmètre de #407, pas de ce fichier : à
+découper après une lecture des journaux de dry-run accumulés sur de vraies
+issues (les décisions qu'un opérateur aurait vues, comparées au modèle
+réellement utilisé et au résultat de la routine), palier par palier plutôt
+que d'un coup — une routine ou une bande de complexité à la fois, jamais les
+quatre bandes de toutes les routines simultanément. Ce protocole n'est pas
+encore écrit en détail : #407 reste `NEEDS_CLARIFICATION` (§4, tableau
+« Périmètre de l'épic après arbitrage ») précisément parce que son
+dimensionnement dépend de ce que ces journaux de dry-run auront montré, pas
+d'une estimation a priori.
 
 ---
 

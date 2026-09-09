@@ -344,9 +344,16 @@ export function validateRoutingPolicy(policy, catalog) {
     errors.push(`version: doit être 1 (valeur: ${JSON.stringify(policy.version)})`)
   }
   for (const key of Object.keys(policy)) {
-    if (key !== 'version' && key !== 'routines') {
+    if (key !== 'version' && key !== 'routines' && key !== 'dry_run') {
       errors.push(`champ inconnu à la racine : "${key}"`)
     }
+  }
+  // Optionnel (issue #406) : absent traité comme `true` par
+  // scripts/routing-dry-run.mjs#resolveRoutingDryRun (mode le plus prudent),
+  // jamais comme `false` implicite — seule sa présence explicite en tant que
+  // booléen est validée ici.
+  if (policy.dry_run !== undefined && typeof policy.dry_run !== 'boolean') {
+    errors.push(`dry_run: doit être un booléen (valeur: ${JSON.stringify(policy.dry_run)})`)
   }
 
   const routines = policy.routines

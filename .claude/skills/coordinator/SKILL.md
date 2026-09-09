@@ -121,6 +121,64 @@ discovered mid-incident. A long coordinator run (implementation + up to
 three review/fix rounds) is exactly the shape most exposed to an
 undocumented cutoff, which is why this isn't a formality to wave through.
 
+## Routage (dry-run, #406)
+
+Runs once, right after "Claim the run" above and before § 1 below —
+observation only. It computes and journals the sub-agent model this run
+*would* route to; it never changes which model § 1's `Agent` call actually
+launches on. `.automation/routing-policy.yml` carries `dry_run: true` (or
+simply omits the flag, treated identically — see below); every `Agent` call
+in this skill keeps launching without an explicit `model` override for as
+long as that holds, exactly as `## Limites` already states.
+
+1. Build a `TaskContext` (`scripts/task-context.mjs#buildTaskContext`) from
+   the issue already read while claiming the run — `eventName: 'issues'`, a
+   payload built from that same issue, `routine: 'coordinator'` (the key
+   this run's entry actually has in `.automation/routines.yml`, not
+   `coordinator-implement` — that name is only the automation-log marker for
+   this step's journal entry, below), this run's id.
+2. Load `.automation/routines.yml`, `.automation/model-catalog.yml`,
+   `.automation/routing-policy.yml`
+   (`scripts/automation-dispatch.mjs#loadRoutinesConfig`/`#loadModelCatalog`/`#loadRoutingPolicy`).
+3. Call `scripts/routing-dry-run.mjs#resolveRoutingDryRun` with that
+   `TaskContext`, the issue's **full, untruncated** body as `issueBody`
+   (never `TaskContext.entity.bodyExcerpt` — `## Catégorie de risque` sits
+   near the end of a long spec and `task-context.mjs`'s own truncation could
+   silently drop it), the issue's labels, the three loaded configs, and no
+   `llmResponse` — this step never launches the classification sub-agent
+   itself (#403's own wiring into this skill is a separate, later change).
+   When `resolveRoutingDryRun`'s internal `shouldRunLlmFallback` check would
+   have warranted one, the chain continues on the heuristic assessment alone
+   and says so in the returned `limits`, exactly as
+   `scripts/routing-dry-run.mjs` already handles that case on its own.
+4. A non-empty `missing`, or an error thrown by `resolveRoutingDryRun`
+   through `routeModel` (invalid catalog/policy version, no policy for this
+   routine, a missing band) — **never** caught or turned into a partial
+   decision — go straight to § Escalade below, naming exactly what's
+   missing or invalid. Nothing has launched yet at this point, so this is
+   the same kind of precondition failure as "Verify readiness" above, just
+   discovered one step later.
+5. Otherwise, upsert the **issue's** own journal
+   (`scripts/automation-log.mjs#upsertAutomationLog`, `number` = the issue,
+   routine `coordinator-implement`, `status: 'running'`), passing this
+   decision's `complexity`, `routing`, and the new `routingApplied`
+   (`resolveRoutingDryRun`'s own `applied` field) /
+   `taskContextVersion` (`TaskContext.version`) fields — so the rendered
+   journal (`scripts/automation-log.mjs` § dry-run rendering) lets an
+   operator compare the proposed model, the model actually used (unchanged,
+   per this section's opening line), and the routine's eventual result. A
+   relaunch of this skill on the same issue updates this same comment via
+   its marker (`markerFor('coordinator-implement')`) — never a second one,
+   same guarantee `upsertAutomationLog` already gives every other caller.
+   This `status: 'running'` is not left standing once the run finishes:
+   § "Converged" step 4 and § Escalade step 3 below close this same journal
+   with the run's real outcome, so the comparison this journal exists for
+   actually includes the routine's result, not just its starting snapshot.
+
+This step reads three config files, builds one `TaskContext`, and upserts
+one comment — no model choice is ever applied here, and no `Agent` call in
+§ 1–§ 3 below reads this decision's `selectedModel` back.
+
 ## Procédure
 
 ### 1. Implementation
@@ -318,10 +376,29 @@ Reached when a review round (§ 2, first pass or after a fix round) finds no
    plan didn't predict it.
 3. Remove `automation:coordinator-owned` — this run is done with the PR;
    any future push (a human's) should go through standalone R3 normally.
-4. Remove the issue's `automation:in-progress` — last, only after the three
+4. Close the issue's routing dry-run journal opened in § "Routage (dry-run,
+   #406)" step 5 (`scripts/automation-log.mjs#upsertAutomationLog`,
+   `number` = the issue, routine `coordinator-implement`,
+   `onlyIfRunning: true`, `status: 'succeeded'`) — the same `onlyIfRunning`
+   mechanism `coordinator-log-sync.yml` already uses to close the PR-side
+   `coordinator-fix` journal on this same outcome, called directly by this
+   session here instead of by a workflow, because this journal (unlike
+   `coordinator-fix`) was opened by the session itself in § "Routage" step
+   5, not by a label-triggered Action. Always finds that journal `running`
+   on this path (§ "Routage" always reaches its own step 5 before § 1 can
+   launch anything), so this is never a no-op here the way it can be in §
+   Escalade below. **Re-pass the same `complexity`, `routing`,
+   `taskContextVersion` and `routingApplied` values § "Routage" step 5
+   captured** — still in memory in this session at this point — on this
+   call: `upsertAutomationLog` re-renders the whole comment body from
+   scratch and never merges it with the previous one, so omitting them here
+   would wipe the Complexité/Routage/Configuration/Modèle appliqué lines the
+   `running` journal carried, right as the run reaches the steady state an
+   operator actually reads.
+5. Remove the issue's `automation:in-progress` — last, only after the four
    steps above, so the pipeline's one in-flight slot frees exactly when
    this run is actually finished, not before.
-5. Post the coordinator's own synthesis (§ "Sorties obligatoires" below).
+6. Post the coordinator's own synthesis (§ "Sorties obligatoires" below).
 
 ### Escalade
 
@@ -447,6 +524,13 @@ instead of by a standalone R2/R4:
 4. **A review or fix sub-agent itself reports it cannot proceed** for a
    reason not covered above (e.g. it lost access to a tool mid-run) —
    treated the same as 1/2/3, never silently retried.
+5. **§ "Routage (dry-run, #406)" can't produce a decision** — a non-empty
+   `missing` from `resolveRoutingDryRun` (no `TaskContext`, or no readable
+   `## Catégorie de risque`), or an error it let through from `routeModel`
+   (invalid catalog/policy version, no policy for this routine, a missing
+   band). Reached before § 1 launches anything, so step 1 of the sequence
+   below (removing labels from a PR "if one exists") finds none yet, same as
+   condition 1.
 
 In every case, this skill performs the full escalation sequence itself
 (rather than delegating it to a sub-agent, since only this skill holds the
@@ -462,12 +546,25 @@ issue's `automation:in-progress` for the whole run):
    itself straight back to `automation:ready` in the window between steps):
    add `automation:needs-human`, add `automation:queued`, only then remove
    `automation:in-progress`.
-3. Remove `automation:coordinator-owned` from the PR if present — a human
+3. Close the issue's routing dry-run journal opened in § "Routage (dry-run,
+   #406)" step 5, the same way § "Converged" step 4 does
+   (`scripts/automation-log.mjs#upsertAutomationLog`, `onlyIfRunning: true`,
+   `number` = the issue, routine `coordinator-implement`,
+   `status: 'failed'`), **re-passing the same `complexity`, `routing`,
+   `taskContextVersion` and `routingApplied` values § "Routage" step 5
+   captured**, for the same reason § "Converged" step 4 does: this call
+   re-renders the whole comment body from scratch, so omitting them would
+   wipe those lines instead of leaving them showing the run's real outcome.
+   A no-op when this is condition 5 itself (§ "Routage" never reached its
+   own step 5, so there is nothing left `running` there to close, and
+   nothing was captured to re-pass either) — `onlyIfRunning` already makes
+   that safe, same as every other caller of it.
+4. Remove `automation:coordinator-owned` from the PR if present — a human
    taking over should get the normal standalone R3/R4 loop back, not a
    silently orphaned guard label (its own § "Cleared by" already allows
    this: only a dead, non-graceful run leaves it stuck, which is exactly
    what the stale-ownership sweeper, not this skill, then catches).
-4. Post one comment naming precisely what's blocking — which step, which
+5. Post one comment naming precisely what's blocking — which step, which
    sub-agent, and its own stop reason verbatim, so a human doesn't have to
    reconstruct it from label history. For condition 2 above (a missing
    reviewer), name exactly which corpus/corpora never answered
@@ -499,7 +596,15 @@ issue's `automation:in-progress` for the whole run):
   same as every other skill in this pipeline.
 - Never batches more than one issue per run (`automation-plan.md` §2
   principle 6) — same as `implement-task`.
-- Does not implement the multi-model routing itself (#403/#404/#406/#407) —
-  it's the vehicle for a future wiring of `.automation/routing-policy.yml`
-  per sub-agent step, not that wiring. Every `Agent` call above launches
-  without an explicit `model` override until that's wired.
+- Does not itself apply the multi-model routing decision it now computes and
+  journals (§ "Routage (dry-run, #406)") — only #407 wires an actual `model`
+  override onto an `Agent` call from it. Every `Agent` call above (§ 1–§ 3)
+  keeps launching without an explicit `model` override for as long as
+  `.automation/routing-policy.yml` carries `dry_run: true` (or omits the
+  flag — treated the same, see `scripts/routing-dry-run.mjs`), which is the
+  case today.
+- Never launches the classification sub-agent (#403) itself from the
+  "Routage (dry-run, #406)" step — that step calls `resolveRoutingDryRun`
+  without an `llmResponse`, so the routing decision it journals always rests
+  on the heuristic `ComplexityAssessment` alone; wiring an actual classifier
+  sub-agent call into this step is a separate, later change.
