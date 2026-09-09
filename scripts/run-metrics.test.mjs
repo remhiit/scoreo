@@ -102,6 +102,32 @@ describe('buildRunMetrics — complétude', () => {
     expect(metrics.complete).toBe(false)
     expect(metrics.missingFields).toContain('routing')
   })
+
+  it('does not treat a null proposedModel/actualModel as missing when routing.status is "no-candidate"', () => {
+    const { valid, metrics } = buildRunMetrics(
+      fullInput({
+        routing: { status: 'no-candidate', proposedModel: null, actualModel: null, activationMode: 'observe', fallbacks: [] },
+      }),
+    )
+    expect(valid).toBe(true)
+    expect(metrics.complete).toBe(true)
+    expect(metrics.missingFields).not.toContain('routing.proposedModel')
+    expect(metrics.missingFields).not.toContain('routing.actualModel')
+  })
+
+  it('still treats a null proposedModel/actualModel as missing when routing.status is absent or unknown', () => {
+    const { metrics: withoutStatus } = buildRunMetrics(
+      fullInput({ routing: { proposedModel: null, actualModel: null, activationMode: 'observe', fallbacks: [] } }),
+    )
+    expect(withoutStatus.missingFields).toContain('routing.proposedModel')
+    expect(withoutStatus.missingFields).toContain('routing.actualModel')
+
+    const { metrics: unknownStatus } = buildRunMetrics(
+      fullInput({ routing: { status: 'bogus', proposedModel: null, actualModel: null, activationMode: 'observe', fallbacks: [] } }),
+    )
+    expect(unknownStatus.missingFields).toContain('routing.proposedModel')
+    expect(unknownStatus.missingFields).toContain('routing.actualModel')
+  })
 })
 
 describe('buildRunMetrics — validation', () => {
