@@ -169,6 +169,26 @@ jobs:
       - name: Validate .automation/routines.yml, model-catalog.yml and routing-policy.yml
         run: node scripts/automation-dispatch.mjs
 
+  risk-controls:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      issues: read
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPO_OWNER: remhiit
+      REPO_NAME: scoreo
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Refuse automation:enabled on a PR linked to a high-risk issue
+        run: node scripts/risk-controls.mjs
+
   design-tokens:
     runs-on: ubuntu-latest
     steps:

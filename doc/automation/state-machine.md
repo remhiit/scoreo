@@ -56,7 +56,7 @@ actually cycles.
 | `automation:review-pass` | Verdict | R3's verdict: PR conforms to its issue's spec — also the coordinator's own terminal verdict once a round finds nothing left to fix (never an interim one) | R3; the coordinator | R3, if a later review overturns it to `automation:needs-fix`; `needs-review-label.yml` (clears a stale one, on synchronize) |
 | `automation:needs-fix` | Verdict **et** file/déclencheur R4 | R3's verdict: PR needs changes — **also** R4's trigger (dual role, see below). **Never posted by the coordinator** on a PR it owns (§ "The coordinator" below): it's a live routine trigger it can't guard the way `automation:coordinator-owned` guards `needs-review-label.yml`, so posting it would start an independent, uncoordinated R4 session on the same branch | R3 | R4, in its first action; `needs-review-label.yml` (clears a stale one, on synchronize) |
 | `automation:needs-human` | Escalade | Terminal escalation: automation cannot resolve this without a decision | R4 (attempt cap or scope mismatch on a PR — also mirrored onto the linked issue, alongside `automation:queued`, so the escalation doesn't freeze the rest of the backlog, §6); R2 (incomplete/ambiguous spec, directly on the issue, alongside `automation:queued`); the coordinator, same conditions and sequence as R2/R4 combined (§ "The coordinator" below) | Only a human, by removing it — on an issue this alone is enough to re-queue it, since `automation:queued` was already posed alongside it |
-| `automation:enabled` | Autorisation | Eligible for auto-merge once required checks are green | R2 only, when the diff matches the risk-Faible whitelist (`automation-plan.md` §5) — the coordinator, the same way, re-checked against the PR's final diff once it converges | R4, on escalation to `automation:needs-human`; the coordinator, on its own escalation |
+| `automation:enabled` | Autorisation | Eligible for auto-merge once required checks are green | R2 only, when the diff matches the risk-Faible whitelist (`automation-plan.md` §5) — the coordinator, the same way, re-checked against the PR's final diff once it converges. Never posed on a PR whose linked issue reads risk `high` (or unreadable, normalized to `high`) regardless of anything else — `scripts/risk-controls.mjs#requiredControls`/`#checkEnabledLabelAllowed` (#479) is the mechanical rule both R2 and the coordinator confirm against before posing it, and `ci.yml`'s `risk-controls` job (below) refuses the combination in depth even if a human poses the label by hand | R4, on escalation to `automation:needs-human`; the coordinator, on its own escalation; `ci.yml`'s `risk-controls` job never removes it — it fails the check instead, so a human sees a red required check rather than a silently-removed label |
 
 No `automation:done` label exists or is ever created: GitHub's own issue
 closure and its `state_reason` (`completed`, `not_planned`, `duplicate`)
@@ -111,6 +111,7 @@ judges anything subjective (`automation-plan.md` §2 principle 2).
 | Coordinator | Versioned routine (declared; live activation pending — #469/#470) | `issues` `labeled`, filter `automation:ready` | `.claude/skills/coordinator/SKILL.md` — fuses R2/R3/R4 into one run, review split into two disjoint-corpus sub-agents of `pr-review` (functional/technical, #470), implementation and fix each a sub-agent of `implement-task`/`address-feedback`. See § "The coordinator" below |
 | `automation-dispatch.yml` (`scripts/automation-dispatch.mjs`) | Action | `issues`/`pull_request` `labeled` | Resolves and logs which routine/skill/entity/target_label matches the event, per the declarative mapping in `.automation/routines.yml` (documented by `schemas/automation/routines.schema.json`) — read-only, doesn't replace the routines' own triggers or any workflow below |
 | `automation-config` (job in `ci.yml`, same script) | Action | `pull_request` (CI) | Validates `.automation/routines.yml` against the same resolver — an invalid config (e.g. two routines on the same `entity`/`trigger_label`, the class of bug behind #99) fails CI clearly |
+| `risk-controls` (job in `ci.yml`, `scripts/risk-controls.mjs`) | Action | `pull_request` (CI) | Refuses `automation:enabled` on a PR whose linked issue (`Closes #N`) reads risk `high`, or whose risk section is missing/unreadable (normalized to `high`) — fails the check naming the issue and the violated rule (issue #479); reuses `extractClosedIssueNumbers` (`scripts/close-linked-issues.mjs`) and `extractRiskLevel` (`scripts/routing-dry-run.mjs`) rather than reparsing either |
 | `dispatch-ready.mjs` | Action | Same workflow as the sweeper below | Promotes one `automation:queued` issue to `automation:ready` |
 | `needs-review-label.yml` | Action | `pull_request` opened/ready_for_review/synchronize | Clears stale `automation:review-pass`/`automation:needs-fix`, poses `automation:needs-review` — both steps skipped, on top of the existing `draft == false` guard, when the PR carries `automation:coordinator-owned` (read straight off the `pull_request` event's own labels, no extra API call) |
 | `review-status-sync.yml` | Action | `pull_request` `labeled`, filter `automation:review-pass`/`automation:needs-fix` | Translates the label into the `claude/review` commit status; also upserts the PR's `pr-review` entry in `scripts/automation-log.mjs`'s idempotent journal — this same Action is what the coordinator's own final `automation:review-pass` drives too (§ "The coordinator" below), no separate mechanism needed for that role |
@@ -455,10 +456,15 @@ escalate (below) instead of a 4th round.
 #22 — drives `review-status-sync.yml` exactly as it would for standalone
 R3: `claude/review` commit status, `pr-review` journal entry), re-check
 `automation:enabled` eligibility against the final diff (same whitelist row
-#4 uses), remove `automation:coordinator-owned`, then remove the issue's
-`automation:in-progress` — in that order, last two last, so the pipeline's
-one in-flight slot frees only once the PR is actually left in a stable
-state for a human or native auto-merge to pick up.
+#4 uses) — mechanically confirmed against
+`scripts/risk-controls.mjs#requiredControls`/`#checkEnabledLabelAllowed`
+(#479), never the coordinator's own reading of the diff alone: a `high` (or
+unreadable, normalized to `high`) risk category on the linked issue always
+forbids the label, regardless of the routing activation mode or how green
+every round came back — remove `automation:coordinator-owned`, then remove
+the issue's `automation:in-progress` — in that order, last two last, so the
+pipeline's one in-flight slot frees only once the PR is actually left in a
+stable state for a human or native auto-merge to pick up.
 
 **Escalation.** Same conditions as rows #6/#19/#20 (ambiguous/incomplete
 spec, attempt cap, scope mismatch, a check suite that stays red, or a
@@ -466,7 +472,17 @@ sub-agent reporting it can't proceed) plus one new to #470 — either review
 sub-agent failing outright or returning no usable structured reply, read
 off `computeReviewVerdict`'s `needs-human` result rather than inferred by
 the coordinator itself; the escalation comment names exactly which
-corpus/corpora (`missingReviewers`) never answered — same three-step
+corpus/corpora (`missingReviewers`) never answered. Since #479, a fix-loop
+escalation (attempt cap, scope mismatch, or a check suite that stays red)
+additionally leads with exactly one of three distinct named motifs rather
+than a generic "fix loop failed", so a human scanning several escalations
+can tell them apart without opening each one: **tentatives épuisées** (the
+3-attempt cap reached with neither of the other two causes in play),
+**dérive de périmètre constatée par un relecteur** (a fix sub-agent reports
+the review's finding needs a materially larger/differently-shaped change
+than anticipated), and **échec de validation après le budget d'itérations**
+(the full check suite is still red after a round that used up the attempt
+budget) — same three-step
 sequence on the issue (§6: `automation:needs-human`, `automation:queued`, only then remove
 `automation:in-progress`) plus, on the PR: remove `automation:in-progress`
 if posed, remove `automation:enabled` if present, add
