@@ -367,7 +367,14 @@ fermetures re-transmettent donc les mêmes `complexity`/`routing`/
 sous peine de faire disparaître les lignes
 Complexité/Routage/Configuration/Activation/Modèle appliqué au moment
 `succeeded`/`failed` — l'état que la comparaison ci-dessus regarde en
-pratique le plus souvent.
+pratique le plus souvent. Ces deux mêmes fermetures sont aussi le seul point
+d'appel où `runMetrics` (#477) est passé à `upsertAutomationLog` : ce champ
+optionnel porte l'enregistrement structuré du run — `RunMetrics`, assemblé
+par `scripts/run-metrics.mjs#buildRunMetrics` et validé par
+`validateRunMetrics` — dont le contrat complet (champs, complétude,
+rédaction des secrets) est documenté par
+`doc/technical/automation-plan.md` § « Métriques » et par
+`schemas/automation/run-metrics.schema.json`.
 
 ## Matrice d'activation (`scripts/routing-activation.mjs`, issue #476)
 
