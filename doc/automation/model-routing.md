@@ -342,6 +342,17 @@ champs optionnels `taskContextVersion`/`routingApplied` de
 avant eux exercés pour l'instant par leurs seuls tests unitaires, aucun
 workflow ne les alimentant encore.
 
+Ce journal est ouvert avec `status: 'running'` et ne le reste pas jusqu'à la
+fin du run : `coordinator/SKILL.md` § « Converged » et § Escalade referment
+ce même commentaire (`upsertAutomationLog`, `onlyIfRunning: true`, même
+`number`/routine) avec le résultat réel de la routine (`succeeded`/`failed`)
+une fois le run convergé ou escaladé — même mécanisme `onlyIfRunning` que
+`coordinator-log-sync.yml` utilise déjà pour clore le journal `coordinator-fix`
+côté PR. Sans cette fermeture, le commentaire afficherait indéfiniment
+`Statut : running`, ce qui viderait de son sens la comparaison « modèle
+proposé / modèle réel / résultat de la routine » que ce journal existe pour
+permettre.
+
 ## Exemple : chaîne de fallback circulaire refusée
 
 ```yaml

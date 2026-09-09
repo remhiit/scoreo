@@ -886,6 +886,16 @@ tests unitaires, aucun workflow ne les alimentant encore), pour qu'un
 opérateur puisse comparer modèle proposé, modèle réel et résultat de la
 routine sans deviner l'un des trois.
 
+Ce journal s'ouvre en `status: 'running'` et ne le reste pas jusqu'à la fin
+du run : `coordinator/SKILL.md` § « Converged » et § Escalade referment ce
+même commentaire (`upsertAutomationLog`, `onlyIfRunning: true`, même
+`number`/routine) avec le résultat réel — `succeeded`/`failed` — une fois le
+run convergé ou escaladé, exactement le même mécanisme `onlyIfRunning` que
+`coordinator-log-sync.yml` (§ ci-dessous) utilise déjà pour clore le journal
+`coordinator-fix` côté PR. Sans cette fermeture, ce commentaire afficherait
+indéfiniment `Statut : running`, même une fois la routine terminée — ce qui
+viderait de son sens la comparaison que ce journal existe pour permettre.
+
 Protocole de passage vers l'activation contrôlée : voir §5, « Passage du
 dry-run à l'activation contrôlée (#406 → #407) ».
 

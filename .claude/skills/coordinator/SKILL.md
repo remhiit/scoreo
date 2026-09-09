@@ -170,6 +170,10 @@ long as that holds, exactly as `## Limites` already states.
    relaunch of this skill on the same issue updates this same comment via
    its marker (`markerFor('coordinator-implement')`) — never a second one,
    same guarantee `upsertAutomationLog` already gives every other caller.
+   This `status: 'running'` is not left standing once the run finishes:
+   § "Converged" step 4 and § Escalade step 3 below close this same journal
+   with the run's real outcome, so the comparison this journal exists for
+   actually includes the routine's result, not just its starting snapshot.
 
 This step reads three config files, builds one `TaskContext`, and upserts
 one comment — no model choice is ever applied here, and no `Agent` call in
@@ -372,10 +376,22 @@ Reached when a review round (§ 2, first pass or after a fix round) finds no
    plan didn't predict it.
 3. Remove `automation:coordinator-owned` — this run is done with the PR;
    any future push (a human's) should go through standalone R3 normally.
-4. Remove the issue's `automation:in-progress` — last, only after the three
+4. Close the issue's routing dry-run journal opened in § "Routage (dry-run,
+   #406)" step 5 (`scripts/automation-log.mjs#upsertAutomationLog`,
+   `number` = the issue, routine `coordinator-implement`,
+   `onlyIfRunning: true`, `status: 'succeeded'`) — the same `onlyIfRunning`
+   mechanism `coordinator-log-sync.yml` already uses to close the PR-side
+   `coordinator-fix` journal on this same outcome, called directly by this
+   session here instead of by a workflow, because this journal (unlike
+   `coordinator-fix`) was opened by the session itself in § "Routage" step
+   5, not by a label-triggered Action. Always finds that journal `running`
+   on this path (§ "Routage" always reaches its own step 5 before § 1 can
+   launch anything), so this is never a no-op here the way it can be in §
+   Escalade below.
+5. Remove the issue's `automation:in-progress` — last, only after the four
    steps above, so the pipeline's one in-flight slot frees exactly when
    this run is actually finished, not before.
-5. Post the coordinator's own synthesis (§ "Sorties obligatoires" below).
+6. Post the coordinator's own synthesis (§ "Sorties obligatoires" below).
 
 ### Escalade
 
@@ -523,12 +539,20 @@ issue's `automation:in-progress` for the whole run):
    itself straight back to `automation:ready` in the window between steps):
    add `automation:needs-human`, add `automation:queued`, only then remove
    `automation:in-progress`.
-3. Remove `automation:coordinator-owned` from the PR if present — a human
+3. Close the issue's routing dry-run journal opened in § "Routage (dry-run,
+   #406)" step 5, the same way § "Converged" step 4 does
+   (`scripts/automation-log.mjs#upsertAutomationLog`, `onlyIfRunning: true`,
+   `number` = the issue, routine `coordinator-implement`,
+   `status: 'failed'`). A no-op when this is condition 5 itself (§ "Routage"
+   never reached its own step 5, so there is nothing left `running` there
+   to close) — `onlyIfRunning` already makes that safe, same as every other
+   caller of it.
+4. Remove `automation:coordinator-owned` from the PR if present — a human
    taking over should get the normal standalone R3/R4 loop back, not a
    silently orphaned guard label (its own § "Cleared by" already allows
    this: only a dead, non-graceful run leaves it stuck, which is exactly
    what the stale-ownership sweeper, not this skill, then catches).
-4. Post one comment naming precisely what's blocking — which step, which
+5. Post one comment naming precisely what's blocking — which step, which
    sub-agent, and its own stop reason verbatim, so a human doesn't have to
    reconstruct it from label history. For condition 2 above (a missing
    reviewer), name exactly which corpus/corpora never answered
