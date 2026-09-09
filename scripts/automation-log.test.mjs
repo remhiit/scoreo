@@ -523,6 +523,96 @@ describe('renderAutomationLog / parseAutomationLog', () => {
     )
   })
 
+  it('publishes a complete RunMetrics record with all its structured lines (#477)', async () => {
+    const { renderAutomationLog } = await import('./automation-log.mjs')
+    const body = renderAutomationLog({
+      routine: 'coordinator-implement',
+      triggeredAt: '2026-09-09T10:00:00Z',
+      sha: 'abc1234',
+      status: 'succeeded',
+      iteration: '1',
+      validation: 'lint / typecheck / tests',
+      resultUrl: 'https://github.com/remhiit/scoreo/actions/runs/999',
+      runMetrics: {
+        routine: 'coordinator-implement',
+        complete: true,
+        durationSeconds: 750,
+        complexity: { band: 'standard', provenance: 'heuristic' },
+        risk: { level: 'low' },
+        routing: {
+          proposedModel: 'claude-sonnet-5',
+          actualModel: 'claude-sonnet-5',
+          activationMode: 'observe',
+          fallbacks: ['claude-haiku-4-5'],
+        },
+        configVersions: { taskContext: 1, routingPolicy: 1, modelCatalog: 1 },
+        outcome: { status: 'succeeded', fixIterations: 1, ciGreenFirstPass: false, escalation: null },
+        findings: { functional: 2, technical: 0 },
+        usage: { compactionObserved: false, usageLimitApproached: true },
+        missingFields: [],
+      },
+    })
+    expect(body).toContain('- Run metrics : `complet` (routine `coordinator-implement`, statut `succeeded`)')
+    expect(body).toContain('  - Durée : 750s')
+    expect(body).toContain('  - Complexité : `standard` (provenance `heuristic`)')
+    expect(body).toContain('  - Risque : `low`')
+    expect(body).toContain(
+      '  - Modèle proposé / réellement utilisé : `claude-sonnet-5` / `claude-sonnet-5` (activation `observe`)',
+    )
+    expect(body).toContain('  - Fallbacks : claude-haiku-4-5')
+    expect(body).toContain('  - Itérations de correctif : 1')
+    expect(body).toContain('  - CI verte au premier passage : non')
+    expect(body).toContain('  - Findings : fonctionnel 2, technique 0')
+    expect(body).toContain("  - Usage : compaction observée non, limite d'usage approchée oui")
+    expect(body).toContain('  - Versions : TaskContext v1, politique v1, catalogue v1')
+    expect(body).not.toContain('Enregistrement incomplet')
+  })
+
+  it('names the missing fields of an incomplete RunMetrics record instead of hiding the gap (#477)', async () => {
+    const { renderAutomationLog } = await import('./automation-log.mjs')
+    const body = renderAutomationLog({
+      routine: 'coordinator-implement',
+      triggeredAt: '2026-09-09T10:00:00Z',
+      sha: 'abc1234',
+      status: 'failed',
+      iteration: '1',
+      validation: 'lint / typecheck / tests',
+      resultUrl: 'https://github.com/remhiit/scoreo/actions/runs/999',
+      runMetrics: {
+        routine: 'coordinator-implement',
+        complete: false,
+        durationSeconds: null,
+        complexity: null,
+        risk: { level: 'high' },
+        routing: null,
+        configVersions: { taskContext: 1, routingPolicy: null, modelCatalog: null },
+        outcome: { status: 'failed', fixIterations: null, ciGreenFirstPass: null, escalation: 'relecteur technique manquant' },
+        findings: null,
+        usage: null,
+        missingFields: ['durationSeconds', 'complexity', 'routing', 'findings', 'usage'],
+      },
+    })
+    expect(body).toContain('- Run metrics : `incomplet` (routine `coordinator-implement`, statut `failed`)')
+    expect(body).toContain('  - Escalade : relecteur technique manquant')
+    expect(body).toContain(
+      '  - ⚠️ Enregistrement incomplet — champs manquants : durationSeconds, complexity, routing, findings, usage',
+    )
+  })
+
+  it('omits the Run metrics line entirely when no runMetrics record is provided', async () => {
+    const { renderAutomationLog } = await import('./automation-log.mjs')
+    const body = renderAutomationLog({
+      routine: 'coordinator-implement',
+      triggeredAt: '2026-09-09T10:00:00Z',
+      sha: 'abc1234',
+      status: 'succeeded',
+      iteration: '1',
+      validation: 'lint / typecheck / tests',
+      resultUrl: 'https://github.com/remhiit/scoreo/actions/runs/999',
+    })
+    expect(body).not.toContain('Run metrics')
+  })
+
   it('uses a distinct marker per reviewer corpus (#470)', async () => {
     const { markerFor } = await import('./automation-log.mjs')
     expect(markerFor('coordinator-review-functional')).toBe('<!-- automation-log:coordinator-review-functional -->')
