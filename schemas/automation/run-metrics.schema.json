@@ -1,0 +1,196 @@
+{
+  "$schema": "https://json-schema.org/draft-07/schema#",
+  "title": "Scoreo Automation Run Metrics",
+  "description": "Contrat de l'enregistrement de métriques d'un run de routine/coordinateur (issue #477, doc/technical/automation-plan.md § « Métriques »), confrontant la décision de routage (#404/#406) à l'issue réelle du run — sans lequel aucune activation (#476) ni aucun budget ne peut être calibré. Un enregistrement par run, jamais agrégé ici (hors scope : la tranche « rapport de calibration »). Le coût n'est jamais collecté en unités monétaires : le mode sous-agent consomme un abonnement, pas une facturation au token — seuls la durée et les indicateurs d'usage déjà auto-déclarés (`usage`) en tiennent lieu. Documenté ici comme référence du contrat ; validé en pratique par le validateur écrit à la main scripts/run-metrics.mjs#validateRunMetrics (même précédent que schemas/automation/routing-decision.schema.json).",
+  "type": "object",
+  "properties": {
+    "version": {
+      "type": "integer",
+      "description": "Version du format de ce document",
+      "const": 1
+    },
+    "routine": {
+      "type": "string",
+      "description": "Nom de la routine/rôle dont ce run est mesuré (ex: coordinator-implement)",
+      "minLength": 1
+    },
+    "entity": {
+      "description": "Issue ou PR à l'origine de ce run — null quand l'entité n'a pas pu être déterminée (compté comme champ manquant, jamais silencieusement omis)",
+      "oneOf": [
+        { "type": "null" },
+        {
+          "type": "object",
+          "properties": {
+            "type": { "type": "string", "enum": ["issue", "pull_request"] },
+            "number": { "type": "integer" }
+          },
+          "required": ["type", "number"],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "durationSeconds": {
+      "description": "Durée du run en secondes, dérivée de startedAt/endedAt — jamais un coût en tokens ou en unité monétaire (§ description ci-dessus)",
+      "type": ["integer", "null"],
+      "minimum": 0
+    },
+    "complexity": {
+      "description": "Bande de complexité retenue pour ce run et sa provenance (scripts/complexity-assessment.mjs / scripts/complexity-llm.mjs) — null quand aucune ComplexityAssessment n'était disponible",
+      "oneOf": [
+        { "type": "null" },
+        {
+          "type": "object",
+          "properties": {
+            "band": { "type": "string", "enum": ["trivial", "standard", "complex", "very-complex"] },
+            "provenance": { "type": "string", "enum": ["heuristic", "llm", "manual"] }
+          },
+          "required": ["band", "provenance"],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "risk": {
+      "description": "Niveau de risque (change-risk, #387) résolu pour ce run — null quand indisponible",
+      "oneOf": [
+        { "type": "null" },
+        {
+          "type": "object",
+          "properties": {
+            "level": { "type": "string", "enum": ["low", "medium", "high"] }
+          },
+          "required": ["level"],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "routing": {
+      "description": "Décision de routage confrontée au modèle réellement utilisé — null uniquement quand aucune décision n'était calculable pour ce run (mode observe sans TaskContext/risque exploitable, cf. scripts/routing-dry-run.mjs) ; le run est journalisé quand même, cette absence est nommée dans missingFields",
+      "oneOf": [
+        { "type": "null" },
+        {
+          "type": "object",
+          "properties": {
+            "proposedModel": {
+              "description": "Identifiant de catalogue proposé par scripts/model-router.mjs#routeModel (RoutingDecision.selectedModel.id) — null si aucun candidat (status='no-candidate')",
+              "type": ["string", "null"]
+            },
+            "actualModel": {
+              "description": "Modèle avec lequel le sous-agent a réellement tourné — jamais rempli avec proposedModel quand inconnu : une valeur inconnue reste null et nomme routing.actualModel dans missingFields",
+              "type": ["string", "null"]
+            },
+            "activationMode": {
+              "description": "Mode résolu par la matrice d'activation (#476, scripts/routing-activation.mjs#resolveActivation) pour ce run",
+              "type": ["string", "null"],
+              "enum": ["observe", "apply", null]
+            },
+            "fallbacks": {
+              "description": "Chaîne ordonnée des identifiants de fallback restants (RoutingDecision.fallbacks) — tableau vide si aucun, jamais absent",
+              "type": "array",
+              "items": { "type": "string" }
+            }
+          },
+          "required": ["proposedModel", "actualModel", "activationMode", "fallbacks"],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "configVersions": {
+      "type": "object",
+      "description": "Versions des trois configs lues pour ce run (TaskContext, RoutingPolicy, ModelCatalog) — chaque champ individuellement null si inconnu plutôt que le bloc entier omis",
+      "properties": {
+        "taskContext": { "type": ["integer", "null"] },
+        "routingPolicy": { "type": ["integer", "null"] },
+        "modelCatalog": { "type": ["integer", "null"] }
+      },
+      "required": ["taskContext", "routingPolicy", "modelCatalog"],
+      "additionalProperties": false
+    },
+    "outcome": {
+      "type": "object",
+      "description": "Issue réelle du run — toujours présent : ce record n'existe que pour un run arrivé à son terme (convergé ou escaladé), jamais pour un run encore `running`",
+      "properties": {
+        "status": {
+          "type": "string",
+          "description": "Statut final du run, même vocabulaire que scripts/automation-log.mjs (jamais 'running' ici)",
+          "enum": ["succeeded", "failed"]
+        },
+        "fixIterations": {
+          "description": "Nombre de tours de review/correctif réellement exécutés (0 à 3)",
+          "type": ["integer", "null"],
+          "minimum": 0,
+          "maximum": 3
+        },
+        "ciGreenFirstPass": {
+          "description": "Vrai quand la suite de contrôle (lint/typecheck/test/build/e2e) est passée verte dès le premier passage, sans tour de correctif dédié à la CI",
+          "type": ["boolean", "null"]
+        },
+        "escalation": {
+          "description": "Raison d'escalade éventuelle (texte libre, passé par scripts/task-context.mjs#redactSecrets avant écriture) — null quand le run a convergé sans escalade",
+          "type": ["string", "null"]
+        }
+      },
+      "required": ["status", "fixIterations", "ciGreenFirstPass", "escalation"],
+      "additionalProperties": false
+    },
+    "findings": {
+      "description": "Nombre de findings rendus par chaque relecteur (#470) pour le tour qui a clos la review de ce run — null quand aucun tour de review n'a eu lieu (ex: escalade avant review)",
+      "oneOf": [
+        { "type": "null" },
+        {
+          "type": "object",
+          "properties": {
+            "functional": { "type": ["integer", "null"], "minimum": 0 },
+            "technical": { "type": ["integer", "null"], "minimum": 0 }
+          },
+          "required": ["functional", "technical"],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "usage": {
+      "description": "Indicateurs d'usage auto-déclarés par la session elle-même (jamais un coût en tokens ni en unité monétaire, § description ci-dessus) — null quand la session ne les a pas déclarés",
+      "oneOf": [
+        { "type": "null" },
+        {
+          "type": "object",
+          "properties": {
+            "compactionObserved": { "type": ["boolean", "null"] },
+            "usageLimitApproached": { "type": ["boolean", "null"] }
+          },
+          "required": ["compactionObserved", "usageLimitApproached"],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "complete": {
+      "type": "boolean",
+      "description": "Faux dès qu'au moins un champ attendu de ce run est indisponible (missingFields non vide) — jamais présenté comme complet dans ce cas, y compris pour un run interrompu avant la fin"
+    },
+    "missingFields": {
+      "type": "array",
+      "description": "Chemins des champs attendus mais indisponibles pour ce run (ex: 'routing.actualModel') — vide seulement quand complete=true",
+      "items": { "type": "string" }
+    },
+    "generatedAt": {
+      "type": "string",
+      "description": "Horodatage ISO 8601 de construction de cet enregistrement"
+    }
+  },
+  "required": [
+    "version",
+    "routine",
+    "entity",
+    "durationSeconds",
+    "complexity",
+    "risk",
+    "routing",
+    "configVersions",
+    "outcome",
+    "findings",
+    "usage",
+    "complete",
+    "missingFields",
+    "generatedAt"
+  ],
+  "additionalProperties": false
+}

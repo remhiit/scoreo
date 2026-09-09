@@ -59,6 +59,7 @@ export function renderAutomationLog({
   complexity,
   routing,
   metrics,
+  runMetrics,
   findings,
   missingReviewers,
   summary,
@@ -192,6 +193,59 @@ export function renderAutomationLog({
       lines.push(`- Métriques : ${parts.join(', ')}`)
     }
   }
+  // Optional: publie le RunMetrics d'un run (issue #477,
+  // doc/technical/automation-plan.md § « Métriques ») — le pendant structuré
+  // et versionné de `metrics` ci-dessus, produit par
+  // scripts/run-metrics.mjs#buildRunMetrics et déjà validé contre
+  // schemas/automation/run-metrics.schema.json avant d'arriver ici (un
+  // enregistrement non conforme n'est jamais transmis à ce rendu). Absent
+  // pour tout appelant qui n'en produit pas encore, comme les blocs
+  // optionnels ci-dessus.
+  if (runMetrics) {
+    lines.push(
+      `- Run metrics : \`${runMetrics.complete ? 'complet' : 'incomplet'}\` (routine \`${runMetrics.routine}\`, statut \`${runMetrics.outcome.status}\`)`,
+    )
+    if (runMetrics.durationSeconds !== null) {
+      lines.push(`  - Durée : ${runMetrics.durationSeconds}s`)
+    }
+    if (runMetrics.complexity) {
+      lines.push(`  - Complexité : \`${runMetrics.complexity.band}\` (provenance \`${runMetrics.complexity.provenance}\`)`)
+    }
+    if (runMetrics.risk) {
+      lines.push(`  - Risque : \`${runMetrics.risk.level}\``)
+    }
+    if (runMetrics.routing) {
+      lines.push(
+        `  - Modèle proposé / réellement utilisé : \`${runMetrics.routing.proposedModel ?? '?'}\` / \`${runMetrics.routing.actualModel ?? '?'}\` (activation \`${runMetrics.routing.activationMode ?? '?'}\`)`,
+      )
+      if (runMetrics.routing.fallbacks?.length) {
+        lines.push(`  - Fallbacks : ${runMetrics.routing.fallbacks.join(' → ')}`)
+      }
+    }
+    lines.push(`  - Itérations de correctif : ${runMetrics.outcome.fixIterations ?? '?'}`)
+    if (runMetrics.outcome.ciGreenFirstPass !== null) {
+      lines.push(`  - CI verte au premier passage : ${runMetrics.outcome.ciGreenFirstPass ? 'oui' : 'non'}`)
+    }
+    if (runMetrics.findings) {
+      lines.push(`  - Findings : fonctionnel ${runMetrics.findings.functional ?? '?'}, technique ${runMetrics.findings.technical ?? '?'}`)
+    }
+    if (runMetrics.usage) {
+      lines.push(
+        `  - Usage : compaction observée ${runMetrics.usage.compactionObserved ? 'oui' : 'non'}, limite d'usage approchée ${runMetrics.usage.usageLimitApproached ? 'oui' : 'non'}`,
+      )
+    }
+    if (runMetrics.outcome.escalation) {
+      lines.push(`  - Escalade : ${runMetrics.outcome.escalation}`)
+    }
+    if (runMetrics.configVersions) {
+      lines.push(
+        `  - Versions : TaskContext v${runMetrics.configVersions.taskContext ?? '?'}, politique v${runMetrics.configVersions.routingPolicy ?? '?'}, catalogue v${runMetrics.configVersions.modelCatalog ?? '?'}`,
+      )
+    }
+    if (!runMetrics.complete) {
+      lines.push(`  - ⚠️ Enregistrement incomplet — champs manquants : ${runMetrics.missingFields.join(', ')}`)
+    }
+  }
   // Optional: attribue chaque finding des deux relecteurs à corpus disjoints
   // (#470) à celui ou ceux qui l'ont rendu, et marque un finding hors corpus
   // comme tel plutôt que de le faire disparaître — c'est ce qui permet au
@@ -296,6 +350,7 @@ export async function upsertAutomationLog({
   complexity,
   routing,
   metrics,
+  runMetrics,
   findings,
   missingReviewers,
   summary,
@@ -334,6 +389,7 @@ export async function upsertAutomationLog({
     complexity,
     routing,
     metrics,
+    runMetrics,
     findings,
     missingReviewers,
     summary,

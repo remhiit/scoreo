@@ -793,22 +793,74 @@ inventera pas un. Sans cela, toute PR coordinateur ayant eu au moins un
 tour de correctif laisserait un journal « correctif en cours » visible
 indéfiniment après le merge.
 
-**Métriques**, collectées dès cette version (#469) : nombre de tours de
-review/correctif réellement exécutés (0 à 3), et deux signaux auto-déclarés
-par la session elle-même (compaction de contexte observée, run approchant
-une limite d'usage) — publiés uniquement dans le commentaire de synthèse du
-coordinateur, lu au fil des runs par un humain ou par R6. #469 en nommait
-une quatrième, les tokens par run, **retirée des critères d'acceptation par
-arbitrage humain sur #473** : à la différence des trois ci-dessus, rien de
-disponible aujourd'hui côté session n'expose un décompte de tokens fiable
-pour son propre run. Si un tel signal apparaît, il fera l'objet d'un ticket
-dédié, pas d'un ajout silencieux. Le champ optionnel `metrics` de
-`scripts/automation-log.mjs` existe (testé unitairement) mais n'est
-alimenté par aucun workflow réel : `coordinator-log-sync.yml` se déclenche
-sur des labels, et une session ne peut éditer aucun commentaire qu'elle a
-déjà posté (§ « R3 idempotent » ci-dessous) — un vrai canal (la session
-posant une ligne de métriques structurée que l'Action relit) reste à
-construire.
+**Métriques**, collectées dès #469 : nombre de tours de review/correctif
+réellement exécutés (0 à 3), et deux signaux auto-déclarés par la session
+elle-même (compaction de contexte observée, run approchant une limite
+d'usage). #469 en nommait une quatrième, les tokens par run, **retirée des
+critères d'acceptation par arbitrage humain sur #473** : à la différence des
+trois ci-dessus, rien de disponible aujourd'hui côté session n'expose un
+décompte de tokens fiable pour son propre run. Si un tel signal apparaît, il
+fera l'objet d'un ticket dédié, pas d'un ajout silencieux. Le champ
+optionnel `metrics` de `scripts/automation-log.mjs` (ces trois valeurs
+brutes) reste tel quel, publié uniquement dans le commentaire de synthèse du
+coordinateur — inchangé par ce qui suit.
+
+**`RunMetrics` : l'enregistrement structuré par run (#477).** Trois valeurs
+auto-déclarées ne suffisent pas à confronter une décision de routage (#404)
+à l'issue réelle du run qu'elle a proposé de router — la donnée sans
+laquelle ni l'activation (#476) ni un budget ne peuvent être calibrés.
+`scripts/run-metrics.mjs#buildRunMetrics(input)` assemble, à partir de ce
+qu'un run du coordinateur connaît déjà en fin de course (routine, entité,
+`ComplexityAssessment.level`/`provenance`, niveau de risque, `RoutingDecision
+.selectedModel`/`fallbacks`, mode résolu par la matrice d'activation, modèle
+avec lequel le sous-agent a réellement tourné, versions de TaskContext/
+RoutingPolicy/ModelCatalog, durée, statut final, itérations de correctif,
+CI verte au premier passage, escalade éventuelle, nombre de findings par
+relecteur, et les deux signaux d'usage déjà auto-déclarés ci-dessus), un
+`RunMetrics` (schemas/automation/run-metrics.schema.json) — un enregistrement
+par run, jamais une agrégation (hors scope, tranche « rapport de
+calibration » à venir). Le coût n'y est jamais collecté en unité monétaire :
+le mode sous-agent consomme un abonnement, pas une facturation au token —
+`durationSeconds` et les indicateurs d'usage en tiennent lieu, documentés
+comme tels dans le schéma.
+
+Toute donnée indisponible pour ce run (un `RoutingDecision` non calculable
+en mode observe sans section `## Catégorie de risque` exploitable, un
+modèle réellement utilisé inconnu, un tour de review qui n'a jamais eu
+lieu...) est nommée dans `missingFields` plutôt que devinée ou omise, et
+`complete` retombe à `false` en conséquence — jamais un enregistrement
+présenté comme complet pour un run interrompu avant la fin. `buildRunMetrics`
+valide systématiquement (`validateRunMetrics`, miroir à la main du schéma,
+même précédent que `scripts/model-router.mjs#validateRoutingDecision`) ce
+qu'il assemble avant de le renvoyer : une entrée non conforme (type erroné,
+niveau hors énumération, version manquante) est rejetée explicitement
+(`{ valid: false, errors, metrics: null }`) plutôt que publiée tronquée —
+l'incomplétude d'un run (`missingFields`) et la non-conformité d'un
+enregistrement (rejet) restent deux cas distincts. Le seul champ texte libre
+de l'enregistrement, la raison d'escalade éventuelle, passe par
+`scripts/task-context.mjs#redactSecrets` avant écriture — aucun secret ni
+contenu d'issue n'entre autrement dans l'enregistrement, qui ne porte
+sinon que des identifiants, des niveaux et des compteurs.
+
+Publié dans le journal existant du coordinateur, pas dans un commentaire
+séparé : `scripts/automation-log.mjs#renderAutomationLog`/`upsertAutomationLog`
+portent désormais un champ optionnel `runMetrics`, rendu en bloc lisible
+(statut, durée, complexité, risque, modèle proposé/réellement utilisé,
+activation, fallbacks, itérations, CI au premier passage, findings, usage,
+versions de config, et la liste des champs manquants quand `complete` est
+faux) juste après le bloc `metrics` existant ci-dessus. Contrairement à
+`metrics`/`findings` (toujours alimentés par aucun workflow réel, cf.
+ci-dessus et § « Le coordinateur »), ce canal-ci n'a pas besoin d'Action
+séparée : le coordinateur appelle déjà `upsertAutomationLog` lui-même,
+directement depuis la session, sur le journal `coordinator-implement` de
+l'**issue** (§ « Routage » étape 5, § « Converged » étape 4, § Escalade
+étape 3) — il lui suffit de construire son `RunMetrics` juste avant ce même
+appel et de le lui passer. Une relance sur la même entité met donc à jour
+ce même commentaire marqué au lieu d'en publier un second, exactement comme
+pour `complexity`/`routing` déjà journalisés par ces mêmes appels
+(`upsertAutomationLog` est idempotent par marqueur, § « Journal d'exécution
+idempotent » ci-dessous — aucun mécanisme nouveau requis pour cette
+garantie-là).
 
 **Deux préalables vérifiés avant mise en service, résultat consigné dans la
 PR de #469** (`coordinator/SKILL.md` § « Préalables vérifiés ») :
