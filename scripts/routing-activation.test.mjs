@@ -72,7 +72,7 @@ describe('resolveActivation', () => {
 
     it('rejects a routine absent from "routines", naming the file and the key', () => {
       expect(() => resolveActivation(POLICY, { routine: 'does-not-exist', band: 'trivial', riskLevel: 'low' })).toThrow(
-        /\.automation\/routing-policy\.yml: routines\.does-not-exist: routine inconnue/,
+        /\.automation\/routing-policy\.yml: activation\.does-not-exist: routine inconnue/,
       )
     })
 

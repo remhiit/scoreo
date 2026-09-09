@@ -50,7 +50,7 @@ function observe(reason) {
 // nommant le fichier et la clé fautive).
 export function resolveActivation(policy, { routine, band, riskLevel }) {
   if (!routine || typeof routine !== 'string' || !policy?.routines?.[routine]) {
-    throw new Error(`${ROUTING_POLICY_PATH}: routines.${routine}: routine inconnue — absente de "routines"`)
+    throw new Error(`${ROUTING_POLICY_PATH}: activation.${routine}: routine inconnue — absente de "routines"`)
   }
   if (!COMPLEXITY_BANDS.includes(band)) {
     throw new Error(

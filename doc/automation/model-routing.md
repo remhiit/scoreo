@@ -419,8 +419,9 @@ elle-même :
 `observe` ni `apply`), routine absente de `policy.routines`, bande absente
 des quatre bandes de `.automation/complexity-thresholds.yml` — est refusée
 avec une erreur nommant `.automation/routing-policy.yml` et la clé fautive
-(`activation.<routine>.<bande>` ou `routines.<routine>`), jamais résolue
-implicitement. Deux niveaux : le job CI `automation-config` refuse toute la
+(`activation.<routine>.<bande>`, ou `activation.<routine>` pour une routine
+elle-même absente de `policy.routines`), jamais résolue implicitement. Deux
+niveaux : le job CI `automation-config` refuse toute la
 matrice à la validation de configuration
 (`scripts/automation-dispatch.mjs#validateRoutingPolicy`, schéma
 `schemas/automation/routing-policy.schema.json`) ; `resolveActivation`
