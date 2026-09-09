@@ -895,6 +895,13 @@ run convergé ou escaladé, exactement le même mécanisme `onlyIfRunning` que
 `coordinator-fix` côté PR. Sans cette fermeture, ce commentaire afficherait
 indéfiniment `Statut : running`, même une fois la routine terminée — ce qui
 viderait de son sens la comparaison que ce journal existe pour permettre.
+`upsertAutomationLog` réécrit le corps entier à chaque appel sans jamais le
+fusionner avec la version précédente : les deux fermetures ci-dessus
+re-transmettent donc les mêmes `complexity`/`routing`/`taskContextVersion`/
+`routingApplied` capturés à l'ouverture, sous peine de faire disparaître les
+lignes Complexité/Routage/Configuration/Modèle appliqué au moment
+`succeeded`/`failed` — l'état que cette comparaison regarde en pratique le
+plus souvent.
 
 Protocole de passage vers l'activation contrôlée : voir §5, « Passage du
 dry-run à l'activation contrôlée (#406 → #407) ».

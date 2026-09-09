@@ -387,7 +387,14 @@ Reached when a review round (§ 2, first pass or after a fix round) finds no
    5, not by a label-triggered Action. Always finds that journal `running`
    on this path (§ "Routage" always reaches its own step 5 before § 1 can
    launch anything), so this is never a no-op here the way it can be in §
-   Escalade below.
+   Escalade below. **Re-pass the same `complexity`, `routing`,
+   `taskContextVersion` and `routingApplied` values § "Routage" step 5
+   captured** — still in memory in this session at this point — on this
+   call: `upsertAutomationLog` re-renders the whole comment body from
+   scratch and never merges it with the previous one, so omitting them here
+   would wipe the Complexité/Routage/Configuration/Modèle appliqué lines the
+   `running` journal carried, right as the run reaches the steady state an
+   operator actually reads.
 5. Remove the issue's `automation:in-progress` — last, only after the four
    steps above, so the pipeline's one in-flight slot frees exactly when
    this run is actually finished, not before.
@@ -543,10 +550,15 @@ issue's `automation:in-progress` for the whole run):
    #406)" step 5, the same way § "Converged" step 4 does
    (`scripts/automation-log.mjs#upsertAutomationLog`, `onlyIfRunning: true`,
    `number` = the issue, routine `coordinator-implement`,
-   `status: 'failed'`). A no-op when this is condition 5 itself (§ "Routage"
-   never reached its own step 5, so there is nothing left `running` there
-   to close) — `onlyIfRunning` already makes that safe, same as every other
-   caller of it.
+   `status: 'failed'`), **re-passing the same `complexity`, `routing`,
+   `taskContextVersion` and `routingApplied` values § "Routage" step 5
+   captured**, for the same reason § "Converged" step 4 does: this call
+   re-renders the whole comment body from scratch, so omitting them would
+   wipe those lines instead of leaving them showing the run's real outcome.
+   A no-op when this is condition 5 itself (§ "Routage" never reached its
+   own step 5, so there is nothing left `running` there to close, and
+   nothing was captured to re-pass either) — `onlyIfRunning` already makes
+   that safe, same as every other caller of it.
 4. Remove `automation:coordinator-owned` from the PR if present — a human
    taking over should get the normal standalone R3/R4 loop back, not a
    silently orphaned guard label (its own § "Cleared by" already allows

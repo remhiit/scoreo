@@ -351,7 +351,13 @@ une fois le run convergé ou escaladé — même mécanisme `onlyIfRunning` que
 côté PR. Sans cette fermeture, le commentaire afficherait indéfiniment
 `Statut : running`, ce qui viderait de son sens la comparaison « modèle
 proposé / modèle réel / résultat de la routine » que ce journal existe pour
-permettre.
+permettre. `upsertAutomationLog` réécrit le corps entier du commentaire à
+chaque appel, sans jamais fusionner avec la version précédente : ces deux
+fermetures re-transmettent donc les mêmes `complexity`/`routing`/
+`taskContextVersion`/`routingApplied` capturés à l'ouverture, sous peine de
+faire disparaître les lignes Complexité/Routage/Configuration/Modèle
+appliqué au moment `succeeded`/`failed` — l'état que la comparaison
+ci-dessus regarde en pratique le plus souvent.
 
 ## Exemple : chaîne de fallback circulaire refusée
 
