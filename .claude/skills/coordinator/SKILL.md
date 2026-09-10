@@ -593,12 +593,18 @@ instead of by a standalone R2/R4:
      when this round would have been a 4th, with no scope mismatch or
      still-red suite in play; three genuine fix attempts simply didn't
      converge.
-   - **Dérive de périmètre constatée par un relecteur** — the fix
+   - **Dérive de périmètre constatée par un relecteur** — either the fix
      sub-agent reports the review's finding(s) need a materially larger or
      differently-shaped change than the review anticipated (the scope
-     mismatch of `address-feedback/SKILL.md` step 4) — the drift was
-     flagged by a review sub-agent's finding, not discovered by the
-     coordinator itself.
+     mismatch of `address-feedback/SKILL.md` step 4), or it reports two
+     findings that directly conflict, or a single one too vague to act on
+     without guessing the reviewer's intent (the contradiction/ambiguity
+     case of `address-feedback/SKILL.md` step 3) — in both cases the drift
+     was flagged by a review sub-agent's finding, not discovered by the
+     coordinator itself, and both are the same motif per
+     `doc/automation/state-machine.md` § "Contradictory feedback" (a
+     conflicting/ambiguous item is escalated on the same terms as a scope
+     mismatch, not treated as a fourth distinct cause).
    - **Échec de validation après le budget d'itérations** — the full check
      suite (`pnpm lint && pnpm typecheck && pnpm test && pnpm build && pnpm
      test:e2e`) is still red after a fix round that used up the attempt

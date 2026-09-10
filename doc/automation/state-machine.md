@@ -473,16 +473,20 @@ sub-agent failing outright or returning no usable structured reply, read
 off `computeReviewVerdict`'s `needs-human` result rather than inferred by
 the coordinator itself; the escalation comment names exactly which
 corpus/corpora (`missingReviewers`) never answered. Since #479, a fix-loop
-escalation (attempt cap, scope mismatch, or a check suite that stays red)
-additionally leads with exactly one of three distinct named motifs rather
-than a generic "fix loop failed", so a human scanning several escalations
-can tell them apart without opening each one: **tentatives épuisées** (the
-3-attempt cap reached with neither of the other two causes in play),
-**dérive de périmètre constatée par un relecteur** (a fix sub-agent reports
-the review's finding needs a materially larger/differently-shaped change
-than anticipated), and **échec de validation après le budget d'itérations**
-(the full check suite is still red after a round that used up the attempt
-budget) — same three-step
+escalation (attempt cap, scope mismatch or contradictory/ambiguous
+feedback, or a check suite that stays red) additionally leads with exactly
+one of three distinct named motifs rather than a generic "fix loop failed",
+so a human scanning several escalations can tell them apart without opening
+each one: **tentatives épuisées** (the 3-attempt cap reached with neither
+of the other two causes in play), **dérive de périmètre constatée par un
+relecteur** (a fix sub-agent reports the review's finding needs a
+materially larger/differently-shaped change than anticipated, or reports
+two findings that directly conflict or one too vague to act on without
+guessing — per § "Contradictory feedback" above, `address-feedback/SKILL.md`
+step 3's case is escalated on the same terms as step 4's scope mismatch,
+not as a fourth distinct motif), and **échec de validation après le budget
+d'itérations** (the full check suite is still red after a round that used
+up the attempt budget) — same three-step
 sequence on the issue (§6: `automation:needs-human`, `automation:queued`, only then remove
 `automation:in-progress`) plus, on the PR: remove `automation:in-progress`
 if posed, remove `automation:enabled` if present, add
