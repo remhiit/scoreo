@@ -98,6 +98,45 @@ blanche `automation:enabled`, justified by §§1-4 above — not a vibe. A low
 open `automation:needs-human` from this window or a rising
 `automation:needs-fix` rate supports maintenir/restreindre.
 
+#### 6. Calibration du routage (#481)
+
+Tranche 6/6 of #407, the closing one: `RunMetrics` records (#477) are inert
+until someone confronts them with the routing policy that produced them —
+that confrontation is this section, joining R6 rather than becoming a
+routine of its own (§ Objectif of #481: never applies anything, only
+proposes to a human).
+
+1. Collect this window's `RunMetrics` records the same way the coordinator's
+   own rolling-day counter does (`coordinator/SKILL.md` § "Budgets (#478)"):
+   `search_issues`/`search_pull_requests` for
+   `in:comments "<!-- automation-log:coordinator-implement -->"` (and the
+   sibling `coordinator-fix`/`coordinator-review-functional`/
+   `coordinator-review-technical` markers) `updated:>=<window-start>`, then
+   `get_issue_comment`/`get_pull_request_comment` on each match and parse the
+   `runMetrics` block `scripts/automation-log.mjs#renderAutomationLog`
+   rendered into it. A comment that doesn't parse cleanly is not a `RunMetrics`
+   record you can hand to `aggregateRunMetrics` — leave it out rather than
+   guessing its shape; it is not the same thing as a record that fails
+   `validateRunMetrics`, which `aggregateRunMetrics` already counts as
+   `rejected` on your behalf once you do hand it one.
+2. `get_file_contents` on `.automation/routing-policy.yml`, parsed the same
+   way `scripts/automation-dispatch.mjs#loadRoutingPolicy` does.
+3. Call `scripts/routing-calibration.mjs#aggregateRunMetrics(records, { since:
+   <window-start> })`. If `insufficientData` is true, state **données
+   insuffisantes** explicitly and stop here — never a section built from zero
+   complete runs. Otherwise report, per group (routine × band): run count,
+   CI-green-first-pass rate, average fix iterations, escalated rate, and the
+   proposed/actual model distribution — and the `rejected` count, named as
+   such (malformed records, not incomplete ones).
+4. Call `#proposeCalibration(aggregate, policy)`. List every `proposals[i]`
+   (config key, current value, proposed value, motivating metric) as a
+   **proposal for Rémi to apply by hand via a PR on
+   `.automation/routing-policy.yml`** — never edited by this skill itself,
+   same non-negotiable as the whitelist in §5 above. List every `skipped[i]`
+   too, with its `reason` verbatim — a group under the sample-size threshold
+   or with no policy entry for its routine is exactly as much a result as a
+   proposal is, never omitted.
+
 #### Ce que ce rapport ne peut pas mesurer
 
 Le nombre de runs de routines consommés n'est pas exposé par l'API GitHub
@@ -113,7 +152,7 @@ un décompte de runs.
 Le rapport est une **issue GitHub**, jamais une PR ni un commentaire :
 
 1. `mcp__github__issue_write` : titre `Rapport hebdo <YYYY-MM-DD>` (date du
-   jour du run), corps = les sections 1 à 5 ci-dessus plus la limite de
+   jour du run), corps = les sections 1 à 6 ci-dessus plus la limite de
    mesure.
 2. Label `P3` dans son propre appel.
 3. Ne jamais poser `automation:ready` — ce n'est pas un ticket à implémenter.
@@ -121,7 +160,7 @@ Le rapport est une **issue GitHub**, jamais une PR ni un commentaire :
 ## Sorties obligatoires
 
 - Exactement une issue GitHub par run (Procédure § Livrable), jamais une PR
-  ni un commentaire — corps = les cinq sections de données (§1-§5) plus la
+  ni un commentaire — corps = les six sections de données (§1-§6) plus la
   limite de mesure. C'est l'instance propre à cette skill de la sortie
   structurée de `doc/automation/skill-contract.md` §2 : Statut = la
   recommandation (§5) ; Résumé = les compteurs R3 (§3) ; Artefacts = le lien
@@ -133,7 +172,7 @@ Le rapport est une **issue GitHub**, jamais une PR ni un commentaire :
 
 ## Contrôles
 
-Chaque section de données (§1-§5) doit citer sa source (l'appel MCP exact,
+Chaque section de données (§1-§6) doit citer sa source (l'appel MCP exact,
 la requête utilisée) plutôt qu'une affirmation non vérifiable — un lecteur
 doit pouvoir reproduire le chiffre. La section « Ce que ce rapport ne peut
 pas mesurer » doit rester présente et explicite plutôt qu'omise (une
@@ -157,3 +196,6 @@ ce rapport ne peut pas mesurer), ça ne bloque jamais la publication.
 - Ne tourne jamais en routine autonome tant que la phase de rodage
   interactif n'est pas jugée suffisante par Rémi (voir "Not yet autonomous"
   ci-dessus).
+- N'applique jamais une proposition de calibration (§6, #481) —
+  `.automation/routing-policy.yml` n'est modifié que par un humain, via une
+  PR séparée.

@@ -818,8 +818,9 @@ RoutingPolicy/ModelCatalog, durée, statut final, itérations de correctif,
 CI verte au premier passage, escalade éventuelle, nombre de findings par
 relecteur, et les deux signaux d'usage déjà auto-déclarés ci-dessus), un
 `RunMetrics` (schemas/automation/run-metrics.schema.json) — un enregistrement
-par run, jamais une agrégation (hors scope, tranche « rapport de
-calibration » à venir). Le coût n'y est jamais collecté en unité monétaire :
+par run, jamais une agrégation (hors scope ici, § « Calibration du routage
+(#481) » plus bas pour l'agrégation elle-même). Le coût n'y est jamais
+collecté en unité monétaire :
 le mode sous-agent consomme un abonnement, pas une facturation au token —
 `durationSeconds` et les indicateurs d'usage en tiennent lieu, documentés
 comme tels dans le schéma.
@@ -1384,6 +1385,39 @@ Procédure complète et contrat détaillé : `doc/automation/model-routing.md`
 compteurs indisponibles, refus au chargement) et
 `scripts/automation-log.test.mjs` (ligne `Budget` d'un dépassement).
 
+### Calibration du routage (#481)
+
+Tranche 6/6 de #407, la dernière : les `RunMetrics` (#477) ne servent à rien
+tant que personne ne les confronte à la politique de routage courante.
+`scripts/routing-calibration.mjs#aggregateRunMetrics(records, { since })`
+groupe les enregistrements par routine (de dispatch, § « Budgets »
+ci-dessus pour la même distinction d'espace de noms) et par bande de
+complexité, et calcule pour chaque groupe le nombre de runs, la part de CI
+verte au premier passage, les itérations de correctif moyennes, la part de
+runs escaladés, et la distribution des modèles proposés/réellement
+utilisés — en excluant toujours un enregistrement `complete: false` de ces
+moyennes (compté séparément, `incompleteRuns`), et en renvoyant
+`insufficientData: true` plutôt qu'une moyenne calculée sur zéro run pour
+une période sans aucun enregistrement complet.
+
+`#proposeCalibration(aggregate, policy, { minSampleSize })` en tire une
+liste de propositions d'ajustement, chacune portant la clé de configuration
+visée, sa valeur actuelle, la valeur proposée, la mesure qui la motive et un
+identifiant de version de proposition — **jamais appliquées** : cette
+fonction ne lit ni n'écrit `.automation/routing-policy.yml` elle-même, et le
+test le vérifie en comparant le fichier avant/après appel. Un groupe sous le
+seuil d'échantillon minimal, sans politique associée pour sa routine, ou
+dont aucun signal ne franchit les seuils de calibration, ne produit aucune
+proposition — le motif est nommé (`skipped`), jamais omis.
+
+Consommé uniquement par `weekly-report/SKILL.md` (R6, § ci-dessous) sous
+forme d'une section de rapport supplémentaire — aucune routine ni
+déclencheur créé pour cette tranche, le principe directeur explicite de
+#481. Procédure complète : `doc/automation/model-routing.md` §
+« Calibration ». Testable entièrement sans exécuter de routine :
+`scripts/routing-calibration.test.mjs` (agrégation, période vide, rejets,
+propositions, non-application).
+
 ---
 
 ## 6. Skills (`.claude/skills/`)
@@ -1401,7 +1435,7 @@ compteurs indisponibles, refus au chargement) et
 | `pr-review` | Checklist **subjective uniquement** : conformité à la spec, respect de l'archi hexagonale, backward-compat des schémas zod, doc à jour, dette introduite. Le mécanisable est déjà en CI. Chaque finding porte gravité, preuve, impact, niveau de confiance et recommandation (#385) ; la confiance basse force la gravité `uncertain` plutôt que de coexister avec `blocking`/`important`, et `address-feedback` continue de ne lire que la gravité. Comme sous-agent du coordinateur, tourne en deux instances aux corpus disjoints — fonctionnelle (spec + `doc/functional/`) et technique (`doc/technical/architecture.md` + `project-conventions`, jamais la spec) — chaque finding portant alors un sixième champ `corpus` (`in`/`out`, #470) |
 | `address-feedback` | Corriger le périmètre signalé. Ne pas refondre. Ne retraite jamais un thread de review déjà résolu, priorise `blocking` avant `important`, ignore `suggestion`/`uncertain` (#379), bascule sur `automation:needs-human` en cas de retour contradictoire/ambigu ou de suite de checks qui reste rouge, publie une synthèse (corrigé / non appliqué / arbitrage requis) à chaque run (issue #380) |
 | `site-quality` | Deps, liens de doc, Lighthouse, PWA. Utilisée par R5 |
-| `weekly-report` | Rapport hebdo : PR ouvertes > 3 jours, issues `automation:needs-human`, taux `automation:review-pass`/`automation:needs-fix`, incidents depuis le dernier rapport, recommandation sur la liste blanche `automation:enabled`. Utilisée par R6 |
+| `weekly-report` | Rapport hebdo : PR ouvertes > 3 jours, issues `automation:needs-human`, taux `automation:review-pass`/`automation:needs-fix`, incidents depuis le dernier rapport, recommandation sur la liste blanche `automation:enabled`, et calibration du routage (#481 : agrégat par routine/bande des `RunMetrics` de la période et propositions d'ajustement de poids/seuils, jamais appliquées). Utilisée par R6 |
 | `test-strategy` | Traduit les critères d'acceptation d'une spec en scénarios de test par niveau (unitaire/intégration/composant/e2e), classés nominal/erreur/limite/régression/invariant, séparés en obligatoires/recommandés/hors de proportion. Support skill, appelée en interactif ou depuis la procédure d'une autre skill — pas encore câblée dans `implement-task`/`pr-review`/`site-quality` (câblage réel hors scope, #386) |
 | `change-risk` | Détecte, depuis la spec et le diff, les surfaces à risque touchées (persistance/migrations, scoring, API/contrats, auth, secrets, configuration, déploiement, concurrence, aggravé par toute rupture de compat) et assigne un niveau `low`/`medium`/`high` (le plus sévère des surfaces touchées, jamais une moyenne) avec preuves et mitigations (tests renforcés, revue humaine, security/architecture review, blocage merge). Échelle distincte de la catégorie binaire **Faible**/**Élevé** d'`issue-to-spec` (qui gouverne `automation:enabled`) — les deux se recoupent (une surface Élevé ne peut jamais produire un `low` ici) sans fusionner. Support skill, appelée en interactif ou depuis la procédure d'une autre skill — pas encore câblée dans `implement-task`/`test-strategy`/`site-quality`/`pr-review` (câblage réel hors scope, #387) |
 | `merge-review-pass` | Merge les PR `automation:review-pass` une par une (rebase, résolution mécanique des conflits, attente CI), pour les PR sans label `automation:enabled` (Dependabot, R5) que l'auto-merge natif ne prend jamais. Interactif, pas encore une routine |
