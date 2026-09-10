@@ -15,9 +15,13 @@ import { extractRiskLevel } from './routing-dry-run.mjs'
 
 // Même précédent que COMPLEXITY_BANDS, mirroré à la main dans
 // scripts/automation-dispatch.mjs, scripts/model-router.mjs et
-// scripts/routing-activation.mjs : trois/quatre valeurs fixes ne
-// justifient pas une dépendance croisée entre ces modules.
-const RISK_LEVELS = ['low', 'medium', 'high']
+// scripts/routing-activation.mjs : deux valeurs fixes ne justifient pas
+// une dépendance croisée entre ces modules. Binaire à dessein : c'est la
+// catégorie Faible/Élevé d'issue-to-spec, distincte de l'échelle
+// low/medium/high de la skill change-risk (doc/technical/automation-plan.md
+// §5/§6, « les deux se recoupent... sans fusionner ») — extractRiskLevel
+// (scripts/routing-dry-run.mjs) ne produit jamais que 'low'/'high'/null.
+const RISK_LEVELS = ['low', 'high']
 const ACTIVATION_MODES = ['observe', 'apply']
 const ENABLED_LABEL = 'automation:enabled'
 
@@ -63,20 +67,6 @@ export function requiredControls({ riskLevel, activationMode }) {
       requiresHumanReview: false,
       forbidsEnabledLabel: false,
       controls: ['standard-review'],
-      reasons,
-    }
-  }
-
-  if (level === 'medium') {
-    reasons.push(
-      'risque "medium" : revue humaine recommandée avant merge, automation:enabled reste interdit (doc/technical/automation-plan.md §5, liste blanche réservée au risque "low")',
-    )
-    return {
-      riskLevel: level,
-      activationMode,
-      requiresHumanReview: true,
-      forbidsEnabledLabel: true,
-      controls: ['human-review-recommended'],
       reasons,
     }
   }

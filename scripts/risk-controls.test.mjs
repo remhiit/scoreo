@@ -17,12 +17,6 @@ describe('requiredControls', () => {
       },
     )
 
-    it('risque "medium" recommande la revue humaine et interdit aussi automation:enabled', () => {
-      const result = requiredControls({ riskLevel: 'medium', activationMode: 'apply' })
-      expect(result.requiresHumanReview).toBe(true)
-      expect(result.forbidsEnabledLabel).toBe(true)
-    })
-
     it('risque "low" ne demande que des contrôles standards', () => {
       const result = requiredControls({ riskLevel: 'low', activationMode: 'apply' })
       expect(result.requiresHumanReview).toBe(false)
