@@ -204,6 +204,28 @@ describe('proposeCalibration — propositions', () => {
     ])
   })
 
+  it('names the min_score bound explicitly, rather than the generic "no adjustment" reason, when it is already at its ceiling', () => {
+    const policyAtCeiling = { routines: { 'implement-task': { bands: { standard: { ...POLICY.routines['implement-task'].bands.standard, min_score: 100 } } } } }
+    const aggregate = { groups: [groupFixture({ ciGreenFirstPassRate: 0.1 })] }
+    const { proposals, skipped } = proposeCalibration(aggregate, policyAtCeiling)
+
+    expect(proposals).toEqual([])
+    expect(skipped).toEqual([
+      expect.objectContaining({ routine: 'implement-task', band: 'standard', reason: expect.stringMatching(/déjà au plafond/) }),
+    ])
+  })
+
+  it('names the min_score bound explicitly when it is already at its floor', () => {
+    const policyAtFloor = { routines: { 'implement-task': { bands: { standard: { candidates: { primary: { model: 'sonnet-5', weight: 100 } }, min_score: 0, fallback: 'opus-5' } } } } }
+    const aggregate = { groups: [groupFixture({ ciGreenFirstPassRate: 1, escalatedRate: 0, proposedModels: {} })] }
+    const { proposals, skipped } = proposeCalibration(aggregate, policyAtFloor)
+
+    expect(proposals).toEqual([])
+    expect(skipped).toEqual([
+      expect.objectContaining({ routine: 'implement-task', band: 'standard', reason: expect.stringMatching(/déjà au plancher/) }),
+    ])
+  })
+
   it('skips a group whose routine has no matching entry in the policy, naming why', () => {
     const aggregate = { groups: [groupFixture({ routine: 'coordinator', ciGreenFirstPassRate: 0.1 })] }
     const { proposals, skipped } = proposeCalibration(aggregate, POLICY)

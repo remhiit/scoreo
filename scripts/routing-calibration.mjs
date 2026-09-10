@@ -209,21 +209,30 @@ export function proposeCalibration(aggregate, policy, { minSampleSize = CALIBRAT
     }
 
     const groupProposals = []
+    // Distingue « aucun signal » de « signal détecté mais min_score déjà à
+    // sa borne, rien de plus à proposer » — sans ça, ce second cas retombe
+    // sur le motif générique ci-dessous et masque le vrai signal détecté
+    // (retour de revue sur #492).
+    let minScoreAtBound = null
 
     if (ciGreenFirstPassRate < CALIBRATION_THRESHOLDS.ciGreenLow) {
-      const proposal = minScoreProposal(routine, band, {
-        currentValue: bandPolicy.min_score,
-        proposedValue: Math.min(100, bandPolicy.min_score + CALIBRATION_THRESHOLDS.minScoreStep),
-        metric: `CI verte au premier passage : ${Math.round(ciGreenFirstPassRate * 100)}% sur ${totalRuns} runs complets (sous ${Math.round(CALIBRATION_THRESHOLDS.ciGreenLow * 100)}%)`,
-      })
-      if (proposal) groupProposals.push(proposal)
+      const proposedValue = Math.min(100, bandPolicy.min_score + CALIBRATION_THRESHOLDS.minScoreStep)
+      const metric = `CI verte au premier passage : ${Math.round(ciGreenFirstPassRate * 100)}% sur ${totalRuns} runs complets (sous ${Math.round(CALIBRATION_THRESHOLDS.ciGreenLow * 100)}%)`
+      const proposal = minScoreProposal(routine, band, { currentValue: bandPolicy.min_score, proposedValue, metric })
+      if (proposal) {
+        groupProposals.push(proposal)
+      } else {
+        minScoreAtBound = `${metric}, mais min_score est déjà au plafond (${bandPolicy.min_score}) — rien à durcir davantage`
+      }
     } else if (ciGreenFirstPassRate > CALIBRATION_THRESHOLDS.ciGreenHigh && escalatedRate === 0) {
-      const proposal = minScoreProposal(routine, band, {
-        currentValue: bandPolicy.min_score,
-        proposedValue: Math.max(0, bandPolicy.min_score - CALIBRATION_THRESHOLDS.minScoreStep),
-        metric: `CI verte au premier passage : ${Math.round(ciGreenFirstPassRate * 100)}% sur ${totalRuns} runs complets, aucune escalade (au-dessus de ${Math.round(CALIBRATION_THRESHOLDS.ciGreenHigh * 100)}%)`,
-      })
-      if (proposal) groupProposals.push(proposal)
+      const proposedValue = Math.max(0, bandPolicy.min_score - CALIBRATION_THRESHOLDS.minScoreStep)
+      const metric = `CI verte au premier passage : ${Math.round(ciGreenFirstPassRate * 100)}% sur ${totalRuns} runs complets, aucune escalade (au-dessus de ${Math.round(CALIBRATION_THRESHOLDS.ciGreenHigh * 100)}%)`
+      const proposal = minScoreProposal(routine, band, { currentValue: bandPolicy.min_score, proposedValue, metric })
+      if (proposal) {
+        groupProposals.push(proposal)
+      } else {
+        minScoreAtBound = `${metric}, mais min_score est déjà au plancher (${bandPolicy.min_score}) — rien à desserrer davantage`
+      }
 
       // Renforce le candidat déjà majoritairement proposé quand la bande
       // performe très bien — jamais l'inverse : ce moteur ne propose aucun
@@ -250,7 +259,9 @@ export function proposeCalibration(aggregate, policy, { minSampleSize = CALIBRAT
       skipped.push({
         routine,
         band,
-        reason: `aucun ajustement justifié par les données (CI verte ${Math.round(ciGreenFirstPassRate * 100)}%, escalade ${Math.round(escalatedRate * 100)}% sur ${totalRuns} runs)`,
+        reason:
+          minScoreAtBound ??
+          `aucun ajustement justifié par les données (CI verte ${Math.round(ciGreenFirstPassRate * 100)}%, escalade ${Math.round(escalatedRate * 100)}% sur ${totalRuns} runs)`,
       })
     } else {
       proposals.push(...groupProposals)

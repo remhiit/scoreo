@@ -768,7 +768,10 @@ produit aucune proposition, pourquoi — jamais une section omise en silence
   noms est hors scope de #481, comme de #478 avant lui pour les budgets.
 - **Aucun ajustement justifié par les données** — le groupe a assez de runs
   et une politique associée, mais ses métriques ne franchissent aucun des
-  seuils ci-dessus.
+  seuils ci-dessus. Cas particulier nommé explicitement plutôt que de
+  retomber sur ce motif générique : un signal `min_score` a bien été détecté
+  mais la valeur actuelle est déjà à son plafond (100) ou son plancher (0),
+  rien de plus à proposer dans cette direction.
 
 Jamais d'effet de bord : `proposeCalibration` ne lit ni n'écrit
 `.automation/routing-policy.yml` lui-même (l'appelant lui passe `policy`
