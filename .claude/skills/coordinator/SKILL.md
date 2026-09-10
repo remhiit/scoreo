@@ -408,7 +408,10 @@ Reached when a review round (§ 2, first pass or after a fix round) finds no
    would wipe the Complexité/Routage/Configuration/Activation/Modèle
    appliqué lines the `running` journal carried, right as the run reaches
    the steady state an
-   operator actually reads.
+   operator actually reads. **Also pass `runMetrics`**, built per §
+   "Métriques" below from this same information plus the round data § 2/§ 3
+   produced along the way — this is the one call in this whole run where
+   that record actually gets published.
 5. Remove the issue's `automation:in-progress` — last, only after the four
    steps above, so the pipeline's one in-flight slot frees exactly when
    this run is actually finished, not before.
@@ -484,28 +487,68 @@ the first run any of them are collected for, which is the acceptance
 criterion (#469: "collectées dès cette première version"), not a promise
 that a dashboard already aggregates them.
 
-These three **are** the metric set. #469 originally named a fourth, tokens
-per run; it was dropped from the acceptance criteria by an explicit human
-call on #473 rather than carried as an open gap: the other three are
-discrete events a session can observe about itself and self-report as a
-boolean/count, whereas nothing available to a Claude Code session today
-exposes a comparable, reliable token count for its own run. Should such a
-signal appear (e.g. usage reporting surfaced by the Claude Agent SDK), it
-takes a new ticket, not a silent line here.
+These three **are** the metric set #469 defined. #469 originally named a
+fourth, tokens per run; it was dropped from the acceptance criteria by an
+explicit human call on #473 rather than carried as an open gap: the other
+three are discrete events a session can observe about itself and
+self-report as a boolean/count, whereas nothing available to a Claude Code
+session today exposes a comparable, reliable token count for its own run.
+Should such a signal appear (e.g. usage reporting surfaced by the Claude
+Agent SDK), it takes a new ticket, not a silent line here.
 
-The three metrics live only in the synthesis comment —
-`scripts/automation-log.mjs`'s optional `metrics` field (added by this same
-change) is **not** fed by `coordinator-log-sync.yml`: that Action fires off
-the label events this skill posts mid-run (`automation:coordinator-owned`,
-each `automation:attempt-N`, then the end-of-run verdict label), and a
-session has no tool to edit a comment it already posted (same limitation
-`pr-review`'s own journal already lives with, `automation-plan.md` § "R3
-idempotent"). A real channel — this skill posting a structured metrics line
-the Action then parses — is left for a follow-up; until then,
-`renderAutomationLog`'s `metrics` rendering is exercised only by its own
-unit tests, never by a live workflow run, and a human or `weekly-report`/R6
-reads the numbers from the synthesis comment, not from the per-round
-journal.
+`scripts/automation-log.mjs`'s optional `metrics` field (added for #469)
+still carries exactly these three raw values, and is still **not** fed by
+`coordinator-log-sync.yml`: that Action fires off the label events this
+skill posts mid-run, and a session has no tool to edit a comment it already
+posted (same limitation `pr-review`'s own journal already lives with,
+`automation-plan.md` § "R3 idempotent"). That field is unchanged by what
+follows; it is not this section's channel.
+
+**`RunMetrics`, a structured record per run (#477).** The three
+self-reported values above answer "did anything unusual happen to the
+session," never "did the routing decision this run made turn out right" —
+the number a run's own `RoutingDecision` (§ "Routage" above) cannot answer
+about itself, and the one #476's activation matrix and any future budget
+need before either can be calibrated on real data instead of guesses. This
+skill builds one at the very end of every run — converged (§ "Converged"
+below) or escalated (§ Escalade below) — from what this session already has
+in hand at that point: the `routine` name and `entity` from § "Routage"
+step 1, `complexity`/`risk`/`routing`/`activation`/`taskContextVersion`
+already captured by § "Routage" step 5, the model the § 1–§ 3 `Agent` calls
+actually ran with, this run's own start/end time, § 2's final round
+`findings` count per reviewer, § 3's `fixIterations` (the attempt number
+reached), whether the check suite implement-task/address-feedback reported
+was green without a dedicated CI-only fix round, and — only on an escalated
+run — the stop reason named in § Escalade's own comment (as `escalation`,
+the one free-text field, redacted the same way `buildRunMetrics` always
+redacts it). Call `scripts/run-metrics.mjs#buildRunMetrics(input)` with
+these; it returns `{ valid: true, metrics }` for anything this session can
+legitimately build (missing pieces simply come back named in
+`metrics.missingFields` and `metrics.complete: false`, never guessed —
+e.g. a run escalated at § 1 before any review round has no `findings`,
+`ciGreenFirstPass`, or fix-round data yet, and the record says so rather
+than pretending it wasn't collected at all), or `{ valid: false, errors }`
+only if this session assembled something that doesn't itself match the
+contract (a real bug in this skill's own call, not a data gap) — in that
+case, log a warning in the synthesis comment naming the collection failure
+rather than passing a malformed `runMetrics` through.
+
+Unlike the three raw `metrics` values above, `RunMetrics` **does** have a
+real channel already, because it doesn't need a separate Action at all: it
+rides the same `upsertAutomationLog` call this skill already makes on the
+issue's `coordinator-implement` journal at § "Converged" step 4 and §
+Escalade step 3 (re-passing `complexity`/`routing`/`taskContextVersion`/
+`routingApplied`/`activation` there already, per those steps' own text) —
+just add the freshly-built `runMetrics` to that same call. No new comment,
+no new marker: a relaunch on the same issue updates the same journal entry
+`upsertAutomationLog` already keeps idempotent by marker, exactly like every
+other field it renders. The synthesis comment (§ "Sorties obligatoires"
+above) keeps naming the same three raw values for a human skimming the PR;
+`RunMetrics` is the structured, validated counterpart published on the
+issue's journal instead, for a consumer (a human, `weekly-report`/R6, or a
+future calibration pass — itself out of scope here, per run-metrics.mjs's
+own "Hors scope") that needs to read it back as data rather than parse
+prose.
 
 ## Contrôles
 
@@ -570,7 +613,12 @@ issue's `automation:in-progress` for the whole run):
    does: this call
    re-renders the whole comment body from scratch, so omitting them would
    wipe those lines instead of leaving them showing the run's real outcome.
-   A no-op when this is condition 5 itself (§ "Routage" never reached its
+   **Also pass `runMetrics`**, built per § "Métriques" below with whatever
+   this escalated run actually reached (a run stopped at condition 1, before
+   any review round, builds one with `findings`/`ciGreenFirstPass` absent
+   and named in `missingFields` — never invented) and the stop reason above
+   as `escalation`. A no-op when this is condition 5 itself (§ "Routage"
+   never reached its
    own step 5, so there is nothing left `running` there to close, and
    nothing was captured to re-pass either) — `onlyIfRunning` already makes
    that safe, same as every other caller of it.
