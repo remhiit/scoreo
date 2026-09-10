@@ -39,7 +39,20 @@
 # le mécanisme — le passage réel de tel triplet à `apply` reste un geste de
 # configuration séparé et ultérieur (doc/technical/automation-plan.md §5
 # « Passage du dry-run à l'activation contrôlée »).
+#
+# `rollback` (issue #480, tranche 5/6 de #407), optionnel, booléen, absent
+# valant `false` : à `true`, force tous les triplets de la matrice
+# `activation` ci-dessous en `observe`, sans qu'aucune ligne de la matrice
+# n'ait à être modifiée — le geste de rollback complet du routage vers le
+# mono-modèle. Priorité la plus haute dans
+# scripts/routing-activation.mjs#resolveActivation : aucune déclaration
+# `apply` de la matrice, ni même le garde-fou risque `high` ci-dessus, ne
+# peut le contredire, et la `reason` renvoyée cite toujours le rollback.
+# Effectif au run suivant (lu à chaque invocation, jamais réévalué pour un
+# run déjà en vol). Voir doc/automation/model-routing.md § « Rollback » pour
+# la procédure complète.
 version: 1
+rollback: false
 activation:
   implement-task:
     trivial: observe

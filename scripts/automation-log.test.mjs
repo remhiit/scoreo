@@ -316,6 +316,73 @@ describe('renderAutomationLog / parseAutomationLog', () => {
     expect(body).toContain('  - Activation : `observe` — activation.implement-task.standard déclare "observe"')
   })
 
+  it('flags an in-flight run affected by a rollback, distinct from a plain rollback-free activation line (issue #480)', async () => {
+    const { renderAutomationLog } = await import('./automation-log.mjs')
+    const body = renderAutomationLog({
+      routine: 'coordinator-implement',
+      triggeredAt: '2026-09-09T10:00:00Z',
+      sha: 'abc1234',
+      status: 'succeeded',
+      iteration: '1',
+      validation: 'lint / typecheck / tests',
+      resultUrl: 'https://github.com/remhiit/scoreo/actions/runs/999',
+      taskContextVersion: 1,
+      routingApplied: false,
+      activation: {
+        mode: 'observe',
+        reason: 'activation.implement-task.standard déclare "observe"',
+        rollbackDuringRun: true,
+      },
+      routing: {
+        status: 'selected',
+        selectedModel: { id: 'sonnet-5', provider: 'anthropic', model: 'claude-sonnet-5', agentAlias: 'sonnet', origin: 'band' },
+        fallbacks: [],
+        input: {
+          complexity: { level: 'standard', effectiveLevel: 'standard', confidence: 'high' },
+          risk: { level: 'low' },
+          catalogVersion: 1,
+          policyVersion: 1,
+        },
+        rulesApplied: [],
+        limits: [],
+      },
+    })
+    expect(body).toContain('  - Activation : `observe` — activation.implement-task.standard déclare "observe"')
+    expect(body).toContain(
+      "  - ⚠️ Rollback intervenu pendant ce run : le modèle déjà retenu à l'ouverture est conservé, aucun sous-agent déjà lancé n'est interrompu — le prochain run partira en observation.",
+    )
+  })
+
+  it('omits the rollback-during-run line when the activation decision does not flag one', async () => {
+    const { renderAutomationLog } = await import('./automation-log.mjs')
+    const body = renderAutomationLog({
+      routine: 'coordinator-implement',
+      triggeredAt: '2026-09-09T10:00:00Z',
+      sha: 'abc1234',
+      status: 'succeeded',
+      iteration: '1',
+      validation: 'lint / typecheck / tests',
+      resultUrl: 'https://github.com/remhiit/scoreo/actions/runs/999',
+      taskContextVersion: 1,
+      routingApplied: false,
+      activation: { mode: 'observe', reason: 'activation.implement-task.standard déclare "observe"' },
+      routing: {
+        status: 'selected',
+        selectedModel: { id: 'sonnet-5', provider: 'anthropic', model: 'claude-sonnet-5', agentAlias: 'sonnet', origin: 'band' },
+        fallbacks: [],
+        input: {
+          complexity: { level: 'standard', effectiveLevel: 'standard', confidence: 'high' },
+          risk: { level: 'low' },
+          catalogVersion: 1,
+          policyVersion: 1,
+        },
+        rulesApplied: [],
+        limits: [],
+      },
+    })
+    expect(body).not.toContain('Rollback intervenu')
+  })
+
   it('omits the Activation line when no activation decision is provided (pre-#476 callers)', async () => {
     const { renderAutomationLog } = await import('./automation-log.mjs')
     const body = renderAutomationLog({

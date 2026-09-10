@@ -83,6 +83,65 @@ describe('resolveActivation', () => {
     })
   })
 
+  describe('rollback (#480)', () => {
+    const ROLLBACK_POLICY = {
+      version: 1,
+      rollback: true,
+      routines: {
+        'implement-task': {},
+        'pr-review': {},
+      },
+      activation: {
+        'implement-task': {
+          trivial: 'apply',
+          standard: 'apply',
+          complex: 'apply',
+          'very-complex': 'apply',
+        },
+      },
+    }
+
+    it('forces every triplet to "observe" when active, even against a matrix declaring "apply" everywhere, citing the rollback in the reason', () => {
+      for (const band of ['trivial', 'standard', 'complex', 'very-complex']) {
+        const result = resolveActivation(ROLLBACK_POLICY, { routine: 'implement-task', band, riskLevel: 'low' })
+        expect(result.mode).toBe('observe')
+        expect(result.reason).toContain('rollback actif')
+      }
+    })
+
+    it('wins over the high-risk guard too, citing rollback rather than risk in the reason', () => {
+      const result = resolveActivation(ROLLBACK_POLICY, { routine: 'implement-task', band: 'trivial', riskLevel: 'high' })
+      expect(result.mode).toBe('observe')
+      expect(result.reason).toContain('rollback actif')
+    })
+
+    it('treats an absent switch as false, the nominal case — the matrix applies normally', () => {
+      const result = resolveActivation(POLICY, { routine: 'implement-task', band: 'trivial', riskLevel: 'low' })
+      expect(result).toEqual({ mode: 'apply', reason: 'activation.implement-task.trivial déclare "apply"' })
+    })
+
+    it('rejects a non-boolean value, naming the file and the key, never interpreted as false', () => {
+      const policy = { ...structuredClone(POLICY), rollback: 'true' }
+      expect(() =>
+        resolveActivation(policy, { routine: 'implement-task', band: 'trivial', riskLevel: 'low' }),
+      ).toThrow(/\.automation\/routing-policy\.yml: rollback: doit être un booléen/)
+    })
+
+    it('distinguishes a rollback-driven "observe" from a plain matrix-driven "observe" via the reason', () => {
+      const matrixObserve = resolveActivation(POLICY, { routine: 'implement-task', band: 'standard', riskLevel: 'low' })
+      const rollbackObserve = resolveActivation(ROLLBACK_POLICY, {
+        routine: 'implement-task',
+        band: 'standard',
+        riskLevel: 'low',
+      })
+      expect(matrixObserve.mode).toBe('observe')
+      expect(rollbackObserve.mode).toBe('observe')
+      expect(matrixObserve.reason).not.toContain('rollback')
+      expect(rollbackObserve.reason).toContain('rollback')
+      expect(matrixObserve.reason).not.toBe(rollbackObserve.reason)
+    })
+  })
+
   describe('matrice absente', () => {
     it('resolves "observe" for any triplet and says the section is absent', () => {
       const policy = { version: 1, routines: { 'implement-task': {} } }
