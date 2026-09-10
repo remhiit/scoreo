@@ -195,4 +195,11 @@ describe('validateRunMetrics', () => {
     expect(result.valid).toBe(false)
     expect(result.errors.some((e) => e.includes('complete'))).toBe(true)
   })
+
+  it('rejects a wrong-typed generatedAt', () => {
+    const { metrics } = buildRunMetrics(fullInput())
+    const result = validateRunMetrics({ ...metrics, generatedAt: new Date() })
+    expect(result.valid).toBe(false)
+    expect(result.errors.some((e) => e.includes('generatedAt'))).toBe(true)
+  })
 })

@@ -330,5 +330,9 @@ export function validateRunMetrics(record) {
     errors.push('run-metrics.missingFields: doit être un tableau')
   }
 
+  if (typeof record.generatedAt !== 'string' || record.generatedAt.length === 0) {
+    errors.push('run-metrics.generatedAt: doit être une chaîne non vide')
+  }
+
   return { valid: errors.length === 0, errors }
 }
