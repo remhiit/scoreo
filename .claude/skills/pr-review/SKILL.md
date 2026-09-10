@@ -197,6 +197,29 @@ whose body starts with `<!-- automation-log:pr-review -->` — the journal
 scope below) — a session running this skill never writes or edits it
 itself, only reads it.
 
+## Traçabilité
+
+Per `doc/automation/skill-contract.md` § "Traçabilité" (#494): this skill's
+own instance of the structured output (the formal PR review, § "Post the
+review" below) carries the model that actually ran it, `<id>` (e.g.
+`claude-sonnet-5`, never the marketing name).
+
+- **As R3** (this skill running as its own Claude Code Remote session): call
+  `get_session` (no `session_id`) and use `session_context.model` — include
+  a `Traçabilité : skill \`pr-review\`, modèle \`<id>\`` line in the
+  submitted review's synthesis body (§ "Post the review" step 3).
+- **As either of the coordinator's review sub-agents** (#469/#470):
+  `get_session` doesn't apply — read the model self-reported in this
+  sub-agent's own system prompt (the #423 mechanism), and report it back to
+  the coordinator alongside this run's findings (§ "Label the verdict"
+  below), tagged with this run's own corpus (`functional`/`technical`) —
+  that's what lets the coordinator's journal attribute each reviewer's model
+  distinctly to its own corpus, rather than one merged value for "the
+  reviewer".
+
+If neither source is available, `<id>` is `inconnu` — never guessed — with
+the reason stated alongside it.
+
 ## Out of scope — don't re-check these
 
 `ci.yml` already runs `lint`, `test`, `build`, `doc-links` on every push. Redoing
@@ -443,7 +466,10 @@ posting any label: each finding with its severity, evidence, impact,
 confidence, recommendation, and `corpus: in`/`out` (§ "Classify every
 finding" above) — structured enough for the coordinator to feed straight
 into `scripts/review-verdict.mjs`, never a prose summary the coordinator
-would have to re-interpret. The coordinator alone decides label writes for
+would have to re-interpret. Alongside the findings, also report this run's
+own self-reported model (§ "Traçabilité" above) and which corpus it ran as
+— the coordinator uses this to attribute the model of each reviewer to its
+own corpus when it journals or synthesizes this round. The coordinator alone decides label writes for
 a PR it owns, and only after combining **both** reviewers' findings through
 that mechanical rule: it never applies `automation:needs-fix` itself (that
 label is `address-feedback`'s own live GitHub trigger, and posting it here
@@ -485,8 +511,9 @@ guards, which stop earlier by design):
 - One formal PR review (Procédure §4) — this skill's instance of
   `doc/automation/skill-contract.md` §2's structured output, its submitted
   body carrying every finding grouped by severity plus the verdict line
-  (Statut/Résumé), each inline comment its own Artefact, and the checklist
-  itself the Validations record.
+  (Statut/Résumé), each inline comment its own Artefact, the checklist
+  itself the Validations record, and a Traçabilité line (§ "Traçabilité"
+  above).
 - Exactly one verdict label, `automation:review-pass` or
   `automation:needs-fix` (Procédure §5), never both.
 - `automation:in-progress` removed (Procédure §5).
@@ -494,9 +521,9 @@ guards, which stop earlier by design):
 As either of the coordinator's review sub-agents (#469/#470): the formal PR
 review (first bullet) still applies, submitted independently by each; the
 last two don't — no label is posted by either sub-agent (Procédure §5), each
-reports its own findings (with `corpus: in`/`out`) back to the coordinator
-instead, which alone computes the combined verdict via
-`scripts/review-verdict.mjs`.
+reports its own findings (with `corpus: in`/`out`) and its own self-reported
+model (§ "Traçabilité" above) back to the coordinator instead, which alone
+computes the combined verdict via `scripts/review-verdict.mjs`.
 
 ## Contrôles
 

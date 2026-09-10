@@ -179,7 +179,9 @@ explicit `model` override for as long as that holds, exactly as
    decision's `complexity`, `routing`, the new `routingApplied`
    (`resolveRoutingDryRun`'s own `applied` field), `activation`
    (`resolveRoutingDryRun`'s own `activation` field — the resolved mode and
-   its reason) and `taskContextVersion` (`TaskContext.version`) fields — so
+   its reason), `taskContextVersion` (`TaskContext.version`) and
+   `executedBy` (this run's own `{ skill: 'coordinator', model: <id> }`, §
+   "Traçabilité (#494)" above) fields — so
    the rendered journal (`scripts/automation-log.mjs` § dry-run rendering)
    lets an operator compare the proposed model, the resolved activation mode
    and why, the model actually used (unchanged as long as that mode is
@@ -258,6 +260,42 @@ level is `high` (where § "Routage" already forces `observe`): a budget
 stop has exactly one outcome, the same escalation sequence every other
 stop in this skill already uses, never a smaller/cheaper retry and never
 an automatic relaunch.
+
+## Traçabilité (#494)
+
+Per `doc/automation/skill-contract.md` § "Traçabilité": every
+`upsertAutomationLog` call this skill makes on the issue's
+`coordinator-implement` journal (§ "Routage" step 5, § "Converged" step 4,
+§ Escalade step 3) passes `executedBy: { skill: 'coordinator', model: <id> }`
+— `<id>` is this session's own model, obtained via `get_session` (no
+`session_id`, so it reads its own session), the same way any other routine
+running as its own Claude Code Remote session would (this skill is exactly
+that: the routine invoked on `automation:ready`, not a sub-agent). Capture
+it once, right after "Claim the run", and reuse the same value at every
+later `upsertAutomationLog` call in this run — it never changes mid-run.
+
+Every sub-agent this skill launches (§ 1's implementer, § 2's two reviewers,
+§ 3's fix sub-agent) is, in turn, instructed by its own `SKILL.md` (each
+file's own "Traçabilité" section) to self-report its own model in its final
+reply — `get_session` doesn't apply to an in-process sub-agent, so each one
+reads it from its own system prompt instead (#423). This skill collects
+those self-reported values as they come back and uses them for:
+
+- the synthesis comment's own Traçabilité section (§ "Sorties obligatoires"
+  below) — this run's own model plus every sub-agent's, one line per role
+  (implémentation / relecteur fonctionnel / relecteur technique / correctif
+  N), never merged into a single value;
+- the per-reviewer model attribution in § "Attribution des findings" below,
+  alongside each finding's own `reviewers` tag.
+
+The implementation sub-agent's own commit trailers and PR "Traçabilité"
+field are `implement-task/SKILL.md`'s own responsibility (step 9/10 there,
+unchanged when run as this skill's sub-agent) — this skill doesn't rewrite
+or duplicate them, only reads the model back for the synthesis comment
+above. If a sub-agent fails or returns nothing before it can self-report its
+model, its line in the synthesis reads `modèle \`inconnu\`` with the reason
+("sous-agent en échec") rather than being omitted — same "unavailable,
+never guessed" convention as everywhere else this field appears.
 
 ## Procédure
 
@@ -493,14 +531,15 @@ Reached when a review round (§ 2, first pass or after a fix round) finds no
    exactly as § "Routage" step 5 captured it; a reread failure here never
    fails this journal close or the run itself, same tolerance § "Budgets"
    step 4 already gives an unavailable period counter. **Re-pass the same
-   `complexity`, `routing`, `taskContextVersion` and `routingApplied` values §
-   "Routage" step 5 captured, and this same (possibly now-enriched)
+   `complexity`, `routing`, `taskContextVersion`, `routingApplied` and
+   `executedBy` values § "Routage" step 5 captured (§ "Traçabilité (#494)"
+   above), and this same (possibly now-enriched)
    `activation` object** — still in memory in this session at this point —
    on this call: `upsertAutomationLog` re-renders the whole comment body from
    scratch and never merges it with the previous one, so omitting them here
-   would wipe the Complexité/Routage/Configuration/Activation/Modèle
-   appliqué lines the `running` journal carried, right as the run reaches
-   the steady state an
+   would wipe the Complexité/Routage/Configuration/Activation/Exécuté par/
+   Modèle appliqué lines the `running` journal carried, right as the run
+   reaches the steady state an
    operator actually reads. **Also pass `runMetrics`**, built per §
    "Métriques" below from this same information plus the round data § 2/§ 3
    produced along the way — this is the one call in this whole run where
@@ -532,13 +571,14 @@ On a converged run (§ 4):
 - `automation:coordinator-owned` removed, issue's `automation:in-progress`
   removed, in that order (§ 4).
 - One synthesis comment on the PR (`add_issue_comment`) — this skill's own
-  instance of `doc/automation/skill-contract.md` §2's five fields: Statut
+  instance of `doc/automation/skill-contract.md` §2's six fields: Statut
   (converged / escalated), Résumé (rounds run, final verdict), Artefacts
   (PR, commits, review(s)), Validations (which of `implement-task`'s five
   checks passed, on which round), Questions non résolues (any
-  `suggestion`/`uncertain` finding left for a human, "aucune" otherwise).
-  Includes the metrics named in "Métriques" below and the finding
-  attribution named in "Attribution des findings" below.
+  `suggestion`/`uncertain` finding left for a human, "aucune" otherwise),
+  Traçabilité (this run's own model plus every sub-agent's, per § "Traçabilité
+  (#494)" above). Includes the metrics named in "Métriques" below and the
+  finding attribution named in "Attribution des findings" below.
 
 On an escalated run: no PR review-pass/enabled labels — see § Escalade.
 
@@ -566,6 +606,13 @@ by its own unit tests today; the synthesis comment is the mechanism this
 skill actually has right now to make attribution visible on the PR, and the
 two new markers are there for a follow-up that wires a real per-reviewer
 journal to them.
+
+Alongside the findings, this same section also names each reviewer's own
+self-reported model next to its corpus (§ "Traçabilité (#494)" above,
+`Relecteur fonctionnel : modèle \`<id>\`` / `Relecteur technique : modèle
+\`<id>\``) — distinct per reviewer even when both happen to run on the same
+model, never a single merged "review model" value, for the same reason
+their findings are never merged into an anonymous pool.
 
 ### Métriques
 
@@ -741,8 +788,9 @@ issue's `automation:in-progress` for the whole run):
    set `activation.rollbackDuringRun = true` on the `activation` object below
    — with the same tolerance for a reread failure (never blocks this
    escalation; `activation` stays exactly as captured at open). **Re-passing
-   the same `complexity`, `routing`, `taskContextVersion` and `routingApplied`
-   values § "Routage" step 5 captured, and this same (possibly now-enriched)
+   the same `complexity`, `routing`, `taskContextVersion`, `routingApplied`
+   and `executedBy`
+   values § "Routage" step 5 captured (§ "Traçabilité (#494)" above), and this same (possibly now-enriched)
    `activation` object**, for the same reason § "Converged" step 4
    does: this call
    re-renders the whole comment body from scratch, so omitting them would

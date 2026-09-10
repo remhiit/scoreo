@@ -105,7 +105,22 @@ readiness verdict » ci-dessous pour la définition de chacun. Ce verdict
 n'affirme qu'une chose, la complétude de la spec : il ne dit rien de l'état
 de blocage par dépendance, porté ailleurs (label `blocked` + lien natif
 `blocked_by`, voir la section « Dépendances » ci-dessous).
+
+## Traçabilité
+
+Créée avec le skill `issue-to-spec`, modèle `<id>`.
 ```
+
+La dernière section, `## Traçabilité`, est obligatoire et toujours en toute
+fin de corps — jamais avant `## Verdict de readiness`. `<id>` est
+l'identifiant machine du modèle qui exécute cette session (ex.
+`claude-sonnet-5` — jamais le nom marketing), obtenu par `get_session` (sans
+`session_id`, donc sur cette session elle-même) et son
+`session_context.model`, per `doc/automation/skill-contract.md` § « Traçabilité »
+— cette skill tourne comme sa propre session Claude Code Remote, jamais
+comme un sous-agent du coordinateur. Si `get_session` échoue ou n'est pas
+disponible, `<id>` devient `inconnu` et le motif est dit dans la même phrase
+(« modèle `inconnu` — get_session indisponible ») plutôt que deviné.
 
 #### Section « Dépendances » (optionnelle)
 
@@ -246,6 +261,9 @@ it):
 - The readiness verdict stated out loud to the user, per "Determining the
   readiness verdict" above — this skill's instance of `doc/automation/
   skill-contract.md` §2's "Statut" field.
+- A `## Traçabilité` section at the very end of the issue body (see "Spec
+  format" above) — this skill's instance of `doc/automation/skill-contract.md`
+  §2's "Traçabilité" field.
 - `automation:enabled` is never added here (see Limites).
 
 ## Contrôles

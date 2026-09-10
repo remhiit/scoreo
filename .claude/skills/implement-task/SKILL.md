@@ -93,6 +93,25 @@ This is the guard behind `doc/automation/state-machine.md` row #5: "not
 actionable" now explicitly includes "already has an open linked PR", not
 just "already claimed, closed".
 
+## Traçabilité
+
+Per `doc/automation/skill-contract.md` § "Traçabilité" (#494): step 9's
+commit trailers and step 10's PR field both need the model that actually
+executed this run, `<id>` (e.g. `claude-sonnet-5`, never the marketing
+name).
+
+- **As R2** (this skill running as its own Claude Code Remote session):
+  call `get_session` (no `session_id`, so it reads its own session) and use
+  `session_context.model`.
+- **As the coordinator's implementation sub-agent** (#469): `get_session`
+  doesn't apply to an in-process sub-agent — read the model self-reported in
+  this sub-agent's own system prompt ("You are powered by the model named
+  ..."), the mechanism already verified in #423.
+
+If neither source is available, `<id>` is `inconnu` — never guessed — and
+the reason (e.g. "get_session indisponible") is stated alongside it in the
+same field/trailer.
+
 ## Procédure
 
 1. **Read the spec fully** — context, acceptance criteria, impacted files,
@@ -185,9 +204,15 @@ just "already claimed, closed".
    reducer/use case/model/port/adapter/screen without a matching doc update
    is not done yet.
 9. **One commit.** Message = the issue's title (see `CLAUDE.md`'s good/bad
-   commit examples — describe the *why*, not "Fix" or "Update").
+   commit examples — describe the *why*, not "Fix" or "Update"), plus two
+   git trailers naming the skill and the model that actually executed this
+   run: `Skill: implement-task` and `Model: <id>` — `<id>` obtained per
+   "Traçabilité" below, never a guessed value. As the coordinator's
+   sub-agent, `Skill: implement-task` stays unchanged (this file's own
+   procedure is what ran, unmodified in substance) even though the
+   coordinator is what launched this sub-agent.
 10. **Push and open a PR** with `Closes #N` in the body, structured per
-    `doc/automation/skill-contract.md` §2's five fields:
+    `doc/automation/skill-contract.md` §2's six fields:
     - **Statut** — `PR opened` (this step only runs once step 6 is
       actually green; the ambiguous/red-suite escalation path never reaches
       here — see "Escalade" below).
@@ -201,6 +226,9 @@ just "already claimed, closed".
     - **Questions non résolues** — anything noted along the way as
       out-of-scope-but-adjacent (step 5's change-budget rule) or left
       unresolved on purpose; "aucune" if there's nothing to flag.
+    - **Traçabilité** — `skill \`implement-task\`` + `modèle \`<id>\`` (the
+      same `<id>` used for the commit trailers above; see "Traçabilité"
+      below for how it's obtained).
     Open it non-draft only once step 6 is actually green — R2 never opens
     the PR itself as `automation:needs-review`; that label is posed
     automatically by the deterministic `needs-review-label.yml` action on PR
@@ -236,9 +264,10 @@ Once a run finishes successfully (never reached on the escalation path
 below):
 
 - One branch, `feat/<issue-number>-<slug>` (step 2).
-- One commit, message = the issue's title (step 9).
+- One commit, message = the issue's title, plus `Skill`/`Model` trailers
+  (step 9).
 - `doc/` updated per `CLAUDE.md`'s Pre-commit Checklist (step 8).
-- One PR, `Closes #N` in the body, structured per the five fields of
+- One PR, `Closes #N` in the body, structured per the six fields of
   `doc/automation/skill-contract.md` §2 (step 10) — this is this skill's
   instance of that structured output format.
 - `automation:enabled` posed only when risk stays Faible end to end

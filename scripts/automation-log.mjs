@@ -67,6 +67,7 @@ export function renderAutomationLog({
   taskContextVersion,
   routingApplied,
   activation,
+  executedBy,
 }) {
   const label = ROUTINE_LABELS[routine] ?? routine
   const lines = [
@@ -80,6 +81,13 @@ export function renderAutomationLog({
     `- Itération : \`${iteration}\``,
     `- Validation : ${validation}`,
     `- Résultat : ${resultUrl ? `[voir le run](${resultUrl})` : '_à venir_'}`,
+    // Traçabilité (issue #494) : le skill et le modèle réellement exécutés,
+    // distinct de `routing` (décision théorique) ci-dessous — jamais gaté
+    // par un `if`, contrairement aux blocs optionnels qui suivent : un
+    // appelant qui ne fournit pas `executedBy` obtient `inconnu`/`inconnu`
+    // plutôt qu'une ligne manquante (doc/automation/skill-contract.md §2
+    // "Traçabilité" — donnée indisponible, jamais devinée).
+    `- Exécuté par : skill \`${executedBy?.skill ?? 'inconnu'}\`, modèle \`${executedBy?.model ?? 'inconnu'}\``,
   ]
   // Optional: links this decision back to the TaskContext artifact it was
   // made from (issue #401, doc/technical/automation-plan.md §4) — absent for
@@ -385,6 +393,7 @@ export async function upsertAutomationLog({
   taskContextVersion,
   routingApplied,
   activation,
+  executedBy,
 }) {
   const existing = await findAutomationLogComment(number, routine)
   const previous = existing ? parseAutomationLog(existing.body) : null
@@ -424,6 +433,7 @@ export async function upsertAutomationLog({
     taskContextVersion,
     routingApplied,
     activation,
+    executedBy,
   })
 
   const { commentId, created } = await writeComment(number, existing, body)
@@ -477,6 +487,20 @@ export function loadMetricsFromEnv() {
   }
 }
 
+// Traçabilité (issue #494) : skill/modèle réellement exécutés, lus depuis
+// l'environnement pour l'appel en ligne de commande, même convention que
+// loadMetricsFromEnv ci-dessus. Contrairement à `metrics`, ce champ n'est
+// jamais `undefined` en sortie : un appelant qui ne fournit ni l'une ni
+// l'autre variable obtient quand même un objet, dont renderAutomationLog
+// affiche les clés manquantes comme `inconnu` (§2 du contrat — donnée
+// indisponible, jamais devinée), plutôt que d'omettre la ligne entière.
+export function loadExecutedByFromEnv() {
+  return {
+    skill: process.env.LOG_EXECUTED_BY_SKILL,
+    model: process.env.LOG_EXECUTED_BY_MODEL,
+  }
+}
+
 async function main() {
   const number = Number(process.env.LOG_NUMBER)
   const routine = process.env.LOG_ROUTINE
@@ -496,6 +520,7 @@ async function main() {
     summary: process.env.LOG_SUMMARY,
     triggeredAt: process.env.LOG_TRIGGERED_AT,
     onlyIfRunning: process.env.LOG_ONLY_IF_RUNNING === 'true',
+    executedBy: loadExecutedByFromEnv(),
   })
 
   if (result.skipped) {

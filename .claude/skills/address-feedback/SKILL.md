@@ -122,6 +122,23 @@ Even run interactively (no routine involved), apply the same check — an
 issue that's already at `automation:attempt-3` shouldn't get a fourth try
 just because a human happened to invoke the skill this time.
 
+## Traçabilité
+
+Per `doc/automation/skill-contract.md` § "Traçabilité" (#494): step 8's
+synthesis carries the model that actually ran this fix, `<id>` (e.g.
+`claude-sonnet-5`, never the marketing name).
+
+- **As R4** (this skill running as its own Claude Code Remote session): call
+  `get_session` (no `session_id`) and use `session_context.model`.
+- **As the coordinator's fix sub-agent** (#469): `get_session` doesn't
+  apply — read the model self-reported in this sub-agent's own system
+  prompt (the #423 mechanism), and include it when reporting back to the
+  coordinator at the end of the workflow (step 9), alongside whether the fix
+  is done and pushed.
+
+If neither source is available, `<id>` is `inconnu` — never guessed — with
+the reason stated alongside it.
+
 ## Escalade
 
 Per `doc/automation/skill-contract.md` §3, specialized to this skill's own
@@ -290,12 +307,15 @@ regardless of which component performed the label sequence). The coordinator
      `automation:needs-human`: the contradictory/ambiguous items, the scope
      mismatch, or the still-red check, described precisely enough that a
      human doesn't have to reconstruct it from the diff and label history.
+   - **Traçabilité** — `skill \`address-feedback\`` + `modèle \`<id>\`` per
+     § "Traçabilité" above.
    This replaces narrating each individual comment inline — the synthesis is
    the one place a human (or the next run) looks for what happened, and the
    diff plus resolved threads are the record of *how*. This synthesis is
    this skill's instance of `doc/automation/skill-contract.md` §2's
    structured output (Statut = clean/partial/escalated; Résumé =
-   `✅ Corrigé`; Questions non résolues = `⚠️ Arbitrage requis`).
+   `✅ Corrigé`; Questions non résolues = `⚠️ Arbitrage requis`; Traçabilité =
+   the bullet above).
 9. **Remove `automation:in-progress` and add the attempt number remembered
    from the counter step above** (`automation:attempt-1`/
    `automation:attempt-2`/`automation:attempt-3`) — the old attempt label
@@ -307,8 +327,9 @@ regardless of which component performed the label sequence). The coordinator
    — there's no `automation:in-progress` from this sub-agent to remove, and
    the coordinator already posted the current attempt's
    `automation:attempt-N` before launching it (see "Claim the run" above).
-   Report back that the fix is done and pushed instead; the coordinator
-   takes it from there (§ 3 of `coordinator/SKILL.md`).
+   Report back that the fix is done and pushed instead, alongside this run's
+   own self-reported model (§ "Traçabilité" above); the coordinator takes it
+   from there (§ 3 of `coordinator/SKILL.md`).
 
 ## Sorties obligatoires
 
@@ -319,7 +340,7 @@ above never reaches it):
   suite is green.
 - Every thread actually fixed resolved (step 7).
 - One synthesis comment, always (step 8) — `✅ Corrigé`/`⏭️ Non appliqué`/
-  `⚠️ Arbitrage requis`.
+  `⚠️ Arbitrage requis`/Traçabilité.
 - `automation:in-progress` removed and the current attempt's
   `automation:attempt-N` posed (step 9).
 
