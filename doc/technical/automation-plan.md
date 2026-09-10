@@ -1073,6 +1073,19 @@ réellement exécutés par routine — le pendant *réel* de la calibration du
 routage (§ « Calibration du routage », #481, ci-dessous), qui ne confronte
 que des décisions *proposées*.
 
+`executedBy` porte aussi un sous-champ optionnel `limits` (tableau de
+chaînes) pour journaliser *pourquoi* `skill`/`model` vaut `inconnu` —
+même convention que `complexity.limits`/`routing.limits`, repris ici plutôt
+que redéfini. `renderAutomationLog` le rend sous la ligne « Exécuté par »
+(`  - Limites : ...join(' ; ')`), absent quand aucune raison n'est fournie ;
+`loadExecutedByFromEnv` le lit depuis `LOG_EXECUTED_BY_LIMITS` (chaînes
+séparées par `;`, trim, entrées vides filtrées). Par ailleurs, le commit de
+correctif poussé par `address-feedback` (`SKILL.md` étape 6) porte désormais
+les mêmes trailers `Skill: address-feedback` / `Model: <id>` que le commit
+d'`implement-task` (étape 9 de son propre `SKILL.md`), `<id>` obtenu selon
+la même règle « Traçabilité » — un run de correctif est ainsi traçable au
+même titre qu'un run d'implémentation.
+
 ### R3 idempotent : dédup par SHA et synthèse classifiée (#379)
 
 `.automation/routines.yml` déclare `deduplicate_by: head_sha` pour
