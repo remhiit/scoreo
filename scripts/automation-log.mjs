@@ -243,8 +243,9 @@ export function renderAutomationLog({
       lines.push(`  - Findings : fonctionnel ${runMetrics.findings.functional ?? '?'}, technique ${runMetrics.findings.technical ?? '?'}`)
     }
     if (runMetrics.usage) {
+      const formatUsageFlag = (value) => (value === null ? '?' : value ? 'oui' : 'non')
       lines.push(
-        `  - Usage : compaction observée ${runMetrics.usage.compactionObserved ? 'oui' : 'non'}, limite d'usage approchée ${runMetrics.usage.usageLimitApproached ? 'oui' : 'non'}`,
+        `  - Usage : compaction observée ${formatUsageFlag(runMetrics.usage.compactionObserved)}, limite d'usage approchée ${formatUsageFlag(runMetrics.usage.usageLimitApproached)}`,
       )
     }
     if (runMetrics.outcome.escalation) {
