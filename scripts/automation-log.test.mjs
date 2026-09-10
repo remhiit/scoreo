@@ -640,6 +640,66 @@ describe('renderAutomationLog / parseAutomationLog', () => {
     expect(body).not.toContain('Run metrics')
   })
 
+  it('publishes an exceeded budget with the crossed limit and the observed value (#478)', async () => {
+    const { renderAutomationLog } = await import('./automation-log.mjs')
+    const body = renderAutomationLog({
+      routine: 'coordinator-implement',
+      triggeredAt: '2026-09-10T10:00:00Z',
+      sha: 'abc1234',
+      status: 'failed',
+      iteration: '1',
+      validation: 'lint / typecheck / tests',
+      resultUrl: 'https://github.com/remhiit/scoreo/actions/runs/999',
+      budget: {
+        status: 'exceeded',
+        limit: 12,
+        observed: 13,
+        reason: 'budgets.coordinator.per_run.subagents_launched: plafond dépassé (observé 13 > plafond 12)',
+        limits: [],
+      },
+    })
+    expect(body).toContain(
+      '- Budget : ⚠️ `exceeded` — budgets.coordinator.per_run.subagents_launched: plafond dépassé (observé 13 > plafond 12)',
+    )
+  })
+
+  it('renders an "ok" budget check with the success icon', async () => {
+    const { renderAutomationLog } = await import('./automation-log.mjs')
+    const body = renderAutomationLog({
+      routine: 'coordinator-implement',
+      triggeredAt: '2026-09-10T10:00:00Z',
+      sha: 'abc1234',
+      status: 'succeeded',
+      iteration: '1',
+      validation: 'lint / typecheck / tests',
+      resultUrl: 'https://github.com/remhiit/scoreo/actions/runs/999',
+      budget: {
+        status: 'ok',
+        limit: 12,
+        observed: 3,
+        reason: 'budgets.coordinator.per_run.subagents_launched: sous le plafond (observé 3 <= plafond 12)',
+        limits: [],
+      },
+    })
+    expect(body).toContain(
+      '- Budget : ✅ `ok` — budgets.coordinator.per_run.subagents_launched: sous le plafond (observé 3 <= plafond 12)',
+    )
+  })
+
+  it('omits the Budget line entirely when no budget check is provided', async () => {
+    const { renderAutomationLog } = await import('./automation-log.mjs')
+    const body = renderAutomationLog({
+      routine: 'coordinator-implement',
+      triggeredAt: '2026-09-10T10:00:00Z',
+      sha: 'abc1234',
+      status: 'succeeded',
+      iteration: '1',
+      validation: 'lint / typecheck / tests',
+      resultUrl: 'https://github.com/remhiit/scoreo/actions/runs/999',
+    })
+    expect(body).not.toContain('- Budget :')
+  })
+
   it('uses a distinct marker per reviewer corpus (#470)', async () => {
     const { markerFor } = await import('./automation-log.mjs')
     expect(markerFor('coordinator-review-functional')).toBe('<!-- automation-log:coordinator-review-functional -->')

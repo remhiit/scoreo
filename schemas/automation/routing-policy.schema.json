@@ -23,6 +23,11 @@
     "rollback": {
       "type": "boolean",
       "description": "Optionnel (issue #480, tranche 5/6 de #407), absent valant `false` — le cas nominal. À `true`, force tous les triplets de `activation` ci-dessus en `observe`, sans qu'aucune ligne de la matrice n'ait à être modifiée : le geste de rollback complet du routage vers le mono-modèle. Priorité la plus haute dans scripts/routing-activation.mjs#resolveActivation, non contournable par une déclaration `apply` de la matrice ni par le garde-fou risque `high`. Une valeur non booléenne est refusée à la validation, jamais interprétée comme `false`."
+    },
+    "budgets": {
+      "type": "object",
+      "description": "Optionnel (issue #478, tranche 3/6 de #407). Plafonds de consommation par routine de **dispatch** (.automation/routines.yml — `coordinator`, `pr-review`, `address-feedback`), un espace de noms distinct de `routines`/`activation` ci-dessus (les politiques de routage par sous-agent) malgré la coïncidence de nom sur `pr-review`/`address-feedback`. Résolu par scripts/routing-budget.mjs#checkBudget(budgets, counters, { routine, scope }), appelé par le skill du coordinateur avant chaque lancement de sous-agent — un dépassement arrête le run proprement, jamais contourné par un modèle moins coûteux. Une routine absente de cette section n'a aucun plafond contraignant.",
+      "additionalProperties": { "$ref": "#/$defs/budgetRoutine" }
     }
   },
   "required": ["version", "routines"],
@@ -136,6 +141,30 @@
     "activationMode": {
       "type": "string",
       "enum": ["observe", "apply"]
+    },
+    "budgetRoutine": {
+      "type": "object",
+      "description": "Plafonds d'une routine de dispatch — par run (`per_run`) et par période glissante (`per_period`). Chacun optionnel ; une routine peut ne déclarer que l'un des deux.",
+      "properties": {
+        "per_run": {
+          "type": "object",
+          "description": "Plafonds évalués sur un run unique.",
+          "properties": {
+            "subagents_launched": { "type": "integer", "minimum": 1, "description": "Nombre maximal de sous-agents (`Agent`) que ce run peut lancer, toutes étapes confondues." },
+            "fix_iterations": { "type": "integer", "minimum": 1, "description": "Nombre maximal de tours de correctif que ce run peut tenter." }
+          },
+          "additionalProperties": false
+        },
+        "per_period": {
+          "type": "object",
+          "description": "Plafonds évalués sur une période glissante, lus depuis les enregistrements RunMetrics (#477) déjà publiés — sans nouvelle source de persistance.",
+          "properties": {
+            "runs_per_day": { "type": "integer", "minimum": 1, "description": "Nombre maximal de runs de cette routine démarrés sur les dernières 24 heures glissantes." }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
     }
   }
 }

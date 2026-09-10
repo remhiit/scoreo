@@ -60,6 +60,7 @@ export function renderAutomationLog({
   routing,
   metrics,
   runMetrics,
+  budget,
   findings,
   missingReviewers,
   summary,
@@ -260,6 +261,17 @@ export function renderAutomationLog({
       lines.push(`  - ⚠️ Enregistrement incomplet — champs manquants : ${runMetrics.missingFields.join(', ')}`)
     }
   }
+  // Optional: publie le résultat d'un checkBudget (issue #478,
+  // scripts/routing-budget.mjs) qui a arrêté ce run — jamais un check qui est
+  // resté `ok`, ce champ n'existe que pour journaliser un dépassement, avec
+  // le plafond franchi et la valeur observée déjà dans `reason`
+  // (scripts/routing-budget.mjs#checkBudget les y inclut toujours). Absent
+  // pour tout appelant qui n'en produit pas, comme les champs optionnels
+  // ci-dessus.
+  if (budget) {
+    const icon = budget.status === 'exceeded' ? '⚠️' : '✅'
+    lines.push(`- Budget : ${icon} \`${budget.status}\` — ${budget.reason}`)
+  }
   // Optional: attribue chaque finding des deux relecteurs à corpus disjoints
   // (#470) à celui ou ceux qui l'ont rendu, et marque un finding hors corpus
   // comme tel plutôt que de le faire disparaître — c'est ce qui permet au
@@ -365,6 +377,7 @@ export async function upsertAutomationLog({
   routing,
   metrics,
   runMetrics,
+  budget,
   findings,
   missingReviewers,
   summary,
@@ -404,6 +417,7 @@ export async function upsertAutomationLog({
     routing,
     metrics,
     runMetrics,
+    budget,
     findings,
     missingReviewers,
     summary,

@@ -51,8 +51,34 @@
 # Effectif au run suivant (lu à chaque invocation, jamais réévalué pour un
 # run déjà en vol). Voir doc/automation/model-routing.md § « Rollback » pour
 # la procédure complète.
+#
+# `budgets` (issue #478, tranche 3/6 de #407), optionnel, plafonne la
+# consommation d'un run : combien de sous-agents un run peut lancer et
+# combien d'itérations de correctif il peut tenter (`per_run`), et combien
+# de runs de cette routine peuvent démarrer sur une période glissante
+# (`per_period`, aujourd'hui `runs_per_day`). Résolu par
+# scripts/routing-budget.mjs#checkBudget, appelé par le skill du
+# coordinateur avant chaque lancement de sous-agent — un dépassement arrête
+# le run proprement (aucun sous-agent de plus, `automation:needs-human`
+# posé) et n'est **jamais** contourné par un modèle moins coûteux, y
+# compris sur un risque `high`. Les clés de premier niveau (`coordinator`
+# ci-dessous) sont des noms de routine de **dispatch**
+# (.automation/routines.yml), un espace de noms distinct de `routines`/
+# `activation` ci-dessous (les politiques de routage par sous-agent) — la
+# coïncidence de nom avec `pr-review`/`address-feedback` n'implique aucun
+# lien entre les deux sections. Un plafond absent est non contraignant ;
+# un plafond nul, négatif ou non numérique est refusé au chargement,
+# nommant le fichier et la clé (scripts/routing-budget.mjs#loadBudgets).
+# Voir doc/automation/model-routing.md § « Budgets » pour le détail.
 version: 1
 rollback: false
+budgets:
+  coordinator:
+    per_run:
+      subagents_launched: 12
+      fix_iterations: 3
+    per_period:
+      runs_per_day: 20
 activation:
   implement-task:
     trivial: observe
