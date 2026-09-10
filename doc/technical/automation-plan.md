@@ -1038,6 +1038,41 @@ verdict en signal GitHub — labels, commit status — plutôt que la routine
 elle-même, qui n'a accès qu'aux outils MCP GitHub habituels et pas à un
 appel script direct).
 
+### Traçabilité : skill et modèle réellement exécutés (#494)
+
+Jusqu'ici, rien dans une issue, une PR, un commit ou un journal produit par
+le pipeline ne nommait explicitement quel `SKILL.md` avait tourné, ni quel
+modèle l'avait réellement exécuté — seul `routine` (le champ propre au
+journal ci-dessus) et le champ optionnel `routing` (§ « Routage par
+sous-agent », #423/#404) en approchaient, et `routing` ne porte qu'une
+décision *théorique* de routage (`RoutingDecision`), jamais le modèle
+effectivement utilisé. `doc/automation/skill-contract.md` §2 ajoute un
+sixième champ au format structuré commun, **Traçabilité** (`skill` + `model`,
+distinct de `routing`), documenté là avec la règle d'obtention du modèle
+réellement exécuté (`get_session` pour une routine tournant comme sa propre
+session ; auto-rapport du prompt système pour un sous-agent du coordinateur,
+mécanisme vérifié en #423) — chaque `SKILL.md` concerné (`issue-to-spec`,
+`implement-task`, `coordinator`, `pr-review`, `address-feedback`,
+`site-quality`, `weekly-report`) reprend cette même règle plutôt que de la
+redéfinir.
+
+`scripts/automation-log.mjs#renderAutomationLog` accepte désormais un
+paramètre `executedBy: { skill, model }`, rendu **systématiquement** — à la
+différence de `routing`/`complexity`, jamais gaté par un `if` : un appelant
+qui ne le fournit pas obtient `skill`/`modèle` `inconnu` plutôt qu'une ligne
+absente, même convention « donnée indisponible, jamais devinée » que
+`TaskContext`/`ComplexityAssessment`. Le rôle « review » scindé en deux
+relecteurs (#470) attribue le modèle de chacun distinctement à son propre
+corpus (fonctionnel/technique) dans la synthèse du coordinateur, jamais
+fusionné en une seule valeur. Changement strictement additif : aucun champ
+existant n'est renommé ni supprimé, et un commentaire de journal déjà posté
+avant #494 n'est jamais réécrit rétroactivement — seuls les nouveaux runs
+portent la ligne `- Exécuté par :`. `weekly-report`/R6 en tire une nouvelle
+section agrégeant, depuis les journaux de la période, le ou les modèles
+réellement exécutés par routine — le pendant *réel* de la calibration du
+routage (§ « Calibration du routage », #481, ci-dessous), qui ne confronte
+que des décisions *proposées*.
+
 ### R3 idempotent : dédup par SHA et synthèse classifiée (#379)
 
 `.automation/routines.yml` déclare `deduplicate_by: head_sha` pour

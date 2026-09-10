@@ -91,7 +91,7 @@ being present and locatable, not about matching a heading string verbatim).
 ## 2. Common structured output format (R2/R3/R4)
 
 A routine's user-visible report — a PR description, a review verdict
-comment, a fix synthesis comment — carries the same five fields, in this
+comment, a fix synthesis comment — carries the same six fields, in this
 order, regardless of which routine produces it. This formalizes a pattern
 already in independent use (`pr-review`'s per-finding severity
 (`blocking`/`important`/`suggestion`/`uncertain`) + overall
@@ -108,6 +108,7 @@ comment) rather than inventing a new shape:
 | **Artefacts** | Links to what this run produced: commit(s), PR, doc files touched | `automation-log.mjs`'s `resultUrl` (link to the run) |
 | **Validations** | Which checks were run and their result — not "tests pass" without saying which suite | `pr-review`'s out-of-scope note (CI already covers lint/test/build/doc-links) + its own per-finding severities; `automation-log.mjs`'s `validation` field |
 | **Questions non résolues** | What this run could not resolve and why, scoped precisely enough that a human (or the next run) doesn't have to reconstruct it from the diff and label history | `address-feedback`'s `⚠️ Arbitrage requis` section |
+| **Traçabilité** | `skill` (nom exact du fichier `SKILL.md` exécutant, ex. `implement-task`) + `model` (identifiant machine du modèle réellement exécuté, ex. `claude-sonnet-5` — jamais le nom marketing), distinct du champ `routing` (qui reste la décision *théorique* de routage, cf. § "Traçabilité" ci-dessous) | Nouveau (#494) : `scripts/automation-log.mjs`'s `executedBy` |
 
 A skill's "Sorties obligatoires" section (§1.6) should say which of a PR
 description, a verdict comment, or a synthesis comment is this skill's
@@ -118,6 +119,49 @@ verdict only, per `automation-plan.md` § Journal d'exécution idempotent);
 this format is what a skill's own free-text output should already contain
 so that wiring a journal call for R2/R4/R5 later is a mechanical extraction,
 not a rewrite of what the routine reports.
+
+### Traçabilité : obtenir le skill et le modèle réellement exécutés (#494)
+
+Nothing produced by the automation pipeline named, until #494, which skill
+file actually ran a given issue/PR/commit/comment, nor which model actually
+executed it — the only prior trace was `routine` (the journal's own field)
+and the optional `routing` field, and `routing` only ever states a
+*theoretical* routing decision (`RoutingDecision`, #404), never the model a
+sub-agent actually ran with (the activation matrix, #476, declares
+`observe` everywhere as of this writing — see `automation-plan.md` §7 —
+so `routing.selectedModel` and the model actually used are the same today,
+but nothing guarantees that once activation ever moves to `apply`). The
+**Traçabilité** field above is deliberately a separate field from
+`routing` for exactly that reason: `routing` answers "what would this run
+route to", **Traçabilité** answers "what actually ran it".
+
+Two ways to obtain the model actually executed, depending on how the
+current session was launched (verified in #423 — a session or sub-agent
+reliably self-reports its own model):
+
+- **A routine running as its own Claude Code Remote session**
+  (`issue-to-spec`, `implement-task`/R2 outside the coordinator,
+  `pr-review`/R3 outside the coordinator, `address-feedback`/R4,
+  `site-quality`/R5, `weekly-report`/R6): call `get_session` (no
+  `session_id`, so it reads its own session) and use
+  `session_context.model`.
+- **A sub-agent launched by the coordinator via the `Agent` tool**
+  (`implement-task`, either of the two reviewers from #470,
+  `address-feedback` in sub-agent mode): `get_session` does not apply to an
+  in-process sub-agent — it reads its own model as self-reported in its own
+  system prompt, the same mechanism already verified in #423 ("You are
+  powered by the model named ...").
+
+When neither source is available (`get_session` fails, or a sub-agent fails
+or returns nothing before it can self-report its model): `model` is
+`inconnu`, with the reason stated in the same free-text output (never a
+guessed value) — the same "unavailable, never guessed" convention already
+used by `TaskContext`/`ComplexityAssessment` for a data point that can't be
+established.
+
+This field is strictly additive: no existing field (`routine`, `routing`,
+`complexity`, `metrics`, etc.) is renamed or removed by it, and a journal
+comment posted before this change is never rewritten retroactively.
 
 ## 3. Conditions de passage à `automation:needs-human`
 
@@ -185,7 +229,7 @@ file against §1–§3 above. Usable on an existing skill or a new one.
       what's actually tempting to over-reach on for this skill (scope
       creep, batching, merging its own output).
 - [ ] A routine skill's user-visible output (PR description, verdict,
-      synthesis) carries the five fields of §2, even if not labeled with
+      synthesis) carries the six fields of §2, even if not labeled with
       those exact names.
 
 A skill that fails any line above is not yet conformant — the line names

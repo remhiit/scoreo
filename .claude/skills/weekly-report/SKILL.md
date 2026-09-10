@@ -137,6 +137,38 @@ proposes to a human).
    or with no policy entry for its routine is exactly as much a result as a
    proposal is, never omitted.
 
+#### 7. Traçabilité des modèles exécutés (#494)
+
+Depuis #494, chaque commentaire de journal (`scripts/automation-log.mjs`)
+porte une ligne `- Exécuté par : skill \`<skill>\`, modèle \`<model>\`` —
+le pendant *réel* du §6 ci-dessus, qui ne confronte que des décisions de
+routage *proposées* (`RoutingDecision`). Cette section-ci lit ce qui a
+effectivement tourné.
+
+1. Réutilise la même collecte que §6 : `search_issues`/`search_pull_requests`
+   pour `in:comments "<!-- automation-log:"` (tous les marqueurs de routine —
+   `pr-review`, `coordinator-implement`, `coordinator-fix`,
+   `coordinator-review-functional`, `coordinator-review-technical`, et tout
+   autre marqueur `ROUTINE_LABELS` connaisse) `updated:>=<window-start>`,
+   puis `get_issue_comment`/`get_pull_request_comment` sur chaque
+   correspondance.
+2. Pour chaque commentaire, extraire la routine (ligne `- Routine :`) et la
+   ligne `- Exécuté par :` (`skill`/`model`). Un commentaire sans cette ligne
+   (journal antérieur à #494, jamais réécrit rétroactivement — voir
+   `doc/automation/skill-contract.md` § « Traçabilité ») est compté à part,
+   jamais confondu avec un `modèle inconnu` explicite.
+3. Regrouper par routine, lister le ou les modèles distincts observés dans
+   la fenêtre (un seul aujourd'hui dans la quasi-totalité des cas, tant que
+   l'activation du routage reste `observe` partout — §6 ci-dessus), et
+   compter les occurrences de `modèle \`inconnu\`` séparément — un volume
+   notable d'`inconnu` est lui-même un signal (mécanisme `get_session`/
+   auto-rapport indisponible plus souvent que prévu), à signaler explicitement
+   plutôt que noyé dans le décompte normal.
+4. Si aucun commentaire de la fenêtre ne porte encore cette ligne (période
+   entièrement antérieure à #494), dire explicitement **aucune donnée de
+   traçabilité pour cette fenêtre** plutôt que de laisser la section vide
+   sans explication — même convention que « données insuffisantes » en §6.
+
 #### Ce que ce rapport ne peut pas mesurer
 
 Le nombre de runs de routines consommés n'est pas exposé par l'API GitHub
@@ -152,7 +184,7 @@ un décompte de runs.
 Le rapport est une **issue GitHub**, jamais une PR ni un commentaire :
 
 1. `mcp__github__issue_write` : titre `Rapport hebdo <YYYY-MM-DD>` (date du
-   jour du run), corps = les sections 1 à 6 ci-dessus plus la limite de
+   jour du run), corps = les sections 1 à 7 ci-dessus plus la limite de
    mesure.
 2. Label `P3` dans son propre appel.
 3. Ne jamais poser `automation:ready` — ce n'est pas un ticket à implémenter.
@@ -160,19 +192,22 @@ Le rapport est une **issue GitHub**, jamais une PR ni un commentaire :
 ## Sorties obligatoires
 
 - Exactement une issue GitHub par run (Procédure § Livrable), jamais une PR
-  ni un commentaire — corps = les six sections de données (§1-§6) plus la
+  ni un commentaire — corps = les sept sections de données (§1-§7) plus la
   limite de mesure. C'est l'instance propre à cette skill de la sortie
   structurée de `doc/automation/skill-contract.md` §2 : Statut = la
   recommandation (§5) ; Résumé = les compteurs R3 (§3) ; Artefacts = le lien
   vers l'issue elle-même ; Validations = sans objet (skill de reporting, pas
   de code) ; Questions non résolues = « Ce que ce rapport ne peut pas
-  mesurer ».
+  mesurer » ; Traçabilité = §7 ci-dessus (les modèles réellement exécutés par
+  routine) plus, pour ce rapport lui-même, `skill \`weekly-report\`` +
+  `modèle \`<id>\`` (obtenu via `get_session`, cette skill tournant toujours
+  comme sa propre session — jamais un sous-agent du coordinateur).
 - Le label `P3`, posé dans son propre appel.
 - Jamais `automation:ready` sur cette issue.
 
 ## Contrôles
 
-Chaque section de données (§1-§6) doit citer sa source (l'appel MCP exact,
+Chaque section de données (§1-§7) doit citer sa source (l'appel MCP exact,
 la requête utilisée) plutôt qu'une affirmation non vérifiable — un lecteur
 doit pouvoir reproduire le chiffre. La section « Ce que ce rapport ne peut
 pas mesurer » doit rester présente et explicite plutôt qu'omise (une

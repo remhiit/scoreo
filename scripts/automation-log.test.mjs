@@ -790,6 +790,50 @@ describe('renderAutomationLog / parseAutomationLog', () => {
     })
     expect(body).toContain('- Résultat : _à venir_')
   })
+
+  it('renders the skill and the model actually executed when executedBy is provided (#494)', async () => {
+    const { renderAutomationLog } = await import('./automation-log.mjs')
+    const body = renderAutomationLog({
+      routine: 'implement-task',
+      triggeredAt: '2026-09-10T10:00:00Z',
+      sha: 'abc1234',
+      status: 'succeeded',
+      iteration: '1',
+      validation: 'lint / typecheck / tests',
+      resultUrl: 'https://github.com/remhiit/scoreo/actions/runs/999',
+      executedBy: { skill: 'implement-task', model: 'claude-sonnet-5' },
+    })
+    expect(body).toContain('- Exécuté par : skill `implement-task`, modèle `claude-sonnet-5`')
+  })
+
+  it('renders "inconnu" for both skill and model when executedBy is not provided, rather than omitting the line (#494)', async () => {
+    const { renderAutomationLog } = await import('./automation-log.mjs')
+    const body = renderAutomationLog({
+      routine: 'pr-review',
+      triggeredAt: '2026-09-10T10:00:00Z',
+      sha: 'abc1234',
+      status: 'succeeded',
+      iteration: '1',
+      validation: 'lint / typecheck / tests',
+      resultUrl: 'https://github.com/remhiit/scoreo/actions/runs/999',
+    })
+    expect(body).toContain('- Exécuté par : skill `inconnu`, modèle `inconnu`')
+  })
+
+  it('renders "inconnu" for whichever of skill/model is missing from an incomplete executedBy (#494)', async () => {
+    const { renderAutomationLog } = await import('./automation-log.mjs')
+    const body = renderAutomationLog({
+      routine: 'coordinator-review-technical',
+      triggeredAt: '2026-09-10T10:00:00Z',
+      sha: 'abc1234',
+      status: 'succeeded',
+      iteration: '1',
+      validation: 'lint / typecheck / tests',
+      resultUrl: 'https://github.com/remhiit/scoreo/actions/runs/999',
+      executedBy: { skill: 'pr-review' },
+    })
+    expect(body).toContain('- Exécuté par : skill `pr-review`, modèle `inconnu`')
+  })
 })
 
 describe('upsertAutomationLog', () => {
@@ -1062,5 +1106,26 @@ describe('loadMetricsFromEnv', () => {
     const { loadMetricsFromEnv } = await import('./automation-log.mjs')
 
     expect(loadMetricsFromEnv()).toBeUndefined()
+  })
+})
+
+describe('loadExecutedByFromEnv', () => {
+  afterEach(resetAll)
+
+  it('reads skill and model from the environment (#494)', async () => {
+    vi.stubEnv('LOG_EXECUTED_BY_SKILL', 'implement-task')
+    vi.stubEnv('LOG_EXECUTED_BY_MODEL', 'claude-sonnet-5')
+
+    vi.resetModules()
+    const { loadExecutedByFromEnv } = await import('./automation-log.mjs')
+
+    expect(loadExecutedByFromEnv()).toEqual({ skill: 'implement-task', model: 'claude-sonnet-5' })
+  })
+
+  it('returns an object with undefined fields, never throwing, when neither variable is set (#494)', async () => {
+    vi.resetModules()
+    const { loadExecutedByFromEnv } = await import('./automation-log.mjs')
+
+    expect(loadExecutedByFromEnv()).toEqual({ skill: undefined, model: undefined })
   })
 })

@@ -83,15 +83,27 @@ consistent with the app: icon paths in the manifest resolve
 passes conceptually — i.e. nothing new was added to `apps/scoreo/public/` without a
 corresponding reference.
 
+## Traçabilité
+
+Per `doc/automation/skill-contract.md` § "Traçabilité" (#494): every PR this
+skill opens (§ Procédure) carries a **Traçabilité** field in its body —
+`skill \`site-quality\`` + `modèle \`<id>\`` — alongside whatever else the
+PR description already says about the category fixed. This skill always
+runs as its own Claude Code Remote session (R5, cron-triggered — never a
+coordinator sub-agent), so `<id>` always comes from calling `get_session`
+(no `session_id`) and reading `session_context.model`. If that call fails,
+`<id>` is `inconnu` with the reason stated alongside it, never guessed.
+
 ## Sorties obligatoires
 
 Zero or more PRs, at most one per category actually touched this run — never
 a combined PR mixing categories (see Objectif). A category with nothing to
 fix (the common case for doc links and PWA validity) produces no PR at all;
-this skill has no obligation to open one every run. Each PR opened still
-goes through `ci.yml`/`pr-review` like any other PR — this skill's own
-"Contrôles" below is what it runs before opening one, not a substitute for
-that downstream review.
+this skill has no obligation to open one every run. Each PR opened carries
+the Traçabilité field above in its body, and still goes through
+`ci.yml`/`pr-review` like any other PR — this skill's own "Contrôles" below
+is what it runs before opening one, not a substitute for that downstream
+review.
 
 ## Contrôles
 
