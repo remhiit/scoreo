@@ -529,7 +529,11 @@ exercé pour l'instant par ses seuls tests unitaires
 (`scripts/automation-log.test.mjs`) — aucun workflow ne le renseigne encore ;
 le brancher (comparer le `rollback` capturé à l'ouverture du journal à sa
 valeur au moment de la fermeture) suit le même patron que le reste de ce
-contrat, hors scope de cette tranche.
+contrat, hors scope de cette tranche. **Travail de suivi explicite, pas un
+gap implicite** : tant que ce branchement n'existe pas,
+« le journal le signale » (§ ci-dessus) n'est vrai qu'au sens testé
+unitairement, jamais sur un run réel — voir
+`doc/technical/automation-plan.md` §5 pour le même constat.
 
 ### Testable sans exécuter de routine
 

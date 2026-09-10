@@ -1176,6 +1176,17 @@ suivant parte en observation — même patron que `metrics`/`findings` avant
 lui : optionnel, exercé pour l'instant par ses seuls tests unitaires, aucun
 workflow ne le renseignant encore.
 
+**Travail de suivi, pas un detail d'implémentation déjà couvert** : tant
+que rien ne calcule et ne transmet `activation.rollbackDuringRun` depuis un
+vrai run (`scripts/routing-dry-run.mjs#resolveRoutingDryRun` ne le fait pas
+aujourd'hui), le critère d'acceptation « le journal signale que le rollback
+est intervenu pendant le run » reste vérifié uniquement par
+`scripts/automation-log.test.mjs`, jamais observable sur un run réel.
+Brancher ce calcul — comparer le `rollback` capturé à l'ouverture du
+journal à sa valeur au moment de la fermeture — reste explicitement hors
+scope de #480 et à faire dans une tranche ultérieure, pas un gap implicite
+qu'un futur lecteur devrait redécouvrir.
+
 Procédure complète (fichier et clé à changer, délai avant effet — le run
 suivant — et vérification) : `doc/automation/model-routing.md` § « Rollback ».
 Testable entièrement sans exécuter de routine :
