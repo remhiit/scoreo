@@ -501,6 +501,33 @@ describe('renderAutomationLog / parseAutomationLog', () => {
     expect(body).not.toContain('Enregistrement incomplet')
   })
 
+  it('never renders a missing usage indicator as a false "non" (#484)', async () => {
+    const { renderAutomationLog } = await import('./automation-log.mjs')
+    const body = renderAutomationLog({
+      routine: 'coordinator-implement',
+      triggeredAt: '2026-09-09T10:00:00Z',
+      sha: 'abc1234',
+      status: 'succeeded',
+      iteration: '1',
+      validation: 'lint / typecheck / tests',
+      resultUrl: 'https://github.com/remhiit/scoreo/actions/runs/999',
+      runMetrics: {
+        routine: 'coordinator-implement',
+        complete: false,
+        durationSeconds: 750,
+        complexity: { band: 'standard', provenance: 'heuristic' },
+        risk: { level: 'low' },
+        routing: null,
+        configVersions: { taskContext: 1, routingPolicy: 1, modelCatalog: 1 },
+        outcome: { status: 'succeeded', fixIterations: 1, ciGreenFirstPass: false, escalation: null },
+        findings: { functional: 2, technical: 0 },
+        usage: { compactionObserved: null, usageLimitApproached: false },
+        missingFields: ['routing', 'usage.compactionObserved'],
+      },
+    })
+    expect(body).toContain("  - Usage : compaction observée ?, limite d'usage approchée non")
+  })
+
   it('names the missing fields of an incomplete RunMetrics record instead of hiding the gap (#477)', async () => {
     const { renderAutomationLog } = await import('./automation-log.mjs')
     const body = renderAutomationLog({
