@@ -276,7 +276,12 @@ regardless of which component performed the label sequence). The coordinator
    synthesis (step 8) what's still red and what was tried.
 6. **Push to the same branch** (new commit, not an amend of history that's
    already been reviewed — the reviewer should be able to see what changed
-   since their comment), only once the full suite is green (step 5).
+   since their comment), only once the full suite is green (step 5). This
+   commit carries the same two git trailers `implement-task/SKILL.md` step 9
+   adds to its own commit — `Skill: address-feedback` and `Model: <id>`,
+   `<id>` obtained per "Traçabilité" above, never a guessed value — so a fix
+   commit is traceable to the skill/model that produced it exactly like an
+   implementation commit is.
    Pushing triggers `needs-review-label.yml` (`synchronize`), which clears
    the stale `automation:needs-fix` and re-queues R3
    (`automation:needs-review`) on its own — this is what returns the PR to
@@ -337,7 +342,8 @@ Once a run reaches a clean or partial outcome (step 9; the escalation path
 above never reaches it):
 
 - A new commit pushed to the same branch (step 6), only once the full check
-  suite is green.
+  suite is green, carrying the `Skill: address-feedback` / `Model: <id>`
+  trailers.
 - Every thread actually fixed resolved (step 7).
 - One synthesis comment, always (step 8) — `✅ Corrigé`/`⏭️ Non appliqué`/
   `⚠️ Arbitrage requis`/Traçabilité.
