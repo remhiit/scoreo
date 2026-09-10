@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { resolveActivation } from './routing-activation.mjs'
+import { detectRollbackDuringRun, resolveActivation } from './routing-activation.mjs'
 
 const POLICY = {
   version: 1,
@@ -147,6 +147,27 @@ describe('resolveActivation', () => {
       expect(matrixObserve.reason).not.toContain('rollback')
       expect(rollbackObserve.reason).toContain('rollback')
       expect(matrixObserve.reason).not.toBe(rollbackObserve.reason)
+    })
+  })
+
+  describe('detectRollbackDuringRun (#490)', () => {
+    it('detects the transition absent/false → true', () => {
+      expect(detectRollbackDuringRun(undefined, true)).toBe(true)
+      expect(detectRollbackDuringRun(false, true)).toBe(true)
+    })
+
+    it('does not detect true → true — already active at open, covered by resolveActivation\'s own reason', () => {
+      expect(detectRollbackDuringRun(true, true)).toBe(false)
+    })
+
+    it('does not detect true → false — cancelled before the journal closes', () => {
+      expect(detectRollbackDuringRun(true, false)).toBe(false)
+    })
+
+    it('does not detect false → false — the nominal case', () => {
+      expect(detectRollbackDuringRun(false, false)).toBe(false)
+      expect(detectRollbackDuringRun(undefined, false)).toBe(false)
+      expect(detectRollbackDuringRun(undefined, undefined)).toBe(false)
     })
   })
 

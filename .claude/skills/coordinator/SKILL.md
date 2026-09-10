@@ -168,7 +168,12 @@ explicit `model` override for as long as that holds, exactly as
    missing or invalid. Nothing has launched yet at this point, so this is
    the same kind of precondition failure as "Verify readiness" above, just
    discovered one step later.
-5. Otherwise, upsert the **issue's** own journal
+5. Otherwise, capture `rollbackAtOpen` — the boolean value of `rollback` read
+   from the `routingPolicy` object step 2 above already loaded (`false` when
+   absent, never re-derived from anything else) — in this session's own
+   memory, unchanged, to reuse when this run's journal closes (§ "Converged"
+   step 4 / § Escalade step 3 below, issue #490). Then upsert the **issue's**
+   own journal
    (`scripts/automation-log.mjs#upsertAutomationLog`, `number` = the issue,
    routine `coordinator-implement`, `status: 'running'`), passing this
    decision's `complexity`, `routing`, the new `routingApplied`
@@ -472,10 +477,26 @@ Reached when a review round (§ 2, first pass or after a fix round) finds no
    5, not by a label-triggered Action. Always finds that journal `running`
    on this path (§ "Routage" always reaches its own step 5 before § 1 can
    launch anything), so this is never a no-op here the way it can be in §
-   Escalade below. **Re-pass the same `complexity`, `routing`,
-   `taskContextVersion`, `routingApplied` and `activation` values § "Routage"
-   step 5 captured** — still in memory in this session at this point — on
-   this call: `upsertAutomationLog` re-renders the whole comment body from
+   Escalade below. Before this call, re-read `.automation/routing-policy.yml`
+   from disk (`scripts/automation-dispatch.mjs#loadRoutingPolicy` —
+   deliberately a fresh read, not the `routingPolicy` object § "Routage" step
+   2 loaded into memory at run start, so a change made after that load is
+   actually caught), read its `rollback` field the same way step 5 above did
+   (`false` when absent) as `rollbackClosed`, and call
+   `scripts/routing-activation.mjs#detectRollbackDuringRun(rollbackAtOpen,
+   rollbackClosed)` (issue #490). When it returns `true`, set
+   `activation.rollbackDuringRun = true` on the `activation` object about to
+   be re-passed below — on any other outcome (including the reread itself
+   throwing: file missing or invalid YAML, unlikely since the same file was
+   already validated at this run's own start and by the CI job
+   `automation-config`, but not excluded on a long run), leave `activation`
+   exactly as § "Routage" step 5 captured it; a reread failure here never
+   fails this journal close or the run itself, same tolerance § "Budgets"
+   step 4 already gives an unavailable period counter. **Re-pass the same
+   `complexity`, `routing`, `taskContextVersion` and `routingApplied` values §
+   "Routage" step 5 captured, and this same (possibly now-enriched)
+   `activation` object** — still in memory in this session at this point —
+   on this call: `upsertAutomationLog` re-renders the whole comment body from
    scratch and never merges it with the previous one, so omitting them here
    would wipe the Complexité/Routage/Configuration/Activation/Modèle
    appliqué lines the `running` journal carried, right as the run reaches
@@ -713,9 +734,16 @@ issue's `automation:in-progress` for the whole run):
    #406)" step 5, the same way § "Converged" step 4 does
    (`scripts/automation-log.mjs#upsertAutomationLog`, `onlyIfRunning: true`,
    `number` = the issue, routine `coordinator-implement`,
-   `status: 'failed'`), **re-passing the same `complexity`, `routing`,
-   `taskContextVersion`, `routingApplied` and `activation` values §
-   "Routage" step 5 captured**, for the same reason § "Converged" step 4
+   `status: 'failed'`). Before this call, apply the exact same
+   `rollbackDuringRun` enrichment § "Converged" step 4 applies (issue #490):
+   re-read `.automation/routing-policy.yml` from disk, call
+   `detectRollbackDuringRun(rollbackAtOpen, rollbackClosed)`, and on `true`
+   set `activation.rollbackDuringRun = true` on the `activation` object below
+   — with the same tolerance for a reread failure (never blocks this
+   escalation; `activation` stays exactly as captured at open). **Re-passing
+   the same `complexity`, `routing`, `taskContextVersion` and `routingApplied`
+   values § "Routage" step 5 captured, and this same (possibly now-enriched)
+   `activation` object**, for the same reason § "Converged" step 4
    does: this call
    re-renders the whole comment body from scratch, so omitting them would
    wipe those lines instead of leaving them showing the run's real outcome.

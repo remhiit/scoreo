@@ -120,3 +120,20 @@ export function resolveActivation(policy, { routine, band, riskLevel }) {
 
   return { mode: declared, reason: `activation.${routine}.${band} déclare "${declared}"` }
 }
+
+// Détecte la transition « rollback intervenu pendant ce run » (issue #490,
+// suivi explicite de #480 — voir doc/automation/model-routing.md §
+// « Rollback » / « Run en vol : le journal le signale explicitement »).
+// `openedRollback` est la valeur de `policy.rollback` capturée à l'ouverture
+// du journal (.claude/skills/coordinator/SKILL.md § « Routage » étape 5,
+// `rollbackAtOpen`) ; `closedRollback` est la même valeur relue depuis le
+// disque à la fermeture (§ « Converged » étape 4 / § Escalade étape 3).
+// Fonction pure, contrôle à deux points (pas une surveillance continue) :
+// ne détecte que la transition faux/absent → vrai, jamais un rollback déjà
+// actif à l'ouverture (`true → true`, déjà couvert par la `reason` de
+// resolveActivation ci-dessus, pas par ce champ) ni une oscillation
+// `false → true → false` entièrement résorbée avant la fermeture — limite
+// connue, documentée dans doc/automation/model-routing.md § « Rollback ».
+export function detectRollbackDuringRun(openedRollback, closedRollback) {
+  return !openedRollback && closedRollback === true
+}
