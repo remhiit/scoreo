@@ -226,9 +226,12 @@ same field/trailer.
     - **Questions non résolues** — anything noted along the way as
       out-of-scope-but-adjacent (step 5's change-budget rule) or left
       unresolved on purpose; "aucune" if there's nothing to flag.
-    - **Traçabilité** — `skill \`implement-task\`` + `modèle \`<id>\`` (the
-      same `<id>` used for the commit trailers above; see "Traçabilité"
-      below for how it's obtained).
+    - **Traçabilité** — one line in French, following the same template as
+      `issue-to-spec`'s own PR/issue field (`issue-to-spec/SKILL.md`):
+      ``Ouverte avec le skill `implement-task`, modèle `<id>`.`` — only the
+      *values* (`implement-task` and `<id>`) go inside backticks, never the
+      field labels themselves; `<id>` is the same one used for the commit
+      trailers above (see "Traçabilité" below for how it's obtained).
     Open it non-draft only once step 6 is actually green — R2 never opens
     the PR itself as `automation:needs-review`; that label is posed
     automatically by the deterministic `needs-review-label.yml` action on PR
