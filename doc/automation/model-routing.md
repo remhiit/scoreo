@@ -673,6 +673,118 @@ chargement (plafond nul, négatif, non numérique, champ inconnu) ;
 `scripts/automation-log.test.mjs` couvre le rendu de la ligne `Budget` d'un
 dépassement.
 
+## Calibration (`scripts/routing-calibration.mjs`, issue #481)
+
+Tranche 6/6 de #407 : ferme la boucle ouverte par #477 — des `RunMetrics`
+confrontant la décision de routage à l'issue réelle d'un run ne servent à
+rien tant que personne ne les agrège et n'en tire un ajustement. Ce module
+lit des enregistrements `RunMetrics` déjà publiés (#477) et **propose** des
+ajustements de poids/seuils de `.automation/routing-policy.yml` à un humain
+— il ne les applique jamais (principe directeur §2.2, aucune décision
+d'automatisation prise par un LLM sans validation humaine), et n'écrit rien
+dans `.automation/routing-policy.yml`. Deux fonctions pures, zéro effet de
+bord, zéro appel réseau, consommées par `weekly-report/SKILL.md` (R6) —
+aucune routine ni déclencheur supplémentaire (hors scope explicite de #481).
+
+### `aggregateRunMetrics(records, { since })`
+
+Groupe des `RunMetrics` par `routine` (le nom tel qu'il apparaît dans
+l'enregistrement — un nom de routine de **dispatch**, ex. `coordinator`,
+pas nécessairement l'espace de noms `routing-policy.yml#routines`, ex.
+`implement-task` ; même distinction que `budgets.<routine>`, § Budgets
+ci-dessus) et par bande de complexité, et renvoie :
+
+```js
+{
+  since,               // la fenêtre demandée, telle quelle
+  rejected,            // enregistrements illisibles/hors schéma, ignorés
+  completeRecords,      // total des enregistrements `complete: true` agrégés
+  incompleteRecords,    // total des enregistrements `complete: false`, exclus des moyennes
+  insufficientData,     // vrai si completeRecords === 0 — jamais de moyenne sur zéro run
+  groups: [
+    {
+      routine, band,
+      totalRuns, incompleteRuns,
+      ciGreenFirstPassRate,  // null si totalRuns === 0
+      avgFixIterations,      // idem
+      escalatedRate,         // idem
+      proposedModels,        // { [modelId]: count }
+      actualModels,          // { [modelId]: count }
+    },
+    ...
+  ],
+}
+```
+
+Un enregistrement qui échoue `scripts/run-metrics.mjs#validateRunMetrics`
+(type erroné, hors énumération, ou simplement pas un objet) est ignoré et
+compté dans `rejected`, jamais agrégé même partiellement. Un enregistrement
+`complete: false` (#477) reste groupé (`incompleteRuns`) mais n'entre jamais
+dans les moyennes du groupe : `complete: true` garantit déjà, via
+`buildRunMetrics`, que `complexity`, `outcome.fixIterations` et
+`outcome.ciGreenFirstPass` sont renseignés — jamais besoin de deviner une
+valeur manquante pour les calculer. `since`, optionnel, filtre sur
+`generatedAt` avant tout regroupement.
+
+### `proposeCalibration(aggregate, policy, { minSampleSize })`
+
+Renvoie `{ version, proposals, skipped }`. Chaque `proposals[i]` porte
+exactement les cinq champs requis par #481 : `configKey` (le chemin dans
+`.automation/routing-policy.yml`, ex.
+`routines.implement-task.bands.standard.min_score`), `currentValue` (lue
+dans `policy`), `proposedValue`, `metric` (la mesure qui la motive, texte
+lisible) et `proposalVersion` (`CALIBRATION_VERSION`, la version du *format*
+de proposition — pas un identifiant unique par proposition). Deux règles,
+volontairement prudentes pour une première version (seuils dans
+`CALIBRATION_THRESHOLDS`, exporté plutôt que dupliqué par les appelants) :
+
+- **Seuil (`min_score`)** : `ciGreenFirstPassRate` sous `ciGreenLow` (0.5)
+  propose de le durcir (+`minScoreStep`, plafonné à 100) ; au-dessus de
+  `ciGreenHigh` (0.9) avec zéro escalade, propose de le desserrer
+  (-`minScoreStep`, plancher 0).
+- **Poids (`candidates.<clé>.weight`)** : dans ce même cas de très bonne
+  performance, renforce (+`weightStep`) le candidat de la bande déjà
+  majoritairement proposé (`proposedModels`) — jamais l'inverse, ce moteur
+  ne propose aucun affaiblissement de poids, seulement consolider ce qui
+  marche déjà. Ne s'applique qu'aux bandes déclarant plus d'un candidat dans
+  `.automation/routing-policy.yml` : une bande à candidat unique (`weight:
+  100` déjà, ex. `very-complex` dans la politique actuelle) n'a rien à
+  renforcer et ne reçoit donc jamais cette proposition, même très
+  performante.
+
+`skipped[i]` (`{ routine, band, reason }`) nomme, pour tout groupe qui ne
+produit aucune proposition, pourquoi — jamais une section omise en silence
+(issue #481, critère d'acceptation) :
+
+- **Échantillon sous le seuil** (`totalRuns < minSampleSize`, par défaut
+  `CALIBRATION_THRESHOLDS.minSampleSize` = 5) — jamais de calibration sur un
+  échantillon trop mince.
+- **Bande de complexité inconnue** (un groupe dont les seuls enregistrements
+  sont incomplets sans `complexity` connue).
+- **Aucune politique pour cette routine/bande** dans
+  `.automation/routing-policy.yml#routines` — le cas d'un `routine` de
+  dispatch (`coordinator`) qui ne recoupe pas encore l'espace de noms des
+  politiques de routage par sous-agent ; réconcilier les deux espaces de
+  noms est hors scope de #481, comme de #478 avant lui pour les budgets.
+- **Aucun ajustement justifié par les données** — le groupe a assez de runs
+  et une politique associée, mais ses métriques ne franchissent aucun des
+  seuils ci-dessus.
+
+Jamais d'effet de bord : `proposeCalibration` ne lit ni n'écrit
+`.automation/routing-policy.yml` lui-même (l'appelant lui passe `policy`
+déjà chargé), et ne mute jamais l'objet `policy` reçu.
+
+### Testable sans exécuter de routine
+
+`scripts/routing-calibration.test.mjs` couvre l'agrégation (groupement,
+moyennes correctes, exclusion des enregistrements incomplets et leur
+comptage séparé), la période vide (`insufficientData`, aucune proposition),
+les rejets (enregistrement hors schéma ignoré et compté), les propositions
+(cinq champs, seuil d'échantillon, aucun ajustement justifié, routine sans
+politique) et la non-application (comparaison du contenu de
+`.automation/routing-policy.yml` avant/après appel, et de l'objet `policy`
+lui-même).
+
 ## Exemple : chaîne de fallback circulaire refusée
 
 ```yaml
