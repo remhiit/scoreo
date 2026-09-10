@@ -12,13 +12,16 @@
 // (scripts/routing-dry-run.mjs, scripts/model-router.mjs), dont
 // resolveRoutingDryRun est le seul appelant prévu.
 //
-// Deux garde-fous de sûreté, non contournables par la déclaration de la
-// matrice elle-même :
-// - un triplet non déclaré résout toujours "observe" — l'absence de
-//   déclaration n'active jamais rien ;
+// Trois garde-fous de sûreté, non contournables par la déclaration de la
+// matrice elle-même, dans l'ordre de priorité où ils sont évalués :
+// - `policy.rollback: true` (issue #480, tranche 5/6 de #407) force
+//   toujours "observe", priorité la plus haute — évalué avant le garde-fou
+//   de risque ci-dessous, jamais contredit par lui ni par la matrice ;
 // - un risque "high" résout toujours "observe", quelle que soit la
 //   déclaration — l'activation sur risque élevé a sa propre tranche, avec
-//   ses propres garde-fous, hors scope ici.
+//   ses propres garde-fous, hors scope ici ;
+// - un triplet non déclaré résout toujours "observe" — l'absence de
+//   déclaration n'active jamais rien.
 //
 // La matrice livrée par cette tranche déclare "observe" partout : elle ne
 // change le modèle d'aucune routine, elle se contente de remplacer le
@@ -57,11 +60,37 @@ export function resolveActivation(policy, { routine, band, riskLevel }) {
       `${ROUTING_POLICY_PATH}: activation.${routine}.${band}: bande inconnue — absente de .automation/complexity-thresholds.yml`,
     )
   }
+  // Défense en profondeur (issue #480) : même validation que
+  // scripts/automation-dispatch.mjs#validateRoutingPolicy, revalidée ici
+  // pour le seul appel qu'on lui demande de résoudre — une valeur non
+  // booléenne n'est jamais interprétée comme `false`.
+  if (policy?.rollback !== undefined && typeof policy.rollback !== 'boolean') {
+    throw new Error(`${ROUTING_POLICY_PATH}: rollback: doit être un booléen (valeur: ${JSON.stringify(policy.rollback)})`)
+  }
 
+  // Structurellement avant les deux garde-fous booléens ci-dessous (rollback,
+  // puis risque high) et non contournable par eux : une matrice incohérente
+  // échoue toujours bruyamment, y compris sous rollback actif ou risque high
+  // — jamais résolue implicitement en "observe" pour la faire disparaître.
+  // Même position relative que le garde-fou risque high avant #480 ; en
+  // pratique inatteignable dans une politique mergée, puisque le même refus
+  // est déjà posé en amont par scripts/automation-dispatch.mjs#validateRoutingPolicy
+  // et le job CI `automation-config` avant qu'un triplet ne puisse être résolu ici.
   const declared = policy?.activation?.[routine]?.[band]
   if (declared !== undefined && !VALID_MODES.includes(declared)) {
     throw new Error(
       `${ROUTING_POLICY_PATH}: activation.${routine}.${band}: mode inconnu "${declared}" (doit être "observe" ou "apply")`,
+    )
+  }
+
+  // Garde-fou de priorité la plus haute (issue #480, critère d'acceptation
+  // « aucune déclaration de la matrice ne peut le contredire ») : évalué
+  // avant même le garde-fou de risque ci-dessous, qui ne s'applique donc
+  // jamais tant que le rollback est actif — la `reason` cite toujours le
+  // rollback plutôt qu'une règle qui n'a pas eu l'occasion de trancher.
+  if (policy?.rollback === true) {
+    return observe(
+      `rollback actif (${ROUTING_POLICY_PATH}: rollback: true) — tous les triplets forcés en "observe", quelle que soit la déclaration de la matrice ou le niveau de risque`,
     )
   }
 

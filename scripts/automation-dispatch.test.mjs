@@ -494,6 +494,24 @@ describe('validateRoutingPolicy', () => {
     expect(valid).toBe(false)
     expect(errors).toEqual(expect.arrayContaining([expect.stringContaining('champ inconnu à la racine : "dry_run"')]))
   })
+
+  it('accepts a boolean "rollback" switch at the root (issue #480)', () => {
+    const policy = { ...structuredClone(VALID_POLICY), rollback: true }
+    expect(validateRoutingPolicy(policy, VALID_CATALOG)).toEqual({ valid: true, errors: [] })
+  })
+
+  it('accepts a missing "rollback" switch (optional, absent means false, issue #480)', () => {
+    const policy = structuredClone(VALID_POLICY)
+    delete policy.rollback
+    expect(validateRoutingPolicy(policy, VALID_CATALOG)).toEqual({ valid: true, errors: [] })
+  })
+
+  it('rejects a non-boolean "rollback" value, naming the key, never interpreted as false (issue #480)', () => {
+    const policy = { ...structuredClone(VALID_POLICY), rollback: 'true' }
+    const { valid, errors } = validateRoutingPolicy(policy, VALID_CATALOG)
+    expect(valid).toBe(false)
+    expect(errors).toEqual(expect.arrayContaining([expect.stringContaining('rollback: doit être un booléen')]))
+  })
 })
 
 describe('validateRoutingPolicyCoverage', () => {

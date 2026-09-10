@@ -433,6 +433,118 @@ mécanisme qui en décidera. `scripts/routing-dry-run.mjs#resolveRoutingDryRun`
 est le seul appelant prévu de `resolveActivation` — voir § « Mode dry-run »
 ci-dessus pour comment son `applied` en dépend désormais.
 
+## Rollback (`scripts/routing-activation.mjs`, issue #480)
+
+Activer par paliers (§ « Matrice d'activation » ci-dessus) n'a de sens que
+si revenir en arrière est immédiat et sûr. Depuis l'arbitrage de #423
+(option C), il n'y a plus de fournisseur à désactiver : le rollback se
+réduit à **revenir à un modèle unique pour tous les sous-agents**, sans
+toucher ni aux skills ni au code — un unique interrupteur, plutôt que de
+repasser chaque ligne de la matrice à `observe` une à une.
+
+### L'interrupteur
+
+`.automation/routing-policy.yml#rollback` : booléen, optionnel, absent
+valant `false` (cas nominal, la matrice s'applique normalement, aucune
+entrée dans `limits`). À `true`, force **tous** les triplets de la section
+`activation` en `observe`, sans qu'aucune de ses lignes n'ait à être
+modifiée :
+
+```yaml
+version: 1
+rollback: true
+activation:
+  implement-task:
+    trivial: apply # ignoré tant que rollback: true
+    # ...
+```
+
+### Procédure de rollback
+
+1. **Fichier et clé à changer** : `.automation/routing-policy.yml`, passer
+   `rollback` à `true` (ou l'ajouter s'il est absent). Aucune autre ligne du
+   fichier à toucher — la matrice `activation` reste inchangée, prête à
+   reprendre effet dès que `rollback` repasse à `false`.
+2. **Délai avant effet** : le run suivant. La configuration est relue à
+   chaque invocation du coordinateur (comme le reste de
+   `.automation/routing-policy.yml`), jamais mise en cache entre deux runs ;
+   un run déjà en vol au moment du changement n'est pas affecté (§
+   « Run en vol » ci-dessous).
+3. **Vérification que le retour est effectif** : sur le run suivant, le
+   journal (`scripts/automation-log.mjs`, ligne `- Activation :`) porte
+   `` `observe` — rollback actif (.automation/routing-policy.yml: rollback:
+   true) — tous les triplets forcés en "observe", quelle que soit la
+   déclaration de la matrice ou le niveau de risque `` — cette `reason`
+   distingue sans ambiguïté un `observe` de rollback d'un `observe`
+   ordinaire de matrice (dont la `reason` cite `activation.<routine>.<bande>`,
+   jamais le rollback). `scripts/routing-activation.test.mjs` teste cette
+   distinction sans exécuter de routine (§ « Testable sans exécuter de
+   routine » ci-dessous).
+
+### Priorité — non contournable par la matrice
+
+`resolveActivation(policy, { routine, band, riskLevel })` évalue
+`policy.rollback` avec la priorité la plus haute, avant même le garde-fou de
+risque `high` (§ « Matrice d'activation » ci-dessus) : un rollback actif
+force `observe` quelle que soit la déclaration de la matrice pour ce
+triplet — y compris une déclaration `apply` explicite, y compris un
+`risk_override` — sans ambiguïté ni avertissement particulier au-delà de la
+`reason`. Un rollback posé en même temps qu'une matrice entièrement `apply`
+ne produit donc aucun conflit à arbitrer : le rollback gagne toujours.
+
+### Cas limites
+
+| Cas | Comportement |
+|---|---|
+| `rollback` absent | `false` — cas nominal, la matrice s'applique normalement, aucune entrée dans `limits` |
+| `rollback` non booléen | Refus au démarrage nommant le fichier et la clé (`rollback: doit être un booléen`), à deux niveaux — le job CI `automation-config` (`scripts/automation-dispatch.mjs#validateRoutingPolicy`) et `resolveActivation` en défense en profondeur — jamais interprété comme `false` |
+| Rollback demandé pendant qu'un run est en vol | Le run en cours termine sur le mode d'activation qu'il a déjà résolu à l'ouverture (`resolveActivation` n'est appelé qu'une fois par run, jamais réévalué en cours de route) ; aucun sous-agent déjà lancé n'est interrompu ; le run suivant part en `observe` |
+| Rollback posé avec une matrice entièrement `apply` | Le rollback gagne, sans ambiguïté ni avertissement particulier au-delà de la `reason` |
+
+### Run en vol : le journal le signale explicitement
+
+Un run déjà en cours au moment où `rollback` passe à `true` a déjà capturé
+sa propre décision d'activation avant le changement — `scripts/coordinator`
+ne rappelle jamais `resolveActivation` en cours de route, et la fermeture du
+journal (`upsertAutomationLog`, `onlyIfRunning: true`) re-transmet
+exactement la même `activation` capturée à l'ouverture (§ « Mode dry-run »
+ci-dessus). Ce run-là termine donc sur le modèle qu'il a déjà retenu, sans
+qu'aucun sous-agent déjà lancé ne soit interrompu — mais son propre journal
+doit le dire, plutôt que de laisser un opérateur le déduire du seul fait que
+le run *suivant* est en observation.
+
+`scripts/automation-log.mjs#renderAutomationLog` porte pour cela un champ
+optionnel `activation.rollbackDuringRun` : quand un appelant le fournit
+(`true`), le journal ajoute, juste après la ligne `- Activation :`, une
+ligne dédiée :
+
+```
+- ⚠️ Rollback intervenu pendant ce run : le modèle déjà retenu à l'ouverture
+  est conservé, aucun sous-agent déjà lancé n'est interrompu — le prochain
+  run partira en observation.
+```
+
+Comme `metrics`/`findings`/`activation` avant lui, ce champ est optionnel et
+exercé pour l'instant par ses seuls tests unitaires
+(`scripts/automation-log.test.mjs`) — aucun workflow ne le renseigne encore ;
+le brancher (comparer le `rollback` capturé à l'ouverture du journal à sa
+valeur au moment de la fermeture) suit le même patron que le reste de ce
+contrat, hors scope de cette tranche. **Travail de suivi explicite, pas un
+gap implicite** : tant que ce branchement n'existe pas,
+« le journal le signale » (§ ci-dessus) n'est vrai qu'au sens testé
+unitairement, jamais sur un run réel — voir
+`doc/technical/automation-plan.md` §5 pour le même constat.
+
+### Testable sans exécuter de routine
+
+La procédure entière est vérifiable par test unitaire, sans lancer aucune
+routine : `scripts/routing-activation.test.mjs` couvre la priorité de
+l'interrupteur (matrice entièrement `apply` + `rollback: true` → tous les
+triplets résolvent `observe`), l'absence et la valeur invalide, et la
+distinction de `reason` entre un `observe` de rollback et un `observe` de
+matrice ; `scripts/automation-log.test.mjs` couvre le rendu de la ligne
+dédiée d'un run en vol signalant le rollback.
+
 ## Exemple : chaîne de fallback circulaire refusée
 
 ```yaml

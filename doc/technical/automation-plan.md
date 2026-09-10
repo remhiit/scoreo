@@ -1139,6 +1139,61 @@ détail au-delà de ce que #476 livre : #407 reste `NEEDS_CLARIFICATION`
 le dimensionnement de ses tranches restantes dépend de ce que ces journaux
 de dry-run auront montré, pas d'une estimation a priori.
 
+### Rollback vers le mono-modèle (#480)
+
+Activer par paliers (§4, « Matrice d'activation (#476) ») n'a de sens que si
+revenir en arrière est immédiat et sûr. Depuis l'arbitrage de #423
+(option C), il n'y a plus de fournisseur à désactiver : le rollback se
+réduit à **revenir à un modèle unique pour tous les sous-agents**, sans
+toucher ni aux skills ni au code — un unique interrupteur plutôt qu'un retour
+matrice-par-matrice.
+
+`.automation/routing-policy.yml#rollback` : booléen, optionnel, absent
+valant `false` (cas nominal, aucune entrée dans `limits`). À `true`, force
+tous les triplets de `activation` en `observe`, sans qu'aucune de ses lignes
+n'ait à être modifiée — la matrice reste intacte, prête à reprendre effet
+dès que l'interrupteur repasse à `false`. Résolu par
+`scripts/routing-activation.mjs#resolveActivation` avec la priorité la plus
+haute : évalué avant même le garde-fou de risque `high` de #476, aucune
+déclaration de la matrice ne peut le contredire, et la `reason` renvoyée
+cite toujours le rollback plutôt que la matrice — c'est ce qui permet à un
+opérateur de distinguer, dans le journal, un `observe` de rollback d'un
+`observe` de matrice ordinaire. Une valeur non booléenne est refusée au
+démarrage, à deux niveaux comme le reste de ce contrat (le job CI
+`automation-config` et `resolveActivation` en défense en profondeur),
+nommant le fichier et la clé, jamais interprétée comme `false`.
+
+Un run déjà en vol au moment du changement n'est pas réévalué :
+`resolveActivation` n'est appelée qu'une fois par run, à l'ouverture du
+journal, et la fermeture de ce même journal re-transmet la décision
+capturée plutôt que d'en recalculer une nouvelle (§4, « Mode dry-run »,
+dernier paragraphe) — ce run-là termine donc sur le modèle qu'il a déjà
+retenu, sans qu'aucun sous-agent déjà lancé ne soit interrompu. Le champ
+optionnel `activation.rollbackDuringRun` de `scripts/automation-log.mjs`
+rend ce cas explicite dans le journal de ce run précis (une ligne dédiée),
+plutôt que de laisser un opérateur le déduire du seul fait que le run
+suivant parte en observation — même patron que `metrics`/`findings` avant
+lui : optionnel, exercé pour l'instant par ses seuls tests unitaires, aucun
+workflow ne le renseignant encore.
+
+**Travail de suivi, pas un detail d'implémentation déjà couvert** : tant
+que rien ne calcule et ne transmet `activation.rollbackDuringRun` depuis un
+vrai run (`scripts/routing-dry-run.mjs#resolveRoutingDryRun` ne le fait pas
+aujourd'hui), le critère d'acceptation « le journal signale que le rollback
+est intervenu pendant le run » reste vérifié uniquement par
+`scripts/automation-log.test.mjs`, jamais observable sur un run réel.
+Brancher ce calcul — comparer le `rollback` capturé à l'ouverture du
+journal à sa valeur au moment de la fermeture — reste explicitement hors
+scope de #480 et à faire dans une tranche ultérieure, pas un gap implicite
+qu'un futur lecteur devrait redécouvrir.
+
+Procédure complète (fichier et clé à changer, délai avant effet — le run
+suivant — et vérification) : `doc/automation/model-routing.md` § « Rollback ».
+Testable entièrement sans exécuter de routine :
+`scripts/routing-activation.test.mjs` (priorité de l'interrupteur, absence,
+valeur invalide, distinction de `reason`) et
+`scripts/automation-log.test.mjs` (ligne dédiée d'un run en vol).
+
 ---
 
 ## 6. Skills (`.claude/skills/`)

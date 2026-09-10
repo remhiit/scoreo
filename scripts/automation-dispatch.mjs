@@ -350,9 +350,18 @@ export function validateRoutingPolicy(policy, catalog) {
     errors.push(`version: doit être 1 (valeur: ${JSON.stringify(policy.version)})`)
   }
   for (const key of Object.keys(policy)) {
-    if (key !== 'version' && key !== 'routines' && key !== 'activation') {
+    if (key !== 'version' && key !== 'routines' && key !== 'activation' && key !== 'rollback') {
       errors.push(`champ inconnu à la racine : "${key}"`)
     }
+  }
+
+  // Interrupteur de rollback (issue #480, tranche 5/6 de #407) : optionnel,
+  // absent valant `false` (cas nominal, aucune erreur). Une valeur non
+  // booléenne est refusée ici, jamais interprétée comme `false` — même
+  // défense en profondeur que scripts/routing-activation.mjs#resolveActivation,
+  // qui revalide ce même champ à la résolution d'un triplet.
+  if (policy.rollback !== undefined && typeof policy.rollback !== 'boolean') {
+    errors.push(`rollback: doit être un booléen (valeur: ${JSON.stringify(policy.rollback)})`)
   }
 
   const routines = policy.routines

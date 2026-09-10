@@ -164,6 +164,19 @@ export function renderAutomationLog({
       // la matrice d'activation qui l'a produit.
       if (activation) {
         lines.push(`  - Activation : \`${activation.mode}\` — ${activation.reason}`)
+        // Optional flag (issue #480) : le rollback (.automation/routing-policy.yml#rollback)
+        // est intervenu après que ce run a résolu sa propre activation —
+        // jamais réévalué en cours de route (resolveActivation n'est appelé
+        // qu'une fois par run), ce qui garantit que ce run termine sur le
+        // modèle déjà retenu et qu'aucun sous-agent déjà lancé n'est
+        // interrompu. Ce champ existe pour que le journal de CE run précis
+        // le dise explicitement, plutôt que de laisser un opérateur le
+        // déduire du seul fait que le prochain run parte en `observe`.
+        if (activation.rollbackDuringRun) {
+          lines.push(
+            "  - ⚠️ Rollback intervenu pendant ce run : le modèle déjà retenu à l'ouverture est conservé, aucun sous-agent déjà lancé n'est interrompu — le prochain run partira en observation.",
+          )
+        }
       }
       lines.push(
         routingApplied

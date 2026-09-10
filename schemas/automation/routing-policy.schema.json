@@ -19,6 +19,10 @@
       "type": "object",
       "description": "Optionnel (issue #476, tranche 1/6 de #407). Matrice d'activation par routine × bande de complexité, remplaçant l'ancien drapeau global `dry_run` (#406) : pour un triplet (routine, bande, niveau de risque), résolue par scripts/routing-activation.mjs#resolveActivation en `observe` (le skill du coordinateur calcule et journalise la décision sans l'appliquer — tout appel `Agent` part sans override `model`) ou `apply`. Les clés de premier niveau réutilisent le même espace de noms que `routines` ci-dessus, jamais celui de .automation/routines.yml. Un triplet non couvert par la matrice, ou une section `activation` absente, résout toujours `observe` — l'absence de déclaration n'active jamais rien. Un niveau de risque `high` résout toujours `observe`, quelle que soit la déclaration — l'activation sur risque élevé a sa propre tranche, hors scope ici.",
       "additionalProperties": { "$ref": "#/$defs/activationRoutine" }
+    },
+    "rollback": {
+      "type": "boolean",
+      "description": "Optionnel (issue #480, tranche 5/6 de #407), absent valant `false` — le cas nominal. À `true`, force tous les triplets de `activation` ci-dessus en `observe`, sans qu'aucune ligne de la matrice n'ait à être modifiée : le geste de rollback complet du routage vers le mono-modèle. Priorité la plus haute dans scripts/routing-activation.mjs#resolveActivation, non contournable par une déclaration `apply` de la matrice ni par le garde-fou risque `high`. Une valeur non booléenne est refusée à la validation, jamais interprétée comme `false`."
     }
   },
   "required": ["version", "routines"],
