@@ -68,6 +68,14 @@ export function resolveActivation(policy, { routine, band, riskLevel }) {
     throw new Error(`${ROUTING_POLICY_PATH}: rollback: doit être un booléen (valeur: ${JSON.stringify(policy.rollback)})`)
   }
 
+  // Structurellement avant les deux garde-fous booléens ci-dessous (rollback,
+  // puis risque high) et non contournable par eux : une matrice incohérente
+  // échoue toujours bruyamment, y compris sous rollback actif ou risque high
+  // — jamais résolue implicitement en "observe" pour la faire disparaître.
+  // Même position relative que le garde-fou risque high avant #480 ; en
+  // pratique inatteignable dans une politique mergée, puisque le même refus
+  // est déjà posé en amont par scripts/automation-dispatch.mjs#validateRoutingPolicy
+  // et le job CI `automation-config` avant qu'un triplet ne puisse être résolu ici.
   const declared = policy?.activation?.[routine]?.[band]
   if (declared !== undefined && !VALID_MODES.includes(declared)) {
     throw new Error(

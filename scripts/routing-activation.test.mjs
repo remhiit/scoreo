@@ -115,6 +115,14 @@ describe('resolveActivation', () => {
       expect(result.reason).toContain('rollback actif')
     })
 
+    it('still rejects an incoherent matrix loudly even when rollback is active — malformed config is never silently resolved to "observe"', () => {
+      const policy = structuredClone(ROLLBACK_POLICY)
+      policy.activation['implement-task'].trivial = 'aply'
+      expect(() =>
+        resolveActivation(policy, { routine: 'implement-task', band: 'trivial', riskLevel: 'low' }),
+      ).toThrow(/\.automation\/routing-policy\.yml: activation\.implement-task\.trivial: mode inconnu "aply"/)
+    })
+
     it('treats an absent switch as false, the nominal case — the matrix applies normally', () => {
       const result = resolveActivation(POLICY, { routine: 'implement-task', band: 'trivial', riskLevel: 'low' })
       expect(result).toEqual({ mode: 'apply', reason: 'activation.implement-task.trivial déclare "apply"' })
