@@ -1,0 +1,33 @@
+name: Risk Controls
+
+# Split out of ci.yml (issue #479 follow-up, PR #485 review): the guard has
+# to run on `labeled` too, since `automation:enabled` is posed via a
+# separate label event (implement-task/SKILL.md step 11,
+# coordinator/SKILL.md § "Converged", or a human), never in the same
+# `opened`/`synchronize` event that runs CI. Keeping this in `ci.yml`'s
+# `pull_request:` trigger (opened/synchronize/reopened only, by default)
+# would rerun every other job in that workflow on every label change instead
+# of just this one.
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, labeled]
+
+jobs:
+  risk-controls:
+    runs-on: ubuntu-latest
+    permissions:
+      issues: read
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPO_OWNER: remhiit
+      REPO_NAME: scoreo
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Refuse automation:enabled on a PR linked to a high-risk issue
+        run: node scripts/risk-controls.mjs

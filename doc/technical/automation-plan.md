@@ -1157,6 +1157,80 @@ réel plutôt que sur les seuls fichiers impactés prévus, dont le seul point
 de recoupement documenté est : toute surface listée « Exclu » ci-dessus fait
 toujours au moins `medium` chez `change-risk`, jamais `low`.
 
+### Garde-fous du risque élevé (#479) : la revue humaine n'est jamais contournée
+
+Tranche 4/6 de l'épic #407. La liste blanche ci-dessus et le jugement de
+`implement-task`/`coordinator` sur `automation:enabled` existaient déjà en
+prose ; rien ne les vérifiait mécaniquement avant ce ticket, alors même que
+l'activation progressive du routage par sous-agent (#476…#481) ajoute des
+axes de configuration (mode d'activation, budgets, retour au mono-modèle)
+qui ne doivent jamais, même indirectement, rouvrir la porte du merge
+autonome sur un changement à risque élevé.
+
+`scripts/risk-controls.mjs#requiredControls({ riskLevel, activationMode })`
+est la fonction pure qui tranche, à partir du niveau de risque d'une issue
+et du mode d'activation résolu pour ce triplet
+(`scripts/routing-activation.mjs#resolveActivation`, #476), quels contrôles
+sont obligatoires. Un seul garde-fou compte pour ce ticket : `riskLevel`
+`high` impose toujours la revue humaine et interdit toujours
+`automation:enabled`, **quel que soit** `activationMode` — le mode
+d'activation du routage par sous-agent porte sur un axe complètement
+différent (quel modèle exécute la routine, jamais si son résultat peut
+merger seul) et ne peut donc jamais assouplir ce garde-fou. Une section
+`## Catégorie de risque` absente ou illisible est traitée comme `high` par
+la même fonction — le mode le plus contraignant, jamais le plus permissif,
+même règle que celle déjà établie par `resolveActivation` (#476) pour un
+triplet non couvert par sa propre matrice.
+
+`checkEnabledLabelAllowed({ labels, riskLevel, issueNumber })` applique la
+même règle à une combinaison de labels réellement observée plutôt qu'à une
+déclaration, à deux points d'application :
+
+- **Le coordinateur**, avant de poser lui-même `automation:enabled` en fin
+  de run (`coordinator/SKILL.md` § « Converged ») — jamais son propre
+  jugement sur le diff final seul, toujours confirmé par cette fonction ;
+  `implement-task/SKILL.md` step 11 (R2 solo) fait de même.
+- **Le job CI `risk-controls`** (`.github/workflows/risk-controls.yml`, un
+  workflow dédié plutôt qu'un job de `ci.yml` — voir plus bas pourquoi), sur
+  `opened`/`synchronize`/`reopened`/`labeled` : si la PR porte
+  `automation:enabled`, il résout le risque de chaque issue qu'elle referme
+  (`Closes #N`) et fait échouer la CI, nommant l'issue et la règle violée,
+  dès que la combinaison est interdite — y compris quand `automation:enabled`
+  a été posé à la main par un humain sur une PR liée à une issue à risque
+  élevé (le garde-fou existe justement pour ce cas-là : un humain qui veut
+  passer outre retire le label plutôt que de contourner la garde) et y
+  compris quand l'issue liée est introuvable ou sa section de risque
+  illisible (traité comme `high`, jamais comme « rien à vérifier »). Ce job
+  vit dans son propre workflow, pas dans le `pull_request:` (sans `types:`,
+  donc limité par défaut à `opened`/`synchronize`/`reopened`) de `ci.yml` :
+  `automation:enabled` est posé via un événement `labeled` séparé
+  (`implement-task/SKILL.md` step 11, `coordinator/SKILL.md` §
+  « Converged », ou un humain), jamais dans le même événement qui a fait
+  tourner `ci.yml` — un job resté dans `ci.yml` ne se serait donc jamais
+  redéclenché sur le cas réel qu'il est censé couvrir, laissant
+  `auto-merge-sync.yml` merger sur le statut « absent — rien à vérifier »
+  d'avant le label (#485).
+
+Zéro appel réseau côté fonctions pures (`requiredControls`,
+`checkEnabledLabelAllowed`) — même précédent que le reste de
+`.automation/`. Le point d'entrée CLI de `scripts/risk-controls.mjs`, lui,
+fait un appel réseau minimal (une lecture par issue liée), même précédent
+que `scripts/close-linked-issues.mjs`, dont il réutilise
+`extractClosedIssueNumbers` ; il réutilise aussi `extractRiskLevel` de
+`scripts/routing-dry-run.mjs` (#406) plutôt que de reparser
+`## Catégorie de risque` une deuxième fois.
+
+L'escalade des trois tours de correctif du coordinateur (`coordinator/
+SKILL.md` § Escalade) nomme désormais un motif distinct parmi trois plutôt
+qu'un « le tour de correctif a échoué » générique : **tentatives épuisées**
+(le plafond de 3 est atteint sans dérive ni suite rouge), **dérive de
+périmètre constatée par un relecteur** (le correctif révèle un changement
+plus large que ce que la review avait anticipé), et **échec de validation
+après le budget d'itérations** (la suite reste rouge après un tour qui a
+consommé le budget de tentatives) — trois causes distinctes du même
+plafond, pour qu'un humain qui parcourt plusieurs escalades les distingue
+sans ouvrir chacune d'elles.
+
 ### Passage du dry-run à l'activation contrôlée (#406 → #407)
 
 Le routage par sous-agent (§4, « Mode dry-run », #406) n'est pas gardé par

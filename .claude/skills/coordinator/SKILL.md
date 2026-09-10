@@ -386,7 +386,17 @@ Reached when a review round (§ 2, first pass or after a fix round) finds no
    still reads Faible end to end — a diff that grew to touch a serialized
    model, a port/adapter, `apps/scoreo/public/`, Vite/TS config, or
    navigation during a fix round loses eligibility even if the original
-   plan didn't predict it.
+   plan didn't predict it. Never this skill's own judgment call alone
+   (issue #479): confirm with
+   `scripts/risk-controls.mjs#requiredControls({ riskLevel, activationMode })`
+   before posting — a `riskLevel` of `high` (including the issue's
+   `## Catégorie de risque` missing or unreadable, which that same function
+   normalizes to `high`) always forbids `automation:enabled`, regardless of
+   `activationMode` or how green every round came back. The coordinator
+   never poses `automation:enabled` on a PR whose linked issue is Élevé,
+   full stop — `risk-controls.yml`'s `risk-controls` job
+   (`checkEnabledLabelAllowed`) is the same rule applied in depth, on the
+   actual label combination, in case this step is ever skipped or wrong.
 3. Remove `automation:coordinator-owned` — this run is done with the PR;
    any future push (a human's) should go through standalone R3 normally.
 4. Close the issue's routing dry-run journal opened in § "Routage (dry-run,
@@ -575,9 +585,31 @@ instead of by a standalone R2/R4:
    (#470, "un relecteur échoue ou ne rend rien"). Never computed from the
    reviewer that did answer; the escalation comment names exactly which
    reviewer(s) are missing (`missingReviewers`).
-3. **§ 3's attempt cap reached, or a fix sub-agent reports a scope mismatch
-   or contradictory/ambiguous feedback** — same conditions as
-   `address-feedback/SKILL.md` rows #19/#20 and § "Escalating to a human".
+3. **§ 3's fix loop stops without converging** — same conditions as
+   `address-feedback/SKILL.md` rows #19/#20 and § "Escalating to a human",
+   named in the escalation comment (step 5 below) as exactly one of three
+   distinct motifs (issue #479 — never a generic "fix loop failed"):
+   - **Tentatives épuisées** — `automation:attempt-3` was already present
+     when this round would have been a 4th, with no scope mismatch or
+     still-red suite in play; three genuine fix attempts simply didn't
+     converge.
+   - **Dérive de périmètre constatée par un relecteur** — either the fix
+     sub-agent reports the review's finding(s) need a materially larger or
+     differently-shaped change than the review anticipated (the scope
+     mismatch of `address-feedback/SKILL.md` step 4), or it reports two
+     findings that directly conflict, or a single one too vague to act on
+     without guessing the reviewer's intent (the contradiction/ambiguity
+     case of `address-feedback/SKILL.md` step 3) — in both cases the drift
+     was flagged by a review sub-agent's finding, not discovered by the
+     coordinator itself, and both are the same motif per
+     `doc/automation/state-machine.md` § "Contradictory feedback" (a
+     conflicting/ambiguous item is escalated on the same terms as a scope
+     mismatch, not treated as a fourth distinct cause).
+   - **Échec de validation après le budget d'itérations** — the full check
+     suite (`pnpm lint && pnpm typecheck && pnpm test && pnpm build && pnpm
+     test:e2e`) is still red after a fix round that used up the attempt
+     budget (`address-feedback/SKILL.md` step 5), distinct from the other
+     two: the code changed, but validation itself never turned green.
 4. **A review or fix sub-agent itself reports it cannot proceed** for a
    reason not covered above (e.g. it lost access to a tool mid-run) —
    treated the same as 1/2/3, never silently retried.
@@ -629,7 +661,13 @@ issue's `automation:in-progress` for the whole run):
    what the stale-ownership sweeper, not this skill, then catches).
 5. Post one comment naming precisely what's blocking — which step, which
    sub-agent, and its own stop reason verbatim, so a human doesn't have to
-   reconstruct it from label history. For condition 2 above (a missing
+   reconstruct it from label history. For condition 3 above (the fix loop
+   stopping without converging), lead with exactly one of the three named
+   motifs — **Tentatives épuisées**, **Dérive de périmètre constatée par un
+   relecteur**, or **Échec de validation après le budget d'itérations** —
+   never a generic "escalated after the fix loop", so a human scanning
+   several escalations can tell the three apart without opening each one.
+   For condition 2 above (a missing
    reviewer), name exactly which corpus/corpora never answered
    (`missingReviewers` from `review-verdict.mjs`), not just "the review
    failed" — a human resuming needs to know whether to re-run one reviewer

@@ -216,7 +216,17 @@ just "already claimed, closed".
     PR end up touching a serialized model, a port/adapter,
     `apps/scoreo/public/`, Vite/TS config, or navigation despite the spec's
     prediction? If so, don't add `automation:enabled` — the diff overrides
-    the prediction).
+    the prediction). This is never this skill's own judgment call alone:
+    `scripts/risk-controls.mjs#requiredControls({ riskLevel, activationMode })`
+    (issue #479) is the mechanical rule this re-check must agree with —
+    **Élevé** (`high`, including an issue whose `## Catégorie de risque` is
+    missing or unreadable, normalized to `high` by that same function)
+    always forbids `automation:enabled`, whatever the diff or the routing
+    activation mode. `automation:enabled` posed anyway is caught in
+    depth by `risk-controls.yml`'s `risk-controls` job
+    (`scripts/risk-controls.mjs#checkEnabledLabelAllowed`), which fails the
+    PR naming the linked issue and the violated rule even if this step's own
+    re-check somehow let it through.
 12. Move to the next `automation:ready` issue rather than batching multiple
     issues into one PR.
 
