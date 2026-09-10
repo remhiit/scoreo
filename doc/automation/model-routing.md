@@ -531,26 +531,56 @@ ligne dédiée :
   run partira en observation.
 ```
 
-Comme `metrics`/`findings`/`activation` avant lui, ce champ est optionnel et
-exercé pour l'instant par ses seuls tests unitaires
-(`scripts/automation-log.test.mjs`) — aucun workflow ne le renseigne encore ;
-le brancher (comparer le `rollback` capturé à l'ouverture du journal à sa
-valeur au moment de la fermeture) suit le même patron que le reste de ce
-contrat, hors scope de cette tranche. **Travail de suivi explicite, pas un
-gap implicite** : tant que ce branchement n'existe pas,
-« le journal le signale » (§ ci-dessus) n'est vrai qu'au sens testé
-unitairement, jamais sur un run réel — voir
-`doc/technical/automation-plan.md` §5 pour le même constat.
+Comme `metrics`/`findings`/`activation` avant lui, ce champ est optionnel.
+`scripts/routing-activation.mjs#detectRollbackDuringRun(openedRollback,
+closedRollback)` (issue #490) est la fonction pure qui décide de le poser :
+elle renvoie `true` uniquement pour la transition `rollback` faux/absent →
+vrai, `false` dans tous les autres cas — y compris `true → true` (rollback
+déjà actif à l'ouverture, déjà couvert par la `reason` de `resolveActivation`
+ci-dessus, pas par ce champ) et `true → false` (annulé avant la fermeture).
+
+`.claude/skills/coordinator/SKILL.md` la branche à ses deux seuls points de
+fermeture de ce journal : § « Routage » étape 5 capture `rollbackAtOpen` (la
+valeur de `rollback` lue dans la politique chargée à l'ouverture) en mémoire
+de session ; § « Converged » étape 4 et § Escalade étape 3 relisent
+`.automation/routing-policy.yml` **depuis le disque** juste avant de fermer
+le journal (jamais l'objet chargé en mémoire à l'ouverture — l'objectif est
+de capter un changement survenu après ce chargement initial), appellent
+`detectRollbackDuringRun(rollbackAtOpen, rollbackClosed)`, et posent
+`activation.rollbackDuringRun = true` sur l'`activation` re-passée à
+`upsertAutomationLog` quand la fonction renvoie `true`. Une relecture qui
+échoue (fichier introuvable ou YAML invalide — improbable puisque ce même
+fichier vient d'être validé au chargement initial de ce run et par le job CI
+`automation-config`, mais pas exclu sur un run long) ne fait jamais échouer
+la fermeture du journal ni l'escalade : `activation.rollbackDuringRun` reste
+simplement non posé, comme si aucune transition n'avait été détectée.
+
+**Limite connue, contrôle à deux points, pas une surveillance continue** :
+comparer la valeur à l'ouverture à la valeur à la fermeture ne détecte que
+la transition faux/absent → vrai qui *tient* jusqu'à la fermeture. Un
+rollback posé puis retiré avant que ce run ne se termine
+(`false → true → false`) n'est pas détecté — ce run n'a jamais lui-même
+tourné avec un rollback actif à sa clôture, cohérent avec la portée de #480
+(« le run en cours termine sur le mode d'activation qu'il a déjà résolu à
+l'ouverture »). Corriger cette oscillation demanderait une surveillance
+continue pendant le run, hors scope de #490.
 
 ### Testable sans exécuter de routine
 
 La procédure entière est vérifiable par test unitaire, sans lancer aucune
 routine : `scripts/routing-activation.test.mjs` couvre la priorité de
 l'interrupteur (matrice entièrement `apply` + `rollback: true` → tous les
-triplets résolvent `observe`), l'absence et la valeur invalide, et la
+triplets résolvent `observe`), l'absence et la valeur invalide, la
 distinction de `reason` entre un `observe` de rollback et un `observe` de
-matrice ; `scripts/automation-log.test.mjs` couvre le rendu de la ligne
-dédiée d'un run en vol signalant le rollback.
+matrice, et la table de vérité de `detectRollbackDuringRun` (issue #490) —
+un cas par transition (faux/absent → vrai, vrai → vrai, vrai → faux,
+faux → faux) ; `scripts/automation-log.test.mjs` couvre le rendu de la
+ligne dédiée à partir de `activation.rollbackDuringRun: true`. Seul le
+branchement dans `.claude/skills/coordinator/SKILL.md` lui-même (capture de
+`rollbackAtOpen`, relecture à la fermeture) échappe au test automatisé — ce
+n'est pas du code exécutable, sa conformité au texte ci-dessus est vérifiée
+par la review de spec (R3/`pr-review`), même précédent que le reste de ce
+skill.
 
 ## Budgets (`scripts/routing-budget.mjs`, issue #478)
 
