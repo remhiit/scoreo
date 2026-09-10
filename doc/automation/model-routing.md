@@ -746,7 +746,11 @@ volontairement prudentes pour une première version (seuils dans
   performance, renforce (+`weightStep`) le candidat de la bande déjà
   majoritairement proposé (`proposedModels`) — jamais l'inverse, ce moteur
   ne propose aucun affaiblissement de poids, seulement consolider ce qui
-  marche déjà.
+  marche déjà. Ne s'applique qu'aux bandes déclarant plus d'un candidat dans
+  `.automation/routing-policy.yml` : une bande à candidat unique (`weight:
+  100` déjà, ex. `very-complex` dans la politique actuelle) n'a rien à
+  renforcer et ne reçoit donc jamais cette proposition, même très
+  performante.
 
 `skipped[i]` (`{ routine, band, reason }`) nomme, pour tout groupe qui ne
 produit aucune proposition, pourquoi — jamais une section omise en silence

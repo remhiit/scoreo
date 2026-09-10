@@ -212,9 +212,18 @@ describe('proposeCalibration — propositions', () => {
     expect(skipped).toEqual([expect.objectContaining({ routine: 'coordinator', band: 'standard', reason: expect.stringMatching(/aucune politique/) })])
   })
 
-  it('skips a group with an unknown complexity band', () => {
-    const aggregate = { groups: [groupFixture({ band: 'unknown', ciGreenFirstPassRate: 0.1 })] }
-    const { proposals, skipped } = proposeCalibration(aggregate, POLICY)
+  it('skips a group with an unknown complexity band — built by aggregateRunMetrics itself, not a hand-crafted aggregate', () => {
+    // A `band: 'unknown'` group only ever arises from incomplete records
+    // (buildRunMetrics guarantees `complexity` is known whenever
+    // `complete: true`), so it never carries `totalRuns > 0` on its own —
+    // exercising this guard for real requires disabling the sample-size
+    // guard above it (`minSampleSize: 0`), not asserting on a synthetic
+    // aggregate shape `aggregateRunMetrics` would never itself produce.
+    const aggregate = aggregateRunMetrics([record({ complexity: null })])
+    const unknownGroup = aggregate.groups.find((g) => g.band === 'unknown')
+    expect(unknownGroup).toBeTruthy()
+
+    const { proposals, skipped } = proposeCalibration(aggregate, POLICY, { minSampleSize: 0 })
 
     expect(proposals).toEqual([])
     expect(skipped).toEqual([expect.objectContaining({ routine: 'implement-task', band: 'unknown' })])
