@@ -223,7 +223,7 @@ just "already claimed, closed".
     missing or unreadable, normalized to `high` by that same function)
     always forbids `automation:enabled`, whatever the diff or the routing
     activation mode. `automation:enabled` posed anyway is caught in
-    depth by `ci.yml`'s `risk-controls` job
+    depth by `risk-controls.yml`'s `risk-controls` job
     (`scripts/risk-controls.mjs#checkEnabledLabelAllowed`), which fails the
     PR naming the linked issue and the violated rule even if this step's own
     re-check somehow let it through.

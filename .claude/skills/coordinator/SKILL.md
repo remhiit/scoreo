@@ -394,7 +394,7 @@ Reached when a review round (§ 2, first pass or after a fix round) finds no
    normalizes to `high`) always forbids `automation:enabled`, regardless of
    `activationMode` or how green every round came back. The coordinator
    never poses `automation:enabled` on a PR whose linked issue is Élevé,
-   full stop — `ci.yml`'s `risk-controls` job
+   full stop — `risk-controls.yml`'s `risk-controls` job
    (`checkEnabledLabelAllowed`) is the same rule applied in depth, on the
    actual label combination, in case this step is ever skipped or wrong.
 3. Remove `automation:coordinator-owned` — this run is done with the PR;

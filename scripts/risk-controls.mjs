@@ -99,7 +99,7 @@ export function requiredControls({ riskLevel, activationMode }) {
 // même contrôle que `requiredControls` ci-dessus, appliqué à ce qu'une PR
 // porte effectivement. Couvre aussi bien le re-contrôle du coordinateur
 // avant de poser le label lui-même que le job de garde CI
-// (.github/workflows/ci.yml, job `risk-controls`) qui refuse la
+// (.github/workflows/risk-controls.yml, job `risk-controls`) qui refuse la
 // combinaison même quand `automation:enabled` a été posé à la main par un
 // humain (issue #479, cas limite « posé à la main sur une PR à risque
 // élevé ») : le seul cas qui ne bloque jamais est l'absence du label

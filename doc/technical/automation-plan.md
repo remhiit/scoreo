@@ -1190,16 +1190,26 @@ déclaration, à deux points d'application :
   de run (`coordinator/SKILL.md` § « Converged ») — jamais son propre
   jugement sur le diff final seul, toujours confirmé par cette fonction ;
   `implement-task/SKILL.md` step 11 (R2 solo) fait de même.
-- **Le job CI `risk-controls`** (`.github/workflows/ci.yml`), sur chaque
-  `pull_request` : si la PR porte `automation:enabled`, il résout le risque
-  de chaque issue qu'elle referme (`Closes #N`) et fait échouer la CI,
-  nommant l'issue et la règle violée, dès que la combinaison est interdite —
-  y compris quand `automation:enabled` a été posé à la main par un humain
-  sur une PR liée à une issue à risque élevé (le garde-fou existe justement
-  pour ce cas-là : un humain qui veut passer outre retire le label plutôt
-  que de contourner la garde) et y compris quand l'issue liée est
-  introuvable ou sa section de risque illisible (traité comme `high`,
-  jamais comme « rien à vérifier »).
+- **Le job CI `risk-controls`** (`.github/workflows/risk-controls.yml`, un
+  workflow dédié plutôt qu'un job de `ci.yml` — voir plus bas pourquoi), sur
+  `opened`/`synchronize`/`reopened`/`labeled` : si la PR porte
+  `automation:enabled`, il résout le risque de chaque issue qu'elle referme
+  (`Closes #N`) et fait échouer la CI, nommant l'issue et la règle violée,
+  dès que la combinaison est interdite — y compris quand `automation:enabled`
+  a été posé à la main par un humain sur une PR liée à une issue à risque
+  élevé (le garde-fou existe justement pour ce cas-là : un humain qui veut
+  passer outre retire le label plutôt que de contourner la garde) et y
+  compris quand l'issue liée est introuvable ou sa section de risque
+  illisible (traité comme `high`, jamais comme « rien à vérifier »). Ce job
+  vit dans son propre workflow, pas dans le `pull_request:` (sans `types:`,
+  donc limité par défaut à `opened`/`synchronize`/`reopened`) de `ci.yml` :
+  `automation:enabled` est posé via un événement `labeled` séparé
+  (`implement-task/SKILL.md` step 11, `coordinator/SKILL.md` §
+  « Converged », ou un humain), jamais dans le même événement qui a fait
+  tourner `ci.yml` — un job resté dans `ci.yml` ne se serait donc jamais
+  redéclenché sur le cas réel qu'il est censé couvrir, laissant
+  `auto-merge-sync.yml` merger sur le statut « absent — rien à vérifier »
+  d'avant le label (#485).
 
 Zéro appel réseau côté fonctions pures (`requiredControls`,
 `checkEnabledLabelAllowed`) — même précédent que le reste de
