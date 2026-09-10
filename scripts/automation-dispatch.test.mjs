@@ -512,6 +512,38 @@ describe('validateRoutingPolicy', () => {
     expect(valid).toBe(false)
     expect(errors).toEqual(expect.arrayContaining([expect.stringContaining('rollback: doit être un booléen')]))
   })
+
+  describe('budgets (issue #478)', () => {
+    it('accepts a well-formed "budgets" section, on a routine name unrelated to "routines"', () => {
+      const policy = {
+        ...structuredClone(VALID_POLICY),
+        budgets: { coordinator: { per_run: { subagents_launched: 12, fix_iterations: 3 }, per_period: { runs_per_day: 20 } } },
+      }
+      expect(validateRoutingPolicy(policy, VALID_CATALOG)).toEqual({ valid: true, errors: [] })
+    })
+
+    it('accepts a missing "budgets" section (optional)', () => {
+      const policy = structuredClone(VALID_POLICY)
+      delete policy.budgets
+      expect(validateRoutingPolicy(policy, VALID_CATALOG)).toEqual({ valid: true, errors: [] })
+    })
+
+    it('rejects a zero or negative budget, naming the file and the key', () => {
+      const policy = { ...structuredClone(VALID_POLICY), budgets: { coordinator: { per_run: { subagents_launched: 0 } } } }
+      const { valid, errors } = validateRoutingPolicy(policy, VALID_CATALOG)
+      expect(valid).toBe(false)
+      expect(errors).toEqual(
+        expect.arrayContaining([expect.stringContaining('budgets.coordinator.per_run.subagents_launched: doit être un entier positif')]),
+      )
+    })
+
+    it('rejects an unknown field inside a budget bucket', () => {
+      const policy = { ...structuredClone(VALID_POLICY), budgets: { coordinator: { per_run: { reviews_launched: 5 } } } }
+      const { valid, errors } = validateRoutingPolicy(policy, VALID_CATALOG)
+      expect(valid).toBe(false)
+      expect(errors).toEqual(expect.arrayContaining([expect.stringContaining('champ inconnu "reviews_launched"')]))
+    })
+  })
 })
 
 describe('validateRoutingPolicyCoverage', () => {

@@ -552,6 +552,127 @@ distinction de `reason` entre un `observe` de rollback et un `observe` de
 matrice ; `scripts/automation-log.test.mjs` couvre le rendu de la ligne
 dédiée d'un run en vol signalant le rollback.
 
+## Budgets (`scripts/routing-budget.mjs`, issue #478)
+
+Une fois le routage appliqué (§ « Matrice d'activation » ci-dessus), un run
+peut consommer davantage qu'aujourd'hui — plus de sous-agents, des modèles
+plus coûteux sur les bandes hautes. Ce module plafonne cette consommation,
+avec une seule issue au dépassement : un arrêt visible et journalisé, jamais
+un basculement silencieux vers un modèle moins cher — ça dégraderait la
+qualité sans que personne ne le sache.
+
+```
+loadBudgets(policy)
+// → budgets normalisés, ex. { coordinator: { perRun: { subagentsLaunched: 12,
+//   fixIterations: 3 }, perPeriod: { runsPerDay: 20 } } }
+
+checkBudget(budgets, counters, { routine, scope })
+// → { status: 'ok' | 'exceeded', limit, observed, reason, limits }
+```
+
+Deux fonctions pures, zéro effet de bord, zéro appel réseau — même précédent
+que `scripts/routing-activation.mjs`.
+
+### `.automation/routing-policy.yml#budgets`
+
+```yaml
+budgets:
+  coordinator:
+    per_run:
+      subagents_launched: 12
+      fix_iterations: 3
+    per_period:
+      runs_per_day: 20
+```
+
+Les clés de premier niveau (`coordinator` ci-dessus) sont des **noms de
+routine de dispatch** (`.automation/routines.yml` — `coordinator`,
+`pr-review`, `address-feedback`), un espace de noms **distinct** de
+`routines`/`activation` de ce même fichier (les politiques de routage par
+sous-agent, sur `implement-task`/`pr-review`/`classification`/
+`address-feedback`) — la coïncidence de nom sur `pr-review`/`address-feedback`
+n'implique aucun lien entre les deux sections ; un budget ne référence
+jamais `routing-policy.yml#routines`, donc n'est jamais revalidé contre lui.
+Chaque routine peut déclarer `per_run`, `per_period`, les deux, ou aucun des
+deux (section absente entièrement, ou routine absente de `budgets`) : un
+plafond non déclaré est **non contraignant**, jamais deviné.
+
+### `checkBudget(budgets, counters, { routine, scope })`
+
+`budgets` est le résultat déjà validé de `loadBudgets` ; `counters` porte au
+moins la clé nommée par `scope` — un des trois plafonds déclarables,
+`subagentsLaunched`/`fixIterations` (portée `per_run`) ou `runsPerDay`
+(portée `per_period`). Un appel par plafond à évaluer : les portées « par
+run » et « par période » sont toujours évaluées indépendamment, jamais
+combinées en un seul verdict.
+
+- **Sous le plafond ou à égalité** : `status: 'ok'` — la borne est
+  **inclusive**, un compteur strictement égal au plafond ne dépasse pas.
+- **Au-dessus** : `status: 'exceeded'`, `reason` nommant toujours le
+  plafond franchi (`budgets.<routine>.<per_run|per_period>.<clé>`) avec la
+  valeur observée et la limite.
+- **Plafond non déclaré** (routine absente de `budgets`, ou scope absent
+  pour une routine présente) : `status: 'ok'`, `limit: null`, et une entrée
+  dans `limits` disant que ce plafond n'est pas contraignant — jamais un
+  plafond deviné à partir d'un autre.
+- **Compteur indisponible** (`counters` ne porte pas la clé du `scope`
+  demandé) : `status: 'ok'`, `observed: null`, et une entrée dans `limits`
+  disant que ce plafond n'a pas pu être évalué — le cas nominal pour
+  `runsPerDay` quand les métriques de période (#477) sont illisibles ou
+  absentes ; les plafonds par run, évalués séparément, s'appliquent quand
+  même.
+
+### Les compteurs de période viennent de #477, sans nouvelle persistance
+
+`runsPerDay` (et tout futur plafond `per_period`) n'a pas de source dédiée :
+il se lit depuis les enregistrements `RunMetrics` (#477) déjà publiés dans
+le journal du coordinateur (`scripts/run-metrics.mjs`, marqueur
+`coordinator-implement`), en comptant, sur une fenêtre glissante de 24
+heures, les journaux ouverts par cette routine — une recherche GitHub
+(`search_issues`), pas une base de données. `.claude/skills/coordinator/SKILL.md`
+§ « Budgets (#478) » documente la requête exacte et le signale comme une
+approximation au même titre que `weekly-report/SKILL.md` § « Verdicts R3 »
+le fait déjà pour un décompte comparable — un journal ouvert à l'entrée de
+la fenêtre et fermé après sa sortie peut être compté zéro, une ou deux fois
+selon l'instant exact de la recherche, une marge acceptable pour un budget,
+pas pour un rapport.
+
+### Refus au chargement
+
+`loadBudgets` refuse un plafond nul, négatif ou non numérique, ou un champ
+inconnu, avec une erreur nommant `.automation/routing-policy.yml` et la clé
+fautive (`budgets.<routine>.<per_run|per_period>.<clé>`) — jamais résolu
+implicitement. Deux niveaux, même patron que le reste de ce contrat : le job
+CI `automation-config` refuse toute la section à la validation de
+configuration (`scripts/automation-dispatch.mjs#validateRoutingPolicy`,
+qui appelle `loadBudgets` lui-même plutôt que de dupliquer sa validation),
+et tout appelant runtime (le skill du coordinateur) qui rappelle
+`loadBudgets` directement obtient la même erreur.
+
+### Ce que le dépassement déclenche — et ce qu'il ne déclenche jamais
+
+- **Déclenche** : un arrêt propre (aucun sous-agent supplémentaire lancé),
+  `automation:needs-human` posé sur l'issue et sur la PR si elle existe déjà,
+  et une entrée dans le journal du coordinateur nommant le plafond franchi et
+  la valeur observée (`scripts/automation-log.mjs`, champ optionnel
+  `budget` — même patron que `routing`/`activation`/`runMetrics` avant lui).
+- **Ne déclenche jamais** : un basculement vers un modèle moins coûteux —
+  y compris sur un risque `high`, où l'arrêt reste la seule issue possible ;
+  ni une relance automatique — le run s'arrête, il ne reprogramme pas une
+  nouvelle tentative lui-même (contrairement à une file d'attente, hors
+  scope de #478), la reprise passant par le cycle normal de dispatch une
+  fois l'escalade levée par un humain.
+
+### Testable sans exécuter de routine
+
+`scripts/routing-budget.test.mjs` couvre la décision (sous/à/au-dessus du
+plafond), l'indépendance des portées `per_run`/`per_period`, l'absence
+(non contraignante, `limits` renseigné), les compteurs indisponibles (le
+plafond de période sauté, celui du run toujours appliqué) et le refus au
+chargement (plafond nul, négatif, non numérique, champ inconnu) ;
+`scripts/automation-log.test.mjs` couvre le rendu de la ligne `Budget` d'un
+dépassement.
+
 ## Exemple : chaîne de fallback circulaire refusée
 
 ```yaml

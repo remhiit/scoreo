@@ -192,6 +192,68 @@ This step reads three config files, builds one `TaskContext`, and upserts
 one comment — no model choice is ever applied here, and no `Agent` call in
 § 1–§ 3 below reads this decision's `selectedModel` back.
 
+## Budgets (#478)
+
+Runs once, right after § "Routage" above and before § 1 below reads any
+further. A run that routes to a costlier model (once activation ever moves
+past `observe`) can also consume more — more sub-agents, more fix rounds —
+than today; this section caps that, with a stop as the *only* outcome of a
+crossed limit, never a silent fallback to a cheaper model, whatever the
+resolved risk level. `scripts/routing-budget.mjs` is the pure decision
+layer this whole section calls into (`loadBudgets`, `checkBudget`) — see
+`doc/automation/model-routing.md` § "Budgets" for its full contract.
+
+1. Call `scripts/routing-budget.mjs#loadBudgets(routingPolicy)` with the
+   same `routingPolicy` object § "Routage" step 2 already loaded. A thrown
+   error (a zero/negative/non-numeric budget, an unknown field — never
+   silently ignored) is the same kind of precondition failure as §
+   "Routage" step 4: go straight to § Escalade below, naming the error
+   verbatim (it already names the file and the key). Nothing has launched
+   yet at this point. A missing `budgets` section throws nothing — it
+   resolves to `{}`, every check below becomes non-binding.
+2. Keep a `subagentsLaunched` counter in this session's own memory, starting
+   at 0 for this run. Immediately before every `Agent` call this skill
+   itself makes (§ 1's one call, each of § 2's two calls per round, § 3's
+   one call per round — never after the fact, so a launch that doesn't
+   happen is never counted), call
+   `checkBudget(budgets, { subagentsLaunched: subagentsLaunched + 1 },
+   { routine: 'coordinator', scope: 'subagentsLaunched' })`. `status:
+   'exceeded'` means: don't launch that sub-agent, stop right here, go to §
+   Escalade below with this result. `status: 'ok'` means: launch it, then
+   increment the counter by one.
+3. Before starting a **new** fix round (§ 3, at the same point that section
+   already reads/increments its own `automation:attempt-N`), call
+   `checkBudget(budgets, { fixIterations: N }, { routine: 'coordinator',
+   scope: 'fixIterations' })` with `N` = the round about to start.
+   `exceeded` stops before posting `automation:attempt-N` and before
+   launching that round's fix sub-agent — go to § Escalade below.
+4. Once, right after step 1 above and before § 1 launches anything, read
+   this run's own rolling-day counter: `search_issues` for
+   `is:issue in:comments "<!-- automation-log:coordinator-implement -->"
+   updated:>=<24h ago, ISO 8601>` and count the matches — the same
+   best-effort approximation `weekly-report/SKILL.md` § "Verdicts R3"
+   already uses for a period count with no dedicated metrics store,
+   stated as such rather than presented as exact (a journal is opened at
+   run start and closed at run end, so a run spanning the window boundary
+   can be counted zero, one, or twice depending on exactly when the search
+   runs — acceptable slack for a budget, not for a report). If the search
+   itself errors or returns nothing usable, treat the counter as
+   unavailable — pass `counters: {}` (no `runsPerDay` key) to the call
+   below, which is exactly `checkBudget`'s own "compteurs de période
+   indisponibles" case: the period budget is skipped (`status: 'ok'`,
+   noted in the result's `limits`), never blocking the run on a read
+   failure. Otherwise call `checkBudget(budgets, { runsPerDay: <count> },
+   { routine: 'coordinator', scope: 'runsPerDay' })`; `exceeded` stops
+   before § 1 launches anything — go to § Escalade below.
+
+None of the above ever changes which model an `Agent` call uses — a
+crossed budget is orthogonal to § "Routage"'s own model choice, and never
+resolved by picking a cheaper one, including when this run's own risk
+level is `high` (where § "Routage" already forces `observe`): a budget
+stop has exactly one outcome, the same escalation sequence every other
+stop in this skill already uses, never a smaller/cheaper retry and never
+an automatic relaunch.
+
 ## Procédure
 
 ### 1. Implementation
@@ -620,6 +682,18 @@ instead of by a standalone R2/R4:
    band). Reached before § 1 launches anything, so step 1 of the sequence
    below (removing labels from a PR "if one exists") finds none yet, same as
    condition 1.
+6. **§ "Budgets (#478)" throws while loading, or `checkBudget` returns
+   `status: 'exceeded'`** for any scope, at any of that section's four
+   checkpoints. The run stops right there — no further `Agent` call, no fix
+   round started, no fallback to a cheaper model (not even on a `high`-risk
+   run, where a budget stop is the only outcome), and no automatic retry: a
+   requeued issue (step 2 of the sequence below) waits for the next `automation:ready`
+   dispatch like any other escalation, never a relaunch this same session
+   triggers itself. Reached either before § 1 launches anything (a load
+   failure, or the first sub-agent/period check) — same as condition 5 — or
+   mid-run, right before a later `Agent` call or fix round that the crossed
+   budget blocks; step 1 of the sequence below finds a PR only in the
+   mid-run case.
 
 In every case, this skill performs the full escalation sequence itself
 (rather than delegating it to a sub-agent, since only this skill holds the
@@ -653,7 +727,13 @@ issue's `automation:in-progress` for the whole run):
    never reached its
    own step 5, so there is nothing left `running` there to close, and
    nothing was captured to re-pass either) — `onlyIfRunning` already makes
-   that safe, same as every other caller of it.
+   that safe, same as every other caller of it. **On condition 6, also pass
+   `budget`** — the exact `checkBudget` result that returned `status:
+   'exceeded'` (or the load error's message, shaped the same way, when §
+   "Budgets" failed at step 1) — so the closed journal names the crossed
+   limit and the observed value that triggered the stop
+   (`scripts/automation-log.mjs` § budget rendering), rather than leaving an
+   operator to reconstruct it from this comment's own prose alone.
 4. Remove `automation:coordinator-owned` from the PR if present — a human
    taking over should get the normal standalone R3/R4 loop back, not a
    silently orphaned guard label (its own § "Cleared by" already allows
@@ -671,7 +751,9 @@ issue's `automation:in-progress` for the whole run):
    reviewer), name exactly which corpus/corpora never answered
    (`missingReviewers` from `review-verdict.mjs`), not just "the review
    failed" — a human resuming needs to know whether to re-run one reviewer
-   or both.
+   or both. For condition 6 (a budget), name the crossed budget verbatim
+   from `checkBudget`'s own `reason` (routine, scope, limit and observed
+   value all already in it) — never just "budget exceeded".
 
 ## Limites
 

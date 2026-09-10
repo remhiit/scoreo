@@ -1320,6 +1320,70 @@ Testable entièrement sans exécuter de routine :
 valeur invalide, distinction de `reason`) et
 `scripts/automation-log.test.mjs` (ligne dédiée d'un run en vol).
 
+### Budgets de consommation (#478)
+
+Le routage par sous-agent (§4) et sa matrice d'activation (#476) ouvrent la
+porte à un run qui consomme davantage qu'aujourd'hui — plus de sous-agents,
+des modèles plus coûteux sur les bandes hautes. #478 (tranche 3/6 de #407)
+plafonne cette consommation plutôt que de la laisser croître sans garde-fou :
+`scripts/routing-budget.mjs#checkBudget(budgets, counters, { routine, scope })`,
+fonction pure, renvoie `{ status: 'ok' | 'exceeded', limit, observed, reason,
+limits }` pour un plafond par run (sous-agents lancés, itérations de
+correctif) ou de période glissante (runs par jour), déclaré dans
+`.automation/routing-policy.yml#budgets` — un espace de noms de routine de
+**dispatch** (`.automation/routines.yml`), distinct de `routines`/
+`activation` du même fichier malgré la coïncidence de nom sur
+`pr-review`/`address-feedback`.
+
+**Un dépassement n'a qu'une seule issue : l'arrêt.** Jamais un basculement
+vers un modèle moins coûteux — y compris sur un risque `high`, où § « Passage
+du dry-run » ci-dessus force déjà `observe` — et jamais une relance
+automatique : le run s'arrête proprement (aucun sous-agent de plus lancé),
+pose `automation:needs-human`, et journalise le plafond franchi avec la
+valeur observée (`scripts/automation-log.mjs`, champ optionnel `budget`,
+même patron que `routing`/`activation`/`runMetrics` avant lui). La reprise
+passe par le cycle normal de dispatch une fois l'escalade levée par un
+humain, jamais par une file d'attente ou un report interne au run (hors
+scope explicite de #478).
+
+Deux garde-fous symétriques à ceux de l'activation et du rollback ci-dessus :
+un plafond absent de la configuration est **non contraignant** (`status:
+'ok'`, journalisé dans `limits`, jamais deviné) ; un plafond nul, négatif ou
+non numérique est **refusé au chargement**
+(`scripts/routing-budget.mjs#loadBudgets`), nommant le fichier et la clé, à
+deux niveaux comme le reste de ce contrat — le job CI `automation-config`
+(qui appelle `loadBudgets` lui-même plutôt que de dupliquer sa validation,
+`scripts/automation-dispatch.mjs#validateRoutingPolicy`) et tout appelant
+runtime. Un plafond franchi exactement à l'égalité reste `ok` — la borne est
+inclusive.
+
+Les compteurs de période (`runsPerDay`) n'ont pas de source dédiée : ils se
+lisent depuis les enregistrements `RunMetrics` (#477) déjà publiés dans le
+journal du coordinateur, sans nouvelle persistance — une recherche GitHub
+(`search_issues`) documentée et assumée comme approximation dans
+`.claude/skills/coordinator/SKILL.md` § « Budgets (#478) », le même
+compromis que `weekly-report/SKILL.md` § « Verdicts R3 » accepte déjà pour un
+décompte comparable. Des compteurs de période indisponibles (métriques
+illisibles ou absentes) sautent seulement le plafond de période — les
+plafonds par run, évalués indépendamment, continuent de s'appliquer.
+
+`.claude/skills/coordinator/SKILL.md` § « Budgets (#478) » appelle
+`loadBudgets` une fois par run juste après § « Routage », maintient les
+compteurs par-run en mémoire de session (incrémentés avant, jamais après,
+chaque lancement de sous-agent), et vérifie `checkBudget` à quatre points de
+contrôle : avant chaque lancement de sous-agent, avant chaque nouveau tour de
+correctif, et une fois pour le plafond de période avant que § 1 ne lance quoi
+que ce soit. Un dépassement à n'importe lequel de ces points rejoint la
+séquence d'escalade déjà documentée (§ Escalade du skill, nouvelle condition
+6), qui pose les mêmes labels que toute autre escalade de ce skill et
+journalise le `checkBudget` exact qui a arrêté le run.
+
+Procédure complète et contrat détaillé : `doc/automation/model-routing.md`
+§ « Budgets ». Testable entièrement sans exécuter de routine :
+`scripts/routing-budget.test.mjs` (décision, portées indépendantes, absence,
+compteurs indisponibles, refus au chargement) et
+`scripts/automation-log.test.mjs` (ligne `Budget` d'un dépassement).
+
 ---
 
 ## 6. Skills (`.claude/skills/`)

@@ -8,6 +8,14 @@
 // routines Claude Code elles-mêmes (§4).
 import { readFileSync } from 'node:fs'
 import { pathToFileURL } from 'node:url'
+// Réutilisé plutôt que reconstruit à la main (issue #478) : loadBudgets
+// valide déjà toute la section `budgets` (plafond nul/négatif/non
+// numérique, champ inconnu) avec le même message que le job CI doit
+// remonter ici — dupliquer cette logique ferait diverger tôt ou tard les
+// deux validations, contrairement aux constantes à quatre valeurs fixes
+// (COMPLEXITY_BANDS ci-dessous) pour lesquelles ce fichier reste
+// volontairement sans dépendance croisée.
+import { loadBudgets } from './routing-budget.mjs'
 
 // Sous-ensemble minimal de YAML (mappings imbriqués de scalaires, pas de
 // listes ni de chaînes multi-lignes) suffisant pour .automation/routines.yml
@@ -350,8 +358,23 @@ export function validateRoutingPolicy(policy, catalog) {
     errors.push(`version: doit être 1 (valeur: ${JSON.stringify(policy.version)})`)
   }
   for (const key of Object.keys(policy)) {
-    if (key !== 'version' && key !== 'routines' && key !== 'activation' && key !== 'rollback') {
+    if (key !== 'version' && key !== 'routines' && key !== 'activation' && key !== 'rollback' && key !== 'budgets') {
       errors.push(`champ inconnu à la racine : "${key}"`)
+    }
+  }
+
+  // Plafonds de consommation (issue #478, tranche 3/6 de #407) : optionnels,
+  // et sur un espace de noms de routine distinct de `routines`/`activation`
+  // ci-dessous (voir le commentaire d'import de loadBudgets). loadBudgets
+  // valide toute la section d'un coup et lève une erreur nommant le fichier
+  // et la clé fautive au premier problème trouvé — capturée ici pour
+  // rejoindre les autres erreurs de ce validateur plutôt que de faire
+  // planter tout le job CI sur une exception non gérée.
+  if (policy.budgets !== undefined) {
+    try {
+      loadBudgets(policy)
+    } catch (err) {
+      errors.push(err.message.replace(/^\.automation\/routing-policy\.yml: /, ''))
     }
   }
 
