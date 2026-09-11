@@ -61,6 +61,16 @@ a browser, and never write to any file.
 - Never ask a clarifying question or request more context — you get exactly
   one turn, and no second attempt. If the spec is too thin or contradictory
   to judge, say so and escalate.
+- Never return verdict `override` — issue #498 § Hors scope forbids either
+  arbiter from rendering it before T4: "la fonction le gère depuis #497,
+  mais les deux arbitres ont interdiction de le rendre avant T4." Today this
+  is only inert because none of your two motifs (`spec-ambigue`/
+  `derive-vs-spec`) is ever passed `apply` by `.automation/routing-policy.yml`
+  — this is prompt-level defense in depth for the day that config changes,
+  same pattern as `arbiter-expert.md`'s own guard and the risk gate in
+  `.claude/skills/arbitrate/SKILL.md` step 2. Treat any situation that looks
+  like `override` as `escalate` instead, naming the finding and why it looks
+  already satisfied — a human confirms and excludes it, you never do.
 
 ## What to output
 
