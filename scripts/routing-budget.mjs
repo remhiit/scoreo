@@ -19,7 +19,18 @@
 // jamais `routing-policy.yml#routines`, donc jamais revalidé contre lui.
 const ROUTING_POLICY_PATH = '.automation/routing-policy.yml'
 
-const PER_RUN_FIELDS = { subagents_launched: 'subagentsLaunched', fix_iterations: 'fixIterations' }
+// `arbitrations` (issue #497, tranche 1/5 de l'épic #496) : plafond par run
+// du nombre d'arbitrages qu'un run peut déclencher — un seul, per #496 § «
+// Les cinq garde-fous » #1 (`arbitrations: 1`, évalué par ce même
+// `checkBudget` existant, aucun mécanisme nouveau). Ajouté au même
+// dictionnaire que `subagents_launched`/`fix_iterations` plutôt que dans un
+// espace de noms séparé : c'est un plafond `per_run` comme les autres, pas
+// une nouvelle catégorie de budget.
+const PER_RUN_FIELDS = {
+  subagents_launched: 'subagentsLaunched',
+  fix_iterations: 'fixIterations',
+  arbitrations: 'arbitrations',
+}
 const PER_PERIOD_FIELDS = { runs_per_day: 'runsPerDay' }
 const KNOWN_BUCKETS = ['per_run', 'per_period']
 
@@ -28,6 +39,7 @@ const KNOWN_BUCKETS = ['per_run', 'per_period']
 const SCOPES = {
   subagentsLaunched: { bucket: 'perRun', snakeBucket: 'per_run', snakeKey: 'subagents_launched' },
   fixIterations: { bucket: 'perRun', snakeBucket: 'per_run', snakeKey: 'fix_iterations' },
+  arbitrations: { bucket: 'perRun', snakeBucket: 'per_run', snakeKey: 'arbitrations' },
   runsPerDay: { bucket: 'perPeriod', snakeBucket: 'per_period', snakeKey: 'runs_per_day' },
 }
 

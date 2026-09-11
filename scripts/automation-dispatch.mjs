@@ -16,6 +16,14 @@ import { pathToFileURL } from 'node:url'
 // (COMPLEXITY_BANDS ci-dessous) pour lesquelles ce fichier reste
 // volontairement sans dépendance croisée.
 import { loadBudgets } from './routing-budget.mjs'
+// Source de vérité du contrat d'arbitrage (issue #497, tranche 1/5 de
+// l'épic #496) : ARBITRABLE_MOTIFS n'est pas mirroré à la main comme
+// COMPLEXITY_BANDS ci-dessous — contrairement à ce dernier, qui reflète un
+// fichier de config externe (.automation/complexity-thresholds.yml),
+// ARBITRABLE_MOTIFS est défini par scripts/arbitration.mjs lui-même ; le
+// dupliquer ici ferait dériver les deux listes tôt ou tard, même
+// raisonnement que l'import de loadBudgets ci-dessus.
+import { ARBITRABLE_MOTIFS } from './arbitration.mjs'
 
 // Sous-ensemble minimal de YAML (mappings imbriqués de scalaires, pas de
 // listes ni de chaînes multi-lignes) suffisant pour .automation/routines.yml
@@ -358,7 +366,14 @@ export function validateRoutingPolicy(policy, catalog) {
     errors.push(`version: doit être 1 (valeur: ${JSON.stringify(policy.version)})`)
   }
   for (const key of Object.keys(policy)) {
-    if (key !== 'version' && key !== 'routines' && key !== 'activation' && key !== 'rollback' && key !== 'budgets') {
+    if (
+      key !== 'version' &&
+      key !== 'routines' &&
+      key !== 'activation' &&
+      key !== 'rollback' &&
+      key !== 'budgets' &&
+      key !== 'arbitration'
+    ) {
       errors.push(`champ inconnu à la racine : "${key}"`)
     }
   }
@@ -428,6 +443,29 @@ export function validateRoutingPolicy(policy, catalog) {
     }
   }
 
+  // Optionnel (issue #497) : absente, traitée comme une matrice vide par
+  // scripts/arbitration.mjs#resolveArbitration ("observe" partout), même
+  // traitement que `activation` absente ci-dessus. Espace de clés distinct
+  // de `routines`/`activation` : les clés de `arbitration` sont des motifs
+  // d'escalade arbitrables (ARBITRABLE_MOTIFS), jamais des noms de routine.
+  const arbitration = policy.arbitration
+  if (arbitration !== undefined) {
+    if (typeof arbitration !== 'object' || arbitration === null || Array.isArray(arbitration)) {
+      errors.push('arbitration: doit être un objet')
+    } else {
+      for (const [motif, mode] of Object.entries(arbitration)) {
+        const motifPath = `arbitration.${motif}`
+        if (!ARBITRABLE_MOTIFS.includes(motif)) {
+          errors.push(`${motifPath}: motif absent de la liste des motifs arbitrables`)
+          continue
+        }
+        if (!VALID_ACTIVATION_MODES.includes(mode)) {
+          errors.push(`${motifPath}: mode inconnu (valeur: ${JSON.stringify(mode)}) — doit être "observe" ou "apply"`)
+        }
+      }
+    }
+  }
+
   for (const [name, routinePolicy] of Object.entries(routines)) {
     if (!routinePolicy || typeof routinePolicy !== 'object') {
       errors.push(`routines.${name}: doit être un objet`)
@@ -483,6 +521,21 @@ export function validateRoutingPolicy(policy, catalog) {
         errors.push(`${bandPath}.fallback: modèle "${fallback}" absent du catalogue`)
       } else if (models[fallback].enabled !== true) {
         errors.push(`${bandPath}.fallback: modèle "${fallback}" désactivé dans le catalogue`)
+      } else if (
+        typeof minScore === 'number' &&
+        typeof models[fallback].quality_score === 'number' &&
+        models[fallback].quality_score < minScore
+      ) {
+        // Même filtre que le candidat primaire (voir plus bas) appliqué au
+        // fallback : scripts/model-router.mjs#evaluateCandidate rejette un
+        // fallback dont le quality_score est sous le min_score de la bande
+        // exactement comme un candidat primaire (« un fallback conserve les
+        // mêmes contraintes de sécurité que le choix initial », issue #404) —
+        // un fallback qui ne le franchit pas ne serait donc jamais retenu,
+        // ce qui a laissé passer #497/#503 jusqu'à la revue.
+        errors.push(
+          `${bandPath}.fallback: modèle "${fallback}" (quality_score=${models[fallback].quality_score}) sous le min_score de la bande (${minScore}) — ce fallback ne serait jamais retenu`,
+        )
       }
 
       const candidates = bandPolicy.candidates

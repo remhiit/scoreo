@@ -26,8 +26,13 @@
     },
     "budgets": {
       "type": "object",
-      "description": "Optionnel (issue #478, tranche 3/6 de #407). Plafonds de consommation par routine de **dispatch** (.automation/routines.yml — `coordinator`, `pr-review`, `address-feedback`), un espace de noms distinct de `routines`/`activation` ci-dessus (les politiques de routage par sous-agent) malgré la coïncidence de nom sur `pr-review`/`address-feedback`. Résolu par scripts/routing-budget.mjs#checkBudget(budgets, counters, { routine, scope }), appelé par le skill du coordinateur avant chaque lancement de sous-agent — un dépassement arrête le run proprement, jamais contourné par un modèle moins coûteux. Une routine absente de cette section n'a aucun plafond contraignant.",
+      "description": "Optionnel (issue #478, tranche 3/6 de #407). Plafonds de consommation par routine de **dispatch** (.automation/routines.yml — `coordinator`, `pr-review`, `address-feedback`), un espace de noms distinct de `routines`/`activation` ci-dessus (les politiques de routage par sous-agent) malgré la coïncidence de nom sur `pr-review`/`address-feedback`. Résolu par scripts/routing-budget.mjs#checkBudget(budgets, counters, { routine, scope }), appelé par le skill du coordinateur avant chaque lancement de sous-agent — un dépassement arrête le run proprement, jamais contourné par un modèle moins coûteux. Une routine absente de cette section n'a aucun plafond contraignant. `budgets.coordinator.per_run.arbitrations` (issue #497) plafonne à 1 le nombre d'arbitrages qu'un run peut déclencher — même mécanisme, aucun champ nouveau requis en dehors de `arbitrations` dans `$defs/budgetRoutine.per_run`.",
       "additionalProperties": { "$ref": "#/$defs/budgetRoutine" }
+    },
+    "arbitration": {
+      "type": "object",
+      "description": "Optionnel (issue #497, tranche 1/5 de l'épic #496). Mode d'arbitrage (`observe` | `apply`) par motif d'escalade arbitrable — jamais un triplet routine × bande comme `activation` ci-dessus : l'arbitrage n'est jamais routé par la bande de complexité qui vient d'échouer, ce serait circulaire. Résolu par scripts/arbitration.mjs#resolveArbitration(policy, { motif, riskLevel }), avec les mêmes garde-fous non contournables que `resolveActivation` : un motif non couvert (ou la section entièrement absente) résout toujours `observe`, un risque `high` résout toujours `observe` quelle que soit la déclaration, et `rollback: true` force aussi tout l'arbitrage en `observe` — aucun nouvel interrupteur. Les clés doivent être un des sept motifs arbitrables (voir scripts/arbitration.mjs#ARBITRABLE_MOTIFS) : `spec-ambigue`, `derive-vs-spec` (condition 1, tranchés par `arbiter-lead`), `tentatives-epuisees`, `derive-vs-review`, `validation-rouge`, `findings-contradictoires`, `finding-trop-vague` (condition 3, tranchés par `arbiter-expert`).",
+      "additionalProperties": { "$ref": "#/$defs/arbitrationMode" }
     }
   },
   "required": ["version", "routines"],
@@ -142,6 +147,11 @@
       "type": "string",
       "enum": ["observe", "apply"]
     },
+    "arbitrationMode": {
+      "type": "string",
+      "description": "Même paire que activationMode (`observe` | `apply`), sur un espace de clés distinct (un motif d'escalade arbitrable, jamais une bande de complexité).",
+      "enum": ["observe", "apply"]
+    },
     "budgetRoutine": {
       "type": "object",
       "description": "Plafonds d'une routine de dispatch — par run (`per_run`) et par période glissante (`per_period`). Chacun optionnel ; une routine peut ne déclarer que l'un des deux.",
@@ -151,7 +161,8 @@
           "description": "Plafonds évalués sur un run unique.",
           "properties": {
             "subagents_launched": { "type": "integer", "minimum": 1, "description": "Nombre maximal de sous-agents (`Agent`) que ce run peut lancer, toutes étapes confondues." },
-            "fix_iterations": { "type": "integer", "minimum": 1, "description": "Nombre maximal de tours de correctif que ce run peut tenter." }
+            "fix_iterations": { "type": "integer", "minimum": 1, "description": "Nombre maximal de tours de correctif que ce run peut tenter." },
+            "arbitrations": { "type": "integer", "minimum": 1, "description": "Nombre maximal d'arbitrages que ce run peut déclencher (issue #497) — toujours 1 en pratique, un tour arbitré qui ne converge pas escalade, jamais un second arbitrage." }
           },
           "additionalProperties": false
         },

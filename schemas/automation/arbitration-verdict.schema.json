@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft-07/schema#",
+  "title": "Scoreo Automation Arbitration Verdict",
+  "description": "Contrat de sortie d'un arbitre (issue #497, tranche 1/5 de l'épic #496 — doc/technical/automation-plan.md §2, amendement du principe directeur). Deux agents à corpus disjoints, `arbiter-lead` (spec de l'issue) et `arbiter-expert` (technique), rendent un verdict dans cet espace fermé, jamais une lecture libre du coordinateur. Documenté ici comme référence du contrat ; validé en pratique par le validateur écrit à la main scripts/arbitration.mjs#validateArbitrationVerdict, puis appliqué mécaniquement par scripts/arbitration.mjs#applyArbitrationVerdict (même précédent que schemas/automation/routing-decision.schema.json). Aucun agent `.claude/agents/arbiter-*.md` ne produit encore ce document en pratique dans cette tranche — T2 de l'épic #496.",
+  "type": "object",
+  "properties": {
+    "verdict": {
+      "type": "string",
+      "description": "L'espace de décision fermé d'un arbitre : `resolve` (un tour de correctif supplémentaire, avec `instruction`), `override` (un finding bloquant/important écarté, avec `overriddenFinding`), `escalate` (l'escalade humaine continue, enrichie de `reasoning`).",
+      "enum": ["resolve", "override", "escalate"]
+    },
+    "motif": {
+      "type": "string",
+      "description": "Le motif d'escalade arbitré — doit être un des sept motifs arbitrables (scripts/arbitration.mjs#ARBITRABLE_MOTIFS), jamais un motif non arbitrable (relecteur manquant, sous-agent hors service, routage sans candidat, budget dépassé, possession périmée).",
+      "enum": [
+        "spec-ambigue",
+        "finding-trop-vague",
+        "derive-vs-spec",
+        "tentatives-epuisees",
+        "derive-vs-review",
+        "validation-rouge",
+        "findings-contradictoires"
+      ]
+    },
+    "arbiter": {
+      "type": "string",
+      "description": "L'arbitre qui a rendu ce verdict — doit correspondre à scripts/arbitration.mjs#selectArbiter(motif), jamais l'autre : `arbiter-lead` pour spec-ambigue/derive-vs-spec, `arbiter-expert` pour tentatives-epuisees/derive-vs-review/validation-rouge/findings-contradictoires/finding-trop-vague. Recoupé mécaniquement par scripts/arbitration.mjs#validateArbitrationVerdict — un arbiter valide (l'un des deux noms d'énumération) mais qui ne correspond pas au motif est refusé, jamais accepté.",
+      "enum": ["arbiter-lead", "arbiter-expert"]
+    },
+    "reasoning": {
+      "type": "string",
+      "description": "Justification lisible du verdict — jamais un verdict nu sans explication.",
+      "minLength": 1
+    },
+    "instruction": {
+      "type": "string",
+      "description": "Requis quand `verdict` = `resolve` — l'instruction explicite que le tour de correctif supplémentaire doit suivre. Un `resolve` sans instruction est refusé par validateArbitrationVerdict, donc traité comme `escalate` (un resolve qui ne dit pas quoi faire ne débloque rien).",
+      "minLength": 1
+    },
+    "overriddenFinding": {
+      "type": "string",
+      "description": "Requis quand `verdict` = `override` — le résumé du finding écarté, comparé (insensible à la casse/aux espaces) aux résumés de scripts/review-verdict.mjs#computeReviewVerdict. Écarter ce finding n'a jamais pour effet de faire passer les autres findings bloquants/importants restants en corpus.",
+      "minLength": 1
+    },
+    "sameModelAsRun": {
+      "type": "boolean",
+      "description": "Vrai si l'arbitre tourne sur le même modèle que le run qu'il arbitre — journalisé pour traçabilité (doc/technical/automation-plan.md §4 « Traçabilité », #494), jamais utilisé pour moduler le verdict lui-même."
+    }
+  },
+  "required": ["verdict", "motif", "arbiter", "reasoning", "sameModelAsRun"],
+  "additionalProperties": false
+}

@@ -30,8 +30,12 @@ const ENABLED_LABEL = 'automation:enabled'
 // limite « section Catégorie de risque absente ou illisible »).
 // `unreadable` distingue ce repli d'un "high" réellement déclaré, pour que
 // l'appelant puisse le nommer dans sa raison plutôt que de le confondre
-// avec une déclaration explicite.
-function normalizeRiskLevel(riskLevel) {
+// avec une déclaration explicite. Exportée (issue #497) pour que
+// scripts/arbitration.mjs#resolveArbitration réutilise ce même précédent
+// plutôt que d'en dupliquer une copie locale — même geste que
+// scripts/review-verdict.mjs#normalizeFindingSummary, déjà importée ailleurs
+// dans ce module.
+export function normalizeRiskLevel(riskLevel) {
   if (RISK_LEVELS.includes(riskLevel)) return { level: riskLevel, unreadable: false }
   return { level: 'high', unreadable: true }
 }
