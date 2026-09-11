@@ -23,10 +23,15 @@
 //   libre du coordinateur, un verdict d'arbitre validé applique
 //   mécaniquement une des trois issues fermées.
 //
-// Aucun agent, aucun skill, aucun câblage dans le coordinateur ici — T2 de
-// #496. Cette tranche n'a aucun appelant en production : la matrice
-// `arbitration` livrée est entièrement en "observe" (voir
-// .automation/routing-policy.yml).
+// Depuis la tranche 2/5 (#498), ce module a un appelant en production :
+// `.claude/agents/arbiter-lead.md`/`arbiter-expert.md`, le skill
+// `.claude/skills/arbitrate/SKILL.md`, et le câblage dans
+// `.claude/skills/coordinator/SKILL.md` § Arbitrage. La matrice
+// `arbitration` de .automation/routing-policy.yml n'est plus entièrement en
+// "observe" : le triplet `derive-vs-review` × risque `low` × verdict
+// `resolve` est passé en "apply" (doc/automation/model-routing.md §
+// « Triplet actuellement en mode apply »), le seul défendable à ce stade —
+// tous les autres motifs restent en "observe".
 import { normalizeFindingSummary } from './review-verdict.mjs'
 import { normalizeRiskLevel } from './risk-controls.mjs'
 

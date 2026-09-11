@@ -469,6 +469,53 @@ the issue's `automation:in-progress` — in that order, last two last, so the
 pipeline's one in-flight slot frees only once the PR is actually left in a
 stable state for a human or native auto-merge to pick up.
 
+**Arbitration insert (#496 tranche 2/5, #498).** Before performing the
+escalation sequence below, conditions 1 (§ 1's implementation sub-agent
+stops) and 3 (§ 3's fix loop stops without converging) attempt arbitration
+first (`.claude/skills/coordinator/SKILL.md` § Arbitrage; rows #26/#27
+above) — spec ambiguity and fix-loop non-convergence are the two escalation
+conditions that are **judgments**, not facts, so a second opinion (an
+isolated arbiter sub-agent, `arbiter-lead` for condition 1's motifs,
+`arbiter-expert` for condition 3's) may resolve what would otherwise go
+straight to `automation:needs-human`. Conditions 2, 4, 5 and 6 — plus row
+#25's stale-ownership sweep — are never arbitrated: each is a fact or a
+guard-rail, never a subjective judgment call, so each always escalates
+directly, with no arbiter consulted:
+
+- **`relecteur-manquant`** (condition 2, a review sub-agent missing or
+  unusable) — a missing review answer can't be manufactured by an arbiter
+  reading the same corpus; there is nothing for a second opinion to
+  adjudicate.
+- **`sous-agent-hs`** (condition 4, a sub-agent reports it can't proceed) —
+  a crash or a tool outage is an operational fact, not a disagreement to
+  resolve.
+- **`routage-no-candidate`** (condition 5, the routing dry-run can't
+  produce a decision) — a routing/catalog configuration gap is a fact about
+  the config, not a judgment about the PR's content.
+- **`budget-depasse`** (condition 6, a budget check returns `exceeded`) — a
+  deliberate guard-rail (`checkBudget`'s own cap); letting an arbiter route
+  around it would be exactly the kind of automated override #496's five
+  guard-rails forbid (arbitration itself is capped by its own
+  `arbitrations: 1` budget for the same reason).
+- **`possession-perimee`** (row #25, a dead run's stale ownership) —
+  replaying it would race whatever branch/PR state the dead run left
+  behind, a collision an arbiter reading a frozen corpus cannot safely
+  adjudicate.
+
+`scripts/arbitration.mjs#isArbitrableMotif` encodes this closed set
+mechanically (`ARBITRABLE_MOTIFS`, built from conditions 1 and 3's motifs
+only) — an unknown motif, or one of the five above, always resolves
+`false`, never `true` by default. Even when a motif is arbitrable, the
+routing policy still gates whether an arbiter actually runs: `rollback:
+true` or a `high` (or unreadable) risk level always forces `observe` and
+skips straight to escalation, same as an unarbitrable motif. An arbiter
+that fails outright, returns an invalid verdict, or itself renders
+`escalate`, still ends in the same escalation sequence below — its arbiter,
+verdict, and `reasoning` named verbatim in the escalation comment
+(`.claude/skills/coordinator/SKILL.md` § Escalade step 5), never silently
+dropped just because the run still terminates in
+`automation:needs-human`.
+
 **Escalation.** Same conditions as rows #6/#19/#20 (ambiguous/incomplete
 spec, attempt cap, scope mismatch, a check suite that stays red, or a
 sub-agent reporting it can't proceed) plus one new to #470 — either review

@@ -130,6 +130,59 @@ describe('buildRunMetrics — complétude', () => {
   })
 })
 
+describe('buildRunMetrics — arbitration (#498)', () => {
+  it('leaves arbitration null and out of missingFields when no arbitration occurred (conditions 2/4/5/6, or 1/3 in mode observe)', () => {
+    const { valid, metrics } = buildRunMetrics(fullInput())
+    expect(valid).toBe(true)
+    expect(metrics.arbitration).toBeNull()
+    expect(metrics.missingFields).not.toEqual(expect.arrayContaining([expect.stringMatching(/^arbitration\./)]))
+  })
+
+  it('records every field when a full arbitration record is provided', () => {
+    const { valid, metrics } = buildRunMetrics(
+      fullInput({
+        arbitration: {
+          motif: 'derive-vs-review',
+          arbiter: 'arbiter-expert',
+          model: 'claude-opus-4-5',
+          verdict: 'resolve',
+          action: 'extra-fix-round',
+          sameModelAsRun: false,
+        },
+      }),
+    )
+    expect(valid).toBe(true)
+    expect(metrics.arbitration).toEqual({
+      motif: 'derive-vs-review',
+      arbiter: 'arbiter-expert',
+      model: 'claude-opus-4-5',
+      verdict: 'resolve',
+      action: 'extra-fix-round',
+      sameModelAsRun: false,
+    })
+    expect(metrics.missingFields).not.toEqual(expect.arrayContaining([expect.stringMatching(/^arbitration\./)]))
+  })
+
+  it.each([
+    ['arbitration.motif', { arbiter: 'arbiter-expert', model: 'claude-opus-4-5', verdict: 'resolve', action: 'extra-fix-round', sameModelAsRun: true }],
+    ['arbitration.arbiter', { motif: 'derive-vs-review', model: 'claude-opus-4-5', verdict: 'resolve', action: 'extra-fix-round', sameModelAsRun: true }],
+    ['arbitration.model', { motif: 'derive-vs-review', arbiter: 'arbiter-expert', verdict: 'resolve', action: 'extra-fix-round', sameModelAsRun: true }],
+    ['arbitration.verdict', { motif: 'derive-vs-review', arbiter: 'arbiter-expert', model: 'claude-opus-4-5', action: 'extra-fix-round', sameModelAsRun: true }],
+    ['arbitration.action', { motif: 'derive-vs-review', arbiter: 'arbiter-expert', model: 'claude-opus-4-5', verdict: 'resolve', sameModelAsRun: true }],
+    ['arbitration.sameModelAsRun', { motif: 'derive-vs-review', arbiter: 'arbiter-expert', model: 'claude-opus-4-5', verdict: 'resolve', action: 'extra-fix-round' }],
+  ])('names %s as missing — never invented — when a partial arbitration record is provided', (expectedMissing, partialArbitration) => {
+    const { valid, metrics } = buildRunMetrics(fullInput({ arbitration: partialArbitration }))
+    expect(valid).toBe(true)
+    expect(metrics.complete).toBe(false)
+    expect(metrics.missingFields).toContain(expectedMissing)
+    // Every other arbitration field, actually present, is kept as-is rather
+    // than being invented or dropped alongside the missing one.
+    for (const [key, value] of Object.entries(partialArbitration)) {
+      expect(metrics.arbitration[key]).toBe(value)
+    }
+  })
+})
+
 describe('buildRunMetrics — validation', () => {
   it('rejects a record built from an out-of-enum complexity band instead of publishing it truncated', () => {
     const result = buildRunMetrics(fullInput({ complexity: { band: 'medium', provenance: 'heuristic' } }))

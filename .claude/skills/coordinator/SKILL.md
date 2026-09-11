@@ -786,10 +786,12 @@ The arbitration attempt follows this sequence:
 2. **Check if the motif is arbitrable:** `scripts/arbitration.mjs#isArbitrableMotif(motif)`.
    If `false`, escalade directly (should never happen; this is defense in
    depth).
-3. **Check arbitration budget:** `scripts/routing-budget.mjs#checkBudget(policy,
-   'arbitrations')`. On `status: 'exceeded'`, escalade directly with the
-   crossed budget named in the comment (same as condition 6 above). On
-   `status: 'ok'`, proceed to step 4.
+3. **Check arbitration budget:** `scripts/routing-budget.mjs#checkBudget(budgets,
+   { arbitrations: 1 }, { routine: 'coordinator', scope: 'arbitrations' })` —
+   same 3-argument signature as every other `checkBudget` call in this skill
+   (§ "Budgets (#478)" above). On `status: 'exceeded'`, escalade directly
+   with the crossed budget named in the comment (same as condition 6 above).
+   On `status: 'ok'`, proceed to step 4.
 4. **Resolve arbitration mode:** `scripts/arbitration.mjs#resolveArbitration(policy,
    { motif, riskLevel })`. Returns `{ mode: 'apply' | 'observe', reason }`:
    - On `observe`: the routing policy declares this motif not arbitrable,
@@ -821,7 +823,11 @@ The arbitration attempt follows this sequence:
      other blocking/important findings remain, launch a fix round to address
      them (same as step 3); if none remain, converge.
    - `escalate` → continue with the normal escalation sequence below (the
-     arbiter could not resolve the dispute).
+     arbiter could not resolve the dispute), carrying forward which arbiter
+     was consulted (`verdict.arbiter`), its verdict (`escalate`), and its
+     `reasoning` — step 5 of that sequence below names all three verbatim
+     in the escalation comment, never just "arbitration failed to resolve
+     it".
 8. **On arbitration, add `automation:arbitrated` label** — a marker of
    observability (issue #496 § « Observabilité de l'arbitrage »), posed the
    moment a real arbitration verdict is rendered (`mode: 'apply'` and the
@@ -907,7 +913,14 @@ issue's `automation:in-progress` for the whole run):
    failed" — a human resuming needs to know whether to re-run one reviewer
    or both. For condition 6 (a budget), name the crossed budget verbatim
    from `checkBudget`'s own `reason` (routine, scope, limit and observed
-   value all already in it) — never just "budget exceeded".
+   value all already in it) — never just "budget exceeded". **When an
+   arbiter was consulted before this escalation** (§ "Arbitrage" above
+   reached its own `escalate` outcome, or an arbiter failed/returned an
+   invalid verdict), name all three of: which arbiter was consulted
+   (`arbiter-lead` or `arbiter-expert`), its verdict (`escalate`, or
+   "invalid" when the verdict was refused by `validateArbitrationVerdict`),
+   and its `reasoning` verbatim — never leave arbitration silently out of
+   the comment just because the run still ends in `automation:needs-human`.
 
 ## Limites
 

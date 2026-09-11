@@ -700,6 +700,44 @@ describe('renderAutomationLog / parseAutomationLog', () => {
     expect(body).not.toContain('- Budget :')
   })
 
+  it('renders the Arbitrage line from a full arbitration field (#498)', async () => {
+    const { renderAutomationLog } = await import('./automation-log.mjs')
+    const body = renderAutomationLog({
+      routine: 'coordinator-fix',
+      triggeredAt: '2026-09-11T10:00:00Z',
+      sha: 'abc1234',
+      status: 'succeeded',
+      iteration: '3',
+      validation: 'lint / typecheck / tests',
+      resultUrl: 'https://github.com/remhiit/scoreo/actions/runs/999',
+      arbitration: {
+        motif: 'derive-vs-review',
+        arbiter: 'arbiter-expert',
+        model: 'claude-opus-4-5',
+        verdict: 'resolve',
+        action: 'extra-fix-round',
+        sameModelAsRun: false,
+      },
+    })
+    expect(body).toContain(
+      '- Arbitrage : motif `derive-vs-review`, arbitre `arbiter-expert`, modèle `claude-opus-4-5`, verdict `resolve`, action appliquée `extra-fix-round`, même modèle `false`',
+    )
+  })
+
+  it('omits the Arbitrage line entirely when no arbitration field is provided — non-regression of existing rendering', async () => {
+    const { renderAutomationLog } = await import('./automation-log.mjs')
+    const body = renderAutomationLog({
+      routine: 'coordinator-fix',
+      triggeredAt: '2026-09-11T10:00:00Z',
+      sha: 'abc1234',
+      status: 'succeeded',
+      iteration: '1',
+      validation: 'lint / typecheck / tests',
+      resultUrl: 'https://github.com/remhiit/scoreo/actions/runs/999',
+    })
+    expect(body).not.toContain('- Arbitrage :')
+  })
+
   it('uses a distinct marker per reviewer corpus (#470)', async () => {
     const { markerFor } = await import('./automation-log.mjs')
     expect(markerFor('coordinator-review-functional')).toBe('<!-- automation-log:coordinator-review-functional -->')

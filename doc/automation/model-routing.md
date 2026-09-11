@@ -851,9 +851,14 @@ applyArbitrationVerdict(verdict, reviewVerdict)
 
 Cinq fonctions pures, zéro effet de bord, zéro appel réseau — même
 précédent que `scripts/routing-activation.mjs` et `scripts/review-verdict.mjs`,
-dont ce module reprend chacun un patron exact. Cette tranche **n'a aucun
-appelant en production** : aucun agent `.claude/agents/arbiter-*.md`, aucun
-skill `arbitrate`, aucun câblage dans le coordinateur — T2 de l'épique #496.
+dont ce module reprend chacun un patron exact. Depuis la tranche 2/5 (#498),
+ce module a un appelant en production : les agents
+`.claude/agents/arbiter-lead.md`/`arbiter-expert.md`, le skill
+`.claude/skills/arbitrate/SKILL.md`, et le câblage dans
+`.claude/skills/coordinator/SKILL.md` § Arbitrage. Voir § « Triplet
+actuellement en mode `apply` » ci-dessous : la matrice `arbitration` n'est
+plus entièrement en "observe", un seul triplet (`derive-vs-review` × risque
+`low` × verdict `resolve`) étant passé en "apply".
 
 ### Les motifs arbitrables — et ceux qui ne le sont jamais
 
