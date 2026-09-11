@@ -8,6 +8,7 @@ const POLICY = {
       per_run: {
         subagents_launched: 10,
         fix_iterations: 3,
+        arbitrations: 1,
       },
       per_period: {
         runs_per_day: 5,
@@ -20,10 +21,15 @@ describe('loadBudgets', () => {
   it('normalizes a well-formed budgets section to camelCase', () => {
     expect(loadBudgets(POLICY)).toEqual({
       coordinator: {
-        perRun: { subagentsLaunched: 10, fixIterations: 3 },
+        perRun: { subagentsLaunched: 10, fixIterations: 3, arbitrations: 1 },
         perPeriod: { runsPerDay: 5 },
       },
     })
+  })
+
+  it('accepts a routine declaring "arbitrations" (#497)', () => {
+    const policy = { version: 1, budgets: { coordinator: { per_run: { arbitrations: 1 } } } }
+    expect(loadBudgets(policy)).toEqual({ coordinator: { perRun: { arbitrations: 1 } } })
   })
 
   it('returns an empty object when the section is absent — non-binding, not an error', () => {
@@ -105,6 +111,20 @@ describe('checkBudget', () => {
       expect(result.limit).toBe(10)
       expect(result.observed).toBe(11)
       expect(result.reason).toBe('budgets.coordinator.per_run.subagents_launched: plafond dépassé (observé 11 > plafond 10)')
+    })
+  })
+
+  describe('arbitrations (#497)', () => {
+    it('is "ok" at the limit of 1', () => {
+      const result = checkBudget(BUDGETS, { arbitrations: 1 }, { routine: 'coordinator', scope: 'arbitrations' })
+      expect(result.status).toBe('ok')
+      expect(result.limit).toBe(1)
+    })
+
+    it('is "exceeded" past the limit of 1 — never a second arbitration in the same run', () => {
+      const result = checkBudget(BUDGETS, { arbitrations: 2 }, { routine: 'coordinator', scope: 'arbitrations' })
+      expect(result.status).toBe('exceeded')
+      expect(result.reason).toContain('budgets.coordinator.per_run.arbitrations')
     })
   })
 

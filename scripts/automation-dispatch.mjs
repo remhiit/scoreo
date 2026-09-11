@@ -16,6 +16,14 @@ import { pathToFileURL } from 'node:url'
 // (COMPLEXITY_BANDS ci-dessous) pour lesquelles ce fichier reste
 // volontairement sans dépendance croisée.
 import { loadBudgets } from './routing-budget.mjs'
+// Source de vérité du contrat d'arbitrage (issue #497, tranche 1/5 de
+// l'épic #496) : ARBITRABLE_MOTIFS n'est pas mirroré à la main comme
+// COMPLEXITY_BANDS ci-dessous — contrairement à ce dernier, qui reflète un
+// fichier de config externe (.automation/complexity-thresholds.yml),
+// ARBITRABLE_MOTIFS est défini par scripts/arbitration.mjs lui-même ; le
+// dupliquer ici ferait dériver les deux listes tôt ou tard, même
+// raisonnement que l'import de loadBudgets ci-dessus.
+import { ARBITRABLE_MOTIFS } from './arbitration.mjs'
 
 // Sous-ensemble minimal de YAML (mappings imbriqués de scalaires, pas de
 // listes ni de chaînes multi-lignes) suffisant pour .automation/routines.yml
@@ -358,7 +366,14 @@ export function validateRoutingPolicy(policy, catalog) {
     errors.push(`version: doit être 1 (valeur: ${JSON.stringify(policy.version)})`)
   }
   for (const key of Object.keys(policy)) {
-    if (key !== 'version' && key !== 'routines' && key !== 'activation' && key !== 'rollback' && key !== 'budgets') {
+    if (
+      key !== 'version' &&
+      key !== 'routines' &&
+      key !== 'activation' &&
+      key !== 'rollback' &&
+      key !== 'budgets' &&
+      key !== 'arbitration'
+    ) {
       errors.push(`champ inconnu à la racine : "${key}"`)
     }
   }
@@ -423,6 +438,29 @@ export function validateRoutingPolicy(policy, catalog) {
           if (!VALID_ACTIVATION_MODES.includes(mode)) {
             errors.push(`${modePath}: mode inconnu (valeur: ${JSON.stringify(mode)}) — doit être "observe" ou "apply"`)
           }
+        }
+      }
+    }
+  }
+
+  // Optionnel (issue #497) : absente, traitée comme une matrice vide par
+  // scripts/arbitration.mjs#resolveArbitration ("observe" partout), même
+  // traitement que `activation` absente ci-dessus. Espace de clés distinct
+  // de `routines`/`activation` : les clés de `arbitration` sont des motifs
+  // d'escalade arbitrables (ARBITRABLE_MOTIFS), jamais des noms de routine.
+  const arbitration = policy.arbitration
+  if (arbitration !== undefined) {
+    if (typeof arbitration !== 'object' || arbitration === null || Array.isArray(arbitration)) {
+      errors.push('arbitration: doit être un objet')
+    } else {
+      for (const [motif, mode] of Object.entries(arbitration)) {
+        const motifPath = `arbitration.${motif}`
+        if (!ARBITRABLE_MOTIFS.includes(motif)) {
+          errors.push(`${motifPath}: motif absent de la liste des motifs arbitrables`)
+          continue
+        }
+        if (!VALID_ACTIVATION_MODES.includes(mode)) {
+          errors.push(`${motifPath}: mode inconnu (valeur: ${JSON.stringify(mode)}) — doit être "observe" ou "apply"`)
         }
       }
     }

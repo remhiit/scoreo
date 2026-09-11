@@ -70,6 +70,28 @@
 # un plafond nul, négatif ou non numérique est refusé au chargement,
 # nommant le fichier et la clé (scripts/routing-budget.mjs#loadBudgets).
 # Voir doc/automation/model-routing.md § « Budgets » pour le détail.
+#
+# `budgets.coordinator.per_run.arbitrations` (issue #497, tranche 1/5 de
+# l'épic #496) : un seul arbitrage par run, toujours — évalué par ce même
+# `checkBudget`, aucun mécanisme nouveau (#496 § « Les cinq garde-fous »
+# #1). Un tour arbitré qui ne converge pas mène à `automation:needs-human`,
+# jamais à un second arbitrage.
+#
+# `arbitration` (issue #497), optionnel, déclare un mode (`observe` |
+# `apply`) par motif d'escalade arbitrable — jamais un triplet routine ×
+# bande comme `activation` ci-dessous, l'arbitrage n'est jamais routé par la
+# bande de complexité qui vient d'échouer (ce serait circulaire). Résolue
+# par la fonction pure scripts/arbitration.mjs#resolveArbitration, avec les
+# mêmes garde-fous non contournables que `resolveActivation` : un motif non
+# couvert (ou la section entièrement absente) résout toujours `observe`, un
+# risque `high` résout toujours `observe` quelle que soit la déclaration, et
+# `rollback: true` ci-dessus force aussi tout l'arbitrage en `observe` —
+# aucun nouvel interrupteur, le même geste de rollback global coupe les deux
+# mécanismes. La matrice ci-dessous déclare `observe` pour les sept motifs
+# arbitrables : cette tranche installe le mécanisme sans en changer le
+# comportement, le passage réel d'un motif à `apply` est un geste de
+# configuration séparé et ultérieur (T2..T4 de l'épic #496). Voir
+# doc/automation/model-routing.md § « Arbitrage » pour le détail.
 version: 1
 rollback: false
 budgets:
@@ -77,8 +99,17 @@ budgets:
     per_run:
       subagents_launched: 12
       fix_iterations: 3
+      arbitrations: 1
     per_period:
       runs_per_day: 20
+arbitration:
+  spec-ambigue: observe
+  finding-trop-vague: observe
+  derive-vs-spec: observe
+  tentatives-epuisees: observe
+  derive-vs-review: observe
+  validation-rouge: observe
+  findings-contradictoires: observe
 activation:
   implement-task:
     trivial: observe
@@ -96,6 +127,11 @@ activation:
     complex: observe
     very-complex: observe
   address-feedback:
+    trivial: observe
+    standard: observe
+    complex: observe
+    very-complex: observe
+  arbitration:
     trivial: observe
     standard: observe
     complex: observe
@@ -230,6 +266,56 @@ routines:
             model: haiku-4-5
             weight: 100
         min_score: 40
+        fallback: sonnet-5
+  # Politique du sous-agent arbitre (#497, tranche 1/5 de l'épic #496,
+  # .claude/agents/arbiter-*.md — T2), pas davantage une routine de
+  # .automation/routines.yml que `classification` ci-dessus. Même patron :
+  # les quatre bandes portent le même candidat unique à poids 100, jamais
+  # routé par bande de complexité — un arbitrage tranche un jugement borné
+  # sur un contexte déjà gelé, pas une tâche que la complexité de l'issue
+  # ferait varier. `min_score` au plancher du haut du catalogue
+  # (.automation/model-catalog.yml : seul `opus-5`, quality_score=95, le
+  # franchit — `sonnet-5` à 80 ne l'atteint pas) : un arbitre tranche un
+  # désaccord qu'un relecteur ou une boucle de correctif n'a pas su
+  # résoudre seul, la qualité prime sur le coût. `structured_output: true`
+  # (le verdict suit schemas/automation/arbitration-verdict.schema.json) ;
+  # `long_context: true` (le corpus d'un arbitre est une union — spec +
+  # diff + findings des deux relecteurs, voire le rapport du correcteur
+  # côté `arbiter-expert`, #496 § « Les deux agents »). `fallback: sonnet-5`
+  # si `opus-5` est désactivé au catalogue, comme pour les autres routines.
+  arbitration:
+    required_capabilities:
+      tools: false
+      structured_output: true
+      long_context: true
+    bands:
+      trivial:
+        candidates:
+          primary:
+            model: opus-5
+            weight: 100
+        min_score: 90
+        fallback: sonnet-5
+      standard:
+        candidates:
+          primary:
+            model: opus-5
+            weight: 100
+        min_score: 90
+        fallback: sonnet-5
+      complex:
+        candidates:
+          primary:
+            model: opus-5
+            weight: 100
+        min_score: 90
+        fallback: sonnet-5
+      very-complex:
+        candidates:
+          primary:
+            model: opus-5
+            weight: 100
+        min_score: 90
         fallback: sonnet-5
   address-feedback:
     required_capabilities:

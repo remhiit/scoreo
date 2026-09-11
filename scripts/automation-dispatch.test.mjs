@@ -543,6 +543,74 @@ describe('validateRoutingPolicy', () => {
       expect(valid).toBe(false)
       expect(errors).toEqual(expect.arrayContaining([expect.stringContaining('champ inconnu "reviews_launched"')]))
     })
+
+    it('accepts a declared "arbitrations" per-run budget (issue #497)', () => {
+      const policy = { ...structuredClone(VALID_POLICY), budgets: { coordinator: { per_run: { arbitrations: 1 } } } }
+      expect(validateRoutingPolicy(policy, VALID_CATALOG)).toEqual({ valid: true, errors: [] })
+    })
+  })
+
+  describe('arbitration (issue #497)', () => {
+    it('accepts a well-formed "arbitration" section, entirely in "observe"', () => {
+      const policy = {
+        ...structuredClone(VALID_POLICY),
+        arbitration: {
+          'spec-ambigue': 'observe',
+          'finding-trop-vague': 'observe',
+          'derive-vs-spec': 'observe',
+          'tentatives-epuisees': 'observe',
+          'derive-vs-review': 'observe',
+          'validation-rouge': 'observe',
+          'findings-contradictoires': 'observe',
+        },
+      }
+      expect(validateRoutingPolicy(policy, VALID_CATALOG)).toEqual({ valid: true, errors: [] })
+    })
+
+    it('accepts a missing "arbitration" section (optional)', () => {
+      const policy = structuredClone(VALID_POLICY)
+      delete policy.arbitration
+      expect(validateRoutingPolicy(policy, VALID_CATALOG)).toEqual({ valid: true, errors: [] })
+    })
+
+    it('accepts a motif declared "apply"', () => {
+      const policy = { ...structuredClone(VALID_POLICY), arbitration: { 'spec-ambigue': 'apply' } }
+      expect(validateRoutingPolicy(policy, VALID_CATALOG)).toEqual({ valid: true, errors: [] })
+    })
+
+    it('rejects a motif absent from the arbitrable list, naming the key', () => {
+      const policy = { ...structuredClone(VALID_POLICY), arbitration: { 'relecteur-manquant': 'observe' } }
+      const { valid, errors } = validateRoutingPolicy(policy, VALID_CATALOG)
+      expect(valid).toBe(false)
+      expect(errors).toEqual(
+        expect.arrayContaining([expect.stringContaining('arbitration.relecteur-manquant: motif absent')]),
+      )
+    })
+
+    it('rejects an unknown mode, naming the key', () => {
+      const policy = { ...structuredClone(VALID_POLICY), arbitration: { 'spec-ambigue': 'sometimes' } }
+      const { valid, errors } = validateRoutingPolicy(policy, VALID_CATALOG)
+      expect(valid).toBe(false)
+      expect(errors).toEqual(
+        expect.arrayContaining([expect.stringContaining('arbitration.spec-ambigue: mode inconnu')]),
+      )
+    })
+
+    it('rejects a non-object "arbitration" section', () => {
+      const policy = { ...structuredClone(VALID_POLICY), arbitration: 'oui' }
+      const { valid, errors } = validateRoutingPolicy(policy, VALID_CATALOG)
+      expect(valid).toBe(false)
+      expect(errors).toEqual(expect.arrayContaining([expect.stringContaining('arbitration: doit être un objet')]))
+    })
+  })
+
+  it('still validates every already-existing section when "arbitration" is present (non-régression, issue #497)', () => {
+    const policy = { ...structuredClone(VALID_POLICY), arbitration: { 'spec-ambigue': 'observe' } }
+    policy.activation = {
+      'implement-task': { trivial: 'observe', standard: 'apply', complex: 'observe', 'very-complex': 'observe' },
+    }
+    policy.budgets = { coordinator: { per_run: { subagents_launched: 12, arbitrations: 1 } } }
+    expect(validateRoutingPolicy(policy, VALID_CATALOG)).toEqual({ valid: true, errors: [] })
   })
 })
 

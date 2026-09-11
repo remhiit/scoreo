@@ -18,6 +18,12 @@ précédent que `schemas/automation/routines.schema.json`) :
 - `schemas/automation/model-catalog.schema.json`
 - `schemas/automation/routing-policy.schema.json`
 
+Le contrat d'arbitrage (§ « Arbitrage » ci-dessous, issue #497) porte son
+propre schéma de sortie, documenté à part — un verdict d'arbitre, pas une
+configuration validée par `scripts/automation-dispatch.mjs` :
+
+- `schemas/automation/arbitration-verdict.schema.json`
+
 ## Ce que ce contrat n'est pas (encore)
 
 Le skill du coordinateur consomme désormais ce contrat pour calculer et
@@ -814,6 +820,172 @@ les rejets (enregistrement hors schéma ignoré et compté), les propositions
 politique) et la non-application (comparaison du contenu de
 `.automation/routing-policy.yml` avant/après appel, et de l'objet `policy`
 lui-même).
+
+## Arbitrage (`scripts/arbitration.mjs`, issue #497)
+
+Tranche 1/5 de l'épique #496 : insère une étape d'arbitrage **avant**
+`automation:needs-human`, pour les deux conditions d'escalade du
+coordinateur (`.claude/skills/coordinator/SKILL.md` § Escalade) qui sont des
+**jugements** — pas un fait manquant, une panne, une configuration ou un
+garde-fou volontaire. Voir `doc/technical/automation-plan.md` §2,
+amendement du principe directeur « aucune décision d'automatisation prise
+par un LLM sans validation humaine », pour la portée exacte de cette
+exception et ses cinq limites.
+
+```
+isArbitrableMotif(motif)               // → boolean
+selectArbiter(motif)                   // → 'arbiter-lead' | 'arbiter-expert' | null
+resolveArbitration(policy, { motif, riskLevel })
+                                        // → { mode: 'observe' | 'apply', reason }
+validateArbitrationVerdict(reply)      // → { valid: boolean, errors: string[] }
+applyArbitrationVerdict(verdict, reviewVerdict)
+                                        // → { action: 'extra-fix-round' | 'converge' | 'escalate', reason, instruction }
+```
+
+Quatre fonctions pures, zéro effet de bord, zéro appel réseau — même
+précédent que `scripts/routing-activation.mjs` et `scripts/review-verdict.mjs`,
+dont ce module reprend chacun un patron exact. Cette tranche **n'a aucun
+appelant en production** : aucun agent `.claude/agents/arbiter-*.md`, aucun
+skill `arbitrate`, aucun câblage dans le coordinateur — T2 de l'épique #496.
+
+### Les motifs arbitrables — et ceux qui ne le sont jamais
+
+| Motif | Condition du coordinateur | Arbitre |
+|---|---|---|
+| `spec-ambigue` | 1 — spec ambiguë/incomplète | `arbiter-lead` |
+| `finding-trop-vague` | 1 — finding trop vague pour agir sans deviner l'intention | `arbiter-lead` |
+| `derive-vs-spec` | 1 — dérive de périmètre par rapport à la spec de l'issue | `arbiter-lead` |
+| `tentatives-epuisees` | 3 — boucle de correctif non convergée | `arbiter-expert` |
+| `derive-vs-review` | 3 — dérive de périmètre par rapport à ce que la review a demandé | `arbiter-expert` |
+| `validation-rouge` | 3 — suite de checks qui reste rouge | `arbiter-expert` |
+| `findings-contradictoires` | 3 — retour contradictoire entre relecteurs | `arbiter-expert` |
+
+Non arbitrables, toujours une escalade directe : `relecteur-manquant`
+(condition 2 — un arbitre ne peut pas inventer la review absente),
+`sous-agent-hs` (condition 4 — une panne), `routage-no-candidate`
+(condition 5 — une configuration), `budget-depasse` (condition 6 — un
+garde-fou volontaire, jamais contournable) et `possession-perimee` (row #25
+du state-machine — un run mort, rejouer collisionnerait avec la branche/PR
+laissée derrière). `isArbitrableMotif` renvoie `false` pour ces cinq motifs
+comme pour tout motif inconnu — la valeur sûre est toujours l'escalade
+humaine, jamais un `true` par défaut.
+
+### `selectArbiter(motif)` — un seul arbitre par motif
+
+Sélection mécanique, jamais un choix du coordinateur : `arbiter-lead` pour
+les trois motifs de la condition 1 (il ne lit que la spec de l'issue,
+`doc/functional/`, le diff et les findings du relecteur fonctionnel —
+jamais la review technique), `arbiter-expert` pour les quatre motifs de la
+condition 3 (diff, `doc/technical/architecture.md`, `project-conventions`,
+findings des deux relecteurs, rapport du correcteur — jamais la spec de
+l'issue). La disjonction de #470 tient : l'expert ne lit toujours pas la
+spec, et « dérive vs. spec » est justement ce qui bascule le motif vers le
+lead plutôt que vers l'expert. Un motif non arbitrable renvoie `null`.
+
+### `resolveArbitration(policy, { motif, riskLevel })`
+
+```yaml
+arbitration:
+  spec-ambigue: observe
+  finding-trop-vague: observe
+  derive-vs-spec: observe
+  tentatives-epuisees: observe
+  derive-vs-review: observe
+  validation-rouge: observe
+  findings-contradictoires: observe
+```
+
+Mêmes garde-fous, dans le même ordre de priorité, que
+`scripts/routing-activation.mjs#resolveActivation` (#476) — mais sur un
+espace de clés différent (`arbitration.<motif>`, jamais `activation.<routine>.<bande>`,
+l'arbitrage n'étant jamais routé par bande de complexité, ce serait
+circulaire) :
+
+1. **`policy.rollback === true`** force toujours `observe`, priorité la
+   plus haute — aucun nouvel interrupteur (§ « Rollback » ci-dessus) : le
+   même geste de rollback global coupe aussi bien le routage que
+   l'arbitrage, la `reason` citant toujours le rollback plutôt qu'une règle
+   qui n'a pas eu l'occasion de trancher.
+2. **Un `riskLevel` de `"high"` — ou absent/illisible, jamais traité comme
+   `"low"`** — force toujours `observe`, quelle que soit la déclaration.
+   Contrairement à `resolveActivation`, qui suppose son appelant déjà
+   normalisé, `resolveArbitration` normalise lui-même l'absence ou une
+   valeur hors de `low`/`high` en `"high"` — même précédent que
+   `scripts/risk-controls.mjs#normalizeRiskLevel` (#479) : la valeur la plus
+   contraignante, jamais la plus permissive.
+3. **Un motif non couvert par `arbitration`** (ou la section entièrement
+   absente) résout toujours `observe` — l'absence de déclaration n'active
+   jamais rien.
+
+La `reason` distingue sans ambiguïté ces trois `observe` l'un de l'autre et
+d'un `observe` de déclaration ordinaire (`arbitration.<motif> déclare
+"observe"`). Défense en profondeur à deux niveaux, même patron que
+`resolveActivation` : la validation « au démarrage » de la section entière
+est faite par `scripts/automation-dispatch.mjs#validateRoutingPolicy` (et le
+job CI `automation-config`), `resolveArbitration` revalidant seulement le
+motif qu'on lui demande de résoudre — un motif absent de
+`ARBITRABLE_MOTIFS`, ou un mode hors de `observe`/`apply`, est refusé au
+chargement comme à la résolution, avec le même message nommant
+`.automation/routing-policy.yml` et la clé fautive (`arbitration.<motif>`).
+
+### `validateArbitrationVerdict(reply)` et `applyArbitrationVerdict(verdict, reviewVerdict)`
+
+Un verdict d'arbitre suit `schemas/automation/arbitration-verdict.schema.json` :
+`verdict` (`resolve`/`override`/`escalate`), `motif`, `arbiter`, `reasoning`,
+`instruction` (requis pour `resolve`), `overriddenFinding` (requis pour
+`override`), `sameModelAsRun`. Un verdict hors schéma, hors énumération, ou
+qui n'est simplement pas un objet, est refusé par `validateArbitrationVerdict`
+— et `applyArbitrationVerdict` appelé sur un verdict refusé renvoie toujours
+`{ action: 'escalate', ... }`, jamais une interprétation du texte libre.
+
+`applyArbitrationVerdict` prolonge `scripts/review-verdict.mjs#computeReviewVerdict`
+(#470) plutôt que de le remplacer :
+
+- **`resolve`** → `extra-fix-round`, portant l'`instruction` de l'arbitre —
+  le compteur `automation:attempt-*` du correcteur n'est **pas**
+  réinitialisé par cette tranche (câblage coordinateur, T2).
+- **`override`** → `converge` seulement si le `reviewVerdict` (la sortie de
+  `computeReviewVerdict`) ne conserve plus aucun finding `blocking`/
+  `important` en corpus une fois le finding désigné (`overriddenFinding`,
+  comparé insensible à la casse/aux espaces via
+  `scripts/review-verdict.mjs#normalizeFindingSummary`, la même clé de
+  déduplication que `dedupeFindings`) écarté ; sinon `extra-fix-round` —
+  écarter un finding n'a jamais pour effet de faire passer les autres.
+- **`escalate`** → `escalate`, l'escalade humaine continue, enrichie de
+  `reasoning`.
+
+### Les cinq garde-fous (rappel, détaillés dans `automation-plan.md` §2)
+
+1. Un arbitrage par run maximum — `budgets.coordinator.per_run.arbitrations: 1`
+   (`scripts/routing-budget.mjs#checkBudget`, #478 ; voir § « Budgets »
+   ci-dessus, même mécanisme, aucun champ nouveau hors `arbitrations`).
+2. L'arbitre ne peut jamais écrire de spec — `arbiter-lead` tranche entre
+   des lectures déjà présentes, jamais un nouveau critère d'acceptation.
+3. Risque `high` → toujours `observe` (voir `resolveArbitration` ci-dessus).
+4. L'arbitre ne pose ni ne retire aucun label, comme les deux relecteurs de
+   #470 — jamais `automation:enabled`, jamais un contournement de
+   `scripts/risk-controls.mjs` (#479).
+5. Il tourne en dernier, une fois tous les findings gelés — sa sortie
+   n'alimente jamais un nouveau tour de **review**, seulement un tour de
+   correctif ou un recalcul de verdict.
+
+### Testable sans exécuter de routine
+
+`scripts/arbitration.test.mjs` couvre `isArbitrableMotif` (un cas par motif
+des deux listes, plus un motif inconnu), `selectArbiter` (un cas par motif,
+plus la vérification qu'aucun motif ne renvoie les deux arbitres),
+`resolveArbitration` (priorité du rollback sur une déclaration `apply`
+explicite, garde-fou `high` sur une déclaration `apply` explicite, motif non
+couvert, section absente, riskLevel absent/illisible traité comme `high`,
+distinction des quatre `reason`, refus d'un mode inconnu),
+`applyArbitrationVerdict` (les trois verdicts, `override` qui converge,
+`override` qui ne converge pas, verdict hors schéma → `escalate`, `resolve`
+sans instruction → `escalate`) et `validateArbitrationVerdict` (objet
+valide, verdict hors énumération, champ requis manquant par verdict, entrée
+qui n'est pas un objet). Non-régression : `scripts/automation-dispatch.test.mjs`
+couvre le refus des nouvelles clés invalides (`arbitration.<motif>`,
+`budgets.<routine>.per_run.arbitrations`) sans casser la validation des
+sections déjà en place.
 
 ## Exemple : chaîne de fallback circulaire refusée
 

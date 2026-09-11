@@ -28,7 +28,40 @@ remettre en cause revient à refaire le plan.
    La CI doit être écrite et éprouvée *avant* toute autonomie.
 2. **Le déterministe ne passe pas par un LLM.** Merger, déplacer une carte,
    fermer un ticket, poser un label : GitHub Actions. Les routines ne font que
-   ce qui demande du jugement : coder, reviewer.
+   ce qui demande du jugement : coder, reviewer. Dans le même esprit, **aucune
+   décision d'automatisation n'est prise par un LLM sans validation humaine**
+   — formulation déjà employée telle quelle par doc/automation/model-routing.md
+   § « Calibration » (#481, qui **propose** des ajustements de politique à
+   un humain, sans jamais les appliquer elle-même).
+
+   **Amendement — l'arbitrage (issue #497, épique #496) est une exception
+   délibérée et bornée à ce principe, jamais une remise en cause.** Un
+   arbitre (`arbiter-lead`/`arbiter-expert`) peut trancher un des deux
+   jugements que le coordinateur escaladerait sinon directement en
+   `automation:needs-human` — spec ambiguë (condition 1) ou boucle de
+   correctif non convergée (condition 3), jamais les quatre autres
+   conditions d'escalade (relecteur manquant, sous-agent hors service,
+   routage sans candidat, budget dépassé), qui restent des faits/pannes/
+   garde-fous, pas des jugements. L'exception reste étroite grâce à cinq
+   limites non contournables (`scripts/arbitration.mjs`, #497) :
+   - **Espace de verdicts fermé** — `resolve` | `override` | `escalate`
+     seulement, jamais une lecture libre du texte de l'arbitre
+     (`scripts/arbitration.mjs#validateArbitrationVerdict`).
+   - **Appliqué par une fonction pure** — `applyArbitrationVerdict`
+     mécanise la conséquence de chaque verdict, le coordinateur n'interprète
+     jamais lui-même ce qu'un arbitre a dit.
+   - **Aucun label posé, aucun merge** — un arbitre a la même limite que les
+     deux relecteurs de #470 : il ne pose ni ne retire jamais un label, il
+     ne merge jamais une PR.
+   - **Jamais sur risque `high`** — `resolveArbitration` force `observe`
+     quelle que soit la déclaration, même garde-fou non contournable que
+     `resolveActivation` (#476) sur le routage par sous-agent.
+   - **Un arbitrage par run, au maximum** — `budgets.coordinator.per_run.
+     arbitrations: 1` (#478), jamais contourné par un second arbitrage si le
+     premier ne converge pas : l'escalade humaine reprend la main.
+
+   Voir doc/automation/model-routing.md § « Arbitrage » pour le détail des
+   quatre fonctions et de la table des motifs.
 3. **Push, pas pull.** Les runs de routine sont un budget rare (5/jour en Pro,
    15 en Max). Aucune routine ne « surveille » ni ne « poll » : elle est
    déclenchée par un événement.

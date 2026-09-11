@@ -16,7 +16,12 @@ function moreSevere(a, b) {
   return (SEVERITY_RANK[a] ?? -1) >= (SEVERITY_RANK[b] ?? -1) ? a : b
 }
 
-function normalizeSummary(summary) {
+// Exportée pour être réutilisée par scripts/arbitration.mjs#applyArbitrationVerdict
+// (#497) : un arbitre désigne le finding qu'il écarte par son résumé, et
+// doit être comparé au même identifiant normalisé que celui qui a servi à
+// dédupliquer les findings ci-dessous — jamais une comparaison stricte, qui
+// diverge à la moindre différence de casse ou d'espacement.
+export function normalizeFindingSummary(summary) {
   return summary.trim().toLowerCase().replace(/\s+/g, ' ')
 }
 
@@ -34,7 +39,7 @@ function normalizeSummary(summary) {
 export function dedupeFindings(findings) {
   const byKey = new Map()
   for (const finding of findings) {
-    const key = normalizeSummary(finding.summary)
+    const key = normalizeFindingSummary(finding.summary)
     const existing = byKey.get(key)
     if (!existing) {
       byKey.set(key, { ...finding, reviewers: [...finding.reviewers] })
