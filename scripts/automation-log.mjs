@@ -89,6 +89,14 @@ export function renderAutomationLog({
     // "Traçabilité" — donnée indisponible, jamais devinée).
     `- Exécuté par : skill \`${executedBy?.skill ?? 'inconnu'}\`, modèle \`${executedBy?.model ?? 'inconnu'}\``,
   ]
+  // Optional: journalise *pourquoi* skill/modèle vaut `inconnu` ci-dessus
+  // (get_session en échec, sous-agent qui n'a pas pu s'auto-rapporter, etc.)
+  // — même convention que `complexity.limits`/`routing.limits` plus bas,
+  // reprise ici pour `executedBy` (issue #494). Absent pour tout appelant qui
+  // n'en fournit pas, comme les autres blocs optionnels de cette fonction.
+  if (executedBy?.limits?.length) {
+    lines.push(`  - Limites : ${executedBy.limits.join(' ; ')}`)
+  }
   // Optional: links this decision back to the TaskContext artifact it was
   // made from (issue #401, doc/technical/automation-plan.md §4) — absent for
   // callers that don't build one yet, so existing journals stay unchanged.
@@ -495,9 +503,16 @@ export function loadMetricsFromEnv() {
 // affiche les clés manquantes comme `inconnu` (§2 du contrat — donnée
 // indisponible, jamais devinée), plutôt que d'omettre la ligne entière.
 export function loadExecutedByFromEnv() {
+  const limits = process.env.LOG_EXECUTED_BY_LIMITS
   return {
     skill: process.env.LOG_EXECUTED_BY_SKILL,
     model: process.env.LOG_EXECUTED_BY_MODEL,
+    ...(limits && {
+      limits: limits
+        .split(';')
+        .map((reason) => reason.trim())
+        .filter(Boolean),
+    }),
   }
 }
 
