@@ -852,10 +852,13 @@ The arbitration attempt follows this sequence:
      in the escalation comment, never just "arbitration failed to resolve
      it".
 8. **On arbitration, add `automation:arbitrated` label** — a marker of
-   observability (issue #496 § « Observabilité de l'arbitrage »), posed the
-   moment a *valid* structured verdict is rendered (`mode: 'apply'` and the
-   arbiter's verdict passed step 6's `validateArbitrationVerdict`), whichever
-   of `resolve`/`override`/`escalate` it is. **Not posed** when step 6 treats
+   observability (issue #496 § « Observabilité de l'arbitrage »), posed on
+   the **PR** (if one exists — condition 1 can fire before the implementer
+   has opened one, same as § 1 escalating below; when no PR exists yet, the
+   label is posed nowhere, same as that step's own handling) the moment a
+   *valid* structured verdict is rendered (`mode: 'apply'` and the arbiter's
+   verdict passed step 6's `validateArbitrationVerdict`), whichever of
+   `resolve`/`override`/`escalate` it is. **Not posed** when step 6 treats
    an invalid verdict as `escalate` (same handling as an arbiter that fails
    outright) — an invalid verdict is not a real arbitration outcome to
    attribute a disagreement-rate reading to, so it never counts as "the
