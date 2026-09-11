@@ -137,7 +137,7 @@ proposes to a human).
    or with no policy entry for its routine is exactly as much a result as a
    proposal is, never omitted.
 
-#### 6.5. Arbitrages (#496, tranche 1/5)
+#### 6.5. Arbitrages (#496, tranche 2/5)
 
 Issue #497 introduces a structured arbitration mechanism, applied on issue
 #498. This section publishes the human disagreement rate — a key signal for

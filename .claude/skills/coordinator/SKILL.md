@@ -821,9 +821,10 @@ The arbitration attempt follows this sequence:
      coordinator choice.
    - `model: routeModel(policy, routine='arbitration', complexity, risk)`,
      per the policy routing at `.automation/routing-policy.yml#routines.arbitration`.
-   - Full prompt carrying the arbiter's corpus (spec + functional findings for
-     lead; diff + technical findings for expert), the motif, and the
-     run's model name (for `sameModelAsRun` self-reporting).
+   - Full prompt carrying the arbiter's corpus (spec + functional findings +
+     PR diff (if one exists) for lead; diff + technical findings for expert),
+     the motif, and the run's model name (for `sameModelAsRun`
+     self-reporting).
    - The arbiter returns a structured `verdict` (` resolve` | `override` |
      `escalate`) per `schemas/automation/arbitration-verdict.schema.json`.
 6. **Validate the verdict:** `scripts/arbitration.mjs#validateArbitrationVerdict(verdict)`.
@@ -835,8 +836,12 @@ The arbitration attempt follows this sequence:
    - `resolve` → launch one more fix round with the arbiter's `instruction`,
      not resetting `automation:attempt-*` (this round is arbitrated, distinct,
      plafonné par the `arbitrations: 1` budget, never by a 4th attempt). On
-     completion, check the suite: if green, converge; if red, escalade (motif
-     « Échec de validation après arbitrage »).
+     completion, check the suite: if green, converge; if red, escalade under
+     the same canonical motif as any other **Échec de validation après le
+     budget d'itérations** (condition 3 above) — never a new/distinct
+     motif — with the escalation comment additionally stating in prose that
+     this round was arbitrated, which arbiter was consulted, and its verdict
+     (`resolve`).
    - `override` → remove the designated finding from the review verdict; if
      other blocking/important findings remain, launch a fix round to address
      them (same as step 3); if none remain, converge.
@@ -875,8 +880,10 @@ The arbitration attempt follows this sequence:
 - **Motif `budget-depasse`** → jamais arbitré ; escalade directe (#478).
 - **Risque `high`** → `resolveArbitration` résout `observe`, arbitrage non
   lancé, escalade directe.
-- **Le tour arbitré échoue à la validation** → escalade, motif « Échec de
-  validation après arbitrage ».
+- **Le tour arbitré échoue à la validation** → escalade sous le même motif
+  canonique **Échec de validation après le budget d'itérations**, jamais un
+  motif distinct — le commentaire d'escalade précise en prose que ce tour
+  était arbitré, l'arbitre consulté et son verdict.
 
 In every case (except arbitration resolution leading to convergence or a fix
 round), this skill performs the full escalation sequence itself
