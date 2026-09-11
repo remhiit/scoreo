@@ -916,7 +916,7 @@ arbitration:
   finding-trop-vague: observe
   derive-vs-spec: observe
   tentatives-epuisees: observe
-  derive-vs-review: observe
+  derive-vs-review: apply        # Tranche 2/5 (#498) : le seul motif en mode 'apply'
   validation-rouge: observe
   findings-contradictoires: observe
 ```
@@ -953,6 +953,19 @@ motif qu'on lui demande de résoudre — un motif absent de
 `ARBITRABLE_MOTIFS`, ou un mode hors de `observe`/`apply`, est refusé au
 chargement comme à la résolution, avec le même message nommant
 `.automation/routing-policy.yml` et la clé fautive (`arbitration.<motif>`).
+
+### Triplet actuellement en mode `apply` (tranche 2/5, #498)
+
+Seul le triplet **motif `derive-vs-review` × risque `low` × verdict
+`resolve`** est pasé en `apply` dès cette tranche (#498). Tous les autres
+motifs restent en `observe` — escalade humaine inchangée, simplement enrichie
+de la consultation d'arbitre qui ne change rien au résultat (mode `observe`),
+ce qui permet la calibration (#481) sans donnée de risque (§ Contexte de #496).
+Le verdict `resolve` signifie qu'un tour de correctif supplémentaire est lancé,
+portant l'instruction de l'arbitre (`arbiter-expert`), après que trois
+tentatives régulières ont échoué à converger **et** que la boucle de review a
+signalé une dérive de périmètre. C'est le plus petit triplet défendable — un
+seul motif arbitrable, une seule condition de risque, un seul verdict appliqué.
 
 ### `validateArbitrationVerdict(reply)` et `applyArbitrationVerdict(verdict, reviewVerdict)`
 
