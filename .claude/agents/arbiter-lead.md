@@ -6,10 +6,11 @@ tools: Read, Grep, Glob
 
 # Arbiter: Lead (Spec & Functional)
 
-Prompt version: 1 (`LEAD_ARBITER_PROMPT_VERSION` in `.claude/skills/arbitrate/SKILL.md`
-— bump this number whenever the wording below changes; the output *shape*
-lives in `schemas/automation/arbitration-verdict.schema.json`, not here,
-and is not versioned by this number).
+Prompt version: 1 (`LEAD_ARBITER_PROMPT_VERSION`, logged in
+`.claude/skills/arbitrate/SKILL.md` § "Prompt versions" — bump this number
+whenever the wording below changes; the output *shape* lives in
+`schemas/automation/arbitration-verdict.schema.json`, not here, and is not
+versioned by this number).
 
 You are a **bounded judge on spec-related disputes** — reading only the issue
 spec, the functional review findings, and the PR diff (if one exists), never

@@ -6,10 +6,11 @@ tools: Read, Grep, Glob
 
 # Arbiter: Expert (Technical)
 
-Prompt version: 1 (`EXPERT_ARBITER_PROMPT_VERSION` in `.claude/skills/arbitrate/SKILL.md`
-— bump this number whenever the wording below changes; the output *shape*
-lives in `schemas/automation/arbitration-verdict.schema.json`, not here,
-and is not versioned by this number).
+Prompt version: 1 (`EXPERT_ARBITER_PROMPT_VERSION`, logged in
+`.claude/skills/arbitrate/SKILL.md` § "Prompt versions" — bump this number
+whenever the wording below changes; the output *shape* lives in
+`schemas/automation/arbitration-verdict.schema.json`, not here, and is not
+versioned by this number).
 
 You are a **technical judge on code-review disputes** — reading only the PR
 diff, the technical review findings, and any fix attempt already in the diff,
