@@ -834,6 +834,38 @@ describe('renderAutomationLog / parseAutomationLog', () => {
     })
     expect(body).toContain('- Exécuté par : skill `pr-review`, modèle `inconnu`')
   })
+
+  it('logs why the model is unknown via executedBy.limits, same convention as complexity/routing (#494)', async () => {
+    const { renderAutomationLog } = await import('./automation-log.mjs')
+    const body = renderAutomationLog({
+      routine: 'coordinator-fix',
+      triggeredAt: '2026-09-10T10:00:00Z',
+      sha: 'abc1234',
+      status: 'succeeded',
+      iteration: '1',
+      validation: 'lint / typecheck / tests',
+      resultUrl: 'https://github.com/remhiit/scoreo/actions/runs/999',
+      executedBy: { skill: 'address-feedback', model: 'inconnu', limits: ['get_session indisponible avant auto-rapport'] },
+    })
+    expect(body).toContain('- Exécuté par : skill `address-feedback`, modèle `inconnu`')
+    expect(body).toContain('  - Limites : get_session indisponible avant auto-rapport')
+  })
+
+  it('omits the Limites line under "Exécuté par" when executedBy carries no reason (#494)', async () => {
+    const { renderAutomationLog } = await import('./automation-log.mjs')
+    const body = renderAutomationLog({
+      routine: 'implement-task',
+      triggeredAt: '2026-09-10T10:00:00Z',
+      sha: 'abc1234',
+      status: 'succeeded',
+      iteration: '1',
+      validation: 'lint / typecheck / tests',
+      resultUrl: 'https://github.com/remhiit/scoreo/actions/runs/999',
+      executedBy: { skill: 'implement-task', model: 'claude-sonnet-5' },
+    })
+    expect(body).toContain('- Exécuté par : skill `implement-task`, modèle `claude-sonnet-5`')
+    expect(body).not.toContain('  - Limites :')
+  })
 })
 
 describe('upsertAutomationLog', () => {
@@ -1127,5 +1159,29 @@ describe('loadExecutedByFromEnv', () => {
     const { loadExecutedByFromEnv } = await import('./automation-log.mjs')
 
     expect(loadExecutedByFromEnv()).toEqual({ skill: undefined, model: undefined })
+  })
+
+  it('reads the reason for an unknown model from LOG_EXECUTED_BY_LIMITS, semicolon-separated (#494)', async () => {
+    vi.stubEnv('LOG_EXECUTED_BY_SKILL', 'address-feedback')
+    vi.stubEnv('LOG_EXECUTED_BY_LIMITS', 'get_session indisponible ; sous-agent non relancé')
+
+    vi.resetModules()
+    const { loadExecutedByFromEnv } = await import('./automation-log.mjs')
+
+    expect(loadExecutedByFromEnv()).toEqual({
+      skill: 'address-feedback',
+      model: undefined,
+      limits: ['get_session indisponible', 'sous-agent non relancé'],
+    })
+  })
+
+  it('omits the limits key entirely when LOG_EXECUTED_BY_LIMITS is not set (#494)', async () => {
+    vi.stubEnv('LOG_EXECUTED_BY_SKILL', 'implement-task')
+    vi.stubEnv('LOG_EXECUTED_BY_MODEL', 'claude-sonnet-5')
+
+    vi.resetModules()
+    const { loadExecutedByFromEnv } = await import('./automation-log.mjs')
+
+    expect(loadExecutedByFromEnv()).toEqual({ skill: 'implement-task', model: 'claude-sonnet-5' })
   })
 })
