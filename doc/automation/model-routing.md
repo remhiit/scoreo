@@ -107,6 +107,7 @@ Validées en CI, avec un message nommant les identifiants en cause :
 | Routine de `.automation/routines.yml` sans `routing_policy`, ou dont le `routing_policy` ne résout aucune entrée de `routing-policy.yml` | Erreur explicite, jamais une valeur par défaut silencieuse |
 | Poids de candidats d'une bande ne totalisant pas 100, ou négatifs | Refus à la validation |
 | Candidat sous le `min_score` de sa bande | Refus à la validation |
+| `fallback` sous le `min_score` de sa propre bande (ne serait jamais retenu — `scripts/model-router.mjs#evaluateCandidate` applique le même plancher au fallback qu'au candidat primaire) | Refus à la validation |
 | Candidat ne couvrant pas une capacité requise (`required_capabilities`) | Refus à la validation |
 | `risk_overrides` pointant un modèle dont le `max_risk` est sous le niveau de risque requis | Refus à la validation |
 
@@ -822,6 +823,12 @@ politique) et la non-application (comparaison du contenu de
 lui-même).
 
 ## Arbitrage (`scripts/arbitration.mjs`, issue #497)
+
+À distinguer de l'« arbitrage » de `scripts/review-verdict.mjs#computeReviewVerdict`
+(`doc/automation/state-machine.md` § « scripts/review-verdict.mjs », l'étape
+mécanique propre du coordinateur qui combine les deux findings de review en
+un verdict) — même mot, deux mécanismes distincts et sans rapport ; cette
+section ne concerne que le second, `arbiter-lead`/`arbiter-expert` ci-dessous.
 
 Tranche 1/5 de l'épique #496 : insère une étape d'arbitrage **avant**
 `automation:needs-human`, pour les deux conditions d'escalade du

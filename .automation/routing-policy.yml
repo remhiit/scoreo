@@ -281,8 +281,21 @@ routines:
   # (le verdict suit schemas/automation/arbitration-verdict.schema.json) ;
   # `long_context: true` (le corpus d'un arbitre est une union — spec +
   # diff + findings des deux relecteurs, voire le rapport du correcteur
-  # côté `arbiter-expert`, #496 § « Les deux agents »). `fallback: sonnet-5`
-  # si `opus-5` est désactivé au catalogue, comme pour les autres routines.
+  # côté `arbiter-expert`, #496 § « Les deux agents »). `fallback: opus-5` —
+  # volontairement identique au seul candidat de bande, pas `sonnet-5` comme
+  # pour les autres routines : `sonnet-5` (quality_score=80) n'atteint pas
+  # `min_score: 90` ci-dessus, et scripts/model-router.mjs#evaluateCandidate
+  # applique ce même plancher au fallback de bande qu'aux candidats primaires
+  # (« un fallback conserve les mêmes contraintes de sécurité que le choix
+  # initial », issue #404) — un `sonnet-5` déclaré ici ne serait donc jamais
+  # retenu, contredisant en silence l'idée d'un filet de secours. Si `opus-5`
+  # est désactivé au catalogue, `routeModel` renvoie `status: "no-candidate"`
+  # (aucun autre modèle du catalogue n'atteint ce `min_score`) : c'est le
+  # motif non arbitrable `routage-no-candidate` (condition 5 du coordinateur,
+  # doc/automation/model-routing.md § « Arbitrage »), qui escalade toujours
+  # directement à un humain plutôt que de dégrader silencieusement la
+  # qualité d'un jugement — cohérent avec « la qualité prime sur le coût »
+  # ci-dessus, jamais un bug.
   arbitration:
     required_capabilities:
       tools: false
@@ -295,28 +308,28 @@ routines:
             model: opus-5
             weight: 100
         min_score: 90
-        fallback: sonnet-5
+        fallback: opus-5
       standard:
         candidates:
           primary:
             model: opus-5
             weight: 100
         min_score: 90
-        fallback: sonnet-5
+        fallback: opus-5
       complex:
         candidates:
           primary:
             model: opus-5
             weight: 100
         min_score: 90
-        fallback: sonnet-5
+        fallback: opus-5
       very-complex:
         candidates:
           primary:
             model: opus-5
             weight: 100
         min_score: 90
-        fallback: sonnet-5
+        fallback: opus-5
   address-feedback:
     required_capabilities:
       tools: true

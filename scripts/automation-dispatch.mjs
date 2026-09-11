@@ -521,6 +521,21 @@ export function validateRoutingPolicy(policy, catalog) {
         errors.push(`${bandPath}.fallback: modèle "${fallback}" absent du catalogue`)
       } else if (models[fallback].enabled !== true) {
         errors.push(`${bandPath}.fallback: modèle "${fallback}" désactivé dans le catalogue`)
+      } else if (
+        typeof minScore === 'number' &&
+        typeof models[fallback].quality_score === 'number' &&
+        models[fallback].quality_score < minScore
+      ) {
+        // Même filtre que le candidat primaire (voir plus bas) appliqué au
+        // fallback : scripts/model-router.mjs#evaluateCandidate rejette un
+        // fallback dont le quality_score est sous le min_score de la bande
+        // exactement comme un candidat primaire (« un fallback conserve les
+        // mêmes contraintes de sécurité que le choix initial », issue #404) —
+        // un fallback qui ne le franchit pas ne serait donc jamais retenu,
+        // ce qui a laissé passer #497/#503 jusqu'à la revue.
+        errors.push(
+          `${bandPath}.fallback: modèle "${fallback}" (quality_score=${models[fallback].quality_score}) sous le min_score de la bande (${minScore}) — ce fallback ne serait jamais retenu`,
+        )
       }
 
       const candidates = bandPolicy.candidates

@@ -419,6 +419,18 @@ describe('validateRoutingPolicy', () => {
     expect(errors).toEqual(expect.arrayContaining([expect.stringContaining('sous le min_score de la bande')]))
   })
 
+  it('rejects a fallback below the band min_score (issue #503) — a fallback that could never be selected', () => {
+    const policy = structuredClone(VALID_POLICY)
+    policy.routines['implement-task'].bands.trivial.min_score = 90
+    policy.routines['implement-task'].bands.trivial.fallback = 'sonnet-5'
+    const { valid, errors } = validateRoutingPolicy(policy, VALID_CATALOG)
+    expect(valid).toBe(false)
+    expect(errors).toEqual(
+      expect.arrayContaining([expect.stringContaining('routines.implement-task.bands.trivial.fallback: modèle "sonnet-5"')]),
+    )
+    expect(errors).toEqual(expect.arrayContaining([expect.stringContaining('ce fallback ne serait jamais retenu')]))
+  })
+
   it('rejects a candidate missing a capability required by the routine', () => {
     const policy = structuredClone(VALID_POLICY)
     policy.routines['implement-task'].required_capabilities.structured_output = true
