@@ -162,6 +162,25 @@
         }
       ]
     },
+    "arbitration": {
+      "description": "Enregistrement de l'arbitrage (#497/#498) qui a eu lieu pour ce run, s'il y en a eu un — null pour tout run qui n'a jamais atteint l'étape 5 du § Arbitrage du coordinateur (motif non arbitrable, budget épuisé, mode observe, ou aucune condition d'arbitrage rencontrée)",
+      "oneOf": [
+        { "type": "null" },
+        {
+          "type": "object",
+          "properties": {
+            "motif": { "type": ["string", "null"] },
+            "arbiter": { "type": ["string", "null"], "enum": ["arbiter-lead", "arbiter-expert", null] },
+            "model": { "type": ["string", "null"] },
+            "verdict": { "type": ["string", "null"], "enum": ["resolve", "override", "escalate", null] },
+            "action": { "type": ["string", "null"], "enum": ["extra-fix-round", "converge", "escalate", null] },
+            "sameModelAsRun": { "type": ["boolean", "null"] }
+          },
+          "required": ["motif", "arbiter", "model", "verdict", "action", "sameModelAsRun"],
+          "additionalProperties": false
+        }
+      ]
+    },
     "complete": {
       "type": "boolean",
       "description": "Faux dès qu'au moins un champ attendu de ce run est indisponible (missingFields non vide) — jamais présenté comme complet dans ce cas, y compris pour un run interrompu avant la fin"

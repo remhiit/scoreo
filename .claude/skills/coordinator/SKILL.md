@@ -853,10 +853,17 @@ The arbitration attempt follows this sequence:
      it".
 8. **On arbitration, add `automation:arbitrated` label** — a marker of
    observability (issue #496 § « Observabilité de l'arbitrage »), posed the
-   moment a real arbitration verdict is rendered (`mode: 'apply'` and the
-   arbiter returned a result). Never removed automatically. Never read by any
-   automated gate; never affects convergence or escalation decisions. A human
-   analyzing logs can filter PRs arbitrated this way for analysis.
+   moment a *valid* structured verdict is rendered (`mode: 'apply'` and the
+   arbiter's verdict passed step 6's `validateArbitrationVerdict`), whichever
+   of `resolve`/`override`/`escalate` it is. **Not posed** when step 6 treats
+   an invalid verdict as `escalate` (same handling as an arbiter that fails
+   outright) — an invalid verdict is not a real arbitration outcome to
+   attribute a disagreement-rate reading to, so it never counts as "the
+   arbiter returned a structured verdict" for this label (same reading as
+   `doc/automation/state-machine.md`'s `automation:arbitrated` row). Never
+   removed automatically. Never read by any automated gate; never affects
+   convergence or escalation decisions. A human analyzing logs can filter PRs
+   arbitrated this way for analysis.
 9. **Keep the arbitration record in memory for § Métriques.** Whenever step 5
    actually launched an arbiter (i.e. this run didn't stop earlier at step 2's
    `isArbitrableMotif`/step 3's budget/step 4's `observe` mode), capture
@@ -866,7 +873,7 @@ The arbitration attempt follows this sequence:
    `applyArbitrationVerdict`'s own `action` field (`'extra-fix-round'` |
    `'converge'` | `'escalate'`) computed at step 7, or `'escalate'` when the
    verdict itself was invalid (step 6). This is the `arbitration` object §
-   "Métriques" below builds into `runMetrics.arbitration` and passes as its
+   "Métriques" above builds into `runMetrics.arbitration` and passes as its
    own top-level field to `upsertAutomationLog`, on whichever of § "Converged"
    step 4 / § Escalade step 3 this run reaches next — same pattern as
    `budget` on condition 6. A run that never reached step 5 has no

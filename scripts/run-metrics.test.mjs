@@ -255,4 +255,61 @@ describe('validateRunMetrics', () => {
     expect(result.valid).toBe(false)
     expect(result.errors.some((e) => e.includes('generatedAt'))).toBe(true)
   })
+
+  it('accepts a well-formed arbitration record (#498/#504 review)', () => {
+    const { metrics } = buildRunMetrics(
+      fullInput({
+        arbitration: {
+          motif: 'derive-vs-review',
+          arbiter: 'arbiter-expert',
+          model: 'claude-opus-4-5',
+          verdict: 'resolve',
+          action: 'extra-fix-round',
+          sameModelAsRun: false,
+        },
+      }),
+    )
+    expect(validateRunMetrics(metrics)).toEqual({ valid: true, errors: [] })
+  })
+
+  it('rejects a malformed arbitration record — out-of-enum verdict (#498/#504 review)', () => {
+    const { metrics } = buildRunMetrics(fullInput())
+    const result = validateRunMetrics({
+      ...metrics,
+      arbitration: {
+        motif: 'derive-vs-review',
+        arbiter: 'arbiter-expert',
+        model: 'claude-opus-4-5',
+        verdict: 'maybe',
+        action: 'extra-fix-round',
+        sameModelAsRun: false,
+      },
+    })
+    expect(result.valid).toBe(false)
+    expect(result.errors.some((e) => e.includes('arbitration.verdict'))).toBe(true)
+  })
+
+  it('rejects a malformed arbitration record — out-of-enum arbiter (#498/#504 review)', () => {
+    const { metrics } = buildRunMetrics(fullInput())
+    const result = validateRunMetrics({
+      ...metrics,
+      arbitration: {
+        motif: 'derive-vs-review',
+        arbiter: 'arbiter-random',
+        model: 'claude-opus-4-5',
+        verdict: 'resolve',
+        action: 'extra-fix-round',
+        sameModelAsRun: false,
+      },
+    })
+    expect(result.valid).toBe(false)
+    expect(result.errors.some((e) => e.includes('arbitration.arbiter'))).toBe(true)
+  })
+
+  it('rejects a malformed arbitration record — non-object', () => {
+    const { metrics } = buildRunMetrics(fullInput())
+    const result = validateRunMetrics({ ...metrics, arbitration: 'resolve' })
+    expect(result.valid).toBe(false)
+    expect(result.errors.some((e) => e.includes('arbitration'))).toBe(true)
+  })
 })
