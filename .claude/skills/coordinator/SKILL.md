@@ -571,9 +571,13 @@ On a converged run (§ 4):
 - Two formal PR reviews per round, one from each isolated sub-agent (§ 2,
   functional and technical), each a real `pull_request_review_write`
   submission.
-- Zero to three fix commits (§ 3), each behind a green full check suite.
+- Zero to three fix commits (§ 3), each behind a green full check suite —
+  plus, on a run where arbitration (§ Arbitrage) reached a `resolve` verdict,
+  one further fix commit for that round (step 7), distinct from and not
+  counted against the three above.
 - `automation:review-pass` and, if still eligible, `automation:enabled`
-  (§ 4).
+  (§ 4); `automation:arbitrated` if arbitration rendered a valid verdict
+  (§ Arbitrage step 8).
 - `automation:coordinator-owned` removed, issue's `automation:in-progress`
   removed, in that order (§ 4).
 - One synthesis comment on the PR (`add_issue_comment`) — this skill's own
