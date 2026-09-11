@@ -157,7 +157,12 @@ or returns nothing before it can self-report its model): `model` is
 `inconnu`, with the reason stated in the same free-text output (never a
 guessed value) — the same "unavailable, never guessed" convention already
 used by `TaskContext`/`ComplexityAssessment` for a data point that can't be
-established.
+established. In `scripts/automation-log.mjs`'s journal specifically, that
+reason is carried in `executedBy.limits` (an array of strings, rendered as
+`  - Limites : ...` right under the "Exécuté par" line) — the same
+`limits` convention `complexity`/`routing` already use in that same journal
+for a data point that couldn't be fully established. Absent when the reason
+isn't provided, like every other optional field in that journal.
 
 This field is strictly additive: no existing field (`routine`, `routing`,
 `complexity`, `metrics`, etc.) is renamed or removed by it, and a journal
