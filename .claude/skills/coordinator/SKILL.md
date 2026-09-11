@@ -543,7 +543,13 @@ Reached when a review round (§ 2, first pass or after a fix round) finds no
    operator actually reads. **Also pass `runMetrics`**, built per §
    "Métriques" below from this same information plus the round data § 2/§ 3
    produced along the way — this is the one call in this whole run where
-   that record actually gets published.
+   that record actually gets published. **When this run reached
+   convergence via arbitration** (§ "Arbitrage" step 7's `resolve`/`override`
+   outcome, rather than a first-pass or ordinary fix-round convergence at §
+   2), also pass `arbitration` — the record § "Arbitrage" step 9 captured —
+   both nested in `runMetrics.arbitration` (via `buildRunMetrics`'s own
+   `arbitration` input) and as this call's own top-level `arbitration` field
+   (§ "Métriques" above). Absent on every other convergence path.
 5. Remove the issue's `automation:in-progress` — last, only after the four
    steps above, so the pipeline's one in-flight slot frees exactly when
    this run is actually finished, not before.
@@ -661,7 +667,11 @@ reached), whether the check suite implement-task/address-feedback reported
 was green without a dedicated CI-only fix round, and — only on an escalated
 run — the stop reason named in § Escalade's own comment (as `escalation`,
 the one free-text field, redacted the same way `buildRunMetrics` always
-redacts it). Call `scripts/run-metrics.mjs#buildRunMetrics(input)` with
+redacts it). **When this run went through arbitration** (§ "Arbitrage" step
+9 above captured a record), also pass it as `arbitration` — same optional
+treatment as everything else here: absent whenever § "Arbitrage" was never
+reached or stopped before launching an arbiter, never fabricated to fill the
+field. Call `scripts/run-metrics.mjs#buildRunMetrics(input)` with
 these; it returns `{ valid: true, metrics }` for anything this session can
 legitimately build (missing pieces simply come back named in
 `metrics.missingFields` and `metrics.complete: false`, never guessed —
@@ -679,9 +689,17 @@ rides the same `upsertAutomationLog` call this skill already makes on the
 issue's `coordinator-implement` journal at § "Converged" step 4 and §
 Escalade step 3 (re-passing `complexity`/`routing`/`taskContextVersion`/
 `routingApplied`/`activation` there already, per those steps' own text) —
-just add the freshly-built `runMetrics` to that same call. No new comment,
-no new marker: a relaunch on the same issue updates the same journal entry
-`upsertAutomationLog` already keeps idempotent by marker, exactly like every
+just add the freshly-built `runMetrics` to that same call, and, when this
+run was arbitrated, the same `arbitration` object (§ "Arbitrage" step 9
+above) again as that call's own top-level `arbitration` field — distinct
+from, and in addition to, the copy `buildRunMetrics` already nested inside
+`runMetrics.arbitration`: `scripts/automation-log.mjs#renderAutomationLog`
+only renders its own « Arbitrage » line from that top-level field, never
+by reaching into `runMetrics` for it, so both need passing, the same way §
+Escalade step 3's `budget` is its own top-level field there rather than
+part of `runMetrics`. No new comment, no new marker: a relaunch on the same
+issue updates the same journal entry `upsertAutomationLog` already keeps
+idempotent by marker, exactly like every
 other field it renders. The synthesis comment (§ "Sorties obligatoires"
 above) keeps naming the same three raw values for a human skimming the PR;
 `RunMetrics` is the structured, validated counterpart published on the
@@ -834,6 +852,20 @@ The arbitration attempt follows this sequence:
    arbiter returned a result). Never removed automatically. Never read by any
    automated gate; never affects convergence or escalation decisions. A human
    analyzing logs can filter PRs arbitrated this way for analysis.
+9. **Keep the arbitration record in memory for § Métriques.** Whenever step 5
+   actually launched an arbiter (i.e. this run didn't stop earlier at step 2's
+   `isArbitrableMotif`/step 3's budget/step 4's `observe` mode), capture
+   `{motif, arbiter, model, verdict: verdict.verdict, action, sameModelAsRun:
+   verdict.sameModelAsRun}` — `model` being the model the arbiter sub-agent
+   actually ran with (step 5's `routeModel` result), `action` being
+   `applyArbitrationVerdict`'s own `action` field (`'extra-fix-round'` |
+   `'converge'` | `'escalate'`) computed at step 7, or `'escalate'` when the
+   verdict itself was invalid (step 6). This is the `arbitration` object §
+   "Métriques" below builds into `runMetrics.arbitration` and passes as its
+   own top-level field to `upsertAutomationLog`, on whichever of § "Converged"
+   step 4 / § Escalade step 3 this run reaches next — same pattern as
+   `budget` on condition 6. A run that never reached step 5 has no
+   `arbitration` object at all; neither call receives one.
 
 **Résumé des cas limites :**
 - **L'arbitre échoue ou rend un verdict invalide** → traité comme `escalate`,
@@ -887,7 +919,15 @@ issue's `automation:in-progress` for the whole run):
    never reached its
    own step 5, so there is nothing left `running` there to close, and
    nothing was captured to re-pass either) — `onlyIfRunning` already makes
-   that safe, same as every other caller of it. **On condition 6, also pass
+   that safe, same as every other caller of it. **When arbitration was
+   attempted before this escalation** (§ "Arbitrage" step 7's `escalate`
+   outcome, or an arbiter that failed/returned an invalid verdict, step 9's
+   record either way), also pass `arbitration` — both nested in
+   `runMetrics.arbitration` and as this call's own top-level `arbitration`
+   field (§ "Métriques" above), same as on the convergence path. Absent for
+   conditions 2/4/5/6 and for a condition 1/3 escalation that never reached
+   arbitration (motif not arbitrable, budget exceeded, or mode `observe`).
+   **On condition 6, also pass
    `budget`** — the exact `checkBudget` result that returned `status:
    'exceeded'` (or the load error's message, shaped the same way, when §
    "Budgets" failed at step 1) — so the closed journal names the crossed

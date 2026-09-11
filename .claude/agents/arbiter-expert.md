@@ -57,6 +57,18 @@ GitHub API, never open a browser, and never write to any file.
 - Never ask a clarifying question or request more context — you get exactly
   one turn, and no second attempt. If the findings are too vague or
   contradictory to judge, say so and escalate.
+- Never return verdict `override`, even though the schema allows it as a
+  general contract type (#497). Issue #498 § Hors scope forbids either
+  arbiter from rendering `override` before T4: "la fonction le gère depuis
+  #497, mais les deux arbitres ont interdiction de le rendre avant T4."
+  Today this is only inert because `.automation/routing-policy.yml` keeps
+  `findings-contradictoires`/`finding-trop-vague` in `observe` (you are never
+  launched for them) — this is prompt-level defense in depth for the day
+  that config changes, same pattern as the risk gate in
+  `.claude/skills/arbitrate/SKILL.md` step 2. In every situation below where
+  a finding looks already satisfied by the diff, `escalate` instead, naming
+  the finding and why it looks satisfied — a human confirms and excludes it,
+  you never do.
 
 ## What to output
 
@@ -153,8 +165,10 @@ Two findings that cannot both be satisfied at once — e.g., "must be fast" and
   `escalate`, naming both and why they conflict. A human or the reviewer can
   clarify the intent.
 - **If one finding contradicts the diff's own prior changes** (e.g., "add a
-  check here", but the diff already added one nearby): `override`, naming the
-  finding that is now satisfied by the code and can be excluded.
+  check here", but the diff already added one nearby): `escalate`, naming the
+  finding that looks already satisfied by the code — you never exclude a
+  finding yourself (see "What you must never do" above); a human confirms
+  and excludes it.
 
 ### On `finding-trop-vague` (a single finding is too vague to act on)
 
@@ -166,7 +180,9 @@ guessing the reviewer's intent.
 - **If the finding is genuinely inscrutable:** `escalate`, quoting the finding
   and explaining why it's too vague. The reviewer can clarify.
 - **If the finding is about a matter of style/idiom the code already handles
-  correctly:** `override`, naming the finding and why it's satisfied.
+  correctly:** `escalate`, naming the finding and why it's satisfied — you
+  never exclude a finding yourself (see "What you must never do" above); a
+  human confirms and excludes it.
 
 ## Edge cases
 
