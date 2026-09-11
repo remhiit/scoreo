@@ -61,6 +61,7 @@ export function renderAutomationLog({
   metrics,
   runMetrics,
   budget,
+  arbitration,
   findings,
   missingReviewers,
   summary,
@@ -279,6 +280,19 @@ export function renderAutomationLog({
   if (budget) {
     const icon = budget.status === 'exceeded' ? '⚠️' : '✅'
     lines.push(`- Budget : ${icon} \`${budget.status}\` — ${budget.reason}`)
+  }
+  // Optional: publie le résultat d'un arbitrage (issue #497, tranche 1/5 de
+  // l'épic #496 ; scripts/arbitration.mjs#applyArbitrationVerdict) qui a eu
+  // lieu pour résoudre un désaccord lors des conditions 1 ou 3 du
+  // coordinateur. Journalise le motif arbitré, l'arbitre consulté, le modèle
+  // utilisé, le verdict rendu, l'action appliquée (resolve/override/escalate)
+  // et si ce jugement a tourné sur le même modèle que le run. Absent pour tout
+  // run qui n'a pas été arbitré — condition 2/4/5/6 (escalade directe), ou
+  // conditions 1/3 mais mode `observe` (pas d'arbitrage lancé).
+  if (arbitration) {
+    lines.push(
+      `- Arbitrage : motif \`${arbitration.motif}\`, arbitre \`${arbitration.arbiter}\`, modèle \`${arbitration.model}\`, verdict \`${arbitration.verdict}\`, action appliquée \`${arbitration.action}\`, même modèle \`${arbitration.sameModelAsRun}\``,
+    )
   }
   // Optional: attribue chaque finding des deux relecteurs à corpus disjoints
   // (#470) à celui ou ceux qui l'ont rendu, et marque un finding hors corpus

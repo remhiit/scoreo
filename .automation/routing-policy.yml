@@ -107,7 +107,7 @@ arbitration:
   finding-trop-vague: observe
   derive-vs-spec: observe
   tentatives-epuisees: observe
-  derive-vs-review: observe
+  derive-vs-review: apply
   validation-rouge: observe
   findings-contradictoires: observe
 activation:

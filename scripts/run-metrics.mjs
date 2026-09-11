@@ -64,6 +64,7 @@ export function buildRunMetrics({
   outcome,
   findings = null,
   usage = null,
+  arbitration = null,
   generatedAt = new Date().toISOString(),
 }) {
   if (!routine || typeof routine !== 'string') {
@@ -148,6 +149,26 @@ export function buildRunMetrics({
     }
   }
 
+  let arbitrationRecord = null
+  if (arbitration) {
+    // Arbitration is optional — a run without arbitration (conditions 2/4/5/6,
+    // or conditions 1/3 with mode 'observe') has no arbitration field at all.
+    if (arbitration.motif == null) missingFields.push('arbitration.motif')
+    if (arbitration.arbiter == null) missingFields.push('arbitration.arbiter')
+    if (arbitration.model == null) missingFields.push('arbitration.model')
+    if (arbitration.verdict == null) missingFields.push('arbitration.verdict')
+    if (arbitration.action == null) missingFields.push('arbitration.action')
+    if (arbitration.sameModelAsRun == null) missingFields.push('arbitration.sameModelAsRun')
+    arbitrationRecord = {
+      motif: arbitration.motif ?? null,
+      arbiter: arbitration.arbiter ?? null,
+      model: arbitration.model ?? null,
+      verdict: arbitration.verdict ?? null,
+      action: arbitration.action ?? null,
+      sameModelAsRun: arbitration.sameModelAsRun ?? null,
+    }
+  }
+
   const metrics = {
     version: RUN_METRICS_VERSION,
     routine,
@@ -165,6 +186,7 @@ export function buildRunMetrics({
     },
     findings: findingsRecord,
     usage: usageRecord,
+    arbitration: arbitrationRecord,
     complete: missingFields.length === 0,
     missingFields,
     generatedAt,

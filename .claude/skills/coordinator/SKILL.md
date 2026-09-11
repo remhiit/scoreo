@@ -763,7 +763,85 @@ instead of by a standalone R2/R4:
    budget blocks; step 1 of the sequence below finds a PR only in the
    mid-run case.
 
-In every case, this skill performs the full escalation sequence itself
+### Arbitrage (conditions 1 et 3 seulement, avant escalade)
+
+For conditions 1 and 3 only (§ 1's implementation stops, § 3's fix loop
+stops), this skill attempts arbitration **before** the escalation sequence
+below, for exactly the reasons issue #496 exists: spec ambiguity and fix
+convergence are **judgments**, not facts, and a second opinion may unblock
+the run (issue #497, tranche 1/5 ; issue #496 § « Les cinq garde-fous »,
+#2). Conditions 2, 4, 5, 6 are facts (missing reviewer, sub-agent error,
+routing/budget failure) and never arbitrated — they escalade directly.
+
+The arbitration attempt follows this sequence:
+
+1. **Determine the motif** — a label for why escalation was triggered. Each
+   condition maps to one or more motifs per `doc/automation/
+   state-machine.md` row #26/#27 and the mappings in
+   `scripts/arbitration.mjs#LEAD_MOTIFS`/`#EXPERT_MOTIFS`:
+   - Condition 1 → `spec-ambigue` or `derive-vs-spec`.
+   - Condition 3 → `tentatives-epuisees`, `derive-vs-review`, `validation-rouge`,
+     `findings-contradictoires`, or `finding-trop-vague` (per issue #479's
+     categorization of why the fix loop stops).
+2. **Check if the motif is arbitrable:** `scripts/arbitration.mjs#isArbitrableMotif(motif)`.
+   If `false`, escalade directly (should never happen; this is defense in
+   depth).
+3. **Check arbitration budget:** `scripts/routing-budget.mjs#checkBudget(policy,
+   'arbitrations')`. On `status: 'exceeded'`, escalade directly with the
+   crossed budget named in the comment (same as condition 6 above). On
+   `status: 'ok'`, proceed to step 4.
+4. **Resolve arbitration mode:** `scripts/arbitration.mjs#resolveArbitration(policy,
+   { motif, riskLevel })`. Returns `{ mode: 'apply' | 'observe', reason }`:
+   - On `observe`: the routing policy declares this motif not arbitrable,
+     or the risk is `high`, or `rollback: true` is set. Escalade directly.
+   - On `apply`: proceed to step 5.
+5. **Launch arbiter sub-agent:** Call `Agent` with:
+   - `subagent_type: selectArbiter(motif)` — either `"arbiter-lead"` or
+     `"arbiter-expert"` per `scripts/arbitration.mjs#selectArbiter`, never a
+     coordinator choice.
+   - `model: routeModel(policy, routine='arbitration', complexity, risk)`,
+     per the policy routing at `.automation/routing-policy.yml#routines.arbitration`.
+   - Full prompt carrying the arbiter's corpus (spec + functional findings for
+     lead; diff + technical findings for expert), the motif, and the
+     run's model name (for `sameModelAsRun` self-reporting).
+   - The arbiter returns a structured `verdict` (` resolve` | `override` |
+     `escalate`) per `schemas/automation/arbitration-verdict.schema.json`.
+6. **Validate the verdict:** `scripts/arbitration.mjs#validateArbitrationVerdict(verdict)`.
+   On invalid (schema violation, wrong arbiter, motif mismatch): treat as
+   `escalate` (same as an arbiter that fails outright).
+7. **Apply the verdict:** `scripts/arbitration.mjs#applyArbitrationVerdict(verdict,
+   reviewVerdict)` (only when the verdict is `resolve` or `override`; `escalate`
+   is handled below):
+   - `resolve` → launch one more fix round with the arbiter's `instruction`,
+     not resetting `automation:attempt-*` (this round is arbitrated, distinct,
+     plafonné par the `arbitrations: 1` budget, never by a 4th attempt). On
+     completion, check the suite: if green, converge; if red, escalade (motif
+     « Échec de validation après arbitrage »).
+   - `override` → remove the designated finding from the review verdict; if
+     other blocking/important findings remain, launch a fix round to address
+     them (same as step 3); if none remain, converge.
+   - `escalate` → continue with the normal escalation sequence below (the
+     arbiter could not resolve the dispute).
+8. **On arbitration, add `automation:arbitrated` label** — a marker of
+   observability (issue #496 § « Observabilité de l'arbitrage »), posed the
+   moment a real arbitration verdict is rendered (`mode: 'apply'` and the
+   arbiter returned a result). Never removed automatically. Never read by any
+   automated gate; never affects convergence or escalation decisions. A human
+   analyzing logs can filter PRs arbitrated this way for analysis.
+
+**Résumé des cas limites :**
+- **L'arbitre échoue ou rend un verdict invalide** → traité comme `escalate`,
+  jamais relancé (#497, cas limite).
+- **Budget `arbitrations` déjà consommé** (un arbitrage a déjà eu lieu dans
+  ce run) → escalade directe, sans second arbitre.
+- **Motif `budget-depasse`** → jamais arbitré ; escalade directe (#478).
+- **Risque `high`** → `resolveArbitration` résout `observe`, arbitrage non
+  lancé, escalade directe.
+- **Le tour arbitré échoue à la validation** → escalade, motif « Échec de
+  validation après arbitrage ».
+
+In every case (except arbitration resolution leading to convergence or a fix
+round), this skill performs the full escalation sequence itself
 (rather than delegating it to a sub-agent, since only this skill holds the
 issue's `automation:in-progress` for the whole run):
 
