@@ -8,8 +8,8 @@ import {
   validateArbitrationVerdict,
 } from './arbitration.mjs'
 
-const LEAD_MOTIFS = ['spec-ambigue', 'finding-trop-vague', 'derive-vs-spec']
-const EXPERT_MOTIFS = ['tentatives-epuisees', 'derive-vs-review', 'validation-rouge', 'findings-contradictoires']
+const LEAD_MOTIFS = ['spec-ambigue', 'derive-vs-spec']
+const EXPERT_MOTIFS = ['tentatives-epuisees', 'derive-vs-review', 'validation-rouge', 'findings-contradictoires', 'finding-trop-vague']
 const NON_ARBITRABLE_MOTIFS = ['relecteur-manquant', 'sous-agent-hs', 'routage-no-candidate', 'budget-depasse', 'possession-perimee']
 
 describe('isArbitrableMotif', () => {
@@ -252,6 +252,24 @@ describe('validateArbitrationVerdict', () => {
     const result = validateArbitrationVerdict({ ...VALID_ESCALATE, arbiter: 'arbiter-junior' })
     expect(result.valid).toBe(false)
     expect(result.errors.some((e) => e.includes('arbiter'))).toBe(true)
+  })
+
+  it('rejects a valid arbiter that does not match selectArbiter(motif) — arbiter-expert on a condition-1 motif', () => {
+    // spec-ambigue is a LEAD_MOTIFS entry (selectArbiter → arbiter-lead) —
+    // arbiter-expert structurally never reads the issue spec it would need
+    // to rule on this motif.
+    const result = validateArbitrationVerdict({ ...VALID_ESCALATE, motif: 'spec-ambigue', arbiter: 'arbiter-expert' })
+    expect(result.valid).toBe(false)
+    expect(result.errors.some((e) => e.includes('arbiter') && e.includes('spec-ambigue'))).toBe(true)
+  })
+
+  it('rejects a valid arbiter that does not match selectArbiter(motif) — arbiter-lead on a condition-3 motif', () => {
+    // validation-rouge is an EXPERT_MOTIFS entry (selectArbiter → arbiter-expert)
+    // — arbiter-lead structurally never reads the technical review it would
+    // need to rule on this motif.
+    const result = validateArbitrationVerdict({ ...VALID_RESOLVE, motif: 'validation-rouge', arbiter: 'arbiter-lead' })
+    expect(result.valid).toBe(false)
+    expect(result.errors.some((e) => e.includes('arbiter') && e.includes('validation-rouge'))).toBe(true)
   })
 
   it('rejects a "resolve" without instruction', () => {

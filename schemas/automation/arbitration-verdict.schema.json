@@ -24,7 +24,7 @@
     },
     "arbiter": {
       "type": "string",
-      "description": "L'arbitre qui a rendu ce verdict — doit correspondre à scripts/arbitration.mjs#selectArbiter(motif), jamais l'autre : `arbiter-lead` pour spec-ambigue/finding-trop-vague/derive-vs-spec, `arbiter-expert` pour tentatives-epuisees/derive-vs-review/validation-rouge/findings-contradictoires.",
+      "description": "L'arbitre qui a rendu ce verdict — doit correspondre à scripts/arbitration.mjs#selectArbiter(motif), jamais l'autre : `arbiter-lead` pour spec-ambigue/derive-vs-spec, `arbiter-expert` pour tentatives-epuisees/derive-vs-review/validation-rouge/findings-contradictoires/finding-trop-vague. Recoupé mécaniquement par scripts/arbitration.mjs#validateArbitrationVerdict — un arbiter valide (l'un des deux noms d'énumération) mais qui ne correspond pas au motif est refusé, jamais accepté.",
       "enum": ["arbiter-lead", "arbiter-expert"]
     },
     "reasoning": {

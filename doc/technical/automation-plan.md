@@ -61,7 +61,7 @@ remettre en cause revient à refaire le plan.
      premier ne converge pas : l'escalade humaine reprend la main.
 
    Voir doc/automation/model-routing.md § « Arbitrage » pour le détail des
-   quatre fonctions et de la table des motifs.
+   cinq fonctions et de la table des motifs.
 3. **Push, pas pull.** Les runs de routine sont un budget rare (5/jour en Pro,
    15 en Max). Aucune routine ne « surveille » ni ne « poll » : elle est
    déclenchée par un événement.

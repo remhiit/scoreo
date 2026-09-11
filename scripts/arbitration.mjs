@@ -28,17 +28,34 @@
 // `arbitration` livrée est entièrement en "observe" (voir
 // .automation/routing-policy.yml).
 import { normalizeFindingSummary } from './review-verdict.mjs'
+import { normalizeRiskLevel } from './risk-controls.mjs'
 
 const ROUTING_POLICY_PATH = '.automation/routing-policy.yml'
 const VALID_MODES = ['observe', 'apply']
 
-// Motifs de la condition 1 (spec ambiguë) : tranchés par `arbiter-lead`, qui
-// ne lit que la spec de l'issue, `doc/functional/`, le diff et les findings
-// du relecteur fonctionnel — jamais la review technique.
-const LEAD_MOTIFS = ['spec-ambigue', 'finding-trop-vague', 'derive-vs-spec']
-// Motifs de la condition 3 (boucle de correctif non convergée) : tranchés
-// par `arbiter-expert`, qui ne lit jamais la spec de l'issue.
-const EXPERT_MOTIFS = ['tentatives-epuisees', 'derive-vs-review', 'validation-rouge', 'findings-contradictoires']
+// Motifs de la condition 1 (spec ambiguë, jamais après une review) :
+// tranchés par `arbiter-lead`, qui ne lit que la spec de l'issue,
+// `doc/functional/`, le diff et les findings du relecteur fonctionnel —
+// jamais la review technique.
+const LEAD_MOTIFS = ['spec-ambigue', 'derive-vs-spec']
+// Motifs de la condition 3 (boucle de correctif non convergée, toujours
+// après une review) : tranchés par `arbiter-expert`, qui ne lit jamais la
+// spec de l'issue. `finding-trop-vague` vit ici, jamais dans LEAD_MOTIFS :
+// `.claude/skills/coordinator/SKILL.md` § Escalade place « a single [finding]
+// too vague to act on without guessing the reviewer's intent » explicitement
+// sous sa condition 3, comme « the same motif » que `derive-vs-review`/
+// `findings-contradictoires` (état partagé, pas une simple ressemblance) —
+// jamais sous sa condition 1, qui ne concerne que l'étape d'implémentation
+// avant toute review. Un motif « trop vague » ne peut par construction
+// exister qu'une fois qu'un relecteur a rendu un finding, donc jamais avant
+// la review que `arbiter-lead` ne lit pas. Il garde toutefois sa propre
+// entrée de matrice (`arbitration.finding-trop-vague`), distincte de
+// `derive-vs-review`/`findings-contradictoires` : les trois motifs restent
+// arbitrables séparément — seule leur restitution dans le commentaire
+// d'escalade du coordinateur (§ Escalade condition 3, un seul des trois
+// libellés « Dérive de périmètre... ») les regroupe sous un même nom lisible
+// pour un humain.
+const EXPERT_MOTIFS = ['tentatives-epuisees', 'derive-vs-review', 'validation-rouge', 'findings-contradictoires', 'finding-trop-vague']
 
 // Espace fermé des motifs arbitrables — les autres conditions d'escalade
 // (#2 relecteur manquant, #4 sous-agent hors service, #5 routage sans
@@ -63,22 +80,12 @@ export function selectArbiter(motif) {
   return null
 }
 
-// Même paire que RISK_LEVELS de scripts/risk-controls.mjs (#479) : la
-// catégorie Faible/Élevé d'issue-to-spec, binaire à dessein. Mirroré à la
-// main plutôt qu'importé — risk-controls.mjs ne l'exporte pas, et ce n'est
-// pas davantage un fichier de config externe à refléter (contrairement à
-// COMPLEXITY_BANDS ci-dessous, qui reflète .automation/complexity-
-// thresholds.yml) : deux constantes locales à deux valeurs fixes ne
-// justifient pas une dépendance croisée entre ces modules.
-const RISK_LEVELS = ['low', 'high']
-
-// Un niveau absent, vide ou hors de RISK_LEVELS est traité comme "high" —
-// jamais comme "low" (issue #497, cas limite « riskLevel absent ou
-// illisible ») — même précédent que scripts/risk-controls.mjs#normalizeRiskLevel.
-function normalizeRiskLevel(riskLevel) {
-  if (RISK_LEVELS.includes(riskLevel)) return { level: riskLevel, unreadable: false }
-  return { level: 'high', unreadable: true }
-}
+// `normalizeRiskLevel` (paire Faible/Élevé d'issue-to-spec, binaire à
+// dessein, un niveau absent/illisible traité comme "high", jamais comme
+// "low") vient de scripts/risk-controls.mjs (#479) — importée plutôt que
+// dupliquée ici, même geste que l'import de `normalizeFindingSummary`
+// ci-dessus : une seule définition à faire dériver si cette échelle change
+// un jour.
 
 function observe(reason) {
   return { mode: 'observe', reason }
@@ -172,6 +179,17 @@ export function validateArbitrationVerdict(reply) {
   }
   if (!VALID_ARBITERS.includes(reply.arbiter)) {
     errors.push(`arbiter: doit être "arbiter-lead" ou "arbiter-expert" (valeur: ${JSON.stringify(reply.arbiter)})`)
+  } else if (isArbitrableMotif(reply.motif) && reply.arbiter !== selectArbiter(reply.motif)) {
+    // Garantie de disjonction de corpus (#470) : un arbitre ne rend jamais
+    // un verdict sur un motif qu'il n'a structurellement pas le droit de
+    // lire — schemas/automation/arbitration-verdict.schema.json documente
+    // cet invariant croisé explicitement, jamais recoupé avant #497 finding
+    // technique « important » (validateArbitrationVerdict ne recoupait que
+    // l'appartenance de `arbiter` à VALID_ARBITERS, jamais sa correspondance
+    // au motif).
+    errors.push(
+      `arbiter: "${reply.arbiter}" ne correspond pas à l'arbitre attendu pour le motif "${reply.motif}" (attendu: "${selectArbiter(reply.motif)}")`,
+    )
   }
   if (typeof reply.reasoning !== 'string' || reply.reasoning.trim().length === 0) {
     errors.push('reasoning: champ requis manquant')

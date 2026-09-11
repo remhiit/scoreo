@@ -842,7 +842,7 @@ applyArbitrationVerdict(verdict, reviewVerdict)
                                         // → { action: 'extra-fix-round' | 'converge' | 'escalate', reason, instruction }
 ```
 
-Quatre fonctions pures, zéro effet de bord, zéro appel réseau — même
+Cinq fonctions pures, zéro effet de bord, zéro appel réseau — même
 précédent que `scripts/routing-activation.mjs` et `scripts/review-verdict.mjs`,
 dont ce module reprend chacun un patron exact. Cette tranche **n'a aucun
 appelant en production** : aucun agent `.claude/agents/arbiter-*.md`, aucun
@@ -853,12 +853,28 @@ skill `arbitrate`, aucun câblage dans le coordinateur — T2 de l'épique #496.
 | Motif | Condition du coordinateur | Arbitre |
 |---|---|---|
 | `spec-ambigue` | 1 — spec ambiguë/incomplète | `arbiter-lead` |
-| `finding-trop-vague` | 1 — finding trop vague pour agir sans deviner l'intention | `arbiter-lead` |
 | `derive-vs-spec` | 1 — dérive de périmètre par rapport à la spec de l'issue | `arbiter-lead` |
 | `tentatives-epuisees` | 3 — boucle de correctif non convergée | `arbiter-expert` |
 | `derive-vs-review` | 3 — dérive de périmètre par rapport à ce que la review a demandé | `arbiter-expert` |
 | `validation-rouge` | 3 — suite de checks qui reste rouge | `arbiter-expert` |
 | `findings-contradictoires` | 3 — retour contradictoire entre relecteurs | `arbiter-expert` |
+| `finding-trop-vague` | 3 — finding trop vague pour agir sans deviner l'intention | `arbiter-expert` |
+
+`finding-trop-vague` vit en condition 3, jamais en condition 1 :
+`.claude/skills/coordinator/SKILL.md` § Escalade place « a single [finding]
+too vague to act on without guessing the reviewer's intent » explicitement
+sous sa condition 3 (la boucle de correctif qui ne converge pas), au même
+titre que `derive-vs-review`/`findings-contradictoires` — « the same motif »
+pour ce texte, pas une quatrième cause distincte. La condition 1 ne concerne
+que l'étape d'implémentation *avant* toute review ; un finding trop vague
+n'existe par construction qu'une fois qu'un relecteur en a rendu un, donc
+jamais à ce stade. `finding-trop-vague` garde néanmoins sa propre entrée de
+matrice (`arbitration.finding-trop-vague`, distincte de `derive-vs-review`/
+`findings-contradictoires`) : les trois restent arbitrables séparément —
+c'est seulement leur restitution dans le commentaire d'escalade du
+coordinateur (§ Escalade condition 3, un seul des trois libellés « Dérive de
+périmètre constatée par un relecteur ») qui les regroupe sous un nom commun
+pour un humain.
 
 Non arbitrables, toujours une escalade directe : `relecteur-manquant`
 (condition 2 — un arbitre ne peut pas inventer la review absente),
@@ -873,14 +889,17 @@ humaine, jamais un `true` par défaut.
 ### `selectArbiter(motif)` — un seul arbitre par motif
 
 Sélection mécanique, jamais un choix du coordinateur : `arbiter-lead` pour
-les trois motifs de la condition 1 (il ne lit que la spec de l'issue,
+les deux motifs de la condition 1 (il ne lit que la spec de l'issue,
 `doc/functional/`, le diff et les findings du relecteur fonctionnel —
-jamais la review technique), `arbiter-expert` pour les quatre motifs de la
+jamais la review technique), `arbiter-expert` pour les cinq motifs de la
 condition 3 (diff, `doc/technical/architecture.md`, `project-conventions`,
 findings des deux relecteurs, rapport du correcteur — jamais la spec de
 l'issue). La disjonction de #470 tient : l'expert ne lit toujours pas la
 spec, et « dérive vs. spec » est justement ce qui bascule le motif vers le
 lead plutôt que vers l'expert. Un motif non arbitrable renvoie `null`.
+`validateArbitrationVerdict` recoupe mécaniquement `arbiter` avec
+`selectArbiter(motif)` — un verdict où l'arbitre ne correspond pas au motif
+est refusé (§ ci-dessous), jamais accepté puis appliqué en silence.
 
 ### `resolveArbitration(policy, { motif, riskLevel })`
 
@@ -937,6 +956,12 @@ Un verdict d'arbitre suit `schemas/automation/arbitration-verdict.schema.json` :
 qui n'est simplement pas un objet, est refusé par `validateArbitrationVerdict`
 — et `applyArbitrationVerdict` appelé sur un verdict refusé renvoie toujours
 `{ action: 'escalate', ... }`, jamais une interprétation du texte libre.
+`validateArbitrationVerdict` refuse aussi un `arbiter` valide (l'un des deux
+noms d'énumération) mais qui ne correspond pas à `selectArbiter(motif)` — la
+garantie de disjonction de corpus (§ « selectArbiter » ci-dessus) tiendrait
+sinon en pratique mais pas à la validation : rien n'empêcherait
+`arbiter-expert` de rendre un verdict sur `spec-ambigue`, un motif qu'il n'a
+structurellement pas le droit de lire.
 
 `applyArbitrationVerdict` prolonge `scripts/review-verdict.mjs#computeReviewVerdict`
 (#470) plutôt que de le remplacer :
@@ -982,7 +1007,9 @@ distinction des quatre `reason`, refus d'un mode inconnu),
 `override` qui ne converge pas, verdict hors schéma → `escalate`, `resolve`
 sans instruction → `escalate`) et `validateArbitrationVerdict` (objet
 valide, verdict hors énumération, champ requis manquant par verdict, entrée
-qui n'est pas un objet). Non-régression : `scripts/automation-dispatch.test.mjs`
+qui n'est pas un objet, `arbiter` valide mais qui ne correspond pas à
+`selectArbiter(motif)` dans les deux sens — `arbiter-expert` sur un motif de
+condition 1, `arbiter-lead` sur un motif de condition 3). Non-régression : `scripts/automation-dispatch.test.mjs`
 couvre le refus des nouvelles clés invalides (`arbitration.<motif>`,
 `budgets.<routine>.per_run.arbitrations`) sans casser la validation des
 sections déjà en place.
