@@ -851,9 +851,14 @@ applyArbitrationVerdict(verdict, reviewVerdict)
 
 Cinq fonctions pures, zéro effet de bord, zéro appel réseau — même
 précédent que `scripts/routing-activation.mjs` et `scripts/review-verdict.mjs`,
-dont ce module reprend chacun un patron exact. Cette tranche **n'a aucun
-appelant en production** : aucun agent `.claude/agents/arbiter-*.md`, aucun
-skill `arbitrate`, aucun câblage dans le coordinateur — T2 de l'épique #496.
+dont ce module reprend chacun un patron exact. Depuis la tranche 2/5 (#498),
+ce module a un appelant en production : les agents
+`.claude/agents/arbiter-lead.md`/`arbiter-expert.md`, le skill
+`.claude/skills/arbitrate/SKILL.md`, et le câblage dans
+`.claude/skills/coordinator/SKILL.md` § Arbitrage. Voir § « Triplet
+actuellement en mode `apply` » ci-dessous : la matrice `arbitration` n'est
+plus entièrement en "observe", un seul triplet (`derive-vs-review` × risque
+`low` × verdict `resolve`) étant passé en "apply".
 
 ### Les motifs arbitrables — et ceux qui ne le sont jamais
 
@@ -896,14 +901,20 @@ humaine, jamais un `true` par défaut.
 ### `selectArbiter(motif)` — un seul arbitre par motif
 
 Sélection mécanique, jamais un choix du coordinateur : `arbiter-lead` pour
-les deux motifs de la condition 1 (il ne lit que la spec de l'issue,
-`doc/functional/`, le diff et les findings du relecteur fonctionnel —
-jamais la review technique), `arbiter-expert` pour les cinq motifs de la
-condition 3 (diff, `doc/technical/architecture.md`, `project-conventions`,
-findings des deux relecteurs, rapport du correcteur — jamais la spec de
-l'issue). La disjonction de #470 tient : l'expert ne lit toujours pas la
-spec, et « dérive vs. spec » est justement ce qui bascule le motif vers le
-lead plutôt que vers l'expert. Un motif non arbitrable renvoie `null`.
+les deux motifs de la condition 1 (il ne lit que la spec de l'issue, le
+diff (s'il en existe un) et les findings du relecteur fonctionnel — jamais
+`doc/functional/` en tant que tel, jamais la review technique),
+`arbiter-expert` pour les cinq motifs de la condition 3 (diff, les findings
+du relecteur technique, la tentative de correctif — jamais `doc/technical/
+architecture.md`/`project-conventions` en tant que tels, jamais les
+findings du relecteur fonctionnel, jamais la spec de l'issue). Corpus
+identique des deux côtés — ici et dans le prompt que construit le
+coordinateur (`.claude/skills/coordinator/SKILL.md` § Arbitrage step 5) et
+dans `.claude/skills/arbitrate/SKILL.md` § Entrées requises. La disjonction
+de #470 tient : l'expert ne lit toujours pas la spec ni les findings
+fonctionnels, et « dérive vs. spec » est justement ce qui bascule le motif
+vers le lead plutôt que vers l'expert. Un motif non arbitrable renvoie
+`null`.
 `validateArbitrationVerdict` recoupe mécaniquement `arbiter` avec
 `selectArbiter(motif)` — un verdict où l'arbitre ne correspond pas au motif
 est refusé (§ ci-dessous), jamais accepté puis appliqué en silence.
@@ -916,7 +927,7 @@ arbitration:
   finding-trop-vague: observe
   derive-vs-spec: observe
   tentatives-epuisees: observe
-  derive-vs-review: observe
+  derive-vs-review: apply        # Tranche 2/5 (#498) : le seul motif en mode 'apply'
   validation-rouge: observe
   findings-contradictoires: observe
 ```
@@ -953,6 +964,21 @@ motif qu'on lui demande de résoudre — un motif absent de
 `ARBITRABLE_MOTIFS`, ou un mode hors de `observe`/`apply`, est refusé au
 chargement comme à la résolution, avec le même message nommant
 `.automation/routing-policy.yml` et la clé fautive (`arbitration.<motif>`).
+
+### Triplet actuellement en mode `apply` (tranche 2/5, #498)
+
+Seul le triplet **motif `derive-vs-review` × risque `low` × verdict
+`resolve`** est passé en `apply` dès cette tranche (#498). Tous les autres
+motifs restent en `observe` : pour ceux-là, aucun arbitre n'est même lancé
+(`.claude/skills/coordinator/SKILL.md` § Arbitrage, condition « on
+observe ») — l'escalade humaine reste directe, sans consultation d'arbitre
+ni changement de résultat, ce qui permet la calibration (#481) sans donnée
+de risque (§ Contexte de #496). Le verdict `resolve` signifie qu'un tour de
+correctif supplémentaire est lancé, portant l'instruction de l'arbitre
+(`arbiter-expert`), après que trois tentatives régulières ont échoué à
+converger **et** que la boucle de review a signalé une dérive de périmètre.
+C'est le plus petit triplet défendable — un seul motif arbitrable, une seule
+condition de risque, un seul verdict appliqué.
 
 ### `validateArbitrationVerdict(reply)` et `applyArbitrationVerdict(verdict, reviewVerdict)`
 

@@ -543,7 +543,13 @@ Reached when a review round (§ 2, first pass or after a fix round) finds no
    operator actually reads. **Also pass `runMetrics`**, built per §
    "Métriques" below from this same information plus the round data § 2/§ 3
    produced along the way — this is the one call in this whole run where
-   that record actually gets published.
+   that record actually gets published. **When this run reached
+   convergence via arbitration** (§ "Arbitrage" step 7's `resolve`/`override`
+   outcome, rather than a first-pass or ordinary fix-round convergence at §
+   2), also pass `arbitration` — the record § "Arbitrage" step 9 captured —
+   both nested in `runMetrics.arbitration` (via `buildRunMetrics`'s own
+   `arbitration` input) and as this call's own top-level `arbitration` field
+   (§ "Métriques" above). Absent on every other convergence path.
 5. Remove the issue's `automation:in-progress` — last, only after the four
    steps above, so the pipeline's one in-flight slot frees exactly when
    this run is actually finished, not before.
@@ -565,9 +571,13 @@ On a converged run (§ 4):
 - Two formal PR reviews per round, one from each isolated sub-agent (§ 2,
   functional and technical), each a real `pull_request_review_write`
   submission.
-- Zero to three fix commits (§ 3), each behind a green full check suite.
+- Zero to three fix commits (§ 3), each behind a green full check suite —
+  plus, on a run where arbitration (§ Arbitrage) reached a `resolve` verdict,
+  one further fix commit for that round (step 7), distinct from and not
+  counted against the three above.
 - `automation:review-pass` and, if still eligible, `automation:enabled`
-  (§ 4).
+  (§ 4); `automation:arbitrated` if arbitration rendered a valid verdict
+  (§ Arbitrage step 8).
 - `automation:coordinator-owned` removed, issue's `automation:in-progress`
   removed, in that order (§ 4).
 - One synthesis comment on the PR (`add_issue_comment`) — this skill's own
@@ -661,7 +671,11 @@ reached), whether the check suite implement-task/address-feedback reported
 was green without a dedicated CI-only fix round, and — only on an escalated
 run — the stop reason named in § Escalade's own comment (as `escalation`,
 the one free-text field, redacted the same way `buildRunMetrics` always
-redacts it). Call `scripts/run-metrics.mjs#buildRunMetrics(input)` with
+redacts it). **When this run went through arbitration** (§ "Arbitrage" step
+9 above captured a record), also pass it as `arbitration` — same optional
+treatment as everything else here: absent whenever § "Arbitrage" was never
+reached or stopped before launching an arbiter, never fabricated to fill the
+field. Call `scripts/run-metrics.mjs#buildRunMetrics(input)` with
 these; it returns `{ valid: true, metrics }` for anything this session can
 legitimately build (missing pieces simply come back named in
 `metrics.missingFields` and `metrics.complete: false`, never guessed —
@@ -679,9 +693,17 @@ rides the same `upsertAutomationLog` call this skill already makes on the
 issue's `coordinator-implement` journal at § "Converged" step 4 and §
 Escalade step 3 (re-passing `complexity`/`routing`/`taskContextVersion`/
 `routingApplied`/`activation` there already, per those steps' own text) —
-just add the freshly-built `runMetrics` to that same call. No new comment,
-no new marker: a relaunch on the same issue updates the same journal entry
-`upsertAutomationLog` already keeps idempotent by marker, exactly like every
+just add the freshly-built `runMetrics` to that same call, and, when this
+run was arbitrated, the same `arbitration` object (§ "Arbitrage" step 9
+above) again as that call's own top-level `arbitration` field — distinct
+from, and in addition to, the copy `buildRunMetrics` already nested inside
+`runMetrics.arbitration`: `scripts/automation-log.mjs#renderAutomationLog`
+only renders its own « Arbitrage » line from that top-level field, never
+by reaching into `runMetrics` for it, so both need passing, the same way §
+Escalade step 3's `budget` is its own top-level field there rather than
+part of `runMetrics`. No new comment, no new marker: a relaunch on the same
+issue updates the same journal entry `upsertAutomationLog` already keeps
+idempotent by marker, exactly like every
 other field it renders. The synthesis comment (§ "Sorties obligatoires"
 above) keeps naming the same three raw values for a human skimming the PR;
 `RunMetrics` is the structured, validated counterpart published on the
@@ -763,7 +785,122 @@ instead of by a standalone R2/R4:
    budget blocks; step 1 of the sequence below finds a PR only in the
    mid-run case.
 
-In every case, this skill performs the full escalation sequence itself
+### Arbitrage (conditions 1 et 3 seulement, avant escalade)
+
+For conditions 1 and 3 only (§ 1's implementation stops, § 3's fix loop
+stops), this skill attempts arbitration **before** the escalation sequence
+below, for exactly the reasons issue #496 exists: spec ambiguity and fix
+convergence are **judgments**, not facts, and a second opinion may unblock
+the run (issue #497, tranche 1/5 ; issue #496 § « Les cinq garde-fous »,
+#2). Conditions 2, 4, 5, 6 are facts (missing reviewer, sub-agent error,
+routing/budget failure) and never arbitrated — they escalade directly.
+
+The arbitration attempt follows this sequence:
+
+1. **Determine the motif** — a label for why escalation was triggered. Each
+   condition maps to one or more motifs per `doc/automation/
+   state-machine.md` row #26/#27 and the mappings in
+   `scripts/arbitration.mjs#LEAD_MOTIFS`/`#EXPERT_MOTIFS`:
+   - Condition 1 → `spec-ambigue` or `derive-vs-spec`.
+   - Condition 3 → `tentatives-epuisees`, `derive-vs-review`, `validation-rouge`,
+     `findings-contradictoires`, or `finding-trop-vague` (per issue #479's
+     categorization of why the fix loop stops).
+2. **Check if the motif is arbitrable:** `scripts/arbitration.mjs#isArbitrableMotif(motif)`.
+   If `false`, escalade directly (should never happen; this is defense in
+   depth).
+3. **Check arbitration budget:** `scripts/routing-budget.mjs#checkBudget(budgets,
+   { arbitrations: 1 }, { routine: 'coordinator', scope: 'arbitrations' })` —
+   same 3-argument signature as every other `checkBudget` call in this skill
+   (§ "Budgets (#478)" above). On `status: 'exceeded'`, escalade directly
+   with the crossed budget named in the comment (same as condition 6 above).
+   On `status: 'ok'`, proceed to step 4.
+4. **Resolve arbitration mode:** `scripts/arbitration.mjs#resolveArbitration(policy,
+   { motif, riskLevel })`. Returns `{ mode: 'apply' | 'observe', reason }`:
+   - On `observe`: the routing policy declares this motif not arbitrable,
+     or the risk is `high`, or `rollback: true` is set. Escalade directly.
+   - On `apply`: proceed to step 5.
+5. **Launch arbiter sub-agent:** Call `Agent` with:
+   - `subagent_type: selectArbiter(motif)` — either `"arbiter-lead"` or
+     `"arbiter-expert"` per `scripts/arbitration.mjs#selectArbiter`, never a
+     coordinator choice.
+   - `model: routeModel(policy, routine='arbitration', complexity, risk)`,
+     per the policy routing at `.automation/routing-policy.yml#routines.arbitration`.
+   - Full prompt carrying the arbiter's corpus (spec + functional findings +
+     PR diff (if one exists) for lead; diff + technical findings for expert),
+     the motif, and the run's model name (for `sameModelAsRun`
+     self-reporting).
+   - The arbiter returns a structured `verdict` (` resolve` | `override` |
+     `escalate`) per `schemas/automation/arbitration-verdict.schema.json`.
+6. **Validate the verdict:** `scripts/arbitration.mjs#validateArbitrationVerdict(verdict)`.
+   On invalid (schema violation, wrong arbiter, motif mismatch): treat as
+   `escalate` (same as an arbiter that fails outright).
+7. **Apply the verdict:** `scripts/arbitration.mjs#applyArbitrationVerdict(verdict,
+   reviewVerdict)` (only when the verdict is `resolve` or `override`; `escalate`
+   is handled below):
+   - `resolve` → launch one more fix round with the arbiter's `instruction`,
+     not resetting `automation:attempt-*` (this round is arbitrated, distinct,
+     plafonné par the `arbitrations: 1` budget, never by a 4th attempt). On
+     completion, check the suite: if green, converge; if red, escalade under
+     the same canonical motif as any other **Échec de validation après le
+     budget d'itérations** (condition 3 above) — never a new/distinct
+     motif — with the escalation comment additionally stating in prose that
+     this round was arbitrated, which arbiter was consulted, and its verdict
+     (`resolve`).
+   - `override` → remove the designated finding from the review verdict; if
+     other blocking/important findings remain, launch a fix round to address
+     them (same as step 3); if none remain, converge.
+   - `escalate` → continue with the normal escalation sequence below (the
+     arbiter could not resolve the dispute), carrying forward which arbiter
+     was consulted (`verdict.arbiter`), its verdict (`escalate`), and its
+     `reasoning` — step 5 of that sequence below names all three verbatim
+     in the escalation comment, never just "arbitration failed to resolve
+     it".
+8. **On arbitration, add `automation:arbitrated` label** — a marker of
+   observability (issue #496 § « Observabilité de l'arbitrage »), posed on
+   the **PR** (if one exists — condition 1 can fire before the implementer
+   has opened one, same as § 1 escalating below; when no PR exists yet, the
+   label is posed nowhere, same as that step's own handling) the moment a
+   *valid* structured verdict is rendered (`mode: 'apply'` and the arbiter's
+   verdict passed step 6's `validateArbitrationVerdict`), whichever of
+   `resolve`/`override`/`escalate` it is. **Not posed** when step 6 treats
+   an invalid verdict as `escalate` (same handling as an arbiter that fails
+   outright) — an invalid verdict is not a real arbitration outcome to
+   attribute a disagreement-rate reading to, so it never counts as "the
+   arbiter returned a structured verdict" for this label (same reading as
+   `doc/automation/state-machine.md`'s `automation:arbitrated` row). Never
+   removed automatically. Never read by any automated gate; never affects
+   convergence or escalation decisions. A human analyzing logs can filter PRs
+   arbitrated this way for analysis.
+9. **Keep the arbitration record in memory for § Métriques.** Whenever step 5
+   actually launched an arbiter (i.e. this run didn't stop earlier at step 2's
+   `isArbitrableMotif`/step 3's budget/step 4's `observe` mode), capture
+   `{motif, arbiter, model, verdict: verdict.verdict, action, sameModelAsRun:
+   verdict.sameModelAsRun}` — `model` being the model the arbiter sub-agent
+   actually ran with (step 5's `routeModel` result), `action` being
+   `applyArbitrationVerdict`'s own `action` field (`'extra-fix-round'` |
+   `'converge'` | `'escalate'`) computed at step 7, or `'escalate'` when the
+   verdict itself was invalid (step 6). This is the `arbitration` object §
+   "Métriques" above builds into `runMetrics.arbitration` and passes as its
+   own top-level field to `upsertAutomationLog`, on whichever of § "Converged"
+   step 4 / § Escalade step 3 this run reaches next — same pattern as
+   `budget` on condition 6. A run that never reached step 5 has no
+   `arbitration` object at all; neither call receives one.
+
+**Résumé des cas limites :**
+- **L'arbitre échoue ou rend un verdict invalide** → traité comme `escalate`,
+  jamais relancé (#497, cas limite).
+- **Budget `arbitrations` déjà consommé** (un arbitrage a déjà eu lieu dans
+  ce run) → escalade directe, sans second arbitre.
+- **Motif `budget-depasse`** → jamais arbitré ; escalade directe (#478).
+- **Risque `high`** → `resolveArbitration` résout `observe`, arbitrage non
+  lancé, escalade directe.
+- **Le tour arbitré échoue à la validation** → escalade sous le même motif
+  canonique **Échec de validation après le budget d'itérations**, jamais un
+  motif distinct — le commentaire d'escalade précise en prose que ce tour
+  était arbitré, l'arbitre consulté et son verdict.
+
+In every case (except arbitration resolution leading to convergence or a fix
+round), this skill performs the full escalation sequence itself
 (rather than delegating it to a sub-agent, since only this skill holds the
 issue's `automation:in-progress` for the whole run):
 
@@ -803,7 +940,15 @@ issue's `automation:in-progress` for the whole run):
    never reached its
    own step 5, so there is nothing left `running` there to close, and
    nothing was captured to re-pass either) — `onlyIfRunning` already makes
-   that safe, same as every other caller of it. **On condition 6, also pass
+   that safe, same as every other caller of it. **When arbitration was
+   attempted before this escalation** (§ "Arbitrage" step 7's `escalate`
+   outcome, or an arbiter that failed/returned an invalid verdict, step 9's
+   record either way), also pass `arbitration` — both nested in
+   `runMetrics.arbitration` and as this call's own top-level `arbitration`
+   field (§ "Métriques" above), same as on the convergence path. Absent for
+   conditions 2/4/5/6 and for a condition 1/3 escalation that never reached
+   arbitration (motif not arbitrable, budget exceeded, or mode `observe`).
+   **On condition 6, also pass
    `budget`** — the exact `checkBudget` result that returned `status:
    'exceeded'` (or the load error's message, shaped the same way, when §
    "Budgets" failed at step 1) — so the closed journal names the crossed
@@ -829,7 +974,14 @@ issue's `automation:in-progress` for the whole run):
    failed" — a human resuming needs to know whether to re-run one reviewer
    or both. For condition 6 (a budget), name the crossed budget verbatim
    from `checkBudget`'s own `reason` (routine, scope, limit and observed
-   value all already in it) — never just "budget exceeded".
+   value all already in it) — never just "budget exceeded". **When an
+   arbiter was consulted before this escalation** (§ "Arbitrage" above
+   reached its own `escalate` outcome, or an arbiter failed/returned an
+   invalid verdict), name all three of: which arbiter was consulted
+   (`arbiter-lead` or `arbiter-expert`), its verdict (`escalate`, or
+   "invalid" when the verdict was refused by `validateArbitrationVerdict`),
+   and its `reasoning` verbatim — never leave arbitration silently out of
+   the comment just because the run still ends in `automation:needs-human`.
 
 ## Limites
 

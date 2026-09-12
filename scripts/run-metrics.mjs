@@ -29,6 +29,14 @@ const COMPLEXITY_PROVENANCES = ['heuristic', 'llm', 'manual']
 const RISK_LEVELS = ['low', 'medium', 'high']
 const ACTIVATION_MODES = ['observe', 'apply']
 const OUTCOME_STATUSES = ['succeeded', 'failed']
+// Miroir des énumérations de scripts/arbitration.mjs (VALID_ARBITERS/
+// VALID_VERDICTS, non exportées) et de l'action calculée par
+// applyArbitrationVerdict (coordinator/SKILL.md § Arbitrage step 9) —
+// mêmes valeurs, dupliquées ici comme le reste de ce fichier duplique déjà
+// COMPLEXITY_BANDS/RISK_LEVELS/etc. plutôt que d'importer scripts/arbitration.mjs.
+const ARBITRATION_ARBITERS = ['arbiter-lead', 'arbiter-expert']
+const ARBITRATION_VERDICTS = ['resolve', 'override', 'escalate']
+const ARBITRATION_ACTIONS = ['extra-fix-round', 'converge', 'escalate']
 
 function isPlainObject(value) {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value)
@@ -64,6 +72,7 @@ export function buildRunMetrics({
   outcome,
   findings = null,
   usage = null,
+  arbitration = null,
   generatedAt = new Date().toISOString(),
 }) {
   if (!routine || typeof routine !== 'string') {
@@ -148,6 +157,26 @@ export function buildRunMetrics({
     }
   }
 
+  let arbitrationRecord = null
+  if (arbitration) {
+    // Arbitration is optional — a run without arbitration (conditions 2/4/5/6,
+    // or conditions 1/3 with mode 'observe') has no arbitration field at all.
+    if (arbitration.motif == null) missingFields.push('arbitration.motif')
+    if (arbitration.arbiter == null) missingFields.push('arbitration.arbiter')
+    if (arbitration.model == null) missingFields.push('arbitration.model')
+    if (arbitration.verdict == null) missingFields.push('arbitration.verdict')
+    if (arbitration.action == null) missingFields.push('arbitration.action')
+    if (arbitration.sameModelAsRun == null) missingFields.push('arbitration.sameModelAsRun')
+    arbitrationRecord = {
+      motif: arbitration.motif ?? null,
+      arbiter: arbitration.arbiter ?? null,
+      model: arbitration.model ?? null,
+      verdict: arbitration.verdict ?? null,
+      action: arbitration.action ?? null,
+      sameModelAsRun: arbitration.sameModelAsRun ?? null,
+    }
+  }
+
   const metrics = {
     version: RUN_METRICS_VERSION,
     routine,
@@ -165,6 +194,7 @@ export function buildRunMetrics({
     },
     findings: findingsRecord,
     usage: usageRecord,
+    arbitration: arbitrationRecord,
     complete: missingFields.length === 0,
     missingFields,
     generatedAt,
@@ -316,6 +346,32 @@ export function validateRunMetrics(record) {
         if (value !== null && typeof value !== 'boolean') {
           errors.push(`run-metrics.usage.${key}: doit être null ou un booléen`)
         }
+      }
+    }
+  }
+
+  if (record.arbitration !== null && record.arbitration !== undefined) {
+    const arbitration = record.arbitration
+    if (!isPlainObject(arbitration)) {
+      errors.push('run-metrics.arbitration: doit être null ou un objet')
+    } else {
+      if (arbitration.motif !== null && typeof arbitration.motif !== 'string') {
+        errors.push('run-metrics.arbitration.motif: doit être null ou une chaîne')
+      }
+      if (arbitration.arbiter !== null && !ARBITRATION_ARBITERS.includes(arbitration.arbiter)) {
+        errors.push('run-metrics.arbitration.arbiter: doit être null, "arbiter-lead" ou "arbiter-expert"')
+      }
+      if (arbitration.model !== null && typeof arbitration.model !== 'string') {
+        errors.push('run-metrics.arbitration.model: doit être null ou une chaîne')
+      }
+      if (arbitration.verdict !== null && !ARBITRATION_VERDICTS.includes(arbitration.verdict)) {
+        errors.push('run-metrics.arbitration.verdict: doit être null, "resolve", "override" ou "escalate"')
+      }
+      if (arbitration.action !== null && !ARBITRATION_ACTIONS.includes(arbitration.action)) {
+        errors.push('run-metrics.arbitration.action: doit être null, "extra-fix-round", "converge" ou "escalate"')
+      }
+      if (arbitration.sameModelAsRun !== null && typeof arbitration.sameModelAsRun !== 'boolean') {
+        errors.push('run-metrics.arbitration.sameModelAsRun: doit être null ou un booléen')
       }
     }
   }

@@ -137,6 +137,43 @@ proposes to a human).
    or with no policy entry for its routine is exactly as much a result as a
    proposal is, never omitted.
 
+#### 6.5. Arbitrages (#496, tranche 2/5)
+
+Issue #497 introduces a structured arbitration mechanism, applied on issue
+#498. This section publishes the human disagreement rate — a key signal for
+judging whether arbitration is saving real work or just redistributing effort
+without improving outcomes (issue #496 § "Les deux gardes-fous de cette
+tranche").
+
+1. Collect PRs labeled `automation:arbitrated` in this window
+   (`search_pull_requests` for `label:automation:arbitrated
+   updated:>=<window-start> updated:<window-end>`), then count arbitrations
+   by verdict: how many `resolve`, `override`, `escalate`. Never double-count
+   a PR that was arbitrated more than once (edge case, shouldn't happen with
+   `arbitrations: 1` budget per run, but name the count regardless).
+
+2. For each `automation:arbitrated` PR, check whether it was later reopened,
+   corrected by a human, or escalated after the arbitration verdict. Track:
+   - **Human overrode resolve** — arbiter said "resolve", the fix round
+     happened (or converged), but a human later reopened the PR with
+     `automation:needs-fix` or corrected it manually (`commit` after
+     `automation:review-pass`/`automation:enabled`).
+   - **Human overrode override** — arbiter said "override", but a human later
+     opened a new PR addressing the same code area or re-escalated the linked
+     issue.
+   - **Human overrode escalate** — arbiter said "escalate", the run escaladed
+     to `automation:needs-human`, but a human later fixed it (commit on the
+     PR) or it converged without needing the escalation (a rare case, name it
+     if observed).
+
+3. Publish the results as:
+   - **Arbitrages this period:** N total (N resolve, N override, N escalate)
+   - **Human disagreement rate:** X% (X out of N arbitrated PRs were later
+     corrected by a human) — explicitly labeled **approximation**, same
+     caveat as the R3 verdict rates §3 (some fixes might be voluntary
+     follow-ups, not overrides). List the PRs where disagreement was observed,
+     with a one-line reason (reopened / corrected / escaladed after verdict).
+
 #### 7. Traçabilité des modèles exécutés (#494)
 
 Depuis #494, chaque commentaire de journal (`scripts/automation-log.mjs`)
@@ -184,16 +221,16 @@ un décompte de runs.
 Le rapport est une **issue GitHub**, jamais une PR ni un commentaire :
 
 1. `mcp__github__issue_write` : titre `Rapport hebdo <YYYY-MM-DD>` (date du
-   jour du run), corps = les sections 1 à 7 ci-dessus plus la limite de
-   mesure.
+   jour du run), corps = les sections 1 à 7 ci-dessus (dont 6.5 « Arbitrages »,
+   issue #496) plus la limite de mesure.
 2. Label `P3` dans son propre appel.
 3. Ne jamais poser `automation:ready` — ce n'est pas un ticket à implémenter.
 
 ## Sorties obligatoires
 
 - Exactement une issue GitHub par run (Procédure § Livrable), jamais une PR
-  ni un commentaire — corps = les sept sections de données (§1-§7) plus la
-  limite de mesure. C'est l'instance propre à cette skill de la sortie
+  ni un commentaire — corps = les sept sections de données (§1-§7, dont 6.5 
+  « Arbitrages ») plus la limite de mesure. C'est l'instance propre à cette skill de la sortie
   structurée de `doc/automation/skill-contract.md` §2 : Statut = la
   recommandation (§5) ; Résumé = les compteurs R3 (§3) ; Artefacts = le lien
   vers l'issue elle-même ; Validations = sans objet (skill de reporting, pas

@@ -301,6 +301,77 @@ describe('validateArbitrationVerdict', () => {
   })
 })
 
+describe('chaîne complète isArbitrableMotif → selectArbiter → resolveArbitration → applyArbitrationVerdict (#498)', () => {
+  // Reflète la matrice réelle de .automation/routing-policy.yml (tranche
+  // 2/5, #498) : seul `derive-vs-review` est en "apply", tous les autres
+  // motifs arbitrables restent en "observe".
+  const REAL_POLICY = {
+    version: 1,
+    arbitration: {
+      'spec-ambigue': 'observe',
+      'finding-trop-vague': 'observe',
+      'derive-vs-spec': 'observe',
+      'tentatives-epuisees': 'observe',
+      'derive-vs-review': 'apply',
+      'validation-rouge': 'observe',
+      'findings-contradictoires': 'observe',
+    },
+  }
+
+  it('triplet actif derive-vs-review × low → resolve : la chaîne complète mène à un tour de correctif supplémentaire', () => {
+    const motif = 'derive-vs-review'
+    const riskLevel = 'low'
+
+    expect(isArbitrableMotif(motif)).toBe(true)
+
+    const arbiter = selectArbiter(motif)
+    expect(arbiter).toBe('arbiter-expert')
+
+    const { mode, reason } = resolveArbitration(REAL_POLICY, { motif, riskLevel })
+    expect(mode).toBe('apply')
+    expect(reason).toContain('arbitration.derive-vs-review déclare "apply"')
+
+    // Le mode résolu à "apply" est ce qui autorise le coordinateur à
+    // effectivement lancer l'arbitre — son verdict "resolve" est alors
+    // appliqué mécaniquement, jamais interprété.
+    const verdict = {
+      verdict: 'resolve',
+      motif,
+      arbiter,
+      reasoning: 'La review a signalé une dérive de périmètre réelle, un correctif ciblé la résout.',
+      instruction: 'Restreindre le correctif au finding désigné par le relecteur technique.',
+      sameModelAsRun: true,
+    }
+    expect(validateArbitrationVerdict(verdict)).toEqual({ valid: true, errors: [] })
+
+    const applied = applyArbitrationVerdict(verdict, {
+      verdict: 'needs-fix',
+      findings: [{ summary: 'Dérive de périmètre constatée', severity: 'important', reviewers: ['technical'] }],
+      outOfCorpusFindings: [],
+    })
+    expect(applied.action).toBe('extra-fix-round')
+    expect(applied.instruction).toBe(verdict.instruction)
+  })
+
+  it('triplet voisin tentatives-epuisees × low : reste en observe, jamais lancé', () => {
+    const motif = 'tentatives-epuisees'
+    const riskLevel = 'low'
+
+    expect(isArbitrableMotif(motif)).toBe(true)
+
+    const arbiter = selectArbiter(motif)
+    expect(arbiter).toBe('arbiter-expert')
+
+    const { mode, reason } = resolveArbitration(REAL_POLICY, { motif, riskLevel })
+    expect(mode).toBe('observe')
+    expect(reason).toContain('arbitration.tentatives-epuisees déclare "observe"')
+
+    // Mode "observe" : le coordinateur ne lance jamais l'arbitre pour ce
+    // triplet — la chaîne s'arrête ici, la décision reste l'escalade
+    // directe habituelle, jamais un appel à applyArbitrationVerdict.
+  })
+})
+
 describe('applyArbitrationVerdict', () => {
   const REVIEW_VERDICT = {
     verdict: 'needs-fix',

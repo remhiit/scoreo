@@ -700,6 +700,44 @@ describe('renderAutomationLog / parseAutomationLog', () => {
     expect(body).not.toContain('- Budget :')
   })
 
+  it('renders the Arbitrage line from a full arbitration field (#498)', async () => {
+    const { renderAutomationLog } = await import('./automation-log.mjs')
+    const body = renderAutomationLog({
+      routine: 'coordinator-fix',
+      triggeredAt: '2026-09-11T10:00:00Z',
+      sha: 'abc1234',
+      status: 'succeeded',
+      iteration: '3',
+      validation: 'lint / typecheck / tests',
+      resultUrl: 'https://github.com/remhiit/scoreo/actions/runs/999',
+      arbitration: {
+        motif: 'derive-vs-review',
+        arbiter: 'arbiter-expert',
+        model: 'claude-opus-4-5',
+        verdict: 'resolve',
+        action: 'extra-fix-round',
+        sameModelAsRun: false,
+      },
+    })
+    expect(body).toContain(
+      '- Arbitrage : motif `derive-vs-review`, arbitre `arbiter-expert`, modèle `claude-opus-4-5`, verdict `resolve`, action appliquée `extra-fix-round`, même modèle `false`',
+    )
+  })
+
+  it('omits the Arbitrage line entirely when no arbitration field is provided — non-regression of existing rendering', async () => {
+    const { renderAutomationLog } = await import('./automation-log.mjs')
+    const body = renderAutomationLog({
+      routine: 'coordinator-fix',
+      triggeredAt: '2026-09-11T10:00:00Z',
+      sha: 'abc1234',
+      status: 'succeeded',
+      iteration: '1',
+      validation: 'lint / typecheck / tests',
+      resultUrl: 'https://github.com/remhiit/scoreo/actions/runs/999',
+    })
+    expect(body).not.toContain('- Arbitrage :')
+  })
+
   it('uses a distinct marker per reviewer corpus (#470)', async () => {
     const { markerFor } = await import('./automation-log.mjs')
     expect(markerFor('coordinator-review-functional')).toBe('<!-- automation-log:coordinator-review-functional -->')
@@ -897,6 +935,43 @@ describe('upsertAutomationLog', () => {
     expect(fetchSpy).toHaveBeenCalledWith(
       'https://api.github.com/repos/remhiit/scoreo/issues/42/comments',
       expect.objectContaining({ method: 'POST' }),
+    )
+  })
+
+  it('forwards `arbitration` through to the rendered Arbitrage line — not just renderAutomationLog directly (#504 review)', async () => {
+    stubEnv()
+    let postedBody = null
+    vi.spyOn(globalThis, 'fetch').mockImplementation((url, opts) => {
+      if (url === COMMENTS_URL && !opts?.method) {
+        return Promise.resolve({ ok: true, json: async () => [] })
+      }
+      if (url === 'https://api.github.com/repos/remhiit/scoreo/issues/42/comments' && opts?.method === 'POST') {
+        postedBody = JSON.parse(opts.body).body
+        return Promise.resolve({ ok: true, json: async () => ({ id: 555 }) })
+      }
+      return Promise.reject(new Error(`unexpected fetch: ${url}`))
+    })
+
+    vi.resetModules()
+    const { upsertAutomationLog } = await import('./automation-log.mjs')
+    await upsertAutomationLog({
+      number: 42,
+      routine: 'coordinator-fix',
+      sha: 'abc1234',
+      status: 'succeeded',
+      triggeredAt: '2026-09-11T10:00:00Z',
+      arbitration: {
+        motif: 'derive-vs-review',
+        arbiter: 'arbiter-expert',
+        model: 'claude-opus-4-5',
+        verdict: 'resolve',
+        action: 'extra-fix-round',
+        sameModelAsRun: false,
+      },
+    })
+
+    expect(postedBody).toContain(
+      '- Arbitrage : motif `derive-vs-review`, arbitre `arbiter-expert`, modèle `claude-opus-4-5`, verdict `resolve`, action appliquée `extra-fix-round`, même modèle `false`',
     )
   })
 

@@ -51,6 +51,7 @@ actually cycles.
 | `automation:ready` | État/déclencheur R2 | Dispatched, next in line for R2 — this is R2's trigger. `.automation/routines.yml` currently declares this trigger against the `coordinator` skill rather than `implement-task` (#469) — see § "The coordinator" below; `implement-task` remains what actually runs, as that skill's own sub-agent | `dispatch-ready.mjs`, `requeue-lost-events.mjs` (re-posing an orphaned one) | R2/the coordinator (`implement-task`), in its first action |
 | `automation:in-progress` | Contrôle | A routine currently owns this item ("claim the run") | R2 on an issue (or the coordinator, on an issue, for its own run's entire lifetime — § "The coordinator" below); R3 or R4 on a PR | On a PR: the routine that set it, once its run ends (success or escalation), or the hourly sweeper (`requeue-lost-events.mjs`) once it's been posed for more than `STALE_OWNERSHIP_THRESHOLD_MINUTES` (180 min — the routine died without ever resuming, row #25). On an issue: persists across R3/R4's entire review/fix cycling on the linked PR (or across the coordinator's own review/fix rounds) — cleared only by R2/the coordinator itself on stop-and-ask (row #6), by the PR merging, by R4 mirroring an escalation from the PR onto the issue (rows #19/#20), or by the same stale-ownership sweeper (row #25), always as the last of three ordered steps (§6) |
 | `automation:coordinator-owned` | Contrôle | The coordinator owns this PR and is already driving its own review/fix loop in-session — guards `needs-review-label.yml` from also queuing it for R3, which would otherwise double-review every push the coordinator makes on its own PR | The coordinator, at the start of its run | The coordinator, at the end of its run — a mark left behind by a dead run is not cleared automatically (the safety net is the stale-ownership escalation, row #25/#467, not this guard) |
+| `automation:arbitrated` | Observabilité | A real arbitration verdict was rendered on this PR (conditions 1 or 3 of the coordinator's escalation logic, with arbitration mode `apply`) — a marker only, never a gate or trigger. Used for analysis and human disagreement rate tracking (issue #496, tranches 1/5, #497). Never removed automatically | The coordinator, on the **PR** (if one exists — condition 1 can fire before the implementer has opened one, same no-PR case as § 1 escalating; when no PR exists yet, the label is posed nowhere), the moment an arbiter returns a *valid* structured verdict (any of resolve/override/escalate that passes `validateArbitrationVerdict`) — **not** posed when the verdict fails schema validation, since that case is treated as `escalate` internally the same way an arbiter that fails outright is (`coordinator/SKILL.md` § Arbitrage step 6/8): no real verdict was rendered, so it never counts as "an arbiter returned a structured verdict" for this label | Never automatically — this label is never cleared, remaining on the PR for the entire lifetime of the run, as a marker for analysis and observability |
 | `automation:needs-review` | File/déclencheur R3 | PR queued for R3 — this is R3's trigger | `needs-review-label.yml` (PR opened/ready/synchronize) | R3 (`pr-review`), in its first action |
 | `automation:attempt-1`/`automation:attempt-2`/`automation:attempt-3` | Compteur | R4's anti-loop retry counter on a PR — also the coordinator's own fix-round counter on a PR it owns, posed the same way, since posting `automation:attempt-N` alone matches no routine's GitHub trigger (safe to reuse; `automation:needs-fix` isn't, § "The coordinator" below) | R4 (`address-feedback`), after a fix is pushed; the coordinator, before launching its fix sub-agent | R4 itself (old counter, before posting the new one), or R3 on `automation:review-pass` (clears a stale counter); the coordinator, the same way, once it reaches its own `automation:review-pass` |
 | `automation:review-pass` | Verdict | R3's verdict: PR conforms to its issue's spec — also the coordinator's own terminal verdict once a round finds nothing left to fix (never an interim one) | R3; the coordinator | R3, if a later review overturns it to `automation:needs-fix`; `needs-review-label.yml` (clears a stale one, on synchronize) |
@@ -161,6 +162,8 @@ whether the transition fires without a human (**Auto**) or requires one
 | 23 | PR or Issue | Posed `automation:needs-review`/`automation:needs-fix` > 30 min ago, no `automation:in-progress` (lost event) | Hourly cron | `requeue-lost-events.mjs` | Label removed then re-posed alone | Auto |
 | 24 | PR or Issue | `automation:needs-human` | — | — | Terminal: `unblock-issues.mjs` and `dispatch-ready.mjs` both explicitly skip any item carrying it | Human only, by removing it and re-queuing |
 | 25 | PR or Issue | `automation:in-progress` present, last `labeled` event for it > `STALE_OWNERSHIP_THRESHOLD_MINUTES` (180 min) ago, no `automation:needs-human` (stale ownership — the routine died without resuming, #379) | Hourly cron | `requeue-lost-events.mjs` | On a PR: `automation:needs-human` posed, then `automation:in-progress` removed. On an issue: same three-step order as §6 — `automation:needs-human` posed, `automation:queued` posed, only then `automation:in-progress` removed. Either way, the trigger label (if one happens to still be present) is never touched — no re-trigger, escalation wins; an idempotent comment (marker `<!-- automation-log:stale-ownership -->`) names the label, its age, and what was done | Human (escalated) |
+| 26 | PR or Issue | Coordinator § Escalade conditions 1/3 reached, motif arbitrable, budget available | Coordinator reconciles arbitration mode (`observe` or `apply`) for the motif; mode is `apply` | Coordinator launches arbiter sub-agent, validates verdict, applies it | On `resolve` verdict: launch a fix round (distinct, not counted against attempt cap, plafonné par `arbitrations: 1` budget); on `override` verdict: apply to review findings, check if other blocking/important findings remain (launch fix round if so); on `escalate` verdict: continue to the normal § Escalade sequence (row #27 below). All cases with a valid verdict: pose `automation:arbitrated` on the **PR** (if one exists — condition 1 can fire before the implementer has opened one; when no PR exists yet, the label is posed nowhere), regardless of verdict type, for observability. Sub-agent runs with model resolved by the arbitration routing policy | Auto (arbitrated) |
+| 27 | PR or Issue | Coordinator § Escalade, arbitration returned `escalate` or conditions 1/3 but motif not arbitrable or mode `observe` | Coordinator proceeds with normal escalation | Coordinator | Same labels/comment as rows #6/#19/#20 (terminal escalation with `automation:needs-human`, detailed comment naming the arbitration verdict if one was rendered), re-checking `rollbackDuringRun` and building `runMetrics` with arbitration details if one occurred | Human (escalated) |
 
 ## 5. The R3 ↔ R4 loop
 
@@ -465,6 +468,53 @@ every round came back — remove `automation:coordinator-owned`, then remove
 the issue's `automation:in-progress` — in that order, last two last, so the
 pipeline's one in-flight slot frees only once the PR is actually left in a
 stable state for a human or native auto-merge to pick up.
+
+**Arbitration insert (#496 tranche 2/5, #498).** Before performing the
+escalation sequence below, conditions 1 (§ 1's implementation sub-agent
+stops) and 3 (§ 3's fix loop stops without converging) attempt arbitration
+first (`.claude/skills/coordinator/SKILL.md` § Arbitrage; rows #26/#27
+above) — spec ambiguity and fix-loop non-convergence are the two escalation
+conditions that are **judgments**, not facts, so a second opinion (an
+isolated arbiter sub-agent, `arbiter-lead` for condition 1's motifs,
+`arbiter-expert` for condition 3's) may resolve what would otherwise go
+straight to `automation:needs-human`. Conditions 2, 4, 5 and 6 — plus row
+#25's stale-ownership sweep — are never arbitrated: each is a fact or a
+guard-rail, never a subjective judgment call, so each always escalates
+directly, with no arbiter consulted:
+
+- **`relecteur-manquant`** (condition 2, a review sub-agent missing or
+  unusable) — a missing review answer can't be manufactured by an arbiter
+  reading the same corpus; there is nothing for a second opinion to
+  adjudicate.
+- **`sous-agent-hs`** (condition 4, a sub-agent reports it can't proceed) —
+  a crash or a tool outage is an operational fact, not a disagreement to
+  resolve.
+- **`routage-no-candidate`** (condition 5, the routing dry-run can't
+  produce a decision) — a routing/catalog configuration gap is a fact about
+  the config, not a judgment about the PR's content.
+- **`budget-depasse`** (condition 6, a budget check returns `exceeded`) — a
+  deliberate guard-rail (`checkBudget`'s own cap); letting an arbiter route
+  around it would be exactly the kind of automated override #496's five
+  guard-rails forbid (arbitration itself is capped by its own
+  `arbitrations: 1` budget for the same reason).
+- **`possession-perimee`** (row #25, a dead run's stale ownership) —
+  replaying it would race whatever branch/PR state the dead run left
+  behind, a collision an arbiter reading a frozen corpus cannot safely
+  adjudicate.
+
+`scripts/arbitration.mjs#isArbitrableMotif` encodes this closed set
+mechanically (`ARBITRABLE_MOTIFS`, built from conditions 1 and 3's motifs
+only) — an unknown motif, or one of the five above, always resolves
+`false`, never `true` by default. Even when a motif is arbitrable, the
+routing policy still gates whether an arbiter actually runs: `rollback:
+true` or a `high` (or unreadable) risk level always forces `observe` and
+skips straight to escalation, same as an unarbitrable motif. An arbiter
+that fails outright, returns an invalid verdict, or itself renders
+`escalate`, still ends in the same escalation sequence below — its arbiter,
+verdict, and `reasoning` named verbatim in the escalation comment
+(`.claude/skills/coordinator/SKILL.md` § Escalade step 5), never silently
+dropped just because the run still terminates in
+`automation:needs-human`.
 
 **Escalation.** Same conditions as rows #6/#19/#20 (ambiguous/incomplete
 spec, attempt cap, scope mismatch, a check suite that stays red, or a

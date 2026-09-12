@@ -87,11 +87,13 @@
 # risque `high` résout toujours `observe` quelle que soit la déclaration, et
 # `rollback: true` ci-dessus force aussi tout l'arbitrage en `observe` —
 # aucun nouvel interrupteur, le même geste de rollback global coupe les deux
-# mécanismes. La matrice ci-dessous déclare `observe` pour les sept motifs
-# arbitrables : cette tranche installe le mécanisme sans en changer le
-# comportement, le passage réel d'un motif à `apply` est un geste de
-# configuration séparé et ultérieur (T2..T4 de l'épic #496). Voir
-# doc/automation/model-routing.md § « Arbitrage » pour le détail.
+# mécanismes. Depuis la tranche 2/5 (#498), la matrice ci-dessous ne déclare
+# plus `observe` pour les sept motifs arbitrables : `derive-vs-review` est
+# passé en `apply` (le plus petit triplet défendable), les six autres
+# restant en `observe`. Le passage d'un autre motif à `apply` reste un
+# geste de configuration séparé et ultérieur (T3..T4 de l'épic #496). Voir
+# doc/automation/model-routing.md § « Triplet actuellement en mode `apply` »
+# pour le détail.
 version: 1
 rollback: false
 budgets:
@@ -107,7 +109,7 @@ arbitration:
   finding-trop-vague: observe
   derive-vs-spec: observe
   tentatives-epuisees: observe
-  derive-vs-review: observe
+  derive-vs-review: apply
   validation-rouge: observe
   findings-contradictoires: observe
 activation:
