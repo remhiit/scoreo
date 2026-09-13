@@ -74,6 +74,33 @@ skill relies on that existing sweep rather than building its own recovery
 path (`## Hors scope` of #469 explicitly excludes #429's pipeline-release
 work; #467 is the filet, already merged).
 
+### Load routing policy & budgets (before Verify readiness, #506)
+
+Runs once, immediately after "Claim the run" above and before every later
+step in this section (§ "Verify readiness", the optional § "Spec
+(sous-agent issue-to-spec, optional)", § "Routage", § "Budgets") reads
+either value. Moved here from inside § "Routage"/§ "Budgets" below (where
+each used to load its own copy) precisely so this data already exists by
+the time § "Spec" below needs to check a sub-agent budget — before this
+fix, that section referenced `budgets` before this run had ever loaded it,
+since § "Routage"/§ "Budgets" only used to run later in this same
+procedure (caught in review on #510).
+
+1. Load `.automation/routing-policy.yml`
+   (`scripts/automation-dispatch.mjs#loadRoutingPolicy`) into this
+   session's own memory as `routingPolicy`. § "Routage" step 2 below
+   reuses this same object — never reloading it — while still loading
+   `.automation/routines.yml` and `.automation/model-catalog.yml` fresh at
+   that point.
+2. Call `scripts/routing-budget.mjs#loadBudgets(routingPolicy)`, store the
+   result as `budgets`. A thrown error (a zero/negative/non-numeric
+   budget, an unknown field — never silently ignored) is a precondition
+   failure: go straight to § Escalade below (condition 6), naming the
+   error verbatim (it already names the file and the key). Nothing has
+   launched yet at this point. A missing `budgets` section throws nothing
+   — it resolves to `{}`, every budget check anywhere in this run becomes
+   non-binding.
+
 ### Verify readiness
 
 Same as `implement-task/SKILL.md` step 1: if the issue still carries
@@ -97,9 +124,12 @@ actionable per § "Which issue" — both skip straight to § Escalade below,
 unchanged, without attempting this step (#506).
 
 1. Before launching, run the same `checkBudget` call § "Budgets" below
-   already runs before every `Agent` call this skill makes
-   (`checkBudget(budgets, { subagentsLaunched: subagentsLaunched + 1 },
-   { routine: 'coordinator', scope: 'subagentsLaunched' })`), incrementing
+   already runs before every `Agent` call this skill makes, using the
+   `budgets` object § "Load routing policy & budgets" above already loaded
+   (right after "Claim the run" — never `undefined` here, since that step
+   runs before this one):
+   `checkBudget(budgets, { subagentsLaunched: subagentsLaunched + 1 },
+   { routine: 'coordinator', scope: 'subagentsLaunched' })`, incrementing
    `subagentsLaunched` on `status: 'ok'` exactly like any other sub-agent
    launch. `status: 'exceeded'` is the same stop as everywhere else that
    check applies — go to § Escalade below instead of launching this
@@ -182,8 +212,10 @@ undocumented cutoff, which is why this isn't a formality to wave through.
 
 ## Routage (dry-run, #406)
 
-Runs once, right after "Claim the run" above and before § 1 below. It
-computes and journals the sub-agent model this run *would* route to, and the
+Runs once, right after § "Verify readiness" above — and, when reached, the
+optional § "Spec (sous-agent issue-to-spec, optional)" above — and before §
+1 below. It computes and journals the sub-agent model this run *would*
+route to, and the
 matrix decides whether that model is actually applied to § 1's `Agent` call:
 `.automation/routing-policy.yml#activation` (#476) resolves a mode per
 triplet (routine × complexity band × risk level) via
@@ -202,10 +234,20 @@ explicit `model` override for as long as that holds, exactly as
    payload built from that same issue, `routine: 'coordinator'` (the key
    this run's entry actually has in `.automation/routines.yml`, not
    `coordinator-implement` — that name is only the automation-log marker for
-   this step's journal entry, below), this run's id.
-2. Load `.automation/routines.yml`, `.automation/model-catalog.yml`,
-   `.automation/routing-policy.yml`
-   (`scripts/automation-dispatch.mjs#loadRoutinesConfig`/`#loadModelCatalog`/`#loadRoutingPolicy`).
+   this step's journal entry, below), this run's id. **Exception**: when §
+   "Spec (sous-agent issue-to-spec, optional)" above was reached and
+   returned `READY_FOR_IMPLEMENTATION`, that sub-agent's own edit makes the
+   claim-time snapshot stale (it may be exactly the snapshot missing the
+   `## Catégorie de risque` or other section this step reads next) — re-read
+   the issue fresh (`issue_read`, method `get`) and build the `TaskContext`
+   from that instead (#506). Every other path (Spec never reached, or
+   reached but not attempted for this issue) keeps using the claim-time
+   snapshot as before.
+2. Load `.automation/routines.yml`, `.automation/model-catalog.yml`
+   (`scripts/automation-dispatch.mjs#loadRoutinesConfig`/`#loadModelCatalog`).
+   Reuse the `routingPolicy` object § "Load routing policy & budgets" above
+   already loaded (right after "Claim the run") — never reload
+   `.automation/routing-policy.yml` a second time here.
 3. Call `scripts/routing-dry-run.mjs#resolveRoutingDryRun` with that
    `TaskContext`, the issue's **full, untruncated** body as `issueBody`
    (never `TaskContext.entity.bodyExcerpt` — `## Catégorie de risque` sits
@@ -228,7 +270,8 @@ explicit `model` override for as long as that holds, exactly as
    the same kind of precondition failure as "Verify readiness" above, just
    discovered one step later.
 5. Otherwise, capture `rollbackAtOpen` — the boolean value of `rollback` read
-   from the `routingPolicy` object step 2 above already loaded (`false` when
+   from the `routingPolicy` object (§ "Load routing policy & budgets"
+   above, reused as-is by step 2 above) (`false` when
    absent, never re-derived from anything else) — in this session's own
    memory, unchanged, to reuse when this run's journal closes (§ "Converged"
    step 4 / § Escalade step 3 below, issue #490). Then upsert the **issue's**
@@ -260,24 +303,19 @@ one comment — no model choice is ever applied here, and no `Agent` call in
 
 ## Budgets (#478)
 
-Runs once, right after § "Routage" above and before § 1 below reads any
-further. A run that routes to a costlier model (once activation ever moves
-past `observe`) can also consume more — more sub-agents, more fix rounds —
-than today; this section caps that, with a stop as the *only* outcome of a
-crossed limit, never a silent fallback to a cheaper model, whatever the
-resolved risk level. `scripts/routing-budget.mjs` is the pure decision
-layer this whole section calls into (`loadBudgets`, `checkBudget`) — see
-`doc/automation/model-routing.md` § "Budgets" for its full contract.
+`budgets` itself was already loaded right after "Claim the run" (§ "Load
+routing policy & budgets" above, before this run ever reaches "Verify
+readiness" or the optional "Spec" step) — the checks below are what
+actually apply it, at each point in this run that launches a sub-agent or
+starts a new round. A run that routes to a costlier model (once activation
+ever moves past `observe`) can also consume more — more sub-agents, more
+fix rounds — than today; this section caps that, with a stop as the *only*
+outcome of a crossed limit, never a silent fallback to a cheaper model,
+whatever the resolved risk level. `scripts/routing-budget.mjs` is the pure
+decision layer this whole section calls into (`loadBudgets`, `checkBudget`)
+— see `doc/automation/model-routing.md` § "Budgets" for its full contract.
 
-1. Call `scripts/routing-budget.mjs#loadBudgets(routingPolicy)` with the
-   same `routingPolicy` object § "Routage" step 2 already loaded. A thrown
-   error (a zero/negative/non-numeric budget, an unknown field — never
-   silently ignored) is the same kind of precondition failure as §
-   "Routage" step 4: go straight to § Escalade below, naming the error
-   verbatim (it already names the file and the key). Nothing has launched
-   yet at this point. A missing `budgets` section throws nothing — it
-   resolves to `{}`, every check below becomes non-binding.
-2. Keep a `subagentsLaunched` counter in this session's own memory, starting
+1. Keep a `subagentsLaunched` counter in this session's own memory, starting
    at 0 for this run. Immediately before every `Agent` call this skill
    itself makes (§ "Spec"'s own call when that optional step is reached, §
    1's one call, each of § 2's two calls per round, § 3's one call per
@@ -288,13 +326,14 @@ layer this whole section calls into (`loadBudgets`, `checkBudget`) — see
    'exceeded'` means: don't launch that sub-agent, stop right here, go to §
    Escalade below with this result. `status: 'ok'` means: launch it, then
    increment the counter by one.
-3. Before starting a **new** fix round (§ 3, at the same point that section
+2. Before starting a **new** fix round (§ 3, at the same point that section
    already reads/increments its own `automation:attempt-N`), call
    `checkBudget(budgets, { fixIterations: N }, { routine: 'coordinator',
    scope: 'fixIterations' })` with `N` = the round about to start.
    `exceeded` stops before posting `automation:attempt-N` and before
    launching that round's fix sub-agent — go to § Escalade below.
-4. Once, right after step 1 above and before § 1 launches anything, read
+3. Once, right after "Load routing policy & budgets" above and before
+   "Verify readiness" reads any further, read
    this run's own rolling-day counter: `search_issues` for
    `is:issue in:comments "<!-- automation-log:coordinator-implement -->"
    updated:>=<24h ago, ISO 8601>` and count the matches — the same
@@ -311,7 +350,9 @@ layer this whole section calls into (`loadBudgets`, `checkBudget`) — see
    noted in the result's `limits`), never blocking the run on a read
    failure. Otherwise call `checkBudget(budgets, { runsPerDay: <count> },
    { routine: 'coordinator', scope: 'runsPerDay' })`; `exceeded` stops
-   before § 1 launches anything — go to § Escalade below.
+   before "Verify readiness" (and, when it would be reached, the optional
+   "Spec" sub-agent) launches anything, and before § 1 does either — go to
+   § Escalade below.
 
 None of the above ever changes which model an `Agent` call uses — a
 crossed budget is orthogonal to § "Routage"'s own model choice, and never
@@ -833,9 +874,11 @@ instead of by a standalone R2/R4:
    band). Reached before § 1 launches anything, so step 1 of the sequence
    below (removing labels from a PR "if one exists") finds none yet, same as
    condition 1.
-6. **§ "Budgets (#478)" throws while loading, or `checkBudget` returns
-   `status: 'exceeded'`** for any scope, at any of that section's four
-   checkpoints. The run stops right there — no further `Agent` call, no fix
+6. **§ "Load routing policy & budgets" throws while loading `routingPolicy`
+   or `budgets`, or `checkBudget` returns `status: 'exceeded'`** for any
+   scope, at any of § "Budgets (#478)"'s three checkpoints (or, for
+   `subagentsLaunched`, at the optional § "Spec" step's own call to it).
+   The run stops right there — no further `Agent` call, no fix
    round started, no fallback to a cheaper model (not even on a `high`-risk
    run, where a budget stop is the only outcome), and no automatic retry: a
    requeued issue (step 2 of the sequence below) waits for the next `automation:ready`
