@@ -133,6 +133,45 @@ describe('SkyjoModuleScreen', () => {
     )
   })
 
+  describe('reopening a match', () => {
+    const editing = {
+      matchId: 'existing-match',
+      version: 1,
+      data: {
+        players: ['p1', 'p2'],
+        rounds: [
+          {
+            enderPlayerId: 'p1',
+            entries: [
+              { playerId: 'p1', rawScore: 10 },
+              { playerId: 'p2', rawScore: 105 },
+            ],
+          },
+        ],
+      },
+    }
+
+    it('restores the round log and saves with the same id, so the host updates instead of duplicating', () => {
+      const onExit = vi.fn()
+      const { host, saved } = fakeHost()
+      render(<SkyjoModuleScreen host={host} playerIds={['p1', 'p2']} editing={editing} onExit={onExit} />)
+
+      // Bob's total already crosses 100 -> restored straight onto the end screen.
+      expect(screen.getByText('Alice remporte la partie !')).toBeInTheDocument()
+
+      fireEvent.click(screen.getByRole('button', { name: '💾 Enregistrer la partie' }))
+
+      expect(saved[0].matchId).toBe('existing-match')
+      expect(saved[0].ranking).toEqual(
+        expect.arrayContaining([
+          { playerId: 'p1', score: 10, rank: 1 },
+          { playerId: 'p2', score: 105, rank: 2 },
+        ]),
+      )
+      expect(onExit).toHaveBeenCalled()
+    })
+  })
+
   it('abandoning clears the draft and exits without saving', () => {
     const onExit = vi.fn()
     const { host, saved, stored } = fakeHost()
