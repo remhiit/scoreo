@@ -76,10 +76,69 @@ work; #467 is the filet, already merged).
 
 ### Verify readiness
 
-Same as `implement-task/SKILL.md` step 1: if the verdict is anything but
-`READY_FOR_IMPLEMENTATION`, or the spec is ambiguous/incomplete, or the
-issue still carries `blocked`, escalate per § Escalade below instead of
-guessing.
+Same as `implement-task/SKILL.md` step 1: if the issue still carries
+`blocked`, escalate per § Escalade below instead of guessing — never attempt
+§ "Spec (sous-agent issue-to-spec, optional)" below for this reason, a
+dependency block has nothing to do with spec completeness. If instead the
+verdict is anything but `READY_FOR_IMPLEMENTATION`, or the spec is
+ambiguous/incomplete, attempt that section before escalating — it is the
+only path from here back to § 1 "Implementation" below; escalating directly
+without attempting it first is a mistake in this skill's own procedure now,
+not a valid shortcut.
+
+### Spec (sous-agent issue-to-spec, optional)
+
+Reached only from § "Verify readiness" above, and only for the reason that
+section now names: the triggering issue's readiness verdict is missing or
+`NEEDS_CLARIFICATION`, or a section `implement-task/SKILL.md` step 1 treats
+as required is missing/ambiguous. Never reached for that section's other
+escalation reason (`blocked`) or for an issue that turned out not
+actionable per § "Which issue" — both skip straight to § Escalade below,
+unchanged, without attempting this step (#506).
+
+1. Before launching, run the same `checkBudget` call § "Budgets" below
+   already runs before every `Agent` call this skill makes
+   (`checkBudget(budgets, { subagentsLaunched: subagentsLaunched + 1 },
+   { routine: 'coordinator', scope: 'subagentsLaunched' })`), incrementing
+   `subagentsLaunched` on `status: 'ok'` exactly like any other sub-agent
+   launch. `status: 'exceeded'` is the same stop as everywhere else that
+   check applies — go to § Escalade below instead of launching this
+   sub-agent.
+2. Launch one `Agent` sub-agent with a prompt that is, verbatim, "follow
+   `.claude/skills/issue-to-spec/SKILL.md`'s procedure for issue #N, as the
+   coordinator's sub-agent" plus the issue number — nothing else from this
+   session's own context, same "built fresh from GitHub" rule § "Entrées
+   requises" above already states for every sub-agent this skill launches.
+3. The sub-agent follows `issue-to-spec/SKILL.md` unchanged except for the
+   delta that skill's own text now states under "As the coordinator's
+   sub-agent" (in that file): it completes only what it can deduce from the
+   issue and the codebase without asking a human, edits the existing issue's
+   body in place (never creates a new issue, never poses a priority/queue
+   label — this issue already carries `automation:in-progress` from this
+   run's own claim), and returns its own verdict —
+   `READY_FOR_IMPLEMENTATION` or `NEEDS_CLARIFICATION` — to this skill
+   instead of asking a human.
+4. **`READY_FOR_IMPLEMENTATION`** — the sub-agent has already written the
+   completed spec back to the issue itself (`issue_write`, per
+   `issue-to-spec/SKILL.md` § Spec format). Proceed to § 1 "Implementation"
+   below on this same issue, without re-reading the spec here beyond noting
+   the new verdict — the sub-agent's own edit is the source of truth from
+   this point on, the same way this skill never re-derives a fact a sub-agent
+   already established elsewhere in this procedure.
+5. **`NEEDS_CLARIFICATION`** — the sub-agent identified at least one element
+   it could not complete without a human answer, and left the issue body
+   untouched. Go straight to § Escalade below, the same sequence "Verify
+   readiness" already triggers, naming in the escalation comment (step 5
+   there) exactly the missing elements this sub-agent returned — never a
+   generic "spec incomplete". This skill attempts this step at most once per
+   run: a `NEEDS_CLARIFICATION` reply here is never followed by a second
+   issue-to-spec sub-agent on the same run.
+6. **The sub-agent fails outright, returns no usable reply, or returns
+   anything other than the two verdict values above** (or edits the issue
+   without clearly declaring which verdict it reached) — treated the same as
+   condition 4 in § Escalade below ("a review or fix sub-agent itself
+   reports it cannot proceed"), never interpreted by tolerance and never
+   retried.
 
 ## Préalables vérifiés (before this skill goes live)
 
@@ -220,9 +279,10 @@ layer this whole section calls into (`loadBudgets`, `checkBudget`) — see
    resolves to `{}`, every check below becomes non-binding.
 2. Keep a `subagentsLaunched` counter in this session's own memory, starting
    at 0 for this run. Immediately before every `Agent` call this skill
-   itself makes (§ 1's one call, each of § 2's two calls per round, § 3's
-   one call per round — never after the fact, so a launch that doesn't
-   happen is never counted), call
+   itself makes (§ "Spec"'s own call when that optional step is reached, §
+   1's one call, each of § 2's two calls per round, § 3's one call per
+   round — never after the fact, so a launch that doesn't happen is never
+   counted), call
    `checkBudget(budgets, { subagentsLaunched: subagentsLaunched + 1 },
    { routine: 'coordinator', scope: 'subagentsLaunched' })`. `status:
    'exceeded'` means: don't launch that sub-agent, stop right here, go to §
@@ -274,17 +334,18 @@ that: the routine invoked on `automation:ready`, not a sub-agent). Capture
 it once, right after "Claim the run", and reuse the same value at every
 later `upsertAutomationLog` call in this run — it never changes mid-run.
 
-Every sub-agent this skill launches (§ 1's implementer, § 2's two reviewers,
-§ 3's fix sub-agent) is, in turn, instructed by its own `SKILL.md` (each
-file's own "Traçabilité" section) to self-report its own model in its final
-reply — `get_session` doesn't apply to an in-process sub-agent, so each one
-reads it from its own system prompt instead (#423). This skill collects
-those self-reported values as they come back and uses them for:
+Every sub-agent this skill launches (§ "Spec"'s optional completion
+sub-agent when reached, § 1's implementer, § 2's two reviewers, § 3's fix
+sub-agent) is, in turn, instructed by its own `SKILL.md` (each file's own
+"Traçabilité" section) to self-report its own model in its final reply —
+`get_session` doesn't apply to an in-process sub-agent, so each one reads it
+from its own system prompt instead (#423). This skill collects those
+self-reported values as they come back and uses them for:
 
 - the synthesis comment's own Traçabilité section (§ "Sorties obligatoires"
   below) — this run's own model plus every sub-agent's, one line per role
-  (implémentation / relecteur fonctionnel / relecteur technique / correctif
-  N), never merged into a single value;
+  (complétion de spec, quand lancée / implémentation / relecteur fonctionnel
+  / relecteur technique / correctif N), never merged into a single value;
 - the per-reviewer model attribution in § "Attribution des findings" below,
   alongside each finding's own `reviewers` tag.
 
@@ -982,6 +1043,10 @@ issue's `automation:in-progress` for the whole run):
    "invalid" when the verdict was refused by `validateArbitrationVerdict`),
    and its `reasoning` verbatim — never leave arbitration silently out of
    the comment just because the run still ends in `automation:needs-human`.
+   For an escalation triggered by § "Verify readiness" after the § "Spec
+   (sous-agent issue-to-spec, optional)" sub-agent itself returned
+   `NEEDS_CLARIFICATION`, name exactly the missing elements that sub-agent
+   returned, verbatim — never a generic "spec incomplete" (#506).
 
 ## Limites
 
@@ -1022,3 +1087,7 @@ issue's `automation:in-progress` for the whole run):
   without an `llmResponse`, so the routing decision it journals always rests
   on the heuristic `ComplexityAssessment` alone; wiring an actual classifier
   sub-agent call into this step is a separate, later change.
+- Never launches the § "Spec (sous-agent issue-to-spec, optional)" sub-agent
+  for `blocked` or a non-actionable issue — only for a missing/ambiguous
+  readiness verdict — and never launches it a second time in the same run:
+  a `NEEDS_CLARIFICATION` reply from it always escalates directly (#506).
