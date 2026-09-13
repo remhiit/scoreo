@@ -67,13 +67,13 @@ Two separate suites, run by different `pnpm` scripts and CI jobs:
 ## Repository layout
 
 The repository is a **pnpm workspace** (`pnpm-workspace.yaml`: `apps/*`, `packages/*`). Scoreo is the
-host application and the only one deployed; the score-counting modules absorbed from the sibling
-repositories live under `packages/` and are loaded by Scoreo. Both are registered in
-`apps/scoreo/src/modules/registry.ts` and reached on demand: `packages/module-tori-valley/`
-(absorbed from `remhiit/toriValleyScoreBoard`, with its commit history preserved) and
-`packages/module-mille-sabords/` (ported from the Kotlin app kept in `legacy/`). Neither runs on
-its own: a module package has no `index.html`, no Vite config and nothing deployed — Scoreo builds
-it into a chunk loaded the first time someone opens it.
+host application and the only one deployed; the score-counting modules live under `packages/` and
+are loaded by Scoreo. All three are registered in `apps/scoreo/src/modules/registry.ts` and reached
+on demand: `packages/module-tori-valley/` (absorbed from `remhiit/toriValleyScoreBoard`, with its
+commit history preserved), `packages/module-mille-sabords/` (ported from the Kotlin app kept in
+`legacy/`), and `packages/module-skyjo/` (built directly as a module, not absorbed from a sibling
+repository). None runs on its own: a module package has no `index.html`, no Vite config and nothing
+deployed — Scoreo builds it into a chunk loaded the first time someone opens it.
 
 ```
 .                                  # workspace root — no source of its own
@@ -96,6 +96,7 @@ it into a chunk loaded the first time someone opens it.
     ├── module-api/                # the host ↔ module contract, no runtime dependency
     ├── shared-domain/             # Player, PlayerSchema, newId, isUuid, Result
     ├── module-mille-sabords/      # 1000 Sabords, ported from Kotlin and checked against it
+    ├── module-skyjo/              # Skyjo, a manual score counter built directly as a module
     └── module-tori-valley/        # absorbed score-counting module
 legacy/
 └── 1ksabord-kotlin/               # TEMPORARY: the Kotlin/JS app, kept as a test oracle

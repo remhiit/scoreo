@@ -114,6 +114,25 @@ describe('SkyjoModuleScreen', () => {
     expect(onExit).toHaveBeenCalled()
   })
 
+  it('shows a tie on the end screen and saves both players at rank 1', () => {
+    const onExit = vi.fn()
+    const { host, saved } = fakeHost()
+    render(<SkyjoModuleScreen host={host} playerIds={['p1', 'p2']} onExit={onExit} />)
+
+    // Ender's score equals the round's lowest -> no doubling, both at 100.
+    playRound('Alice', { Alice: '100', Bob: '100' })
+
+    expect(screen.getByText('Égalité entre Alice et Bob !')).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: '💾 Enregistrer la partie' }))
+    expect(saved[0].ranking).toEqual(
+      expect.arrayContaining([
+        { playerId: 'p1', score: 100, rank: 1 },
+        { playerId: 'p2', score: 100, rank: 1 },
+      ]),
+    )
+  })
+
   it('abandoning clears the draft and exits without saving', () => {
     const onExit = vi.fn()
     const { host, saved, stored } = fakeHost()

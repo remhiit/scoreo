@@ -22,7 +22,9 @@ Standard Skyjo:
   doubled). Every other player's round score is entered as-is.
 - Round scores accumulate into a running total per player, round after round.
 - **End of game.** The instant a round leaves any player's total at 100 or higher, the game ends
-  immediately — no further rounds. The winner is the player with the **lowest** total.
+  immediately — no further rounds. The winner is the player with the **lowest** total; if several
+  players share that lowest total, they all win and the end screen shows the tie instead of picking
+  one of them arbitrarily.
 
 ## User flow
 
@@ -40,9 +42,9 @@ Standard Skyjo:
 5. **Abandonner** discards the game in progress without saving anything to Scoreo — a confirmation
    guards against an accidental tap, exactly like 1000 Sabords' own abandon flow.
 6. The instant a round leaves someone at or past 100 points, the module shows its end screen: the
-   winner (lowest total), the full standings, and **Enregistrer la partie**, which hands the result
-   to Scoreo (`host.saveMatch`) and returns to the host, landing on History with the new match
-   highlighted.
+   winner (lowest total, or every tied player when several share it), the full standings ranked
+   with shared places on a tie, and **Enregistrer la partie**, which hands the result to Scoreo
+   (`host.saveMatch`) and returns to the host, landing on History with the new match highlighted.
 7. Reopening a finished Skyjo match from History resumes on the module with the full round-by-round
    table restored; re-saving updates that match instead of creating a second one.
 

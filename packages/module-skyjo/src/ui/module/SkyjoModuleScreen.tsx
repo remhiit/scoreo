@@ -4,7 +4,7 @@ import { useEffect, useMemo, useReducer } from 'react'
 // nothing until someone opens it.
 import '../../styles.css'
 import { appliedRoundScores, cumulativeTotals, END_THRESHOLD, type SkyjoRound } from '../../domain/round'
-import { toModuleMatchResult } from '../../domain/moduleResult'
+import { buildRanking, toModuleMatchResult } from '../../domain/moduleResult'
 import {
   buildInitialState,
   canSubmitRound,
@@ -281,26 +281,30 @@ function RoundRow({
 function EndScreen({
   state,
   names,
-  totals,
   dispatch,
   onSave,
 }: ViewProps & { onSave: () => void }) {
-  const ranked = [...state.playerIds].sort((a, b) => (totals.get(a) ?? 0) - (totals.get(b) ?? 0))
-  const winnerId = ranked[0]
+  const ranking = buildRanking(state.playerIds, state.rounds)
+  const winners = ranking.filter((entry) => entry.rank === 1)
+  const winnerNames = new Intl.ListFormat('fr', { style: 'long', type: 'conjunction' }).format(
+    winners.map((entry) => names.get(entry.playerId) ?? ''),
+  )
+  const title = winners.length > 1 ? `Égalité entre ${winnerNames} !` : `${winnerNames} remporte la partie !`
 
   return (
     <div className="sj-end">
       <div className="sj-trophy" aria-hidden="true">
         🏆
       </div>
-      <h2>{names.get(winnerId)} remporte la partie !</h2>
-      <p className="sj-winner-score">{totals.get(winnerId)} points</p>
+      <h2>{title}</h2>
+      <p className="sj-winner-score">{winners[0]?.score ?? 0} points</p>
 
       <ol className="sj-ranking">
-        {ranked.map((id) => (
-          <li key={id}>
-            <span className="sj-rank-name">{names.get(id)}</span>
-            <span className="sj-rank-score">{totals.get(id)} pts</span>
+        {ranking.map((entry) => (
+          <li key={entry.playerId}>
+            <span className="sj-rank-position">{entry.rank}.</span>
+            <span className="sj-rank-name">{names.get(entry.playerId)}</span>
+            <span className="sj-rank-score">{entry.score} pts</span>
           </li>
         ))}
       </ol>
