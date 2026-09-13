@@ -43,6 +43,15 @@ const MODULES: Record<string, ModuleUnderTest> = {
     },
     surface: '.module-mille-sabords .ms-table-wrap',
   },
+  Skyjo: {
+    name: /Skyjo/,
+    // No setup step of its own: the module opens straight onto the round-entry
+    // screen, scoreboard included.
+    reach: async (page) => {
+      await expect(page.locator('.module-skyjo .sj-table-wrap')).toBeVisible()
+    },
+    surface: '.module-skyjo .sj-table-wrap',
+  },
 }
 
 const readToken = (name: string) => `(() => {

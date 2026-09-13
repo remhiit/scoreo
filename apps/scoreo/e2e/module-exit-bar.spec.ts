@@ -34,6 +34,13 @@ const MODULES: Record<string, ModuleUnderTest> = {
       await expect(page.locator('.module-mille-sabords .ms-table-wrap')).toBeVisible()
     },
   },
+  Skyjo: {
+    name: /Skyjo/,
+    // No setup step of its own: the module opens straight onto the round-entry screen.
+    reach: async (page) => {
+      await expect(page.locator('.module-skyjo .sj-table-wrap')).toBeVisible()
+    },
+  },
 }
 
 test.beforeEach(async ({ page }) => {

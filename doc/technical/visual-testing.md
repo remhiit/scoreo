@@ -26,7 +26,7 @@ player actually sees.
 It is the only guard of its kind, and it exists because a module's screen is the
 one part of the app whose look nothing else checks: the e2e specs assert
 behaviour, and a module keeps a stylesheet of its own that the host knows nothing
-about. **Every registered module belongs here** — Torī Valley and 1000 Sabords
+about. **Every registered module belongs here** — Torī Valley, 1000 Sabords and Skyjo
 each have their spec. Scoping protects the host from the module — never the module from the
 host, whose generic rules (`.card`, `.empty`…) land on the module's markup like
 any other. This suite is where that shows up.

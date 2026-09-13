@@ -234,8 +234,9 @@ supplies the rest. Torī Valley shipped for a while with every player card laid 
 exactly that reason, its own sheet never having had to declare `display`.
 
 Hence the second half of the rule: **every class a module renders carries a prefix of its own** —
-`ms-` for 1000 Sabords, `tv-` for Torī Valley. The scope and the prefix guard opposite directions of
-the same border, and only the pair of them makes a module's look actually its own.
+`ms-` for 1000 Sabords, `tv-` for Torī Valley, `sj-` for Skyjo. The scope and the prefix guard
+opposite directions of the same border, and only the pair of them makes a module's look actually
+its own.
 
 `scripts/check-module-styles.mjs` holds both halves — it fails on a rule that is not scoped under
 `.module-<moduleId>` and on a class name Scoreo also styles — and runs in CI. What it cannot see,
