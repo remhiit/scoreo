@@ -1,6 +1,6 @@
 ---
 name: issue-to-spec
-description: Turn a feature/fix description into a well-formed GitHub issue for the Scoreo repo — testable acceptance criteria, impacted files, out-of-scope, a risk category that later determines eligibility for the "automation:enabled" label, and a mandatory readiness verdict (READY_FOR_IMPLEMENTATION/NEEDS_CLARIFICATION) that states only whether the spec is complete, independent of dependency state. Use when the user describes a feature or correctif and says to plan/turn it into a ticket ("Plan", "crée une issue", "crée un ticket"). This is the R1 grooming step in doc/technical/automation-plan.md — always run interactively, never as an autonomous routine.
+description: Turn a feature/fix description into a well-formed GitHub issue for the Scoreo repo — testable acceptance criteria, impacted files, out-of-scope, a risk category that later determines eligibility for the "automation:enabled" label, and a mandatory readiness verdict (READY_FOR_IMPLEMENTATION/NEEDS_CLARIFICATION) that states only whether the spec is complete, independent of dependency state. Use when the user describes a feature or correctif and says to plan/turn it into a ticket ("Plan", "crée une issue", "crée un ticket"). This is the R1 grooming step in doc/technical/automation-plan.md — always run interactively, never as an autonomous routine, on its own. Also invoked, procedure unchanged except for its own coordinator-sub-agent delta, as the coordinator's spec-completion sub-agent (`.claude/skills/coordinator/SKILL.md`, #506) — see the "As the coordinator's sub-agent" notes below for what that mode changes.
 ---
 
 # Issue → Spec
@@ -13,6 +13,62 @@ clarifying questions. This skill only produces the spec — it never
 implements it: `implement-task` (R2) takes over once the issue reaches
 `READY_FOR_IMPLEMENTATION`. See `project-conventions` for repo
 layering/backward-compat rules referenced below.
+
+### As the coordinator's sub-agent
+
+When launched by `.claude/skills/coordinator/SKILL.md` (#506,
+§ "Spec (sous-agent issue-to-spec, optional)") rather than interactively,
+this procedure runs unchanged except for these deltas, stated again at the
+exact point they replace below:
+
+- **Entrées requises** — the input is the existing issue the coordinator
+  named (an issue number in the prompt), never a user's direct description:
+  read that issue fresh via GitHub tools, the same "built fresh from
+  GitHub, never forwarded from context" rule every coordinator sub-agent
+  follows. There is no conversation context to fall back on.
+- **Sizing / Labels** — there is no new issue to create and no size to
+  judge: this mode only completes the body of that same existing issue, in
+  place (`mcp__github__issue_write`, method `update` — never `create`).
+  Never poses a priority label (`P0`…`P3`) or a queue label
+  (`automation:queued`/`blocked`): the issue already carries the priority
+  it was created with, and its queue state is `automation:in-progress`,
+  already claimed by the coordinator for this run's entire lifetime — this
+  sub-agent never touches either.
+- **Determining the readiness verdict** — complete only what the codebase
+  and the issue's existing content let you deduce without asking a
+  question, the same "never simulate interactivity" rule every coordinator
+  sub-agent follows. The interactive path below ("ask the user directly")
+  never applies here: no human is present. If, even after deducing
+  everything you can, a `## Risques et questions ouvertes` item, an
+  untestable acceptance criterion, an inferable-but-not-inferred edge case,
+  or an unclear risk category still needs a real human answer, do not guess
+  one — leave the issue body untouched and return `NEEDS_CLARIFICATION` to
+  the coordinator, with the same checklist of exactly what's missing and
+  the precise question for each item this skill would otherwise have put to
+  the user.
+- **Labels / the interactive grooming gate** — the human confirmation this
+  skill normally requires before creating an issue (§ "Labels", § Contrôles)
+  doesn't apply here: there is no separate issue to create and no human to
+  confirm with. Reaching your own `READY_FOR_IMPLEMENTATION` verdict is
+  itself the gate — write the completed spec straight back to the issue
+  (`issue_write`, method `update`), keeping the exact section order of
+  "Spec format" above (the mandatory trailing `## Traçabilité` included,
+  naming this sub-agent's own model), then return that verdict to the
+  coordinator. This is the only GitHub write this mode ever makes.
+- **Escalade** — there is no user to ask directly: return
+  `NEEDS_CLARIFICATION` to the coordinator instead (previous bullet), never
+  create or edit anything while that verdict stands. The coordinator
+  performs the actual escalation to a human from there
+  (`coordinator/SKILL.md` § "Spec (sous-agent issue-to-spec, optional)").
+- **Traçabilité** — `get_session` doesn't apply to an in-process sub-agent;
+  read the model self-reported in this sub-agent's own system prompt
+  instead (#423), the same mechanism every other coordinator sub-agent
+  uses, and self-report it back to the coordinator in your final reply (it
+  has no other channel to learn it).
+
+Everything else — the spec format itself, the risk-category rule, and the
+"one issue = one PR-sized change" principle applied to what's already on
+the issue — is unchanged from the interactive procedure below.
 
 ## Entrées requises
 
@@ -211,6 +267,10 @@ duplicate that state.
   question to ask for each item, then ask the user directly — this is the
   interactive path of `doc/automation/skill-contract.md` §3: a human is
   present, so ask rather than guess. Re-run this verdict once they answer.
+  **As the coordinator's sub-agent** (#506): there is no human to ask —
+  leave the issue untouched and return this checklist as
+  `NEEDS_CLARIFICATION` to the coordinator instead (§ "As the coordinator's
+  sub-agent" above).
   This is the one case where incompleteness and blocking can coexist and
   incompleteness still wins: a spec that is both incomplete and cites an open
   blocker still gets `NEEDS_CLARIFICATION`, never the `blocked`-label
@@ -222,7 +282,10 @@ duplicate that state.
 Once the spec is written, the verdict is `READY_FOR_IMPLEMENTATION` (never
 `NEEDS_CLARIFICATION` — that verdict means no issue exists yet), and the
 user has confirmed it (this is the interactive grooming gate — don't skip
-it):
+it). **As the coordinator's sub-agent** (#506): steps 1–3 below don't
+apply — there is no new issue to create and no label to pose; instead,
+write the completed spec back onto the existing issue and return the
+verdict to the coordinator (§ "As the coordinator's sub-agent" above).
 
 1. Create the issue with `mcp__github__issue_write` (title = a short
    imperative summary, not the full spec).
@@ -285,6 +348,12 @@ directly rather than guessing — see "Determining the readiness verdict"
 above — never creating an issue with unresolved questions "documented" but
 unanswered.
 
+**As the coordinator's sub-agent** (#506): there is no user to ask —
+return `NEEDS_CLARIFICATION` to the coordinator instead, with the same
+missing-items checklist this skill would otherwise have put to the user (§
+"As the coordinator's sub-agent" above). The coordinator, not this
+sub-agent, performs the actual escalation to a human from there.
+
 ## Limites
 
 - Never creates the issue while the verdict is `NEEDS_CLARIFICATION`.
@@ -295,3 +364,7 @@ unanswered.
   written.
 - Never batches more than one independent change into a single issue (see
   "Sizing").
+- As the coordinator's sub-agent (#506): never creates a new issue and
+  never poses any label on it (priority, queue, or otherwise) — only edits
+  the existing issue's body, or leaves it untouched and returns
+  `NEEDS_CLARIFICATION` to the coordinator instead of asking a human.
