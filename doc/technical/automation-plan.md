@@ -917,6 +917,29 @@ chaque phase), l'activation reste un geste manuel séparé, avec la question
 du plafond de durée non résolue signalée ici pour que ce geste soit informé
 plutôt que découvert en incident.
 
+**Complétion de spec avant escalade (#506).** Quand « Verify readiness »
+détecterait normalement une spec incomplète ou ambiguë sur l'issue
+déclenchante (verdict absent ou `NEEDS_CLARIFICATION`, section obligatoire
+manquante) — jamais pour les deux autres motifs de cette même vérification,
+le label `blocked` ou une issue devenue non actionnable —, le coordinateur
+lance un quatrième sous-agent avant d'escalader : `issue-to-spec/SKILL.md`
+« as the coordinator's sub-agent ». Ce sous-agent reste fidèle à la règle
+« jamais interactif tout seul » d'`issue-to-spec` : il ne pose jamais de
+question à un humain, complète l'issue existante (jamais une nouvelle
+issue, jamais de label de priorité/file — l'issue porte déjà
+`automation:in-progress`) avec ce qu'il peut déduire seul du code et de la
+spec déjà écrite, puis renvoie son propre verdict au coordinateur au lieu
+de le demander à un humain. `READY_FOR_IMPLEMENTATION` : la spec complétée
+est déjà réécrite sur l'issue par le sous-agent lui-même (`issue_write`) ;
+le coordinateur poursuit normalement au § 1 « Implementation » sans relire
+la spec au-delà du nouveau verdict. `NEEDS_CLARIFICATION` : le coordinateur
+escalade exactement comme avant (§ Escalade, motif « Verify readiness »),
+en nommant dans le commentaire les éléments identifiés comme manquants par
+le sous-agent — une seule tentative par run, jamais une seconde boucle de
+complétion sur le même run. Ce sous-agent est compté par le budget de
+sous-agents (`checkBudget`, § « Budgets » ci-dessus) comme n'importe quel
+autre appel `Agent` de ce skill, sans règle de budget dédiée.
+
 ### Mode dry-run (#406) : le coordinateur calcule et journalise, sans appliquer
 
 Câble la chaîne existante — `TaskContext` (#401) → `ComplexityAssessment`
