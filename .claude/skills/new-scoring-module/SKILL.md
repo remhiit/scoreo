@@ -121,6 +121,63 @@ A new module is a **row in an existing table**, not a new test:
 A module carries its own doc; the workspace's `doc/` keeps what belongs to the repository. Then one
 row in `doc/reference.md`.
 
+### 9. Quality review (two isolated sub-agents)
+
+Once § Contrôles is green a first time — never before, and this needs step 8's doc to already exist,
+since the rules sub-agent below judges against it. In "reviewing an existing module" mode this step
+runs directly, skipping steps 1–8.
+
+Two `Agent` sub-agents, each on its own disjoint corpus, neither one getting the implementation's own
+reasoning nor the other sub-agent's findings — the same isolation principle as `coordinator/SKILL.md`
+§ "Review (two isolated sub-agents, disjoint corpora)", minus its GitHub apparatus: there is no PR at
+this level, so each sub-agent reads the local diff (`git diff` against the base branch) and returns
+its findings to this session, never a GitHub review.
+
+**Contract-compliance sub-agent** reads `doc/technical/module-contract.md`, `project-conventions`,
+the traps this file itself documents (the bundle trap of step 2, the styles trap of step 5, the
+single registry file of step 6), and the local diff — never the implementation's own reasoning. It
+checks explicitly:
+
+- `src/index.ts` exports only the manifest and the module;
+- every style rule is scoped `.module-<moduleId>` and every class is prefixed;
+- `apps/scoreo/src/modules/registry.ts` remains the only file naming the module;
+- the hexagonal layering is respected (pure reducer / use case / port / adapter);
+- any new serialized field carries a zod `.default()`;
+- the doc is present (`packages/module-<game>/doc/` plus a row in `doc/reference.md`).
+
+**Game-rules sub-agent** reads the game's rules doc in `packages/module-<game>/doc/`, the description
+of what is expected (given to it by this session), and the reducer/screen diff (`src/ui/module/`) —
+never the implementation's own reasoning, never the other sub-agent's findings. It checks:
+
+- the scoring logic matches the written rules;
+- the edge cases named in the rules doc are covered;
+- the turn in progress goes through `host.saveDraft`/`loadDraft`;
+- no mutable aggregate is kept in state;
+- `assertRoundsSumToRanking` is respected.
+
+If the rules doc is missing or incomplete when this sub-agent runs — it should not happen given the
+order above, but can in "existing module" mode against a module that was never properly documented —
+it reports that as a `blocking` finding rather than guessing the rules.
+
+Each sub-agent returns a structured findings list — severity (`blocking`/`important`/`suggestion`),
+a description, and the file concerned — never free text this session would have to reinterpret. If a
+sub-agent fails outright or returns something unstructured, that round does not count as validated
+for it: re-run that one sub-agent once before escalating on persistent failure — never conclude from
+the sole sub-agent that did answer.
+
+If either sub-agent returns at least one `blocking`/`important` finding, this session fixes it
+directly (no separate fix sub-agent — it already holds the implementation's own context), re-runs §
+Contrôles in full, then runs one further and final round of both review sub-agents on the updated
+diff. A fix that diverges far beyond what the findings asked for is a scope mismatch, not a silent
+"while I was in there" — stop and ask per § Escalade below instead of expanding it further.
+
+If `blocking`/`important` findings still remain after that second round, stop and ask the user — this
+skill is interactive, a human is there to answer — rather than looping again or pushing through an
+unreviewed fix.
+
+Once no sub-agent returns a `blocking`/`important` finding — on the first round, or after the one
+allowed fix round — this step is satisfied and § Sorties obligatoires can be reached.
+
 ## Sorties obligatoires
 
 - `packages/module-<game>/` created per steps 1–2 (`package.json` without a
@@ -136,6 +193,10 @@ row in `doc/reference.md`.
   recorded in the container (step 7).
 - `packages/module-<game>/doc/` populated and one row added to
   `doc/reference.md` (step 8).
+- Step 9's quality review passed: both isolated sub-agents (contract-
+  compliance, game-rules) reported no `blocking`/`important` finding,
+  either on the first round or after the one allowed fix-and-re-review
+  round — before considering the module shipped.
 
 ## Contrôles
 
