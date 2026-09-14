@@ -224,3 +224,83 @@ export const SABORDS_MATCHES: Match[] = [
   sabordsMatch(SABORDS_IN_PROGRESS_ID, SABORDS_DATES[0], SABORDS_IN_PROGRESS, [4500, 1500, 1000]),
   sabordsMatch(SABORDS_FINISHED_ID, SABORDS_DATES[1], SABORDS_FINISHED, [6500, 5800, 4500]),
 ]
+
+// ─────────────────────────── Skyjo ───────────────────────────
+
+/** Shaped exactly as `BindModuleUseCase` creates it from the module's manifest. */
+export const SKYJO_GAME_TYPE: GameType = {
+  id: 'gametype-skyjo',
+  name: 'Skyjo',
+  winCondition: 'LOWEST_SCORE',
+  tieBreakRule: 'NONE',
+  tieBreakCondition: 'HIGHEST_SCORE',
+  tieBreakLabel: null,
+  moduleId: 'skyjo',
+  active: true,
+}
+
+function skyjoRound(enderPlayerId: string, scores: readonly number[]) {
+  return {
+    enderPlayerId,
+    entries: PLAYER_IDS.map((playerId, index) => ({ playerId, rawScore: scores[index] })),
+  }
+}
+
+/**
+ * Two rounds: Akira ends round 1 as its own lowest (2, not doubled), Mei ends
+ * round 2 without the lowest (6 > Hiroshi's 3, doubled to 12). Running totals:
+ * Akira 12, Mei 27, Hiroshi 11 — nobody near the 100 threshold.
+ */
+const SKYJO_IN_PROGRESS = [
+  skyjoRound('player-akira', [2, 15, 8]),
+  skyjoRound('player-mei', [10, 6, 3]),
+]
+
+/**
+ * Continues from the two rounds above through three more, the last one
+ * doubling Mei past 100 (45 raw, not the round's lowest, doubled to 90) —
+ * final totals Akira 38, Mei 152, Hiroshi 55. The module renders its end
+ * screen, Akira the winner with the lowest total.
+ */
+const SKYJO_FINISHED = [
+  ...SKYJO_IN_PROGRESS,
+  skyjoRound('player-hiroshi', [20, 5, 1]),
+  skyjoRound('player-akira', [1, 30, 40]),
+  skyjoRound('player-mei', [5, 45, 3]),
+]
+
+/** Real UUIDs — see MATCH_ONE_ID for why a readable slug would not survive. */
+export const SKYJO_IN_PROGRESS_ID = 'a13e5f76-2c88-4d1a-9e0f-3b7c6a51d208'
+export const SKYJO_FINISHED_ID = 'd4f0b2a7-8e61-4c3d-9a52-1f6e0c8b4d97'
+
+/** 2024-06-01T12:00:00Z and 2024-06-08T12:00:00Z. */
+const SKYJO_DATES = [1717243200000, 1717848000000]
+
+function skyjoMatch(
+  id: string,
+  date: number,
+  rounds: ReturnType<typeof skyjoRound>[],
+  scores: number[],
+): Match {
+  return {
+    id,
+    date,
+    gameTypeId: SKYJO_GAME_TYPE.id,
+    playerScores: PLAYER_IDS.map((playerId, index) => ({ playerId, score: scores[index] })),
+    manualWinners: [],
+    secondaryPlayerScores: [],
+    // Left empty on purpose: these baselines never open Scoreo's own history,
+    // and the module rebuilds its rounds from moduleData anyway.
+    rounds: [],
+    moduleData: {
+      moduleId: 'skyjo',
+      version: 1,
+      data: { players: PLAYER_IDS, rounds },
+    },
+  }
+}
+
+export const SKYJO_MATCHES: Match[] = [
+  skyjoMatch(SKYJO_IN_PROGRESS_ID, SKYJO_DATES[0], SKYJO_IN_PROGRESS, [12, 27, 11]),
+  skyjoMatch(SKYJO_FINISHED_ID, SKYJO_DATES[1], SKYJO_FINISHED, [38, 152, 55]),
+]

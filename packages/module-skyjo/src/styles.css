@@ -1,0 +1,368 @@
+/*
+ * Skyjo keeps its own look inside Scoreo — magenta and teal on a dark table,
+ * whatever flavor the host is wearing. The game is the identity, not the app.
+ *
+ * Every rule below is scoped under `.module-skyjo`, and every selector of ours
+ * is prefixed `sj-`. That is not tidiness, it is the contract: a bare `:root`,
+ * or a bare `input` / `button` / `label`, would apply to the whole document —
+ * and the two sides name tokens alike (`--color-primary`, `--space-5`,
+ * `--radius-lg`) with different values. A stylesheet is never unloaded on
+ * navigation, so any leak would follow the player for the rest of the session.
+ * `apps/scoreo/e2e/module-style-isolation.spec.ts` guards that boundary.
+ */
+
+.module-skyjo {
+  --sj-bg: #150f1f;
+  --sj-surface: #201933;
+  --sj-surface-2: #2a2143;
+  --sj-surface-3: #362a55;
+  --sj-magenta: #ff4f8b;
+  --sj-teal: #2ee6c8;
+  --sj-danger: #ff5d5d;
+  --sj-text: #f1e9f7;
+  --sj-text-dim: #a396b8;
+
+  --sj-radius: 10px;
+  --sj-gap-1: 4px;
+  --sj-gap-2: 8px;
+  --sj-gap-3: 12px;
+  --sj-gap-4: 16px;
+  --sj-gap-5: 24px;
+
+  background: var(--sj-bg);
+  color: var(--sj-text);
+  font-family:
+    system-ui,
+    -apple-system,
+    'Segoe UI',
+    Roboto,
+    sans-serif;
+  font-size: 16px;
+  line-height: 1.4;
+  min-height: 100%;
+}
+
+.module-skyjo *,
+.module-skyjo *::before,
+.module-skyjo *::after {
+  box-sizing: border-box;
+}
+
+.module-skyjo .sj-shell {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: var(--sj-gap-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sj-gap-4);
+}
+
+/* ==================== Header ==================== */
+
+.module-skyjo .sj-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sj-gap-3);
+  flex-wrap: wrap;
+}
+
+.module-skyjo .sj-title {
+  margin: 0;
+  font-size: 1.5rem;
+  color: var(--sj-magenta);
+}
+
+.module-skyjo .sj-badge {
+  padding: var(--sj-gap-1) var(--sj-gap-3);
+  border-radius: var(--sj-radius);
+  background: var(--sj-surface-2);
+  border: 1px solid var(--sj-surface-3);
+  font-size: 0.9rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.module-skyjo .sj-badge-final {
+  background: var(--sj-teal);
+  border-color: var(--sj-teal);
+  color: #0b1c19;
+}
+
+/* ==================== Buttons ==================== */
+
+.module-skyjo .sj-btn {
+  padding: 10px 16px;
+  border: 1px solid transparent;
+  border-radius: var(--sj-radius);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  background: var(--sj-surface-2);
+  color: var(--sj-text);
+}
+
+.module-skyjo .sj-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.module-skyjo .sj-btn-primary {
+  background: var(--sj-magenta);
+  color: #1a0510;
+}
+
+.module-skyjo .sj-btn-secondary {
+  background: var(--sj-surface-2);
+  border-color: var(--sj-surface-3);
+}
+
+.module-skyjo .sj-btn-danger {
+  background: var(--sj-danger);
+  color: #1a0505;
+}
+
+.module-skyjo .sj-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sj-gap-2);
+}
+
+.module-skyjo .sj-btn:focus-visible,
+.module-skyjo .sj-chip:focus-visible,
+.module-skyjo select:focus-visible,
+.module-skyjo input:focus-visible {
+  outline: 2px solid var(--sj-magenta);
+  outline-offset: 2px;
+}
+
+/* ==================== Round entry ==================== */
+
+.module-skyjo .sj-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sj-gap-3);
+  background: var(--sj-surface);
+  border: 1px solid var(--sj-surface-3);
+  border-radius: var(--sj-radius);
+  padding: var(--sj-gap-4);
+}
+
+.module-skyjo .sj-panel-title {
+  margin: 0;
+  font-size: 1rem;
+  color: var(--sj-text-dim);
+}
+
+.module-skyjo .sj-ender-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sj-gap-2);
+}
+
+.module-skyjo .sj-chip {
+  padding: 8px 14px;
+  border: 1px solid var(--sj-surface-3);
+  border-radius: 999px;
+  background: var(--sj-surface-2);
+  color: var(--sj-text);
+  font: inherit;
+  cursor: pointer;
+}
+
+.module-skyjo .sj-chip-active {
+  background: var(--sj-magenta);
+  border-color: var(--sj-magenta);
+  color: #1a0510;
+  font-weight: 700;
+}
+
+.module-skyjo .sj-score-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: var(--sj-gap-3);
+}
+
+.module-skyjo .sj-score-name {
+  font-weight: 600;
+}
+
+.module-skyjo .sj-score-input {
+  width: 90px;
+  font: inherit;
+  padding: 10px 12px;
+  border: 2px solid var(--sj-surface-3);
+  border-radius: var(--sj-radius);
+  background: var(--sj-surface-2);
+  color: var(--sj-text);
+  text-align: right;
+}
+
+/* ==================== Scoreboard ==================== */
+
+.module-skyjo .sj-table-wrap {
+  overflow-x: auto;
+  background: var(--sj-surface);
+  border: 1px solid var(--sj-surface-3);
+  border-radius: var(--sj-radius);
+}
+
+.module-skyjo .sj-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+}
+
+.module-skyjo .sj-table th,
+.module-skyjo .sj-table td {
+  padding: var(--sj-gap-2) var(--sj-gap-3);
+  text-align: center;
+  border-bottom: 1px solid var(--sj-surface-2);
+  white-space: nowrap;
+}
+
+.module-skyjo .sj-table thead th {
+  font-size: 0.9rem;
+  background: var(--sj-surface-2);
+}
+
+.module-skyjo .sj-round-label {
+  color: var(--sj-text-dim);
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-align: left;
+}
+
+.module-skyjo .sj-cell-doubled {
+  color: var(--sj-danger);
+  font-weight: 700;
+}
+
+.module-skyjo .sj-empty {
+  color: var(--sj-text-dim);
+  font-style: italic;
+  padding: var(--sj-gap-4);
+}
+
+.module-skyjo .sj-table tfoot .sj-total {
+  font-weight: 700;
+  background: var(--sj-surface-2);
+}
+
+.module-skyjo .sj-leading {
+  color: var(--sj-teal);
+}
+
+/* ==================== End screen ==================== */
+
+.module-skyjo .sj-end {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sj-gap-3);
+  text-align: center;
+  background: var(--sj-surface);
+  border: 1px solid var(--sj-surface-3);
+  border-radius: var(--sj-radius);
+  padding: var(--sj-gap-5) var(--sj-gap-4);
+}
+
+.module-skyjo .sj-trophy {
+  font-size: 3.5rem;
+  line-height: 1;
+}
+
+.module-skyjo .sj-end h2 {
+  margin: 0;
+  font-size: 1.3rem;
+}
+
+.module-skyjo .sj-winner-score {
+  margin: 0;
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: var(--sj-teal);
+}
+
+.module-skyjo .sj-ranking {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  max-width: 420px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sj-gap-1);
+}
+
+.module-skyjo .sj-ranking li {
+  display: flex;
+  align-items: center;
+  gap: var(--sj-gap-2);
+  padding: var(--sj-gap-2) var(--sj-gap-3);
+  background: var(--sj-surface-2);
+  border-radius: var(--sj-radius);
+}
+
+.module-skyjo .sj-rank-position {
+  font-variant-numeric: tabular-nums;
+  color: var(--sj-text-dim);
+}
+
+.module-skyjo .sj-rank-name {
+  flex: 1;
+  text-align: left;
+  font-weight: 600;
+}
+
+.module-skyjo .sj-rank-score {
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+}
+
+/* ==================== Modal ==================== */
+
+.module-skyjo .sj-modal-overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--sj-gap-4);
+  background: rgba(6, 4, 10, 0.75);
+  z-index: 100;
+}
+
+.module-skyjo .sj-modal {
+  background: var(--sj-surface);
+  border: 1px solid var(--sj-surface-3);
+  border-radius: var(--sj-radius);
+  padding: var(--sj-gap-4);
+  max-width: 420px;
+  width: 100%;
+}
+
+.module-skyjo .sj-modal h2 {
+  margin: 0 0 var(--sj-gap-2);
+  font-size: 1.1rem;
+}
+
+.module-skyjo .sj-modal p {
+  margin: 0 0 var(--sj-gap-4);
+  color: var(--sj-text-dim);
+  font-size: 0.9rem;
+}
+
+.module-skyjo .sj-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--sj-gap-2);
+  flex-wrap: wrap;
+}
+
+.module-skyjo label {
+  font-size: 0.8rem;
+  color: var(--sj-text-dim);
+  font-weight: 600;
+}

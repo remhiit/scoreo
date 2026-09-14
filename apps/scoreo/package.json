@@ -18,6 +18,7 @@
   "dependencies": {
     "@scoreboards/module-api": "workspace:*",
     "@scoreboards/module-mille-sabords": "workspace:*",
+    "@scoreboards/module-skyjo": "workspace:*",
     "@scoreboards/module-tori-valley": "workspace:*",
     "@scoreboards/shared-domain": "workspace:*",
     "i18next": "^26.4.2",
