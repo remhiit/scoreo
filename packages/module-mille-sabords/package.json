@@ -15,11 +15,11 @@
     "@scoreboards/module-api": "workspace:*",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
-    "zod": "^4.5.4"
+    "zod": "^4.6.2"
   },
   "devDependencies": {
     "@testing-library/react": "^16.3.3",
-    "@types/node": "^26.5.0",
+    "@types/node": "^26.5.1",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
     "jsdom": "^30.0.1",
