@@ -35,7 +35,7 @@ pnpm typecheck
 pnpm lint
 ```
 
-`.claude/hooks/session-start.sh` (déclaré dans `.claude/settings.json`) préchauffe `node_modules` au démarrage d'une session Claude Code sur le web (`$CLAUDE_CODE_REMOTE`), pour que `pnpm test`/`typecheck`/`lint`/`build` soient rapides dès la première commande — active le pnpm épinglé dans `package.json` (`packageManager`) via Corepack (`registry.npmjs.org`), puis `pnpm install --frozen-lockfile`.
+`.claude/hooks/session-start.sh` (déclaré dans `.claude/settings.json`) préchauffe `node_modules` au démarrage d'une session Claude Code sur le web (`$CLAUDE_CODE_REMOTE`), pour que `pnpm test`/`typecheck`/`lint`/`build` soient rapides dès la première commande — active le pnpm épinglé dans `package.json` (`packageManager`) via Corepack (`registry.npmjs.org`), puis `pnpm install --frozen-lockfile`. Il fait aussi pointer le build Chromium que réclame `@playwright/test` vers celui que l'image web embarque, sans quoi `pnpm test:e2e` échoue d'emblée faute de navigateur au chemin attendu ; cette étape est best-effort et ne concerne que le web.
 
 Les scripts de la racine essaiment avec `pnpm -r` (ou `--filter scoreo` pour ceux qui ne concernent que l'app) ; `pnpm test` fait tourner en plus le projet Vitest racine, qui ne couvre que les tests des scripts d'automatisation (`scripts/*.test.mjs`).
 
