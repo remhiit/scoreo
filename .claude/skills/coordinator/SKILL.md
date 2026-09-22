@@ -371,7 +371,12 @@ Per `doc/automation/skill-contract.md` § "Traçabilité": every
 — `<id>` is this session's own model, obtained via `get_session` (no
 `session_id`, so it reads its own session), the same way any other routine
 running as its own Claude Code Remote session would (this skill is exactly
-that: the routine invoked on `automation:ready`, not a sub-agent). Capture
+that: the routine invoked on `automation:ready`, not a sub-agent), and
+normalized the way that same section states it: a context-window suffix
+stripped (`claude-opus-5[1m]` → `claude-opus-5`), and
+`external_metadata.last_served_model` preferred when it is present and
+differs from `session_context.model`, which that call can come back without.
+Capture
 it once, right after "Claim the run", and reuse the same value at every
 later `upsertAutomationLog` call in this run — it never changes mid-run.
 

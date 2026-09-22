@@ -174,9 +174,16 @@ l'identifiant machine du modèle qui exécute cette session (ex.
 `session_id`, donc sur cette session elle-même) et son
 `session_context.model`, per `doc/automation/skill-contract.md` § « Traçabilité »
 — cette skill tourne comme sa propre session Claude Code Remote, jamais
-comme un sous-agent du coordinateur. Si `get_session` échoue ou n'est pas
-disponible, `<id>` devient `inconnu` et le motif est dit dans la même phrase
-(« modèle `inconnu` — get_session indisponible ») plutôt que deviné.
+comme un sous-agent du coordinateur. Normalise cette valeur comme le dit
+`doc/automation/skill-contract.md` § « Traçabilité » : retire le suffixe de
+fenêtre de contexte (`claude-opus-5[1m]` → `claude-opus-5`) et préfère
+`external_metadata.last_served_model` quand il est présent et diffère de
+`session_context.model` — un fallback à la portée du tour change ce qui a
+servi le run sans changer ce à quoi la session est réglée, et cet appel peut
+ne renvoyer aucun `session_context.model` exploitable. Si `get_session`
+échoue ou n'est pas disponible, `<id>` devient `inconnu` et le motif est dit
+dans la même phrase (« modèle `inconnu` — get_session indisponible ») plutôt
+que deviné.
 
 #### Section « Dépendances » (optionnelle)
 

@@ -239,6 +239,13 @@ Le rapport est une **issue GitHub**, jamais une PR ni un commentaire :
   routine) plus, pour ce rapport lui-même, `skill \`weekly-report\`` +
   `modèle \`<id>\`` (obtenu via `get_session`, cette skill tournant toujours
   comme sa propre session — jamais un sous-agent du coordinateur).
+  Normalise cette valeur comme le dit `doc/automation/skill-contract.md`
+  § « Traçabilité » : retire le suffixe de fenêtre de contexte
+  (`claude-opus-5[1m]` → `claude-opus-5`) et préfère
+  `external_metadata.last_served_model` quand il est présent et diffère de
+  `session_context.model` — un fallback à la portée du tour change ce qui a
+  servi le run sans changer ce à quoi la session est réglée, et cet appel
+  peut ne renvoyer aucun `session_context.model` exploitable.
 - Le label `P3`, posé dans son propre appel.
 - Jamais `automation:ready` sur cette issue.
 

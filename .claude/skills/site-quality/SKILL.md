@@ -91,8 +91,15 @@ skill opens (§ Procédure) carries a **Traçabilité** field in its body —
 PR description already says about the category fixed. This skill always
 runs as its own Claude Code Remote session (R5, cron-triggered — never a
 coordinator sub-agent), so `<id>` always comes from calling `get_session`
-(no `session_id`) and reading `session_context.model`. If that call fails,
-`<id>` is `inconnu` with the reason stated alongside it, never guessed.
+(no `session_id`) and reading `session_context.model`. Normalize that value
+the way `skill-contract.md` § "Traçabilité" states it: strip a
+context-window suffix (`claude-opus-5[1m]` → `claude-opus-5`), and prefer
+`external_metadata.last_served_model` when it is present and differs from
+`session_context.model` — a turn-scoped fallback changes what served the run
+without changing what the session is set to, and that call can come back
+with no usable `session_context.model` at all.
+If that call fails, `<id>` is `inconnu` with the reason stated alongside it,
+never guessed.
 
 ## Sorties obligatoires
 

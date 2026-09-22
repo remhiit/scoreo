@@ -144,7 +144,20 @@ reliably self-reports its own model):
   `pr-review`/R3 outside the coordinator, `address-feedback`/R4,
   `site-quality`/R5, `weekly-report`/R6): call `get_session` (no
   `session_id`, so it reads its own session) and use
-  `session_context.model`.
+  `session_context.model`. Two refinements that call has in practice, since
+  this field reports what *actually ran*, not what was configured: strip a
+  context-window suffix (`claude-opus-5[1m]` → `claude-opus-5`) — it sizes
+  the window, it doesn't name a different model — and prefer
+  `external_metadata.last_served_model` whenever it is present and either
+  differs from `session_context.model` or `session_context.model` itself
+  comes back empty or absent. A turn-scoped fallback (overload, model
+  unavailable) changes what served the run without changing what the
+  session is set to, which is the differing case; and a `get_session` that
+  returns no usable `session_context.model` at all leaves
+  `last_served_model` as the only value naming what ran — an observed case,
+  not a hypothetical (the R3 review of #528 hit exactly it). Only when
+  neither field yields a value is the model `inconnu`, per the rule below —
+  never a guess.
 - **A sub-agent launched by the coordinator via the `Agent` tool**
   (`implement-task`, either of the two reviewers from #470,
   `address-feedback` in sub-agent mode): `get_session` does not apply to an
@@ -163,6 +176,34 @@ reason is carried in `executedBy.limits` (an array of strings, rendered as
 `limits` convention `complexity`/`routing` already use in that same journal
 for a data point that couldn't be fully established. Absent when the reason
 isn't provided, like every other optional field in that journal.
+
+#### Le rôle « review », scindé en deux relecteurs (#470)
+
+The review role runs as two sub-agents on disjoint corpora (functional /
+technical), so it has no single "review model" to report. Attribution is
+per corpus, and the journal already carries it structurally: each reviewer
+writes its **own** journal comment, under its own marker
+(`coordinator-review-functional` / `coordinator-review-technical`, see
+`scripts/automation-log.mjs`'s `ROUTINE_LABELS`), hence its own
+`executedBy` — so a reviewer's model is attributed to its corpus by the
+entry it sits in, never merged into one value covering both. Both entries
+name `skill: pr-review` (that file's own procedure is what ran in either
+corpus); what distinguishes them is the routine marker and the model. This
+holds when the two run on different models, and when one of them fails: a
+sub-agent that returns nothing before self-reporting gets `inconnu` plus
+its reason in **its** entry only, leaving its peer's entry intact — the
+same "unavailable, never guessed" rule as above, applied per corpus.
+
+As with `findings` (#470), no `.github/workflows/*.yml` Action calls
+`automation-log.mjs` with either reviewer marker yet — today the
+per-corpus attribution above is what the renderer guarantees (and what its
+unit tests pin), while the channel that actually makes it visible on a PR
+right now is the coordinator's synthesis comment, which restates the same
+attribution in prose next to each reviewer's findings
+(`coordinator/SKILL.md` § "Attribution des findings"). The two are
+consistent by construction, both reading the value each sub-agent
+self-reported; wiring an Action to those two markers changes where it is
+published, not what is attributed to whom.
 
 This field is strictly additive: no existing field (`routine`, `routing`,
 `complexity`, `metrics`, etc.) is renamed or removed by it, and a journal

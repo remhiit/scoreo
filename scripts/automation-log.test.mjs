@@ -904,6 +904,75 @@ describe('renderAutomationLog / parseAutomationLog', () => {
     expect(body).toContain('- Exécuté par : skill `implement-task`, modèle `claude-sonnet-5`')
     expect(body).not.toContain('  - Limites :')
   })
+
+  it('attributes a distinct model to each reviewer corpus, one journal entry per corpus (#494, #470)', async () => {
+    const { renderAutomationLog, markerFor } = await import('./automation-log.mjs')
+    // Le rôle « review » est scindé en deux relecteurs aux corpus disjoints
+    // (#470) : chacun tient son propre journal, sous son propre marqueur, donc
+    // porte son propre `executedBy`. C'est ce qui attribue un modèle à un
+    // corpus — jamais une valeur « modèle de la review » fusionnée, pour la
+    // même raison que leurs findings ne sont jamais versés dans un pot commun.
+    const functional = renderAutomationLog({
+      routine: 'coordinator-review-functional',
+      triggeredAt: '2026-09-10T10:00:00Z',
+      sha: 'abc1234',
+      status: 'succeeded',
+      iteration: '1',
+      validation: 'lint / typecheck / tests',
+      resultUrl: 'https://github.com/remhiit/scoreo/actions/runs/999',
+      executedBy: { skill: 'pr-review', model: 'claude-sonnet-5' },
+    })
+    const technical = renderAutomationLog({
+      routine: 'coordinator-review-technical',
+      triggeredAt: '2026-09-10T10:00:00Z',
+      sha: 'abc1234',
+      status: 'succeeded',
+      iteration: '1',
+      validation: 'lint / typecheck / tests',
+      resultUrl: 'https://github.com/remhiit/scoreo/actions/runs/999',
+      executedBy: { skill: 'pr-review', model: 'claude-opus-5' },
+    })
+
+    expect(functional).toContain(markerFor('coordinator-review-functional'))
+    expect(functional).toContain('- Exécuté par : skill `pr-review`, modèle `claude-sonnet-5`')
+    expect(technical).toContain(markerFor('coordinator-review-technical'))
+    expect(technical).toContain('- Exécuté par : skill `pr-review`, modèle `claude-opus-5`')
+    // Deux modèles différents restent séparés : aucun des deux journaux ne
+    // mentionne le modèle de l'autre relecteur.
+    expect(functional).not.toContain('claude-opus-5')
+    expect(technical).not.toContain('claude-sonnet-5')
+  })
+
+  it('marks only the failing reviewer as `inconnu` when its sub-agent returns nothing, leaving its peer intact (#494, #470)', async () => {
+    const { renderAutomationLog } = await import('./automation-log.mjs')
+    // Un sous-agent relecteur en échec ne contamine pas le corpus de l'autre :
+    // son journal vaut `inconnu` + motif, celui de son pair garde son modèle.
+    const functional = renderAutomationLog({
+      routine: 'coordinator-review-functional',
+      triggeredAt: '2026-09-10T10:00:00Z',
+      sha: 'abc1234',
+      status: 'succeeded',
+      iteration: '1',
+      validation: 'lint / typecheck / tests',
+      resultUrl: 'https://github.com/remhiit/scoreo/actions/runs/999',
+      executedBy: { skill: 'pr-review', model: 'claude-sonnet-5' },
+    })
+    const technical = renderAutomationLog({
+      routine: 'coordinator-review-technical',
+      triggeredAt: '2026-09-10T10:00:00Z',
+      sha: 'abc1234',
+      status: 'failed',
+      iteration: '1',
+      validation: 'lint / typecheck / tests',
+      resultUrl: 'https://github.com/remhiit/scoreo/actions/runs/999',
+      executedBy: { skill: 'pr-review', model: 'inconnu', limits: ['sous-agent en échec avant auto-rapport'] },
+    })
+
+    expect(functional).toContain('- Exécuté par : skill `pr-review`, modèle `claude-sonnet-5`')
+    expect(technical).toContain('- Exécuté par : skill `pr-review`, modèle `inconnu`')
+    expect(technical).toContain('  - Limites : sous-agent en échec avant auto-rapport')
+    expect(functional).not.toContain('  - Limites :')
+  })
 })
 
 describe('upsertAutomationLog', () => {
