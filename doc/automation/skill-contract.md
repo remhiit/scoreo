@@ -147,11 +147,17 @@ reliably self-reports its own model):
   `session_context.model`. Two refinements that call has in practice, since
   this field reports what *actually ran*, not what was configured: strip a
   context-window suffix (`claude-opus-5[1m]` → `claude-opus-5`) — it sizes
-  the window, it doesn't name a different model — and when
-  `external_metadata.last_served_model` is present and differs from
-  `session_context.model`, prefer `last_served_model`: a turn-scoped
-  fallback (overload, model unavailable) changes what served the run
-  without changing what the session is set to.
+  the window, it doesn't name a different model — and prefer
+  `external_metadata.last_served_model` whenever it is present and either
+  differs from `session_context.model` or `session_context.model` itself
+  comes back empty or absent. A turn-scoped fallback (overload, model
+  unavailable) changes what served the run without changing what the
+  session is set to, which is the differing case; and a `get_session` that
+  returns no usable `session_context.model` at all leaves
+  `last_served_model` as the only value naming what ran — an observed case,
+  not a hypothetical (the R3 review of #528 hit exactly it). Only when
+  neither field yields a value is the model `inconnu`, per the rule below —
+  never a guess.
 - **A sub-agent launched by the coordinator via the `Agent` tool**
   (`implement-task`, either of the two reviewers from #470,
   `address-feedback` in sub-agent mode): `get_session` does not apply to an
