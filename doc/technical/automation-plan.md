@@ -1119,8 +1119,14 @@ qui ne le fournit pas obtient `skill`/`modèle` `inconnu` plutôt qu'une ligne
 absente, même convention « donnée indisponible, jamais devinée » que
 `TaskContext`/`ComplexityAssessment`. Le rôle « review » scindé en deux
 relecteurs (#470) attribue le modèle de chacun distinctement à son propre
-corpus (fonctionnel/technique) dans la synthèse du coordinateur, jamais
-fusionné en une seule valeur. Changement strictement additif : aucun champ
+corpus (fonctionnel/technique), jamais fusionné en une seule valeur : dans
+le journal, chaque relecteur écrit sa propre entrée sous son propre
+marqueur (`coordinator-review-functional`/`coordinator-review-technical`),
+donc porte son propre `executedBy` — un relecteur en échec vaut `inconnu`
+dans *son* entrée seule, sans toucher celle de son pair ; la synthèse du
+coordinateur restitue la même attribution en prose à côté des findings de
+chacun (`doc/automation/skill-contract.md` § « Le rôle "review", scindé en
+deux relecteurs »). Changement strictement additif : aucun champ
 existant n'est renommé ni supprimé, et un commentaire de journal déjà posté
 avant #494 n'est jamais réécrit rétroactivement — seuls les nouveaux runs
 portent la ligne `- Exécuté par :`. `weekly-report`/R6 en tire une nouvelle
