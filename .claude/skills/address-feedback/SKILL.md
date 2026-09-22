@@ -130,6 +130,12 @@ synthesis carries the model that actually ran this fix, `<id>` (e.g.
 
 - **As R4** (this skill running as its own Claude Code Remote session): call
   `get_session` (no `session_id`) and use `session_context.model`.
+  Normalize that value the way `skill-contract.md` § "Traçabilité" states it:
+  strip a context-window suffix (`claude-opus-5[1m]` → `claude-opus-5`), and
+  prefer `external_metadata.last_served_model` when it is present and differs
+  from `session_context.model` — a turn-scoped fallback changes what served
+  the run without changing what the session is set to, and that call can come
+  back with no usable `session_context.model` at all.
 - **As the coordinator's fix sub-agent** (#469): `get_session` doesn't
   apply — read the model self-reported in this sub-agent's own system
   prompt (the #423 mechanism), and include it when reporting back to the

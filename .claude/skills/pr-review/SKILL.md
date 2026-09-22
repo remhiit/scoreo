@@ -208,6 +208,12 @@ review" below) carries the model that actually ran it, `<id>` (e.g.
   `get_session` (no `session_id`) and use `session_context.model` — include
   a `Traçabilité : skill \`pr-review\`, modèle \`<id>\`` line in the
   submitted review's synthesis body (§ "Post the review" step 3).
+  Normalize that value the way `skill-contract.md` § "Traçabilité" states it:
+  strip a context-window suffix (`claude-opus-5[1m]` → `claude-opus-5`), and
+  prefer `external_metadata.last_served_model` when it is present and differs
+  from `session_context.model` — a turn-scoped fallback changes what served
+  the run without changing what the session is set to, and that call can come
+  back with no usable `session_context.model` at all.
 - **As either of the coordinator's review sub-agents** (#469/#470):
   `get_session` doesn't apply — read the model self-reported in this
   sub-agent's own system prompt (the #423 mechanism), and report it back to

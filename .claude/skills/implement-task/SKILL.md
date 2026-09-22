@@ -103,6 +103,12 @@ name).
 - **As R2** (this skill running as its own Claude Code Remote session):
   call `get_session` (no `session_id`, so it reads its own session) and use
   `session_context.model`.
+  Normalize that value the way `skill-contract.md` § "Traçabilité" states it:
+  strip a context-window suffix (`claude-opus-5[1m]` → `claude-opus-5`), and
+  prefer `external_metadata.last_served_model` when it is present and differs
+  from `session_context.model` — a turn-scoped fallback changes what served
+  the run without changing what the session is set to, and that call can come
+  back with no usable `session_context.model` at all.
 - **As the coordinator's implementation sub-agent** (#469): `get_session`
   doesn't apply to an in-process sub-agent — read the model self-reported in
   this sub-agent's own system prompt ("You are powered by the model named
