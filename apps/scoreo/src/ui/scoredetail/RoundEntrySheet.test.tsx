@@ -30,7 +30,12 @@ describe('RoundEntrySheet', () => {
         open
         roundNumber={4}
         players={[alice, bob]}
-        totals={new Map([['alice', 16], ['bob', 26]])}
+        totals={
+          new Map([
+            ['alice', 16],
+            ['bob', 26],
+          ])
+        }
         inputs={{ alice: 0, bob: 0 }}
         onChange={vi.fn()}
         onCancel={vi.fn()}
@@ -84,7 +89,7 @@ describe('RoundEntrySheet', () => {
     fireEvent.click(screen.getByText('Cancel'))
     expect(onCancel).toHaveBeenCalledTimes(1)
 
-    fireEvent.click(container.querySelector('.sheet-scrim')!)
+    fireEvent.click(container.querySelector('.sc-sheet-scrim')!)
     expect(onCancel).toHaveBeenCalledTimes(2)
   })
 

@@ -189,7 +189,7 @@ Notable coverage that goes beyond a 1:1 port of business logic:
 
 Design system: [`packages/design-system/`](../packages/design-system/README.md) — tokens (`src/tokens/*.css`, Catppuccin, see Styling in `doc/technical/architecture.md`) and every atom → template the host composes; `NOT_YET_ON_DESIGN_SYSTEM` in `eslint.config.js` lists the host files still styling themselves.
 
-Legacy host sheets, deleted screen by screen (`apps/scoreo/public/css/`): `theme.css`, `layout.css`, `games.css`, `scoring.css`, `history.css`, `stats.css`, `halloffame.css`, `import.css`, `sync.css`, `components.css`, `styles.css` (entry point, `@import`s the rest).
+Legacy host sheets, deleted screen by screen (`apps/scoreo/public/css/`): `theme.css`, `layout.css`, `games.css`, `history.css`, `stats.css`, `halloffame.css`, `import.css`, `sync.css`, `components.css`, `styles.css` (entry point, `@import`s the rest).
 
 Hall of Fame classes (`halloffame.css`): `.trophy-list`, `.trophy-card` (extends the shared `.card`, `display: block`), `.trophy-card-title`, `.trophy-card-description`, `.trophy-card-empty`, `.trophy-holders`, `.trophy-holder`, `.trophy-holder-info`, `.trophy-holder-name`, `.trophy-holder-detail`, `.trophy-holder-value` (`--font-score`, tabular figures like Stats' ELO figures), `.trophy-holder-groups`, `.trophy-holder-group-title` (F3's per-month subtitle, wraps a `.trophy-holders` list per month).
 

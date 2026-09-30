@@ -88,7 +88,12 @@ class Harness {
   }
 
   updateScore(roundIndex: number, playerId: string, value: string) {
-    this.state = scoreDetailReducer(this.state, { type: 'updateScore', roundIndex, playerId, value })
+    this.state = scoreDetailReducer(this.state, {
+      type: 'updateScore',
+      roundIndex,
+      playerId,
+      value,
+    })
     saveDraft(this.deps, this.state.gameType, this.state.players, this.state.rounds)
   }
 
@@ -150,7 +155,11 @@ class Harness {
   }
 
   updateSecondaryScoreInput(playerId: string, value: string) {
-    this.state = scoreDetailReducer(this.state, { type: 'updateSecondaryScoreInput', playerId, value })
+    this.state = scoreDetailReducer(this.state, {
+      type: 'updateSecondaryScoreInput',
+      playerId,
+      value,
+    })
   }
 
   submitSecondaryScores() {
@@ -659,7 +668,9 @@ describe('scoreDetailReducer', () => {
   })
 
   it('SECONDARY_SCORE with an invalid input shows an error', () => {
-    const { harness } = buildHarnessWithGameType(gameType('gt1', 'TestGame', 'HIGHEST_SCORE', 'SECONDARY_SCORE'))
+    const { harness } = buildHarnessWithGameType(
+      gameType('gt1', 'TestGame', 'HIGHEST_SCORE', 'SECONDARY_SCORE'),
+    )
     harness.givenTiedScores()
     expect(harness.state.showSecondaryScoreDialog).toBe(true)
 
@@ -700,7 +711,9 @@ describe('scoreDetailReducer', () => {
   })
 
   it('MANUAL_SELECTION with an empty selection shows an error', () => {
-    const { harness } = buildHarnessWithGameType(gameType('gt1', 'TestGame', 'HIGHEST_SCORE', 'MANUAL_SELECTION'))
+    const { harness } = buildHarnessWithGameType(
+      gameType('gt1', 'TestGame', 'HIGHEST_SCORE', 'MANUAL_SELECTION'),
+    )
     harness.givenTiedScores()
     expect(harness.state.showManualSelectionDialog).toBe(true)
 
@@ -711,7 +724,9 @@ describe('scoreDetailReducer', () => {
   })
 
   it('toggleManualSelectionWinner adds and removes a selection', () => {
-    const { harness } = buildHarnessWithGameType(gameType('gt1', 'TestGame', 'HIGHEST_SCORE', 'MANUAL_SELECTION'))
+    const { harness } = buildHarnessWithGameType(
+      gameType('gt1', 'TestGame', 'HIGHEST_SCORE', 'MANUAL_SELECTION'),
+    )
     harness.givenTiedScores()
 
     harness.toggleManualSelectionWinner('alice')
@@ -722,7 +737,9 @@ describe('scoreDetailReducer', () => {
   })
 
   it('dismissTieBreak closes all tie-break dialogs', () => {
-    const { harness } = buildHarnessWithGameType(gameType('gt1', 'TestGame', 'HIGHEST_SCORE', 'MANUAL_SELECTION'))
+    const { harness } = buildHarnessWithGameType(
+      gameType('gt1', 'TestGame', 'HIGHEST_SCORE', 'MANUAL_SELECTION'),
+    )
     harness.givenTiedScores()
     expect(harness.state.showManualSelectionDialog).toBe(true)
 
@@ -756,7 +773,9 @@ describe('scoreDetailReducer', () => {
   })
 
   it('updateSecondaryScoreInput updates the input map', () => {
-    const { harness } = buildHarnessWithGameType(gameType('gt1', 'TestGame', 'HIGHEST_SCORE', 'SECONDARY_SCORE'))
+    const { harness } = buildHarnessWithGameType(
+      gameType('gt1', 'TestGame', 'HIGHEST_SCORE', 'SECONDARY_SCORE'),
+    )
     harness.givenTiedScores()
 
     harness.updateSecondaryScoreInput('alice', '75')
@@ -1241,7 +1260,7 @@ describe('scoreDetailReducer', () => {
     }
   })
 
-  it('terminate does not reject today\'s local date as a future date when the UTC day is still yesterday', () => {
+  it("terminate does not reject today's local date as a future date when the UTC day is still yesterday", () => {
     vi.stubEnv('TZ', 'Europe/Paris')
     try {
       const gt = gameType('gt1', 'TestGame')
@@ -1255,8 +1274,18 @@ describe('scoreDetailReducer', () => {
         currentDate,
       }
       let state = buildInitialState(gt, [alice, bob], deps.mode, deps.currentDate)
-      state = scoreDetailReducer(state, { type: 'updateScore', roundIndex: 0, playerId: 'alice', value: '10' })
-      state = scoreDetailReducer(state, { type: 'updateScore', roundIndex: 0, playerId: 'bob', value: '5' })
+      state = scoreDetailReducer(state, {
+        type: 'updateScore',
+        roundIndex: 0,
+        playerId: 'alice',
+        value: '10',
+      })
+      state = scoreDetailReducer(state, {
+        type: 'updateScore',
+        roundIndex: 0,
+        playerId: 'bob',
+        value: '5',
+      })
       state = scoreDetailReducer(state, submitTerminate(state, deps))
 
       expect(state.error).toBeUndefined()
@@ -1273,7 +1302,14 @@ describe('scoreDetailReducer', () => {
     gameTypeRepo.save(gt)
     const matchRepo = new InMemoryMatchRepository()
     const draftRepo = new InMemoryMatchDraftRepository()
-    const harness = new Harness(gt, [alice, bob], matchRepo, gameTypeRepo, { type: 'Create' }, draftRepo)
+    const harness = new Harness(
+      gt,
+      [alice, bob],
+      matchRepo,
+      gameTypeRepo,
+      { type: 'Create' },
+      draftRepo,
+    )
 
     harness.updateScore(0, 'alice', '10')
 
@@ -1291,7 +1327,14 @@ describe('scoreDetailReducer', () => {
     gameTypeRepo.save(gt)
     const matchRepo = new InMemoryMatchRepository()
     const draftRepo = new InMemoryMatchDraftRepository()
-    const harness = new Harness(gt, [alice, bob], matchRepo, gameTypeRepo, { type: 'Create' }, draftRepo)
+    const harness = new Harness(
+      gt,
+      [alice, bob],
+      matchRepo,
+      gameTypeRepo,
+      { type: 'Create' },
+      draftRepo,
+    )
 
     harness.updateScore(0, 'alice', '10')
     harness.addRound()
@@ -1308,7 +1351,14 @@ describe('scoreDetailReducer', () => {
     gameTypeRepo.save(gt)
     const matchRepo = new InMemoryMatchRepository()
     const draftRepo = new InMemoryMatchDraftRepository()
-    const harness = new Harness(gt, [alice, bob], matchRepo, gameTypeRepo, { type: 'Create' }, draftRepo)
+    const harness = new Harness(
+      gt,
+      [alice, bob],
+      matchRepo,
+      gameTypeRepo,
+      { type: 'Create' },
+      draftRepo,
+    )
 
     harness.updateScore(0, 'alice', '10')
     harness.addRound()
@@ -1326,7 +1376,14 @@ describe('scoreDetailReducer', () => {
     gameTypeRepo.save(gt)
     const matchRepo = new InMemoryMatchRepository()
     const draftRepo = new InMemoryMatchDraftRepository()
-    const harness = new Harness(gt, [alice, bob], matchRepo, gameTypeRepo, { type: 'Create' }, draftRepo)
+    const harness = new Harness(
+      gt,
+      [alice, bob],
+      matchRepo,
+      gameTypeRepo,
+      { type: 'Create' },
+      draftRepo,
+    )
 
     harness.updateScore(0, 'alice', '10')
     harness.updateScore(0, 'bob', '5')
@@ -1341,7 +1398,14 @@ describe('scoreDetailReducer', () => {
     gameTypeRepo.save(gt)
     const matchRepo = new InMemoryMatchRepository()
     const draftRepo = new InMemoryMatchDraftRepository()
-    const harness1 = new Harness(gt, [alice, bob], matchRepo, gameTypeRepo, { type: 'Create' }, draftRepo)
+    const harness1 = new Harness(
+      gt,
+      [alice, bob],
+      matchRepo,
+      gameTypeRepo,
+      { type: 'Create' },
+      draftRepo,
+    )
 
     harness1.updateScore(0, 'alice', '10')
     harness1.updateScore(0, 'bob', '5')
@@ -1349,7 +1413,14 @@ describe('scoreDetailReducer', () => {
     harness1.updateScore(1, 'alice', '3')
     harness1.updateScore(1, 'bob', '7')
 
-    const harness2 = new Harness(gt, [alice, bob], matchRepo, gameTypeRepo, { type: 'Create' }, draftRepo)
+    const harness2 = new Harness(
+      gt,
+      [alice, bob],
+      matchRepo,
+      gameTypeRepo,
+      { type: 'Create' },
+      draftRepo,
+    )
 
     expect(harness2.state.rounds).toHaveLength(2)
     expect(harness2.state.rounds[0].alice).toBe('10')
@@ -1364,7 +1435,14 @@ describe('scoreDetailReducer', () => {
     gameTypeRepo.save(gt)
     const matchRepo = new InMemoryMatchRepository()
     const draftRepo = new InMemoryMatchDraftRepository()
-    const harness = new Harness(gt, [alice, bob], matchRepo, gameTypeRepo, { type: 'Create' }, draftRepo)
+    const harness = new Harness(
+      gt,
+      [alice, bob],
+      matchRepo,
+      gameTypeRepo,
+      { type: 'Create' },
+      draftRepo,
+    )
 
     harness.updateScore(0, 'alice', '10')
 
@@ -1382,10 +1460,24 @@ describe('scoreDetailReducer', () => {
     const matchRepo = new InMemoryMatchRepository()
     const draftRepo = new InMemoryMatchDraftRepository()
 
-    const harness1 = new Harness(gameType1, [alice, bob], matchRepo, gameTypeRepo, { type: 'Create' }, draftRepo)
+    const harness1 = new Harness(
+      gameType1,
+      [alice, bob],
+      matchRepo,
+      gameTypeRepo,
+      { type: 'Create' },
+      draftRepo,
+    )
     harness1.updateScore(0, 'alice', '10')
 
-    const harness2 = new Harness(gameType2, [alice, bob], matchRepo, gameTypeRepo, { type: 'Create' }, draftRepo)
+    const harness2 = new Harness(
+      gameType2,
+      [alice, bob],
+      matchRepo,
+      gameTypeRepo,
+      { type: 'Create' },
+      draftRepo,
+    )
 
     expect(harness2.state.rounds).toHaveLength(1)
     expect(harness2.state.rounds[0]).toEqual({})
@@ -1400,10 +1492,24 @@ describe('scoreDetailReducer', () => {
     const players1 = [alice, bob]
     const players2 = [player('charlie', 'Charlie'), player('dave', 'Dave')]
 
-    const harness1 = new Harness(gt, players1, matchRepo, gameTypeRepo, { type: 'Create' }, draftRepo)
+    const harness1 = new Harness(
+      gt,
+      players1,
+      matchRepo,
+      gameTypeRepo,
+      { type: 'Create' },
+      draftRepo,
+    )
     harness1.updateScore(0, 'alice', '10')
 
-    const harness2 = new Harness(gt, players2, matchRepo, gameTypeRepo, { type: 'Create' }, draftRepo)
+    const harness2 = new Harness(
+      gt,
+      players2,
+      matchRepo,
+      gameTypeRepo,
+      { type: 'Create' },
+      draftRepo,
+    )
 
     expect(harness2.state.rounds).toHaveLength(1)
     expect(harness2.state.rounds[0]).toEqual({})
@@ -1415,7 +1521,14 @@ describe('scoreDetailReducer', () => {
     gameTypeRepo.save(gt)
     const matchRepo = new InMemoryMatchRepository()
     const draftRepo = new InMemoryMatchDraftRepository()
-    const harness = new Harness(gt, [alice, bob], matchRepo, gameTypeRepo, { type: 'Create' }, draftRepo)
+    const harness = new Harness(
+      gt,
+      [alice, bob],
+      matchRepo,
+      gameTypeRepo,
+      { type: 'Create' },
+      draftRepo,
+    )
 
     harness.updateScore(0, 'alice', '10')
     harness.cancelMatch()
@@ -1430,7 +1543,14 @@ describe('scoreDetailReducer', () => {
     gameTypeRepo.save(gt)
     const matchRepo = new InMemoryMatchRepository()
     const draftRepo = new InMemoryMatchDraftRepository()
-    const harness = new Harness(gt, [alice, bob], matchRepo, gameTypeRepo, { type: 'Create' }, draftRepo)
+    const harness = new Harness(
+      gt,
+      [alice, bob],
+      matchRepo,
+      gameTypeRepo,
+      { type: 'Create' },
+      draftRepo,
+    )
 
     harness.updateScore(0, 'alice', '10')
     expect(draftRepo.load()).toBeDefined()
@@ -1489,7 +1609,14 @@ describe('scoreDetailReducer', () => {
     gameTypeRepo.save(gt)
     const matchRepo = new InMemoryMatchRepository()
     const draftRepo = new InMemoryMatchDraftRepository()
-    const harness = new Harness(gt, [alice, bob], matchRepo, gameTypeRepo, { type: 'Create' }, draftRepo)
+    const harness = new Harness(
+      gt,
+      [alice, bob],
+      matchRepo,
+      gameTypeRepo,
+      { type: 'Create' },
+      draftRepo,
+    )
 
     harness.updateScore(0, 'alice', '10')
     harness.updateScore(0, 'bob', '5')
@@ -1510,7 +1637,11 @@ describe('computeStandings', () => {
 
   it('ranks players by descending total for HIGHEST_SCORE', () => {
     const gt = gameType('gt1', 'TestGame', 'HIGHEST_SCORE')
-    const rows = computeStandings(gt, [alice, bob, charlie], [{ alice: '10', bob: '30', charlie: '20' }])
+    const rows = computeStandings(
+      gt,
+      [alice, bob, charlie],
+      [{ alice: '10', bob: '30', charlie: '20' }],
+    )
 
     expect(rows.map((r) => r.playerId)).toEqual(['bob', 'charlie', 'alice'])
     expect(rows.map((r) => r.rank)).toEqual([1, 2, 3])
@@ -1518,7 +1649,11 @@ describe('computeStandings', () => {
 
   it('ranks players by ascending total for LOWEST_SCORE', () => {
     const gt = gameType('gt1', 'TestGame', 'LOWEST_SCORE')
-    const rows = computeStandings(gt, [alice, bob, charlie], [{ alice: '10', bob: '30', charlie: '20' }])
+    const rows = computeStandings(
+      gt,
+      [alice, bob, charlie],
+      [{ alice: '10', bob: '30', charlie: '20' }],
+    )
 
     expect(rows.map((r) => r.playerId)).toEqual(['alice', 'charlie', 'bob'])
     expect(rows.map((r) => r.rank)).toEqual([1, 2, 3])
@@ -1526,7 +1661,11 @@ describe('computeStandings', () => {
 
   it('tied totals share the same rank and the next rank skips accordingly', () => {
     const gt = gameType('gt1', 'TestGame', 'HIGHEST_SCORE')
-    const rows = computeStandings(gt, [alice, bob, charlie], [{ alice: '20', bob: '20', charlie: '10' }])
+    const rows = computeStandings(
+      gt,
+      [alice, bob, charlie],
+      [{ alice: '20', bob: '20', charlie: '10' }],
+    )
 
     const byId = new Map(rows.map((r) => [r.playerId, r]))
     expect(byId.get('alice')?.rank).toBe(1)
@@ -1536,7 +1675,11 @@ describe('computeStandings', () => {
 
   it('marks every rank-1 row as lead, even when tied for first', () => {
     const gt = gameType('gt1', 'TestGame', 'HIGHEST_SCORE')
-    const rows = computeStandings(gt, [alice, bob, charlie], [{ alice: '20', bob: '20', charlie: '10' }])
+    const rows = computeStandings(
+      gt,
+      [alice, bob, charlie],
+      [{ alice: '20', bob: '20', charlie: '10' }],
+    )
 
     const byId = new Map(rows.map((r) => [r.playerId, r]))
     expect(byId.get('alice')?.isLead).toBe(true)

@@ -1,9 +1,6 @@
+import { Button, ButtonRow, Dialog, List, ListRow, Text } from '@scoreboards/design-system'
 import { useTranslation } from 'react-i18next'
 import type { Player } from '../../domain/model/player'
-import { ListContainer } from '../shared/ListContainer'
-import { ListItemRow } from '../shared/ListItemRow'
-import { LudoButton } from '../shared/LudoButton'
-import { LudoModal } from '../shared/LudoModal'
 
 export interface ManualSelectionDialogProps {
   tiedPlayers: Player[]
@@ -17,7 +14,8 @@ export interface ManualSelectionDialogProps {
 
 /**
  * Final manual arbitration when secondary scores fail to break a tie, or when
- * the game type uses the MANUAL_SELECTION tie-break rule.
+ * the game type uses the MANUAL_SELECTION tie-break rule. Same selectable rows
+ * as the player list.
  */
 export function ManualSelectionDialog({
   tiedPlayers,
@@ -30,30 +28,35 @@ export function ManualSelectionDialog({
 }: ManualSelectionDialogProps) {
   const { t } = useTranslation()
   return (
-    <LudoModal
+    <Dialog
       open
       title={t('scoreDetail.finalDecision')}
       onClose={onDismiss}
-      footer={
-        <>
-          <LudoButton text={t('common.cancel')} variant="secondary" onClick={onDismiss} />
-          <LudoButton text={t('scoreDetail.keepTie')} variant="secondary" onClick={onKeepTie} />
-          <LudoButton text={t('common.confirm')} variant="primary" onClick={onConfirm} />
-        </>
+      closeLabel={t('common.close')}
+      actions={
+        <ButtonRow>
+          <Button variant="secondary" onClick={onDismiss}>
+            {t('common.cancel')}
+          </Button>
+          <Button variant="secondary" onClick={onKeepTie}>
+            {t('scoreDetail.keepTie')}
+          </Button>
+          <Button onClick={onConfirm}>{t('common.confirm')}</Button>
+        </ButtonRow>
       }
     >
-      <ListContainer>
+      <List>
         {tiedPlayers.map((player) => (
-          <ListItemRow
+          <ListRow
             key={player.id}
-            label={player.name}
-            isSelectable
-            isSelected={selectedWinners.has(player.id)}
+            title={player.name}
+            selectable
+            selected={selectedWinners.has(player.id)}
             onSelect={() => onToggleWinner(player.id)}
           />
         ))}
-      </ListContainer>
-      {error && <div className="error-msg">{error}</div>}
-    </LudoModal>
+      </List>
+      {error && <Text variant="error">{error}</Text>}
+    </Dialog>
   )
 }

@@ -8,13 +8,13 @@ export async function startMatch(page: Page, playerNames: string[]): Promise<voi
   await page.getByRole('button', { name: 'New Match' }).click()
 }
 
-/** Fills the first round's score for each player, matched by name against its `.hist-cell`. */
+/** Fills the first round's score for each player, matched by player name in the "Round 1" card. */
 export async function enterRoundScore(page: Page, scores: Record<string, number>): Promise<void> {
   await page.getByRole('button', { name: 'History' }).click()
-  const round = page.locator('.hist-round').first()
+  const round = page.getByRole('region', { name: 'Round 1' })
 
   for (const [name, value] of Object.entries(scores)) {
-    await round.locator('.hist-cell', { hasText: name }).getByRole('spinbutton').fill(String(value))
+    await round.getByRole('spinbutton', { name, exact: true }).fill(String(value))
   }
 }
 

@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import { useId, type ReactNode } from 'react'
 
 export interface RoundCardProps {
   title: ReactNode
@@ -8,11 +8,13 @@ export interface RoundCardProps {
   children: ReactNode
 }
 
+/** A `region` named by its title, so a round is reachable as "Round 3". */
 export function RoundCard({ title, trailing, children }: RoundCardProps) {
+  const titleId = useId()
   return (
-    <section className="sc-round">
+    <section className="sc-round" aria-labelledby={titleId}>
       <header className="sc-round__head">
-        <span>{title}</span>
+        <span id={titleId}>{title}</span>
         {trailing}
       </header>
       <div className="sc-round__cells">{children}</div>

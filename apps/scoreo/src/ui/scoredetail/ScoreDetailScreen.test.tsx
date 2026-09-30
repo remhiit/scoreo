@@ -44,11 +44,22 @@ function renderScreen(
     currentDate: () => 1767225600000,
     matchDraftRepository: options.matchDraftRepository,
   }
-  const initialState = buildInitialState(gt, [alice, bob], mode, deps.currentDate, options.matchDraftRepository)
+  const initialState = buildInitialState(
+    gt,
+    [alice, bob],
+    mode,
+    deps.currentDate,
+    options.matchDraftRepository,
+  )
   const onSaved = vi.fn()
   const onCancel = vi.fn()
   const result = render(
-    <ScoreDetailScreen initialState={initialState} {...deps} onSaved={onSaved} onCancel={onCancel} />,
+    <ScoreDetailScreen
+      initialState={initialState}
+      {...deps}
+      onSaved={onSaved}
+      onCancel={onCancel}
+    />,
   )
   return { matchRepo, onSaved, onCancel, unmount: result.unmount }
 }
@@ -105,10 +116,10 @@ describe('ScoreDetailScreen', () => {
   it('defaults to the Standings view, showing a rank card per player', () => {
     renderScreen(gameType())
 
-    expect(screen.getByText('Standings').closest('button')).toHaveClass('on')
+    expect(screen.getByText('Standings').closest('button')).toHaveAttribute('aria-pressed', 'true')
     expect(screen.queryByRole('spinbutton')).not.toBeInTheDocument()
-    expect(screen.getByText('Alice', { selector: '.gs-name' })).toBeInTheDocument()
-    expect(screen.getByText('Bob', { selector: '.gs-name' })).toBeInTheDocument()
+    expect(screen.getByText('Alice', { selector: '.sc-standing__name' })).toBeInTheDocument()
+    expect(screen.getByText('Bob', { selector: '.sc-standing__name' })).toBeInTheDocument()
   })
 
   it('switching to History reveals one editable round card per round', () => {
@@ -116,9 +127,11 @@ describe('ScoreDetailScreen', () => {
 
     switchToHistory()
 
-    expect(screen.getByText('History').closest('button')).toHaveClass('on')
-    expect(document.querySelectorAll('.hist-round')).toHaveLength(1)
-    expect(within(document.querySelector('.hist-cell') as HTMLElement).getByText('Alice')).toBeInTheDocument()
+    expect(screen.getByText('History').closest('button')).toHaveAttribute('aria-pressed', 'true')
+    expect(document.querySelectorAll('.sc-round')).toHaveLength(1)
+    expect(
+      within(document.querySelector('.sc-hcell') as HTMLElement).getByText('Alice'),
+    ).toBeInTheDocument()
     expect(scoreInputs()).toHaveLength(2)
   })
 
@@ -132,9 +145,9 @@ describe('ScoreDetailScreen', () => {
 
     fireEvent.click(screen.getByText('Standings'))
 
-    const cards = document.querySelectorAll('.gs-card')
+    const cards = document.querySelectorAll('.sc-standing')
     expect(cards).toHaveLength(2)
-    expect(cards[0]).toHaveClass('gs-card--lead')
+    expect(cards[0]).toHaveClass('sc-standing--lead')
     expect(within(cards[0] as HTMLElement).getByText('Alice')).toBeInTheDocument()
     expect(within(cards[0] as HTMLElement).getByText('10')).toBeInTheDocument()
     expect(within(cards[0] as HTMLElement).getByText('+10')).toBeInTheDocument()
@@ -144,7 +157,7 @@ describe('ScoreDetailScreen', () => {
     const { matchRepo, onSaved } = renderScreen(gameType())
     switchToHistory()
 
-    const cells = document.querySelectorAll('.hist-cell')
+    const cells = document.querySelectorAll('.sc-hcell')
     expect(within(cells[0] as HTMLElement).getByText('Alice')).toBeInTheDocument()
     expect(within(cells[1] as HTMLElement).getByText('Bob')).toBeInTheDocument()
 
@@ -171,7 +184,7 @@ describe('ScoreDetailScreen', () => {
     fireEvent.change(bobInput, { target: { value: '4' } })
     fireEvent.click(within(sheet).getByText('Save round'))
 
-    expect(document.querySelectorAll('.hist-round')).toHaveLength(1)
+    expect(document.querySelectorAll('.sc-round')).toHaveLength(1)
 
     fireEvent.click(screen.getByText('Add round'))
     sheet = screen.getByRole('dialog', { name: 'Round 2' })
@@ -184,7 +197,7 @@ describe('ScoreDetailScreen', () => {
     expect(screen.getAllByTitle('Remove round')).toHaveLength(2)
 
     fireEvent.click(screen.getAllByTitle('Remove round')[0])
-    expect(document.querySelectorAll('.hist-round')).toHaveLength(1)
+    expect(document.querySelectorAll('.sc-round')).toHaveLength(1)
     expect(scoreInputs()).toHaveLength(2)
     expect(screen.queryByTitle('Remove round')).not.toBeInTheDocument()
   })
@@ -196,7 +209,11 @@ describe('ScoreDetailScreen', () => {
 
     const sheet = screen.getByRole('dialog', { name: 'Round 1' })
     expect(within(sheet).getByText('Alice', { exact: false })).toBeInTheDocument()
-    expect(within(sheet).getAllByRole('spinbutton').map((el) => (el as HTMLInputElement).value)).toEqual(['0', '0'])
+    expect(
+      within(sheet)
+        .getAllByRole('spinbutton')
+        .map((el) => (el as HTMLInputElement).value),
+    ).toEqual(['0', '0'])
   })
 
   it('validating the sheet adds the round and updates the standings immediately', () => {
@@ -210,7 +227,7 @@ describe('ScoreDetailScreen', () => {
     fireEvent.click(within(sheet).getByText('Save round'))
 
     expect(screen.queryByText('Round 1')).not.toBeInTheDocument()
-    const cards = document.querySelectorAll('.gs-card')
+    const cards = document.querySelectorAll('.sc-standing')
     expect(within(cards[0] as HTMLElement).getByText('Alice')).toBeInTheDocument()
     expect(within(cards[0] as HTMLElement).getByText('10')).toBeInTheDocument()
     expect(screen.getByText('Enter round 2')).toBeInTheDocument()
@@ -255,7 +272,9 @@ describe('ScoreDetailScreen', () => {
     fireEvent.change(aliceInput, { target: { value: '1.5' } })
     fireEvent.click(screen.getByText('Finish match'))
 
-    expect(screen.getByText('Invalid score for Alice in round 1: expected a number')).toBeInTheDocument()
+    expect(
+      screen.getByText('Invalid score for Alice in round 1: expected a number'),
+    ).toBeInTheDocument()
     expect(matchRepo.getAll()).toHaveLength(0)
     expect(onSaved).not.toHaveBeenCalled()
   })
@@ -272,7 +291,7 @@ describe('ScoreDetailScreen', () => {
     expect(screen.getByText('Select winner(s)')).toBeInTheDocument()
     const dialog = screen.getByRole('dialog')
     expect(within(dialog).queryByRole('checkbox')).not.toBeInTheDocument()
-    fireEvent.click(within(dialog).getByText('Alice', { selector: '.list-item-name' }))
+    fireEvent.click(within(dialog).getByText('Alice', { selector: '.sc-row__title' }))
     fireEvent.click(within(dialog).getByText('Confirm'))
 
     expect(matchRepo.getAll()).toHaveLength(1)
@@ -334,7 +353,7 @@ describe('ScoreDetailScreen', () => {
 
     const dialog = screen.getByRole('dialog', { name: 'Final decision' })
     expect(within(dialog).queryByRole('checkbox')).not.toBeInTheDocument()
-    fireEvent.click(within(dialog).getByText('Alice', { selector: '.list-item-name' }))
+    fireEvent.click(within(dialog).getByText('Alice', { selector: '.sc-row__title' }))
     fireEvent.click(within(dialog).getByText('Confirm'))
 
     expect(matchRepo.getAll()[0].manualWinners).toEqual(['alice'])
