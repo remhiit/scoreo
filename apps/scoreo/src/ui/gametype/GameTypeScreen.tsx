@@ -1,4 +1,15 @@
-import { Merge } from 'lucide-react'
+import {
+  Button,
+  ButtonRow,
+  DetailList,
+  DetailRow,
+  Dialog,
+  EmptyState,
+  List,
+  ListRow,
+  Stack,
+  Text,
+} from '@scoreboards/design-system'
 import { useEffect, useMemo, useReducer } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { AddGameTypeUseCase } from '../../application/addGameTypeUseCase'
@@ -8,10 +19,6 @@ import type { GetGameTypesUseCase } from '../../application/getGameTypesUseCase'
 import type { MergeGameTypesUseCase } from '../../application/mergeGameTypesUseCase'
 import type { UpdateGameTypeUseCase } from '../../application/updateGameTypeUseCase'
 import { tieBreakRuleLabel, winConditionLabel } from '../../domain/model/enums'
-import { ListContainer } from '../shared/ListContainer'
-import { ListItemRow } from '../shared/ListItemRow'
-import { LudoButton } from '../shared/LudoButton'
-import { LudoModal } from '../shared/LudoModal'
 import { GameTypeFields, GameTypeForm } from './GameTypeForm'
 import {
   gameTypeReducer,
@@ -54,7 +61,11 @@ export function GameTypeScreen({
 
   const handleAdd = () => {
     const result = submitAddGameType(addGameType, getGameTypes, state)
-    dispatch('error' in result ? { type: 'addFailed', error: result.error } : { type: 'addSucceeded', ...result })
+    dispatch(
+      'error' in result
+        ? { type: 'addFailed', error: result.error }
+        : { type: 'addSucceeded', ...result },
+    )
   }
 
   const handleEdit = (id: string) => {
@@ -78,21 +89,29 @@ export function GameTypeScreen({
     }
     const result = submitUpdateGameType(updateGameType, getGameTypes, updated)
     dispatch(
-      'error' in result ? { type: 'updateFailed', error: result.error } : { type: 'updateSucceeded', ...result },
+      'error' in result
+        ? { type: 'updateFailed', error: result.error }
+        : { type: 'updateSucceeded', ...result },
     )
   }
 
   const handleArchive = (gameTypeId: string) => {
     const result = submitArchiveGameType(archiveGameType, getGameTypes, gameTypeId)
     dispatch(
-      'error' in result ? { type: 'archiveFailed', error: result.error } : { type: 'archiveSucceeded', ...result },
+      'error' in result
+        ? { type: 'archiveFailed', error: result.error }
+        : { type: 'archiveSucceeded', ...result },
     )
   }
 
   const handleMerge = () => {
     const result = submitMergeGameTypes(mergeGameTypes, getGameTypes, state)
     if (!result) return
-    dispatch('error' in result ? { type: 'mergeFailed', error: result.error } : { type: 'mergeSucceeded', ...result })
+    dispatch(
+      'error' in result
+        ? { type: 'mergeFailed', error: result.error }
+        : { type: 'mergeSucceeded', ...result },
+    )
   }
 
   // Read-only projection of the pending merge, recomputed whenever either side
@@ -104,132 +123,159 @@ export function GameTypeScreen({
 
   const selectedGameType = state.gameTypes.find((gt) => gt.id === state.selectedGameId)
   const editingGameType = state.gameTypes.find((gt) => gt.id === state.editingGameId)
-  const archiveConfirmGameType = state.gameTypes.find((gt) => gt.id === state.archiveConfirmGameTypeId)
+  const archiveConfirmGameType = state.gameTypes.find(
+    (gt) => gt.id === state.archiveConfirmGameTypeId,
+  )
 
   return (
-    <>
-      {showTitle && <h1>{t('gametype.title')}</h1>}
+    <Stack gap={4}>
+      {showTitle && <Text variant="heading">{t('gametype.title')}</Text>}
 
       <GameTypeForm state={state} dispatch={dispatch} onSubmit={handleAdd} />
 
-      {state.error && <div className="error-msg">{state.error}</div>}
+      {state.error && <Text variant="error">{state.error}</Text>}
 
       {state.gameTypes.length === 0 ? (
-        <div className="empty">{t('gametype.noGameTypesYet')}</div>
+        <EmptyState>{t('gametype.noGameTypesYet')}</EmptyState>
       ) : (
-        <ListContainer className="list-container--spaced">
+        <List>
           {state.gameTypes.map((gameType) => (
-            <ListItemRow
+            <ListRow
               key={gameType.id}
-              label={gameType.name}
+              title={gameType.name}
               subtitle={winConditionLabel(gameType.winCondition)}
-              onView={() => dispatch({ type: 'selectGame', id: gameType.id })}
-              onEdit={() => handleEdit(gameType.id)}
-              onDelete={() => dispatch({ type: 'showArchiveConfirm', gameTypeId: gameType.id })}
+              actions={[
+                {
+                  icon: 'view',
+                  label: 'View details',
+                  onClick: () => dispatch({ type: 'selectGame', id: gameType.id }),
+                },
+                { icon: 'edit', label: 'Edit', onClick: () => handleEdit(gameType.id) },
+                {
+                  icon: 'delete',
+                  label: 'Delete',
+                  tone: 'danger',
+                  onClick: () => dispatch({ type: 'showArchiveConfirm', gameTypeId: gameType.id }),
+                },
+              ]}
             />
           ))}
-        </ListContainer>
+        </List>
       )}
 
       {state.allGameTypes.length >= 2 && (
-        <div className="game-list-tools">
-          <LudoButton
-            text={
-              <>
-                <Merge size={16} aria-hidden /> {t('gametype.merge')}
-              </>
-            }
+        <Stack direction="row" justify="center">
+          <Button
             variant="secondary"
+            icon="merge"
             onClick={() => dispatch({ type: 'showMergeDialog' })}
-          />
-        </div>
+          >
+            {t('gametype.merge')}
+          </Button>
+        </Stack>
       )}
 
-      <LudoModal
-        open={state.selectedGameId !== undefined && state.editingGameId === undefined && selectedGameType !== undefined}
+      <Dialog
+        open={
+          state.selectedGameId !== undefined &&
+          state.editingGameId === undefined &&
+          selectedGameType !== undefined
+        }
         title={selectedGameType?.name ?? ''}
         onClose={() => dispatch({ type: 'deselectGame' })}
-        footer={
-          <>
-            <LudoButton text={t('gametype.back')} variant="secondary" onClick={() => dispatch({ type: 'deselectGame' })} />
-            <LudoButton
-              text={t('gametype.edit')}
-              variant="primary"
-              onClick={() => selectedGameType && handleEdit(selectedGameType.id)}
-            />
-            <LudoButton
-              text={t('gametype.archive')}
+        closeLabel={t('common.close')}
+        actions={
+          <ButtonRow>
+            <Button variant="secondary" onClick={() => dispatch({ type: 'deselectGame' })}>
+              {t('gametype.back')}
+            </Button>
+            <Button onClick={() => selectedGameType && handleEdit(selectedGameType.id)}>
+              {t('gametype.edit')}
+            </Button>
+            <Button
               variant="danger"
               onClick={() =>
-                selectedGameType && dispatch({ type: 'showArchiveConfirm', gameTypeId: selectedGameType.id })
+                selectedGameType &&
+                dispatch({ type: 'showArchiveConfirm', gameTypeId: selectedGameType.id })
               }
-            />
-          </>
+            >
+              {t('gametype.archive')}
+            </Button>
+          </ButtonRow>
         }
       >
         {selectedGameType && (
-          <>
-            <div className="detail-row">
-              <span className="detail-label">{t('gametype.winCondition')}</span>
-              <span className="detail-value">{winConditionLabel(selectedGameType.winCondition)}</span>
-            </div>
-            <div className="detail-row">
-              <span className="detail-label">{t('gametype.tieBreak')}</span>
-              <span className="detail-value">{tieBreakRuleLabel(selectedGameType.tieBreakRule)}</span>
-            </div>
+          <DetailList>
+            <DetailRow
+              label={t('gametype.winCondition')}
+              value={winConditionLabel(selectedGameType.winCondition)}
+            />
+            <DetailRow
+              label={t('gametype.tieBreak')}
+              value={tieBreakRuleLabel(selectedGameType.tieBreakRule)}
+            />
             {selectedGameType.tieBreakRule === 'SECONDARY_SCORE' && (
-              <>
-                <div className="detail-row">
-                  <span className="detail-label">{t('gametype.tieBreakCondition')}</span>
-                  <span className="detail-value">{winConditionLabel(selectedGameType.tieBreakCondition)}</span>
-                </div>
-                {selectedGameType.tieBreakLabel && (
-                  <div className="detail-row">
-                    <span className="detail-label">{t('gametype.tieBreakQuestion')}</span>
-                    <span className="detail-value">{selectedGameType.tieBreakLabel}</span>
-                  </div>
-                )}
-              </>
+              <DetailRow
+                label={t('gametype.tieBreakCondition')}
+                value={winConditionLabel(selectedGameType.tieBreakCondition)}
+              />
             )}
-          </>
+            {selectedGameType.tieBreakRule === 'SECONDARY_SCORE' &&
+              selectedGameType.tieBreakLabel && (
+                <DetailRow
+                  label={t('gametype.tieBreakQuestion')}
+                  value={selectedGameType.tieBreakLabel}
+                />
+              )}
+          </DetailList>
         )}
-      </LudoModal>
+      </Dialog>
 
-      <LudoModal
+      <Dialog
         open={state.editingGameId !== undefined && editingGameType !== undefined}
         title={editingGameType ? t('gametype.editTitle', { name: editingGameType.name }) : ''}
         onClose={() => dispatch({ type: 'cancelEdit' })}
-        footer={
-          <>
-            <LudoButton text={t('common.cancel')} variant="secondary" onClick={() => dispatch({ type: 'cancelEdit' })} />
-            <LudoButton text={t('gametype.saveChanges')} variant="primary" onClick={handleUpdate} />
-          </>
+        closeLabel={t('common.close')}
+        actions={
+          <ButtonRow>
+            <Button variant="secondary" onClick={() => dispatch({ type: 'cancelEdit' })}>
+              {t('common.cancel')}
+            </Button>
+            <Button onClick={handleUpdate}>{t('gametype.saveChanges')}</Button>
+          </ButtonRow>
         }
       >
         <GameTypeFields state={state} dispatch={dispatch} />
-      </LudoModal>
+      </Dialog>
 
-      <LudoModal
+      <Dialog
         open={state.archiveConfirmGameTypeId !== undefined && archiveConfirmGameType !== undefined}
-        title={archiveConfirmGameType ? t('gametype.archiveTitle', { name: archiveConfirmGameType.name }) : ''}
+        title={
+          archiveConfirmGameType
+            ? t('gametype.archiveTitle', { name: archiveConfirmGameType.name })
+            : ''
+        }
         onClose={() => dispatch({ type: 'dismissArchiveConfirm' })}
-        footer={
-          <>
-            <LudoButton
-              text={t('common.cancel')}
-              variant="secondary"
-              onClick={() => dispatch({ type: 'dismissArchiveConfirm' })}
-            />
-            <LudoButton
-              text={t('gametype.archive')}
+        closeLabel={t('common.close')}
+        actions={
+          <ButtonRow>
+            <Button variant="secondary" onClick={() => dispatch({ type: 'dismissArchiveConfirm' })}>
+              {t('common.cancel')}
+            </Button>
+            <Button
               variant="danger"
-              onClick={() => state.archiveConfirmGameTypeId !== undefined && handleArchive(state.archiveConfirmGameTypeId)}
-            />
-          </>
+              onClick={() =>
+                state.archiveConfirmGameTypeId !== undefined &&
+                handleArchive(state.archiveConfirmGameTypeId)
+              }
+            >
+              {t('gametype.archive')}
+            </Button>
+          </ButtonRow>
         }
       >
-        {t('gametype.archiveBody')}
-      </LudoModal>
+        <Text block>{t('gametype.archiveBody')}</Text>
+      </Dialog>
 
       <MergeGameTypesModal
         open={state.showMergeDialog}
@@ -243,6 +289,6 @@ export function GameTypeScreen({
         onClose={() => dispatch({ type: 'dismissMergeDialog' })}
         onConfirmMerge={handleMerge}
       />
-    </>
+    </Stack>
   )
 }

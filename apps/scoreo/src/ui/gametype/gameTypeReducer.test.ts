@@ -20,7 +20,10 @@ import {
 } from './gameTypeReducer'
 import { initialGameTypeState, type GameTypeState } from './gameTypeTypes'
 
-function buildUseCases(repo = new InMemoryGameTypeRepository(), matchRepo = new InMemoryMatchRepository()) {
+function buildUseCases(
+  repo = new InMemoryGameTypeRepository(),
+  matchRepo = new InMemoryMatchRepository(),
+) {
   return {
     repo,
     matchRepo,
@@ -93,8 +96,14 @@ describe('gameTypeReducer', () => {
 
   it('adding an empty name sets an error', () => {
     const useCases = buildUseCases()
-    const withoutName = submitAddGameType(useCases.addGameType, useCases.getGameTypes, initialGameTypeState)
-    expect('error' in withoutName && withoutName.error).toBe('name: Game type name must not be blank')
+    const withoutName = submitAddGameType(
+      useCases.addGameType,
+      useCases.getGameTypes,
+      initialGameTypeState,
+    )
+    expect('error' in withoutName && withoutName.error).toBe(
+      'name: Game type name must not be blank',
+    )
   })
 
   it('adding multiple game types accumulates in state', () => {
@@ -122,12 +131,18 @@ describe('gameTypeReducer', () => {
   })
 
   it('updateTieBreakLabel updates selectedTieBreakLabel', () => {
-    const state = gameTypeReducer(initialGameTypeState, { type: 'updateTieBreakLabel', label: 'Points' })
+    const state = gameTypeReducer(initialGameTypeState, {
+      type: 'updateTieBreakLabel',
+      label: 'Points',
+    })
     expect(state.selectedTieBreakLabel).toBe('Points')
   })
 
   it('updateTieBreakLabel with a blank string sets it to undefined', () => {
-    let state = gameTypeReducer(initialGameTypeState, { type: 'updateTieBreakLabel', label: 'Points' })
+    let state = gameTypeReducer(initialGameTypeState, {
+      type: 'updateTieBreakLabel',
+      label: 'Points',
+    })
     state = gameTypeReducer(state, { type: 'updateTieBreakLabel', label: '   ' })
     expect(state.selectedTieBreakLabel).toBeUndefined()
   })
@@ -139,9 +154,10 @@ describe('gameTypeReducer', () => {
     state = gameTypeReducer(state, { type: 'updateTieBreakCondition', condition: 'LOWEST_SCORE' })
     state = gameTypeReducer(state, { type: 'updateTieBreakLabel', label: 'Handicap' })
     const result = submitAddGameType(useCases.addGameType, useCases.getGameTypes, state)
-    state = 'error' in result
-      ? gameTypeReducer(state, { type: 'addFailed', error: result.error })
-      : gameTypeReducer(state, { type: 'addSucceeded', ...result })
+    state =
+      'error' in result
+        ? gameTypeReducer(state, { type: 'addFailed', error: result.error })
+        : gameTypeReducer(state, { type: 'addSucceeded', ...result })
 
     expect(state.gameTypes).toHaveLength(1)
     const gameType = state.gameTypes[0]
@@ -203,12 +219,17 @@ describe('gameTypeReducer', () => {
     let state = add(initialGameTypeState, useCases, 'Belote')
 
     const original = state.gameTypes[0]
-    const updated = { ...original, name: 'Belote Updated', tieBreakRule: 'MANUAL_SELECTION' as const }
+    const updated = {
+      ...original,
+      name: 'Belote Updated',
+      tieBreakRule: 'MANUAL_SELECTION' as const,
+    }
     state = gameTypeReducer(state, { type: 'editGameType', gameType: original })
     const result = submitUpdateGameType(useCases.updateGameType, useCases.getGameTypes, updated)
-    state = 'error' in result
-      ? gameTypeReducer(state, { type: 'updateFailed', error: result.error })
-      : gameTypeReducer(state, { type: 'updateSucceeded', ...result })
+    state =
+      'error' in result
+        ? gameTypeReducer(state, { type: 'updateFailed', error: result.error })
+        : gameTypeReducer(state, { type: 'updateSucceeded', ...result })
 
     expect(state.gameTypes).toHaveLength(1)
     expect(state.gameTypes[0].name).toBe('Belote Updated')
@@ -258,10 +279,15 @@ describe('gameTypeReducer', () => {
     expect(state.gameTypes).toHaveLength(2)
     const gameTypeIdToArchive = state.gameTypes[0].id
 
-    const result = submitArchiveGameType(useCases.archiveGameType, useCases.getGameTypes, gameTypeIdToArchive)
-    state = 'error' in result
-      ? gameTypeReducer(state, { type: 'archiveFailed', error: result.error })
-      : gameTypeReducer(state, { type: 'archiveSucceeded', ...result })
+    const result = submitArchiveGameType(
+      useCases.archiveGameType,
+      useCases.getGameTypes,
+      gameTypeIdToArchive,
+    )
+    state =
+      'error' in result
+        ? gameTypeReducer(state, { type: 'archiveFailed', error: result.error })
+        : gameTypeReducer(state, { type: 'archiveSucceeded', ...result })
 
     expect(state.gameTypes).toHaveLength(1)
     expect(state.gameTypes[0].name).toBe('Golf')
@@ -273,7 +299,11 @@ describe('gameTypeReducer', () => {
 
     const gameTypeId = state.gameTypes[0].id
     state = gameTypeReducer(state, { type: 'showArchiveConfirm', gameTypeId })
-    const result = submitArchiveGameType(useCases.archiveGameType, useCases.getGameTypes, gameTypeId)
+    const result = submitArchiveGameType(
+      useCases.archiveGameType,
+      useCases.getGameTypes,
+      gameTypeId,
+    )
     state = gameTypeReducer(state, { type: 'archiveSucceeded', ...(result as LoadedGameTypes) })
 
     expect(state.archiveConfirmGameTypeId).toBeUndefined()
@@ -287,7 +317,11 @@ describe('gameTypeReducer', () => {
     state = gameTypeReducer(state, { type: 'selectGame', id: gameTypeId })
     expect(state.selectedGameId).toBe(gameTypeId)
 
-    const result = submitArchiveGameType(useCases.archiveGameType, useCases.getGameTypes, gameTypeId)
+    const result = submitArchiveGameType(
+      useCases.archiveGameType,
+      useCases.getGameTypes,
+      gameTypeId,
+    )
     state = gameTypeReducer(state, { type: 'archiveSucceeded', ...(result as LoadedGameTypes) })
 
     expect(state.selectedGameId).toBeUndefined()
@@ -297,7 +331,11 @@ describe('gameTypeReducer', () => {
     let state = add(initialGameTypeState, useCases, 'Belote')
     state = add(state, useCases, 'Belote coinchee')
     const archivedId = state.gameTypes[1].id
-    const archived = submitArchiveGameType(useCases.archiveGameType, useCases.getGameTypes, archivedId)
+    const archived = submitArchiveGameType(
+      useCases.archiveGameType,
+      useCases.getGameTypes,
+      archivedId,
+    )
     state = gameTypeReducer(state, { type: 'archiveSucceeded', ...(archived as LoadedGameTypes) })
 
     expect(state.gameTypes).toHaveLength(1)
@@ -390,7 +428,10 @@ describe('gameTypeReducer', () => {
     state = gameTypeReducer(state, { type: 'toggleMergeDuplicate', id: 'ghost' })
 
     const result = submitMergeGameTypes(useCases.mergeGameTypes, useCases.getGameTypes, state)!
-    state = gameTypeReducer(state, { type: 'mergeFailed', error: (result as { error: string }).error })
+    state = gameTypeReducer(state, {
+      type: 'mergeFailed',
+      error: (result as { error: string }).error,
+    })
 
     expect(state.showMergeDialog).toBe(true)
     expect(state.mergeError).toBe('GameType ghost not found')
@@ -401,14 +442,18 @@ describe('gameTypeReducer', () => {
     const useCases = buildUseCases()
     const state = gameTypeReducer(initialGameTypeState, { type: 'selectMergeKept', id: 'gt1' })
 
-    expect(submitMergeGameTypes(useCases.mergeGameTypes, useCases.getGameTypes, state)).toBeUndefined()
+    expect(
+      submitMergeGameTypes(useCases.mergeGameTypes, useCases.getGameTypes, state),
+    ).toBeUndefined()
   })
 
   it('confirming a merge with no kept game type picked is a no-op', () => {
     const useCases = buildUseCases()
     const state = gameTypeReducer(initialGameTypeState, { type: 'toggleMergeDuplicate', id: 'gt1' })
 
-    expect(submitMergeGameTypes(useCases.mergeGameTypes, useCases.getGameTypes, state)).toBeUndefined()
+    expect(
+      submitMergeGameTypes(useCases.mergeGameTypes, useCases.getGameTypes, state),
+    ).toBeUndefined()
   })
 
   it('loadGameTypes returns the active list and the full one', () => {

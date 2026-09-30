@@ -31,9 +31,8 @@ export async function createGameType(
   await page.getByRole('button', { name: 'Menu' }).click()
   await page.getByRole('button', { name: 'Games' }).click()
   await page.getByPlaceholder('Game name').fill(name)
-  const selects = page.locator('select.select')
-  await selects.nth(0).selectOption(winCondition)
-  await selects.nth(1).selectOption(options.tieBreakRule)
+  await page.getByLabel('Win condition').selectOption(winCondition)
+  await page.getByLabel('Tie-break rule').selectOption(options.tieBreakRule)
   await page.getByRole('button', { name: 'Add game type' }).click()
   await page.getByRole('button', { name: 'Menu' }).click()
   await page.getByRole('button', { name: 'Home' }).click()
@@ -44,7 +43,7 @@ export async function createGameType(
  * (trash) icon, then confirms in the "Archive <name>?" modal.
  */
 export async function archiveGameType(page: Page, name: string): Promise<void> {
-  const row = page.locator('.list-item-row', { hasText: name })
+  const row = page.locator('.sc-row', { hasText: name })
   await row.getByRole('button', { name: 'Delete' }).click()
   await page
     .getByRole('dialog', { name: `Archive ${name}?` })

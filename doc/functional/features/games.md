@@ -50,7 +50,7 @@ Screen: `apps/scoreo/src/ui/gametype/GameTypeScreen.tsx`. See `doc/reference.md`
 
 ### Merge dialog
 - "Merge" button under the list, shown as soon as at least 2 game types exist (archived ones included)
-- One dropdown, **Game to keep**, then below it **Duplicates to remove**: the multi-select list (○/●) of every other game type. Several duplicates can be folded in one pass
+- One dropdown, **Game to keep**, then below it **Duplicates to remove**: the multi-select list of every other game type (a selected row is tinted in the accent). Several duplicates can be folded in one pass
 - The game type picked as the one to keep is dropped from the duplicates list (and unticked if it was already ticked), so it can never be its own duplicate
 - Both the dropdown and the list include archived game types, marked "(archived)" — a duplicate is often archived to hide it before the user thinks of merging
 - Once a kept game type and at least one duplicate are picked, the dialog states how many matches will move
@@ -62,7 +62,7 @@ Screen: `apps/scoreo/src/ui/gametype/GameTypeScreen.tsx`. See `doc/reference.md`
 
 ### Detail view
 - Shows: game name, win condition, tie-break rule, tie-break condition/label (if SECONDARY_SCORE)
-- Each detail is a key/value row (`.detail-row`) justified to both edges, labels without a trailing colon, separated by a thin `border-bottom` (the last row has none)
+- Each detail is a design-system `DetailRow` (label / value justified to both edges, labels without a trailing colon, hairline-separated)
 - Back button → returns to list
 - Edit button → switches to form mode with fields pre-filled
 - Archive button (🗑 red) → opens archive confirmation modal
