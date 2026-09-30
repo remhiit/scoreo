@@ -62,6 +62,14 @@ describe('StatRow', () => {
     fireEvent.click(screen.getByRole('button'))
     expect(onClick).toHaveBeenCalledOnce()
   })
+
+  it('shows the headline score and renders as a passive line inside a panel', () => {
+    const { container } = render(<StatRow title="Camille" score="1200" variant="line" />)
+    expect(screen.getByText('1200')).toHaveClass('sc-stat__score')
+    expect(container.firstChild).toHaveClass('sc-stat--line')
+    expect(screen.queryByRole('button')).toBeNull()
+    expect(screen.queryByRole('meter')).toBeNull()
+  })
 })
 
 describe('SegmentedControl and Tabs', () => {
