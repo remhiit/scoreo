@@ -74,7 +74,7 @@ Each round is a design-system `RoundCard` (a region named "Round N"), not a tabl
 
 ### Round entry sheet
 
-The primary way to enter a new round. A full-width primary button in the bottom bar reads "Enter round N" (N = `nextRoundNumber(rounds)`, the first not-yet-played round + 1). Tapping it opens `RoundEntrySheet` (`apps/scoreo/src/ui/scoredetail/RoundEntrySheet.tsx`), a bottom sheet (`.sheet`) over a dimming scrim (`.sheet-scrim`):
+The primary way to enter a new round. A full-width primary button in the bottom bar reads "Enter round N" (N = `nextRoundNumber(rounds)`, the first not-yet-played round + 1). Tapping it opens `RoundEntrySheet` (`apps/scoreo/src/ui/scoredetail/RoundEntrySheet.tsx`), a bottom sheet (design-system `Sheet`) over a dimming scrim:
 
 - Title "Round N".
 - One `SheetRow` per player: name, current total (computed before this round), and a `NumberInput` stepper defaulted to 0.
