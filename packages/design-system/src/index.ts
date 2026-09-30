@@ -58,6 +58,7 @@ export { DropZone, type DropZoneProps } from './organisms/DropZone'
 export { RoundCard, type RoundCardProps } from './organisms/RoundCard'
 export { Sheet, SheetRow, type SheetProps, type SheetRowProps } from './organisms/Sheet'
 export { SideMenu, type SideMenuItem, type SideMenuProps } from './organisms/SideMenu'
+export { Panel, type PanelProps } from './organisms/Panel'
 export { StandingsGrid } from './organisms/StandingsGrid'
 export { ThemePicker, type ThemePickerProps } from './organisms/ThemePicker'
 

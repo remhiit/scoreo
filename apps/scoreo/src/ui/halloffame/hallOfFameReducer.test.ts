@@ -27,8 +27,22 @@ function gameType(id: string, name: string): GameType {
   }
 }
 
-function match(id: string, date: number, gameTypeId: string, playerScores: Match['playerScores']): Match {
-  return { id, date, gameTypeId, playerScores, manualWinners: [], secondaryPlayerScores: [], rounds: [], moduleData: null }
+function match(
+  id: string,
+  date: number,
+  gameTypeId: string,
+  playerScores: Match['playerScores'],
+): Match {
+  return {
+    id,
+    date,
+    gameTypeId,
+    playerScores,
+    manualWinners: [],
+    secondaryPlayerScores: [],
+    rounds: [],
+    moduleData: null,
+  }
 }
 
 function buildUseCases(
@@ -55,7 +69,12 @@ describe('hallOfFameReducer', () => {
     const gameTypeRepo = new InMemoryGameTypeRepository()
     gameTypeRepo.save(gameType('gt1', 'Chess'))
     const matchRepo = new InMemoryMatchRepository()
-    matchRepo.save(match('m1', 1000, 'gt1', [{ playerId: 'p1', score: 10 }, { playerId: 'p2', score: 5 }]))
+    matchRepo.save(
+      match('m1', 1000, 'gt1', [
+        { playerId: 'p1', score: 10 },
+        { playerId: 'p2', score: 5 },
+      ]),
+    )
     const { getTrophies, getGameTypes } = buildUseCases(playerRepo, gameTypeRepo, matchRepo)
 
     const { trophies, gameTypes } = loadHallOfFame(getTrophies, getGameTypes, undefined)
@@ -65,7 +84,10 @@ describe('hallOfFameReducer', () => {
   })
 
   it('selectGameType sets selectedGameTypeId', () => {
-    let state = hallOfFameReducer(initialHallOfFameState, { type: 'selectGameType', gameTypeId: 'gt1' })
+    let state = hallOfFameReducer(initialHallOfFameState, {
+      type: 'selectGameType',
+      gameTypeId: 'gt1',
+    })
 
     expect(state.selectedGameTypeId).toBe('gt1')
 
@@ -82,9 +104,24 @@ describe('hallOfFameReducer', () => {
     gameTypeRepo.save(gameType('gt1', 'Chess'))
     gameTypeRepo.save(gameType('gt2', 'Darts'))
     const matchRepo = new InMemoryMatchRepository()
-    matchRepo.save(match('m1', 1000, 'gt1', [{ playerId: 'p1', score: 10 }, { playerId: 'p2', score: 5 }]))
-    matchRepo.save(match('m2', 2000, 'gt1', [{ playerId: 'p1', score: 10 }, { playerId: 'p2', score: 5 }]))
-    matchRepo.save(match('m3', 3000, 'gt2', [{ playerId: 'p2', score: 10 }, { playerId: 'p1', score: 5 }]))
+    matchRepo.save(
+      match('m1', 1000, 'gt1', [
+        { playerId: 'p1', score: 10 },
+        { playerId: 'p2', score: 5 },
+      ]),
+    )
+    matchRepo.save(
+      match('m2', 2000, 'gt1', [
+        { playerId: 'p1', score: 10 },
+        { playerId: 'p2', score: 5 },
+      ]),
+    )
+    matchRepo.save(
+      match('m3', 3000, 'gt2', [
+        { playerId: 'p2', score: 10 },
+        { playerId: 'p1', score: 5 },
+      ]),
+    )
     const { getTrophies, getGameTypes } = buildUseCases(playerRepo, gameTypeRepo, matchRepo)
     const initialLoad = loadHallOfFame(getTrophies, getGameTypes, undefined)
     let state = hallOfFameReducer(initialHallOfFameState, { type: 'loaded', ...initialLoad })

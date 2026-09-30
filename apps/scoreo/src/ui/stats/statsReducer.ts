@@ -2,7 +2,10 @@ import type { GameType } from '../../domain/model/gameType'
 import type { GetGameTypesUseCase } from '../../application/getGameTypesUseCase'
 import type { GetHeadToHeadUseCase, PlayerDetail } from '../../application/getHeadToHeadUseCase'
 import type { GetTrophiesUseCase } from '../../application/getTrophiesUseCase'
-import { groupTrophiesByPlayer, type PlayerTrophyBadge } from '../../application/groupTrophiesByPlayer'
+import {
+  groupTrophiesByPlayer,
+  type PlayerTrophyBadge,
+} from '../../application/groupTrophiesByPlayer'
 import type { StatsState } from './statsTypes'
 
 export type StatsAction =
@@ -27,7 +30,11 @@ export function loadStats(
   getGameTypes: GetGameTypesUseCase,
   getTrophies: GetTrophiesUseCase,
   selectedGameTypeId: string | undefined,
-): { leaderboard: PlayerDetail[]; gameTypes: GameType[]; trophiesByPlayer: Map<string, PlayerTrophyBadge[]> } {
+): {
+  leaderboard: PlayerDetail[]
+  gameTypes: GameType[]
+  trophiesByPlayer: Map<string, PlayerTrophyBadge[]>
+} {
   return {
     leaderboard: getHeadToHead.invoke(selectedGameTypeId),
     gameTypes: getGameTypes.invoke(),

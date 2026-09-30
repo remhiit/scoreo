@@ -19,7 +19,10 @@ export function loadHallOfFame(
   }
 }
 
-export function hallOfFameReducer(state: HallOfFameState, action: HallOfFameAction): HallOfFameState {
+export function hallOfFameReducer(
+  state: HallOfFameState,
+  action: HallOfFameAction,
+): HallOfFameState {
   switch (action.type) {
     case 'selectGameType':
       return { ...state, selectedGameTypeId: action.gameTypeId }

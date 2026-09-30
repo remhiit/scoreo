@@ -29,8 +29,22 @@ function gameType(id: string, name: string): GameType {
   }
 }
 
-function match(id: string, date: number, gameTypeId: string, playerScores: Match['playerScores']): Match {
-  return { id, date, gameTypeId, playerScores, manualWinners: [], secondaryPlayerScores: [], rounds: [], moduleData: null }
+function match(
+  id: string,
+  date: number,
+  gameTypeId: string,
+  playerScores: Match['playerScores'],
+): Match {
+  return {
+    id,
+    date,
+    gameTypeId,
+    playerScores,
+    manualWinners: [],
+    secondaryPlayerScores: [],
+    rounds: [],
+    moduleData: null,
+  }
 }
 
 function renderStats() {
@@ -41,18 +55,28 @@ function renderStats() {
   gameTypeRepo.save(gameType('gt1', 'Type A'))
   gameTypeRepo.save(gameType('gt2', 'Type B'))
   const matchRepo = new InMemoryMatchRepository()
-  matchRepo.save(match('m1', 1000, 'gt1', [
-    { playerId: 'p1', score: 10 },
-    { playerId: 'p2', score: 5 },
-  ]))
-  matchRepo.save(match('m2', 2000, 'gt2', [
-    { playerId: 'p1', score: 3 },
-    { playerId: 'p2', score: 10 },
-  ]))
+  matchRepo.save(
+    match('m1', 1000, 'gt1', [
+      { playerId: 'p1', score: 10 },
+      { playerId: 'p2', score: 5 },
+    ]),
+  )
+  matchRepo.save(
+    match('m2', 2000, 'gt2', [
+      { playerId: 'p1', score: 3 },
+      { playerId: 'p2', score: 10 },
+    ]),
+  )
   const getHeadToHead = new GetHeadToHeadUseCase(matchRepo, gameTypeRepo, playerRepo)
   const getGameTypes = new GetGameTypesUseCase(gameTypeRepo)
   const getTrophies = new GetTrophiesUseCase(matchRepo, gameTypeRepo, playerRepo)
-  return render(<StatsScreen getHeadToHead={getHeadToHead} getGameTypes={getGameTypes} getTrophies={getTrophies} />)
+  return render(
+    <StatsScreen
+      getHeadToHead={getHeadToHead}
+      getGameTypes={getGameTypes}
+      getTrophies={getTrophies}
+    />,
+  )
 }
 
 /**
@@ -68,10 +92,30 @@ function renderStatsWithTrophies(onBackOverrideChange?: (override: (() => void) 
   gameTypeRepo.save(gameType('gt1', 'Type A'))
   gameTypeRepo.save(gameType('gt2', 'Type B'))
   const matchRepo = new InMemoryMatchRepository()
-  matchRepo.save(match('m1', 1000, 'gt1', [{ playerId: 'p1', score: 10 }, { playerId: 'p2', score: 5 }]))
-  matchRepo.save(match('m2', 2000, 'gt1', [{ playerId: 'p1', score: 10 }, { playerId: 'p2', score: 5 }]))
-  matchRepo.save(match('m3', 3000, 'gt1', [{ playerId: 'p1', score: 10 }, { playerId: 'p2', score: 5 }]))
-  matchRepo.save(match('m4', 4000, 'gt2', [{ playerId: 'p1', score: 3 }, { playerId: 'p2', score: 10 }]))
+  matchRepo.save(
+    match('m1', 1000, 'gt1', [
+      { playerId: 'p1', score: 10 },
+      { playerId: 'p2', score: 5 },
+    ]),
+  )
+  matchRepo.save(
+    match('m2', 2000, 'gt1', [
+      { playerId: 'p1', score: 10 },
+      { playerId: 'p2', score: 5 },
+    ]),
+  )
+  matchRepo.save(
+    match('m3', 3000, 'gt1', [
+      { playerId: 'p1', score: 10 },
+      { playerId: 'p2', score: 5 },
+    ]),
+  )
+  matchRepo.save(
+    match('m4', 4000, 'gt2', [
+      { playerId: 'p1', score: 3 },
+      { playerId: 'p2', score: 10 },
+    ]),
+  )
   const getHeadToHead = new GetHeadToHeadUseCase(matchRepo, gameTypeRepo, playerRepo)
   const getGameTypes = new GetGameTypesUseCase(gameTypeRepo)
   const getTrophies = new GetTrophiesUseCase(matchRepo, gameTypeRepo, playerRepo)
@@ -98,7 +142,13 @@ describe('StatsScreen', () => {
       new InMemoryGameTypeRepository(),
       new InMemoryPlayerRepository(),
     )
-    render(<StatsScreen getHeadToHead={getHeadToHead} getGameTypes={getGameTypes} getTrophies={getTrophies} />)
+    render(
+      <StatsScreen
+        getHeadToHead={getHeadToHead}
+        getGameTypes={getGameTypes}
+        getTrophies={getTrophies}
+      />,
+    )
 
     expect(screen.getByText('No stats yet — play some matches first.')).toBeInTheDocument()
   })
@@ -113,10 +163,10 @@ describe('StatsScreen', () => {
     expect(screen.getByText('Type B')).toBeInTheDocument()
   })
 
-  it('wraps the leaderboard rows in a list-container', () => {
+  it('wraps the leaderboard rows in a design-system list', () => {
     renderStats()
 
-    expect(screen.getByText('Alice').closest('.list-container')).not.toBeNull()
+    expect(screen.getByText('Alice').closest('.sc-list')).not.toBeNull()
   })
 
   it('filtering by game type narrows the leaderboard to that game', () => {
@@ -207,10 +257,18 @@ describe('StatsScreen', () => {
       new InMemoryGameTypeRepository(),
       new InMemoryPlayerRepository(),
     )
-    render(<StatsScreen getHeadToHead={getHeadToHead} getGameTypes={getGameTypes} getTrophies={getTrophies} />)
+    render(
+      <StatsScreen
+        getHeadToHead={getHeadToHead}
+        getGameTypes={getGameTypes}
+        getTrophies={getTrophies}
+      />,
+    )
 
     await i18n.changeLanguage('fr')
-    expect(screen.getByText("Aucune statistique pour l'instant — jouez quelques parties d'abord.")).toBeInTheDocument()
+    expect(
+      screen.getByText("Aucune statistique pour l'instant — jouez quelques parties d'abord."),
+    ).toBeInTheDocument()
     await i18n.changeLanguage('en')
   })
 
@@ -239,25 +297,44 @@ describe('StatsScreen', () => {
     const gameTypeRepo = new InMemoryGameTypeRepository()
     gameTypeRepo.save(gameType('gt1', 'Type A'))
     const matchRepo = new InMemoryMatchRepository()
-    matchRepo.save(match('m1', new Date(2020, 0, 15).getTime(), 'gt1', [
-      { playerId: 'p1', score: 10 },
-      { playerId: 'p2', score: 5 },
-    ]))
-    matchRepo.save(match('m2', new Date(2020, 2, 15).getTime(), 'gt1', [
-      { playerId: 'p1', score: 10 },
-      { playerId: 'p2', score: 5 },
-    ]))
+    matchRepo.save(
+      match('m1', new Date(2020, 0, 15).getTime(), 'gt1', [
+        { playerId: 'p1', score: 10 },
+        { playerId: 'p2', score: 5 },
+      ]),
+    )
+    matchRepo.save(
+      match('m2', new Date(2020, 2, 15).getTime(), 'gt1', [
+        { playerId: 'p1', score: 10 },
+        { playerId: 'p2', score: 5 },
+      ]),
+    )
     const getHeadToHead = new GetHeadToHeadUseCase(matchRepo, gameTypeRepo, playerRepo)
     const getGameTypes = new GetGameTypesUseCase(gameTypeRepo)
     const getTrophies = new GetTrophiesUseCase(matchRepo, gameTypeRepo, playerRepo)
-    render(<StatsScreen getHeadToHead={getHeadToHead} getGameTypes={getGameTypes} getTrophies={getTrophies} />)
+    render(
+      <StatsScreen
+        getHeadToHead={getHeadToHead}
+        getGameTypes={getGameTypes}
+        getTrophies={getTrophies}
+      />,
+    )
 
     fireEvent.click(screen.getByText('Alice'))
 
-    const marchLabel = new Date(2020, 2, 1).toLocaleDateString('en', { month: 'short', year: 'numeric' })
-    const januaryLabel = new Date(2020, 0, 1).toLocaleDateString('en', { month: 'short', year: 'numeric' })
+    const marchLabel = new Date(2020, 2, 1).toLocaleDateString('en', {
+      month: 'short',
+      year: 'numeric',
+    })
+    const januaryLabel = new Date(2020, 0, 1).toLocaleDateString('en', {
+      month: 'short',
+      year: 'numeric',
+    })
     const titles = screen.getAllByText(/Monthly Champions —/).map((el) => el.textContent)
-    expect(titles).toEqual([`Monthly Champions — ${marchLabel}`, `Monthly Champions — ${januaryLabel}`])
+    expect(titles).toEqual([
+      `Monthly Champions — ${marchLabel}`,
+      `Monthly Champions — ${januaryLabel}`,
+    ])
   })
 
   it('changing the game type tab changes which badges are shown', () => {

@@ -3,12 +3,30 @@
   align-items: center;
   gap: var(--space-3);
   width: 100%;
-  padding: var(--space-3) var(--space-4);
-  background: var(--surface-sunken);
   border: none;
-  border-radius: var(--radius-md);
   color: var(--text-body);
   text-align: left;
+}
+.sc-stat--card {
+  padding: var(--space-3) var(--space-4);
+  background: var(--surface-sunken);
+  border-radius: var(--radius-md);
+}
+.sc-stat--line {
+  padding: var(--space-2) 0;
+  background: transparent;
+  border-bottom: var(--border-width) solid var(--border-subtle);
+}
+.sc-stat--line:last-child {
+  border-bottom: none;
+}
+.sc-stat__score {
+  min-width: 44px;
+  text-align: right;
+  font-family: var(--font-score);
+  font-weight: var(--weight-bold);
+  font-size: var(--text-md);
+  color: var(--color-primary);
 }
 .sc-stat--interactive {
   cursor: pointer;

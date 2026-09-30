@@ -28,8 +28,22 @@ function gameType(id: string, name: string): GameType {
   }
 }
 
-function match(id: string, date: number, gameTypeId: string, playerScores: Match['playerScores']): Match {
-  return { id, date, gameTypeId, playerScores, manualWinners: [], secondaryPlayerScores: [], rounds: [], moduleData: null }
+function match(
+  id: string,
+  date: number,
+  gameTypeId: string,
+  playerScores: Match['playerScores'],
+): Match {
+  return {
+    id,
+    date,
+    gameTypeId,
+    playerScores,
+    manualWinners: [],
+    secondaryPlayerScores: [],
+    rounds: [],
+    moduleData: null,
+  }
 }
 
 function buildUseCases(
@@ -57,11 +71,17 @@ describe('statsReducer', () => {
     const gameTypeRepo = new InMemoryGameTypeRepository()
     gameTypeRepo.save(gameType('gt1', 'Test'))
     const matchRepo = new InMemoryMatchRepository()
-    matchRepo.save(match('m1', 1000, 'gt1', [
-      { playerId: 'p1', score: 10 },
-      { playerId: 'p2', score: 5 },
-    ]))
-    const { getHeadToHead, getGameTypes, getTrophies } = buildUseCases(playerRepo, gameTypeRepo, matchRepo)
+    matchRepo.save(
+      match('m1', 1000, 'gt1', [
+        { playerId: 'p1', score: 10 },
+        { playerId: 'p2', score: 5 },
+      ]),
+    )
+    const { getHeadToHead, getGameTypes, getTrophies } = buildUseCases(
+      playerRepo,
+      gameTypeRepo,
+      matchRepo,
+    )
 
     const { leaderboard } = loadStats(getHeadToHead, getGameTypes, getTrophies, undefined)
 
@@ -75,11 +95,17 @@ describe('statsReducer', () => {
     const gameTypeRepo = new InMemoryGameTypeRepository()
     gameTypeRepo.save(gameType('gt1', 'Test'))
     const matchRepo = new InMemoryMatchRepository()
-    matchRepo.save(match('m1', 1000, 'gt1', [
-      { playerId: 'p1', score: 10 },
-      { playerId: 'p2', score: 5 },
-    ]))
-    const { getHeadToHead, getGameTypes, getTrophies } = buildUseCases(playerRepo, gameTypeRepo, matchRepo)
+    matchRepo.save(
+      match('m1', 1000, 'gt1', [
+        { playerId: 'p1', score: 10 },
+        { playerId: 'p2', score: 5 },
+      ]),
+    )
+    const { getHeadToHead, getGameTypes, getTrophies } = buildUseCases(
+      playerRepo,
+      gameTypeRepo,
+      matchRepo,
+    )
     const load = loadStats(getHeadToHead, getGameTypes, getTrophies, undefined)
     let state = statsReducer(initialStatsState, { type: 'loaded', ...load })
 
@@ -96,15 +122,23 @@ describe('statsReducer', () => {
     const gameTypeRepo = new InMemoryGameTypeRepository()
     gameTypeRepo.save(gameType('gt1', 'Test'))
     const matchRepo = new InMemoryMatchRepository()
-    matchRepo.save(match('m1', 1000, 'gt1', [
-      { playerId: 'p1', score: 10 },
-      { playerId: 'p2', score: 5 },
-    ]))
-    matchRepo.save(match('m2', 2000, 'gt1', [
-      { playerId: 'p1', score: 8 },
-      { playerId: 'p2', score: 12 },
-    ]))
-    const { getHeadToHead, getGameTypes, getTrophies } = buildUseCases(playerRepo, gameTypeRepo, matchRepo)
+    matchRepo.save(
+      match('m1', 1000, 'gt1', [
+        { playerId: 'p1', score: 10 },
+        { playerId: 'p2', score: 5 },
+      ]),
+    )
+    matchRepo.save(
+      match('m2', 2000, 'gt1', [
+        { playerId: 'p1', score: 8 },
+        { playerId: 'p2', score: 12 },
+      ]),
+    )
+    const { getHeadToHead, getGameTypes, getTrophies } = buildUseCases(
+      playerRepo,
+      gameTypeRepo,
+      matchRepo,
+    )
 
     const { leaderboard } = loadStats(getHeadToHead, getGameTypes, getTrophies, undefined)
 
@@ -120,11 +154,17 @@ describe('statsReducer', () => {
     const gameTypeRepo = new InMemoryGameTypeRepository()
     gameTypeRepo.save(gameType('gt1', 'Test'))
     const matchRepo = new InMemoryMatchRepository()
-    matchRepo.save(match('m1', 1000, 'gt1', [
-      { playerId: 'p1', score: 10 },
-      { playerId: 'p2', score: 5 },
-    ]))
-    const { getHeadToHead, getGameTypes, getTrophies } = buildUseCases(playerRepo, gameTypeRepo, matchRepo)
+    matchRepo.save(
+      match('m1', 1000, 'gt1', [
+        { playerId: 'p1', score: 10 },
+        { playerId: 'p2', score: 5 },
+      ]),
+    )
+    const { getHeadToHead, getGameTypes, getTrophies } = buildUseCases(
+      playerRepo,
+      gameTypeRepo,
+      matchRepo,
+    )
     const load = loadStats(getHeadToHead, getGameTypes, getTrophies, undefined)
     let state = statsReducer(initialStatsState, { type: 'loaded', ...load })
 
@@ -143,15 +183,23 @@ describe('statsReducer', () => {
     gameTypeRepo.save(gameType('gt1', 'Type A'))
     gameTypeRepo.save(gameType('gt2', 'Type B'))
     const matchRepo = new InMemoryMatchRepository()
-    matchRepo.save(match('m1', 1000, 'gt1', [
-      { playerId: 'p1', score: 10 },
-      { playerId: 'p2', score: 5 },
-    ]))
-    matchRepo.save(match('m2', 2000, 'gt2', [
-      { playerId: 'p1', score: 3 },
-      { playerId: 'p2', score: 10 },
-    ]))
-    const { getHeadToHead, getGameTypes, getTrophies } = buildUseCases(playerRepo, gameTypeRepo, matchRepo)
+    matchRepo.save(
+      match('m1', 1000, 'gt1', [
+        { playerId: 'p1', score: 10 },
+        { playerId: 'p2', score: 5 },
+      ]),
+    )
+    matchRepo.save(
+      match('m2', 2000, 'gt2', [
+        { playerId: 'p1', score: 3 },
+        { playerId: 'p2', score: 10 },
+      ]),
+    )
+    const { getHeadToHead, getGameTypes, getTrophies } = buildUseCases(
+      playerRepo,
+      gameTypeRepo,
+      matchRepo,
+    )
     const initialLoad = loadStats(getHeadToHead, getGameTypes, getTrophies, undefined)
     let state = statsReducer(initialStatsState, { type: 'loaded', ...initialLoad })
 

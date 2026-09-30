@@ -13,7 +13,6 @@ import tseslint from 'typescript-eslint'
 const NOT_YET_ON_DESIGN_SYSTEM = [
   'apps/scoreo/src/ui/gametype/GameTypeForm.tsx',
   'apps/scoreo/src/ui/gametype/GameTypeScreen.tsx',
-  'apps/scoreo/src/ui/halloffame/HallOfFameScreen.tsx',
   'apps/scoreo/src/ui/history/HistoryScreen.tsx',
   'apps/scoreo/src/ui/import/ImportScreen.tsx',
   'apps/scoreo/src/ui/shared/ListContainer.test.tsx',
@@ -23,8 +22,6 @@ const NOT_YET_ON_DESIGN_SYSTEM = [
   'apps/scoreo/src/ui/shared/LudoModal.tsx',
   'apps/scoreo/src/ui/shared/LudoNumberInput.tsx',
   'apps/scoreo/src/ui/shared/LudoTextInput.tsx',
-  'apps/scoreo/src/ui/stats/StatsScreen.tsx',
-  'apps/scoreo/src/ui/stats/trophyIcons.ts',
   'apps/scoreo/src/ui/sync/SyncScreen.tsx',
 ]
 
