@@ -16,6 +16,7 @@
     "typecheck": "tsc -b --noEmit"
   },
   "dependencies": {
+    "@scoreboards/design-system": "workspace:*",
     "@scoreboards/module-api": "workspace:*",
     "@scoreboards/module-mille-sabords": "workspace:*",
     "@scoreboards/module-skyjo": "workspace:*",

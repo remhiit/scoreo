@@ -1,0 +1,108 @@
+.sc-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-family: var(--font-ui);
+  font-weight: var(--weight-semibold);
+  border-radius: var(--radius-md);
+  border: var(--border-width) solid transparent;
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+  transition:
+    background var(--duration-fast) var(--ease-standard),
+    transform var(--duration-fast) var(--ease-standard);
+}
+.sc-btn:active:not(:disabled) {
+  transform: scale(0.97);
+}
+.sc-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+.sc-btn:focus-visible {
+  outline: 2px solid var(--border-focus);
+  outline-offset: 2px;
+}
+
+.sc-btn--sm {
+  height: 36px;
+  padding: 0 var(--space-3);
+  font-size: var(--text-sm);
+  gap: 6px;
+}
+.sc-btn--md {
+  height: var(--tap-target);
+  padding: 0 18px;
+  font-size: var(--text-md);
+  gap: var(--space-2);
+}
+.sc-btn--lg {
+  height: 52px;
+  padding: 0 var(--space-6);
+  font-size: var(--text-lg);
+  gap: 10px;
+}
+
+/* Icon-only stays square with the regular radius — never a circle. */
+.sc-btn--icon {
+  padding: 0;
+}
+.sc-btn--icon.sc-btn--sm {
+  width: 36px;
+}
+.sc-btn--icon.sc-btn--md {
+  width: var(--tap-target);
+}
+.sc-btn--icon.sc-btn--lg {
+  width: 52px;
+}
+
+.sc-btn--primary {
+  background: var(--color-primary);
+  color: var(--text-on-accent);
+}
+.sc-btn--primary:hover:not(:disabled) {
+  background: var(--color-primary-hover);
+}
+.sc-btn--primary:active:not(:disabled) {
+  background: var(--color-primary-active);
+}
+
+.sc-btn--secondary {
+  background: var(--surface-raised);
+  color: var(--text-body);
+  border-color: var(--border-default);
+}
+.sc-btn--secondary:hover:not(:disabled) {
+  background: var(--surface-hover);
+}
+
+.sc-btn--ghost {
+  background: transparent;
+  color: var(--text-body);
+}
+.sc-btn--ghost:hover:not(:disabled) {
+  background: var(--surface-hover);
+}
+
+.sc-btn--danger {
+  background: var(--color-danger);
+  color: var(--text-on-danger);
+}
+
+/* The floating action: pill shape and an accent glow, one per screen at most. */
+.sc-btn--pill {
+  border-radius: var(--radius-pill);
+  box-shadow: 0 8px 20px -6px color-mix(in srgb, var(--color-primary) 60%, transparent);
+}
+
+.sc-btn--fill {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 0 var(--space-3);
+}
+.sc-btn--full {
+  width: 100%;
+}

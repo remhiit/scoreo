@@ -1,0 +1,20 @@
+.sc-action-bar {
+  position: fixed;
+  left: 50%;
+  bottom: 0;
+  transform: translateX(-50%);
+  z-index: 90;
+  width: 100%;
+  max-width: var(--screen-max);
+  display: flex;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4) calc(var(--space-4) + env(safe-area-inset-bottom));
+  background: var(--surface-app);
+  border-top: var(--border-width) solid var(--border-default);
+}
+.sc-action-bar--center {
+  justify-content: center;
+}
+.sc-action-bar--stack {
+  flex-direction: column;
+}

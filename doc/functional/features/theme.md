@@ -13,15 +13,16 @@ swappable accent hue, replacing the previous binary dark/light toggle.
 | On return | Subsequent visit | `scoreo_flavor`/`scoreo_accent` read from `localStorage` |
 
 Flavors: `latte` (light, default), `frappe`, `macchiato`, `mocha` (dark).
-Accent: 14 Catppuccin hues (`mauve` default) — see `tokens/semantic.css`.
+Accent: 14 Catppuccin hues (`mauve` default) — see `packages/design-system/src/tokens/semantic.css`.
 
 ## CSS
 
-Files (`apps/scoreo/public/css/`):
-- `tokens/` — Catppuccin flavor palettes
-  (`colors-latte.css`, `colors-frappe.css`, `colors-macchiato.css`,
-  `colors-mocha.css`) + the semantic alias/accent layer
-  (`semantic.css`).
+Tokens (`packages/design-system/src/tokens/`): Catppuccin flavor palettes
+(`colors-latte.css`, `colors-frappe.css`, `colors-macchiato.css`,
+`colors-mocha.css`) + the semantic alias/accent layer (`semantic.css`).
+
+Legacy picker styles (`apps/scoreo/public/css/`, until the picker composes the
+design system's `ThemePicker`):
 - `theme-picker.css` — `.theme-chip`,
   `.accent-swatch` and their `--active` variants, for the picker
   dialog.

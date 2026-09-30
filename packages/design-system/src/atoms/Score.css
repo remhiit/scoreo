@@ -1,0 +1,40 @@
+.sc-score {
+  font-family: var(--font-score);
+  font-weight: var(--weight-bold);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+}
+.sc-score--sm {
+  font-size: 13px;
+}
+.sc-score--md {
+  font-size: var(--text-md);
+}
+.sc-score--lg {
+  font-size: var(--text-xl);
+}
+.sc-score--xl {
+  font-size: 26px;
+}
+.sc-score--default {
+  color: var(--text-heading);
+}
+.sc-score--accent {
+  color: var(--color-primary);
+}
+.sc-score--muted {
+  color: var(--text-muted);
+  font-weight: var(--weight-semibold);
+}
+
+.sc-rank {
+  font-family: var(--font-score);
+  font-size: 13px;
+  font-weight: var(--weight-bold);
+  color: var(--text-faint);
+}
+.sc-delta {
+  font-family: var(--font-score);
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+}

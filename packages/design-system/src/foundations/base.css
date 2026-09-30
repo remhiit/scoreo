@@ -1,0 +1,44 @@
+/*
+  Foundations — the only element-level rules in the system. Everything else is
+  a `.sc-*` class owned by one component, so the app never needs a selector of
+  its own. `--header-height` is a layout constant shared by the header and the
+  screen template, not a theme token.
+*/
+:root {
+  --header-height: 56px;
+  --screen-max: 600px;
+  --sc-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body {
+  width: 100%;
+  height: 100%;
+  background: var(--surface-app);
+  font-family: var(--font-ui);
+  color: var(--text-body);
+  font-size: var(--text-md);
+}
+
+#root {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Form controls don't inherit the page font by default. Scoped to the system's
+   own controls (a module keeps its native ones) and wrapped in :where() so any
+   component class still wins. */
+:where(button, input, select, textarea)[class*='sc-'] {
+  font: inherit;
+  color: inherit;
+}

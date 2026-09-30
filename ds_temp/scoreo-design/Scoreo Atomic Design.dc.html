@@ -1,0 +1,955 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="stylesheet" href="design/tokens.css">
+<script src="design/components.js"></script>
+<style>
+  body{ margin:0; background:#e7e9ef; font-family:var(--font-ui); }
+  /* Note: avoid "ad"-prefixed class names here — ad-blocker cosmetic filters
+     force display:none on things like .ad-title regardless of content. */
+  .atomic{ padding:56px 64px 120px; }
+  .atomic[data-lang="en"] .l-fr{ display:none; }
+  .atomic[data-lang="fr"] .l-en{ display:none; }
+
+  /* Semantic re-map: the DS maps these on :root only, so element-scoped
+     [data-theme] would otherwise retint the raw palette but not surfaces. */
+  [data-theme]{
+    --surface-app:var(--ctp-base); --surface-sunken:var(--ctp-mantle); --surface-well:var(--ctp-crust);
+    --surface-card:var(--ctp-mantle); --surface-raised:var(--ctp-surface0); --surface-overlay:var(--ctp-surface0);
+    --surface-hover:var(--ctp-surface1); --surface-active:var(--ctp-surface2);
+    --text-heading:var(--ctp-text); --text-body:var(--ctp-text); --text-muted:var(--ctp-subtext1);
+    --text-faint:var(--ctp-subtext0); --text-disabled:var(--ctp-overlay0); --text-on-accent:var(--ctp-on-accent);
+    --border-subtle:var(--ctp-surface1); --border-default:var(--ctp-surface2); --border-strong:var(--ctp-overlay1);
+    --color-success:var(--ctp-green); --color-warning:var(--ctp-yellow); --color-danger:var(--ctp-red); --color-info:var(--ctp-blue);
+    --text-on-danger:var(--ctp-on-accent); --scrim:color-mix(in srgb, var(--ctp-crust) 60%, transparent);
+    --color-primary-tint:color-mix(in srgb, var(--color-primary) 16%, var(--surface-app));
+    --color-primary-border:color-mix(in srgb, var(--color-primary) 45%, var(--border-default));
+  }
+
+  .scoreo,.scoreo *,.scoreo *::before,.scoreo *::after{ box-sizing:border-box; margin:0; padding:0; }
+  .scoreo{ --header-height:56px; font-family:var(--font-ui); color:var(--text-body); font-variant-numeric:tabular-nums; }
+  .ic{ width:20px; height:20px; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; flex-shrink:0; }
+  .ic--sm{ width:16px; height:16px; }
+  .ic--lg{ width:30px; height:30px; }
+  .no-spin{ -webkit-appearance:none !important; appearance:none !important; }
+  .no-spin::-webkit-inner-spin-button,.no-spin::-webkit-outer-spin-button{ -webkit-appearance:none !important; margin:0 !important; }
+
+  /* ---------- page chrome ---------- */
+  .atomic-intro h1{ font-size:42px; font-weight:700; letter-spacing:-.025em; color:#181926; margin:0 0 10px; }
+  .atomic-intro p{ font-size:16px; line-height:1.55; color:#4a4d63; max-width:780px; margin:0; text-wrap:pretty; }
+  .atomic-badge{ display:inline-block; background:#8839ef; color:#fff; font-size:12px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; padding:4px 10px; border-radius:999px; margin-bottom:20px; }
+
+  .layer{ margin-top:72px; }
+  .layer-head{ display:flex; align-items:flex-start; gap:16px; padding-bottom:14px; border-bottom:2px solid #181926; margin-bottom:28px; }
+  .layer-num{ font-family:var(--font-score); font-size:13px; font-weight:700; color:#fff; background:#181926; padding:4px 10px; border-radius:999px; flex-shrink:0; margin-top:3px; }
+  .layer-head h2{ font-size:27px; font-weight:700; letter-spacing:-.015em; color:#181926; margin:0 0 4px; }
+  .layer-head p{ font-size:14px; line-height:1.5; color:#565975; max-width:640px; margin:0; text-wrap:pretty; }
+
+  .specs{ display:flex; flex-wrap:wrap; gap:20px; align-items:flex-start; }
+  .spec{ background:#fff; border:1px solid #ced2dd; border-radius:14px; overflow:hidden; box-shadow:0 1px 2px rgba(24,25,38,.05); }
+  .spec-head{ display:flex; align-items:baseline; gap:8px; padding:11px 16px; border-bottom:1px solid #e4e7ee; background:#f7f8fb; }
+  .spec-name{ font-size:13.5px; font-weight:650; color:#181926; }
+  .spec-code{ font-family:var(--font-mono); font-size:11px; color:#8b8fa3; }
+  .spec-body{ padding:20px 16px; }
+  .spec-note{ font-size:12px; color:#6b6e88; line-height:1.45; padding:0 16px 14px; max-width:340px; text-wrap:pretty; }
+  /* Templates: keep the four cards equal width — the note must not out-grow
+     the 250px wireframe it describes. */
+  .spec--tpl .spec-note{ max-width:250px; }
+  .row{ display:flex; flex-wrap:wrap; gap:10px; align-items:center; }
+  .col{ display:flex; flex-direction:column; gap:10px; }
+  .stack{ display:flex; flex-direction:column; gap:8px; }
+  .lbl{ font-size:10.5px; font-weight:650; text-transform:uppercase; letter-spacing:.07em; color:#9498aa; }
+
+  /* ---------- tokens ---------- */
+  .sw-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(96px,1fr)); gap:10px; }
+  .sw{ display:flex; flex-direction:column; gap:5px; }
+  .sw-chip{ height:44px; border-radius:8px; border:1px solid rgba(24,25,38,.12); }
+  .sw-nm{ font-size:11px; font-weight:600; color:#3c3f54; }
+  .sw-hex{ font-family:var(--font-mono); font-size:10px; color:#9498aa; }
+  .type-line{ display:flex; align-items:baseline; gap:14px; padding:7px 0; border-bottom:1px solid #eceef4; }
+  .type-line:last-child{ border-bottom:none; }
+  .type-meta{ font-family:var(--font-mono); font-size:10.5px; color:#9498aa; width:118px; flex-shrink:0; }
+  .sp-bar{ background:#8839ef; height:14px; border-radius:3px; }
+
+  /* ---------- atoms / molecules ---------- */
+  .select{ appearance:none; -webkit-appearance:none; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%239195a8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 14px center; background-size:16px 16px; background-color:var(--surface-card); display:block; width:100%; min-height:44px; border:var(--border-width) solid var(--border-default); border-radius:var(--radius-md); padding:10px 40px 10px 14px; font-size:15px; line-height:1.3; font-family:var(--font-ui); color:var(--text-body); outline:none; cursor:pointer; }
+  .score-num{ font-family:var(--font-score); font-weight:700; color:var(--text-heading); font-variant-numeric:tabular-nums; }
+  .rank-pos{ font-family:var(--font-score); font-size:13px; font-weight:700; color:var(--text-faint); }
+  .delta{ font-family:var(--font-score); font-size:12px; color:var(--text-muted); }
+  .bar-wrap{ width:110px; height:8px; background:var(--surface-sunken); border-radius:var(--radius-sm); overflow:hidden; }
+  .bar{ height:100%; background:var(--color-primary); border-radius:var(--radius-sm); }
+  .elo-badge{ display:inline-flex; align-items:center; background:var(--color-primary-tint); color:var(--color-primary); font-family:var(--font-score); font-weight:700; font-size:14px; padding:2px 10px; border-radius:var(--radius-pill); }
+  .theme-chip{ border:var(--border-width) solid var(--border-default); background:transparent; color:var(--text-body); border-radius:var(--radius-pill); padding:4px 10px; font-size:13px; cursor:pointer; font-family:inherit; }
+  .theme-chip--on{ border:2px solid var(--color-primary); padding:3px 9px; }
+  .accent-sw{ width:26px; height:26px; border-radius:var(--radius-pill); border:var(--border-width) solid var(--border-default); cursor:pointer; padding:0; }
+  .accent-sw--on{ border:2px solid var(--text-heading); }
+
+  .list-item-row{ display:flex; align-items:center; gap:0; padding:12px 16px; background:var(--surface-card); border:var(--border-width) solid var(--border-subtle); border-radius:var(--radius-md); overflow:hidden; }
+  .list-item-row:has(.sel--on){ background:var(--color-primary-tint); }
+  .list-item-label{ flex:1; display:flex; align-items:center; align-self:stretch; gap:10px; min-width:0; }
+  /* Wraps picto AND name so the full-width area really is the tap target. */
+  .sel{ cursor:pointer; display:flex; align-items:center; gap:10px; padding:12px 16px; margin:-12px 0 -12px -16px; width:100%; min-width:0; }
+  .list-item-name{ font-weight:500; font-size:15px; display:block; }
+  .list-item-sub{ font-size:13px; color:var(--text-muted); display:block; margin-top:2px; }
+  .list-item-players{ font-size:13px; color:var(--text-body); display:block; margin-top:3px; }
+  .list-item-players strong{ font-weight:var(--weight-semibold); color:var(--text-heading); }
+  .list-item-date{ font-size:12px; color:var(--text-muted); display:block; margin-top:3px; }
+  .list-item-actions{ display:flex; align-items:stretch; align-self:stretch; margin:-12px -16px -12px 0; gap:0; flex-shrink:0; }
+  .list-item-actions > *{ display:flex; align-items:stretch; }
+  /* DS Buttons carry no class and set border-radius inline, so icon-only ones
+     arrive as pills — square them off to match every other button. */
+  .scoreo button:not([class]){ border-radius:var(--radius-md) !important; }
+  .scoreo .list-item-actions button{ width:56px !important; height:100% !important; border-radius:0 !important; border:none !important; }
+
+  .gs-card{ display:flex; flex-direction:column; gap:2px; padding:10px 12px; background:var(--surface-card); border:var(--border-width) solid var(--border-subtle); border-radius:var(--radius-md); }
+  .gs-card--lead{ border-color:var(--color-primary-border); }
+  .gs-card--lead .gs-tot{ color:var(--color-primary); }
+  .gs-top{ display:flex; align-items:baseline; gap:6px; }
+  .gs-name{ font-size:14px; font-weight:500; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .gs-bot{ display:flex; align-items:baseline; justify-content:space-between; }
+  .gs-tot{ font-family:var(--font-score); font-size:26px; font-weight:700; line-height:1.1; color:var(--text-heading); }
+  .gs-grid{ display:grid; grid-template-columns:repeat(2,1fr); gap:8px; }
+
+  .hist-cell{ display:grid; grid-template-columns:1fr auto; align-items:center; gap:6px; background:var(--surface-sunken); border-radius:var(--radius-sm); padding:5px 9px; font-size:13px; }
+  .hist-cell > span:first-child{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .hist-round{ background:var(--surface-card); border:var(--border-width) solid var(--border-subtle); border-radius:var(--radius-md); }
+  .hist-round-head{ display:flex; align-items:center; justify-content:space-between; padding:8px 14px; background:var(--surface-sunken); border-radius:var(--radius-md) var(--radius-md) 0 0; font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:var(--tracking-wide); color:var(--text-muted); }
+  .hist-cells{ display:grid; grid-template-columns:repeat(2,1fr); gap:6px; padding:10px 14px; }
+
+  .seg{ display:flex; background:var(--surface-sunken); border-radius:var(--radius-md); padding:3px; }
+  .seg button{ flex:1; border:none; background:transparent; padding:8px 12px; font:inherit; font-size:14px; font-weight:600; color:var(--text-muted); border-radius:var(--radius-sm); cursor:pointer; }
+  .seg button.on{ background:var(--surface-card); color:var(--text-heading); box-shadow:var(--shadow-sm); }
+  .tab-bar{ display:flex; border-bottom:2px solid var(--border-default); }
+  .tab-btn{ flex:1; background:transparent; border:none; box-shadow:inset 0 -2px 0 transparent; padding:14px 12px; font-size:15px; font-weight:500; color:var(--text-muted); cursor:pointer; font-family:inherit; }
+  .tab-btn.on{ color:var(--color-primary); box-shadow:inset 0 -2px 0 var(--color-primary); font-weight:600; }
+  .card{ background:var(--surface-sunken); border-radius:var(--radius-md); padding:12px 16px; display:flex; align-items:center; justify-content:space-between; gap:12px; }
+  .detail-row{ display:flex; justify-content:space-between; gap:12px; padding:10px 0; border-bottom:var(--border-width) solid var(--border-subtle); font-size:14px; }
+  .detail-row:last-child{ border-bottom:none; }
+  .detail-label{ color:var(--text-muted); }
+  .detail-value{ font-weight:var(--weight-medium); color:var(--text-heading); }
+  .sync-card{ flex:1; display:flex; flex-direction:column; gap:4px; padding:12px 16px; border-radius:var(--radius-lg); background:var(--surface-card); border:var(--border-width) solid var(--border-subtle); box-shadow:var(--shadow-sm); }
+  .sync-card-title{ font-weight:600; font-size:.9rem; margin-bottom:4px; }
+  .sync-card-stat{ font-size:.85rem; color:var(--text-muted); }
+  .res-line{ font-size:15px; padding:4px 0; display:flex; align-items:center; gap:6px; }
+  .banner{ background:var(--color-primary-tint); border:var(--border-width) solid color-mix(in srgb,var(--color-primary) 30%,transparent); padding:14px 16px; border-radius:var(--radius-md); line-height:1.6; }
+  .banner h3{ margin:0 0 8px; color:var(--color-primary); font-size:1rem; }
+  .banner ol{ margin:0; padding-left:20px; }
+  .banner li{ margin:5px 0; color:var(--text-muted); }
+  .banner-btn{ background:transparent; border:none; color:var(--color-primary); cursor:pointer; font-size:15px; font-weight:600; display:flex; align-items:center; gap:8px; padding:0; font-family:inherit; }
+  .drop{ display:flex; flex-direction:column; align-items:center; gap:16px; padding:40px 24px; border:2px dashed var(--border-default); border-radius:var(--radius-md); text-align:center; cursor:pointer; }
+  .filter-bar{ display:flex; align-items:center; gap:12px; padding:12px; background:var(--surface-sunken); border-radius:var(--radius-sm); }
+  .filter-bar label{ font-weight:500; font-size:14px; }
+  .filter-select{ appearance:none; -webkit-appearance:none; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%239195a8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 11px center; background-size:14px 14px; background-color:var(--surface-card); display:block; min-height:32px; padding:6px 30px 6px 12px; border:var(--border-width) solid var(--border-default); border-radius:var(--radius-sm); color:var(--text-body); cursor:pointer; font-size:.9rem; line-height:1.3; font-family:var(--font-ui); }
+  .empty{ text-align:center; color:var(--text-muted); padding:32px 0; font-size:15px; }
+  .section-label{ font-size:13px; font-weight:600; color:var(--text-muted); text-transform:uppercase; letter-spacing:var(--tracking-wide); }
+
+  /* ---------- added in the completion pass ---------- */
+  .chk{ display:flex; align-items:center; gap:10px; min-height:44px; font-size:15px; color:var(--text-body); cursor:pointer; }
+  .chk input{ width:18px; height:18px; accent-color:var(--color-primary); flex-shrink:0; cursor:inherit; }
+  .chk--off{ color:var(--text-disabled); cursor:not-allowed; }
+  .badge{ display:inline-flex; align-items:center; gap:4px; padding:2px 10px; border-radius:var(--radius-pill); background:var(--surface-well); color:var(--text-body); font-family:var(--font-score); font-weight:700; font-size:14px; line-height:1.3; white-space:nowrap; }
+  .badge--accent{ background:var(--color-primary-tint); color:var(--color-primary); }
+  .badge--solid{ background:var(--color-primary); color:var(--text-on-accent); }
+  .badge--success{ background:color-mix(in srgb,var(--color-success) 16%,var(--surface-app)); color:var(--text-heading); }
+  .badge--warning{ background:color-mix(in srgb,var(--color-warning) 18%,var(--surface-app)); color:var(--text-heading); }
+  .badge--danger{ background:color-mix(in srgb,var(--color-danger) 14%,var(--surface-app)); color:var(--color-danger); }
+  .badge__label{ font-family:var(--font-ui); font-weight:500; font-size:13px; color:var(--text-body); }
+  .err{ font-size:13px; color:var(--color-danger); }
+  .hint{ font-size:13px; color:var(--text-muted); }
+  .empty-title{ font-size:15px; font-weight:600; color:var(--text-heading); margin-bottom:6px; }
+  /* A containing block for the DS Modal: its scrim is position:fixed, so a
+     transform here resolves it inside the card instead of over the page. */
+  .modal-stage{ position:relative; transform:translateZ(0); height:330px; overflow:hidden; background:var(--surface-app); }
+  .modal-stage [role="dialog"]{ max-height:88% !important; }
+  .fab-row{ display:flex; justify-content:center; padding:12px 16px 16px; background:var(--surface-app); border-top:var(--border-width) solid var(--border-default); }
+  .swatch-btn{ width:44px; height:44px; display:inline-flex; align-items:center; justify-content:center; padding:0; border:none; background:transparent; border-radius:var(--radius-pill); cursor:pointer; }
+
+  /* ---------- organisms in context ---------- */
+  .device{ width:390px; height:780px; background:var(--surface-app); border:var(--border-width) solid var(--border-default); border-radius:28px; overflow:hidden; position:relative; transform:translateZ(0); box-shadow:0 24px 60px -20px rgba(24,24,37,.4); display:flex; flex-direction:column; }
+  .device [role="dialog"]{ max-height:88% !important; }
+  .app-header{ height:var(--header-height); flex-shrink:0; background:var(--surface-app); border-bottom:var(--border-width) solid var(--border-default); display:flex; align-items:center; justify-content:space-between; padding:0 8px; position:relative; z-index:5; }
+  .app-title{ font-size:18px; font-weight:600; color:var(--text-heading); flex:1; text-align:center; }
+  .app-content{ flex:1; overflow-y:auto; padding:16px 16px 24px; display:flex; flex-direction:column; }
+  .bottom-bar{ position:absolute; left:0; right:0; bottom:0; padding:12px 16px 16px; background:var(--surface-app); border-top:var(--border-width) solid var(--border-default); z-index:6; }
+  .scrim{ position:absolute; inset:0; background:var(--scrim); z-index:20; }
+  .sheet{ position:absolute; left:0; right:0; bottom:0; z-index:22; max-height:80%; display:flex; flex-direction:column; gap:10px; padding:12px 16px 16px; background:var(--surface-app); border-top:var(--border-width) solid var(--border-default); border-radius:var(--radius-lg) var(--radius-lg) 0 0; box-shadow:var(--shadow-lg); }
+  .sheet-grip{ width:36px; height:4px; border-radius:2px; background:var(--border-default); margin:0 auto 2px; }
+  .sheet-title{ font-size:16px; font-weight:600; color:var(--text-heading); }
+  .sheet-rows{ display:flex; flex-direction:column; gap:8px; overflow-y:auto; }
+  .sheet-row{ display:flex; align-items:center; gap:12px; }
+  .sheet-row-name{ flex:1; font-size:15px; }
+  .sheet-row-tot{ font-family:var(--font-score); font-size:13px; color:var(--text-muted); }
+  .menu{ position:absolute; top:0; right:0; bottom:0; width:230px; background:var(--surface-app); z-index:21; display:flex; flex-direction:column; padding:12px 0; box-shadow:var(--shadow-lg); }
+  .menu-item{ display:flex; align-items:center; gap:14px; padding:14px 24px; border:none; background:transparent; font-size:16px; color:var(--text-body); cursor:pointer; text-align:left; width:100%; font-family:inherit; }
+  .modal-actions{ display:flex; flex-wrap:wrap; justify-content:flex-end; gap:8px; margin-top:20px; padding-top:16px; border-top:var(--border-width) solid var(--border-subtle); }
+
+  /* ---------- templates (wireframe diagrams) ---------- */
+  .wf{ width:250px; height:420px; border:2px solid #b9bece; border-radius:18px; background:#fff; display:flex; flex-direction:column; overflow:hidden; }
+  .wf-z{ display:flex; align-items:center; justify-content:center; font-size:10.5px; font-weight:650; text-transform:uppercase; letter-spacing:.06em; color:#7c8195; background:#f2f4f9; border-bottom:1px dashed #c6cbd9; text-align:center; padding:6px; }
+  .wf-z--fill{ flex:1; border-bottom:none; background:#fafbfd; flex-direction:column; gap:6px; }
+  .wf-z--accent{ background:#f3ebfe; color:#7124d8; border-top:1px dashed #c6cbd9; border-bottom:none; }
+  .wf-sub{ font-size:9.5px; font-weight:500; letter-spacing:0; text-transform:none; color:#9aa0b3; }
+
+  .pages{ display:flex; flex-wrap:wrap; gap:32px; align-items:flex-start; }
+  .page-cap{ font-size:13px; font-weight:650; color:#181926; margin-bottom:10px; }
+  .page-cap span{ display:block; font-size:12px; font-weight:400; color:#6b6e88; margin-top:2px; max-width:390px; }
+</style>
+</helmet>
+<div class="atomic" data-lang="{{ lang }}">
+  <div class="atomic-intro">
+    <span class="atomic-badge">Scoreo design system</span>
+    <h1><span class="l-en">Scoreo — atomic design system</span><span class="l-fr">Scoreo — design system atomique</span></h1>
+    <p><span class="l-en">The same screens we built, decomposed into Brad Frost's five layers: tokens feed atoms, atoms compose into molecules, molecules into organisms, organisms fill templates, and templates become the real pages. Every piece below is the live component, not a picture of one — Button, Input and Modal come from the design system bundle; the rest is built on its tokens.</span><span class="l-fr">Les mêmes écrans, décomposés selon les cinq niveaux de Brad Frost : les tokens nourrissent les atomes, les atomes composent les molécules, les molécules les organismes, les organismes remplissent les gabarits, et les gabarits deviennent les pages réelles. Chaque élément ci-dessous est le composant vivant, pas une image — Bouton, Champ et Modale viennent du bundle du design system ; le reste est bâti sur ses tokens.</span></p>
+  </div>
+
+  <!-- ================= 0 · TOKENS ================= -->
+  <div class="layer scoreo" data-theme="{{ flavor }}" data-accent="{{ accent }}">
+    <div class="layer-head">
+      <span class="layer-num">00</span>
+      <div>
+        <h2><span class="l-en">Tokens</span><span class="l-fr">Tokens</span></h2>
+        <p><span class="l-en">Subatomic. Catppuccin palette behind a semantic layer — components only ever reference the semantic names, so swapping flavor or accent retints everything downstream.</span><span class="l-fr">Niveau subatomique. La palette Catppuccin derrière une couche sémantique — les composants ne référencent que les noms sémantiques, si bien que changer de palette ou d'accent recolore tout l'aval.</span></p>
+      </div>
+    </div>
+    <div class="specs">
+      <div class="spec" style="width:430px">
+        <div class="spec-head"><span class="spec-name"><span class="l-en">Surfaces &amp; text</span><span class="l-fr">Surfaces et texte</span></span><span class="spec-code">--surface-* / --text-*</span></div>
+        <div class="spec-body">
+          <div class="sw-grid">
+            <div class="sw"><div class="sw-chip" style="background:var(--surface-app)"></div><span class="sw-nm">app</span><span class="sw-hex">base</span></div>
+            <div class="sw"><div class="sw-chip" style="background:var(--surface-card)"></div><span class="sw-nm">card</span><span class="sw-hex">mantle</span></div>
+            <div class="sw"><div class="sw-chip" style="background:var(--surface-sunken)"></div><span class="sw-nm">sunken</span><span class="sw-hex">mantle</span></div>
+            <div class="sw"><div class="sw-chip" style="background:var(--surface-raised)"></div><span class="sw-nm">raised</span><span class="sw-hex">surface0</span></div>
+            <div class="sw"><div class="sw-chip" style="background:var(--text-heading)"></div><span class="sw-nm">heading</span><span class="sw-hex">text</span></div>
+            <div class="sw"><div class="sw-chip" style="background:var(--text-muted)"></div><span class="sw-nm">muted</span><span class="sw-hex">subtext1</span></div>
+            <div class="sw"><div class="sw-chip" style="background:var(--border-default)"></div><span class="sw-nm">border</span><span class="sw-hex">surface2</span></div>
+            <div class="sw"><div class="sw-chip" style="background:var(--surface-hover)"></div><span class="sw-nm">hover</span><span class="sw-hex">surface1</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="spec" style="width:300px">
+        <div class="spec-head"><span class="spec-name"><span class="l-en">Accent &amp; status</span><span class="l-fr">Accent et statuts</span></span><span class="spec-code">--color-*</span></div>
+        <div class="spec-body">
+          <div class="sw-grid">
+            <div class="sw"><div class="sw-chip" style="background:var(--color-primary)"></div><span class="sw-nm">primary</span><span class="sw-hex">accent</span></div>
+            <div class="sw"><div class="sw-chip" style="background:var(--color-primary-tint)"></div><span class="sw-nm">tint</span><span class="sw-hex">16%</span></div>
+            <div class="sw"><div class="sw-chip" style="background:var(--color-success)"></div><span class="sw-nm">success</span><span class="sw-hex">green</span></div>
+            <div class="sw"><div class="sw-chip" style="background:var(--color-warning)"></div><span class="sw-nm">warning</span><span class="sw-hex">yellow</span></div>
+            <div class="sw"><div class="sw-chip" style="background:var(--color-danger)"></div><span class="sw-nm">danger</span><span class="sw-hex">red</span></div>
+            <div class="sw"><div class="sw-chip" style="background:var(--color-info)"></div><span class="sw-nm">info</span><span class="sw-hex">blue</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="spec" style="width:420px">
+        <div class="spec-head"><span class="spec-name"><span class="l-en">Type scale</span><span class="l-fr">Échelle typographique</span></span><span class="spec-code">--text-* / --font-*</span></div>
+        <div class="spec-body">
+          <div class="type-line"><span class="type-meta">score · 26px · 700</span><span class="score-num" style="font-size:26px">1284</span></div>
+          <div class="type-line"><span class="type-meta">lg · 18px · 600</span><span style="font-size:18px;font-weight:600;color:var(--text-heading)">Skyjo</span></div>
+          <div class="type-line"><span class="type-meta">md · 15px · 500</span><span style="font-size:15px;font-weight:500">Camille</span></div>
+          <div class="type-line"><span class="type-meta">sm · 13px · 400</span><span style="font-size:13px;color:var(--text-muted)">12W 5L</span></div>
+          <div class="type-line"><span class="type-meta">xs · 11px · 600 caps</span><span style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:var(--tracking-wide);color:var(--text-muted)"><span class="l-en">Round 3</span><span class="l-fr">Tour 3</span></span></div>
+        </div>
+      </div>
+
+      <div class="spec" style="width:280px">
+        <div class="spec-head"><span class="spec-name"><span class="l-en">Space &amp; radius</span><span class="l-fr">Espacement et rayons</span></span><span class="spec-code">--space-* / --radius-*</span></div>
+        <div class="spec-body col">
+          <div class="row" style="gap:8px"><span class="sp-bar" style="width:4px"></span><span class="sp-bar" style="width:8px"></span><span class="sp-bar" style="width:12px"></span><span class="sp-bar" style="width:16px"></span><span class="sp-bar" style="width:24px"></span><span class="sp-bar" style="width:32px"></span></div>
+          <div class="row">
+            <div style="width:46px;height:34px;background:var(--surface-raised);border:1px solid var(--border-default);border-radius:var(--radius-sm)"></div>
+            <div style="width:46px;height:34px;background:var(--surface-raised);border:1px solid var(--border-default);border-radius:var(--radius-md)"></div>
+            <div style="width:46px;height:34px;background:var(--surface-raised);border:1px solid var(--border-default);border-radius:var(--radius-lg)"></div>
+            <div style="width:46px;height:34px;background:var(--surface-raised);border:1px solid var(--border-default);border-radius:var(--radius-pill)"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= 1 · ATOMS ================= -->
+  <div class="layer scoreo" data-theme="{{ flavor }}" data-accent="{{ accent }}">
+    <div class="layer-head">
+      <span class="layer-num">01</span>
+      <div>
+        <h2><span class="l-en">Atoms</span><span class="l-fr">Atomes</span></h2>
+        <p><span class="l-en">Indivisible. Each one is meaningless alone but appears everywhere — a button, a number, a bar. The first four come straight from the design system; the rest are Scoreo-specific primitives it doesn't define yet.</span><span class="l-fr">Indivisibles. Chacun n'a pas de sens isolément mais se retrouve partout — un bouton, un chiffre, une barre. Les quatre premiers viennent du design system ; les autres sont des primitives propres à Scoreo qu'il ne définit pas encore.</span></p>
+      </div>
+    </div>
+    <div class="specs">
+      <div class="spec" style="width:340px">
+        <div class="spec-head"><span class="spec-name">Button</span><span class="spec-code">DS · 4 variants × 3 sizes × 3 modes</span></div>
+        <div class="spec-body col">
+          <div><div class="lbl" style="margin-bottom:7px">Variants</div><div class="row">
+            <x-import component-from-global-scope="Scoreo.Button" variant="primary" size="md" hint-size="auto,44px">Primary</x-import>
+            <x-import component-from-global-scope="Scoreo.Button" variant="secondary" size="md" hint-size="auto,44px">Secondary</x-import>
+          </div></div>
+          <div class="row">
+            <x-import component-from-global-scope="Scoreo.Button" variant="ghost" size="md" hint-size="auto,44px">Ghost</x-import>
+            <x-import component-from-global-scope="Scoreo.Button" variant="danger" size="md" hint-size="auto,44px">Danger</x-import>
+          </div>
+          <div><div class="lbl" style="margin-bottom:7px">Sizes</div><div class="row">
+            <x-import component-from-global-scope="Scoreo.Button" variant="primary" size="sm" hint-size="auto,36px">sm</x-import>
+            <x-import component-from-global-scope="Scoreo.Button" variant="primary" size="md" hint-size="auto,44px">md</x-import>
+            <x-import component-from-global-scope="Scoreo.Button" variant="primary" size="lg" hint-size="auto,52px">lg</x-import>
+          </div></div>
+          <div><div class="lbl" style="margin-bottom:7px"><span class="l-en">Content modes</span><span class="l-fr">Modes de contenu</span></div>
+            <div class="row">
+              <x-import component-from-global-scope="Scoreo.Button" variant="primary" size="md" hint-size="auto,44px"><span class="l-en">Add</span><span class="l-fr">Ajouter</span></x-import>
+              <x-import component-from-global-scope="Scoreo.Button" variant="primary" size="md" icon-only="{{ true }}" dc-props="{{ squareIcon }}" hint-size="44px,44px"><svg class="ic" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="M12 5v14"/></svg></x-import>
+              <x-import component-from-global-scope="Scoreo.Button" variant="primary" size="md" hint-size="auto,44px"><svg class="ic ic--sm" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="M12 5v14"/></svg><span class="l-en">Add</span><span class="l-fr">Ajouter</span></x-import>
+            </div>
+            <div class="row" style="margin-top:8px">
+              <x-import component-from-global-scope="Scoreo.Button" variant="ghost" size="md" hint-size="auto,44px"><span class="l-en">Cancel</span><span class="l-fr">Annuler</span></x-import>
+              <x-import component-from-global-scope="Scoreo.Button" variant="ghost" size="md" icon-only="{{ true }}" dc-props="{{ squareIcon }}" hint-size="44px,44px"><svg class="ic" viewBox="0 0 24 24"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg></x-import>
+              <x-import component-from-global-scope="Scoreo.Button" variant="ghost" size="md" hint-size="auto,44px"><svg class="ic ic--sm" viewBox="0 0 24 24"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg><span class="l-en">Rename</span><span class="l-fr">Renommer</span></x-import>
+            </div>
+          </div>
+        </div>
+        <p class="spec-note"><span class="l-en">Three content modes: label alone, icon alone (<code>icon-only</code> — square, same radius as the others, needs an accessible label), or icon + label with the icon leading. Never a trailing icon, and never icon-only for a destructive action outside a list row.</span><span class="l-fr">Trois modes de contenu : libellé seul, icône seule (<code>icon-only</code> — carré, même rayon que les autres, exige un libellé accessible), ou icône + libellé avec l'icône devant. Jamais d'icône à droite, et jamais d'icône seule pour une action destructive hors d'une ligne de liste.</span></p>
+      </div>
+
+      <div class="spec" style="width:270px">
+        <div class="spec-head"><span class="spec-name">Input</span><span class="spec-code">DS · text / number</span></div>
+        <div class="spec-body col">
+          <x-import component-from-global-scope="Scoreo.Input" label="{{ t.playerName }}" placeholder="Camille" hint-size="100%,66px"></x-import>
+          <div><div class="lbl" style="margin-bottom:7px"><span class="l-en">Number, stepper</span><span class="l-fr">Nombre, stepper</span></div>
+            <x-import component-from-global-scope="Scoreo.Input" type="number" size="sm" default-value="11" hint-size="120px,36px"></x-import>
+          </div>
+        </div>
+      </div>
+
+      <div class="spec" style="width:250px">
+        <div class="spec-head"><span class="spec-name">Select</span><span class="spec-code">.select</span></div>
+        <div class="spec-body"><select class="select"><option>Belote</option></select></div>
+        <p class="spec-note"><span class="l-en">Not in the design system yet. Native arrows can't be inset, so the chevron is a background SVG with <code>appearance:none</code>.</span><span class="l-fr">Absent du design system. La flèche native ne peut pas être décalée du bord : le chevron est un SVG de fond avec <code>appearance:none</code>.</span></p>
+      </div>
+
+      <div class="spec" style="width:250px">
+        <div class="spec-head"><span class="spec-name">Icon</span><span class="spec-code">.ic · 24×24 stroke 2</span></div>
+        <div class="spec-body row" style="gap:16px;color:var(--text-body)">
+          <svg class="ic" viewBox="0 0 24 24"><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="18" y2="18"/></svg>
+          <svg class="ic" viewBox="0 0 24 24"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>
+          <svg class="ic" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+          <svg class="ic" viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+          <svg class="ic" viewBox="0 0 24 24"><polygon points="6 3 20 12 6 21 6 3"/></svg>
+          <svg class="ic" viewBox="0 0 24 24"><path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg>
+        </div>
+      </div>
+
+      <div class="spec" style="width:300px">
+        <div class="spec-head"><span class="spec-name"><span class="l-en">Score primitives</span><span class="l-fr">Primitives de score</span></span><span class="spec-code">--font-score, tabular</span></div>
+        <div class="spec-body col">
+          <div class="row" style="gap:18px">
+            <span class="score-num" style="font-size:26px">26</span>
+            <span class="rank-pos">3</span>
+            <span class="delta">+11</span>
+            <span class="elo-badge">1284</span>
+          </div>
+          <div><div class="lbl" style="margin-bottom:7px"><span class="l-en">Win-rate bar</span><span class="l-fr">Barre de victoires</span></div>
+            <div class="bar-wrap"><div class="bar" style="width:70%"></div></div>
+          </div>
+        </div>
+        <p class="spec-note"><span class="l-en">All numerals are monospaced and tabular so columns of scores line up as they change.</span><span class="l-fr">Tous les chiffres sont monospace et tabulaires pour que les colonnes de scores restent alignées quand elles changent.</span></p>
+      </div>
+
+      <div class="spec" style="width:290px">
+        <div class="spec-head"><span class="spec-name"><span class="l-en">Theme</span><span class="l-fr">Thème</span></span><span class="spec-code">.theme-chip, .accent-sw</span></div>
+        <div class="spec-body col">
+          <div class="row" style="gap:18px">
+            
+            
+            <button class="theme-chip theme-chip--on">Latte</button>
+            <button class="theme-chip">Mocha</button>
+          </div>
+          <div class="row" style="gap:6px">
+            <button class="accent-sw accent-sw--on" style="background:var(--ctp-mauve)"></button>
+            <button class="accent-sw" style="background:var(--ctp-blue)"></button>
+            <button class="accent-sw" style="background:var(--ctp-teal)"></button>
+            <button class="accent-sw" style="background:var(--ctp-peach)"></button>
+            <button class="accent-sw" style="background:var(--ctp-green)"></button>
+            <button class="accent-sw" style="background:var(--ctp-red)"></button>
+          </div>
+        </div>
+        <p class="spec-note"><span class="l-en">The 26px dot is below the 44px tap floor — it must sit inside a 44px hit area, as the theme-picker organism below shows.</span><span class="l-fr">La pastille de 26px est sous le plancher tactile de 44px — elle doit être posée dans une zone de 44px, comme le montre l'organisme sélecteur de thème plus bas.</span></p>
+      </div>
+
+      <div class="spec" style="width:280px">
+        <div class="spec-head"><span class="spec-name">Checkbox</span><span class="spec-code">.chk</span></div>
+        <div class="spec-body col" style="gap:0">
+          <label class="chk"><input type="checkbox" defaultChecked="{{ true }}"><span class="l-en">Merge with local data</span><span class="l-fr">Fusionner avec le local</span></label>
+          <label class="chk"><input type="checkbox"><span class="l-en">Replace everything</span><span class="l-fr">Tout remplacer</span></label>
+          <label class="chk chk--off"><input type="checkbox" disabled="{{ true }}"><span class="l-en">Keep both copies</span><span class="l-fr">Garder les deux copies</span></label>
+        </div>
+        <p class="spec-note"><span class="l-en">Used only inside dialogs (Sync, Import). The label is the tap target and carries the full 44px height — never a bare box.</span><span class="l-fr">Uniquement dans les dialogues (Synchro, Import). Le libellé est la cible tactile et porte les 44px — jamais une case nue.</span></p>
+      </div>
+
+      <div class="spec" style="width:300px">
+        <div class="spec-head"><span class="spec-name">Badge</span><span class="spec-code">.badge · 6 tones</span></div>
+        <div class="spec-body col">
+          <div class="row"><span class="badge">24</span><span class="badge badge--accent">1284</span><span class="badge badge--solid"><span class="l-en">1st</span><span class="l-fr">1er</span></span></div>
+          <div class="row"><span class="badge badge--success">+18</span><span class="badge badge--warning">2</span><span class="badge badge--danger">−32</span></div>
+          <div class="row"><span class="badge"><span class="badge__label"><span class="l-en">Wins</span><span class="l-fr">Victoires</span></span>12</span></div>
+        </div>
+        <p class="spec-note"><span class="l-en">Generalizes the ELO pill: same shape for trophies, deltas and import counts. Figures are monospaced; a leading word stays in the UI font.</span><span class="l-fr">Généralise la pastille ELO : même forme pour les trophées, les écarts et les compteurs d'import. Les chiffres sont monospace ; un mot en tête reste en police d'interface.</span></p>
+      </div>
+
+      <div class="spec" style="width:330px">
+        <div class="spec-head"><span class="spec-name"><span class="l-en">Field states</span><span class="l-fr">États de champ</span></span><span class="spec-code">DS Input · invalid / disabled</span></div>
+        <div class="spec-body col">
+          <div class="stack" style="gap:6px">
+            <x-import component-from-global-scope="Scoreo.Input" label="{{ t.playerName }}" default-value="Camille" dc-props="{{ invalidInput }}" hint-size="100%,66px"></x-import>
+            <span class="err">{{ t.nameTaken }}</span>
+          </div>
+          <x-import component-from-global-scope="Scoreo.Input" label="{{ t.playerName }}" placeholder="Camille" disabled="{{ true }}" hint-size="100%,66px"></x-import>
+        </div>
+        <p class="spec-note"><span class="l-en">The only two states the app produces: a duplicate name, and a field locked while a sync runs. Errors read as one plain sentence under the field, never as a toast. Upstream has no invalid state — <code>invalid</code> + <code>error</code> are the app's extension, listed in <code>EXTENSIONS.md</code>; until the system adopts them the red border is set by the caller, as here.</span><span class="l-fr">Les deux seuls états que l'appli produit : un nom en double, et un champ verrouillé pendant une synchro. L'erreur se lit en une phrase sous le champ, jamais en toast. Le système amont n'a pas d'état invalide — <code>invalid</code> et <code>error</code> sont une extension de l'appli, listée dans <code>EXTENSIONS.md</code> ; en attendant son adoption, la bordure rouge est posée par l'appelant, comme ici.</span></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= 2 · MOLECULES ================= -->
+  <div class="layer scoreo" data-theme="{{ flavor }}" data-accent="{{ accent }}">
+    <div class="layer-head">
+      <span class="layer-num">02</span>
+      <div>
+        <h2><span class="l-en">Molecules</span><span class="l-fr">Molécules</span></h2>
+        <p><span class="l-en">Two or three atoms bonded into something with one job. This is the layer Scoreo reuses hardest — the list row and the standings card carry most of the app.</span><span class="l-fr">Deux ou trois atomes liés pour remplir une seule fonction. C'est le niveau que Scoreo réutilise le plus — la ligne de liste et la carte de classement portent l'essentiel de l'appli.</span></p>
+      </div>
+    </div>
+    <div class="specs">
+      <div class="spec" style="width:390px">
+        <div class="spec-head"><span class="spec-name"><span class="l-en">List row</span><span class="l-fr">Ligne de liste</span></span><span class="spec-code">.list-item-row</span></div>
+        <div class="spec-body col" style="background:var(--surface-app)">
+          <div class="list-item-row">
+            <div class="list-item-label"><div class="sel"><div><span class="list-item-name">Camille</span><span class="list-item-sub">12W 5L</span></div></div></div>
+            <div class="list-item-actions">
+              <x-import component-from-global-scope="Scoreo.Button" variant="ghost" size="sm" icon-only="{{ true }}" hint-size="56px,56px"><svg class="ic ic--sm" viewBox="0 0 24 24"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg></x-import>
+              <x-import component-from-global-scope="Scoreo.Button" variant="ghost" size="sm" icon-only="{{ true }}" dc-props="{{ dangerGhost }}" hint-size="56px,56px"><svg class="ic ic--sm" viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></x-import>
+            </div>
+          </div>
+          <div class="list-item-row">
+            <div class="list-item-label"><div class="sel sel--on"><div><span class="list-item-name">Léa</span><span class="list-item-sub">7W 4L</span></div></div></div>
+            <div class="list-item-actions">
+              <x-import component-from-global-scope="Scoreo.Button" variant="ghost" size="sm" icon-only="{{ true }}" hint-size="56px,56px"><svg class="ic ic--sm" viewBox="0 0 24 24"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg></x-import>
+              <x-import component-from-global-scope="Scoreo.Button" variant="ghost" size="sm" icon-only="{{ true }}" dc-props="{{ dangerGhost }}" hint-size="56px,56px"><svg class="ic ic--sm" viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></x-import>
+            </div>
+          </div>
+        </div>
+        <p class="spec-note"><span class="l-en">The accent tint alone carries selected state — no bullet needed. It covers the whole row, buttons included. Actions are square, flush to the edge and full row height; the label area is one edge-to-edge tap target.</span><span class="l-fr">La teinte d'accent suffit à porter l'état sélectionné — pas de pastille. Elle couvre toute la ligne, boutons compris. Les actions sont carrées, à ras du bord et sur toute la hauteur ; la zone du nom est une cible unique bord à bord.</span></p>
+      </div>
+
+      <div class="spec" style="width:390px">
+        <div class="spec-head"><span class="spec-name"><span class="l-en">Match row</span><span class="l-fr">Ligne de partie</span></span><span class="spec-code">.list-item-players</span></div>
+        <div class="spec-body" style="background:var(--surface-app)">
+          <div class="list-item-row">
+            <div class="list-item-label"><div style="padding:0 0 0 0"><span class="list-item-name">Skyjo</span><span class="list-item-players"><strong>Léa 16</strong> · Camille 26 · Théo 38</span><span class="list-item-date">10 Jul 2026</span></div></div>
+          </div>
+        </div>
+        <p class="spec-note"><span class="l-en">Three lines — game, players with the winner bolded per that game's win condition, then the date.</span><span class="l-fr">Trois lignes — le jeu, les joueurs avec le gagnant en gras selon la condition de victoire du jeu, puis la date.</span></p>
+      </div>
+
+      <div class="spec" style="width:250px">
+        <div class="spec-head"><span class="spec-name"><span class="l-en">Standings card</span><span class="l-fr">Carte de classement</span></span><span class="spec-code">.gs-card</span></div>
+        <div class="spec-body col" style="background:var(--surface-app)">
+          <div class="gs-card gs-card--lead"><div class="gs-top"><span class="rank-pos">1</span><span class="gs-name">Léa</span></div><div class="gs-bot"><span class="gs-tot">16</span><span class="delta">+4</span></div></div>
+          <div class="gs-card"><div class="gs-top"><span class="rank-pos">3</span><span class="gs-name">Théo</span></div><div class="gs-bot"><span class="gs-tot">38</span><span class="delta">+11</span></div></div>
+        </div>
+        <p class="spec-note"><span class="l-en">Leader is bordered in the accent, never filled — the number stays the loudest thing.</span><span class="l-fr">Le leader est bordé en accent, jamais rempli — le chiffre reste l'élément le plus fort.</span></p>
+      </div>
+
+      <div class="spec" style="width:260px">
+        <div class="spec-head"><span class="spec-name"><span class="l-en">Stats row</span><span class="l-fr">Ligne de stats</span></span><span class="spec-code">.card + .bar</span></div>
+        <div class="spec-body col">
+          <div class="card"><div><span class="list-item-name">Camille</span><span class="list-item-sub">12W 5L</span></div><span class="score-num" style="font-size:16px;color:var(--color-primary)">1284</span></div>
+          <div class="card"><div class="bar-wrap" style="width:100%"><div class="bar" style="width:70%"></div></div><span style="font-weight:600;font-size:14px;color:var(--color-primary)">70%</span></div>
+        </div>
+      </div>
+
+      <div class="spec" style="width:250px">
+        <div class="spec-head"><span class="spec-name"><span class="l-en">History cell</span><span class="l-fr">Cellule d'historique</span></span><span class="spec-code">.hist-cell</span></div>
+        <div class="spec-body" style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+          <span class="hist-cell"><span>Léa</span><span class="score-num" style="font-size:13px">4</span></span>
+          <span class="hist-cell"><span>Camille</span><span class="score-num" style="font-size:13px">3</span></span>
+          <span class="hist-cell"><span>Théo</span><span class="score-num" style="font-size:13px">11</span></span>
+          <span class="hist-cell"><span>Malik</span><span class="score-num" style="font-size:13px">9</span></span>
+        </div>
+        <p class="spec-note"><span class="l-en">A two-column grid so names and scores align down the card instead of ragging.</span><span class="l-fr">Une grille à deux colonnes pour que noms et scores s'alignent verticalement au lieu de se décaler.</span></p>
+      </div>
+
+      <div class="spec" style="width:300px">
+        <div class="spec-head"><span class="spec-name"><span class="l-en">Navigation controls</span><span class="l-fr">Contrôles de navigation</span></span><span class="spec-code">.seg / .tab-bar</span></div>
+        <div class="spec-body col">
+          <div class="seg"><button class="on"><span class="l-en">Standings</span><span class="l-fr">Classement</span></button><button><span class="l-en">History</span><span class="l-fr">Historique</span></button></div>
+          <div class="tab-bar"><button class="tab-btn on"><span class="l-en">All</span><span class="l-fr">Tous</span></button><button class="tab-btn">Belote</button><button class="tab-btn">Skyjo</button></div>
+        </div>
+        <p class="spec-note"><span class="l-en">Segmented control switches views inside one screen; the tab bar filters a list by game.</span><span class="l-fr">Le contrôle segmenté change de vue au sein d'un écran ; la barre d'onglets filtre une liste par jeu.</span></p>
+      </div>
+
+      <div class="spec" style="width:300px">
+        <div class="spec-head"><span class="spec-name"><span class="l-en">Form &amp; data pairs</span><span class="l-fr">Paires formulaire et données</span></span><span class="spec-code">.form-row / .detail-row</span></div>
+        <div class="spec-body col">
+          <div style="display:flex;gap:8px;align-items:flex-end">
+            <x-import component-from-global-scope="Scoreo.Input" placeholder="{{ t.playerName }}" dc-props="{{ growInput }}" hint-size="100%,44px"></x-import>
+            <x-import component-from-global-scope="Scoreo.Button" variant="primary" size="md" hint-size="auto,44px"><span class="l-en">Add</span><span class="l-fr">Ajouter</span></x-import>
+          </div>
+          <div>
+            <div class="detail-row"><span class="detail-label"><span class="l-en">Win condition</span><span class="l-fr">Condition</span></span><span class="detail-value">Lowest score</span></div>
+            <div class="detail-row"><span class="detail-label"><span class="l-en">Tie-break</span><span class="l-fr">Départage</span></span><span class="detail-value">Manual</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="spec" style="width:300px">
+        <div class="spec-head"><span class="spec-name"><span class="l-en">Status &amp; filter</span><span class="l-fr">Statut et filtre</span></span><span class="spec-code">.res-line / .filter-bar</span></div>
+        <div class="spec-body col">
+          <div>
+            <div class="res-line" style="color:var(--color-success);font-weight:600"><svg class="ic ic--sm" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/></svg><span class="l-en">15 imported</span><span class="l-fr">15 importés</span></div>
+            <div class="res-line" style="color:var(--color-warning);font-weight:600"><svg class="ic ic--sm" viewBox="0 0 24 24"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg><span class="l-en">2 skipped</span><span class="l-fr">2 ignorés</span></div>
+            <div class="res-line" style="color:var(--color-danger);font-weight:600"><svg class="ic ic--sm" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></svg><span class="l-en">1 failed</span><span class="l-fr">1 échoué</span></div>
+          </div>
+          <div class="filter-bar"><label><span class="l-en">Filter by game</span><span class="l-fr">Filtrer par jeu</span></label><select class="filter-select"><option>All games</option></select></div>
+        </div>
+      </div>
+
+      <div class="spec" style="width:300px">
+        <div class="spec-head"><span class="spec-name"><span class="l-en">Empty state</span><span class="l-fr">État vide</span></span><span class="spec-code">.empty / .hint / .err</span></div>
+        <div class="spec-body col">
+          <div class="empty" style="padding:22px 0">
+            <div class="empty-title"><span class="l-en">No matches yet</span><span class="l-fr">Aucune partie</span></div>
+            <span class="l-en">Play a match to see it here.</span><span class="l-fr">Joue une partie pour la voir ici.</span>
+          </div>
+          <div class="stack" style="gap:4px">
+            <span class="hint"><span class="l-en">Lowest total wins this game.</span><span class="l-fr">Le plus petit total gagne à ce jeu.</span></span>
+            <span class="err"><span class="l-en">Pick at least two players.</span><span class="l-fr">Sélectionne au moins deux joueurs.</span></span>
+          </div>
+        </div>
+        <p class="spec-note"><span class="l-en">Three screens are empty-first (Stats, History, Games). One line saying what is missing, one saying how to fill it — no illustration, no call-to-action button duplicating the bar below.</span><span class="l-fr">Trois écrans démarrent vides (Stats, Historique, Jeux). Une ligne pour dire ce qui manque, une pour dire comment le remplir — pas d'illustration, pas de bouton dupliquant la barre du dessous.</span></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= 3 · ORGANISMS ================= -->
+  <div class="layer scoreo" data-theme="{{ flavor }}" data-accent="{{ accent }}">
+    <div class="layer-head">
+      <span class="layer-num">03</span>
+      <div>
+        <h2><span class="l-en">Organisms</span><span class="l-fr">Organismes</span></h2>
+        <p><span class="l-en">Self-sufficient sections of interface. Each one could be lifted onto any screen and still make sense — this is where Scoreo's real structure lives.</span><span class="l-fr">Des sections d'interface autonomes. Chacune pourrait être posée sur n'importe quel écran et garder son sens — c'est ici que vit la vraie structure de Scoreo.</span></p>
+      </div>
+    </div>
+    <div class="specs">
+      <div class="spec" style="width:390px">
+        <div class="spec-head"><span class="spec-name"><span class="l-en">App header</span><span class="l-fr">En-tête</span></span><span class="spec-code">.app-header</span></div>
+        <div class="spec-body" style="padding:0;background:var(--surface-app)">
+          <div class="app-header" style="--header-height:56px">
+            <x-import component-from-global-scope="Scoreo.Button" variant="ghost" size="md" icon-only="{{ true }}" dc-props="{{ squareIcon }}" hint-size="44px,44px"><svg class="ic" viewBox="0 0 24 24"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg></x-import>
+            <span class="app-title">Skyjo</span>
+            <x-import component-from-global-scope="Scoreo.Button" variant="ghost" size="md" icon-only="{{ true }}" dc-props="{{ squareIcon }}" hint-size="44px,44px"><svg class="ic" viewBox="0 0 24 24"><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="18" y2="18"/></svg></x-import>
+          </div>
+        </div>
+        <p class="spec-note"><span class="l-en">Back (or nothing) left, title centered, burger right — invariant across every screen.</span><span class="l-fr">Retour (ou rien) à gauche, titre centré, menu à droite — invariant sur tous les écrans.</span></p>
+      </div>
+
+      <div class="spec" style="width:390px">
+        <div class="spec-head"><span class="spec-name"><span class="l-en">Standings grid</span><span class="l-fr">Grille de classement</span></span><span class="spec-code">.gs-grid</span></div>
+        <div class="spec-body" style="background:var(--surface-app)">
+          <div class="gs-grid">
+            <div class="gs-card gs-card--lead"><div class="gs-top"><span class="rank-pos">1</span><span class="gs-name">Léa</span></div><div class="gs-bot"><span class="gs-tot">16</span><span class="delta">+4</span></div></div>
+            <div class="gs-card"><div class="gs-top"><span class="rank-pos">2</span><span class="gs-name">Camille</span></div><div class="gs-bot"><span class="gs-tot">26</span><span class="delta">+3</span></div></div>
+            <div class="gs-card"><div class="gs-top"><span class="rank-pos">3</span><span class="gs-name">Théo</span></div><div class="gs-bot"><span class="gs-tot">38</span><span class="delta">+11</span></div></div>
+            <div class="gs-card"><div class="gs-top"><span class="rank-pos">4</span><span class="gs-name">Malik</span></div><div class="gs-bot"><span class="gs-tot">41</span><span class="delta">+9</span></div></div>
+            <div class="gs-card"><div class="gs-top"><span class="rank-pos">5</span><span class="gs-name">Jonas</span></div><div class="gs-bot"><span class="gs-tot">47</span><span class="delta">+14</span></div></div>
+            <div class="gs-card"><div class="gs-top"><span class="rank-pos">6</span><span class="gs-name">Inès</span></div><div class="gs-bot"><span class="gs-tot">52</span><span class="delta">+6</span></div></div>
+            <div class="gs-card"><div class="gs-top"><span class="rank-pos">7</span><span class="gs-name">Hugo</span></div><div class="gs-bot"><span class="gs-tot">58</span><span class="delta">+12</span></div></div>
+            <div class="gs-card"><div class="gs-top"><span class="rank-pos">8</span><span class="gs-name">Sofia</span></div><div class="gs-bot"><span class="gs-tot">63</span><span class="delta">+8</span></div></div>
+          </div>
+        </div>
+        <p class="spec-note"><span class="l-en">The core of score entry: eight players fit with no scrolling, so the whole table's state reads in one glance.</span><span class="l-fr">Le cœur de la saisie : huit joueurs tiennent sans défilement, l'état de toute la table se lit d'un coup d'œil.</span></p>
+      </div>
+
+      <div class="spec" style="width:390px">
+        <div class="spec-head"><span class="spec-name"><span class="l-en">Round history card</span><span class="l-fr">Carte de tour</span></span><span class="spec-code">.hist-round</span></div>
+        <div class="spec-body" style="background:var(--surface-app)">
+          <div class="hist-round">
+            <div class="hist-round-head"><span><span class="l-en">Round 3</span><span class="l-fr">Tour 3</span></span></div>
+            <div class="hist-cells">
+              <span class="hist-cell"><span>Léa</span><x-import component-from-global-scope="Scoreo.Input" type="number" size="sm" stepper="{{ false }}" default-value="4" dc-props="{{ scoreCell }}" hint-size="60px,36px"></x-import></span>
+              <span class="hist-cell"><span>Camille</span><x-import component-from-global-scope="Scoreo.Input" type="number" size="sm" stepper="{{ false }}" default-value="3" dc-props="{{ scoreCell }}" hint-size="60px,36px"></x-import></span>
+              <span class="hist-cell"><span>Théo</span><x-import component-from-global-scope="Scoreo.Input" type="number" size="sm" stepper="{{ false }}" default-value="11" dc-props="{{ scoreCell }}" hint-size="60px,36px"></x-import></span>
+              <span class="hist-cell"><span>Malik</span><x-import component-from-global-scope="Scoreo.Input" type="number" size="sm" stepper="{{ false }}" default-value="9" dc-props="{{ scoreCell }}" hint-size="60px,36px"></x-import></span>
+            </div>
+          </div>
+        </div>
+        <p class="spec-note"><span class="l-en">Every past score stays editable in place. Cells wrap, so the card grows downward instead of scrolling sideways.</span><span class="l-fr">Chaque score passé reste modifiable sur place. Les cellules passent à la ligne : la carte grandit vers le bas au lieu de défiler latéralement.</span></p>
+      </div>
+
+      <div class="spec" style="width:390px">
+        <div class="spec-head"><span class="spec-name"><span class="l-en">Banners</span><span class="l-fr">Bannières</span></span><span class="spec-code">.banner</span></div>
+        <div class="spec-body col" style="background:var(--surface-app)">
+          <div class="banner">
+            <button class="banner-btn"><svg class="ic ic--sm" viewBox="0 0 24 24"><polygon points="6 3 20 12 6 21 6 3"/></svg><span class="l-en">Resume match in progress</span><span class="l-fr">Reprendre la partie en cours</span></button>
+          </div>
+          <div class="banner">
+            <h3><span class="l-en">Getting started</span><span class="l-fr">Pour commencer</span></h3>
+            <ol><li><span class="l-en">Add players</span><span class="l-fr">Ajoute des joueurs</span></li><li><span class="l-en">Create a game type</span><span class="l-fr">Crée un type de jeu</span></li><li><span class="l-en">Select players and start</span><span class="l-fr">Sélectionne et démarre</span></li></ol>
+          </div>
+        </div>
+        <p class="spec-note"><span class="l-en">One accent-tinted container serves both onboarding and resume — same tint as a selected row.</span><span class="l-fr">Un seul conteneur teinté accent sert l'accueil et la reprise — même teinte qu'une ligne sélectionnée.</span></p>
+      </div>
+
+      <div class="spec" style="width:290px">
+        <div class="spec-head"><span class="spec-name"><span class="l-en">Drop zone</span><span class="l-fr">Zone de dépôt</span></span><span class="spec-code">.drop</span></div>
+        <div class="spec-body" style="background:var(--surface-app)">
+          <div class="drop">
+            <svg class="ic ic--lg" style="color:var(--color-primary)" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>
+            <span style="font-size:15px;color:var(--text-muted)"><span class="l-en">Choose a JSON file</span><span class="l-fr">Choisis un fichier JSON</span></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="spec" style="width:390px">
+        <div class="spec-head"><span class="spec-name"><span class="l-en">Conflict comparison</span><span class="l-fr">Comparaison de conflit</span></span><span class="spec-code">.sync-card ×2</span></div>
+        <div class="spec-body" style="background:var(--surface-app)">
+          <div style="display:flex;gap:12px">
+            <div class="sync-card"><div class="sync-card-title"><span class="l-en">Local</span><span class="l-fr">Local</span> · 13 Jul</div><div class="sync-card-stat">5 <span class="l-en">players</span><span class="l-fr">joueurs</span></div><div class="sync-card-stat">23 <span class="l-en">matches</span><span class="l-fr">parties</span></div></div>
+            <div class="sync-card"><div class="sync-card-title"><span class="l-en">Remote</span><span class="l-fr">Distant</span> · 11 Jul</div><div class="sync-card-stat">5 <span class="l-en">players</span><span class="l-fr">joueurs</span></div><div class="sync-card-stat">19 <span class="l-en">matches</span><span class="l-fr">parties</span></div></div>
+          </div>
+        </div>
+        <p class="spec-note"><span class="l-en">Two symmetric cards — never pre-pick a side for the user.</span><span class="l-fr">Deux cartes symétriques — ne jamais présélectionner un côté pour l'utilisateur.</span></p>
+      </div>
+
+      <div class="spec" style="width:250px">
+        <div class="spec-head"><span class="spec-name"><span class="l-en">Slide-in menu</span><span class="l-fr">Menu latéral</span></span><span class="spec-code">.menu</span></div>
+        <div class="spec-body" style="padding:0;background:var(--surface-app)">
+          <button class="menu-item"><svg class="ic" viewBox="0 0 24 24"><path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8"/><path d="M3 10a2 2 0 0 1 .709-1.528l7-5.999a2 2 0 0 1 2.582 0l7 5.999A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg><span class="l-en">Home</span><span class="l-fr">Accueil</span></button>
+          <button class="menu-item"><svg class="ic" viewBox="0 0 24 24"><path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg><span>Stats</span></button>
+          <button class="menu-item"><svg class="ic" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg><span class="l-en">History</span><span class="l-fr">Historique</span></button>
+          <button class="menu-item"><svg class="ic" viewBox="0 0 24 24"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/></svg><span class="l-en">Sync</span><span class="l-fr">Synchro</span></button>
+        </div>
+      </div>
+
+      <div class="spec" style="width:390px">
+        <div class="spec-head"><span class="spec-name"><span class="l-en">Dialog</span><span class="l-fr">Dialogue</span></span><span class="spec-code">DS Modal + .modal-actions</span></div>
+        <div class="spec-body" style="padding:0">
+          <div class="modal-stage">
+            <x-import component-from-global-scope="Scoreo.Modal" open="{{ true }}" width="330px" title="{{ t.deleteMatch }}" hint-size="100%,100%">
+              <p style="font-size:15px;margin-bottom:8px">Belote · 12 Jul 2026</p>
+              <label class="chk"><input type="checkbox" defaultChecked="{{ true }}"><span class="l-en">Also remove it from stats</span><span class="l-fr">Retirer aussi des stats</span></label>
+              <p style="font-size:15px"><span class="l-en">This match will be lost.</span><span class="l-fr">Cette partie sera perdue.</span></p>
+              <div class="modal-actions">
+                <x-import component-from-global-scope="Scoreo.Button" variant="secondary" size="md" dc-props="{{ flexBtn }}" hint-size="auto,44px"><span class="l-en">Cancel</span><span class="l-fr">Annuler</span></x-import>
+                <x-import component-from-global-scope="Scoreo.Button" variant="danger" size="md" dc-props="{{ flexBtn }}" hint-size="auto,44px"><span class="l-en">Delete</span><span class="l-fr">Supprimer</span></x-import>
+              </div>
+            </x-import>
+          </div>
+        </div>
+        <p class="spec-note"><span class="l-en">Seven screens are a dialog. Invariants: title states the action, body is one plain sentence (plus the affected records where deletion is involved), and the footer is right-aligned with the confirming button last.</span><span class="l-fr">Sept écrans sont un dialogue. Invariants : le titre énonce l'action, le corps tient en une phrase simple (plus les données concernées en cas de suppression), et le pied est aligné à droite, le bouton de confirmation en dernier.</span></p>
+      </div>
+
+      <div class="spec" style="width:390px">
+        <div class="spec-head"><span class="spec-name"><span class="l-en">Round entry sheet</span><span class="l-fr">Feuille de saisie</span></span><span class="spec-code">.sheet</span></div>
+        <div class="spec-body" style="padding:0;background:var(--surface-well)">
+          <div style="position:relative;height:300px;overflow:hidden">
+            <div class="sheet" style="position:absolute">
+              <div class="sheet-grip"></div>
+              <div class="sheet-title"><span class="l-en">Round 4</span><span class="l-fr">Tour 4</span></div>
+              <div class="sheet-rows">
+                <div class="sheet-row"><span class="sheet-row-name">Léa <span class="sheet-row-tot">· 16</span></span><x-import component-from-global-scope="Scoreo.Input" type="number" size="sm" default-value="0" hint-size="120px,36px"></x-import></div>
+                <div class="sheet-row"><span class="sheet-row-name">Camille <span class="sheet-row-tot">· 26</span></span><x-import component-from-global-scope="Scoreo.Input" type="number" size="sm" default-value="0" hint-size="120px,36px"></x-import></div>
+                <div class="sheet-row"><span class="sheet-row-name">Théo <span class="sheet-row-tot">· 38</span></span><x-import component-from-global-scope="Scoreo.Input" type="number" size="sm" default-value="0" hint-size="120px,36px"></x-import></div>
+              </div>
+              <div style="display:flex;gap:8px">
+                <x-import component-from-global-scope="Scoreo.Button" variant="secondary" size="md" dc-props="{{ flexBtn }}" hint-size="auto,44px"><span class="l-en">Cancel</span><span class="l-fr">Annuler</span></x-import>
+                <x-import component-from-global-scope="Scoreo.Button" variant="primary" size="md" dc-props="{{ flexBtn }}" hint-size="auto,44px"><span class="l-en">Save round</span><span class="l-fr">Valider le tour</span></x-import>
+              </div>
+            </div>
+          </div>
+        </div>
+        <p class="spec-note"><span class="l-en">A sheet, not a dialog, because the standings stay readable behind it while you type. One stepper per player, running total beside each name, actions pinned to the bottom.</span><span class="l-fr">Une feuille, pas un dialogue : le classement reste lisible derrière pendant la saisie. Un stepper par joueur, le total courant à côté du nom, les actions en bas.</span></p>
+      </div>
+
+      <div class="spec" style="width:330px">
+        <div class="spec-head"><span class="spec-name"><span class="l-en">Action bar</span><span class="l-fr">Barre d'action</span></span><span class="spec-code">.bottom-bar</span></div>
+        <div class="spec-body col" style="padding:0;gap:0">
+          <div class="fab-row">
+            <x-import component-from-global-scope="Scoreo.Button" variant="primary" size="lg" dc-props="{{ fabBtn }}" hint-size="auto,52px"><svg class="ic ic--sm" viewBox="0 0 24 24"><polygon points="6 3 20 12 6 21 6 3"/></svg><span class="l-en">New match</span><span class="l-fr">Nouvelle partie</span></x-import>
+          </div>
+          <div class="fab-row" style="flex-direction:column;gap:8px">
+            <x-import component-from-global-scope="Scoreo.Button" variant="primary" size="lg" dc-props="{{ fullBtn }}" hint-size="100%,52px"><svg class="ic ic--sm" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="M12 5v14"/></svg><span class="l-en">Enter round 4</span><span class="l-fr">Saisir le tour 4</span></x-import>
+            <div style="display:flex;gap:8px;width:100%">
+              <x-import component-from-global-scope="Scoreo.Button" variant="secondary" size="md" dc-props="{{ flexBtn }}" hint-size="auto,44px"><span class="l-en">Cancel match</span><span class="l-fr">Annuler</span></x-import>
+              <x-import component-from-global-scope="Scoreo.Button" variant="secondary" size="md" dc-props="{{ flexBtn }}" hint-size="auto,44px"><span class="l-en">Finish match</span><span class="l-fr">Terminer</span></x-import>
+            </div>
+          </div>
+        </div>
+        <p class="spec-note"><span class="l-en">Two shapes only: a single pill for the one thing a screen is for, or a full-width primary over a row of secondaries. Never more than one primary.</span><span class="l-fr">Deux formes seulement : une pilule unique pour l'action à laquelle sert l'écran, ou un primaire pleine largeur au-dessus d'une rangée de secondaires. Jamais plus d'un primaire.</span></p>
+      </div>
+
+      <div class="spec" style="width:330px">
+        <div class="spec-head"><span class="spec-name"><span class="l-en">Theme picker</span><span class="l-fr">Sélecteur de thème</span></span><span class="spec-code">.theme-chip + .accent-sw</span></div>
+        <div class="spec-body col" style="background:var(--surface-app)">
+          <div>
+            <div class="section-label" style="margin-bottom:8px"><span class="l-en">Flavor</span><span class="l-fr">Palette</span></div>
+            <div class="row" style="gap:6px">
+              <button class="theme-chip theme-chip--on">Latte</button>
+              <button class="theme-chip">Frappé</button>
+              <button class="theme-chip">Macchiato</button>
+              <button class="theme-chip">Mocha</button>
+            </div>
+          </div>
+          <div>
+            <div class="section-label" style="margin-bottom:4px"><span class="l-en">Accent</span><span class="l-fr">Accent</span></div>
+            <div class="row" style="gap:0">
+              <sc-for list="{{ accentDots }}" as="dot" hint-placeholder-count="14">
+                <button class="swatch-btn" aria-label="{{ dot.name }}" title="{{ dot.name }}"><span class="accent-sw" style="{{ dot.style }}"></span></button>
+              </sc-for>
+            </div>
+          </div>
+        </div>
+        <p class="spec-note"><span class="l-en">14 accents × 4 flavors from one screen. Each 26px dot sits in a 44px button, so the row stays tappable without growing the dots.</span><span class="l-fr">14 accents × 4 palettes depuis un seul écran. Chaque pastille de 26px est posée dans un bouton de 44px : la rangée reste tactile sans grossir les pastilles.</span></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= 4 · TEMPLATES ================= -->
+  <div class="layer">
+    <div class="layer-head">
+      <span class="layer-num">04</span>
+      <div>
+        <h2><span class="l-en">Templates</span><span class="l-fr">Gabarits</span></h2>
+        <p><span class="l-en">Layout without content. Scoreo needs only four: every screen in the app is one of these with organisms dropped into the content zone.</span><span class="l-fr">La mise en page sans le contenu. Scoreo n'en a besoin que de quatre : chaque écran de l'appli est l'un d'eux, avec des organismes déposés dans la zone de contenu.</span></p>
+      </div>
+    </div>
+    <div class="specs">
+      <div class="spec spec--tpl">
+        <div class="spec-head"><span class="spec-name"><span class="l-en">Scrolling list</span><span class="l-fr">Liste défilante</span></span><span class="spec-code">header + content</span></div>
+        <div class="spec-body">
+          <div class="wf">
+            <div class="wf-z" style="height:44px">header</div>
+            <div class="wf-z wf-z--fill">content <span class="wf-sub"><span class="l-en">scrolls</span><span class="l-fr">défile</span></span></div>
+          </div>
+        </div>
+        <p class="spec-note"><span class="l-en">Stats, History, Games, Import, Sync.</span><span class="l-fr">Stats, Historique, Jeux, Import, Synchro.</span></p>
+      </div>
+
+      <div class="spec spec--tpl">
+        <div class="spec-head"><span class="spec-name"><span class="l-en">List + action bar</span><span class="l-fr">Liste + barre d'action</span></span><span class="spec-code">+ .bottom-bar</span></div>
+        <div class="spec-body">
+          <div class="wf">
+            <div class="wf-z" style="height:44px">header</div>
+            <div class="wf-z wf-z--fill">content</div>
+            <div class="wf-z wf-z--accent" style="height:74px"><span class="l-en">primary action</span><span class="l-fr">action principale</span></div>
+          </div>
+        </div>
+        <p class="spec-note"><span class="l-en">Home (new match) and Score entry (enter round, finish, cancel).</span><span class="l-fr">Accueil (nouvelle partie) et Saisie (saisir un tour, terminer, annuler).</span></p>
+      </div>
+
+      <div class="spec spec--tpl">
+        <div class="spec-head"><span class="spec-name"><span class="l-en">Bottom sheet</span><span class="l-fr">Feuille inférieure</span></span><span class="spec-code">.scrim + .sheet</span></div>
+        <div class="spec-body">
+          <div class="wf">
+            <div class="wf-z" style="height:44px">header</div>
+            <div class="wf-z wf-z--fill" style="background:#e9ebf2;color:#a4a9bb">scrim</div>
+            <div class="wf-z wf-z--accent" style="height:210px;flex-direction:column;gap:6px"><span class="l-en">sheet</span><span class="l-fr">feuille</span><span class="wf-sub"><span class="l-en">one field per player</span><span class="l-fr">un champ par joueur</span></span></div>
+          </div>
+        </div>
+        <p class="spec-note"><span class="l-en">Round entry — a task you complete then dismiss.</span><span class="l-fr">Saisie d'un tour — une tâche qu'on termine puis referme.</span></p>
+      </div>
+
+      <div class="spec spec--tpl">
+        <div class="spec-head"><span class="spec-name"><span class="l-en">Centered dialog</span><span class="l-fr">Dialogue centré</span></span><span class="spec-code">DS Modal</span></div>
+        <div class="spec-body">
+          <div class="wf">
+            <div class="wf-z" style="height:44px">header</div>
+            <div class="wf-z wf-z--fill" style="background:#e9ebf2;color:#a4a9bb;justify-content:center">
+              <div style="width:180px;border:2px solid #8839ef;border-radius:10px;background:#fff;color:#7124d8;font-size:10.5px;font-weight:650;text-transform:uppercase;letter-spacing:.06em;padding:26px 10px;text-align:center">modal</div>
+            </div>
+          </div>
+        </div>
+        <p class="spec-note"><span class="l-en">Confirmations, tie-break, game edit, theme picker.</span><span class="l-fr">Confirmations, départage, édition de jeu, thème.</span></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= 5 · PAGES ================= -->
+  <div class="layer scoreo" data-theme="{{ flavor }}" data-accent="{{ accent }}">
+    <div class="layer-head">
+      <span class="layer-num">05</span>
+      <div>
+        <h2><span class="l-en">Pages</span><span class="l-fr">Pages</span></h2>
+        <p><span class="l-en">Templates filled with real content — the proof the system holds up. Three representative pages here; the full 25-screen set lives in the screen gallery, and the screen-by-component map lives in the coverage document.</span><span class="l-fr">Les gabarits remplis de contenu réel — la preuve que le système tient. Trois pages représentatives ici ; l'ensemble des 25 écrans est dans la galerie d'écrans, et la carte écran-par-composant dans le document de couverture.</span></p>
+      </div>
+    </div>
+    <div class="pages">
+      <div>
+        <div class="page-cap"><span class="l-en">Home</span><span class="l-fr">Accueil</span><span class="l-en">List + action bar · banner, list rows, pill FAB</span><span class="l-fr">Liste + barre d'action · bannière, lignes, FAB pilule</span></div>
+        <div class="device" data-screen-label="Page · Home">
+          <div class="app-header">
+            <span style="width:44px"></span><span class="app-title">Scoreo</span>
+            <x-import component-from-global-scope="Scoreo.Button" variant="ghost" size="md" icon-only="{{ true }}" dc-props="{{ squareIcon }}" hint-size="44px,44px"><svg class="ic" viewBox="0 0 24 24"><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="18" y2="18"/></svg></x-import>
+          </div>
+          <div class="app-content">
+            <div class="banner" style="margin-bottom:16px"><button class="banner-btn"><svg class="ic ic--sm" viewBox="0 0 24 24"><polygon points="6 3 20 12 6 21 6 3"/></svg><span class="l-en">Resume match in progress</span><span class="l-fr">Reprendre la partie en cours</span></button></div>
+            <div style="display:flex;gap:8px;align-items:flex-end">
+              <x-import component-from-global-scope="Scoreo.Input" placeholder="{{ t.playerName }}" dc-props="{{ growInput }}" hint-size="100%,44px"></x-import>
+              <x-import component-from-global-scope="Scoreo.Button" variant="primary" size="md" hint-size="auto,44px"><svg class="ic ic--sm" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="M12 5v14"/></svg><span class="l-en">Add</span><span class="l-fr">Ajouter</span></x-import>
+            </div>
+            <div class="stack" style="margin-top:16px">
+              <div class="list-item-row"><div class="list-item-label"><div class="sel sel--on"><div><span class="list-item-name">Camille</span><span class="list-item-sub">12W 5L</span></div></div></div><div class="list-item-actions"><x-import component-from-global-scope="Scoreo.Button" variant="ghost" size="sm" icon-only="{{ true }}" hint-size="56px,56px"><svg class="ic ic--sm" viewBox="0 0 24 24"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg></x-import><x-import component-from-global-scope="Scoreo.Button" variant="ghost" size="sm" icon-only="{{ true }}" dc-props="{{ dangerGhost }}" hint-size="56px,56px"><svg class="ic ic--sm" viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></x-import></div></div>
+              <div class="list-item-row"><div class="list-item-label"><div class="sel"><div><span class="list-item-name">Théo</span><span class="list-item-sub">9W 8L</span></div></div></div><div class="list-item-actions"><x-import component-from-global-scope="Scoreo.Button" variant="ghost" size="sm" icon-only="{{ true }}" hint-size="56px,56px"><svg class="ic ic--sm" viewBox="0 0 24 24"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg></x-import><x-import component-from-global-scope="Scoreo.Button" variant="ghost" size="sm" icon-only="{{ true }}" dc-props="{{ dangerGhost }}" hint-size="56px,56px"><svg class="ic ic--sm" viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></x-import></div></div>
+              <div class="list-item-row"><div class="list-item-label"><div class="sel sel--on"><div><span class="list-item-name">Léa</span><span class="list-item-sub">7W 4L</span></div></div></div><div class="list-item-actions"><x-import component-from-global-scope="Scoreo.Button" variant="ghost" size="sm" icon-only="{{ true }}" hint-size="56px,56px"><svg class="ic ic--sm" viewBox="0 0 24 24"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg></x-import><x-import component-from-global-scope="Scoreo.Button" variant="ghost" size="sm" icon-only="{{ true }}" dc-props="{{ dangerGhost }}" hint-size="56px,56px"><svg class="ic ic--sm" viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></x-import></div></div>
+            </div>
+            <div style="height:76px"></div>
+          </div>
+          <div class="bottom-bar" style="display:flex;justify-content:center">
+            <x-import component-from-global-scope="Scoreo.Button" variant="primary" size="lg" dc-props="{{ fabBtn }}" hint-size="auto,52px"><svg class="ic ic--sm" viewBox="0 0 24 24"><polygon points="6 3 20 12 6 21 6 3"/></svg><span class="l-en">New match</span><span class="l-fr">Nouvelle partie</span></x-import>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div class="page-cap"><span class="l-en">Score entry · standings</span><span class="l-fr">Saisie · classement</span><span class="l-en">List + action bar · segmented control, standings grid</span><span class="l-fr">Liste + barre d'action · contrôle segmenté, grille</span></div>
+        <div class="device" data-screen-label="Page · Standings">
+          <div class="app-header">
+            <x-import component-from-global-scope="Scoreo.Button" variant="ghost" size="md" icon-only="{{ true }}" dc-props="{{ squareIcon }}" hint-size="44px,44px"><svg class="ic" viewBox="0 0 24 24"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg></x-import>
+            <span class="app-title">Skyjo</span>
+            <x-import component-from-global-scope="Scoreo.Button" variant="ghost" size="md" icon-only="{{ true }}" dc-props="{{ squareIcon }}" hint-size="44px,44px"><svg class="ic" viewBox="0 0 24 24"><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="18" y2="18"/></svg></x-import>
+          </div>
+          <div class="app-content">
+            <div class="seg" style="margin-bottom:12px"><button class="on"><span class="l-en">Standings</span><span class="l-fr">Classement</span></button><button><span class="l-en">History</span><span class="l-fr">Historique</span></button></div>
+            <div style="font-size:12px;color:var(--text-muted);margin-bottom:10px"><span class="l-en">After 3 rounds · lowest score leads</span><span class="l-fr">Après 3 tours · le plus bas mène</span></div>
+            <div class="gs-grid">
+              <div class="gs-card gs-card--lead"><div class="gs-top"><span class="rank-pos">1</span><span class="gs-name">Léa</span></div><div class="gs-bot"><span class="gs-tot">16</span><span class="delta">+4</span></div></div>
+              <div class="gs-card"><div class="gs-top"><span class="rank-pos">2</span><span class="gs-name">Camille</span></div><div class="gs-bot"><span class="gs-tot">26</span><span class="delta">+3</span></div></div>
+              <div class="gs-card"><div class="gs-top"><span class="rank-pos">3</span><span class="gs-name">Théo</span></div><div class="gs-bot"><span class="gs-tot">38</span><span class="delta">+11</span></div></div>
+              <div class="gs-card"><div class="gs-top"><span class="rank-pos">4</span><span class="gs-name">Malik</span></div><div class="gs-bot"><span class="gs-tot">41</span><span class="delta">+9</span></div></div>
+              <div class="gs-card"><div class="gs-top"><span class="rank-pos">5</span><span class="gs-name">Jonas</span></div><div class="gs-bot"><span class="gs-tot">47</span><span class="delta">+14</span></div></div>
+              <div class="gs-card"><div class="gs-top"><span class="rank-pos">6</span><span class="gs-name">Inès</span></div><div class="gs-bot"><span class="gs-tot">52</span><span class="delta">+6</span></div></div>
+              <div class="gs-card"><div class="gs-top"><span class="rank-pos">7</span><span class="gs-name">Hugo</span></div><div class="gs-bot"><span class="gs-tot">58</span><span class="delta">+12</span></div></div>
+              <div class="gs-card"><div class="gs-top"><span class="rank-pos">8</span><span class="gs-name">Sofia</span></div><div class="gs-bot"><span class="gs-tot">63</span><span class="delta">+8</span></div></div>
+            </div>
+            <div style="height:120px"></div>
+          </div>
+          <div class="bottom-bar" style="display:flex;flex-direction:column;gap:8px">
+            <x-import component-from-global-scope="Scoreo.Button" variant="primary" size="lg" dc-props="{{ fullBtn }}" hint-size="100%,52px"><svg class="ic ic--sm" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="M12 5v14"/></svg><span class="l-en">Enter round 4</span><span class="l-fr">Saisir le tour 4</span></x-import>
+            <div style="display:flex;gap:8px">
+              <x-import component-from-global-scope="Scoreo.Button" variant="secondary" size="md" dc-props="{{ flexBtn }}" hint-size="auto,44px"><span class="l-en">Cancel match</span><span class="l-fr">Annuler la partie</span></x-import>
+              <x-import component-from-global-scope="Scoreo.Button" variant="secondary" size="md" dc-props="{{ flexBtn }}" hint-size="auto,44px"><span class="l-en">Finish match</span><span class="l-fr">Terminer la partie</span></x-import>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div class="page-cap"><span class="l-en">Score entry · round sheet</span><span class="l-fr">Saisie · feuille de tour</span><span class="l-en">Bottom sheet · one Input per player over the standings</span><span class="l-fr">Feuille inférieure · un Champ par joueur au-dessus du classement</span></div>
+        <div class="device" data-screen-label="Page · Round sheet">
+          <div class="app-header">
+            <x-import component-from-global-scope="Scoreo.Button" variant="ghost" size="md" icon-only="{{ true }}" dc-props="{{ squareIcon }}" hint-size="44px,44px"><svg class="ic" viewBox="0 0 24 24"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg></x-import>
+            <span class="app-title">Skyjo</span>
+            <x-import component-from-global-scope="Scoreo.Button" variant="ghost" size="md" icon-only="{{ true }}" dc-props="{{ squareIcon }}" hint-size="44px,44px"><svg class="ic" viewBox="0 0 24 24"><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="18" y2="18"/></svg></x-import>
+          </div>
+          <div class="app-content">
+            <div class="gs-grid">
+              <div class="gs-card gs-card--lead"><div class="gs-top"><span class="rank-pos">1</span><span class="gs-name">Léa</span></div><div class="gs-bot"><span class="gs-tot">16</span></div></div>
+              <div class="gs-card"><div class="gs-top"><span class="rank-pos">2</span><span class="gs-name">Camille</span></div><div class="gs-bot"><span class="gs-tot">26</span></div></div>
+              <div class="gs-card"><div class="gs-top"><span class="rank-pos">3</span><span class="gs-name">Théo</span></div><div class="gs-bot"><span class="gs-tot">38</span></div></div>
+              <div class="gs-card"><div class="gs-top"><span class="rank-pos">4</span><span class="gs-name">Malik</span></div><div class="gs-bot"><span class="gs-tot">41</span></div></div>
+            </div>
+          </div>
+          <div class="scrim"></div>
+          <div class="sheet">
+            <div class="sheet-grip"></div>
+            <div class="sheet-title"><span class="l-en">Round 4</span><span class="l-fr">Tour 4</span></div>
+            <div class="sheet-rows">
+              <div class="sheet-row"><span class="sheet-row-name">Léa <span class="sheet-row-tot">· 16</span></span><x-import component-from-global-scope="Scoreo.Input" type="number" size="sm" default-value="0" hint-size="120px,36px"></x-import></div>
+              <div class="sheet-row"><span class="sheet-row-name">Camille <span class="sheet-row-tot">· 26</span></span><x-import component-from-global-scope="Scoreo.Input" type="number" size="sm" default-value="0" hint-size="120px,36px"></x-import></div>
+              <div class="sheet-row"><span class="sheet-row-name">Théo <span class="sheet-row-tot">· 38</span></span><x-import component-from-global-scope="Scoreo.Input" type="number" size="sm" default-value="0" hint-size="120px,36px"></x-import></div>
+              <div class="sheet-row"><span class="sheet-row-name">Malik <span class="sheet-row-tot">· 41</span></span><x-import component-from-global-scope="Scoreo.Input" type="number" size="sm" default-value="0" hint-size="120px,36px"></x-import></div>
+              <div class="sheet-row"><span class="sheet-row-name">Jonas <span class="sheet-row-tot">· 47</span></span><x-import component-from-global-scope="Scoreo.Input" type="number" size="sm" default-value="0" hint-size="120px,36px"></x-import></div>
+            </div>
+            <div style="display:flex;gap:8px">
+              <x-import component-from-global-scope="Scoreo.Button" variant="secondary" size="md" dc-props="{{ flexBtn }}" hint-size="auto,44px"><span class="l-en">Cancel</span><span class="l-fr">Annuler</span></x-import>
+              <x-import component-from-global-scope="Scoreo.Button" variant="primary" size="md" dc-props="{{ flexBtn }}" hint-size="auto,44px"><span class="l-en">Save round</span><span class="l-fr">Valider le tour</span></x-import>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1500,&quot;height&quot;:950},&quot;flavor&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;latte&quot;,&quot;frappe&quot;,&quot;macchiato&quot;,&quot;mocha&quot;],&quot;default&quot;:&quot;latte&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Theme&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;rosewater&quot;,&quot;flamingo&quot;,&quot;pink&quot;,&quot;mauve&quot;,&quot;red&quot;,&quot;maroon&quot;,&quot;peach&quot;,&quot;yellow&quot;,&quot;green&quot;,&quot;teal&quot;,&quot;sky&quot;,&quot;sapphire&quot;,&quot;blue&quot;,&quot;lavender&quot;],&quot;default&quot;:&quot;mauve&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Theme&quot;},&quot;lang&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;en&quot;,&quot;fr&quot;],&quot;default&quot;:&quot;en&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Content&quot;}}">
+const STRINGS = {
+  en: { playerName: 'Player name', nameTaken: 'That name is already taken.', deleteMatch: 'Delete match?' },
+  fr: { playerName: 'Nom du joueur', nameTaken: 'Ce nom est déjà pris.', deleteMatch: 'Supprimer la partie ?' },
+};
+
+const ACCENTS = ['rosewater','flamingo','pink','mauve','red','maroon','peach','yellow','green','teal','sky','sapphire','blue','lavender'];
+
+class Component extends DCLogic {
+  componentDidMount() {
+    if (!window.Scoreo) {
+      this._poll = setInterval(() => {
+        if (window.Scoreo) { clearInterval(this._poll); this.forceUpdate(); }
+      }, 60);
+    }
+  }
+  componentWillUnmount() { if (this._poll) clearInterval(this._poll); }
+
+  renderVals() {
+    const lang = this.props.lang ?? 'en';
+    // Native number spinners eat the content box of a narrow score cell, so
+    // 2-digit values clip. Suppress them inline (a class alone loses to the
+    // DS Input's own specificity) and trim the inherited 12px padding.
+    const scoreCell = {
+      className: 'no-spin',
+      style: {
+        width: '60px', padding: '0 6px', textAlign: 'center',
+        WebkitAppearance: 'none', appearance: 'none', MozAppearance: 'textfield',
+      },
+    };
+    // The x-import mount is display:contents, so flex must go on the input
+    // element itself — the mount never forms a box to size.
+    const growInput = { style: { flex: '1 1 auto', minWidth: 0, width: 'auto' } };
+    // DS icon-only buttons default to a pill radius; keep them square like
+    // every other button in Scoreo.
+    const squareIcon = { style: { borderRadius: 'var(--radius-md)' } };
+    const accent = this.props.accent ?? 'mauve';
+    const accentDots = ACCENTS.map((name) => ({
+      name,
+      style: { background: 'var(--ctp-' + name + ')', border: name === accent ? '2px solid var(--text-heading)' : undefined },
+    }));
+    // Upstream Input has no invalid state (see EXTENSIONS.md) — the caller
+    // paints the border until the design system adopts the prop.
+    const invalidInput = { style: { borderColor: 'var(--color-danger)' } };
+    return {
+      scoreCell, growInput, accentDots, invalidInput,
+      flavor: this.props.flavor ?? 'latte',
+      accent: this.props.accent ?? 'mauve',
+      lang,
+      t: STRINGS[lang] || STRINGS.en,
+      fullBtn: { style: { width: '100%' } },
+      flexBtn: { style: { flex: '1 1 auto', minWidth: 0, padding: '0 12px' } },
+      dangerGhost: { style: { color: 'var(--color-danger)' } },
+      fabBtn: {
+        style: {
+          borderRadius: 'var(--radius-pill)',
+          boxShadow: '0 8px 20px -6px color-mix(in srgb, var(--color-primary) 60%, transparent)',
+        },
+      },
+    };
+  }
+}
+</script>
+</body>
+</html>

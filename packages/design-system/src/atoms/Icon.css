@@ -1,0 +1,22 @@
+.sc-icon {
+  flex-shrink: 0;
+  stroke-width: 2;
+}
+.sc-icon--sm {
+  width: 16px;
+  height: 16px;
+}
+.sc-icon--md {
+  width: 20px;
+  height: 20px;
+}
+.sc-icon--lg {
+  width: 30px;
+  height: 30px;
+}
+.sc-icon--accent {
+  color: var(--color-primary);
+}
+.sc-icon--muted {
+  color: var(--text-muted);
+}
