@@ -1,0 +1,63 @@
+.sc-swatch {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--tap-target);
+  height: var(--tap-target);
+  padding: 0;
+  border: none;
+  background: transparent;
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+}
+.sc-swatch__dot {
+  width: 26px;
+  height: 26px;
+  border-radius: var(--radius-pill);
+  border: var(--border-width) solid var(--border-default);
+}
+.sc-swatch__dot--selected {
+  border: 2px solid var(--text-heading);
+}
+.sc-swatch__dot--rosewater {
+  background: var(--ctp-rosewater);
+}
+.sc-swatch__dot--flamingo {
+  background: var(--ctp-flamingo);
+}
+.sc-swatch__dot--pink {
+  background: var(--ctp-pink);
+}
+.sc-swatch__dot--mauve {
+  background: var(--ctp-mauve);
+}
+.sc-swatch__dot--red {
+  background: var(--ctp-red);
+}
+.sc-swatch__dot--maroon {
+  background: var(--ctp-maroon);
+}
+.sc-swatch__dot--peach {
+  background: var(--ctp-peach);
+}
+.sc-swatch__dot--yellow {
+  background: var(--ctp-yellow);
+}
+.sc-swatch__dot--green {
+  background: var(--ctp-green);
+}
+.sc-swatch__dot--teal {
+  background: var(--ctp-teal);
+}
+.sc-swatch__dot--sky {
+  background: var(--ctp-sky);
+}
+.sc-swatch__dot--sapphire {
+  background: var(--ctp-sapphire);
+}
+.sc-swatch__dot--blue {
+  background: var(--ctp-blue);
+}
+.sc-swatch__dot--lavender {
+  background: var(--ctp-lavender);
+}

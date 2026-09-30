@@ -24,7 +24,7 @@ PWA for tracking game/match results between friends, built with React + TypeScri
 - **Validation/persistence:** zod schemas with `.default()` per field
 - **UI pattern:** MVI-style — `useReducer` per screen (Handler/Intent/State equivalent)
 - **Application architecture:** Hexagonal (Ports & Adapters)
-- **Styling:** `public/css/` — CSS custom properties (Catppuccin tokens), fixed top header
+- **Styling:** `packages/design-system/` — the app composes its components (no className/style of its own); Catppuccin tokens live there
 - **Storage:** localStorage via `LocalStorage*Repository` (`scoreo_players`, `scoreo_gametypes`, `scoreo_matches` keys)
 
 See [`doc/technical/architecture.md`](../doc/technical/architecture.md) for the full architecture description.

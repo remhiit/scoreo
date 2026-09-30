@@ -1,0 +1,338 @@
+/* Scoreo — design tokens. Origin: Ludo Design System (Catppuccin), detached 2026-09-30. */
+
+/* ── colors-latte ── */
+/*
+  Catppuccin — Latte (light, default flavor)
+  Raw palette values. Never reference these directly in components —
+  use the semantic aliases in semantic.css instead.
+  Source: https://catppuccin.com/palette/
+*/
+:root,
+[data-theme="latte"] {
+  --ctp-rosewater: #dc8a78;
+  --ctp-flamingo: #dd7878;
+  --ctp-pink: #ea76cb;
+  --ctp-mauve: #8839ef;
+  --ctp-red: #d20f39;
+  --ctp-maroon: #e64553;
+  --ctp-peach: #fe640b;
+  --ctp-yellow: #df8e1d;
+  --ctp-green: #40a02b;
+  --ctp-teal: #179299;
+  --ctp-sky: #04a5e5;
+  --ctp-sapphire: #209fb5;
+  --ctp-blue: #1e66f5;
+  --ctp-lavender: #7287fd;
+
+  --ctp-text: #4c4f69;
+  --ctp-subtext1: #5c5f77;
+  --ctp-subtext0: #6c6f85;
+  --ctp-overlay2: #7c7f93;
+  --ctp-overlay1: #8c8fa1;
+  --ctp-overlay0: #9ca0b0;
+  --ctp-surface2: #acb0be;
+  --ctp-surface1: #bcc0cc;
+  --ctp-surface0: #ccd0da;
+  --ctp-base: #eff1f5;
+  --ctp-mantle: #e6e9ef;
+  --ctp-crust: #dce0e8;
+
+  --ctp-is-dark: 0; /* @kind other */
+  /* Accents are saturated in Latte — pair them with a light foreground. */
+  --ctp-on-accent: #ffffff;
+}
+
+
+/* ── colors-frappe ── */
+/*
+  Catppuccin — Frappé (low-contrast dark flavor)
+  Activate with <html data-theme="frappe">.
+*/
+[data-theme="frappe"] {
+  --ctp-rosewater: #f2d5cf;
+  --ctp-flamingo: #eebebe;
+  --ctp-pink: #f4b8e4;
+  --ctp-mauve: #ca9ee6;
+  --ctp-red: #e78284;
+  --ctp-maroon: #ea999c;
+  --ctp-peach: #ef9f76;
+  --ctp-yellow: #e5c890;
+  --ctp-green: #a6d189;
+  --ctp-teal: #81c8be;
+  --ctp-sky: #99d1db;
+  --ctp-sapphire: #85c1dc;
+  --ctp-blue: #8caaee;
+  --ctp-lavender: #babbf1;
+
+  --ctp-text: #c6d0f5;
+  --ctp-subtext1: #b5bfe2;
+  --ctp-subtext0: #a5adce;
+  --ctp-overlay2: #949cbb;
+  --ctp-overlay1: #838ba7;
+  --ctp-overlay0: #737994;
+  --ctp-surface2: #626880;
+  --ctp-surface1: #51576d;
+  --ctp-surface0: #414559;
+  --ctp-base: #303446;
+  --ctp-mantle: #292c3c;
+  --ctp-crust: #232634;
+
+  --ctp-is-dark: 1; /* @kind other */
+  /* Accents are pastel-light in dark flavors — pair them with a dark foreground. */
+  --ctp-on-accent: var(--ctp-crust);
+}
+
+
+/* ── colors-macchiato ── */
+/*
+  Catppuccin — Macchiato (medium-contrast dark flavor)
+  Activate with <html data-theme="macchiato">.
+*/
+[data-theme="macchiato"] {
+  --ctp-rosewater: #f4dbd6;
+  --ctp-flamingo: #f0c6c6;
+  --ctp-pink: #f5bde6;
+  --ctp-mauve: #c6a0f6;
+  --ctp-red: #ed8796;
+  --ctp-maroon: #ee99a0;
+  --ctp-peach: #f5a97f;
+  --ctp-yellow: #eed49f;
+  --ctp-green: #a6da95;
+  --ctp-teal: #8bd5ca;
+  --ctp-sky: #91d7e3;
+  --ctp-sapphire: #7dc4e4;
+  --ctp-blue: #8aadf4;
+  --ctp-lavender: #b7bdf8;
+
+  --ctp-text: #cad3f5;
+  --ctp-subtext1: #b8c0e0;
+  --ctp-subtext0: #a5adcb;
+  --ctp-overlay2: #939ab7;
+  --ctp-overlay1: #8087a2;
+  --ctp-overlay0: #6e738d;
+  --ctp-surface2: #5b6078;
+  --ctp-surface1: #494d64;
+  --ctp-surface0: #363a4f;
+  --ctp-base: #24273a;
+  --ctp-mantle: #1e2030;
+  --ctp-crust: #181926;
+
+  --ctp-is-dark: 1; /* @kind other */
+  --ctp-on-accent: var(--ctp-crust);
+}
+
+
+/* ── colors-mocha ── */
+/*
+  Catppuccin — Mocha (original, darkest flavor)
+  Activate with <html data-theme="mocha">.
+*/
+[data-theme="mocha"] {
+  --ctp-rosewater: #f5e0dc;
+  --ctp-flamingo: #f2cdcd;
+  --ctp-pink: #f5c2e7;
+  --ctp-mauve: #cba6f7;
+  --ctp-red: #f38ba8;
+  --ctp-maroon: #eba0ac;
+  --ctp-peach: #fab387;
+  --ctp-yellow: #f9e2af;
+  --ctp-green: #a6e3a1;
+  --ctp-teal: #94e2d5;
+  --ctp-sky: #89dceb;
+  --ctp-sapphire: #74c7ec;
+  --ctp-blue: #89b4fa;
+  --ctp-lavender: #b4befe;
+
+  --ctp-text: #cdd6f4;
+  --ctp-subtext1: #bac2de;
+  --ctp-subtext0: #a6adc8;
+  --ctp-overlay2: #9399b2;
+  --ctp-overlay1: #7f849c;
+  --ctp-overlay0: #6c7086;
+  --ctp-surface2: #585b70;
+  --ctp-surface1: #45475a;
+  --ctp-surface0: #313244;
+  --ctp-base: #1e1e2e;
+  --ctp-mantle: #181825;
+  --ctp-crust: #11111b;
+
+  --ctp-is-dark: 1; /* @kind other */
+  --ctp-on-accent: var(--ctp-crust);
+}
+
+
+/* ── semantic ── */
+/*
+  Semantic tokens — the only layer components should reference.
+  Maps Catppuccin roles → UI meaning, and defines the swappable
+  "primary" accent that host apps override per game/app.
+*/
+:root {
+  /* ---------- surfaces ---------- */
+  --surface-app: var(--ctp-base);
+  --surface-sunken: var(--ctp-mantle);
+  --surface-well: var(--ctp-crust);
+  --surface-card: var(--ctp-mantle);
+  --surface-raised: var(--ctp-surface0);
+  --surface-overlay: var(--ctp-surface0);
+  --surface-hover: var(--ctp-surface1);
+  --surface-active: var(--ctp-surface2);
+
+  /* ---------- text ---------- */
+  --text-heading: var(--ctp-text);
+  --text-body: var(--ctp-text);
+  --text-muted: var(--ctp-subtext1);
+  --text-faint: var(--ctp-subtext0);
+  --text-disabled: var(--ctp-overlay0);
+  --text-on-accent: var(--ctp-on-accent);
+
+  /* ---------- borders ---------- */
+  --border-subtle: var(--ctp-surface1);
+  --border-default: var(--ctp-surface2);
+  --border-strong: var(--ctp-overlay1);
+  --border-focus: var(--color-primary);
+
+  /* ---------- semantic status ---------- */
+  --color-success: var(--ctp-green);
+  --color-warning: var(--ctp-yellow);
+  --color-danger: var(--ctp-red);
+  --color-info: var(--ctp-blue);
+  --text-on-success: var(--ctp-on-accent);
+  --text-on-warning: var(--ctp-on-accent);
+  --text-on-danger: var(--ctp-on-accent);
+  --text-on-info: var(--ctp-on-accent);
+
+  /* ---------- overlay scrim ---------- */
+  --scrim: color-mix(in srgb, var(--ctp-crust) 60%, transparent);
+
+  /* ---------- primary accent ----------
+     Default flavor ships Mauve as primary, per the brief.
+     Apps override this ONE var (or set data-accent="…") to
+     retint every component without touching component code. */
+  --color-primary: var(--ctp-mauve);
+  --color-primary-hover: color-mix(in srgb, var(--color-primary) 88%, black 6%);
+  --color-primary-active: color-mix(in srgb, var(--color-primary) 78%, black 12%);
+  --color-primary-tint: color-mix(in srgb, var(--color-primary) 16%, var(--surface-app));
+  --color-primary-border: color-mix(in srgb, var(--color-primary) 45%, var(--border-default));
+}
+
+/* ---------- accent presets ----------
+   Opt in with <html data-accent="blue">. Any of the 14 Catppuccin
+   hues works as a drop-in primary; apps are free to skip this and
+   set --color-primary to an arbitrary value instead. */
+[data-accent="rosewater"] { --color-primary: var(--ctp-rosewater); }
+[data-accent="flamingo"]  { --color-primary: var(--ctp-flamingo); }
+[data-accent="pink"]      { --color-primary: var(--ctp-pink); }
+[data-accent="mauve"]     { --color-primary: var(--ctp-mauve); }
+[data-accent="red"]       { --color-primary: var(--ctp-red); }
+[data-accent="maroon"]    { --color-primary: var(--ctp-maroon); }
+[data-accent="peach"]     { --color-primary: var(--ctp-peach); }
+[data-accent="yellow"]    { --color-primary: var(--ctp-yellow); }
+[data-accent="green"]     { --color-primary: var(--ctp-green); }
+[data-accent="teal"]      { --color-primary: var(--ctp-teal); }
+[data-accent="sky"]       { --color-primary: var(--ctp-sky); }
+[data-accent="sapphire"]  { --color-primary: var(--ctp-sapphire); }
+[data-accent="blue"]      { --color-primary: var(--ctp-blue); }
+[data-accent="lavender"]  { --color-primary: var(--ctp-lavender); }
+
+
+/* ── typography ── */
+/*
+  Typography — system font stacks only.
+  Deliberate choice: these apps run fully local/offline in a browser
+  with no build step, so we lean on the fonts already on-device
+  instead of shipping/fetching webfonts. Numerals use tabular figures
+  so scoreboards don't jitter as digits change.
+*/
+:root {
+  --font-ui: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: ui-monospace, monospace;
+
+  --font-body: var(--font-ui);
+  --font-score: var(--font-mono);
+
+  --text-3xl: 2.5rem;
+  --text-2xl: 2rem;
+  --text-xl: 1.5rem;
+  --text-lg: 1.25rem;
+  --text-md: 1rem;
+  --text-sm: 0.875rem;
+  --text-xs: 0.75rem;
+
+  --leading-tight: 1.15;
+  --leading-normal: 1.45;
+  --leading-loose: 1.7;
+
+  --weight-regular: 400;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+  --weight-bold: 700;
+
+  --tracking-tight: -0.01em;
+  --tracking-normal: 0;
+  --tracking-wide: 0.02em;
+
+  --num-tabular: tabular-nums; /* @kind other */
+}
+
+body {
+  font-family: var(--font-body);
+  color: var(--text-body);
+  font-variant-numeric: var(--num-tabular);
+}
+
+
+/* ── spacing ── */
+/*
+  Spacing — 4px base scale. Kept small: these are compact utility
+  apps (scoreboards), not marketing pages.
+*/
+:root {
+  --space-0: 0px;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+
+  /* touch target floor — every interactive control clears this */
+  --tap-target: 44px;
+
+  --container-max: 720px;
+}
+
+
+/* ── radius-shadow ── */
+/*
+  Radius, elevation, borders, motion.
+  Catppuccin itself is flat and low-chrome: soft rounded corners,
+  thin 1px borders in a surface tone (not the primary color),
+  and shadows so quiet they read as depth, not drop-shadow.
+*/
+:root {
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-pill: 999px;
+
+  --border-width: 1px;
+
+  --shadow-sm: 0 1px 2px color-mix(in srgb, var(--ctp-crust) 14%, transparent);
+  --shadow-md: 0 4px 12px color-mix(in srgb, var(--ctp-crust) 18%, transparent);
+  --shadow-lg: 0 12px 32px color-mix(in srgb, var(--ctp-crust) 24%, transparent);
+
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1); /* @kind other */
+  --duration-fast: 100ms; /* @kind other */
+  --duration-normal: 160ms; /* @kind other */
+  --duration-slow: 240ms; /* @kind other */
+}
+
+* {
+  box-sizing: border-box;
+}
+

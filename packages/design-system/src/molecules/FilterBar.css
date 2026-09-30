@@ -1,0 +1,17 @@
+.sc-filter {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  background: var(--surface-sunken);
+  border-radius: var(--radius-sm);
+}
+.sc-filter__label {
+  font-weight: var(--weight-medium);
+  font-size: var(--text-sm);
+  flex-shrink: 0;
+}
+.sc-filter__control {
+  flex: 1 1 auto;
+  min-width: 0;
+}

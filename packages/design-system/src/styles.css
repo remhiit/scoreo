@@ -1,0 +1,59 @@
+/*
+  Scoreo design system — the single stylesheet. Import it once, from the app
+  entry: `import '@scoreboards/design-system/styles.css'`.
+  Order is the atomic order: tokens, foundations, atoms, molecules, organisms,
+  templates — each layer only builds on the ones above it.
+*/
+
+/* 00 · tokens */
+@import './tokens/colors-latte.css';
+@import './tokens/colors-frappe.css';
+@import './tokens/colors-macchiato.css';
+@import './tokens/colors-mocha.css';
+@import './tokens/semantic.css';
+@import './tokens/typography.css';
+@import './tokens/spacing.css';
+@import './tokens/radius-shadow.css';
+
+/* foundations */
+@import './foundations/base.css';
+
+/* 01 · atoms */
+@import './atoms/Icon.css';
+@import './atoms/Button.css';
+@import './atoms/Text.css';
+@import './atoms/Stack.css';
+@import './atoms/Field.css';
+@import './atoms/Badge.css';
+@import './atoms/Score.css';
+@import './atoms/Meter.css';
+@import './atoms/Chip.css';
+@import './atoms/Swatch.css';
+
+/* 02 · molecules */
+@import './molecules/ListRow.css';
+@import './molecules/StandingsCard.css';
+@import './molecules/StatRow.css';
+@import './molecules/HistoryCell.css';
+@import './molecules/SegmentedControl.css';
+@import './molecules/FormRow.css';
+@import './molecules/DetailList.css';
+@import './molecules/StatusLine.css';
+@import './molecules/FilterBar.css';
+@import './molecules/EmptyState.css';
+
+/* 03 · organisms */
+@import './organisms/AppHeader.css';
+@import './organisms/StandingsGrid.css';
+@import './organisms/RoundCard.css';
+@import './organisms/Banner.css';
+@import './organisms/DropZone.css';
+@import './organisms/Comparison.css';
+@import './organisms/SideMenu.css';
+@import './organisms/Dialog.css';
+@import './organisms/Sheet.css';
+@import './organisms/ActionBar.css';
+@import './organisms/ThemePicker.css';
+
+/* 04 · templates */
+@import './templates/ScreenTemplate.css';

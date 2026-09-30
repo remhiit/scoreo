@@ -9,17 +9,19 @@
 //     never reach Scoreo — a stylesheet is not unloaded on navigation, so a leak
 //     would retint the host for the rest of the session;
 //   - every class name prefixed, so Scoreo's own generic rules never reach the
-//     module. `public/css/theme.css` styles plain `.card` and `.empty`; a module
+//     module. `public/css/theme.css` used to style plain `.card` and `.empty`; a module
 //     reusing those names inherits whatever it does not itself declare. Torī
 //     Valley shipped from #331 to #348 with every player card laid out in a row
 //     for exactly that reason.
 //
 // See doc/technical/module-contract.md.
-import { readdirSync, readFileSync } from 'node:fs'
+import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 
-const HOST_CSS_DIR = 'apps/scoreo/public/css'
+// Everything the host styles: the design system, plus the host's remaining
+// per-screen sheets until the last screen composes the design system.
+const HOST_CSS_DIRS = ['packages/design-system/src', 'apps/scoreo/public/css']
 const PACKAGES_DIR = 'packages'
 
 const COMMENTS = /\/\*[\s\S]*?\*\//g
@@ -80,9 +82,17 @@ export function findViolations(css, moduleFile, hostClasses) {
   return violations
 }
 
+function cssFiles(dir) {
+  return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
+    const path = join(dir, entry.name)
+    if (entry.isDirectory()) return cssFiles(path)
+    return entry.name.endsWith('.css') ? [path] : []
+  })
+}
+
 function hostClasses() {
-  const files = readdirSync(HOST_CSS_DIR).filter((name) => name.endsWith('.css'))
-  return new Set(files.flatMap((name) => [...classNames(readFileSync(join(HOST_CSS_DIR, name), 'utf8'))]))
+  const files = HOST_CSS_DIRS.filter((dir) => existsSync(dir)).flatMap(cssFiles)
+  return new Set(files.flatMap((file) => [...classNames(readFileSync(file, 'utf8'))]))
 }
 
 function moduleStylesheets() {

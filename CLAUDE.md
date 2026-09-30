@@ -64,15 +64,16 @@ Lire ces fichiers dans l'ordre. Tout le contexte nécessaire y est :
 | `apps/scoreo/src/modules/` | Intégration des modules côté hôte : `registry.ts` (le **seul** fichier qui nomme un module) |
 | `apps/scoreo/src/services/` | `ServicesContext.tsx` — DI racine (`useMemo`), hook `useServices()` |
 | `apps/scoreo/src/ui/*/` | Un dossier par écran : `<screen>Reducer.ts` (+ test), `<screen>Types.ts`, `<Screen>.tsx` (+ test) |
-| `apps/scoreo/src/ui/shared/` | Composants React partagés (`LudoButton`, `LudoModal`, `LudoTable`, ...) |
+| `apps/scoreo/src/ui/shared/` | Anciens composants partagés (`LudoButton`, `LudoModal`, ...), remplacés écran par écran par `@scoreboards/design-system` |
 | `apps/scoreo/src/ui/theme/` | `themeManager.ts`, `ThemeContext.tsx`, `ThemePickerDialog.tsx` |
 | `apps/scoreo/src/ui/navigation/` | `screen.ts` (union `Screen`), `hash.ts` (`parseHash`/`screenToHash`), `useHashRouter.ts` |
-| `apps/scoreo/public/` | `manifest.json`, `sw.js`, icônes PWA, `css/` (dont `css/tokens/`) |
+| `apps/scoreo/public/` | `manifest.json`, `sw.js`, icônes PWA, `css/` (feuilles par écran héritées, supprimées au fil de la migration vers le design system) |
 | `schemas/import/` | Schémas JSON du format d'import (versionnés, `v1.0`/`v1.1`) |
 | `packages/module-mille-sabords/` | 1000 Sabords porté du Kotlin, avec sa doc. Son domaine est vérifié contre l'oracle `legacy/` par un test différentiel golden (`tests/golden/`), pas par relecture |
 | `legacy/1ksabord-kotlin/` | **Temporaire.** L'app Kotlin/JS de 1000 Sabords absorbée avec son historique, gardée comme **oracle** du portage TypeScript : ses 107 tests tournent en CI (`kotlin-legacy.yml`) et doivent rester verts. Supprimée avec son workflow une fois le portage livré. Ne rien y développer |
 | `packages/module-*/doc/` | La doc d'un jeu vit dans le paquet de son module, à côté du code qui l'implémente : règles, guide, doc technique et ressources (le PDF des règles de 1000 Sabords, celui de Torī et ses scans de cartes). `doc/` à la racine ne garde que ce qui concerne le dépôt entier |
-| `ds_temp/` | Référence temporaire du handoff design (Ludo Design System) : tokens, composants, mapping écran→fichiers. Source de vérité visuelle pour les issues de migration à venir ; à supprimer une fois la migration terminée. Voir `ds_temp/design_handoff_scoreo_ds/README.md` |
+| `packages/design-system/` | **Toute** décision visuelle de l'app : tokens Catppuccin, atomes → gabarits en composants React + CSS préfixé `sc-`. Voir son `README.md` |
+| `ds_temp/scoreo-design/` | Référence temporaire : l'export Claude Design (atomic design, 25 écrans, carte écrans × composants) vers lequel les écrans migrent. À supprimer une fois la migration terminée |
 
 ## Workflow
 
@@ -88,6 +89,7 @@ Ajouter un compteur de points pour un nouveau jeu : `.claude/skills/new-scoring-
 
 ## Règles
 
+- **UI = composition du design system.** L'app n'écrit ni `className`, ni `style`, ni CSS, ni import `lucide-react` : elle assemble les composants de `@scoreboards/design-system`. Un besoin visuel manquant = un composant ou une prop ajouté(e) au design system (avec son CSS et son test), jamais un contournement local. ESLint l'impose ; `NOT_YET_ON_DESIGN_SYSTEM` (`eslint.config.js`) liste les fichiers pas encore migrés et ne fait que rétrécir.
 - Reducer dans `ui/*/`. Reçoit une `Action` → produit un `State`.
 - Use Case dans `application/`. Opération métier, zéro dépendance framework.
 - Interface Repository dans `domain/port/`. Implémentation dans `infrastructure/`.

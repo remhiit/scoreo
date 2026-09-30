@@ -1,0 +1,15 @@
+.sc-meter {
+  display: block;
+  flex: 1 1 auto;
+  min-width: 60px;
+  height: 8px;
+  background: var(--surface-sunken);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+.sc-meter__fill {
+  display: block;
+  height: 100%;
+  background: var(--color-primary);
+  border-radius: var(--radius-sm);
+}

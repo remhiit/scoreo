@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="design/tokens.css">
+<script src="design/components.js"></script>
+<style>
+  body{ margin:0; background:#eef0f5; font-family:var(--font-ui); color:#2a2d3d; }
+  a{ color:#8839ef; }
+  a:hover{ color:#7124d8; }
+</style>
+</helmet>
+
+<div style="max-width:1160px;margin:0 auto;padding:48px 28px 110px;display:flex;flex-direction:column;gap:44px">
+
+  <header style="display:flex;flex-direction:column;gap:12px">
+    <span style="align-self:flex-start;background:#8839ef;color:#fff;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:4px 10px;border-radius:999px">Scoreo design system</span>
+    <h1 style="margin:0;font-size:40px;font-weight:700;letter-spacing:-.025em;color:#181926">Écrans × atomic design</h1>
+    <p style="margin:0;max-width:78ch;font-size:16px;line-height:1.55;color:#4a4d63;text-wrap:pretty">Les 25 écrans de Scoreo, chacun décomposé en gabarit, organismes, molécules et atomes. C'est la carte à suivre pendant l'intégration : pour chaque écran, ce qui doit être composé depuis le design system plutôt que réécrit en CSS applicatif. L'index inversé en fin de document donne, pour chaque composant, les écrans qui en dépendent — donc ce qui casse si on le change.</p>
+    <div style="display:flex;gap:16px;flex-wrap:wrap;margin-top:4px">
+      <span style="display:flex;align-items:center;gap:7px;font-size:13px;color:#565975"><span style="width:11px;height:11px;border-radius:3px;background:#8839ef"></span>Organisme</span>
+      <span style="display:flex;align-items:center;gap:7px;font-size:13px;color:#565975"><span style="width:11px;height:11px;border-radius:3px;background:#1e66f5"></span>Molécule</span>
+      <span style="display:flex;align-items:center;gap:7px;font-size:13px;color:#565975"><span style="width:11px;height:11px;border-radius:3px;background:#5c5f77"></span>Atome</span>
+      <span style="display:flex;align-items:center;gap:7px;font-size:13px;color:#565975"><span style="width:11px;height:11px;border-radius:3px;background:#df8e1d"></span>Hors système — à écrire côté appli</span>
+    </div>
+  </header>
+
+  <sc-for list="{{ routes }}" as="route" hint-placeholder-count="8">
+    <section style="display:flex;flex-direction:column;gap:14px">
+      <div style="display:flex;align-items:baseline;gap:12px;padding-bottom:10px;border-bottom:2px solid #181926">
+        <h2 style="margin:0;font-size:22px;font-weight:700;letter-spacing:-.015em;color:#181926">{{ route.name }}</h2>
+        <span style="font-family:var(--font-mono);font-size:12px;color:#8b8fa3">{{ route.path }}</span>
+        <span style="margin-left:auto;font-size:12.5px;color:#6b6e88">{{ route.count }}</span>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:14px;align-items:start">
+        <sc-for list="{{ route.screens }}" as="screen" hint-placeholder-count="3">
+          <article style="background:#fff;border:1px solid #d3d7e2;border-radius:13px;overflow:hidden;box-shadow:0 1px 2px rgba(24,25,38,.05)">
+            <div style="display:flex;align-items:center;gap:9px;padding:11px 15px;background:#f6f7fb;border-bottom:1px solid #e4e7ee">
+              <span style="font-family:var(--font-score);font-size:11.5px;font-weight:700;color:#fff;background:#181926;padding:2px 7px;border-radius:999px">{{ screen.num }}</span>
+              <span style="font-size:14px;font-weight:650;color:#181926">{{ screen.name }}</span>
+              <span style="margin-left:auto;font-size:11px;font-weight:600;color:#7124d8;background:#f2e9fe;padding:3px 8px;border-radius:999px;white-space:nowrap">{{ screen.tpl }}</span>
+            </div>
+            <p style="margin:0;padding:12px 15px 0;font-size:12.5px;line-height:1.5;color:#6b6e88;text-wrap:pretty">{{ screen.note }}</p>
+            <div style="display:flex;flex-direction:column;gap:9px;padding:12px 15px 15px">
+              <sc-for list="{{ screen.rows }}" as="row" hint-placeholder-count="3">
+                <div style="display:grid;grid-template-columns:22px 1fr;gap:9px;align-items:start">
+                  <span style="font-family:var(--font-mono);font-size:10.5px;font-weight:700;color:#9498aa;padding-top:4px">{{ row.key }}</span>
+                  <div style="display:flex;flex-wrap:wrap;gap:5px">
+                    <sc-for list="{{ row.items }}" as="item" hint-placeholder-count="4">
+                      <span style="{{ item.style }}">{{ item.label }}</span>
+                    </sc-for>
+                  </div>
+                </div>
+              </sc-for>
+            </div>
+          </article>
+        </sc-for>
+      </div>
+    </section>
+  </sc-for>
+
+  <section style="display:flex;flex-direction:column;gap:14px">
+    <div style="display:flex;align-items:baseline;gap:12px;padding-bottom:10px;border-bottom:2px solid #181926">
+      <h2 style="margin:0;font-size:22px;font-weight:700;letter-spacing:-.015em;color:#181926">Index inversé</h2>
+      <span style="font-size:12.5px;color:#6b6e88">ce qui casse si on touche à un composant</span>
+    </div>
+    <div style="background:#fff;border:1px solid #d3d7e2;border-radius:13px;overflow:hidden">
+      <sc-for list="{{ index }}" as="entry" hint-placeholder-count="12">
+        <div style="display:grid;grid-template-columns:200px 46px 1fr;gap:14px;align-items:baseline;padding:11px 16px;border-bottom:1px solid #eceef4">
+          <span style="display:flex;align-items:center;gap:8px;font-size:13.5px;font-weight:600;color:#181926"><span style="{{ entry.dot }}"></span>{{ entry.name }}</span>
+          <span style="font-family:var(--font-score);font-size:13px;font-weight:700;color:#7124d8">{{ entry.count }}</span>
+          <span style="font-size:12.5px;line-height:1.5;color:#6b6e88">{{ entry.screens }}</span>
+        </div>
+      </sc-for>
+    </div>
+  </section>
+
+  <section style="display:flex;flex-direction:column;gap:14px">
+    <div style="display:flex;align-items:baseline;gap:12px;padding-bottom:10px;border-bottom:2px solid #181926">
+      <h2 style="margin:0;font-size:22px;font-weight:700;letter-spacing:-.015em;color:#181926">Ce que la passe a trouvé</h2>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:14px;align-items:start">
+      <sc-for list="{{ findings }}" as="f" hint-placeholder-count="5">
+        <article style="background:#fff;border:1px solid #d3d7e2;border-radius:13px;padding:15px 17px;display:flex;flex-direction:column;gap:7px">
+          <span style="font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:{{ f.color }}">{{ f.tag }}</span>
+          <h3 style="margin:0;font-size:14.5px;font-weight:650;color:#181926">{{ f.title }}</h3>
+          <p style="margin:0;font-size:12.5px;line-height:1.55;color:#6b6e88;text-wrap:pretty">{{ f.body }}</p>
+        </article>
+      </sc-for>
+    </div>
+  </section>
+
+  <footer style="font-size:12.5px;line-height:1.6;color:#6b6e88;border-top:1px solid #d3d7e2;padding-top:18px">
+    Références : <b>Scoreo Atomic Design.dc.html</b> (les composants) · <b>Scoreo Screens.dc.html</b> (les écrans rendus).
+  </footer>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1240,&quot;height&quot;:900}}">
+const CHIP = 'display:inline-flex;align-items:center;padding:3px 8px;border-radius:6px;font-size:11.5px;font-weight:550;line-height:1.35;white-space:nowrap;';
+const TONE = {
+  o: CHIP + 'background:#f2e9fe;color:#6b21c8;',
+  m: CHIP + 'background:#e6edfe;color:#1a52c4;',
+  a: CHIP + 'background:#eef0f5;color:#4b4e63;',
+  x: CHIP + 'background:#fdf1dd;color:#9a5f06;',
+}
+const DOT = { o: '#8839ef', m: '#1e66f5', a: '#5c5f77', x: '#df8e1d' }
+
+// tag → [label, layer]. One vocabulary for the whole document: the cards and
+// the reverse index are both derived from it, so they cannot drift apart.
+const VOCAB = {
+  header: ['En-tête', 'o'], bar: ["Barre d'action", 'o'], modal: ['Dialogue', 'o'],
+  sheet: ['Feuille', 'o'], menu: ['Menu latéral', 'o'], banner: ['Bannière', 'o'],
+  grid: ['Grille de classement', 'o'], roundcard: ['Carte de tour', 'o'],
+  drop: ['Zone de dépôt', 'o'], compare: ['Comparaison', 'o'], theme: ['Sélecteur de thème', 'o'],
+  row: ['Ligne de liste', 'm'], matchrow: ['Ligne de partie', 'm'], standcard: ['Carte de classement', 'm'],
+  statsrow: ['Ligne de stats', 'm'], histcell: ["Cellule d'historique", 'm'], seg: ['Segmented', 'm'],
+  tabs: ['Tabs', 'm'], formpair: ['Paire formulaire', 'm'], detail: ['Ligne de détail', 'm'],
+  status: ['Ligne de statut', 'm'], filter: ['Barre de filtre', 'm'], empty: ['État vide', 'm'],
+  btn: ['Button', 'a'], input: ['Input', 'a'], num: ['Input nombre', 'a'], select: ['Select', 'a'],
+  check: ['Checkbox', 'a'], icon: ['Icon', 'a'], score: ['Score', 'a'], badge: ['Badge', 'a'],
+  meter: ['Barre de taux', 'a'], chip: ['Chip', 'a'], swatch: ['Swatch', 'a'], hint: ['Hint / erreur', 'a'],
+  h2h: ['Face-à-face', 'x'], authrow: ['Compte Drive', 'x'],
+}
+
+const ROUTES = [
+  { name: 'Accueil', path: '/', screens: [
+    { name: 'Premier lancement', tpl: 'Liste + barre', note: "Liste vide : le guide en trois étapes tient lieu d'état vide, la barre du bas reste désactivée tant qu'aucun joueur n'existe.",
+      o: ['header', 'banner', 'bar'], m: ['formpair', 'empty'], a: ['input', 'btn', 'icon', 'hint'] },
+    { name: 'Liste des joueurs', tpl: 'Liste + barre', note: "Le cœur de l'appli : sélection multiple par teinte d'accent, bannière de reprise si une partie est en cours, FAB pilule.",
+      o: ['header', 'banner', 'bar'], m: ['formpair', 'row'], a: ['input', 'btn', 'icon'] },
+    { name: 'Choisir un jeu', tpl: 'Dialogue', note: 'Dialogue de démarrage posé sur la liste : un select, un raccourci « créer un jeu », deux actions.',
+      o: ['header', 'modal'], m: ['formpair'], a: ['select', 'btn'] },
+  ]},
+  { name: 'Saisie de scores', path: '/match/:id', screens: [
+    { name: 'Classement', tpl: 'Liste + barre', note: 'Huit joueurs sans défilement. Le segmented bascule vers les tours ; la barre porte un primaire pleine largeur et deux secondaires.',
+      o: ['header', 'grid', 'bar'], m: ['seg', 'standcard'], a: ['score', 'btn', 'icon', 'hint'] },
+    { name: 'Feuille de tour', tpl: 'Feuille', note: 'Un stepper par joueur, total courant à côté du nom. Le classement reste visible derrière le scrim pendant la saisie.',
+      o: ['header', 'grid', 'sheet'], m: [], a: ['num', 'btn'] },
+    { name: 'Historique des tours', tpl: 'Liste défilante', note: 'Une carte par tour, chaque score modifiable sur place. Les cellules passent à la ligne au lieu de défiler latéralement.',
+      o: ['header', 'roundcard', 'bar'], m: ['seg', 'histcell'], a: ['num', 'score'] },
+    { name: 'Décision finale', tpl: 'Dialogue', note: 'Départage manuel quand les totaux sont à égalité — mêmes lignes sélectionnables que la liste des joueurs, réutilisées dans le dialogue.',
+      o: ['header', 'modal'], m: ['row'], a: ['btn'] },
+    { name: 'Abandonner', tpl: 'Dialogue', note: 'Une phrase, deux boutons, le destructif en dernier. Le seul dialogue en variante danger de la saisie.',
+      o: ['header', 'modal'], m: [], a: ['btn'] },
+  ]},
+  { name: 'Statistiques', path: '/stats', screens: [
+    { name: 'Classement ELO', tpl: 'Liste défilante', note: "Filtrable par jeu. La pastille ELO et la barre de taux de victoire portent toute la donnée — pas de tableau.",
+      o: ['header'], m: ['filter', 'statsrow'], a: ['select', 'badge', 'meter', 'score'] },
+    { name: 'Détail joueur', tpl: 'Liste défilante', note: 'Bilan global en paires libellé/valeur, puis le face-à-face — une notion propre à Scoreo, qui reste côté appli.',
+      o: ['header'], m: ['detail', 'statsrow'], a: ['score', 'badge', 'meter', 'h2h'] },
+    { name: 'Vide', tpl: 'Liste défilante', note: "Avant toute partie jouée. Une ligne sur ce qui manque, une sur comment le remplir.",
+      o: ['header'], m: ['empty'], a: [] },
+  ]},
+  { name: 'Historique', path: '/history', screens: [
+    { name: 'Parties', tpl: 'Liste défilante', note: 'Trois lignes par partie — jeu, joueurs avec le gagnant en gras, date — et une action de suppression à ras du bord.',
+      o: ['header'], m: ['filter', 'matchrow'], a: ['select', 'btn', 'icon'] },
+    { name: 'Supprimer une partie', tpl: 'Dialogue', note: 'La confirmation liste ce qui disparaît, scores compris : la phrase seule ne suffit pas pour un effacement.',
+      o: ['header', 'modal'], m: ['detail'], a: ['btn'] },
+    { name: 'Vide', tpl: 'Liste défilante', note: 'Le filtre reste affiché — sinon on croit à un bug de filtre plutôt qu\'à une absence de données.',
+      o: ['header'], m: ['filter', 'empty'], a: ['select'] },
+  ]},
+  { name: 'Jeux', path: '/games', screens: [
+    { name: 'Gérer', tpl: 'Liste défilante', note: "Formulaire d'ajout en tête, puis la liste des types de jeu avec voir / modifier / archiver.",
+      o: ['header'], m: ['formpair', 'row'], a: ['input', 'btn', 'icon'] },
+    { name: 'Modifier', tpl: 'Dialogue', note: 'Le départage au score secondaire révèle deux champs de plus — le dialogue grandit, il ne défile pas.',
+      o: ['header', 'modal'], m: ['formpair', 'detail'], a: ['select', 'input', 'btn'] },
+    { name: 'Détail', tpl: 'Dialogue', note: 'Lecture seule, en paires libellé/valeur. Retour / Modifier / Archiver en pied.',
+      o: ['header', 'modal'], m: ['detail'], a: ['btn'] },
+  ]},
+  { name: 'Import', path: '/import', screens: [
+    { name: 'Choisir un fichier', tpl: 'Liste défilante', note: 'Zone de dépôt en pointillés, cliquable autant que déposable.',
+      o: ['header', 'drop'], m: [], a: ['icon', 'btn'] },
+    { name: 'Aperçu', tpl: 'Liste défilante', note: 'Ce que le fichier ajoutera, avant validation. Les cases décident du sort des doublons.',
+      o: ['header'], m: ['detail'], a: ['check', 'btn'] },
+    { name: 'Résultat', tpl: 'Liste défilante', note: 'Importés / ignorés / échoués, chacun sur une ligne de statut colorée par le token sémantique correspondant.',
+      o: ['header'], m: ['status'], a: ['icon', 'badge', 'btn'] },
+  ]},
+  { name: 'Synchronisation', path: '/sync', screens: [
+    { name: 'Déconnecté', tpl: 'Liste défilante', note: 'Pas encore lié à Drive : un état, une action. Le bloc de compte reste applicatif.',
+      o: ['header'], m: ['detail'], a: ['btn', 'authrow'] },
+    { name: 'Conflit', tpl: 'Liste défilante', note: 'Deux cartes symétriques, local et distant — aucun côté présélectionné.',
+      o: ['header', 'compare'], m: ['detail'], a: ['btn', 'check'] },
+    { name: 'Terminé', tpl: 'Liste défilante', note: 'Confirmation et horodatage, même ligne de statut que le résultat d\'import.',
+      o: ['header'], m: ['status', 'detail'], a: ['icon', 'btn'] },
+  ]},
+  { name: 'Transverse', path: 'toutes les routes', screens: [
+    { name: 'Menu latéral', tpl: 'Liste défilante', note: 'Ouvert depuis le burger de l\'en-tête. Même contenu partout, quel que soit l\'écran dessous.',
+      o: ['header', 'menu'], m: [], a: ['icon', 'btn'] },
+    { name: 'Sélecteur de thème', tpl: 'Dialogue', note: '4 palettes × 14 accents depuis un seul dialogue — la démonstration que rien n\'est codé en dur.',
+      o: ['header', 'modal', 'theme'], m: [], a: ['chip', 'swatch', 'btn'] },
+  ]},
+]
+
+class Component extends DCLogic {
+  componentDidMount() {
+    document.documentElement.setAttribute('data-theme', 'latte')
+    document.documentElement.setAttribute('data-accent', 'mauve')
+    if (!window.Scoreo) {
+      this._poll = setInterval(() => {
+        if (window.Scoreo) { clearInterval(this._poll); this.forceUpdate() }
+      }, 60)
+    }
+  }
+  componentWillUnmount() { if (this._poll) clearInterval(this._poll) }
+
+  renderVals() {
+    const chips = (tags) => tags.map((tag) => {
+      const entry = VOCAB[tag] || [tag, 'a']
+      return { label: entry[0], style: TONE[entry[1]] }
+    })
+
+    let n = 0
+    const usage = {}
+    const routes = ROUTES.map((route) => ({
+      name: route.name,
+      path: route.path,
+      count: route.screens.length + (route.screens.length > 1 ? ' écrans' : ' écran'),
+      screens: route.screens.map((screen) => {
+        n += 1
+        const num = String(n).padStart(2, '0')
+        for (const tag of [...screen.o, ...screen.m, ...screen.a]) {
+          (usage[tag] = usage[tag] || []).push(route.name + ' · ' + screen.name)
+        }
+        const rows = [
+          { key: 'ORG', items: chips(screen.o) },
+          { key: 'MOL', items: chips(screen.m) },
+          { key: 'ATO', items: chips(screen.a) },
+        ].filter((row) => row.items.length > 0)
+        return { num, name: screen.name, tpl: screen.tpl, note: screen.note, rows }
+      }),
+    }))
+
+    const order = { o: 0, m: 1, a: 2, x: 3 }
+    const index = Object.keys(usage)
+      .map((tag) => {
+        const entry = VOCAB[tag] || [tag, 'a']
+        return {
+          name: entry[0],
+          layer: entry[1],
+          count: usage[tag].length,
+          screens: usage[tag].join(' · '),
+          dot: 'width:9px;height:9px;border-radius:2px;flex-shrink:0;background:' + DOT[entry[1]],
+        }
+      })
+      .sort((a, b) => order[a.layer] - order[b.layer] || b.count - a.count || a.name.localeCompare(b.name))
+
+    return {
+      routes,
+      index,
+      findings: [
+        { tag: 'Manquait', color: '#9a5f06', title: 'Le dialogue n\'était pas spécifié',
+          body: 'Sept écrans sur 25 sont un dialogue, et l\'atomic design ne le montrait que comme un rectangle dans les gabarits. Il a maintenant sa fiche d\'organisme : titre, corps, pied aligné à droite, bouton de confirmation en dernier.' },
+        { tag: 'Manquait', color: '#9a5f06', title: 'Checkbox, Badge, État vide',
+          body: 'Trois atomes utilisés sur les écrans mais absents du système : les cases des dialogues Import et Synchro, la pastille généralisée depuis l\'ELO, et l\'état vide de Stats, Historique et Jeux. Ajoutés.' },
+        { tag: 'Manquait', color: '#9a5f06', title: 'Feuille, barre d\'action, sélecteur de thème',
+          body: 'Trois organismes qui n\'existaient que dans les pages d\'exemple. Extraits en fiches, avec leurs invariants : un seul primaire par barre, la feuille plutôt que le dialogue quand le contexte doit rester lisible.' },
+        { tag: 'Écart', color: '#d20f39', title: 'Le Table du design system ne sert jamais',
+          body: 'Le système livre un Table ; aucun des 25 écrans ne l\'utilise — l\'historique est une grille de cartes qui passe à la ligne, choix délibéré pour le mobile. D\'où la décision de ne pas le porter dans src/ds.' },
+        { tag: 'Écart', color: '#d20f39', title: 'Aucun retour transitoire',
+          body: 'Pas de toast, pas de spinner en composant : la synchro et l\'import n\'ont que leurs états finaux. Si un temps d\'attente doit devenir visible, c\'est le prochain composant à demander en amont.' },
+        { tag: 'Reste applicatif', color: '#1e66f5', title: 'Face-à-face, sections module, compte Drive',
+          body: 'Le face-à-face des stats, le bloc de compte Drive et la chrome de la route module portent du sens métier propre à Scoreo. Ils composent des atomes du système mais ne deviennent pas des composants : rien d\'autre ne les réutiliserait.' },
+      ],
+    }
+  }
+}
+</script>
+</body>
+</html>

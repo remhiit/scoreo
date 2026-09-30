@@ -1,0 +1,21 @@
+.sc-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+  padding: var(--space-1) 10px;
+  border: var(--border-width) solid var(--border-default);
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--text-body);
+  font-size: 13px;
+  text-transform: capitalize;
+  cursor: pointer;
+}
+.sc-chip:hover {
+  background: var(--surface-hover);
+}
+.sc-chip--selected {
+  border: 2px solid var(--color-primary);
+  padding: 3px 9px;
+}
