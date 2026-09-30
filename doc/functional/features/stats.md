@@ -5,7 +5,7 @@
 - Players sorted by ELO descending
 - Each row shows: name, W/L record, win % bar, ELO number
 - Click a player → head-to-head detail view
-- Rows are wrapped in a `.list-container` (`ListContainer`), same 8px row spacing as other lists
+- Rows are design-system `StatRow`s inside a `List` (same 8px row spacing as other lists)
 - ELO figures (the leaderboard `StatRow` score, the detail's ELO `Badge`) use `--font-score` (monospace, tabular figures) so digits don't shift width row to row
 
 ## ELO Calculation
