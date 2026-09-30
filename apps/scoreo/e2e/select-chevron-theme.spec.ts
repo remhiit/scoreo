@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test'
 
 const CHEVRON_BACKGROUND_COLOR =
-  "getComputedStyle(document.querySelector('.select-chevron'), '::after').backgroundColor"
+  "getComputedStyle(document.querySelector('.sc-select'), '::after').backgroundColor"
 
 const TEXT_MUTED_COLOR = `(() => {
   const probe = document.createElement('div')

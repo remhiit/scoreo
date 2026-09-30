@@ -1,3 +1,20 @@
+import {
+  BulletList,
+  Button,
+  ButtonRow,
+  Dialog,
+  EmptyState,
+  FilterBar,
+  HistoryCell,
+  List,
+  ListRow,
+  RoundCard,
+  Score,
+  Select,
+  Stack,
+  Text,
+  type RowAction,
+} from '@scoreboards/design-system'
 import { Fragment, useCallback, useEffect, useReducer } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { DeleteMatchUseCase } from '../../application/deleteMatchUseCase'
@@ -5,11 +22,13 @@ import type { GetGameTypesUseCase } from '../../application/getGameTypesUseCase'
 import type { GetMatchesUseCase } from '../../application/getMatchesUseCase'
 import type { GetPlayersUseCase } from '../../application/getPlayersUseCase'
 import type { GameType } from '../../domain/model/gameType'
-import { ListContainer } from '../shared/ListContainer'
-import { ListItemRow } from '../shared/ListItemRow'
-import { LudoButton } from '../shared/LudoButton'
-import { LudoModal } from '../shared/LudoModal'
-import { buildRoundBreakdown, buildScoreSummary, deleteMatch, historyReducer, loadDisplays } from './historyReducer'
+import {
+  buildRoundBreakdown,
+  buildScoreSummary,
+  deleteMatch,
+  historyReducer,
+  loadDisplays,
+} from './historyReducer'
 import { initialHistoryState } from './historyTypes'
 
 export interface HistoryScreenProps {
@@ -25,6 +44,24 @@ export interface HistoryScreenProps {
    * refresh always shows the plain, unhighlighted history.
    */
   highlightMatchId?: string
+}
+
+/** "Alice 10 · Bob 14" with the winner(s) bold — the same line in the list and in the round breakdown. */
+function ScoreSummary({
+  parts,
+}: {
+  parts: { playerId: string; text: string; isWinner: boolean }[]
+}) {
+  return (
+    <>
+      {parts.map((part, i) => (
+        <Fragment key={part.playerId}>
+          {i > 0 && ' · '}
+          {part.isWinner ? <Text variant="strong">{part.text}</Text> : part.text}
+        </Fragment>
+      ))}
+    </>
+  )
 }
 
 function uniqueGameTypes(displays: { gameType: GameType | undefined }[]): GameType[] {
@@ -74,7 +111,8 @@ export function HistoryScreen({
 
   const emptyText = (() => {
     if (state.selectedGameTypeFilter === undefined) return t('history.noMatchesYet')
-    const gameName = state.displays.find((d) => d.match.gameTypeId === state.selectedGameTypeFilter)?.gameType?.name
+    const gameName = state.displays.find((d) => d.match.gameTypeId === state.selectedGameTypeFilter)
+      ?.gameType?.name
     return gameName ? t('history.noMatchesForGame', { gameName }) : t('history.noMatchesYet')
   })()
 
@@ -83,154 +121,145 @@ export function HistoryScreen({
   const roundBreakdown = matchToView ? buildRoundBreakdown(matchToView) : []
 
   return (
-    <>
-      {state.error && <div className="error-msg">{state.error}</div>}
+    <Stack gap={4}>
+      {state.error && <Text variant="error">{state.error}</Text>}
 
-      <div className="history-filter">
-        <label>{t('history.filterByGame')}</label>
-        <div className="select-chevron select-chevron--compact">
-          <select
-            className="filter-select"
-            value={state.selectedGameTypeFilter ?? ''}
-            onChange={(e) => dispatch({ type: 'selectGameTypeFilter', gameTypeId: e.target.value || undefined })}
-          >
-            <option value="">{t('history.allGames')}</option>
-            {uniqueGameTypes(state.displays).map((gt) => (
-              <option key={gt.id} value={gt.id}>
-                {gt.name}
-              </option>
-            ))}
-          </select>
-        </div>
-      </div>
+      {/* Stays up even when the list is empty, so no data never reads as a broken filter. */}
+      <FilterBar label={t('history.filterByGame')}>
+        <Select
+          size="sm"
+          ariaLabel={t('history.filterByGame')}
+          value={state.selectedGameTypeFilter ?? ''}
+          placeholder={t('history.allGames')}
+          options={uniqueGameTypes(state.displays).map((gt) => ({ value: gt.id, label: gt.name }))}
+          onChange={(id) => dispatch({ type: 'selectGameTypeFilter', gameTypeId: id || undefined })}
+        />
+      </FilterBar>
 
       {filteredDisplays.length === 0 ? (
-        <div className="empty">{emptyText}</div>
+        <EmptyState>{emptyText}</EmptyState>
       ) : (
-        <ListContainer>
+        <List>
           {filteredDisplays.map((display) => {
-            const gameLabel = display.gameType?.name ?? t('history.unknownGame')
             const gameType = display.gameType
+            const actions: RowAction[] = [
+              {
+                icon: 'view',
+                label: 'View details',
+                onClick: () => dispatch({ type: 'showRounds', matchId: display.match.id }),
+              },
+            ]
+            if (onEditMatch && gameType) {
+              actions.push({
+                icon: 'edit',
+                label: 'Edit',
+                onClick: () =>
+                  onEditMatch(
+                    gameType.id,
+                    display.match.playerScores.map((ps) => ps.playerId),
+                    display.match.id,
+                  ),
+              })
+            }
+            actions.push({
+              icon: 'delete',
+              label: 'Delete',
+              tone: 'danger',
+              onClick: () => dispatch({ type: 'showDeleteConfirm', matchId: display.match.id }),
+            })
             return (
-              <ListItemRow
+              <ListRow
                 key={display.match.id}
-                label={gameLabel}
+                title={gameType?.name ?? t('history.unknownGame')}
                 highlighted={display.match.id === highlightMatchId}
-                players={
-                  <>
-                    {buildScoreSummary(display).map((part, i) => (
-                      <Fragment key={part.playerId}>
-                        {i > 0 && ' · '}
-                        {part.isWinner ? <strong>{part.text}</strong> : part.text}
-                      </Fragment>
-                    ))}
-                  </>
-                }
+                players={<ScoreSummary parts={buildScoreSummary(display)} />}
                 date={display.dateFormatted}
-                onView={() => dispatch({ type: 'showRounds', matchId: display.match.id })}
-                onEdit={
-                  onEditMatch && gameType
-                    ? () =>
-                        onEditMatch(
-                          gameType.id,
-                          display.match.playerScores.map((ps) => ps.playerId),
-                          display.match.id,
-                        )
-                    : undefined
-                }
-                onDelete={() => dispatch({ type: 'showDeleteConfirm', matchId: display.match.id })}
+                actions={actions}
               />
             )
           })}
-        </ListContainer>
+        </List>
       )}
 
-      <LudoModal
+      <Dialog
         open={matchToView !== undefined}
         title={t('history.roundsTitle')}
         onClose={() => dispatch({ type: 'dismissRounds' })}
-        footer={
-          <LudoButton
-            text={t('common.close')}
-            variant="secondary"
-            onClick={() => dispatch({ type: 'dismissRounds' })}
-          />
+        closeLabel={t('common.close')}
+        actions={
+          <ButtonRow align="end">
+            <Button variant="secondary" onClick={() => dispatch({ type: 'dismissRounds' })}>
+              {t('common.close')}
+            </Button>
+          </ButtonRow>
         }
       >
         {matchToView && (
           <>
-            <p className="rounds-detail-head">
+            <Text variant="muted" block>
               {matchToView.gameType?.name ?? t('history.unknownGame')} · {matchToView.dateFormatted}
-            </p>
+            </Text>
             {roundBreakdown.length === 0 ? (
-              <p className="rounds-detail-empty">{t('history.noRoundDetail')}</p>
+              <Text variant="hint" block>
+                {t('history.noRoundDetail')}
+              </Text>
             ) : (
               roundBreakdown.map((round) => (
-                <div key={round.roundNumber} className="rounds-detail-round">
-                  <span className="rounds-detail-round-head">
-                    {t('scoreDetail.round', { number: round.roundNumber })}
-                  </span>
-                  <div className="rounds-detail-cells">
-                    {round.cells.map((cell) => (
-                      <span key={cell.playerId} className="rounds-detail-cell">
-                        <span>{cell.label}</span>
-                        <span className="rounds-detail-score">{cell.score}</span>
-                      </span>
-                    ))}
-                  </div>
-                </div>
+                <RoundCard
+                  key={round.roundNumber}
+                  title={t('scoreDetail.round', { number: round.roundNumber })}
+                >
+                  {round.cells.map((cell) => (
+                    <HistoryCell key={cell.playerId} name={cell.label}>
+                      <Score size="sm">{cell.score}</Score>
+                    </HistoryCell>
+                  ))}
+                </RoundCard>
               ))
             )}
-            <p className="rounds-detail-totals">
-              {t('history.totals')}{' '}
-              {buildScoreSummary(matchToView).map((part, i) => (
-                <Fragment key={part.playerId}>
-                  {i > 0 && ' · '}
-                  {part.isWinner ? <strong>{part.text}</strong> : part.text}
-                </Fragment>
-              ))}
-            </p>
+            <Text block>
+              {t('history.totals')} <ScoreSummary parts={buildScoreSummary(matchToView)} />
+            </Text>
           </>
         )}
-      </LudoModal>
+      </Dialog>
 
-      <LudoModal
+      <Dialog
         open={state.deleteConfirmMatchId !== undefined && matchToDelete !== undefined}
         title={t('history.deleteTitle')}
         onClose={() => dispatch({ type: 'dismissDeleteConfirm' })}
-        footer={
-          <>
-            <LudoButton
-              text={t('common.cancel')}
-              variant="secondary"
-              onClick={() => dispatch({ type: 'dismissDeleteConfirm' })}
-            />
-            <LudoButton
-              text={t('common.delete')}
+        closeLabel={t('common.close')}
+        actions={
+          <ButtonRow>
+            <Button variant="secondary" onClick={() => dispatch({ type: 'dismissDeleteConfirm' })}>
+              {t('common.cancel')}
+            </Button>
+            <Button
               variant="danger"
               onClick={() => {
-                if (state.deleteConfirmMatchId !== undefined) handleDelete(state.deleteConfirmMatchId)
+                if (state.deleteConfirmMatchId !== undefined)
+                  handleDelete(state.deleteConfirmMatchId)
               }}
-            />
-          </>
+            >
+              {t('common.delete')}
+            </Button>
+          </ButtonRow>
         }
       >
         {matchToDelete && (
           <>
-            <p>
+            <Text block>
               {matchToDelete.gameType?.name ?? t('history.unknown')} · {matchToDelete.dateFormatted}
-            </p>
-            <ul>
-              {matchToDelete.match.playerScores.map((ps) => (
-                <li key={ps.playerId}>
-                  {matchToDelete.playerLabels[ps.playerId] ?? '?'}: {ps.score}
-                </li>
-              ))}
-            </ul>
-            <p>{t('history.matchDataWillBeLost')}</p>
+            </Text>
+            <BulletList
+              items={matchToDelete.match.playerScores.map(
+                (ps) => `${matchToDelete.playerLabels[ps.playerId] ?? '?'}: ${ps.score}`,
+              )}
+            />
+            <Text block>{t('history.matchDataWillBeLost')}</Text>
           </>
         )}
-      </LudoModal>
-    </>
+      </Dialog>
+    </Stack>
   )
 }

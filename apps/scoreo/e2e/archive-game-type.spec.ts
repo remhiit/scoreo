@@ -43,7 +43,7 @@ test('archiving a game type hides it from new matches but keeps its history', as
   await page.getByRole('button', { name: 'Menu' }).click()
   await page.getByRole('button', { name: 'History' }).click()
 
-  const historyRow = page.locator('.list-item-row', { hasText: gameTypeName })
+  const historyRow = page.locator('.sc-row', { hasText: gameTypeName })
   await expect(historyRow).toBeVisible()
   await expect(historyRow).toContainText(`${playerA} 10`)
   await expect(historyRow).toContainText(`${playerB} 5`)

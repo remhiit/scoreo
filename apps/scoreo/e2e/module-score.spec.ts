@@ -41,13 +41,13 @@ test('scoring a match on the Torī Valley module lands it in Scoreo history', as
   // that match called out — no burger + History detour needed.
   await expect(page.getByRole('button', { name: 'Menu' })).toBeVisible()
 
-  const row = page.locator('.list-item-row')
+  const row = page.getByRole('main').locator('.sc-row')
   await expect(row).toHaveCount(1)
-  await expect(row).toHaveClass(/list-item-row--highlighted/)
+  await expect(row).toHaveClass(/sc-row--highlighted/)
   await expect(row.getByText('La Vallée des Torī')).toBeVisible()
   // Winners are bold: Alice alone, with the 2 VP her Torī series is worth.
-  await expect(row.locator('strong')).toHaveCount(1)
-  await expect(row.locator('strong')).toContainText(`${alice} 2`)
+  await expect(row.locator('.sc-text--strong')).toHaveCount(1)
+  await expect(row.locator('.sc-text--strong')).toContainText(`${alice} 2`)
 
   // Reopening goes back to the module, not to Scoreo's generic score screen,
   // and the module's own grid comes back with it.
@@ -62,9 +62,9 @@ test('scoring a match on the Torī Valley module lands it in Scoreo history', as
   await page.getByRole('button', { name: 'Save match' }).click()
 
   await expect(page.getByRole('button', { name: 'Menu' })).toBeVisible()
-  await expect(page.locator('.list-item-row')).toHaveCount(1)
-  await expect(page.locator('.list-item-row')).toHaveClass(/list-item-row--highlighted/)
-  await expect(page.locator('.list-item-row').locator('strong')).toContainText(`${alice} 4`)
+  await expect(page.locator('.sc-row')).toHaveCount(1)
+  await expect(page.locator('.sc-row')).toHaveClass(/sc-row--highlighted/)
+  await expect(page.locator('.sc-row').locator('.sc-text--strong')).toContainText(`${alice} 4`)
 })
 
 test('a game a module counts still offers Scoreo’s own score screen', async ({ page }) => {
