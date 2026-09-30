@@ -94,6 +94,7 @@ page background, `--header-height`, `--screen-max`.
 | `StatusLine`               | success / warning / danger / info outcome, with detail lines                                                                                         |
 | `FilterBar`                | Label + compact select                                                                                                                               |
 | `EmptyState`               | What is missing, how to fill it                                                                                                                      |
+| `BulletList`               | The records a destructive dialog affects, one per line                                                                                               |
 
 ### 03 · Organisms — `src/organisms/`
 
