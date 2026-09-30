@@ -1,18 +1,10 @@
 import {
-  ArrowLeft,
-  BarChart3,
-  Cloud,
-  Gamepad2,
-  History,
-  Home,
-  Languages,
-  Menu,
-  Palette,
-  Trophy,
-  Upload,
-  X,
-  type LucideIcon,
-} from 'lucide-react'
+  AppHeader,
+  EmptyState,
+  ScreenTemplate,
+  SideMenu,
+  type SideMenuItem,
+} from '@scoreboards/design-system'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { AddGameTypeUseCase } from './application/addGameTypeUseCase'
@@ -60,7 +52,6 @@ import { buildInitialState } from './ui/scoredetail/scoreDetailReducer'
 import { ScoreDetailScreen } from './ui/scoredetail/ScoreDetailScreen'
 import type { ScoreDetailMode } from './ui/scoredetail/scoreDetailTypes'
 import { LanguagePickerDialog } from './ui/shared/LanguagePickerDialog'
-import { LudoButton } from './ui/shared/LudoButton'
 import { StatsScreen } from './ui/stats/StatsScreen'
 import { SyncScreen } from './ui/sync/SyncScreen'
 import { useAutoSync } from './ui/sync/useAutoSync'
@@ -93,23 +84,6 @@ function screenTitle(screen: Screen): string {
   }
 }
 
-interface BurgerItemProps {
-  icon: LucideIcon
-  label: string
-  onClick: () => void
-}
-
-function BurgerItem({ icon: Icon, label, onClick }: BurgerItemProps) {
-  return (
-    <button type="button" className="burger-item" onClick={onClick}>
-      <span className="burger-item-icon">
-        <Icon size={20} aria-hidden />
-      </span>
-      <span>{label}</span>
-    </button>
-  )
-}
-
 interface ScoreDetailRouteProps {
   screen: Extract<Screen, { type: 'ScoreDetail' }>
   services: Services
@@ -124,7 +98,13 @@ interface ScoreDetailRouteProps {
  * `ScoreDetailHandler(...)` construction — deliberately ad hoc per-screen
  * wiring, not part of ServicesContext (per TS-056).
  */
-function ScoreDetailRoute({ screen, services, onSaved, onCancel, onMissingGameType }: ScoreDetailRouteProps) {
+function ScoreDetailRoute({
+  screen,
+  services,
+  onSaved,
+  onCancel,
+  onMissingGameType,
+}: ScoreDetailRouteProps) {
   const gameType = useMemo(
     () => services.gameTypeRepository.findById(screen.gameTypeId),
     [services, screen.gameTypeId],
@@ -150,7 +130,13 @@ function ScoreDetailRoute({ screen, services, onSaved, onCancel, onMissingGameTy
   )
   const initialState = useMemo(() => {
     if (!gameType) return undefined
-    return buildInitialState(gameType, players, mode, services.currentDate, services.matchDraftRepository)
+    return buildInitialState(
+      gameType,
+      players,
+      mode,
+      services.currentDate,
+      services.matchDraftRepository,
+    )
   }, [gameType, players, mode, services])
 
   useEffect(() => {
@@ -195,17 +181,37 @@ function AppShell() {
     }
   }
   const getHeadToHead = useMemo(
-    () => new GetHeadToHeadUseCase(services.matchRepository, services.gameTypeRepository, services.playerRepository),
+    () =>
+      new GetHeadToHeadUseCase(
+        services.matchRepository,
+        services.gameTypeRepository,
+        services.playerRepository,
+      ),
     [services],
   )
-  const getGameTypes = useMemo(() => new GetGameTypesUseCase(services.gameTypeRepository), [services])
+  const getGameTypes = useMemo(
+    () => new GetGameTypesUseCase(services.gameTypeRepository),
+    [services],
+  )
   const getMatches = useMemo(() => new GetMatchesUseCase(services.matchRepository), [services])
   const getPlayers = useMemo(() => new GetPlayersUseCase(services.playerRepository), [services])
-  const deleteMatchUseCase = useMemo(() => new DeleteMatchUseCase(services.matchRepository), [services])
+  const deleteMatchUseCase = useMemo(
+    () => new DeleteMatchUseCase(services.matchRepository),
+    [services],
+  )
   const addGameType = useMemo(() => new AddGameTypeUseCase(services.gameTypeRepository), [services])
-  const updateGameType = useMemo(() => new UpdateGameTypeUseCase(services.gameTypeRepository), [services])
-  const findGameTypeById = useMemo(() => new FindGameTypeByIdUseCase(services.gameTypeRepository), [services])
-  const archiveGameType = useMemo(() => new ArchiveGameTypeUseCase(services.gameTypeRepository), [services])
+  const updateGameType = useMemo(
+    () => new UpdateGameTypeUseCase(services.gameTypeRepository),
+    [services],
+  )
+  const findGameTypeById = useMemo(
+    () => new FindGameTypeByIdUseCase(services.gameTypeRepository),
+    [services],
+  )
+  const archiveGameType = useMemo(
+    () => new ArchiveGameTypeUseCase(services.gameTypeRepository),
+    [services],
+  )
   const mergeGameTypes = useMemo(
     () =>
       new MergeGameTypesUseCase(
@@ -232,13 +238,26 @@ function AppShell() {
     [services],
   )
   const getTrophies = useMemo(
-    () => new GetTrophiesUseCase(services.matchRepository, services.gameTypeRepository, services.playerRepository),
+    () =>
+      new GetTrophiesUseCase(
+        services.matchRepository,
+        services.gameTypeRepository,
+        services.playerRepository,
+      ),
     [services],
   )
   const deletePlayer = useMemo(() => new DeletePlayerUseCase(services.playerRepository), [services])
-  const renamePlayerUseCase = useMemo(() => new RenamePlayerUseCase(services.playerRepository), [services])
+  const renamePlayerUseCase = useMemo(
+    () => new RenamePlayerUseCase(services.playerRepository),
+    [services],
+  )
   const mergePlayersUseCase = useMemo(
-    () => new MergePlayersUseCase(services.playerRepository, services.matchRepository, services.matchDraftRepository),
+    () =>
+      new MergePlayersUseCase(
+        services.playerRepository,
+        services.matchRepository,
+        services.matchDraftRepository,
+      ),
     [services],
   )
   const cleanupInactivePlayers = useMemo(
@@ -308,208 +327,153 @@ function AppShell() {
 
   if (current.type === 'ModuleScore') {
     return (
-      <div className="app-module-route">
-        <ModuleScoreScreen
-          screen={current}
-          services={services}
-          onExit={(savedMatchId) => {
-            if (savedMatchId !== undefined) {
-              setHighlightMatchId(savedMatchId)
-              navigate(HISTORY_SCREEN)
-              return
-            }
-            navigate(current.matchId !== undefined ? HISTORY_SCREEN : HOME_SCREEN)
-          }}
-        />
-      </div>
+      <ModuleScoreScreen
+        screen={current}
+        services={services}
+        onExit={(savedMatchId) => {
+          if (savedMatchId !== undefined) {
+            setHighlightMatchId(savedMatchId)
+            navigate(HISTORY_SCREEN)
+            return
+          }
+          navigate(current.matchId !== undefined ? HISTORY_SCREEN : HOME_SCREEN)
+        }}
+      />
     )
   }
 
+  const goTo = (target: Screen) => () => {
+    setBurgerOpen(false)
+    navigate(target)
+  }
+  const menuItems: SideMenuItem[] = [
+    { icon: 'home', label: t('menu.home'), onClick: goTo(HOME_SCREEN) },
+    { icon: 'stats', label: t('menu.stats'), onClick: goTo(STATS_SCREEN) },
+    { icon: 'trophy', label: t('menu.hallOfFame'), onClick: goTo(HALL_OF_FAME_SCREEN) },
+    { icon: 'history', label: t('menu.history'), onClick: goTo(HISTORY_SCREEN) },
+    { icon: 'upload', label: t('menu.import'), onClick: goTo(IMPORT_SCREEN) },
+    { icon: 'games', label: t('menu.games'), onClick: goTo(GAMES_SCREEN) },
+    ...(services.syncUseCase
+      ? [
+          {
+            icon: 'cloud',
+            label: t('menu.sync'),
+            onClick: goTo(SYNC_SCREEN),
+          } satisfies SideMenuItem,
+        ]
+      : []),
+    {
+      icon: 'palette',
+      label: t('menu.theme'),
+      onClick: () => {
+        setBurgerOpen(false)
+        setThemePickerOpen(true)
+      },
+    },
+    {
+      icon: 'language',
+      label: t('menu.language'),
+      onClick: () => {
+        setBurgerOpen(false)
+        setLanguagePickerOpen(true)
+      },
+    },
+  ]
+
   return (
-    <>
-      <div className="app-header">
-        {onBack && (
-          <LudoButton text={<ArrowLeft size={20} />} variant="ghost" iconOnly ariaLabel="Back" onClick={onBack} />
-        )}
-        <span
-          className="app-title clickable"
-          onClick={() => {
-            if (current.type !== 'Home') navigate(HOME_SCREEN)
-          }}
-        >
-          {screenTitle(current)}
-        </span>
-        <LudoButton
-          text={<Menu size={20} />}
-          variant="ghost"
-          iconOnly
-          ariaLabel="Menu"
-          onClick={() => setBurgerOpen(true)}
+    <ScreenTemplate
+      header={
+        <AppHeader
+          title={screenTitle(current)}
+          back={onBack ? { label: 'Back', onClick: onBack } : undefined}
+          menu={{ label: 'Menu', onClick: () => setBurgerOpen(true) }}
+          onTitleClick={current.type !== 'Home' ? () => navigate(HOME_SCREEN) : undefined}
         />
-      </div>
-
-      <div className="app-content">
-        {current.type === 'Home' && (
-          <HomeScreen
-            addPlayer={addPlayer}
-            getPlayers={getPlayers}
-            getPlayerStats={getPlayerStats}
-            deletePlayer={deletePlayer}
-            renamePlayerUseCase={renamePlayerUseCase}
-            mergePlayersUseCase={mergePlayersUseCase}
-            cleanupInactivePlayers={cleanupInactivePlayers}
-            getTrophies={getTrophies}
-            getGameTypes={homeGetGameTypes}
-            onAddGameType={homeOnAddGameType}
-            onStartGame={handleStartGame}
-            onStartModule={handleStartModule}
-            matchDraftRepository={services.matchDraftRepository}
-            onResumeDraft={handleStartGame}
-            getMatchCount={homeGetMatchCount}
-          />
-        )}
-        {current.type === 'History' && (
-          <HistoryScreen
-            getMatches={getMatches}
-            getPlayers={getPlayers}
-            getGameTypes={getGameTypes}
-            deleteMatchUseCase={deleteMatchUseCase}
-            onEditMatch={handleEditMatch}
-            highlightMatchId={highlightMatchId}
-          />
-        )}
-        {current.type === 'Stats' && (
-          <StatsScreen
-            getHeadToHead={getHeadToHead}
-            getGameTypes={getGameTypes}
-            getTrophies={getTrophies}
-            onBackOverrideChange={handleStatsBackOverrideChange}
-          />
-        )}
-        {current.type === 'Import' && <ImportScreen importUseCase={importUseCase} onDone={handleImportDone} />}
-        {current.type === 'HallOfFame' && <HallOfFameScreen getTrophies={getTrophies} getGameTypes={getGameTypes} />}
-        {current.type === 'Games' && (
-          <GameTypeScreen
-            addGameType={addGameType}
-            updateGameType={updateGameType}
-            getGameTypes={getGameTypes}
-            findGameTypeById={findGameTypeById}
-            archiveGameType={archiveGameType}
-            mergeGameTypes={mergeGameTypes}
-          />
-        )}
-        {current.type === 'Sync' &&
-          (services.syncUseCase ? (
-            <SyncScreen syncUseCase={services.syncUseCase} />
-          ) : (
-            <div className="empty">
-            <Cloud size={20} aria-hidden /> Sync not available
-          </div>
-          ))}
-        {current.type === 'ScoreDetail' && (
-          <ScoreDetailRoute
-            screen={current}
-            services={services}
-            onSaved={() => navigate(current.matchId !== undefined ? HISTORY_SCREEN : HOME_SCREEN)}
-            onCancel={() => navigate(current.matchId !== undefined ? HISTORY_SCREEN : HOME_SCREEN)}
-            onMissingGameType={() => navigate(HOME_SCREEN)}
-          />
-        )}
-      </div>
-
-      {burgerOpen && (
+      }
+      overlays={
         <>
-          <div className="burger-overlay" onClick={() => setBurgerOpen(false)} />
-          <div className="burger-menu">
-            <LudoButton
-              text={<X size={20} />}
-              variant="ghost"
-              iconOnly
-              ariaLabel="Close"
-              className="burger-close"
-              onClick={() => setBurgerOpen(false)}
-            />
-            <BurgerItem
-              icon={Home}
-              label={t('menu.home')}
-              onClick={() => {
-                setBurgerOpen(false)
-                navigate(HOME_SCREEN)
-              }}
-            />
-            <BurgerItem
-              icon={BarChart3}
-              label={t('menu.stats')}
-              onClick={() => {
-                setBurgerOpen(false)
-                navigate(STATS_SCREEN)
-              }}
-            />
-            <BurgerItem
-              icon={Trophy}
-              label={t('menu.hallOfFame')}
-              onClick={() => {
-                setBurgerOpen(false)
-                navigate(HALL_OF_FAME_SCREEN)
-              }}
-            />
-            <BurgerItem
-              icon={History}
-              label={t('menu.history')}
-              onClick={() => {
-                setBurgerOpen(false)
-                navigate(HISTORY_SCREEN)
-              }}
-            />
-            <BurgerItem
-              icon={Upload}
-              label={t('menu.import')}
-              onClick={() => {
-                setBurgerOpen(false)
-                navigate(IMPORT_SCREEN)
-              }}
-            />
-            <BurgerItem
-              icon={Gamepad2}
-              label={t('menu.games')}
-              onClick={() => {
-                setBurgerOpen(false)
-                navigate(GAMES_SCREEN)
-              }}
-            />
-            {services.syncUseCase && (
-              <BurgerItem
-                icon={Cloud}
-                label={t('menu.sync')}
-                onClick={() => {
-                  setBurgerOpen(false)
-                  navigate(SYNC_SCREEN)
-                }}
-              />
-            )}
-            <BurgerItem
-              icon={Palette}
-              label={t('menu.theme')}
-              onClick={() => {
-                setBurgerOpen(false)
-                setThemePickerOpen(true)
-              }}
-            />
-            <BurgerItem
-              icon={Languages}
-              label={t('menu.language')}
-              onClick={() => {
-                setBurgerOpen(false)
-                setLanguagePickerOpen(true)
-              }}
-            />
-          </div>
+          <SideMenu
+            open={burgerOpen}
+            onClose={() => setBurgerOpen(false)}
+            closeLabel={t('common.close')}
+            items={menuItems}
+          />
+          {themePickerOpen && <ThemePickerDialog onClose={() => setThemePickerOpen(false)} />}
+          {languagePickerOpen && (
+            <LanguagePickerDialog onClose={() => setLanguagePickerOpen(false)} />
+          )}
         </>
+      }
+    >
+      {current.type === 'Home' && (
+        <HomeScreen
+          addPlayer={addPlayer}
+          getPlayers={getPlayers}
+          getPlayerStats={getPlayerStats}
+          deletePlayer={deletePlayer}
+          renamePlayerUseCase={renamePlayerUseCase}
+          mergePlayersUseCase={mergePlayersUseCase}
+          cleanupInactivePlayers={cleanupInactivePlayers}
+          getTrophies={getTrophies}
+          getGameTypes={homeGetGameTypes}
+          onAddGameType={homeOnAddGameType}
+          onStartGame={handleStartGame}
+          onStartModule={handleStartModule}
+          matchDraftRepository={services.matchDraftRepository}
+          onResumeDraft={handleStartGame}
+          getMatchCount={homeGetMatchCount}
+        />
       )}
-
-      {themePickerOpen && <ThemePickerDialog onClose={() => setThemePickerOpen(false)} />}
-      {languagePickerOpen && <LanguagePickerDialog onClose={() => setLanguagePickerOpen(false)} />}
-    </>
+      {current.type === 'History' && (
+        <HistoryScreen
+          getMatches={getMatches}
+          getPlayers={getPlayers}
+          getGameTypes={getGameTypes}
+          deleteMatchUseCase={deleteMatchUseCase}
+          onEditMatch={handleEditMatch}
+          highlightMatchId={highlightMatchId}
+        />
+      )}
+      {current.type === 'Stats' && (
+        <StatsScreen
+          getHeadToHead={getHeadToHead}
+          getGameTypes={getGameTypes}
+          getTrophies={getTrophies}
+          onBackOverrideChange={handleStatsBackOverrideChange}
+        />
+      )}
+      {current.type === 'Import' && (
+        <ImportScreen importUseCase={importUseCase} onDone={handleImportDone} />
+      )}
+      {current.type === 'HallOfFame' && (
+        <HallOfFameScreen getTrophies={getTrophies} getGameTypes={getGameTypes} />
+      )}
+      {current.type === 'Games' && (
+        <GameTypeScreen
+          addGameType={addGameType}
+          updateGameType={updateGameType}
+          getGameTypes={getGameTypes}
+          findGameTypeById={findGameTypeById}
+          archiveGameType={archiveGameType}
+          mergeGameTypes={mergeGameTypes}
+        />
+      )}
+      {current.type === 'Sync' &&
+        (services.syncUseCase ? (
+          <SyncScreen syncUseCase={services.syncUseCase} />
+        ) : (
+          <EmptyState icon="cloud" title="Sync not available" />
+        ))}
+      {current.type === 'ScoreDetail' && (
+        <ScoreDetailRoute
+          screen={current}
+          services={services}
+          onSaved={() => navigate(current.matchId !== undefined ? HISTORY_SCREEN : HOME_SCREEN)}
+          onCancel={() => navigate(current.matchId !== undefined ? HISTORY_SCREEN : HOME_SCREEN)}
+          onMissingGameType={() => navigate(HOME_SCREEN)}
+        />
+      )}
+    </ScreenTemplate>
   )
 }
 

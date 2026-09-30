@@ -23,6 +23,7 @@ describe('ImmersiveTemplate', () => {
         module
       </ImmersiveTemplate>,
     )
+    expect(screen.getByRole('banner')).toHaveTextContent('Skyjo')
     fireEvent.click(screen.getByRole('button', { name: 'Back to Scoreo' }))
     expect(onExit).toHaveBeenCalledOnce()
   })

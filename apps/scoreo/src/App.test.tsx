@@ -135,7 +135,7 @@ describe('App', () => {
     fireEvent.click(screen.getByText('Games'))
     expect(screen.getByText('No game types yet. Add one.')).toBeInTheDocument()
 
-    fireEvent.click(screen.getByText('Games', { selector: '.app-title' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Games' }))
     expect(screen.getByText('Getting started')).toBeInTheDocument()
   })
 
@@ -252,7 +252,7 @@ describe('App', () => {
     fireEvent.click(screen.getByText('Exit'))
     expect(document.querySelector('.list-item-row--highlighted')).not.toBeNull()
 
-    fireEvent.click(screen.getByText('History', { selector: '.app-title' }))
+    fireEvent.click(screen.getByRole('button', { name: 'History' }))
     fireEvent.click(screen.getByLabelText('Menu'))
     fireEvent.click(screen.getByText('History'))
 

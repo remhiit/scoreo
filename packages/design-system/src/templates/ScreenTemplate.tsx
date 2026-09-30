@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { Button } from '../atoms/Button'
 import { cx } from '../cx'
 
 export interface ScreenTemplateProps {
@@ -40,17 +41,15 @@ export interface ImmersiveTemplateProps {
 
 /**
  * For content that brings its own chrome (a scoring module): no host header,
- * just a fine bar with the way out, and the content taking the rest.
+ * just a fine bar (a `banner` landmark) with its ✕ as the way out, and the content taking the rest.
  */
 export function ImmersiveTemplate({ title, exit, children }: ImmersiveTemplateProps) {
   return (
     <div className="sc-immersive">
-      <div className="sc-immersive__bar">
+      <header className="sc-immersive__bar">
         <span className="sc-immersive__title">{title}</span>
-        <button type="button" className="sc-immersive__exit" onClick={exit.onClick}>
-          {exit.label}
-        </button>
-      </div>
+        <Button variant="ghost" icon="close" label={exit.label} onClick={exit.onClick} />
+      </header>
       <div className="sc-immersive__content">{children}</div>
     </div>
   )

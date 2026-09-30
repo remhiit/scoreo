@@ -21,16 +21,10 @@ Tokens (`packages/design-system/src/tokens/`): Catppuccin flavor palettes
 (`colors-latte.css`, `colors-frappe.css`, `colors-macchiato.css`,
 `colors-mocha.css`) + the semantic alias/accent layer (`semantic.css`).
 
-Legacy picker styles (`apps/scoreo/public/css/`, until the picker composes the
-design system's `ThemePicker`):
-- `theme-picker.css` — `.theme-chip`,
-  `.accent-swatch` and their `--active` variants, for the picker
-  dialog.
-
 Burger menu entry: `"🎨 Theme"` (in `apps/scoreo/src/App.tsx`) opens
-`ThemePickerDialog`, which uses `LudoModal`/`LudoButton` (the chips/
-swatches themselves stay custom — Ludo has no "color swatch"
-primitive).
+`ThemePickerDialog`, which composes the design system's `Dialog` and
+`ThemePicker` organism (flavor `Chip`s, accent `Swatch`es — each 26px dot
+inside a 44px tap target). No host CSS.
 
 ## Code
 

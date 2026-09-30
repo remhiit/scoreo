@@ -158,10 +158,10 @@ describe('ModuleScoreScreen', () => {
     const { onExit } = renderFakeModule()
     await screen.findByText('Save')
 
-    const bar = screen.getByText('Fake').closest('.app-module-bar')
-    expect(bar).not.toBeNull()
+    const bar = screen.getByRole('banner')
+    expect(bar).toHaveTextContent('Fake')
 
-    fireEvent.click(within(bar as HTMLElement).getByRole('button', { name: 'Exit' }))
+    fireEvent.click(within(bar).getByRole('button', { name: 'Exit' }))
     expect(onExit).toHaveBeenCalledWith(undefined)
   })
 })
