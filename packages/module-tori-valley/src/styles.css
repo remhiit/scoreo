@@ -2,7 +2,7 @@
  * Every class here carries the `tv-` prefix, and every rule is scoped under
  * `.module-tori-valley`. The two guard opposite directions of the same border:
  * the scope keeps the module's declarations off the host, the prefix keeps the
- * host's generic rules — `.card`, `.empty`, `.app-title` in its `theme.css` and
+ * host's generic rules — `.card`, `.empty` in its `theme.css` and
  * `layout.css` — off the module's markup. Torī shipped for a while with every
  * player card laid out in a row because it reused the plain name `.card` and
  * never declared `display`. See doc/technical/module-contract.md.
