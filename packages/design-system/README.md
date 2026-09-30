@@ -69,6 +69,8 @@ page background, `--header-height`, `--screen-max`.
 | `Text`                   | Every piece of copy: `body`, `muted`, `hint`, `error`, `warning`, `success`, `strong`, `label`, `title`, `heading`, `caption`, `mono`                              |
 | `Stack`                  | The layout primitive: direction, gap, align, justify, wrap, grow                                                                                                   |
 | `TextInput`              | Text field with label, `invalid`/`error`/`hint`, `onEnter`                                                                                                         |
+| `DateInput`              | Native date field (`YYYY-MM-DD`) with label, `layout` `stacked`/`inline`, `max`                                                                                    |
+| `NumberField`            | Bare numeric field controlled as text (empty and `-` survive mid-edit), modes `cell`/`plain`, `invalid`                                                            |
 | `NumberInput`            | `stepper` (−, value, +), `plain`, or `cell` (60px history cell)                                                                                                    |
 | `Select`                 | Native select with a themed chevron, `md` or `sm` (filter)                                                                                                         |
 | `Checkbox`               | Label is the 44px tap target                                                                                                                                       |
@@ -80,34 +82,36 @@ page background, `--header-height`, `--screen-max`.
 
 ### 02 · Molecules — `src/molecules/`
 
-| Component                  | Role                                                                                                                                                 |
-| -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `ListRow` + `List`         | The row that carries the app: title, subtitle, players, date, badge; `selectable`/`selected` tints the whole row; square `actions` flush to the edge |
-| `StandingsCard`            | Rank, name, total, delta; `lead` bordered in the accent                                                                                              |
-| `StatRow`                  | Leaderboard line: name, record, meter, value, trailing badge                                                                                         |
-| `HistoryCell`              | Name + score (or editable cell) on a two-column grid                                                                                                 |
-| `SegmentedControl`, `Tabs` | Switch views inside a screen / filter a list                                                                                                         |
-| `FormRow`, `ButtonRow`     | Field + submit; buttons sharing a row                                                                                                                |
-| `DetailList` + `DetailRow` | Label/value pairs, optionally `boxed`                                                                                                                |
-| `StatusLine`               | success / warning / danger / info outcome, with detail lines                                                                                         |
-| `FilterBar`                | Label + compact select                                                                                                                               |
-| `EmptyState`               | What is missing, how to fill it                                                                                                                      |
+| Component                  | Role                                                                                                                                                   |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `ListRow` + `List`         | The row that carries the app: title, subtitle, players, date, badge; `selectable`/`selected` tints the whole row; square `actions` flush to the edge   |
+| `StandingsCard`            | Rank, name, total, delta; `lead` bordered in the accent                                                                                                |
+| `StatRow`                  | Leaderboard line: name, record, meter, value, `score` (accented ELO), trailing badge; `variant` `card` (default) or `line` (compact, inside a `Panel`) |
+| `HistoryCell`              | Name + score (or editable cell) on a two-column grid                                                                                                   |
+| `SegmentedControl`, `Tabs` | Switch views inside a screen / filter a list                                                                                                           |
+| `FormRow`, `ButtonRow`     | Field + submit; buttons sharing a row                                                                                                                  |
+| `DetailList` + `DetailRow` | Label/value pairs, optionally `boxed`                                                                                                                  |
+| `StatusLine`               | success / warning / danger / info outcome, with detail lines                                                                                           |
+| `FilterBar`                | Label + compact select                                                                                                                                 |
+| `EmptyState`               | What is missing, how to fill it                                                                                                                        |
+| `BulletList`               | The records a destructive dialog affects, one per line                                                                                                 |
 
 ### 03 · Organisms — `src/organisms/`
 
-| Component                       | Role                                                                       |
-| ------------------------------- | -------------------------------------------------------------------------- |
-| `AppHeader`                     | Back (or nothing), centred title, burger — fixed                           |
-| `StandingsGrid`                 | Two columns of standings cards                                             |
-| `RoundCard`                     | A past round, cells wrap downward                                          |
-| `Banner`                        | Accent container for onboarding steps or the resume action                 |
-| `DropZone`                      | Dashed file target, hands back the `File`                                  |
-| `Comparison` + `ComparisonCard` | Two symmetric cards (sync conflict)                                        |
-| `SideMenu`                      | Slide-in navigation                                                        |
-| `Dialog`                        | Centred dialog: title, body, `actions` footer                              |
-| `Sheet` + `SheetRow`            | Bottom sheet over readable context (round entry)                           |
-| `ActionBar`                     | Bottom bar: `center` (one pill) or `stack` (full primary over secondaries) |
-| `ThemePicker`                   | Flavor chips + accent swatches                                             |
+| Component                       | Role                                                                                                             |
+| ------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| `AppHeader`                     | Back (or nothing), centred title, burger — fixed                                                                 |
+| `StandingsGrid`                 | Two columns of standings cards                                                                                   |
+| `RoundCard`                     | A past round, cells wrap downward                                                                                |
+| `Panel`                         | Titled section on a card: title, `description`, `trailing`, children (Stats head-to-head, Hall of Fame trophies) |
+| `Banner`                        | Accent container for onboarding steps or the resume action                                                       |
+| `DropZone`                      | Dashed file target, hands back the `File`                                                                        |
+| `Comparison` + `ComparisonCard` | Two symmetric cards (sync conflict)                                                                              |
+| `SideMenu`                      | Slide-in navigation                                                                                              |
+| `Dialog`                        | Centred dialog: title, body, `actions` footer                                                                    |
+| `Sheet` + `SheetRow`            | Bottom sheet over readable context (round entry)                                                                 |
+| `ActionBar`                     | Bottom bar: `center` (one pill) or `stack` (full primary over secondaries)                                       |
+| `ThemePicker`                   | Flavor chips + accent swatches                                                                                   |
 
 ### 04 · Templates — `src/templates/`
 
