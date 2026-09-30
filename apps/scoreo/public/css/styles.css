@@ -1,6 +1,0 @@
-/* Per-screen host styles, on their way out: tokens and every shared component
-   now come from @scoreboards/design-system (imported by src/main.tsx). A file
-   here is deleted as soon as its screen composes the design system. */
-@import url("components.css");
-@import url("theme.css");
-@import url("layout.css");

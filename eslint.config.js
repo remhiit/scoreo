@@ -4,22 +4,6 @@ import reactHooks from 'eslint-plugin-react-hooks'
 import reactRefresh from 'eslint-plugin-react-refresh'
 import tseslint from 'typescript-eslint'
 
-/**
- * Host files that still style themselves instead of composing
- * @scoreboards/design-system. The list only ever shrinks: a screen leaves it in
- * the PR that moves it onto the design system, and a new file can't join it.
- * Once empty, the host has no visual decision left of its own.
- */
-const NOT_YET_ON_DESIGN_SYSTEM = [
-  'apps/scoreo/src/ui/shared/ListContainer.test.tsx',
-  'apps/scoreo/src/ui/shared/ListContainer.tsx',
-  'apps/scoreo/src/ui/shared/ListItemRow.tsx',
-  'apps/scoreo/src/ui/shared/LudoButton.tsx',
-  'apps/scoreo/src/ui/shared/LudoModal.tsx',
-  'apps/scoreo/src/ui/shared/LudoNumberInput.tsx',
-  'apps/scoreo/src/ui/shared/LudoTextInput.tsx',
-]
-
 export default tseslint.config(
   {
     ignores: [
@@ -55,7 +39,6 @@ export default tseslint.config(
     // The host composes design-system components and nothing else: every visual
     // decision (class, inline style, icon glyph) lives in packages/design-system.
     files: ['apps/scoreo/src/**/*.{ts,tsx}'],
-    ignores: NOT_YET_ON_DESIGN_SYSTEM,
     rules: {
       'no-restricted-syntax': [
         'error',

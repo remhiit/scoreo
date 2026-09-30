@@ -226,8 +226,8 @@ registered module — it runs its two checks over a table of them, so a new modu
 a new test.
 
 Scoping runs **one way**. It keeps the module out of the host; nothing keeps the host out of the
-module. Scoreo's `theme.css` and `layout.css` carry generic rules — `.card`, `.empty`, `.app-title`
-— that land on a module's markup like any other, and a class name the two happen to share is settled
+module. Host rules land on a module's markup like any other — Scoreo's old `theme.css` styled plain
+`.card` and `.empty` — and a class name the two happen to share is settled
 property by property: the module's `.module-<id> .card` wins the ones it declares, the host's `.card`
 supplies the rest. Torī Valley shipped for a while with every player card laid out in a row for
 exactly that reason, its own sheet never having had to declare `display`.
@@ -238,7 +238,10 @@ opposite directions of the same border, and only the pair of them makes a module
 its own.
 
 `scripts/check-module-styles.mjs` holds both halves — it fails on a rule that is not scoped under
-`.module-<moduleId>` and on a class name Scoreo also styles — and runs in CI. What it cannot see,
+`.module-<moduleId>` and on a class name Scoreo also styles (every host class now lives in
+`packages/design-system/`, prefixed `sc-`) — and runs in CI. The design system's one deliberate
+reach into modules is the pair of `h1`/`h2` defaults the host used to set globally, now scoped to a
+module's root and kept until the modules compose the design system themselves. What it cannot see,
 `apps/scoreo/tests/visual/` does: see [`visual-testing.md`](visual-testing.md).
 
 Anything that must paint before scripts run belongs in the module's own shell, not in the

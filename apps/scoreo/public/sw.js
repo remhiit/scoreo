@@ -1,13 +1,15 @@
-const CACHE_NAME = 'scoreo-v3'
+const CACHE_NAME = 'scoreo-v4'
 // Vite's build output uses content-hashed JS/CSS filenames unknown ahead of
 // time (unlike the Kotlin/webpack bundle's fixed `scoreo.js`), so only the
 // stable, non-hashed entry points are precached here. At runtime, GET
-// same-origin requests are split in two: hashed assets (`/assets/*`) are
+// same-origin requests are split in two: hashed assets (`/assets/*`, the app's
+// only stylesheet included — it comes from @scoreboards/design-system) are
 // served cache-first and populated on first fetch — immutable, the hash
 // guarantees freshness. Everything else same-origin (navigations,
-// `css/*.css`, `manifest.json`, icons) is served network-first with a cache
-// fallback for offline, refreshing the cache on every successful response.
-const ASSETS = ['./', './index.html', './css/styles.css']
+// `manifest.json`, icons) is served network-first with a cache fallback for
+// offline, refreshing the cache on every successful response.
+// v4: `./css/styles.css` left the shell when the host stopped shipping CSS.
+const ASSETS = ['./', './index.html']
 // The Cache Storage API is scoped per origin, not per service-worker scope:
 // the sibling PWAs deployed alongside Scoreo on `remhiit.github.io` share it.
 // Only Scoreo's own caches may be purged, so the activation filter is keyed on
@@ -24,7 +26,11 @@ self.addEventListener('activate', (event) => {
     caches
       .keys()
       .then((keys) =>
-        Promise.all(keys.filter((k) => k.startsWith(CACHE_PREFIX) && k !== CACHE_NAME).map((k) => caches.delete(k))),
+        Promise.all(
+          keys
+            .filter((k) => k.startsWith(CACHE_PREFIX) && k !== CACHE_NAME)
+            .map((k) => caches.delete(k)),
+        ),
       ),
   )
   self.clients.claim()
@@ -38,7 +44,9 @@ const putInCache = (request, response) => {
 }
 
 const cacheFirst = (request) =>
-  caches.match(request).then((cached) => cached || fetch(request).then((response) => putInCache(request, response)))
+  caches
+    .match(request)
+    .then((cached) => cached || fetch(request).then((response) => putInCache(request, response)))
 
 const networkFirst = (request) =>
   fetch(request)

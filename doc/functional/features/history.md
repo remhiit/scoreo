@@ -33,7 +33,7 @@ Screen: `apps/scoreo/src/ui/history/HistoryScreen.tsx`.
 ## Screen: HistoryScreen
 
 - **Filter dropdown** at top: "Filter by game type" — shows all game types from loaded matches, or "All games" for no filter
-- List of match rows (`ListItemRow`) sorted by date descending (most recent first), each spanning three lines:
+- List of match rows (design-system `ListRow`) sorted by date descending (most recent first), each spanning three lines:
   1. Game type name (design-system `ListRow` title)
   2. Per-player scores (`ListRow` players line), players separated by ` · `, winner(s) rendered as `<Text variant="strong">` (all tied winners are bold)
   3. Match date **with time-of-day** (`ListRow` date line, HH:mm in local timezone)

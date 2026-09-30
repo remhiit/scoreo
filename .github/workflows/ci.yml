@@ -179,7 +179,7 @@ jobs:
         with:
           node-version: 22
 
-      - name: Check design-system and host stylesheets for design token adherence
+      - name: Check design-system stylesheets for design token adherence
         run: node scripts/check-design-tokens.mjs
 
       - name: Check module stylesheets stay on their side of the border

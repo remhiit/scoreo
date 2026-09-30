@@ -42,3 +42,19 @@ body {
   font: inherit;
   color: inherit;
 }
+
+/* Heading defaults the host used to set globally (old public/css/theme.css).
+   The scoring modules were built against them and still rely on them, so they
+   are kept — scoped to a module's root so they never reach the system's own
+   headings. Removed once the modules compose the design system. */
+:where([class^='module-'], [class*=' module-']) :where(h1) {
+  font-size: 22px;
+  font-weight: var(--weight-semibold);
+  margin-bottom: var(--space-4);
+  color: var(--text-heading);
+}
+:where([class^='module-'], [class*=' module-']) :where(h2) {
+  font-size: 18px;
+  font-weight: var(--weight-medium);
+  margin-bottom: var(--space-3);
+}
