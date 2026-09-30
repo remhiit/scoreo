@@ -1,5 +1,6 @@
 import { fireEvent, render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
+import { BulletList } from './BulletList'
 import { DetailList, DetailRow } from './DetailList'
 import { EmptyState } from './EmptyState'
 import { FilterBar } from './FilterBar'
@@ -113,5 +114,14 @@ describe('Detail, status, filter and empty', () => {
     expect(screen.getByText('match-42')).toBeInTheDocument()
     expect(screen.getByRole('group', { name: 'Filter by game' })).toBeInTheDocument()
     expect(screen.getByText('No matches yet')).toBeInTheDocument()
+  })
+})
+
+describe('BulletList', () => {
+  it('renders one list item per entry in a sc-bullets list', () => {
+    const { container } = render(<BulletList items={['Léa', 'Théo']} />)
+    expect(container.querySelector('ul.sc-bullets')).not.toBeNull()
+    expect(screen.getAllByRole('listitem')).toHaveLength(2)
+    expect(screen.getByText('Théo')).toBeInTheDocument()
   })
 })
