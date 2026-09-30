@@ -22,6 +22,7 @@ export { Text, type TextProps, type TextVariant } from './atoms/Text'
 export { TextInput, type FieldSize, type TextInputProps } from './atoms/TextInput'
 
 // 02 · molecules
+export { BulletList } from './molecules/BulletList'
 export { DetailList, DetailRow, type DetailRowProps } from './molecules/DetailList'
 export { EmptyState, type EmptyStateProps } from './molecules/EmptyState'
 export { FilterBar, type FilterBarProps } from './molecules/FilterBar'

@@ -1,0 +1,8 @@
+.sc-bullets {
+  padding-left: var(--space-5);
+  font-size: var(--text-sm);
+  color: var(--text-body);
+}
+.sc-bullets li {
+  margin: 2px 0;
+}

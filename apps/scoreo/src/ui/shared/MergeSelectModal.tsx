@@ -1,9 +1,15 @@
 import type { ReactNode } from 'react'
+import {
+  Button,
+  ButtonRow,
+  Dialog,
+  List,
+  ListRow,
+  Select,
+  Stack,
+  Text,
+} from '@scoreboards/design-system'
 import { useTranslation } from 'react-i18next'
-import { ListContainer } from './ListContainer'
-import { ListItemRow } from './ListItemRow'
-import { LudoButton } from './LudoButton'
-import { LudoModal } from './LudoModal'
 
 export interface MergeSelectOption {
   id: string
@@ -73,60 +79,53 @@ export function MergeSelectModal({
   const selectionComplete = keptId !== undefined && duplicateIds.length > 0
 
   return (
-    <LudoModal
+    <Dialog
       open={open}
       title={title}
       onClose={onClose}
-      footer={
-        <>
-          <LudoButton text={t('common.cancel')} variant="secondary" onClick={onClose} />
-          <LudoButton
-            text={confirmText}
-            variant="primary"
-            disabled={!selectionComplete || blocked}
-            onClick={onConfirm}
-          />
-        </>
+      closeLabel={t('common.close')}
+      actions={
+        <ButtonRow>
+          <Button variant="secondary" onClick={onClose}>
+            {t('common.cancel')}
+          </Button>
+          <Button disabled={!selectionComplete || blocked} onClick={onConfirm}>
+            {confirmText}
+          </Button>
+        </ButtonRow>
       }
     >
-      <div className="modal-body">{body}</div>
+      <Text block>{body}</Text>
 
-      <div className="section-label">{keptLabel}</div>
-      <div className="select-chevron">
-        <select
-          className="select"
-          aria-label={keptLabel}
-          value={keptId ?? ''}
-          onChange={(e) => onSelectKept(e.target.value === '' ? undefined : e.target.value)}
-        >
-          <option value="">{placeholder}</option>
-          {options.map((option) => (
-            <option key={option.id} value={option.id}>
-              {optionText(option)}
-            </option>
+      <Select
+        label={keptLabel}
+        value={keptId ?? ''}
+        placeholder={placeholder}
+        options={options.map((option) => ({ value: option.id, label: optionText(option) }))}
+        onChange={(id) => onSelectKept(id === '' ? undefined : id)}
+      />
+
+      <Stack gap={2}>
+        <Text variant="label">{duplicatesLabel}</Text>
+        <List>
+          {candidates.map((option) => (
+            <ListRow
+              key={option.id}
+              title={option.label}
+              subtitle={option.note}
+              selectable
+              selected={duplicateIds.includes(option.id)}
+              onSelect={() => onToggleDuplicate(option.id)}
+            />
           ))}
-        </select>
-      </div>
+        </List>
+      </Stack>
 
-      <div className="section-label">{duplicatesLabel}</div>
-      <ListContainer>
-        {candidates.map((option) => (
-          <ListItemRow
-            key={option.id}
-            label={option.label}
-            subtitle={option.note}
-            isSelectable
-            isSelected={duplicateIds.includes(option.id)}
-            onSelect={() => onToggleDuplicate(option.id)}
-          />
-        ))}
-      </ListContainer>
-
-      {selectionComplete && summary && <div className="merge-summary">{summary}</div>}
+      {selectionComplete && summary && <Text block>{summary}</Text>}
       {selectionComplete && warning && (
-        <div className={blocked ? 'merge-warning merge-warning--blocking' : 'merge-warning'}>{warning}</div>
+        <Text variant={blocked ? 'error' : 'warning'}>{warning}</Text>
       )}
-      {error && <div className="error-msg">{error}</div>}
-    </LudoModal>
+      {error && <Text variant="error">{error}</Text>}
+    </Dialog>
   )
 }

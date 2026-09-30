@@ -155,3 +155,35 @@
     font-weight: 700;
     font-size: var(--text-sm);
 }
+
+/* ── Setup tabs ── */
+
+/* Underline-tab pattern — not one of Ludo's Button variants (all 4
+   are standalone backgrounds/borders, not toggle-underline tabs), so
+   kept custom rather than forced into LudoButton; tokens direct. */
+.tab-bar {
+    display: flex;
+    border-bottom: 2px solid var(--border-default);
+    margin-bottom: var(--space-4);
+}
+
+.tab-btn {
+    flex: 1;
+    background: transparent;
+    border: none;
+    box-shadow: inset 0 -2px 0 transparent;
+    padding: 14px var(--space-4);
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: color 0.15s, box-shadow 0.15s; /* 150ms: no exact --duration-* match */
+}
+
+.tab-btn:hover { background: var(--surface-hover); }
+
+.tab-btn.active {
+    color: var(--color-primary);
+    box-shadow: inset 0 -2px 0 var(--color-primary);
+    font-weight: 600;
+}

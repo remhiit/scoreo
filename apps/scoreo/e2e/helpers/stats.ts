@@ -13,7 +13,8 @@ export async function readLeaderboardRow(page: Page, playerName: string): Promis
   const eloText = await row.locator('.stats-elo').innerText()
 
   const match = recordText.match(/^(\d+)W (\d+)L$/)
-  if (!match) throw new Error(`Unexpected leaderboard record text for "${playerName}": "${recordText}"`)
+  if (!match)
+    throw new Error(`Unexpected leaderboard record text for "${playerName}": "${recordText}"`)
 
   return { wins: Number(match[1]), losses: Number(match[2]), elo: Number(eloText) }
 }

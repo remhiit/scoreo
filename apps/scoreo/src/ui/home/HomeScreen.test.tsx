@@ -61,7 +61,7 @@ describe('HomeScreen', () => {
     fireEvent.change(screen.getByPlaceholderText('Player name'), { target: { value: 'Alice' } })
     fireEvent.click(screen.getByText('Add'))
 
-    expect(screen.getByText('Alice', { selector: '.list-item-name' })).toBeInTheDocument()
+    expect(screen.getByText('Alice', { selector: '.sc-row__title' })).toBeInTheDocument()
     expect(screen.queryByText('Getting started')).not.toBeInTheDocument()
     expect(screen.getByPlaceholderText('Player name')).toHaveValue('')
   })
@@ -85,11 +85,11 @@ describe('HomeScreen', () => {
     const newMatchButton = screen.getByText('New Match').closest('button')!
     expect(newMatchButton).toBeDisabled()
 
-    fireEvent.click(screen.getByText('Alice', { selector: '.list-item-name' }))
+    fireEvent.click(screen.getByText('Alice', { selector: '.sc-row__title' }))
     expect(screen.getByText('1/2 players selected')).toBeInTheDocument()
     expect(newMatchButton).toBeDisabled()
 
-    fireEvent.click(screen.getByText('Bob', { selector: '.list-item-name' }))
+    fireEvent.click(screen.getByText('Bob', { selector: '.sc-row__title' }))
     expect(screen.queryByText(/players selected/)).not.toBeInTheDocument()
     expect(newMatchButton).not.toBeDisabled()
   })
@@ -110,8 +110,8 @@ describe('HomeScreen', () => {
     })
     render(<HomeScreen {...props} />)
 
-    fireEvent.click(screen.getByText('Alice', { selector: '.list-item-name' }))
-    fireEvent.click(screen.getByText('Bob', { selector: '.list-item-name' }))
+    fireEvent.click(screen.getByText('Alice', { selector: '.sc-row__title' }))
+    fireEvent.click(screen.getByText('Bob', { selector: '.sc-row__title' }))
     fireEvent.click(screen.getByText('New Match'))
 
     expect(screen.getByText('Select a game')).toBeInTheDocument()
@@ -139,8 +139,8 @@ describe('HomeScreen', () => {
     })
     render(<HomeScreen {...props} />)
 
-    fireEvent.click(screen.getByText('Alice', { selector: '.list-item-name' }))
-    fireEvent.click(screen.getByText('Bob', { selector: '.list-item-name' }))
+    fireEvent.click(screen.getByText('Alice', { selector: '.sc-row__title' }))
+    fireEvent.click(screen.getByText('Bob', { selector: '.sc-row__title' }))
     fireEvent.click(screen.getByText('New Match'))
     fireEvent.click(within(screen.getByRole('dialog')).getByText('Start match'))
 
@@ -153,13 +153,13 @@ describe('HomeScreen', () => {
     playerRepo.save({ id: 'p2', name: 'Bob', active: true })
     render(<HomeScreen {...props} />)
 
-    fireEvent.click(screen.getByText('Alice', { selector: '.list-item-name' }))
-    fireEvent.click(screen.getByText('Bob', { selector: '.list-item-name' }))
+    fireEvent.click(screen.getByText('Alice', { selector: '.sc-row__title' }))
+    fireEvent.click(screen.getByText('Bob', { selector: '.sc-row__title' }))
     fireEvent.click(screen.getByText('New Match'))
 
     expect(screen.getByText('No game types yet. Add one.')).toBeInTheDocument()
 
-    fireEvent.click(screen.getByText('＋'))
+    fireEvent.click(screen.getByText('Add new game'))
     fireEvent.change(screen.getByPlaceholderText('Game name'), { target: { value: 'Chess' } })
     fireEvent.click(screen.getByText('Add game'))
 
@@ -205,7 +205,7 @@ describe('HomeScreen', () => {
     fireEvent.change(within(dialog).getByDisplayValue('Alice'), { target: { value: 'Alicia' } })
     fireEvent.click(within(dialog).getByText('Confirm'))
 
-    expect(screen.getByText('Alicia', { selector: '.list-item-name' })).toBeInTheDocument()
+    expect(screen.getByText('Alicia', { selector: '.sc-row__title' })).toBeInTheDocument()
   })
 
   it('does not show the cleanup button when there are no eligible players', () => {
@@ -309,10 +309,10 @@ describe('HomeScreen', () => {
     })
     const { container } = render(<HomeScreen {...props} />)
 
-    expect(container.querySelectorAll('.list-item-badge')).toHaveLength(1)
+    expect(container.querySelectorAll('.sc-row__badge')).toHaveLength(1)
 
-    const aliceRow = screen.getByText('Alice', { selector: '.list-item-name' }).closest('.list-item-row')!
-    const badge = aliceRow.querySelector('.list-item-badge')!
+    const aliceRow = screen.getByText('Alice', { selector: '.sc-row__title' }).closest('.sc-row')!
+    const badge = aliceRow.querySelector('.sc-badge')!
     // 6 records this single (long-past) match can award, plus the monthly
     // champion badge (F3) since its month is long completed.
     expect(badge).toHaveTextContent('7')
@@ -324,12 +324,17 @@ describe('HomeScreen', () => {
     playerRepo.save({ id: 'p1', name: 'Alice', active: true })
     const { container } = render(<HomeScreen {...props} />)
 
-    expect(container.querySelector('.list-item-badge')).not.toBeInTheDocument()
+    expect(container.querySelector('.sc-row__badge')).not.toBeInTheDocument()
   })
 
   it('shows the resume-draft banner and calls onResumeDraft', () => {
     const matchDraftRepository = new InMemoryMatchDraftRepository()
-    matchDraftRepository.save({ gameTypeId: 'gt1', playerIds: ['p1', 'p2'], rounds: [], updatedAt: 1000 })
+    matchDraftRepository.save({
+      gameTypeId: 'gt1',
+      playerIds: ['p1', 'p2'],
+      rounds: [],
+      updatedAt: 1000,
+    })
     const onResumeDraft = vi.fn()
     const { props } = buildProps({ matchDraftRepository, onResumeDraft })
     render(<HomeScreen {...props} />)
@@ -349,7 +354,9 @@ describe('HomeScreen', () => {
 
     await i18n.changeLanguage('fr')
 
-    expect(screen.getByText("Aucun joueur pour l'instant. Ajoutez-en un ci-dessus.")).toBeInTheDocument()
+    expect(
+      screen.getByText("Aucun joueur pour l'instant. Ajoutez-en un ci-dessus."),
+    ).toBeInTheDocument()
     expect(screen.queryByText('No players yet. Add one above.')).not.toBeInTheDocument()
 
     await i18n.changeLanguage('en')
@@ -398,17 +405,17 @@ describe('HomeScreen', () => {
     fireEvent.click(screen.getByText('Merge'))
     const dialog = screen.getByRole('dialog')
     fireEvent.change(within(dialog).getByLabelText('Player to keep'), { target: { value: 'keep' } })
-    fireEvent.click(within(dialog).getByText('Jean Luc', { selector: '.list-item-name' }))
-    fireEvent.click(within(dialog).getByText('JeanLuc', { selector: '.list-item-name' }))
+    fireEvent.click(within(dialog).getByText('Jean Luc', { selector: '.sc-row__title' }))
+    fireEvent.click(within(dialog).getByText('JeanLuc', { selector: '.sc-row__title' }))
 
     expect(within(dialog).getByText('2 matches will move.')).toBeInTheDocument()
 
     fireEvent.click(within(dialog).getByText('Merge'))
 
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
-    expect(screen.queryByText('Jean Luc', { selector: '.list-item-name' })).not.toBeInTheDocument()
-    expect(screen.queryByText('JeanLuc', { selector: '.list-item-name' })).not.toBeInTheDocument()
-    expect(screen.getByText('Jean-Luc', { selector: '.list-item-name' })).toBeInTheDocument()
+    expect(screen.queryByText('Jean Luc', { selector: '.sc-row__title' })).not.toBeInTheDocument()
+    expect(screen.queryByText('JeanLuc', { selector: '.sc-row__title' })).not.toBeInTheDocument()
+    expect(screen.getByText('Jean-Luc', { selector: '.sc-row__title' })).toBeInTheDocument()
     expect(matchRepo.getAll().map((m) => m.playerScores[0].playerId)).toEqual(['keep', 'keep'])
   })
 
@@ -426,7 +433,7 @@ describe('HomeScreen', () => {
     fireEvent.change(within(dialog).getByLabelText('Player to keep'), { target: { value: 'keep' } })
     expect(confirm).toBeDisabled()
 
-    fireEvent.click(within(dialog).getByText('Jean Luc', { selector: '.list-item-name' }))
+    fireEvent.click(within(dialog).getByText('Jean Luc', { selector: '.sc-row__title' }))
     expect(confirm).toBeEnabled()
   })
 
@@ -452,7 +459,7 @@ describe('HomeScreen', () => {
     fireEvent.click(screen.getByText('Merge'))
     const dialog = screen.getByRole('dialog')
     fireEvent.change(within(dialog).getByLabelText('Player to keep'), { target: { value: 'keep' } })
-    fireEvent.click(within(dialog).getByText('Jean Luc', { selector: '.list-item-name' }))
+    fireEvent.click(within(dialog).getByText('Jean Luc', { selector: '.sc-row__title' }))
 
     expect(
       within(dialog).getByText(
@@ -471,8 +478,12 @@ describe('HomeScreen', () => {
     fireEvent.click(screen.getByText('Merge'))
     const dialog = screen.getByRole('dialog')
 
-    expect(within(dialog).getByText('Jean Luc (deleted)', { selector: 'option' })).toBeInTheDocument()
-    expect(within(dialog).getByText('(deleted)', { selector: '.list-item-subtitle' })).toBeInTheDocument()
+    expect(
+      within(dialog).getByText('Jean Luc (deleted)', { selector: 'option' }),
+    ).toBeInTheDocument()
+    expect(
+      within(dialog).getByText('(deleted)', { selector: '.sc-row__subtitle' }),
+    ).toBeInTheDocument()
   })
 
   it('drops the kept player from the duplicates list, so it cannot be its own duplicate', () => {
@@ -483,11 +494,13 @@ describe('HomeScreen', () => {
 
     fireEvent.click(screen.getByText('Merge'))
     const dialog = screen.getByRole('dialog')
-    fireEvent.click(within(dialog).getByText('Jean-Luc', { selector: '.list-item-name' }))
+    fireEvent.click(within(dialog).getByText('Jean-Luc', { selector: '.sc-row__title' }))
     fireEvent.change(within(dialog).getByLabelText('Player to keep'), { target: { value: 'p2' } })
 
     // Jean-Luc was ticked as a duplicate, then picked as the player to keep.
-    expect(within(dialog).queryByText('Jean-Luc', { selector: '.list-item-name' })).not.toBeInTheDocument()
+    expect(
+      within(dialog).queryByText('Jean-Luc', { selector: '.sc-row__title' }),
+    ).not.toBeInTheDocument()
     expect(within(dialog).getByText('Merge').closest('button')).toBeDisabled()
   })
 })

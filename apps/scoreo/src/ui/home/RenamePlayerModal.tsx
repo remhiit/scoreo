@@ -1,7 +1,5 @@
+import { Button, ButtonRow, Dialog, TextInput } from '@scoreboards/design-system'
 import { useTranslation } from 'react-i18next'
-import { LudoButton } from '../shared/LudoButton'
-import { LudoModal } from '../shared/LudoModal'
-import { LudoTextInput } from '../shared/LudoTextInput'
 
 export interface RenamePlayerModalProps {
   open: boolean
@@ -23,21 +21,31 @@ export function RenamePlayerModal({
   onConfirmRename,
 }: RenamePlayerModalProps) {
   const { t } = useTranslation()
+  const title = t('home.renameTitle', { name: playerName ?? '' })
 
   return (
-    <LudoModal
+    <Dialog
       open={open}
-      title={t('home.renameTitle', { name: playerName ?? '' })}
+      title={title}
       onClose={onClose}
-      footer={
-        <>
-          <LudoButton text={t('common.cancel')} variant="secondary" onClick={onClose} />
-          <LudoButton text={t('common.confirm')} variant="primary" onClick={onConfirmRename} />
-        </>
+      closeLabel={t('common.close')}
+      actions={
+        <ButtonRow>
+          <Button variant="secondary" onClick={onClose}>
+            {t('common.cancel')}
+          </Button>
+          <Button onClick={onConfirmRename}>{t('common.confirm')}</Button>
+        </ButtonRow>
       }
     >
-      <LudoTextInput value={value} onChange={onChange} autofocus onEnter={onConfirmRename} />
-      {error && <div className="error-msg">{error}</div>}
-    </LudoModal>
+      <TextInput
+        value={value}
+        onChange={onChange}
+        ariaLabel={title}
+        error={error}
+        autoFocus
+        onEnter={onConfirmRename}
+      />
+    </Dialog>
   )
 }

@@ -164,7 +164,7 @@ describe('App', () => {
     expect(screen.queryByText('Head-to-head')).not.toBeInTheDocument()
 
     fireEvent.click(screen.getByLabelText('Back'))
-    expect(screen.getByText('Alice', { selector: '.list-item-name' })).toBeInTheDocument()
+    expect(screen.getByText('Alice', { selector: '.sc-row__title' })).toBeInTheDocument()
   })
 
   it('Hall of Fame: burger menu navigates and shows the trophy cards', () => {

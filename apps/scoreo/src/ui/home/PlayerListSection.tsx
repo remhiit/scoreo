@@ -1,10 +1,16 @@
-import { Merge, Sparkles, Trophy } from 'lucide-react'
+import {
+  Badge,
+  Button,
+  EmptyState,
+  Icon,
+  List,
+  ListRow,
+  Stack,
+  Text,
+} from '@scoreboards/design-system'
 import { useTranslation } from 'react-i18next'
 import type { PlayerStats } from '../../application/getPlayerStatsUseCase'
 import type { Player } from '../../domain/model/player'
-import { ListContainer } from '../shared/ListContainer'
-import { ListItemRow } from '../shared/ListItemRow'
-import { LudoButton } from '../shared/LudoButton'
 
 export interface PlayerListSectionProps {
   players: Player[]
@@ -38,72 +44,65 @@ export function PlayerListSection({
   const { t } = useTranslation()
 
   return (
-    <>
+    <Stack gap={3}>
       {players.length === 0 ? (
-        <div className="empty">{t('home.noPlayersYet')}</div>
+        <EmptyState>{t('home.noPlayersYet')}</EmptyState>
       ) : (
-        <ListContainer>
+        <List>
           {players.map((player) => {
-            const isSelected = selectedPlayers.has(player.id)
             const playerStats = stats.get(player.id)
-            const subtitle = playerStats ? `${playerStats.wins}W ${playerStats.losses}L` : undefined
             const trophyCount = trophyCounts.get(player.id) ?? 0
             return (
-              <ListItemRow
+              <ListRow
                 key={player.id}
-                label={player.name}
-                subtitle={subtitle}
+                title={player.name}
+                subtitle={playerStats ? `${playerStats.wins}W ${playerStats.losses}L` : undefined}
                 badge={
                   trophyCount > 0 ? (
-                    <>
-                      <Trophy size={14} aria-hidden />
+                    <Badge tone="accent" ariaLabel={t('home.trophyCount', { count: trophyCount })}>
+                      <Icon name="trophy" size="sm" />
                       {trophyCount}
-                    </>
+                    </Badge>
                   ) : undefined
                 }
-                badgeLabel={t('home.trophyCount', { count: trophyCount })}
-                isSelectable
-                isSelected={isSelected}
+                selectable
+                selected={selectedPlayers.has(player.id)}
                 onSelect={() => onToggleSelect(player.id)}
-                onEdit={() => onEditPlayer(player.id)}
-                onDelete={() => onDeleteRequest(player.id)}
+                actions={[
+                  { icon: 'edit', label: 'Edit', onClick: () => onEditPlayer(player.id) },
+                  {
+                    icon: 'delete',
+                    label: 'Delete',
+                    tone: 'danger',
+                    onClick: () => onDeleteRequest(player.id),
+                  },
+                ]}
               />
             )
           })}
-        </ListContainer>
+        </List>
       )}
 
       {players.length > 0 && selectedPlayers.size < 2 && (
-        <div className="selection-hint">
+        <Text variant="hint" align="center" block>
           {t('home.playersSelected', { count: selectedPlayers.size })}
-        </div>
+        </Text>
       )}
 
-      <div className="player-list-tools">
-        {mergeCandidatesCount >= 2 && (
-          <LudoButton
-            text={
-              <>
-                <Merge size={16} aria-hidden /> {t('home.merge')}
-              </>
-            }
-            variant="secondary"
-            onClick={onShowMergeDialog}
-          />
-        )}
-
-        {cleanupCandidatesCount > 0 && (
-          <LudoButton
-            text={
-              <>
-                <Sparkles size={16} aria-hidden /> {t('home.cleanUp', { count: cleanupCandidatesCount })}
-              </>
-            }
-            variant="secondary"
-            onClick={onShowCleanupConfirm}
-          />
-        )}
-      </div>
-    </>
+      {(mergeCandidatesCount >= 2 || cleanupCandidatesCount > 0) && (
+        <Stack direction="row" gap={2} justify="center" wrap>
+          {mergeCandidatesCount >= 2 && (
+            <Button variant="secondary" icon="merge" onClick={onShowMergeDialog}>
+              {t('home.merge')}
+            </Button>
+          )}
+          {cleanupCandidatesCount > 0 && (
+            <Button variant="secondary" icon="sparkles" onClick={onShowCleanupConfirm}>
+              {t('home.cleanUp', { count: cleanupCandidatesCount })}
+            </Button>
+          )}
+        </Stack>
+      )}
+    </Stack>
   )
 }

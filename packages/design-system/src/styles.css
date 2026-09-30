@@ -41,6 +41,7 @@
 @import './molecules/StatusLine.css';
 @import './molecules/FilterBar.css';
 @import './molecules/EmptyState.css';
+@import './molecules/BulletList.css';
 
 /* 03 · organisms */
 @import './organisms/AppHeader.css';

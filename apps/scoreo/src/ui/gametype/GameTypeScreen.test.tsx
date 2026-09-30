@@ -267,8 +267,8 @@ describe('GameTypeScreen', () => {
     fireEvent.click(screen.getByText('Merge'))
     const dialog = screen.getByRole('dialog')
     fireEvent.change(within(dialog).getByLabelText('Game to keep'), { target: { value: 'keep' } })
-    fireEvent.click(within(dialog).getByText('Belote coinchee', { selector: '.list-item-name' }))
-    fireEvent.click(within(dialog).getByText('belote', { selector: '.list-item-name' }))
+    fireEvent.click(within(dialog).getByText('Belote coinchee', { selector: '.sc-row__title' }))
+    fireEvent.click(within(dialog).getByText('belote', { selector: '.sc-row__title' }))
 
     expect(within(dialog).getByText('2 matches will move.')).toBeInTheDocument()
 
@@ -288,7 +288,7 @@ describe('GameTypeScreen', () => {
     fireEvent.click(screen.getByText('Merge'))
     const dialog = screen.getByRole('dialog')
     fireEvent.change(within(dialog).getByLabelText('Game to keep'), { target: { value: 'keep' } })
-    fireEvent.click(within(dialog).getByText('Belote coinchee', { selector: '.list-item-name' }))
+    fireEvent.click(within(dialog).getByText('Belote coinchee', { selector: '.sc-row__title' }))
 
     expect(within(dialog).getByText(/"Belote" rules will apply/)).toBeInTheDocument()
     expect(within(dialog).getByText('Merge').closest('button')).toBeEnabled()
@@ -304,6 +304,6 @@ describe('GameTypeScreen', () => {
     const dialog = screen.getByRole('dialog')
 
     expect(within(dialog).getByText('Belote coinchee (archived)', { selector: 'option' })).toBeInTheDocument()
-    expect(within(dialog).getByText('(archived)', { selector: '.list-item-subtitle' })).toBeInTheDocument()
+    expect(within(dialog).getByText('(archived)', { selector: '.sc-row__subtitle' })).toBeInTheDocument()
   })
 })
