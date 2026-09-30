@@ -6,7 +6,13 @@ import { InMemoryCloudSyncRepository } from '../../infrastructure/testing/inMemo
 import { InMemoryGameTypeRepository } from '../../infrastructure/testing/inMemoryGameTypeRepository'
 import { InMemoryMatchRepository } from '../../infrastructure/testing/inMemoryMatchRepository'
 import { InMemoryPlayerRepository } from '../../infrastructure/testing/inMemoryPlayerRepository'
-import { submitLogin, submitLogout, submitResolveConflict, submitRestoreSession, syncReducer } from './syncReducer'
+import {
+  submitLogin,
+  submitLogout,
+  submitResolveConflict,
+  submitRestoreSession,
+  syncReducer,
+} from './syncReducer'
 import { initialSyncState, type SyncState } from './syncTypes'
 import type { SyncAction } from './syncReducer'
 
@@ -19,7 +25,13 @@ function buildUseCase(
   return {
     cloudRepo,
     playerRepo,
-    syncUseCase: new SyncUseCase(cloudRepo, playerRepo, gameTypeRepo, matchRepo, new InMemoryDataChangeNotifier()),
+    syncUseCase: new SyncUseCase(
+      cloudRepo,
+      playerRepo,
+      gameTypeRepo,
+      matchRepo,
+      new InMemoryDataChangeNotifier(),
+    ),
   }
 }
 

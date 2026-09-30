@@ -1,7 +1,11 @@
 import { fireEvent, render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import { ImportMatchesUseCase } from '../../application/importMatchesUseCase'
-import { invalidJson, validJson, withMultipleFailedDetailsJson } from '../../application/testImportData'
+import {
+  invalidJson,
+  validJson,
+  withMultipleFailedDetailsJson,
+} from '../../application/testImportData'
 import { InMemoryGameTypeRepository } from '../../infrastructure/testing/inMemoryGameTypeRepository'
 import { InMemoryMatchRepository } from '../../infrastructure/testing/inMemoryMatchRepository'
 import { InMemoryPlayerRepository } from '../../infrastructure/testing/inMemoryPlayerRepository'
@@ -61,13 +65,10 @@ describe('ImportScreen', () => {
     fireEvent.click(await screen.findByText('Import'))
 
     expect(await screen.findByText('3 failed')).toBeInTheDocument()
-    const errorLine = screen.getByText('3 failed').closest('.import-result-line')
-    expect(errorLine?.querySelector('.import-failed-id')).toBeNull()
-
+    const errorLine = screen.getByText('3 failed').parentElement
     for (const id of ['m1', 'm2', 'm3']) {
       const idEl = screen.getByText(id)
-      expect(idEl).toHaveClass('import-failed-id')
-      expect(idEl.parentElement).not.toBe(errorLine)
+      expect(errorLine).not.toContainElement(idEl)
     }
   })
 

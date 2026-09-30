@@ -9,7 +9,10 @@ import { InMemoryPlayerRepository } from '../../infrastructure/testing/inMemoryP
 import i18n from '../../i18n/i18n'
 import { SyncScreen } from './SyncScreen'
 
-function buildUseCase(cloudRepo = new InMemoryCloudSyncRepository(), playerRepo = new InMemoryPlayerRepository()) {
+function buildUseCase(
+  cloudRepo = new InMemoryCloudSyncRepository(),
+  playerRepo = new InMemoryPlayerRepository(),
+) {
   return {
     cloudRepo,
     syncUseCase: new SyncUseCase(

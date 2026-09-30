@@ -1,4 +1,8 @@
-import type { ImportMatchesUseCase, ImportPreview, ImportResult } from '../../application/importMatchesUseCase'
+import type {
+  ImportMatchesUseCase,
+  ImportPreview,
+  ImportResult,
+} from '../../application/importMatchesUseCase'
 import { initialImportState, type ImportState } from './importTypes'
 
 export type ImportAction =
@@ -12,9 +16,21 @@ export type ImportAction =
 export function importReducer(state: ImportState, action: ImportAction): ImportState {
   switch (action.type) {
     case 'previewReady':
-      return { ...state, step: 'READY', preview: action.preview, jsonContent: action.jsonContent, error: undefined }
+      return {
+        ...state,
+        step: 'READY',
+        preview: action.preview,
+        jsonContent: action.jsonContent,
+        error: undefined,
+      }
     case 'previewFailed':
-      return { ...state, step: 'IDLE', preview: undefined, jsonContent: '', error: `Invalid file: ${action.error}` }
+      return {
+        ...state,
+        step: 'IDLE',
+        preview: undefined,
+        jsonContent: '',
+        error: `Invalid file: ${action.error}`,
+      }
     case 'importSucceeded':
       return { ...state, step: 'DONE', result: action.result }
     case 'importFailed':
@@ -27,7 +43,10 @@ export function importReducer(state: ImportState, action: ImportAction): ImportS
 }
 
 /** Mirrors ImportHandler's FileLoaded: previews the file and reports success/failure. */
-export function submitFileLoaded(importUseCase: ImportMatchesUseCase, content: string): ImportAction {
+export function submitFileLoaded(
+  importUseCase: ImportMatchesUseCase,
+  content: string,
+): ImportAction {
   const result = importUseCase.preview(content)
   return result.ok
     ? { type: 'previewReady', preview: result.value, jsonContent: content }
@@ -35,7 +54,10 @@ export function submitFileLoaded(importUseCase: ImportMatchesUseCase, content: s
 }
 
 /** Mirrors ImportHandler's Execute (only meaningful from the READY step — callers must guard). */
-export function submitExecute(importUseCase: ImportMatchesUseCase, jsonContent: string): ImportAction {
+export function submitExecute(
+  importUseCase: ImportMatchesUseCase,
+  jsonContent: string,
+): ImportAction {
   const result = importUseCase.execute(jsonContent)
   return result.ok
     ? { type: 'importSucceeded', result: result.value }

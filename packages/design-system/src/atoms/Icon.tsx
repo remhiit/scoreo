@@ -16,7 +16,12 @@ export function Icon({ name, size = 'md', label, tone = 'current' }: IconProps) 
   const Glyph = ICONS[name]
   return (
     <Glyph
-      className={cx('sc-icon', `sc-icon--${size}`, tone !== 'current' && `sc-icon--${tone}`)}
+      className={cx(
+        'sc-icon',
+        `sc-icon--${size}`,
+        tone !== 'current' && `sc-icon--${tone}`,
+        name === 'loader' && 'sc-icon--spin',
+      )}
       aria-hidden={label === undefined ? true : undefined}
       aria-label={label}
       role={label === undefined ? undefined : 'img'}
