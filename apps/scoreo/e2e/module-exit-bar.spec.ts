@@ -5,7 +5,7 @@ import { addPlayer } from './helpers/players'
 /**
  * Every module registered in `apps/scoreo/src/modules/registry.ts` plays full
  * screen, behind its own controls (#388) — the host's chrome is gone, so the
- * one way back has to come from somewhere else. `.app-module-bar`'s ✕ is that
+ * one way back has to come from somewhere else. The immersive bar's ✕ is that
  * way, always present regardless of what the module itself draws (#389).
  *
  * This guards the promise across every registered module, the same way
@@ -60,9 +60,9 @@ for (const [module, { name, reach }] of Object.entries(MODULES)) {
     await page.getByRole('button', { name }).click()
     await reach(page)
 
-    await expect(page.locator('.app-module-bar')).toBeVisible()
-
-    await page.getByRole('button', { name: 'Exit' }).click()
+    const exit = page.getByRole('button', { name: 'Exit' })
+    await expect(exit).toBeVisible()
+    await exit.click()
 
     // Back on a Scoreo route: the host's own chrome is up again.
     await expect(page.getByRole('button', { name: 'Menu' })).toBeVisible()

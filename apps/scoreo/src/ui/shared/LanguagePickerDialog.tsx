@@ -1,7 +1,6 @@
+import { Button, ButtonRow, Chip, Dialog, Stack } from '@scoreboards/design-system'
 import { useTranslation } from 'react-i18next'
 import { SUPPORTED_LANGUAGES, type SupportedLanguage } from '../../i18n/i18n'
-import { LudoButton } from './LudoButton'
-import { LudoModal } from './LudoModal'
 
 export interface LanguagePickerDialogProps {
   onClose: () => void
@@ -22,27 +21,31 @@ export function LanguagePickerDialog({ onClose }: LanguagePickerDialogProps) {
   const { t, i18n } = useTranslation()
 
   return (
-    <LudoModal
+    <Dialog
       open
       title={t('languagePicker.title')}
       onClose={onClose}
-      footer={<LudoButton text={t('common.close')} variant="secondary" onClick={onClose} />}
+      closeLabel={t('common.close')}
+      actions={
+        <ButtonRow align="end">
+          <Button variant="secondary" onClick={onClose}>
+            {t('common.close')}
+          </Button>
+        </ButtonRow>
+      }
     >
-      <div className="theme-picker-row">
+      <Stack direction="row" gap={2} wrap>
         {SUPPORTED_LANGUAGES.map((lang) => (
-          <button
+          <Chip
             key={lang}
-            type="button"
-            className={lang === i18n.language ? 'theme-chip theme-chip--active' : 'theme-chip'}
+            selected={lang === i18n.language}
             onClick={() => void i18n.changeLanguage(lang)}
           >
-            <span className="language-picker-flag" aria-hidden="true">
-              {LANGUAGE_FLAG[lang]}
-            </span>
+            <span aria-hidden="true">{LANGUAGE_FLAG[lang]}</span>
             <span>{t(LANGUAGE_LABEL_KEY[lang])}</span>
-          </button>
+          </Chip>
         ))}
-      </div>
-    </LudoModal>
+      </Stack>
+    </Dialog>
   )
 }

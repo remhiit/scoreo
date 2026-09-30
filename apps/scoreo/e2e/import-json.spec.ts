@@ -16,7 +16,7 @@ test('importing a JSON backup shows imported players and match', async ({ page }
   await expect(page.locator('.import-preview-row', { hasText: 'Game:' })).toContainText('Uno E2E')
   await expect(page.locator('.import-preview-row', { hasText: 'Matches to import:' })).toContainText('1')
 
-  await page.getByRole('button', { name: 'Import' }).click()
+  await page.getByRole('main').getByRole('button', { name: 'Import' }).click()
 
   await expect(page.getByText('1 imported')).toBeVisible()
 

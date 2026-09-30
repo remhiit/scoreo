@@ -1,5 +1,4 @@
-import { LudoButton } from '../shared/LudoButton'
-import { LudoModal } from '../shared/LudoModal'
+import { Button, ButtonRow, Dialog, ThemePicker } from '@scoreboards/design-system'
 import { ACCENTS, FLAVORS } from './themeManager'
 import { useTheme } from './useTheme'
 
@@ -7,44 +6,35 @@ export interface ThemePickerDialogProps {
   onClose: () => void
 }
 
+const capitalize = (word: string) => word.charAt(0).toUpperCase() + word.slice(1)
+
 /** Flavor + accent picker, opened from the burger menu. */
 export function ThemePickerDialog({ onClose }: ThemePickerDialogProps) {
   const { flavor, accent, setFlavor, setAccent } = useTheme()
 
   return (
-    <LudoModal
+    <Dialog
       open
       title="Theme"
       onClose={onClose}
-      footer={<LudoButton text="Close" variant="secondary" onClick={onClose} />}
+      actions={
+        <ButtonRow align="end">
+          <Button variant="secondary" onClick={onClose}>
+            Close
+          </Button>
+        </ButtonRow>
+      }
     >
-      <div className="theme-picker-label">Flavor</div>
-      <div className="theme-picker-row">
-        {FLAVORS.map((f) => (
-          <button
-            key={f}
-            type="button"
-            className={f === flavor ? 'theme-chip theme-chip--active' : 'theme-chip'}
-            onClick={() => setFlavor(f)}
-          >
-            {f.charAt(0).toUpperCase() + f.slice(1)}
-          </button>
-        ))}
-      </div>
-
-      <div className="theme-picker-label">Accent</div>
-      <div className="theme-picker-row">
-        {ACCENTS.map((a) => (
-          <button
-            key={a}
-            type="button"
-            className={a === accent ? 'accent-swatch accent-swatch--active' : 'accent-swatch'}
-            style={{ background: `var(--ctp-${a})` }}
-            aria-label={a}
-            onClick={() => setAccent(a)}
-          />
-        ))}
-      </div>
-    </LudoModal>
+      <ThemePicker
+        flavorLabel="Flavor"
+        accentLabel="Accent"
+        flavors={FLAVORS.map((f) => ({ value: f, label: capitalize(f) }))}
+        flavor={flavor}
+        onFlavorChange={setFlavor}
+        accents={ACCENTS.map((a) => ({ value: a, label: a }))}
+        accent={accent}
+        onAccentChange={setAccent}
+      />
+    </Dialog>
   )
 }
