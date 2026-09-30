@@ -197,7 +197,7 @@ Stats: leaderboard rows are design-system `StatRow`s (name + record, ELO `score`
 
 The secondary-action rows under the Home player list (Merge / Clean up) and the Games catalogue (Merge) are centred design-system `Stack`s of secondary `Button`s.
 
-Key classes: `.modal-body`, `.modal-row`, `.modal-title`, `.detail-row`, `.detail-label`, `.detail-value`, `.splash`, `.splash-content`, `.spinner`, `.list-container`, `.list-container--spaced`, `.list-item-row`, `.list-item-label`, `.list-item-label--selectable`, `.list-item-label--selected`, `.list-item-name`, `.list-item-subtitle`, `.list-item-actions`, `.list-item-select-picto`.
+Key classes: `.modal-body`, `.modal-row`, `.modal-title`, `.splash`, `.splash-content`, `.spinner`, `.list-container`, `.list-container--spaced`, `.list-item-row`, `.list-item-label`, `.list-item-label--selectable`, `.list-item-label--selected`, `.list-item-name`, `.list-item-subtitle`, `.list-item-actions`, `.list-item-select-picto`.
 
 Native `<select>`s are the design-system `Select` (`md` 44px form field, `sm` 32px compact filter, e.g. History's `FilterBar`): `appearance: none`, the chevron drawn by a `::after` mask on the `.sc-select` wrapper and coloured with `var(--text-muted)`, so it follows the theme.
 
