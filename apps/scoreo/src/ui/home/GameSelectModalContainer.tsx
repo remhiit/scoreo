@@ -1,6 +1,7 @@
 import type { ScoringModuleManifest } from '@scoreboards/module-api'
 import { forwardRef, useImperativeHandle, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { manifestClaimsGameName, resolveBindingTarget } from '../../application/bindModuleUseCase'
 import { NotFoundError, ValidationError } from '../../domain/model/errors'
 import type { WinCondition } from '../../domain/model/enums'
 import type { GameType } from '../../domain/model/gameType'
@@ -25,21 +26,17 @@ export interface GameSelectModalContainerProps {
 
 const MODULE_CHOICE_PREFIX = 'module:'
 
-const normalizeName = (name: string) => name.trim().toLowerCase()
-
 /**
  * The game list: active game types first, as the repository orders them, then
  * every registered module no game type stands for yet, sorted by label.
  *
  * A module is left out when a game type — even an archived one — is bound to
- * it, or when an active game type already carries one of its names (the same
- * match `BindModuleUseCase` applies: case-insensitive, ignoring surrounding
- * blanks): either would list the same game twice.
+ * it, or when an active game type already carries one of its names (matched by
+ * `manifestClaimsGameName`, the rule `BindModuleUseCase` applies): either would
+ * list the same game twice.
  */
 function buildChoices(allGameTypes: readonly GameType[]): GameChoice[] {
   const active = allGameTypes.filter((gt) => gt.active)
-  const boundModuleIds = new Set(allGameTypes.map((gt) => gt.moduleId))
-  const activeNames = new Set(active.map((gt) => normalizeName(gt.name)))
 
   const gameTypeChoices: GameChoice[] = active.map((gt) => ({
     kind: 'gameType',
@@ -49,8 +46,8 @@ function buildChoices(allGameTypes: readonly GameType[]): GameChoice[] {
   }))
   const moduleChoices: GameChoice[] = MODULE_MANIFESTS.filter(
     (m) =>
-      !boundModuleIds.has(m.moduleId) &&
-      !m.gameNames.some((n) => activeNames.has(normalizeName(n))),
+      resolveBindingTarget(m, allGameTypes)?.kind !== 'bound' &&
+      !active.some((gt) => manifestClaimsGameName(m, gt.name)),
   )
     .map((m): GameChoice => ({
       kind: 'module',
@@ -71,26 +68,20 @@ function buildChoices(allGameTypes: readonly GameType[]): GameChoice[] {
  * stamp the `moduleId` onto it (its rule 2). A module already bound to another
  * game type is not offered: binding would open that other game instead.
  *
- * Rule 2 stamps the *first* game type, archived ones included and in repository
- * order, whose name matches any of the module's names — not necessarily the one
- * selected here. So the module is only offered when that first match is this
- * very game type: with two homonyms (say an older archived "Skyjo" and an
- * active "skyjo"), offering it on the second would bind, reactivate and open
- * the first. `allGameTypes` is `getAll(true)`, the same list in the same order
- * the use case reads.
+ * The module is only offered when `resolveBindingTarget` — the very rules 1
+ * and 2 the use case applies — lands on this game type: rule 2 picks the
+ * *first* name match, archived games included, so with two homonyms (say an
+ * older archived "Skyjo" and an active "skyjo") offering it on the second would
+ * bind, reactivate and open the first. `allGameTypes` is `getAll(true)`, the
+ * same list in the same order the use case reads.
  */
 function moduleClaimingGameType(
   gameType: GameType,
   allGameTypes: readonly GameType[],
 ): ScoringModuleManifest | undefined {
-  const normalized = normalizeName(gameType.name)
   return MODULE_MANIFESTS.find((m) => {
-    const aliases = new Set(m.gameNames.map(normalizeName))
-    return (
-      aliases.has(normalized) &&
-      !allGameTypes.some((gt) => gt.moduleId === m.moduleId) &&
-      allGameTypes.find((gt) => aliases.has(normalizeName(gt.name)))?.id === gameType.id
-    )
+    const target = resolveBindingTarget(m, allGameTypes)
+    return target?.kind === 'byName' && target.gameType.id === gameType.id
   })
 }
 

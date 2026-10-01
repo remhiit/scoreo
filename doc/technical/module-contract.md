@@ -153,6 +153,11 @@ score screen — through `BindModuleUseCase`:
 Rule 1 makes the whole thing idempotent, and both reuse paths un-archive the game: playing a game is
 asking for it back.
 
+Rules 1 and 2 live in one pure function, `resolveBindingTarget(manifest, allGameTypes)` (exported
+from `bindModuleUseCase.ts`, with the name match `manifestClaimsGameName`): `invoke()` decides with
+it, and the game selection modal calls it too, so the game it offers **Play on the module** on is,
+by construction, the one the binding will pick.
+
 `moduleId` is a **capability flag, not a redirection** — Scoreo's own score screen stays available
 for a game that has a module, which is what lets the host offer "play in Scoreo" _or_ "play on the
 module".
