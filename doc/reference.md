@@ -189,7 +189,7 @@ Notable coverage that goes beyond a 1:1 port of business logic:
 
 Design system: [`packages/design-system/`](../packages/design-system/README.md) — tokens (`src/tokens/*.css`, Catppuccin, see Styling in `doc/technical/architecture.md`) and every atom → template the host composes; `NOT_YET_ON_DESIGN_SYSTEM` in `eslint.config.js` lists the host files still styling themselves.
 
-Legacy host sheets, deleted screen by screen (`apps/scoreo/public/css/`): `theme.css`, `layout.css`, `import.css`, `sync.css`, `components.css`, `styles.css` (entry point, `@import`s the rest).
+Legacy host sheets, deleted screen by screen (`apps/scoreo/public/css/`): `theme.css`, `layout.css`, `components.css`, `styles.css` (entry point, `@import`s the rest).
 
 Hall of Fame: one design-system `Panel` per trophy (title, description), holders as `StatRow variant="line"`, F3's holders grouped under a `Text variant="label"` month heading; game filter via the shared `GameTypeTabs` (`apps/scoreo/src/ui/shared/GameTypeTabs.tsx`, design-system `Tabs`).
 
@@ -197,13 +197,13 @@ Stats: leaderboard rows are design-system `StatRow`s (name + record, ELO `score`
 
 The secondary-action rows under the Home player list (Merge / Clean up) and the Games catalogue (Merge) are centred design-system `Stack`s of secondary `Button`s.
 
-Key classes: `.modal-body`, `.modal-row`, `.modal-title`, `.splash`, `.splash-content`, `.spinner`, `.list-container`, `.list-container--spaced`, `.list-item-row`, `.list-item-label`, `.list-item-label--selectable`, `.list-item-label--selected`, `.list-item-name`, `.list-item-subtitle`, `.list-item-actions`, `.list-item-select-picto`.
+Key classes: `.splash`, `.splash-content`, `.spinner`, `.list-container`, `.list-container--spaced`, `.list-item-row`, `.list-item-label`, `.list-item-label--selectable`, `.list-item-label--selected`, `.list-item-name`, `.list-item-subtitle`, `.list-item-actions`, `.list-item-select-picto`.
 
 Native `<select>`s are the design-system `Select` (`md` 44px form field, `sm` 32px compact filter, e.g. History's `FilterBar`): `appearance: none`, the chevron drawn by a `::after` mask on the `.sc-select` wrapper and coloured with `var(--text-muted)`, so it follows the theme.
 
 Games detail dialog: a design-system `DetailList` of `DetailRow`s (label / value, hairline-separated).
 
-Sync classes (`sync.css`): `.sync-icon`, `.sync-status`, `.sync-conflict-container`, `.sync-card`, `.sync-card-title`, `.sync-card-stat`, `.sync-actions`.
+Sync: design-system `EmptyState` per phase (a spinning `loader` icon while working), `StatusLine` for offline / done, `Comparison` + two `ComparisonCard`s for a conflict.
 
 Theme picker: the design system's `Dialog` + `ThemePicker` organism (flavor `Chip`s, accent `Swatch`es) — no host CSS.
 

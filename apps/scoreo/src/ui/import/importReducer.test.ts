@@ -14,7 +14,18 @@ function buildUseCase(
   matchRepo = new InMemoryMatchRepository(),
   currentDate: () => number = () => 1767225600000,
 ) {
-  return { playerRepo, gameTypeRepo, matchRepo, importUseCase: new ImportMatchesUseCase(playerRepo, gameTypeRepo, matchRepo, currentDate, MODULE_MANIFESTS) }
+  return {
+    playerRepo,
+    gameTypeRepo,
+    matchRepo,
+    importUseCase: new ImportMatchesUseCase(
+      playerRepo,
+      gameTypeRepo,
+      matchRepo,
+      currentDate,
+      MODULE_MANIFESTS,
+    ),
+  }
 }
 
 describe('importReducer', () => {

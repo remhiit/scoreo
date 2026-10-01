@@ -1,9 +1,23 @@
-import { CheckCircle2, Cloud, Loader2, WifiOff } from 'lucide-react'
+import {
+  Button,
+  ButtonRow,
+  Comparison,
+  ComparisonCard,
+  EmptyState,
+  Stack,
+  StatusLine,
+  Text,
+} from '@scoreboards/design-system'
 import { useEffect, useReducer, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { SyncUseCase } from '../../application/syncUseCase'
-import { LudoButton } from '../shared/LudoButton'
-import { submitLogin, submitLogout, submitResolveConflict, submitRestoreSession, syncReducer } from './syncReducer'
+import {
+  submitLogin,
+  submitLogout,
+  submitResolveConflict,
+  submitRestoreSession,
+  syncReducer,
+} from './syncReducer'
 import { initialSyncState } from './syncTypes'
 
 export interface SyncScreenProps {
@@ -12,7 +26,10 @@ export interface SyncScreenProps {
 
 export function SyncScreen({ syncUseCase }: SyncScreenProps) {
   const { t } = useTranslation()
-  const [state, dispatch] = useReducer(syncReducer, initialSyncState, (s) => ({ ...s, phase: 'Restoring' as const }))
+  const [state, dispatch] = useReducer(syncReducer, initialSyncState, (s) => ({
+    ...s,
+    phase: 'Restoring' as const,
+  }))
   const [isOnline, setIsOnline] = useState(() => navigator.onLine)
 
   useEffect(() => {
@@ -31,126 +48,119 @@ export function SyncScreen({ syncUseCase }: SyncScreenProps) {
     }
   }, [])
 
+  const disconnectButton = (
+    <Button variant="secondary" onClick={() => void submitLogout(syncUseCase, dispatch)}>
+      {t('sync.disconnect')}
+    </Button>
+  )
+
   return (
-    <>
-      {!isOnline && (
-        <div className="error-msg">
-          <span>
-            <WifiOff size={16} aria-hidden /> {t('sync.offline')}
-          </span>
-        </div>
-      )}
+    <Stack gap={4}>
+      {!isOnline && <StatusLine tone="warning">{t('sync.offline')}</StatusLine>}
 
       {state.phase === 'Disconnected' && (
-        <div className="empty">
-          <span className="sync-icon">
-            <Cloud size={32} aria-hidden />
-          </span>
-          <div className="section-label">{t('sync.cloudSync')}</div>
-          <div>{t('sync.syncYourData')}</div>
-          {state.connected ? (
-            <LudoButton
-              text={t('sync.disconnect')}
-              variant="secondary"
-              onClick={() => void submitLogout(syncUseCase, dispatch)}
-            />
-          ) : (
-            <LudoButton
-              text={t('sync.connectWithGoogle')}
-              variant="primary"
-              onClick={() => void submitLogin(syncUseCase, dispatch)}
-            />
-          )}
-        </div>
+        <EmptyState icon="cloud" title={t('sync.cloudSync')}>
+          <Stack gap={4} align="center">
+            <Text>{t('sync.syncYourData')}</Text>
+            {state.connected ? (
+              disconnectButton
+            ) : (
+              <Button onClick={() => void submitLogin(syncUseCase, dispatch)}>
+                {t('sync.connectWithGoogle')}
+              </Button>
+            )}
+          </Stack>
+        </EmptyState>
       )}
 
-      {state.phase === 'Restoring' && <LoadingView message={t('sync.restoringSession')} />}
-      {state.phase === 'Connecting' && <LoadingView message={t('sync.connectingToGoogle')} />}
-      {state.phase === 'Detecting' && <LoadingView message={t('sync.checkingSyncStatus')} />}
-      {state.phase === 'Syncing' && <LoadingView message={t('sync.synchronisingData')} />}
+      {state.phase === 'Restoring' && (
+        <EmptyState icon="loader">{t('sync.restoringSession')}</EmptyState>
+      )}
+      {state.phase === 'Connecting' && (
+        <EmptyState icon="loader">{t('sync.connectingToGoogle')}</EmptyState>
+      )}
+      {state.phase === 'Detecting' && (
+        <EmptyState icon="loader">{t('sync.checkingSyncStatus')}</EmptyState>
+      )}
+      {state.phase === 'Syncing' && (
+        <EmptyState icon="loader">{t('sync.synchronisingData')}</EmptyState>
+      )}
 
       {state.phase === 'Resolved' && (
-        <div className="empty">
-          <span className="sync-icon">
-            <CheckCircle2 size={32} aria-hidden />
-          </span>
-          <div className="section-label">{t('sync.syncComplete')}</div>
+        <Stack gap={4} align="center">
+          <StatusLine tone="success">{t('sync.syncComplete')}</StatusLine>
           {state.result && (
-            <div>{t('sync.syncSummary', { pushed: state.result.pushed, pulled: state.result.pulled })}</div>
+            <Text variant="muted">
+              {t('sync.syncSummary', { pushed: state.result.pushed, pulled: state.result.pulled })}
+            </Text>
           )}
-          <LudoButton
-            text={t('sync.disconnect')}
-            variant="secondary"
-            onClick={() => void submitLogout(syncUseCase, dispatch)}
-          />
-        </div>
+          {disconnectButton}
+        </Stack>
       )}
 
       {state.phase === 'Conflict' &&
         (state.conflict ? (
-          <div style={{ padding: '16px 0' }}>
-            <div className="modal-title">{t('sync.syncConflict')}</div>
-            <div className="modal-body">{t('sync.conflictBody')}</div>
+          <Stack gap={4}>
+            <Stack gap={1}>
+              <Text variant="title">{t('sync.syncConflict')}</Text>
+              <Text variant="muted">{t('sync.conflictBody')}</Text>
+            </Stack>
 
-            <div className="sync-conflict-container">
-              <div className="sync-card">
-                <div className="sync-card-title">
-                  {t('sync.localVersion')}
-                  {state.conflict.localSnapshot.dateLabel ? ` (${state.conflict.localSnapshot.dateLabel})` : ''}
-                </div>
-                <div className="sync-card-stat">{t('sync.players', { count: state.conflict.localSnapshot.playerCount })}</div>
-                <div className="sync-card-stat">
-                  {t('sync.gameTypes', { count: state.conflict.localSnapshot.gameTypeCount })}
-                </div>
-                <div className="sync-card-stat">{t('sync.matches', { count: state.conflict.localSnapshot.matchCount })}</div>
-              </div>
-              <div className="sync-card">
-                <div className="sync-card-title">
-                  {t('sync.remoteVersion')}
-                  {state.conflict.remoteSnapshot.dateLabel ? ` (${state.conflict.remoteSnapshot.dateLabel})` : ''}
-                </div>
-                <div className="sync-card-stat">{t('sync.players', { count: state.conflict.remoteSnapshot.playerCount })}</div>
-                <div className="sync-card-stat">
-                  {t('sync.gameTypes', { count: state.conflict.remoteSnapshot.gameTypeCount })}
-                </div>
-                <div className="sync-card-stat">{t('sync.matches', { count: state.conflict.remoteSnapshot.matchCount })}</div>
-              </div>
-            </div>
-
-            <div className="sync-actions">
-              <LudoButton
-                text={t('sync.keepLocal')}
-                variant="primary"
-                onClick={() => void submitResolveConflict(syncUseCase, dispatch, true)}
+            {/* Two symmetric cards and two equal buttons: no side is pre-picked. */}
+            <Comparison>
+              <ComparisonCard
+                title={`${t('sync.localVersion')}${
+                  state.conflict.localSnapshot.dateLabel
+                    ? ` (${state.conflict.localSnapshot.dateLabel})`
+                    : ''
+                }`}
+                stats={[
+                  t('sync.players', { count: state.conflict.localSnapshot.playerCount }),
+                  t('sync.gameTypes', { count: state.conflict.localSnapshot.gameTypeCount }),
+                  t('sync.matches', { count: state.conflict.localSnapshot.matchCount }),
+                ]}
               />
-              <LudoButton
-                text={t('sync.keepRemote')}
+              <ComparisonCard
+                title={`${t('sync.remoteVersion')}${
+                  state.conflict.remoteSnapshot.dateLabel
+                    ? ` (${state.conflict.remoteSnapshot.dateLabel})`
+                    : ''
+                }`}
+                stats={[
+                  t('sync.players', { count: state.conflict.remoteSnapshot.playerCount }),
+                  t('sync.gameTypes', { count: state.conflict.remoteSnapshot.gameTypeCount }),
+                  t('sync.matches', { count: state.conflict.remoteSnapshot.matchCount }),
+                ]}
+              />
+            </Comparison>
+
+            <ButtonRow>
+              <Button
+                variant="secondary"
+                onClick={() => void submitResolveConflict(syncUseCase, dispatch, true)}
+              >
+                {t('sync.keepLocal')}
+              </Button>
+              <Button
                 variant="secondary"
                 onClick={() => void submitResolveConflict(syncUseCase, dispatch, false)}
-              />
-            </div>
-          </div>
+              >
+                {t('sync.keepRemote')}
+              </Button>
+            </ButtonRow>
+          </Stack>
         ) : (
-          <div className="empty">{t('sync.noConflictData')}</div>
+          <EmptyState>{t('sync.noConflictData')}</EmptyState>
         ))}
 
       {state.error && (
-        <>
-          <div className="error-msg">{state.error}</div>
-          <LudoButton text={t('sync.dismiss')} variant="secondary" onClick={() => dispatch({ type: 'dismissError' })} />
-        </>
+        <Stack gap={2} align="start">
+          <Text variant="error">{state.error}</Text>
+          <Button variant="secondary" onClick={() => dispatch({ type: 'dismissError' })}>
+            {t('sync.dismiss')}
+          </Button>
+        </Stack>
       )}
-    </>
-  )
-}
-
-function LoadingView({ message }: { message: string }) {
-  return (
-    <div className="empty">
-      <div className="import-zone-icon">
-        <Loader2 size={32} aria-hidden />
-      </div>
-      <div>{message}</div>
-    </div>
+    </Stack>
   )
 }

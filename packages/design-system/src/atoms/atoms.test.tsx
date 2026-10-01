@@ -73,6 +73,13 @@ describe('Icon', () => {
     render(<Icon name="trophy" label="Trophy" />)
     expect(screen.getByRole('img', { name: 'Trophy' })).toBeInTheDocument()
   })
+
+  it('spins the loader and only the loader', () => {
+    const { container, rerender } = render(<Icon name="loader" />)
+    expect(container.querySelector('svg')).toHaveClass('sc-icon--spin')
+    rerender(<Icon name="upload" />)
+    expect(container.querySelector('svg')).not.toHaveClass('sc-icon--spin')
+  })
 })
 
 describe('TextInput', () => {

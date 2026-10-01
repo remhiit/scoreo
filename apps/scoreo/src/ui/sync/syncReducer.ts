@@ -56,13 +56,21 @@ export function syncReducer(state: SyncState, action: SyncAction): SyncState {
  */
 function errorMessage(e: unknown): string | undefined {
   if (e instanceof Error) return e.message
-  if (e && typeof e === 'object' && 'message' in e && typeof (e as { message?: unknown }).message === 'string') {
+  if (
+    e &&
+    typeof e === 'object' &&
+    'message' in e &&
+    typeof (e as { message?: unknown }).message === 'string'
+  ) {
     return (e as { message: string }).message
   }
   return undefined
 }
 
-async function runAutoSync(syncUseCase: SyncUseCase, dispatch: (action: SyncAction) => void): Promise<void> {
+async function runAutoSync(
+  syncUseCase: SyncUseCase,
+  dispatch: (action: SyncAction) => void,
+): Promise<void> {
   try {
     const outcome = await syncUseCase.autoSync()
     if (outcome.kind === 'Synced') {
@@ -95,7 +103,10 @@ export async function submitRestoreSession(
   }
 }
 
-export async function submitLogin(syncUseCase: SyncUseCase, dispatch: (action: SyncAction) => void): Promise<void> {
+export async function submitLogin(
+  syncUseCase: SyncUseCase,
+  dispatch: (action: SyncAction) => void,
+): Promise<void> {
   dispatch({ type: 'loginStarted' })
   try {
     await syncUseCase.login()
@@ -106,7 +117,10 @@ export async function submitLogin(syncUseCase: SyncUseCase, dispatch: (action: S
   }
 }
 
-export async function submitLogout(syncUseCase: SyncUseCase, dispatch: (action: SyncAction) => void): Promise<void> {
+export async function submitLogout(
+  syncUseCase: SyncUseCase,
+  dispatch: (action: SyncAction) => void,
+): Promise<void> {
   await syncUseCase.logout()
   dispatch({ type: 'loggedOut' })
 }
