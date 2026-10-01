@@ -226,7 +226,7 @@ registered module — it runs its two checks over a table of them, so a new modu
 a new test.
 
 Scoping runs **one way**. It keeps the module out of the host; nothing keeps the host out of the
-module. Scoreo's `theme.css` and `layout.css` carry generic rules — `.card`, `.empty`, `.app-title`
+module. Scoreo's `theme.css` and `layout.css` carry generic rules — `.card`, `.empty`
 — that land on a module's markup like any other, and a class name the two happen to share is settled
 property by property: the module's `.module-<id> .card` wins the ones it declares, the host's `.card`
 supplies the rest. Torī Valley shipped for a while with every player card laid out in a row for
