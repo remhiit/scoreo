@@ -8,6 +8,14 @@ export async function startMatch(page: Page, playerNames: string[]): Promise<voi
   await page.getByRole('button', { name: 'New Match' }).click()
 }
 
+/**
+ * Picks a game in the open "Select a game" modal by its label — an existing
+ * game type, or a module no game type is bound to yet.
+ */
+export async function chooseGame(page: Page, gameLabel: string): Promise<void> {
+  await page.getByRole('dialog').getByRole('combobox').first().selectOption({ label: gameLabel })
+}
+
 /** Fills the first round's score for each player, matched by player name in the "Round 1" card. */
 export async function enterRoundScore(page: Page, scores: Record<string, number>): Promise<void> {
   await page.getByRole('button', { name: 'History' }).click()

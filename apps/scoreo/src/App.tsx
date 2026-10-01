@@ -294,18 +294,33 @@ function AppShell() {
   )
   /**
    * Binding happens here, on the way in: no game type is created until someone
-   * actually chooses to play a module's game.
+   * actually chooses to play a module's game — on the module or in Scoreo.
    */
+  const bindModule = useCallback(
+    (moduleId: string) => {
+      const manifest = findManifest(moduleId)
+      return manifest && new BindModuleUseCase(services.gameTypeRepository).invoke(manifest)
+    },
+    [services],
+  )
   const handleStartModule = useCallback(
     (moduleId: string, playerIds: string[]) => {
-      const manifest = findManifest(moduleId)
-      if (!manifest) return
-      const gameType = new BindModuleUseCase(services.gameTypeRepository).invoke(manifest)
-      navigate(moduleScoreScreen(moduleId, gameType.id, playerIds))
+      const gameType = bindModule(moduleId)
+      if (gameType) navigate(moduleScoreScreen(moduleId, gameType.id, playerIds))
     },
-    [navigate, services],
+    [navigate, bindModule],
   )
-  const homeGetGameTypes = useCallback(() => getGameTypes.invoke(), [getGameTypes])
+  const handleStartModuleInScoreo = useCallback(
+    (moduleId: string, playerIds: string[]) => {
+      const gameType = bindModule(moduleId)
+      if (gameType) navigate(scoreDetailScreen(gameType.id, playerIds))
+    },
+    [navigate, bindModule],
+  )
+  const homeGetGameTypes = useCallback(
+    (includeInactive?: boolean) => getGameTypes.invoke(includeInactive),
+    [getGameTypes],
+  )
   const homeOnAddGameType = useCallback(
     (name: string, winCondition: WinCondition) => addGameType.invoke(name, winCondition),
     [addGameType],
@@ -419,6 +434,7 @@ function AppShell() {
           onAddGameType={homeOnAddGameType}
           onStartGame={handleStartGame}
           onStartModule={handleStartModule}
+          onStartModuleInScoreo={handleStartModuleInScoreo}
           matchDraftRepository={services.matchDraftRepository}
           onResumeDraft={handleStartGame}
           getMatchCount={homeGetMatchCount}

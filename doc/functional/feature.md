@@ -31,9 +31,14 @@
    - A game a **scoring module** can count offers both ways in: **Play in Scoreo** (the generic
      score screen) or **Play on the module** (the module's own screen). A module augments a game,
      it never replaces it.
-   - Modules with no game type of their own yet appear under **Available modules**, filtered to
-     those that accept the number of players selected. Picking one creates its game type on the
-     spot — nothing is created before that.
+   - Every registered module with no game type of its own yet is listed **in the same game list**,
+     after the existing games and sorted by name, offering the same two buttons. Choosing either one
+     creates its game type on the spot (`BindModuleUseCase`) — nothing is created before that, and a
+     module never played does not appear on the **Games** screen. A module already bound to a game
+     type (even an archived one), or whose name an existing game already carries, is not listed a
+     second time.
+   - When the number of players selected falls outside the module's range, the game stays listed and
+     **Play in Scoreo** stays available, but **Play on the module** is disabled and the range is shown.
 3. **Score Detail** → enter rounds (auto-saved after each score) → **Finish match**
    - A match scored on a module reopens **on that module**, with its own grid restored.
    - Exiting a module after it saved a match lands on **History**, that match called out, instead of

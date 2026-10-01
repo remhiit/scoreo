@@ -241,7 +241,6 @@
     "loading": "Chargement du module…",
     "failedToLoad": "Ce module n'a pas pu être chargé.",
     "unknownModule": "Ce module n'est pas installé.",
-    "availableModules": "Modules disponibles",
     "playInScoreo": "Jouer dans Scoreo",
     "playOnModule": "Jouer sur le module",
     "playerRange": "{{min}} à {{max}} joueurs",

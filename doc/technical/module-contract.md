@@ -129,8 +129,16 @@ the module has).
 
 ## Binding a module to a game
 
-Nothing is materialized when the app starts: a fresh profile has no game types at all. A module's
-game becomes real the first time someone plays it, through `BindModuleUseCase`:
+Nothing is materialized when the app starts: a fresh profile has no game types at all. The game
+selection modal still lists every registered module as a game — after the existing game types,
+sorted by `gameNames[0]` — as long as no `GameType` (active or archived) carries its `moduleId` and
+no active one already carries one of its `gameNames` (case- and space-insensitive). Both buttons are
+offered on such an entry; **Play on the module** is disabled, with the manifest's player range shown,
+when the selected players fall outside `[minPlayers, maxPlayers]`. The **Games** screen lists only
+real `GameType`s, so a module never played does not appear there.
+
+A module's game becomes real the first time someone plays it — on the module or in Scoreo's generic
+score screen — through `BindModuleUseCase`:
 
 1. a `GameType` already carries this `moduleId` → reuse it, whatever its name has become;
 2. otherwise a `GameType`'s name matches one the manifest claims → stamp the `moduleId` onto it —

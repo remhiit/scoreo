@@ -1,10 +1,10 @@
 import { expect, test } from '@playwright/test'
-import { startMatch } from './helpers/match'
+import { chooseGame, startMatch } from './helpers/match'
 import { addPlayer } from './helpers/players'
 
 /**
  * The target scenario of the whole module effort:
- * Home → pick players → New Match → the module's game → "Play on the module" →
+ * Home → pick players → New Match → the module's game, in the game list → "Play on the module" →
  * score → save → the match is in Scoreo's history, with the module's own winner,
  * landed on directly (no burger + History detour needed, see #390).
  */
@@ -24,8 +24,9 @@ test('scoring a match on the Torī Valley module lands it in Scoreo history', as
   await startMatch(page, [alice, bob])
 
   // Nothing was materialized before this click: the module has no game type of
-  // its own yet, so it shows up under "Available modules", not in the game list.
-  await page.getByRole('button', { name: /La Vallée des Torī/ }).click()
+  // its own yet, yet it is offered in the game list like any other game.
+  await chooseGame(page, 'La Vallée des Torī')
+  await page.getByRole('button', { name: 'Play on the module' }).click()
 
   // The module's own two steps: deal the Objectif cards, then enter the scores.
   await page.getByRole('button', { name: 'Start match' }).click()
@@ -76,14 +77,15 @@ test('a game a module counts still offers Scoreo’s own score screen', async ({
 
   // First visit binds the game type to the module.
   await startMatch(page, [alice, bob])
-  await page.getByRole('button', { name: /La Vallée des Torī/ }).click()
+  await chooseGame(page, 'La Vallée des Torī')
+  await page.getByRole('button', { name: 'Play on the module' }).click()
   await page.getByRole('button', { name: 'Start match' }).click()
   await page.goto('/')
 
   // Second visit: the game is in the list, and both ways in are offered —
   // `moduleId` is a capability flag, not a redirection.
   await startMatch(page, [alice, bob])
-  await page.getByRole('combobox').first().selectOption({ label: 'La Vallée des Torī' })
+  await chooseGame(page, 'La Vallée des Torī')
 
   await expect(page.getByRole('button', { name: 'Play in Scoreo' })).toBeVisible()
   await expect(page.getByRole('button', { name: 'Play on the module' })).toBeVisible()

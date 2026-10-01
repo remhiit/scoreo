@@ -28,10 +28,12 @@ export interface HomeScreenProps {
   mergePlayersUseCase: MergePlayersUseCase
   cleanupInactivePlayers: CleanupInactivePlayersUseCase
   getTrophies: GetTrophiesUseCase
-  getGameTypes: () => GameType[]
+  getGameTypes: (includeInactive?: boolean) => GameType[]
   onAddGameType: (name: string, winCondition: WinCondition) => GameType
   onStartGame: (gameTypeId: string, playerIds: string[]) => void
   onStartModule: (moduleId: string, playerIds: string[]) => void
+  /** "Play in Scoreo" on a module no game type is bound to yet: bind it, then score generically. */
+  onStartModuleInScoreo: (moduleId: string, playerIds: string[]) => void
   matchDraftRepository?: MatchDraftRepository
   onResumeDraft?: (gameTypeId: string, playerIds: string[]) => void
   getMatchCount?: () => number
@@ -50,6 +52,7 @@ export function HomeScreen({
   onAddGameType,
   onStartGame,
   onStartModule,
+  onStartModuleInScoreo,
   matchDraftRepository,
   onResumeDraft = () => {},
   getMatchCount = () => 0,
@@ -142,6 +145,7 @@ export function HomeScreen({
         onAddGameType={onAddGameType}
         onStartGame={onStartGame}
         onStartModule={onStartModule}
+        onStartModuleInScoreo={onStartModuleInScoreo}
         selectedPlayerIds={[...selectedPlayers]}
       />
 
