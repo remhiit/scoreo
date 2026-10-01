@@ -55,6 +55,7 @@
 @import './organisms/Sheet.css';
 @import './organisms/ActionBar.css';
 @import './organisms/ThemePicker.css';
+@import './organisms/Panel.css';
 
 /* 04 · templates */
 @import './templates/ScreenTemplate.css';

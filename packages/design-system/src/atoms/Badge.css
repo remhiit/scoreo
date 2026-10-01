@@ -36,6 +36,9 @@
   color: var(--color-danger);
 }
 .sc-badge__label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
   font-family: var(--font-ui);
   font-weight: var(--weight-medium);
   font-size: 13px;

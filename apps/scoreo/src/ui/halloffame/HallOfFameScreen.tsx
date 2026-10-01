@@ -1,9 +1,14 @@
+import { EmptyState, Panel, Stack, StatRow, Text } from '@scoreboards/design-system'
 import { useEffect, useReducer } from 'react'
 import { useTranslation } from 'react-i18next'
-import type { GameType } from '../../domain/model/gameType'
 import type { Trophy, TrophyHolder, TrophyPeriod } from '../../domain/model/trophy'
 import type { GetGameTypesUseCase } from '../../application/getGameTypesUseCase'
-import { NEMESIS_MIN_MEETINGS, REGULAR_MIN_MATCHES, type GetTrophiesUseCase } from '../../application/getTrophiesUseCase'
+import {
+  NEMESIS_MIN_MEETINGS,
+  REGULAR_MIN_MATCHES,
+  type GetTrophiesUseCase,
+} from '../../application/getTrophiesUseCase'
+import { GameTypeTabs } from '../shared/GameTypeTabs'
 import { hallOfFameReducer, loadHallOfFame } from './hallOfFameReducer'
 import { initialHallOfFameState } from './hallOfFameTypes'
 
@@ -16,55 +21,28 @@ export function HallOfFameScreen({ getTrophies, getGameTypes }: HallOfFameScreen
   const [state, dispatch] = useReducer(hallOfFameReducer, initialHallOfFameState)
 
   useEffect(() => {
-    const { trophies, gameTypes } = loadHallOfFame(getTrophies, getGameTypes, state.selectedGameTypeId)
+    const { trophies, gameTypes } = loadHallOfFame(
+      getTrophies,
+      getGameTypes,
+      state.selectedGameTypeId,
+    )
     dispatch({ type: 'loaded', trophies, gameTypes })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.selectedGameTypeId])
 
   return (
-    <>
+    <Stack gap={4}>
       <GameTypeTabs
         gameTypes={state.gameTypes}
         selectedGameTypeId={state.selectedGameTypeId}
         onSelect={(gameTypeId) => dispatch({ type: 'selectGameType', gameTypeId })}
       />
-      <div className="trophy-list">
+      <Stack gap={3}>
         {state.trophies.map((trophy) => (
           <TrophyCard key={trophy.id} trophy={trophy} />
         ))}
-      </div>
-    </>
-  )
-}
-
-interface GameTypeTabsProps {
-  gameTypes: GameType[]
-  selectedGameTypeId: string | undefined
-  onSelect: (gameTypeId: string | undefined) => void
-}
-
-function GameTypeTabs({ gameTypes, selectedGameTypeId, onSelect }: GameTypeTabsProps) {
-  const { t } = useTranslation()
-  return (
-    <div className="tab-bar">
-      <button
-        type="button"
-        className={selectedGameTypeId === undefined ? 'tab-btn active' : 'tab-btn'}
-        onClick={() => onSelect(undefined)}
-      >
-        {t('stats.all')}
-      </button>
-      {gameTypes.map((gt) => (
-        <button
-          key={gt.id}
-          type="button"
-          className={selectedGameTypeId === gt.id ? 'tab-btn active' : 'tab-btn'}
-          onClick={() => onSelect(gt.id)}
-        >
-          {gt.name}
-        </button>
-      ))}
-    </div>
+      </Stack>
+    </Stack>
   )
 }
 
@@ -80,7 +58,8 @@ function holderKey(holder: TrophyHolder): string {
   if (detail === undefined) return `${holder.playerId}${periodSuffix}`
   if (typeof detail === 'string') return `${holder.playerId}-${detail}${periodSuffix}`
   if (detail.kind === 'date') return `${holder.playerId}-${detail.epochMs}${periodSuffix}`
-  if (detail.kind === 'ratio') return `${holder.playerId}-${detail.wins}-${detail.played}${periodSuffix}`
+  if (detail.kind === 'ratio')
+    return `${holder.playerId}-${detail.wins}-${detail.played}${periodSuffix}`
   return `${holder.playerId}-${detail.brokenPlayerName}${periodSuffix}`
 }
 
@@ -95,7 +74,11 @@ function groupHoldersByMonth(holders: TrophyHolder[]): HolderMonthGroup[] {
   for (const holder of holders) {
     if (!holder.period) continue
     const last = groups[groups.length - 1]
-    if (last && last.period.year === holder.period.year && last.period.month === holder.period.month) {
+    if (
+      last &&
+      last.period.year === holder.period.year &&
+      last.period.month === holder.period.month
+    ) {
       last.holders.push(holder)
     } else {
       groups.push({ period: holder.period, holders: [holder] })
@@ -116,48 +99,56 @@ function TrophyCard({ trophy }: { trophy: Trophy }) {
       case 'streakBroken':
         return t('hallOfFame.trophies.a4.detail', { brokenPlayerName: detail.brokenPlayerName })
       case 'date':
-        return new Date(detail.epochMs).toLocaleDateString(i18n.language, { day: 'numeric', month: 'short', year: 'numeric' })
+        return new Date(detail.epochMs).toLocaleDateString(i18n.language, {
+          day: 'numeric',
+          month: 'short',
+          year: 'numeric',
+        })
     }
   }
 
   function renderHolder(holder: TrophyHolder) {
-    const detailText = holderDetailText(holder.detail)
     return (
-      <div key={holderKey(holder)} className="trophy-holder">
-        <div className="trophy-holder-info">
-          <span className="trophy-holder-name">{holder.name}</span>
-          {detailText && <span className="trophy-holder-detail">{detailText}</span>}
-        </div>
-        <span className="trophy-holder-value">
-          {holder.value}
-          {trophy.unit ? ` ${t(`hallOfFame.units.${trophy.unit}`)}` : ''}
-        </span>
-      </div>
+      <StatRow
+        key={holderKey(holder)}
+        variant="line"
+        title={holder.name}
+        subtitle={holderDetailText(holder.detail)}
+        value={`${holder.value}${trophy.unit ? ` ${t(`hallOfFame.units.${trophy.unit}`)}` : ''}`}
+      />
     )
   }
 
   const monthGroups = trophy.id === 'f3' ? groupHoldersByMonth(trophy.holders) : null
 
   return (
-    <div className="card trophy-card">
-      <div className="trophy-card-title">{t(`hallOfFame.trophies.${trophy.id}.title`)}</div>
-      <div className="trophy-card-description">{t(`hallOfFame.trophies.${trophy.id}.description`, DESCRIPTION_OPTIONS[trophy.id])}</div>
-      {trophy.holders.length === 0 ? (
-        <div className="empty trophy-card-empty">{t('hallOfFame.noRecordYet')}</div>
-      ) : monthGroups ? (
-        <div className="trophy-holder-groups">
-          {monthGroups.map((group) => (
-            <div key={`${group.period.year}-${group.period.month}`} className="trophy-holder-group">
-              <div className="trophy-holder-group-title">
-                {new Date(group.period.year, group.period.month, 1).toLocaleDateString(i18n.language, { month: 'long', year: 'numeric' })}
-              </div>
-              <div className="trophy-holders">{group.holders.map(renderHolder)}</div>
-            </div>
-          ))}
-        </div>
-      ) : (
-        <div className="trophy-holders">{trophy.holders.map(renderHolder)}</div>
+    <Panel
+      title={t(`hallOfFame.trophies.${trophy.id}.title`)}
+      description={t(
+        `hallOfFame.trophies.${trophy.id}.description`,
+        DESCRIPTION_OPTIONS[trophy.id],
       )}
-    </div>
+    >
+      {trophy.holders.length === 0 ? (
+        <EmptyState>{t('hallOfFame.noRecordYet')}</EmptyState>
+      ) : monthGroups ? (
+        monthGroups.map((group) => (
+          <Stack key={`${group.period.year}-${group.period.month}`} gap={1}>
+            <Text variant="label">
+              {new Date(group.period.year, group.period.month, 1).toLocaleDateString(
+                i18n.language,
+                {
+                  month: 'long',
+                  year: 'numeric',
+                },
+              )}
+            </Text>
+            <Stack gap={0}>{group.holders.map(renderHolder)}</Stack>
+          </Stack>
+        ))
+      ) : (
+        <Stack gap={0}>{trophy.holders.map(renderHolder)}</Stack>
+      )}
+    </Panel>
   )
 }

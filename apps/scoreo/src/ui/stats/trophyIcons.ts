@@ -1,20 +1,19 @@
-import { Calendar, Crown, Flame, Medal, Mountain, Skull, Star, Swords, Target, TrendingUp, Trophy as TrophyIcon } from 'lucide-react'
-import type { LucideIcon } from 'lucide-react'
+import type { IconName } from '@scoreboards/design-system'
 
 /**
- * Trophy id -> presentation icon. Lives in `ui/` on purpose: the domain
+ * Trophy id -> design-system icon name. Lives in `ui/` on purpose: the domain
  * `Trophy` model and `application/` have no notion of icons.
  */
-export const TROPHY_ICONS: Record<string, LucideIcon> = {
-  a1: Flame,
-  a2: TrendingUp,
-  a4: Swords,
-  b2: TrophyIcon,
-  b3: Target,
-  c1: Mountain,
-  c3: Crown,
-  d1: Star,
-  e1: Skull,
-  f2: Calendar,
-  f3: Medal,
+export const TROPHY_ICONS: Record<string, IconName> = {
+  a1: 'flame',
+  a2: 'trendingUp',
+  a4: 'swords',
+  b2: 'trophy',
+  b3: 'target',
+  c1: 'mountain',
+  c3: 'crown',
+  d1: 'star',
+  e1: 'skull',
+  f2: 'calendar',
+  f3: 'medal',
 }

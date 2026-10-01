@@ -152,3 +152,15 @@ describe('ThemePicker', () => {
     expect(onAccent).toHaveBeenCalledWith('blue')
   })
 })
+
+describe('Panel', () => {
+  it('is a region named by its title', async () => {
+    const { Panel } = await import('./Panel')
+    render(
+      <Panel title="The Invincible" description="Longest win streak">
+        <span>Alice</span>
+      </Panel>,
+    )
+    expect(screen.getByRole('region', { name: 'The Invincible' })).toHaveTextContent('Alice')
+  })
+})

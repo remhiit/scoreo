@@ -1,13 +1,22 @@
+import {
+  Badge,
+  EmptyState,
+  Icon,
+  List,
+  Panel,
+  Stack,
+  StatRow,
+  Text,
+} from '@scoreboards/design-system'
 import { useEffect, useReducer } from 'react'
 import { useTranslation } from 'react-i18next'
-import type { GameType } from '../../domain/model/gameType'
 import type { GetGameTypesUseCase } from '../../application/getGameTypesUseCase'
 import type { GetHeadToHeadUseCase, PlayerDetail } from '../../application/getHeadToHeadUseCase'
 import type { GetTrophiesUseCase } from '../../application/getTrophiesUseCase'
 import type { PlayerTrophyBadge } from '../../application/groupTrophiesByPlayer'
 import { loadStats, statsReducer } from './statsReducer'
 import { initialStatsState, selectedPlayer } from './statsTypes'
-import { ListContainer } from '../shared/ListContainer'
+import { GameTypeTabs } from '../shared/GameTypeTabs'
 import { TROPHY_ICONS } from './trophyIcons'
 
 export interface StatsScreenProps {
@@ -29,7 +38,12 @@ function pct(wins: number, losses: number): number {
   return total === 0 ? 0 : Math.trunc((wins / total) * 100)
 }
 
-export function StatsScreen({ getHeadToHead, getGameTypes, getTrophies, onBackOverrideChange }: StatsScreenProps) {
+export function StatsScreen({
+  getHeadToHead,
+  getGameTypes,
+  getTrophies,
+  onBackOverrideChange,
+}: StatsScreenProps) {
   const [state, dispatch] = useReducer(statsReducer, initialStatsState)
 
   useEffect(() => {
@@ -44,17 +58,24 @@ export function StatsScreen({ getHeadToHead, getGameTypes, getTrophies, onBackOv
   }, [state.selectedGameTypeId])
 
   useEffect(() => {
-    onBackOverrideChange?.(state.selectedPlayerId !== undefined ? () => dispatch({ type: 'backToLeaderboard' }) : null)
+    onBackOverrideChange?.(
+      state.selectedPlayerId !== undefined ? () => dispatch({ type: 'backToLeaderboard' }) : null,
+    )
   }, [state.selectedPlayerId, onBackOverrideChange])
 
   const detail = selectedPlayer(state)
 
   if (detail) {
-    return <PlayerDetailView detail={detail} badges={state.trophiesByPlayer.get(detail.playerId) ?? []} />
+    return (
+      <PlayerDetailView
+        detail={detail}
+        badges={state.trophiesByPlayer.get(detail.playerId) ?? []}
+      />
+    )
   }
 
   return (
-    <>
+    <Stack gap={4}>
       <GameTypeTabs
         gameTypes={state.gameTypes}
         selectedGameTypeId={state.selectedGameTypeId}
@@ -64,38 +85,7 @@ export function StatsScreen({ getHeadToHead, getGameTypes, getTrophies, onBackOv
         leaderboard={state.leaderboard}
         onSelectPlayer={(playerId) => dispatch({ type: 'selectPlayer', playerId })}
       />
-    </>
-  )
-}
-
-interface GameTypeTabsProps {
-  gameTypes: GameType[]
-  selectedGameTypeId: string | undefined
-  onSelect: (gameTypeId: string | undefined) => void
-}
-
-function GameTypeTabs({ gameTypes, selectedGameTypeId, onSelect }: GameTypeTabsProps) {
-  const { t } = useTranslation()
-  return (
-    <div className="tab-bar">
-      <button
-        type="button"
-        className={selectedGameTypeId === undefined ? 'tab-btn active' : 'tab-btn'}
-        onClick={() => onSelect(undefined)}
-      >
-        {t('stats.all')}
-      </button>
-      {gameTypes.map((gt) => (
-        <button
-          key={gt.id}
-          type="button"
-          className={selectedGameTypeId === gt.id ? 'tab-btn active' : 'tab-btn'}
-          onClick={() => onSelect(gt.id)}
-        >
-          {gt.name}
-        </button>
-      ))}
-    </div>
+    </Stack>
   )
 }
 
@@ -107,105 +97,108 @@ interface LeaderboardViewProps {
 function LeaderboardView({ leaderboard, onSelectPlayer }: LeaderboardViewProps) {
   const { t } = useTranslation()
   if (leaderboard.length === 0) {
-    return <div className="empty">{t('stats.noStatsYet')}</div>
+    return <EmptyState>{t('stats.noStatsYet')}</EmptyState>
   }
 
   return (
-    <ListContainer>
+    <List>
       {leaderboard.map((detail) => {
         const rowPct = pct(detail.wins, detail.losses)
         return (
-          <div key={detail.playerId} className="card stats-row" onClick={() => onSelectPlayer(detail.playerId)}>
-            <div className="stats-row-info">
-              <span className="stats-row-name">{detail.name}</span>
-              <span className="stats-row-record">
-                {detail.wins}W {detail.losses}L
-              </span>
-            </div>
-            <span className="stats-elo">{detail.elo}</span>
-            <div className="stats-row-bar-wrap">
-              <div className="stats-row-bar" style={{ width: `${rowPct}%` }} />
-            </div>
-            <span className="stats-row-pct">{rowPct}%</span>
-          </div>
+          <StatRow
+            key={detail.playerId}
+            title={detail.name}
+            subtitle={`${detail.wins}W ${detail.losses}L`}
+            score={detail.elo}
+            rate={rowPct / 100}
+            value={`${rowPct}%`}
+            onClick={() => onSelectPlayer(detail.playerId)}
+          />
         )
       })}
-    </ListContainer>
+    </List>
   )
 }
 
-function PlayerDetailView({ detail, badges }: { detail: PlayerDetail; badges: PlayerTrophyBadge[] }) {
+function PlayerDetailView({
+  detail,
+  badges,
+}: {
+  detail: PlayerDetail
+  badges: PlayerTrophyBadge[]
+}) {
   const { t, i18n } = useTranslation()
   const overallPct = pct(detail.wins, detail.losses)
 
   return (
-    <>
-      <div className="stats-detail-header">
-        <div className="stats-detail-title">{detail.name}</div>
-        <span className="stats-elo-badge">{detail.elo}</span>
-      </div>
+    <Stack gap={4}>
+      <Stack direction="row" align="center" justify="between">
+        <Text variant="heading">{detail.name}</Text>
+        <Badge tone="accent">{detail.elo}</Badge>
+      </Stack>
 
-      <div className="stats-detail-overall">
-        <span className="stats-detail-record">
-          {detail.wins}W / {detail.losses}L
-        </span>
-        <span className="stats-detail-pct">({overallPct}%)</span>
-      </div>
+      <StatRow
+        title={`${detail.wins}W / ${detail.losses}L`}
+        rate={overallPct / 100}
+        value={`${overallPct}%`}
+      />
 
       {detail.headToHead.length === 0 ? (
-        <div className="empty">{t('stats.noHeadToHead')}</div>
+        <EmptyState>{t('stats.noHeadToHead')}</EmptyState>
       ) : (
-        <>
-          <div className="section-label">{t('stats.headToHead')}</div>
+        <Panel title={t('stats.headToHead')}>
           {detail.headToHead.map((h2h) => {
             const hPct = pct(h2h.wins, h2h.losses)
             return (
-              <div key={h2h.opponentId} className="stats-h2h-row">
-                <div className="stats-row-info">
-                  <span className="stats-h2h-name">{h2h.opponentName}</span>
-                </div>
-                <div className="stats-row-bar-wrap">
-                  <div className="stats-row-bar" style={{ width: `${hPct}%` }} />
-                </div>
-                <span className="stats-h2h-record">
-                  {h2h.wins} - {h2h.losses}
-                </span>
-              </div>
+              <StatRow
+                key={h2h.opponentId}
+                variant="line"
+                title={h2h.opponentName}
+                rate={hPct / 100}
+                value={`${h2h.wins} - ${h2h.losses}`}
+              />
             )
           })}
-        </>
+        </Panel>
       )}
 
-      <div className="section-label">{t('stats.trophies')}</div>
-      {badges.length === 0 ? (
-        <div className="empty">{t('stats.noTrophies')}</div>
-      ) : (
-        <div className="stats-trophy-badges">
-          {badges.map(({ trophy, holder }, index) => {
-            const Icon = TROPHY_ICONS[trophy.id]
-            const title = t(`hallOfFame.trophies.${trophy.id}.title`)
-            const badgeTitle = holder.period
-              ? t('hallOfFame.badgePeriod', {
-                  title,
-                  period: new Date(holder.period.year, holder.period.month, 1).toLocaleDateString(i18n.language, {
-                    month: 'short',
-                    year: 'numeric',
-                  }),
-                })
-              : title
-            return (
-              <div key={`${trophy.id}-${index}`} className="stats-trophy-badge">
-                <Icon size={16} />
-                <span className="stats-trophy-badge-title">{badgeTitle}</span>
-                <span className="stats-trophy-badge-value">
+      <Panel title={t('stats.trophies')}>
+        {badges.length === 0 ? (
+          <EmptyState>{t('stats.noTrophies')}</EmptyState>
+        ) : (
+          <Stack direction="row" gap={2} wrap>
+            {badges.map(({ trophy, holder }, index) => {
+              const title = t(`hallOfFame.trophies.${trophy.id}.title`)
+              const badgeTitle = holder.period
+                ? t('hallOfFame.badgePeriod', {
+                    title,
+                    period: new Date(holder.period.year, holder.period.month, 1).toLocaleDateString(
+                      i18n.language,
+                      {
+                        month: 'short',
+                        year: 'numeric',
+                      },
+                    ),
+                  })
+                : title
+              return (
+                <Badge
+                  key={`${trophy.id}-${index}`}
+                  label={
+                    <>
+                      <Icon name={TROPHY_ICONS[trophy.id] ?? 'trophy'} size="sm" />
+                      {badgeTitle}
+                    </>
+                  }
+                >
                   {holder.value}
                   {trophy.unit ? ` ${t(`hallOfFame.units.${trophy.unit}`)}` : ''}
-                </span>
-              </div>
-            )
-          })}
-        </div>
-      )}
-    </>
+                </Badge>
+              )
+            })}
+          </Stack>
+        )}
+      </Panel>
+    </Stack>
   )
 }

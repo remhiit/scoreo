@@ -3,7 +3,8 @@
   flex: 1 1 auto;
   min-width: 60px;
   height: 8px;
-  background: var(--surface-sunken);
+  /* One step below --surface-sunken/--surface-card, where meters sit, so an empty track still reads. */
+  background: var(--surface-well);
   border-radius: var(--radius-sm);
   overflow: hidden;
 }
