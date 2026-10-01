@@ -1,3 +1,4 @@
+import type { ScoringModuleManifest } from '@scoreboards/module-api'
 import { forwardRef, useImperativeHandle, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { NotFoundError, ValidationError } from '../../domain/model/errors'
@@ -32,8 +33,8 @@ const normalizeName = (name: string) => name.trim().toLowerCase()
  *
  * A module is left out when a game type — even an archived one — is bound to
  * it, or when an active game type already carries one of its names (the same
- * case- and space-insensitive match `BindModuleUseCase` applies): either would
- * list the same game twice.
+ * match `BindModuleUseCase` applies: case-insensitive, ignoring surrounding
+ * blanks): either would list the same game twice.
  */
 function buildChoices(allGameTypes: readonly GameType[]): GameChoice[] {
   const active = allGameTypes.filter((gt) => gt.active)
@@ -60,6 +61,26 @@ function buildChoices(allGameTypes: readonly GameType[]): GameChoice[] {
     .sort((a, b) => a.label.localeCompare(b.label))
 
   return [...gameTypeChoices, ...moduleChoices]
+}
+
+/**
+ * The module an unbound game type stands for by name — a game created by a v1.1
+ * import, or by hand, before its module was played. Its module entry is hidden
+ * from the list (see `buildChoices`), so this is the only way to reach the
+ * module from that game: "Play on the module" then lets `BindModuleUseCase`
+ * stamp the `moduleId` onto it (its rule 2). A module already bound to another
+ * game type is not offered: binding would open that other game instead.
+ */
+function moduleClaimingName(
+  name: string,
+  allGameTypes: readonly GameType[],
+): ScoringModuleManifest | undefined {
+  const normalized = normalizeName(name)
+  return MODULE_MANIFESTS.find(
+    (m) =>
+      m.gameNames.some((n) => normalizeName(n) === normalized) &&
+      !allGameTypes.some((gt) => gt.moduleId === m.moduleId),
+  )
 }
 
 function domainErrorMessage(e: unknown): string {
@@ -110,8 +131,9 @@ export const GameSelectModalContainer = forwardRef<
     if (selectedChoice === undefined) return undefined
     if (selectedChoice.kind === 'module') return selectedChoice.manifest
     const moduleId = selectedChoice.gameType.moduleId
-    return moduleId === null ? undefined : findManifest(moduleId)
-  }, [selectedChoice])
+    if (moduleId !== null) return findManifest(moduleId)
+    return moduleClaimingName(selectedChoice.gameType.name, allGameTypes)
+  }, [selectedChoice, allGameTypes])
 
   const moduleFitsPlayers =
     moduleForSelectedGame !== undefined &&

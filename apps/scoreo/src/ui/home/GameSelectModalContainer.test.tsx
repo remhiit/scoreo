@@ -103,6 +103,32 @@ describe('GameSelectModalContainer', () => {
     expect(options().filter((label) => label?.trim().toLowerCase() === 'skyjo')).toHaveLength(1)
   })
 
+  it('offers the module on an unbound game carrying its name, and hands its module id over', () => {
+    const repo = new InMemoryGameTypeRepository()
+    repo.save(gameType({ id: 'gt1', name: ' skyJO ' }))
+    const { dialog, select, props } = renderModal(repo)
+
+    select('skyJO')
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Play on the module' }))
+
+    expect(props.onStartModule).toHaveBeenCalledWith('skyjo', ['p1', 'p2'])
+    expect(props.onStartGame).not.toHaveBeenCalled()
+  })
+
+  it('does not offer a module already bound elsewhere on an unbound game carrying its name', () => {
+    const repo = new InMemoryGameTypeRepository()
+    repo.save(gameType({ id: 'gt1', name: 'Skyjo' }))
+    repo.save(gameType({ id: 'gt2', name: 'Old Skyjo', moduleId: 'skyjo', active: false }))
+    const { dialog, select } = renderModal(repo)
+
+    select('Skyjo')
+
+    expect(
+      within(dialog).queryByRole('button', { name: 'Play on the module' }),
+    ).not.toBeInTheDocument()
+    expect(within(dialog).getByRole('button', { name: 'Start match' })).toBeEnabled()
+  })
+
   it('offers both ways in for an unbound module entry', () => {
     const repo = new InMemoryGameTypeRepository()
     const { dialog, select } = renderModal(repo)

@@ -28,9 +28,8 @@ Standard Skyjo:
 
 ## User flow
 
-1. From Scoreo's "Select a game" screen, the players pick **Skyjo** among the available modules
-   (first time only — after that it is bound to the game type and offered from the normal match
-   flow).
+1. From Scoreo's "Select a game" screen, the players pick **Skyjo** in the game list (it is listed
+   even before it was ever played) and tap **Play on the module**.
 2. The module opens straight onto the round-entry screen: no setup step, since there is nothing to
    configure before the physical cards are dealt.
 3. After a round is played at the table, the players tap **who ended the round**, then type each

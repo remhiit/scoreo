@@ -132,9 +132,12 @@ the module has).
 Nothing is materialized when the app starts: a fresh profile has no game types at all. The game
 selection modal still lists every registered module as a game — after the existing game types,
 sorted by `gameNames[0]` — as long as no `GameType` (active or archived) carries its `moduleId` and
-no active one already carries one of its `gameNames` (case- and space-insensitive). Both buttons are
-offered on such an entry; **Play on the module** is disabled, with the manifest's player range shown,
-when the selected players fall outside `[minPlayers, maxPlayers]`. The **Games** screen lists only
+no active one already carries one of its `gameNames` (case-insensitive, ignoring surrounding
+blanks). Both buttons are offered on such an entry; **Play on the module** is disabled, with the
+manifest's player range shown, when the selected players fall outside `[minPlayers, maxPlayers]`.
+An unbound `GameType` carrying one of the module's names — typically created by a v1.1 import —
+stands for the module instead: selecting it offers **Play on the module** too (unless the module is
+already bound to another `GameType`), which binds it through rule 2 below. The **Games** screen lists only
 real `GameType`s, so a module never played does not appear there.
 
 A module's game becomes real the first time someone plays it — on the module or in Scoreo's generic

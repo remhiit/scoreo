@@ -35,8 +35,9 @@
      after the existing games and sorted by name, offering the same two buttons. Choosing either one
      creates its game type on the spot (`BindModuleUseCase`) — nothing is created before that, and a
      module never played does not appear on the **Games** screen. A module already bound to a game
-     type (even an archived one), or whose name an existing game already carries, is not listed a
-     second time.
+     type (even an archived one), or whose name an active game already carries, is not listed a
+     second time. Such a same-name game (e.g. imported before the module was ever played) offers
+     **Play on the module** itself, which binds it to the module.
    - When the number of players selected falls outside the module's range, the game stays listed and
      **Play in Scoreo** stays available, but **Play on the module** is disabled and the range is shown.
 3. **Score Detail** → enter rounds (auto-saved after each score) → **Finish match**
