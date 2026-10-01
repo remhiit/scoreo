@@ -1,8 +1,10 @@
 #!/usr/bin/env node
-// Fails if a raw px/duration/easing value in apps/scoreo/public/css/*.css exactly
-// matches a design token (apps/scoreo/public/css/tokens/), locking in the mechanical
-// var(...) substitution done for issue #238 (Ludo Design System adherence,
-// ds_temp/design_handoff_scoreo_ds). Modeled on check-doc-links.mjs.
+// Fails if a raw px/duration/easing value in the design system's stylesheets
+// (packages/design-system/src/**/*.css) or the host's remaining ones
+// (apps/scoreo/public/css/*.css) exactly matches a design token
+// (packages/design-system/src/tokens/), locking in the mechanical
+// var(...) substitution done for issue #238 (Ludo Design System adherence).
+// Modeled on check-doc-links.mjs.
 //
 // Only flags values for the properties the substitution actually covers
 // (spacing/text-size/radius/duration/easing) — width, height, border,
@@ -10,11 +12,12 @@
 // A negative px value (e.g. `-12px`, used for negative-margin click-target
 // tricks) is not flagged: substituting it needs a calc(-1 * var(...))
 // wrapper, not a direct var() swap, so it's out of scope for this ticket.
-import { readFileSync, readdirSync } from 'node:fs'
+import { existsSync, readFileSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 
-const CSS_ROOT = 'apps/scoreo/public/css'
+// The host's own folder disappears once every screen composes the design system.
+const CSS_ROOTS = ['packages/design-system/src', 'apps/scoreo/public/css']
 const TOKENS_DIR = 'tokens'
 
 // Keyed by the exact px integer a token resolves to.
@@ -77,7 +80,12 @@ const SPACING_PROPS = new Set([
   'column-gap',
 ])
 
-const DURATION_PROPS = new Set(['transition', 'transition-duration', 'animation', 'animation-duration'])
+const DURATION_PROPS = new Set([
+  'transition',
+  'transition-duration',
+  'animation',
+  'animation-duration',
+])
 
 function tokenForPxProperty(property, px) {
   if (SPACING_PROPS.has(property)) return SPACING_PX[px]
@@ -111,7 +119,13 @@ export function findViolations(cssText, filePath) {
         const ms = durMatch[2] === 's' ? num * 1000 : num
         const varName = DURATION_MS[ms]
         if (varName) {
-          violations.push({ file: filePath, line, property, found: durMatch[0], expected: `var(${varName})` })
+          violations.push({
+            file: filePath,
+            line,
+            property,
+            found: durMatch[0],
+            expected: `var(${varName})`,
+          })
         }
       }
       if (EASE_STANDARD_RE.test(rawValue)) {
@@ -130,7 +144,13 @@ export function findViolations(cssText, filePath) {
       const px = Number(pxMatch[1])
       const varName = tokenForPxProperty(property, px)
       if (varName) {
-        violations.push({ file: filePath, line, property, found: pxMatch[0], expected: `var(${varName})` })
+        violations.push({
+          file: filePath,
+          line,
+          property,
+          found: pxMatch[0],
+          expected: `var(${varName})`,
+        })
       }
     }
   }
@@ -153,20 +173,25 @@ function findCssFiles(dir) {
 
 function main() {
   const violations = []
-  for (const file of findCssFiles(CSS_ROOT)) {
+  const roots = CSS_ROOTS.filter((root) => existsSync(root))
+  for (const file of roots.flatMap(findCssFiles)) {
     const content = readFileSync(file, 'utf-8')
     violations.push(...findViolations(content, file))
   }
 
   if (violations.length > 0) {
-    console.error(`Found ${violations.length} raw value(s) matching a design token in ${CSS_ROOT}/:\n`)
+    console.error(
+      `Found ${violations.length} raw value(s) matching a design token in ${roots.join(', ')}:\n`,
+    )
     for (const v of violations) {
       console.error(`  - ${v.file}:${v.line} ${v.property}: ${v.found} -> use ${v.expected}`)
     }
     process.exit(1)
   }
 
-  console.log(`No raw px/duration/easing value under ${CSS_ROOT}/ matches a design token.`)
+  console.log(
+    `No raw px/duration/easing value in the stylesheets matches a design token (${roots.join(', ')}).`,
+  )
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {

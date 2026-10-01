@@ -84,15 +84,17 @@ deployed — Scoreo builds it into a chunk loaded the first time someone opens i
 ├── vitest.config.ts               # root project: only the scripts/ automation tests
 ├── lighthouserc.json              # asserts against apps/scoreo/dist/
 ├── doc/  schemas/  scripts/  .github/  .claude/    # doc/ is the repo's; a game's lives in its package
+├── ds_temp/scoreo-design/         # TEMPORARY: the Claude Design export the screens are being moved onto
 ├── .automation/                   # routines.yml: declarative label → routine → skill dispatch mapping
 ├── apps/
-│   └── scoreo/                    # the deployed PWA
+│   └── scoreo/                    # the deployed PWA — composes packages/design-system, styles nothing itself
 │       ├── index.html  vite.config.ts  vitest.config.ts
 │       ├── playwright.config.ts  playwright.visual.config.ts
 │       ├── tsconfig.json  tsconfig.app.json  tsconfig.node.json
 │       ├── public/  src/  e2e/  tests/visual/  scripts/
 │       └── package.json           # React/zod/vite/vitest deps live here
 └── packages/
+    ├── design-system/             # every visual decision: tokens, atoms → templates (see its README)
     ├── module-api/                # the host ↔ module contract, no runtime dependency
     ├── shared-domain/             # Player, PlayerSchema, newId, isUuid, Result
     ├── module-mille-sabords/      # 1000 Sabords, ported from Kotlin and checked against it
@@ -102,7 +104,7 @@ legacy/
 └── 1ksabord-kotlin/               # TEMPORARY: the Kotlin/JS app, kept as a test oracle
 ```
 
-`module-api` and `shared-domain` are consumed as TypeScript source (their `exports` field points at
+`design-system`, `module-api` and `shared-domain` are consumed as TypeScript source (their `exports` field points at
 `src/index.ts`): nothing to build before the app compiles, and one definition of `Player` for the
 whole workspace. The two packages are distinct on purpose — `shared-domain` is vocabulary both sides
 already had, `module-api` is the boundary between them. See
@@ -153,18 +155,21 @@ Run `find src -type d` for the exhaustive package list.
 
 ## Styling
 
-CSS files live in `apps/scoreo/public/css/` and are copied verbatim into the production build by Vite (no manual copy step). `styles.css` is the entry point, `@import`ing `theme.css`, `layout.css`, `home.css`, etc. — the browser resolves `@import` directives natively.
-Uses CSS custom properties (design tokens), a fixed top header bar, and minimal component styles (cards, inputs, buttons, modals, score table).
+Every visual decision lives in the design system package, [`packages/design-system/`](../../packages/design-system/README.md) (`@scoreboards/design-system`), organised in atomic layers: tokens, atoms, molecules, organisms, templates. The host **composes** its components and nothing else — no `className`, no `style`, no stylesheet, no `lucide-react` glyph of its own. `apps/scoreo/src/main.tsx` imports its single stylesheet, `@scoreboards/design-system/styles.css`, which Vite bundles and links from `index.html`'s `<head>` (so the splash is styled before the JS runs).
 
-### Design tokens — Catppuccin (Ludo design system)
+**Guard-rail: the composition rule** — `eslint.config.js` fails on a `className` or `style` attribute, or a `lucide-react` import, anywhere in `apps/scoreo/src/`. Screens not yet moved onto the design system are listed in `NOT_YET_ON_DESIGN_SYSTEM`; each migration PR removes its files from that list, and nothing may be added to it. Their styles still come from `apps/scoreo/public/css/` (`styles.css` `@import`s the per-screen sheets), a folder deleted along with the last entry.
 
-`apps/scoreo/public/css/tokens/` holds the color/type/spacing/radius tokens, imported first from `styles.css` (before `theme.css` and the per-screen CSS files):
+All design-system classes are prefixed `sc-`, so they never collide with those legacy sheets or with a scoring module's classes.
+
+### Design tokens — Catppuccin
+
+`packages/design-system/src/tokens/` holds the color/type/spacing/radius tokens, imported first by the design system's `styles.css`:
 
 - `colors-latte.css` / `colors-frappe.css` / `colors-macchiato.css` /
   `colors-mocha.css` — the 4 Catppuccin flavors, raw `--ctp-*` values,
   each scoped to `[data-theme="…"]` (`latte` is also the `:root`
   default). Never referenced directly outside `semantic.css`.
-- `semantic.css` — the only layer components/screens should read:
+- `semantic.css` — the only layer components read:
   semantic aliases (`--surface-app`, `--surface-card`, `--text-body`,
   `--border-subtle`, …) plus the independently swappable primary accent
   (`--color-primary`, default Mauve) and its 14 presets, opted into via
@@ -174,11 +179,7 @@ Uses CSS custom properties (design tokens), a fixed top header bar, and minimal 
 
 Flavor and accent are switched by setting `data-theme`/`data-accent` attributes on `<html>` (see `apps/scoreo/src/ui/theme/themeManager.ts`).
 
-`theme.css` never redefines the font stack itself — it references `var(--font-body)`/`var(--font-ui)` from `typography.css`, so the type scale stays the single source of truth.
-
-Every screen references the semantic tokens directly — the shared `Ludo*` components (`apps/scoreo/src/ui/shared/LudoButton.tsx`, `LudoTextInput.tsx`, `LudoModal.tsx`) and each screen's own CSS all read `--color-primary`, `--surface-card`, `--text-body`, etc. `theme.css` holds only the splash screen, a couple of shared layout classes (`.card`, `.form-row`, `.select`, `.error-msg`, `.empty`, `.section-label`), and the one non-color layout constant that's still a plain custom property, `--header-height`.
-
-**Guard-rail: `scripts/check-design-tokens.mjs`** (`pnpm check:design-tokens`, run in CI as the `design-tokens` job). `eslint.config.js` only lints `**/*.{ts,tsx}`, so nothing catches a raw `px`/duration value creeping back into `apps/scoreo/public/css/*.css` once it's been substituted for a token — this script does, mirroring `check-doc-links.mjs`'s pattern. It scans every declaration for `padding`/`margin`/`gap`/`font-size`/`border-radius` (and their longhands) plus `transition`/`animation`, and fails if a literal value exactly equals a `--space-*`/`--tap-target`/`--text-*`/`--radius-*`/`--duration-*` token or the `--ease-standard` easing — reporting file, line, and the expected `var(...)`. Values with no exact token equivalent (e.g. `13px`, `15px`, or `0.2s`/`0.3s`/`0.8s` transitions, none of which match `--duration-fast/normal/slow` exactly) are left alone, since substituting them would change the rendered layout/timing rather than just its expression. A negative px value (e.g. a negative-margin click-target trick) is likewise left alone — it would need a `calc(-1 * var(...))` wrapper, not a direct swap. `width`, `height`, `border`, `max-width`, `background-position`, `outline` etc. are never inspected.
+**Guard-rail: `scripts/check-design-tokens.mjs`** (`pnpm check:design-tokens`, run in CI as the `design-tokens` job). `eslint.config.js` only lints `**/*.{ts,tsx}`, so nothing catches a raw `px`/duration value creeping into a stylesheet — the design system's (`packages/design-system/src/**/*.css`) or the host's remaining `apps/scoreo/public/css/*.css` — once it's been substituted for a token; this script does, mirroring `check-doc-links.mjs`'s pattern. It scans every declaration for `padding`/`margin`/`gap`/`font-size`/`border-radius` (and their longhands) plus `transition`/`animation`, and fails if a literal value exactly equals a `--space-*`/`--tap-target`/`--text-*`/`--radius-*`/`--duration-*` token or the `--ease-standard` easing — reporting file, line, and the expected `var(...)`. Values with no exact token equivalent (e.g. `13px`, `15px`, or `0.2s`/`0.3s`/`0.8s` transitions, none of which match `--duration-fast/normal/slow` exactly) are left alone, since substituting them would change the rendered layout/timing rather than just its expression. A negative px value (e.g. a negative-margin click-target trick) is likewise left alone — it would need a `calc(-1 * var(...))` wrapper, not a direct swap. `width`, `height`, `border`, `max-width`, `background-position`, `outline` etc. are never inspected.
 
 ## PWA (Progressive Web App)
 
@@ -263,7 +264,7 @@ This applies to: `Player`, `GameType`, `Match`, `PlayerScore`, `WinCondition`.
 
 ### Theme
 
-`ThemeProvider` (`apps/scoreo/src/ui/theme/ThemeContext.tsx`) is a React Context so the burger menu's theme picker and the rest of the app share the same live flavor/accent state; the context itself lives in `apps/scoreo/src/ui/theme/themeContext.ts` and the `useTheme()` hook in `apps/scoreo/src/ui/theme/useTheme.ts` (split out so each file only exports one thing — React Fast Refresh needs that to keep component state across edits). The pure logic (`readInitialFlavor`/`readInitialAccent`/`applyTheme`) lives in `apps/scoreo/src/ui/theme/themeManager.ts` and is directly unit-tested. CSS token files (`colors-{latte,frappe,macchiato,mocha}.css`, `semantic.css`, etc.) live in `apps/scoreo/public/css/tokens/`, native `@import` chain.
+`ThemeProvider` (`apps/scoreo/src/ui/theme/ThemeContext.tsx`) is a React Context so the burger menu's theme picker and the rest of the app share the same live flavor/accent state; the context itself lives in `apps/scoreo/src/ui/theme/themeContext.ts` and the `useTheme()` hook in `apps/scoreo/src/ui/theme/useTheme.ts` (split out so each file only exports one thing — React Fast Refresh needs that to keep component state across edits). The pure logic (`readInitialFlavor`/`readInitialAccent`/`applyTheme`) lives in `apps/scoreo/src/ui/theme/themeManager.ts` and is directly unit-tested. CSS token files (`colors-{latte,frappe,macchiato,mocha}.css`, `semantic.css`, etc.) live in `packages/design-system/src/tokens/`, pulled in by the design system's `styles.css`.
 
 ### i18n (internationalization)
 

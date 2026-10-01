@@ -1,0 +1,66 @@
+.sc-text {
+  color: inherit;
+}
+.sc-text--block {
+  display: block;
+}
+.sc-text--center {
+  text-align: center;
+}
+
+.sc-text--body {
+  font-size: 15px;
+  color: var(--text-body);
+}
+.sc-text--muted {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+.sc-text--hint {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+.sc-text--error {
+  font-size: 13px;
+  color: var(--color-danger);
+}
+.sc-text--warning {
+  font-size: 13px;
+  font-weight: var(--weight-semibold);
+  color: var(--color-warning);
+}
+.sc-text--success {
+  font-size: 13px;
+  font-weight: var(--weight-semibold);
+  color: var(--color-success);
+}
+.sc-text--strong {
+  font-weight: var(--weight-semibold);
+  color: var(--text-heading);
+}
+.sc-text--label {
+  font-size: 13px;
+  font-weight: var(--weight-semibold);
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+}
+.sc-text--title {
+  font-size: 18px;
+  font-weight: var(--weight-semibold);
+  color: var(--text-heading);
+}
+.sc-text--heading {
+  font-size: 22px;
+  font-weight: var(--weight-semibold);
+  color: var(--text-heading);
+}
+.sc-text--caption {
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+}
+.sc-text--mono {
+  font-family: var(--font-score);
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+}

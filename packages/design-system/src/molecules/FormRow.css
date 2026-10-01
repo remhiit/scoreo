@@ -1,0 +1,27 @@
+.sc-form-row {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-2);
+}
+.sc-form-row > .sc-field {
+  flex: 1 1 auto;
+}
+
+.sc-button-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  width: 100%;
+}
+.sc-button-row > .sc-btn {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 0 var(--space-3);
+}
+.sc-button-row--end {
+  justify-content: flex-end;
+}
+.sc-button-row--end > .sc-btn {
+  flex: 0 0 auto;
+  padding: 0 18px;
+}
