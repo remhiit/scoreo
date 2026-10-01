@@ -9,7 +9,9 @@ test.beforeEach(async ({ page }) => {
   await page.reload()
 })
 
-test('resumes a draft match from the Home banner after leaving ScoreDetail without finishing', async ({ page }) => {
+test('resumes a draft match from the Home banner after leaving ScoreDetail without finishing', async ({
+  page,
+}) => {
   const playerA = `Alice ${Date.now()}`
   const playerB = `Bob ${Date.now()}`
   const gameTypeName = `Highest score ${Date.now()}`
@@ -30,7 +32,7 @@ test('resumes a draft match from the Home banner after leaving ScoreDetail witho
   await page.getByText('Resume match in progress').click()
 
   await page.getByRole('button', { name: 'History' }).click()
-  const round = page.locator('.hist-round').first()
-  await expect(round.locator('.hist-cell', { hasText: playerA }).getByRole('spinbutton')).toHaveValue('7')
-  await expect(round.locator('.hist-cell', { hasText: playerB }).getByRole('spinbutton')).toHaveValue('3')
+  const round = page.getByRole('region', { name: 'Round 1' })
+  await expect(round.getByRole('spinbutton', { name: playerA, exact: true })).toHaveValue('7')
+  await expect(round.getByRole('spinbutton', { name: playerB, exact: true })).toHaveValue('3')
 })

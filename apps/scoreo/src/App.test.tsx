@@ -125,8 +125,8 @@ describe('App', () => {
     expect(window.location.hash).toMatch(/^#\/score\/gt1\/p1,p2\/[0-9a-f-]{36}$/)
     expect(screen.getByText('Finish match')).toBeInTheDocument()
 
-    fireEvent.click(screen.getByText('History', { selector: '.seg button' }))
-    expect(document.querySelector('.hist-cell')).toHaveTextContent('Alice')
+    fireEvent.click(screen.getByText('History', { selector: '.sc-seg__option' }))
+    expect(document.querySelector('.sc-hcell')).toHaveTextContent('Alice')
   })
 
   it('clicking the title navigates Home from any screen', () => {

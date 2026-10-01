@@ -69,6 +69,8 @@ page background, `--header-height`, `--screen-max`.
 | `Text`                   | Every piece of copy: `body`, `muted`, `hint`, `error`, `warning`, `success`, `strong`, `label`, `title`, `heading`, `caption`, `mono`                              |
 | `Stack`                  | The layout primitive: direction, gap, align, justify, wrap, grow                                                                                                   |
 | `TextInput`              | Text field with label, `invalid`/`error`/`hint`, `onEnter`                                                                                                         |
+| `DateInput`              | Native date field (`YYYY-MM-DD`) with label, `layout` `stacked`/`inline`, `max`                                                                                    |
+| `NumberField`            | Bare numeric field controlled as text (empty and `-` survive mid-edit), modes `cell`/`plain`, `invalid`                                                            |
 | `NumberInput`            | `stepper` (−, value, +), `plain`, or `cell` (60px history cell)                                                                                                    |
 | `Select`                 | Native select with a themed chevron, `md` or `sm` (filter)                                                                                                         |
 | `Checkbox`               | Label is the 44px tap target                                                                                                                                       |

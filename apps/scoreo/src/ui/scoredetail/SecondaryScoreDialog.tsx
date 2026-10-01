@@ -1,8 +1,15 @@
+import {
+  Button,
+  ButtonRow,
+  Dialog,
+  NumberField,
+  SheetRow,
+  Stack,
+  Text,
+} from '@scoreboards/design-system'
 import { useTranslation } from 'react-i18next'
 import type { GameType } from '../../domain/model/gameType'
 import type { Player } from '../../domain/model/player'
-import { LudoButton } from '../shared/LudoButton'
-import { LudoModal } from '../shared/LudoModal'
 
 export interface SecondaryScoreDialogProps {
   gameType: GameType
@@ -27,29 +34,33 @@ export function SecondaryScoreDialog({
   const { t } = useTranslation()
   const title = gameType.tieBreakLabel ?? t('scoreDetail.secondaryScore')
   return (
-    <LudoModal
+    <Dialog
       open
       title={`${title} ?`}
       onClose={onDismiss}
-      footer={
-        <>
-          <LudoButton text={t('common.cancel')} variant="secondary" onClick={onDismiss} />
-          <LudoButton text={t('common.confirm')} variant="primary" onClick={onSubmit} />
-        </>
+      closeLabel={t('common.close')}
+      actions={
+        <ButtonRow>
+          <Button variant="secondary" onClick={onDismiss}>
+            {t('common.cancel')}
+          </Button>
+          <Button onClick={onSubmit}>{t('common.confirm')}</Button>
+        </ButtonRow>
       }
     >
-      {tiedPlayers.map((player) => (
-        <div key={player.id} className="modal-row">
-          <span>{player.name}</span>
-          <input
-            type="number"
-            className="ludo-input ludo-input--sm ludo-input--stepper-field ludo-input--mono"
-            value={secondaryScoreInputs[player.id] ?? ''}
-            onChange={(e) => onUpdateInput(player.id, e.target.value)}
-          />
-        </div>
-      ))}
-      {error && <div className="error-msg">{error}</div>}
-    </LudoModal>
+      <Stack gap={2}>
+        {tiedPlayers.map((player) => (
+          <SheetRow key={player.id} name={player.name}>
+            <NumberField
+              mode="plain"
+              ariaLabel={player.name}
+              value={secondaryScoreInputs[player.id] ?? ''}
+              onChange={(value) => onUpdateInput(player.id, value)}
+            />
+          </SheetRow>
+        ))}
+      </Stack>
+      {error && <Text variant="error">{error}</Text>}
+    </Dialog>
   )
 }

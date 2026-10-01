@@ -1,9 +1,19 @@
+import {
+  ActionBar,
+  Button,
+  ButtonRow,
+  DateInput,
+  Dialog,
+  List,
+  ListRow,
+  SegmentedControl,
+  Stack,
+  StandingsCard,
+  StandingsGrid,
+  Text,
+} from '@scoreboards/design-system'
 import { useEffect, useReducer, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
-import { ListContainer } from '../shared/ListContainer'
-import { ListItemRow } from '../shared/ListItemRow'
-import { LudoButton } from '../shared/LudoButton'
-import { LudoModal } from '../shared/LudoModal'
 import { ManualSelectionDialog } from './ManualSelectionDialog'
 import { RoundEntrySheet } from './RoundEntrySheet'
 import { RoundHistoryList } from './RoundHistoryList'
@@ -38,7 +48,12 @@ export interface ScoreDetailScreenProps extends ScoreDetailDeps {
   onCancel: () => void
 }
 
-export function ScoreDetailScreen({ initialState, onSaved, onCancel, ...deps }: ScoreDetailScreenProps) {
+export function ScoreDetailScreen({
+  initialState,
+  onSaved,
+  onCancel,
+  ...deps
+}: ScoreDetailScreenProps) {
   const { t } = useTranslation()
   const [state, dispatch] = useReducer(scoreDetailReducer, initialState)
   const isFirstRoundsEffect = useRef(true)
@@ -68,87 +83,73 @@ export function ScoreDetailScreen({ initialState, onSaved, onCancel, ...deps }: 
   const leadHint = leadHintLabel(state.gameType, countRoundsPlayed(state.rounds))
 
   return (
-    <>
-      <div className="match-date-row">
-        <label htmlFor="match-date-input" className="match-date-label">
-          {t('scoreDetail.matchDate')}
-        </label>
-        <input
-          id="match-date-input"
-          type="date"
-          className="ludo-input ludo-input--sm ludo-input--bare match-date-input"
-          value={state.matchDate}
-          max={toDateOnly(deps.currentDate())}
-          onChange={(e) => dispatch({ type: 'updateMatchDate', value: e.target.value })}
-        />
-      </div>
+    <Stack gap={3}>
+      <DateInput
+        label={t('scoreDetail.matchDate')}
+        layout="inline"
+        value={state.matchDate}
+        max={toDateOnly(deps.currentDate())}
+        onChange={(value) => dispatch({ type: 'updateMatchDate', value })}
+      />
 
-      <div className="seg">
-        <button
-          type="button"
-          className={state.viewMode === 'standings' ? 'on' : ''}
-          onClick={() => dispatch({ type: 'setViewMode', mode: 'standings' })}
-        >
-          {t('scoreDetail.standings')}
-        </button>
-        <button
-          type="button"
-          className={state.viewMode === 'history' ? 'on' : ''}
-          onClick={() => dispatch({ type: 'setViewMode', mode: 'history' })}
-        >
-          {t('scoreDetail.history')}
-        </button>
-      </div>
+      <SegmentedControl
+        ariaLabel={t('scoreDetail.standings')}
+        options={[
+          { value: 'standings', label: t('scoreDetail.standings') },
+          { value: 'history', label: t('scoreDetail.history') },
+        ]}
+        value={state.viewMode}
+        onChange={(mode) => dispatch({ type: 'setViewMode', mode })}
+      />
 
       {state.viewMode === 'standings' ? (
-        <>
-          <div className="lead-hint">{leadHint}</div>
-          <div className="gs-grid">
+        <Stack gap={2}>
+          <Text variant="caption">{leadHint}</Text>
+          <StandingsGrid>
             {standings.map((row) => (
-              <div key={row.playerId} className={row.isLead ? 'gs-card gs-card--lead' : 'gs-card'}>
-                <div className="gs-top">
-                  <span className="gs-pos">{row.rank}</span>
-                  <span className="gs-name">{row.playerName}</span>
-                </div>
-                <div className="gs-bot">
-                  <span className="gs-tot">{row.total}</span>
-                  <span className="gs-delta">{formatDelta(row.delta)}</span>
-                </div>
-              </div>
+              <StandingsCard
+                key={row.playerId}
+                rank={row.rank}
+                name={row.playerName}
+                total={row.total}
+                delta={formatDelta(row.delta)}
+                lead={row.isLead}
+              />
             ))}
-          </div>
-        </>
+          </StandingsGrid>
+        </Stack>
       ) : (
         <RoundHistoryList
           rounds={state.rounds}
           players={state.players}
-          onChangeScore={(roundIndex, playerId, value) => dispatch({ type: 'updateScore', roundIndex, playerId, value })}
+          onChangeScore={(roundIndex, playerId, value) =>
+            dispatch({ type: 'updateScore', roundIndex, playerId, value })
+          }
           onRemoveRound={(index) => dispatch({ type: 'removeRound', index })}
           onAddRound={() => dispatch({ type: 'openRoundSheet' })}
         />
       )}
 
-      {state.error && <div className="error-msg">{state.error}</div>}
+      {state.error && <Text variant="error">{state.error}</Text>}
 
-      <div className="bottom-bar">
-        <LudoButton
-          text={t('scoreDetail.enterRound', { number: nextRoundNumber(state.rounds) })}
-          variant="primary"
+      <ActionBar>
+        <Button
+          size="lg"
+          width="full"
+          icon="plus"
           onClick={() => dispatch({ type: 'openRoundSheet' })}
-        />
-        <div className="bottom-bar-row">
-          <LudoButton
-            text={t('scoreDetail.finishMatch')}
-            variant="primary"
-            onClick={() => dispatch(submitTerminate(state, deps))}
-          />
-          <LudoButton
-            text={t('common.cancel')}
-            variant="secondary"
-            onClick={() => dispatch(submitCancelMatch(state, deps))}
-          />
-        </div>
-      </div>
+        >
+          {t('scoreDetail.enterRound', { number: nextRoundNumber(state.rounds) })}
+        </Button>
+        <ButtonRow>
+          <Button variant="secondary" onClick={() => dispatch(submitCancelMatch(state, deps))}>
+            {t('common.cancel')}
+          </Button>
+          <Button variant="secondary" onClick={() => dispatch(submitTerminate(state, deps))}>
+            {t('scoreDetail.finishMatch')}
+          </Button>
+        </ButtonRow>
+      </ActionBar>
 
       <RoundEntrySheet
         open={state.showRoundSheet}
@@ -161,39 +162,36 @@ export function ScoreDetailScreen({ initialState, onSaved, onCancel, ...deps }: 
         onSubmit={() => dispatch({ type: 'submitRoundSheet' })}
       />
 
-      <LudoModal
+      <Dialog
         open={state.showWinnerModal}
         title={t('scoreDetail.selectWinners')}
         onClose={() => dispatch({ type: 'dismissModal' })}
-        footer={
-          <>
-            <LudoButton
-              text={t('common.cancel')}
-              variant="secondary"
-              onClick={() => dispatch({ type: 'dismissModal' })}
-            />
-            <LudoButton
-              text={t('common.confirm')}
-              variant="primary"
-              onClick={() => dispatch(submitConfirmWinners(state, deps))}
-            />
-          </>
+        closeLabel={t('common.close')}
+        actions={
+          <ButtonRow>
+            <Button variant="secondary" onClick={() => dispatch({ type: 'dismissModal' })}>
+              {t('common.cancel')}
+            </Button>
+            <Button onClick={() => dispatch(submitConfirmWinners(state, deps))}>
+              {t('common.confirm')}
+            </Button>
+          </ButtonRow>
         }
       >
-        <ListContainer>
+        <List>
           {state.players.map((player) => (
-            <ListItemRow
+            <ListRow
               key={player.id}
-              label={player.name}
+              title={player.name}
               subtitle={t('scoreDetail.pointsSuffix', { points: totals.get(player.id) ?? 0 })}
-              isSelectable
-              isSelected={state.modalWinners.has(player.id)}
+              selectable
+              selected={state.modalWinners.has(player.id)}
               onSelect={() => dispatch({ type: 'toggleModalWinner', playerId: player.id })}
             />
           ))}
-        </ListContainer>
-        {state.error && <div className="error-msg">{state.error}</div>}
-      </LudoModal>
+        </List>
+        {state.error && <Text variant="error">{state.error}</Text>}
+      </Dialog>
 
       {state.showSecondaryScoreDialog && (
         <SecondaryScoreDialog
@@ -201,7 +199,9 @@ export function ScoreDetailScreen({ initialState, onSaved, onCancel, ...deps }: 
           tiedPlayers={tiedPlayers}
           secondaryScoreInputs={state.secondaryScoreInputs}
           error={state.error}
-          onUpdateInput={(playerId, value) => dispatch({ type: 'updateSecondaryScoreInput', playerId, value })}
+          onUpdateInput={(playerId, value) =>
+            dispatch({ type: 'updateSecondaryScoreInput', playerId, value })
+          }
           onSubmit={() => dispatch(submitSecondaryScores(state, deps))}
           onDismiss={() => dispatch({ type: 'dismissTieBreak' })}
         />
@@ -219,23 +219,24 @@ export function ScoreDetailScreen({ initialState, onSaved, onCancel, ...deps }: 
         />
       )}
 
-      <LudoModal
+      <Dialog
         open={state.showCancelConfirm}
         title={t('scoreDetail.discardScoresTitle')}
         onClose={() => dispatch({ type: 'dismissCancelConfirm' })}
-        footer={
-          <>
-            <LudoButton
-              text={t('common.cancel')}
-              variant="secondary"
-              onClick={() => dispatch({ type: 'dismissCancelConfirm' })}
-            />
-            <LudoButton text={t('scoreDetail.discard')} variant="danger" onClick={() => dispatch(submitConfirmCancel(deps))} />
-          </>
+        closeLabel={t('common.close')}
+        actions={
+          <ButtonRow>
+            <Button variant="secondary" onClick={() => dispatch({ type: 'dismissCancelConfirm' })}>
+              {t('common.cancel')}
+            </Button>
+            <Button variant="danger" onClick={() => dispatch(submitConfirmCancel(deps))}>
+              {t('scoreDetail.discard')}
+            </Button>
+          </ButtonRow>
         }
       >
-        <p>{t('scoreDetail.discardScoresBody')}</p>
-      </LudoModal>
-    </>
+        <Text block>{t('scoreDetail.discardScoresBody')}</Text>
+      </Dialog>
+    </Stack>
   )
 }

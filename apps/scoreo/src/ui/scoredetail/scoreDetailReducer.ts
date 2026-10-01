@@ -45,10 +45,21 @@ function isValidDateOnly(dateStr: string): boolean {
 function combineDateWithTimeOfDay(dateStr: string, referenceEpochMs: number): number {
   const [year, month, day] = dateStr.split('-').map(Number)
   const ref = new Date(referenceEpochMs)
-  return new Date(year, month - 1, day, ref.getHours(), ref.getMinutes(), ref.getSeconds(), ref.getMilliseconds()).getTime()
+  return new Date(
+    year,
+    month - 1,
+    day,
+    ref.getHours(),
+    ref.getMinutes(),
+    ref.getSeconds(),
+    ref.getMilliseconds(),
+  ).getTime()
 }
 
-export function computeTotals(players: Player[], rounds: Record<string, string>[]): Map<string, number> {
+export function computeTotals(
+  players: Player[],
+  rounds: Record<string, string>[],
+): Map<string, number> {
   const totals = new Map<string, number>()
   for (const player of players) {
     let sum = 0
@@ -144,7 +155,8 @@ export function nextRoundNumber(rounds: Record<string, string>[]): number {
 }
 
 export function leadHintLabel(gameType: GameType, roundsPlayed: number): string {
-  const direction = gameType.winCondition === 'LOWEST_SCORE' ? 'lowest score leads' : 'highest score leads'
+  const direction =
+    gameType.winCondition === 'LOWEST_SCORE' ? 'lowest score leads' : 'highest score leads'
   if (roundsPlayed === 0) return `No rounds played yet · ${direction}`
   const roundWord = roundsPlayed === 1 ? 'round' : 'rounds'
   return `After ${roundsPlayed} ${roundWord} · ${direction}`
@@ -163,7 +175,10 @@ function validateRounds(state: ScoreDetailState): { ok: true } | { ok: false; er
     for (const [playerId, scoreStr] of Object.entries(state.rounds[roundIndex])) {
       if (scoreStr.length > 0 && toIntOrNull(scoreStr) === null) {
         const playerName = state.players.find((p) => p.id === playerId)?.name ?? playerId
-        return { ok: false, error: `Invalid score for ${playerName} in round ${roundIndex + 1}: expected a number` }
+        return {
+          ok: false,
+          error: `Invalid score for ${playerName} in round ${roundIndex + 1}: expected a number`,
+        }
       }
     }
   }
@@ -200,7 +215,10 @@ export type ScoreDetailAction =
   | { type: 'updateRoundSheetInput'; playerId: string; value: number }
   | { type: 'submitRoundSheet' }
 
-export function scoreDetailReducer(state: ScoreDetailState, action: ScoreDetailAction): ScoreDetailState {
+export function scoreDetailReducer(
+  state: ScoreDetailState,
+  action: ScoreDetailAction,
+): ScoreDetailState {
   switch (action.type) {
     case 'setViewMode':
       return { ...state, viewMode: action.mode }
@@ -214,7 +232,8 @@ export function scoreDetailReducer(state: ScoreDetailState, action: ScoreDetailA
     case 'addRound':
       return { ...state, rounds: [...state.rounds, {}], error: undefined }
     case 'removeRound': {
-      if (state.rounds.length <= 1 || action.index < 0 || action.index >= state.rounds.length) return state
+      if (state.rounds.length <= 1 || action.index < 0 || action.index >= state.rounds.length)
+        return state
       const rounds = state.rounds.slice()
       rounds.splice(action.index, 1)
       return { ...state, rounds }
@@ -287,7 +306,12 @@ export function scoreDetailReducer(state: ScoreDetailState, action: ScoreDetailA
     case 'manualWinnersEmptyError':
       return { ...state, error: 'Select at least one winner' }
     case 'dismissTieBreak':
-      return { ...state, showSecondaryScoreDialog: false, showManualSelectionDialog: false, error: undefined }
+      return {
+        ...state,
+        showSecondaryScoreDialog: false,
+        showManualSelectionDialog: false,
+        error: undefined,
+      }
     case 'openRoundSheet':
       return {
         ...state,
@@ -328,7 +352,14 @@ function performSave(
       const original = deps.mode.matchRepository.findById(deps.mode.matchId)
       if (!original) return { type: 'saveFailed', error: 'Could not find original match to update' }
       const date = combineDateWithTimeOfDay(state.matchDate, original.date)
-      const updated: Match = { ...original, date, playerScores, manualWinners, secondaryPlayerScores, rounds }
+      const updated: Match = {
+        ...original,
+        date,
+        playerScores,
+        manualWinners,
+        secondaryPlayerScores,
+        rounds,
+      }
       deps.mode.updateMatchUseCase.invoke(updated)
       deps.matchDraftRepository?.clear()
       return { type: 'saved' }
@@ -345,7 +376,10 @@ function performSave(
     }
     return { type: 'saveFailed', error: result.error.message }
   } catch (e) {
-    return { type: 'saveFailed', error: `Failed to save match: ${e instanceof Error ? e.message : String(e)}` }
+    return {
+      type: 'saveFailed',
+      error: `Failed to save match: ${e instanceof Error ? e.message : String(e)}`,
+    }
   }
 }
 
@@ -379,12 +413,18 @@ export function submitTerminate(state: ScoreDetailState, deps: ScoreDetailDeps):
   return { type: 'openSecondaryScoreDialog', tiedPlayerIds: primaryWinners }
 }
 
-export function submitConfirmWinners(state: ScoreDetailState, deps: ScoreDetailDeps): ScoreDetailAction {
+export function submitConfirmWinners(
+  state: ScoreDetailState,
+  deps: ScoreDetailDeps,
+): ScoreDetailAction {
   if (state.modalWinners.size === 0) return { type: 'confirmWinnersEmptyError' }
   return performSave(deps, state, playerScoresFromTotals(state), [...state.modalWinners])
 }
 
-export function submitSecondaryScores(state: ScoreDetailState, deps: ScoreDetailDeps): ScoreDetailAction {
+export function submitSecondaryScores(
+  state: ScoreDetailState,
+  deps: ScoreDetailDeps,
+): ScoreDetailAction {
   const secondaryScores: PlayerScore[] = []
   for (const playerId of state.tiedPlayerIds) {
     const input = (state.secondaryScoreInputs[playerId] ?? '').trim()
@@ -393,7 +433,11 @@ export function submitSecondaryScores(state: ScoreDetailState, deps: ScoreDetail
     secondaryScores.push({ playerId, score })
   }
 
-  const secondaryWinners = computeWinners(state.gameType, secondaryScores, state.gameType.tieBreakCondition)
+  const secondaryWinners = computeWinners(
+    state.gameType,
+    secondaryScores,
+    state.gameType.tieBreakCondition,
+  )
   const resolvedWinners = secondaryWinners.filter((id) => state.tiedPlayerIds.includes(id))
 
   if (resolvedWinners.length < state.tiedPlayerIds.length) {
@@ -402,7 +446,10 @@ export function submitSecondaryScores(state: ScoreDetailState, deps: ScoreDetail
   return { type: 'secondaryScoreEscalate', collectedSecondaryScores: secondaryScores }
 }
 
-export function submitConfirmManualWinners(state: ScoreDetailState, deps: ScoreDetailDeps): ScoreDetailAction {
+export function submitConfirmManualWinners(
+  state: ScoreDetailState,
+  deps: ScoreDetailDeps,
+): ScoreDetailAction {
   if (state.manualSelectionWinners.size === 0) return { type: 'manualWinnersEmptyError' }
   return performSave(
     deps,
@@ -424,7 +471,10 @@ export function submitKeepTie(state: ScoreDetailState, deps: ScoreDetailDeps): S
 }
 
 /** Mirrors ScoreDetailHandler's CancelMatch: shows a confirmation only if any score was entered. */
-export function submitCancelMatch(state: ScoreDetailState, deps: ScoreDetailDeps): ScoreDetailAction {
+export function submitCancelMatch(
+  state: ScoreDetailState,
+  deps: ScoreDetailDeps,
+): ScoreDetailAction {
   if (hasUnsavedScores(state.rounds)) {
     return { type: 'showCancelConfirm' }
   }
@@ -480,7 +530,9 @@ function roundsAgreeWithTotals(match: Match): boolean {
  */
 function reconstructRounds(match: Match): Record<string, string>[] {
   if (match.rounds.length > 0 && roundsAgreeWithTotals(match)) {
-    return match.rounds.map((round) => Object.fromEntries(round.map((ps) => [ps.playerId, String(ps.score)])))
+    return match.rounds.map((round) =>
+      Object.fromEntries(round.map((ps) => [ps.playerId, String(ps.score)])),
+    )
   }
   const round: Record<string, string> = {}
   for (const ps of match.playerScores) {
@@ -489,7 +541,11 @@ function reconstructRounds(match: Match): Record<string, string>[] {
   return [round]
 }
 
-function freshState(gameType: GameType, players: Player[], currentDateEpochMs: number): ScoreDetailState {
+function freshState(
+  gameType: GameType,
+  players: Player[],
+  currentDateEpochMs: number,
+): ScoreDetailState {
   return {
     gameType,
     players,
@@ -515,7 +571,11 @@ function freshState(gameType: GameType, players: Player[], currentDateEpochMs: n
 }
 
 /** Mirrors ScoreDetailHandler.reset(): fresh state (ignores any draft/edit mode) + clears the draft. */
-export function resetState(gameType: GameType, players: Player[], deps: ScoreDetailDeps): ScoreDetailState {
+export function resetState(
+  gameType: GameType,
+  players: Player[],
+  deps: ScoreDetailDeps,
+): ScoreDetailState {
   deps.matchDraftRepository?.clear()
   return freshState(gameType, players, deps.currentDate())
 }
@@ -552,6 +612,7 @@ export function buildInitialState(
   if (draft.gameTypeId !== gameType.id) return base
   const draftIds = new Set(draft.playerIds)
   const playerIds = new Set(players.map((p) => p.id))
-  if (draftIds.size !== playerIds.size || [...draftIds].some((id) => !playerIds.has(id))) return base
+  if (draftIds.size !== playerIds.size || [...draftIds].some((id) => !playerIds.has(id)))
+    return base
   return { ...base, rounds: draft.rounds }
 }

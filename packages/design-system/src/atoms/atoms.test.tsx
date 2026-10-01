@@ -201,3 +201,29 @@ describe('Badge and Text', () => {
     expect(screen.getByRole('alert')).toHaveTextContent('Pick at least two players.')
   })
 })
+
+describe('DateInput and NumberField', () => {
+  it('reports the picked date', async () => {
+    const { DateInput } = await import('./DateInput')
+    const onChange = vi.fn()
+    render(
+      <DateInput
+        label="Match date"
+        layout="inline"
+        value="2026-09-30"
+        max="2026-09-30"
+        onChange={onChange}
+      />,
+    )
+    fireEvent.change(screen.getByLabelText('Match date'), { target: { value: '2026-09-01' } })
+    expect(onChange).toHaveBeenCalledWith('2026-09-01')
+  })
+
+  it('passes the raw text through, empty included', async () => {
+    const { NumberField } = await import('./NumberField')
+    const onChange = vi.fn()
+    render(<NumberField ariaLabel="Léa" value="4" onChange={onChange} />)
+    fireEvent.change(screen.getByRole('spinbutton', { name: 'Léa' }), { target: { value: '' } })
+    expect(onChange).toHaveBeenCalledWith('')
+  })
+})

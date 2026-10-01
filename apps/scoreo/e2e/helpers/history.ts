@@ -7,7 +7,7 @@ export async function openMatchFromHistory(page: Page, index: number): Promise<v
   await page.locator('.list-item-row').nth(index).getByRole('button', { name: 'Edit' }).click()
 }
 
-/** Edits a given round's score for a player, matched by name against its `.hist-cell`. */
+/** Edits a given round's score for a player, matched by player name in its "Round N" card. */
 export async function editMatchScore(
   page: Page,
   roundIndex: number,
@@ -15,11 +15,8 @@ export async function editMatchScore(
   newScore: number,
 ): Promise<void> {
   await page.getByRole('button', { name: 'History' }).click()
-  const round = page.locator('.hist-round').nth(roundIndex)
-  await round
-    .locator('.hist-cell', { hasText: playerName })
-    .getByRole('spinbutton')
-    .fill(String(newScore))
+  const round = page.getByRole('region', { name: `Round ${roundIndex + 1}` })
+  await round.getByRole('spinbutton', { name: playerName, exact: true }).fill(String(newScore))
 }
 
 /** Navigates to History (via the burger menu) and deletes the given match (0-indexed, in list order), confirming the modal. */

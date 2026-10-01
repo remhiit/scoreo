@@ -1,7 +1,6 @@
-import { X } from 'lucide-react'
+import { Button, HistoryCell, NumberField, RoundCard, Stack } from '@scoreboards/design-system'
 import { useTranslation } from 'react-i18next'
 import type { Player } from '../../domain/model/player'
-import { LudoButton } from '../shared/LudoButton'
 
 export interface RoundHistoryListProps {
   rounds: Record<string, string>[]
@@ -12,52 +11,56 @@ export interface RoundHistoryListProps {
 }
 
 /**
- * One `.hist-round` card per round, cells wrapping instead of scrolling
- * sideways — replaces `.score-table` (a column per player breaks down past
- * ~4 players). Remove stays disabled while a single round remains, same as
- * the table it replaces.
+ * One round card per round, cells wrapping instead of scrolling sideways (a
+ * column per player breaks down past ~4 players). Every score stays editable
+ * in place. Remove stays hidden while a single round remains.
  */
-export function RoundHistoryList({ rounds, players, onChangeScore, onRemoveRound, onAddRound }: RoundHistoryListProps) {
+export function RoundHistoryList({
+  rounds,
+  players,
+  onChangeScore,
+  onRemoveRound,
+  onAddRound,
+}: RoundHistoryListProps) {
   const { t } = useTranslation()
   const canRemove = rounds.length > 1
 
   return (
-    <>
+    <Stack gap={2}>
       {rounds.map((round, roundIndex) => (
-        <div key={roundIndex} className="hist-round">
-          <div className="hist-round-head">
-            <span>{t('scoreDetail.round', { number: roundIndex + 1 })}</span>
-            {canRemove && (
-              <LudoButton
-                text={<X size={16} aria-hidden />}
-                variant="danger"
+        <RoundCard
+          key={roundIndex}
+          title={t('scoreDetail.round', { number: roundIndex + 1 })}
+          trailing={
+            canRemove && (
+              <Button
+                variant="ghost"
                 size="sm"
-                iconOnly
+                icon="close"
+                label={t('scoreDetail.removeRound')}
                 title={t('scoreDetail.removeRound')}
                 onClick={() => onRemoveRound(roundIndex)}
               />
-            )}
-          </div>
-          <div className="hist-cells">
-            {players.map((player) => (
-              <span key={player.id} className="hist-cell">
-                <span>{player.name}</span>
-                <input
-                  type="number"
-                  className="ludo-input ludo-input--sm ludo-input--stepper-field ludo-input--mono"
-                  inputMode="numeric"
-                  value={round[player.id] ?? ''}
-                  onChange={(e) => onChangeScore(roundIndex, player.id, e.target.value)}
-                />
-              </span>
-            ))}
-          </div>
-        </div>
+            )
+          }
+        >
+          {players.map((player) => (
+            <HistoryCell key={player.id} name={player.name}>
+              <NumberField
+                ariaLabel={player.name}
+                value={round[player.id] ?? ''}
+                onChange={(value) => onChangeScore(roundIndex, player.id, value)}
+              />
+            </HistoryCell>
+          ))}
+        </RoundCard>
       ))}
 
-      <div className="hist-add">
-        <LudoButton text={t('scoreDetail.addRound')} variant="secondary" size="sm" onClick={onAddRound} />
-      </div>
-    </>
+      <Stack direction="row" justify="center">
+        <Button variant="secondary" size="sm" icon="plus" onClick={onAddRound}>
+          {t('scoreDetail.addRound')}
+        </Button>
+      </Stack>
+    </Stack>
   )
 }

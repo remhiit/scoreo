@@ -11,7 +11,9 @@ test.beforeEach(async ({ page }) => {
   await page.reload()
 })
 
-test('editing a finished match from History recomputes stats and ELO for the new result', async ({ page }) => {
+test('editing a finished match from History recomputes stats and ELO for the new result', async ({
+  page,
+}) => {
   const alice = `Alice ${Date.now()}`
   const bob = `Bob ${Date.now()}`
   const gameTypeName = `Highest score ${Date.now()}`

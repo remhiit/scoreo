@@ -1,7 +1,9 @@
+/* --surface-sunken and --surface-card share a value, so the track goes one step
+   further down to keep the card-coloured thumb readable. */
 .sc-seg {
   display: flex;
   padding: 3px;
-  background: var(--surface-sunken);
+  background: var(--surface-well);
   border-radius: var(--radius-md);
 }
 .sc-seg__option {

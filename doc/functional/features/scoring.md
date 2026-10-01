@@ -35,7 +35,7 @@ A segmented control (`Standings` / `History`) sits above the content. `viewMode`
 
 ### Standings view (default)
 
-A 2-column card grid (`.gs-grid`), one `.gs-card` per player, holding any headcount (tested up to 8 players) without horizontal scrolling:
+A 2-column card grid (design-system `StandingsGrid`), one `StandingsCard` per player, holding any headcount (tested up to 8 players) without horizontal scrolling:
 
 ```
 ┌─────────────┬─────────────┐
@@ -50,12 +50,12 @@ A 2-column card grid (`.gs-grid`), one `.gs-card` per player, holding any headco
 - A hint line above the grid states how many rounds have been played and the win direction (e.g. "After 3 rounds · highest score leads").
 - Cards are ranked by `gameType.winCondition` (`HIGHEST_SCORE` descending, `LOWEST_SCORE` ascending); players tied on total share the same rank.
 - The card's bottom-right number is the delta: the score entered in the **last** round only (not the cumulative total).
-- The leading card(s) — rank 1, possibly several on a tie — get an accented border/total (`.gs-card--lead`).
+- The leading card(s) — rank 1, possibly several on a tie — get an accented border/total (`StandingsCard`'s `lead`).
 - This view is read-only: no inputs, no add/remove-round controls.
 
 ### History view: one card per round (`RoundHistoryList`, `apps/scoreo/src/ui/scoredetail/RoundHistoryList.tsx`)
 
-Each round is a `.hist-round` card, not a table row — this is what lets any player count (tested up to 8) fit without horizontal scrolling:
+Each round is a design-system `RoundCard` (a region named "Round N"), not a table row — this is what lets any player count (tested up to 8) fit without horizontal scrolling:
 
 ```
 ┌ Round 1 ──────────────── ✕ ┐
@@ -67,18 +67,18 @@ Each round is a `.hist-round` card, not a table row — this is what lets any pl
         [ Add round ]
 ```
 
-- `.hist-cells` is a `flex-wrap` list of `.hist-cell` pills (player name + editable numeric field); cells wrap onto more lines instead of the card scrolling sideways, and `.hist-round` never clips (`overflow` left at its default so it can grow with the wrapped cells).
-- Editable score cells with numeric input (for already-entered rounds; unchanged by the round entry sheet below). Native spinner arrows are suppressed on these fields (`.ludo-input--stepper-field`: `appearance: none`, `-moz-appearance: textfield`, `::-webkit-inner/outer-spin-button` neutralized) so a two-digit score isn't clipped in the narrow cell.
-- **✕** button in the card's `.hist-round-head` removes that round; hidden while only one round remains, same as before.
+- the card's cells are `HistoryCell`s (player name + editable `NumberField`) on a two-column grid; cells wrap onto more lines instead of the card scrolling sideways, and the card never clips, it grows with the wrapped cells.
+- Editable score cells with numeric input (for already-entered rounds; unchanged by the round entry sheet below). Native spinner arrows are suppressed on these fields (design-system number inputs never show them), so a 2-digit score is never clipped.
+- **✕** button in the card's head removes that round; hidden while only one round remains, same as before.
 - **"Add round"** button below the list opens the round entry sheet (`openRoundSheet`) — the same sheet as the bottom bar's "Enter round N" button, not a direct empty-round insert.
 
 ### Round entry sheet
 
-The primary way to enter a new round. A full-width primary button in the bottom bar reads "Enter round N" (N = `nextRoundNumber(rounds)`, the first not-yet-played round + 1). Tapping it opens `RoundEntrySheet` (`apps/scoreo/src/ui/scoredetail/RoundEntrySheet.tsx`), a bottom sheet (`.sheet`) over a dimming scrim (`.sheet-scrim`):
+The primary way to enter a new round. A full-width primary button in the bottom bar reads "Enter round N" (N = `nextRoundNumber(rounds)`, the first not-yet-played round + 1). Tapping it opens `RoundEntrySheet` (`apps/scoreo/src/ui/scoredetail/RoundEntrySheet.tsx`), a bottom sheet (design-system `Sheet`) over a dimming scrim:
 
 - Title "Round N".
-- One `.sheet-row` per player: name, current total (`.sheet-row-tot`, computed before this round), and a `LudoNumberInput` stepper defaulted to 0.
-- Rows scroll internally (`.sheet-rows`, `overflow-y: auto`); the sheet is capped at 80% of the viewport height, so the title and footer buttons stay visible.
+- One `SheetRow` per player: name, current total (computed before this round), and a `NumberInput` stepper defaulted to 0.
+- Rows scroll internally (design-system `Sheet`); the sheet is capped at 80% of the viewport height, so the title and footer buttons stay visible.
 - Footer: **Cancel** (secondary — closes the sheet, `roundSheetInputs` discarded, `rounds` untouched) and **Save round** (primary — writes the round into `rounds` and closes).
 
 State (`showRoundSheet`, `roundSheetInputs`) lives in `ScoreDetailState`; `submitRoundSheet` fills the first not-yet-played round (or appends one if all existing rounds are already played) and triggers the same `saveDraft` autosave as a direct cell edit. Standings update immediately since both views read the same `rounds` state.
@@ -88,8 +88,8 @@ State (`showRoundSheet`, `roundSheetInputs`) lives in `ScoreDetailState`; `submi
 - Full-width primary **Enter round N** button (opens the round entry sheet above).
 - **Finish match** to save (also auto-saves to localStorage as MatchDraft after each score update).
 - **Cancel match**.
-- Pinned to the bottom of the screen (`.bottom-bar`), visible from both the Standings and History views.
-- For `MANUAL` win condition: modal appears listing each player's total as a selectable row (○/●) to select winner(s)
+- Pinned to the bottom of the screen (design-system `ActionBar`: full-width "Enter round N" over Cancel / Finish match), visible from both the Standings and History views.
+- For `MANUAL` win condition: modal appears listing each player's total as a selectable row (selection shown by the accent tint) to select winner(s)
 
 ### Cancel confirmation
 When clicking **Cancel** with scores already entered:
@@ -105,7 +105,7 @@ When clicking **Cancel** with no scores entered:
 When a tie is detected (multiple players have the same top/lowest score), the system follows the game type's `tieBreakRule`:
 
 1. **NONE** → All tied players are winners (equality preserved)
-2. **MANUAL_SELECTION** → A **ManualSelectionDialog** appears immediately with selectable rows (○/●) to select winners among tied players
+2. **MANUAL_SELECTION** → A **ManualSelectionDialog** appears immediately with selectable rows (selection shown by the accent tint) to select winners among tied players
 3. **SECONDARY_SCORE** → A **SecondaryScoreDialog** appears:
    - Title uses `tieBreakLabel` (e.g. "Number of cards ?")
    - One numeric input per tied player
@@ -113,7 +113,7 @@ When a tie is detected (multiple players have the same top/lowest score), the sy
    - If the tie persists → escalates to **ManualSelectionDialog**
 
 The **ManualSelectionDialog** offers:
-- Selectable rows (○/●, `ListItemRow`) to select one or more winners
+- Selectable rows (design-system `ListRow`, accent tint when selected) to select one or more winners
 - "Keep tie" button to preserve equality (all tied win)
 - Confirm button to finalize
 

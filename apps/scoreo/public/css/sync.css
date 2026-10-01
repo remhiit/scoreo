@@ -49,3 +49,17 @@
     margin-top: var(--space-4);
     flex-wrap: wrap;
 }
+
+/* Kept for SyncScreen until it composes the design system. */
+
+.modal-title {
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: var(--space-4);
+    color: var(--text-heading);
+}
+
+.modal-body {
+    font-size: var(--text-sm);
+    color: var(--text-muted);
+    margin-bottom: var(--space-4);

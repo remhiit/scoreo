@@ -11,7 +11,9 @@ test.beforeEach(async ({ page }) => {
   await page.reload()
 })
 
-test('merging two duplicate players moves their match records onto the player kept', async ({ page }) => {
+test('merging two duplicate players moves their match records onto the player kept', async ({
+  page,
+}) => {
   const stamp = Date.now()
   const opponent = `Alice ${stamp}`
   const kept = `Jean-Luc ${stamp}`
@@ -33,7 +35,10 @@ test('merging two duplicate players moves their match records onto the player ke
   await finishMatch(page)
 
   await startMatch(page, [opponent, duplicateB])
-  await page.getByRole('dialog', { name: 'Select a game' }).getByRole('combobox').selectOption({ label: gameTypeName })
+  await page
+    .getByRole('dialog', { name: 'Select a game' })
+    .getByRole('combobox')
+    .selectOption({ label: gameTypeName })
   await page.getByRole('button', { name: 'Start match' }).click()
   await enterRoundScore(page, { [opponent]: 3, [duplicateB]: 12 })
   await finishMatch(page)

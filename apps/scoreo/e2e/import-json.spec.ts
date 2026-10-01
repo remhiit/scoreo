@@ -14,7 +14,9 @@ test('importing a JSON backup shows imported players and match', async ({ page }
   await page.locator('input[type="file"]').setInputFiles(fixturePath)
 
   await expect(page.locator('.import-preview-row', { hasText: 'Game:' })).toContainText('Uno E2E')
-  await expect(page.locator('.import-preview-row', { hasText: 'Matches to import:' })).toContainText('1')
+  await expect(
+    page.locator('.import-preview-row', { hasText: 'Matches to import:' }),
+  ).toContainText('1')
 
   await page.getByRole('main').getByRole('button', { name: 'Import' }).click()
 

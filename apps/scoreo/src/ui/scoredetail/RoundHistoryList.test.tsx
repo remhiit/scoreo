@@ -18,9 +18,9 @@ describe('RoundHistoryList', () => {
       />,
     )
 
-    expect(document.querySelectorAll('.hist-round')).toHaveLength(1)
+    expect(document.querySelectorAll('.sc-round')).toHaveLength(1)
     expect(screen.getByText('Round 1')).toBeInTheDocument()
-    const cells = document.querySelectorAll('.hist-cell')
+    const cells = document.querySelectorAll('.sc-hcell')
     expect(cells).toHaveLength(2)
     expect(within(cells[0] as HTMLElement).getByText('Alice')).toBeInTheDocument()
     expect(within(cells[0] as HTMLElement).getByRole('spinbutton')).toHaveValue(10)

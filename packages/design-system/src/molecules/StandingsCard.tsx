@@ -14,7 +14,7 @@ export interface StandingsCardProps {
 
 export function StandingsCard({ rank, name, total, delta, lead = false }: StandingsCardProps) {
   return (
-    <div className={cx('sc-standing', lead && 'sc-standing--lead')}>
+    <div className={cx('sc-standing', lead && 'sc-standing--lead')} role="listitem">
       <div className="sc-standing__top">
         <Rank>{rank}</Rank>
         <span className="sc-standing__name">{name}</span>
