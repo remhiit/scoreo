@@ -11,8 +11,6 @@ import tseslint from 'typescript-eslint'
  * Once empty, the host has no visual decision left of its own.
  */
 const NOT_YET_ON_DESIGN_SYSTEM = [
-  'apps/scoreo/src/ui/gametype/GameTypeForm.tsx',
-  'apps/scoreo/src/ui/gametype/GameTypeScreen.tsx',
   'apps/scoreo/src/ui/import/ImportScreen.tsx',
   'apps/scoreo/src/ui/shared/ListContainer.test.tsx',
   'apps/scoreo/src/ui/shared/ListContainer.tsx',

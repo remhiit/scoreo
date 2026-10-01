@@ -77,7 +77,10 @@ export function gameTypeReducer(state: GameTypeState, action: GameTypeAction): G
     case 'updateTieBreakCondition':
       return { ...state, selectedTieBreakCondition: action.condition }
     case 'updateTieBreakLabel':
-      return { ...state, selectedTieBreakLabel: action.label.trim() === '' ? undefined : action.label }
+      return {
+        ...state,
+        selectedTieBreakLabel: action.label.trim() === '' ? undefined : action.label,
+      }
     case 'selectGame':
       return { ...state, selectedGameId: action.id }
     case 'deselectGame':
@@ -179,7 +182,10 @@ export function submitAddGameType(
   }
 }
 
-export function resolveGameTypeForEdit(findGameTypeById: FindGameTypeByIdUseCase, id: string): GameType | undefined {
+export function resolveGameTypeForEdit(
+  findGameTypeById: FindGameTypeByIdUseCase,
+  id: string,
+): GameType | undefined {
   return findGameTypeById.invoke(id)
 }
 

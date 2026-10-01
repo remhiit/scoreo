@@ -54,7 +54,9 @@ export function MergeGameTypesModal({
       onSelectKept={onSelectKept}
       onToggleDuplicate={onToggleDuplicate}
       summary={preview && t('gametype.mergeSummary', { count: preview.affectedMatches })}
-      warning={preview?.rulesDiffer ? t('gametype.mergeRulesDiffer', { name: keptName }) : undefined}
+      warning={
+        preview?.rulesDiffer ? t('gametype.mergeRulesDiffer', { name: keptName }) : undefined
+      }
       confirmText={t('gametype.mergeConfirm')}
       error={error}
       onClose={onClose}

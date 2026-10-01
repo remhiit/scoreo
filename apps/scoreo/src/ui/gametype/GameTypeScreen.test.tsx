@@ -21,7 +21,11 @@ function renderScreen(repo = new InMemoryGameTypeRepository()) {
       findGameTypeById={new FindGameTypeByIdUseCase(repo)}
       archiveGameType={new ArchiveGameTypeUseCase(repo)}
       mergeGameTypes={
-        new MergeGameTypesUseCase(repo, new InMemoryMatchRepository(), new InMemoryMatchDraftRepository())
+        new MergeGameTypesUseCase(
+          repo,
+          new InMemoryMatchRepository(),
+          new InMemoryMatchDraftRepository(),
+        )
       }
     />,
   )
@@ -56,7 +60,7 @@ describe('GameTypeScreen', () => {
     fireEvent.change(nameInput(), { target: { value: 'Belote' } })
     fireEvent.click(screen.getByText('Add game type'))
 
-    expect(screen.getByText('Belote', { selector: '.list-item-name' })).toBeInTheDocument()
+    expect(screen.getByText('Belote', { selector: '.sc-row__title' })).toBeInTheDocument()
     expect(nameInput()).toHaveValue('')
   })
 
@@ -74,7 +78,9 @@ describe('GameTypeScreen', () => {
 
     expect(screen.queryByPlaceholderText('e.g. Number of cards')).not.toBeInTheDocument()
 
-    fireEvent.change(screen.getByDisplayValue('No tie-break'), { target: { value: 'SECONDARY_SCORE' } })
+    fireEvent.change(screen.getByDisplayValue('No tie-break'), {
+      target: { value: 'SECONDARY_SCORE' },
+    })
 
     expect(screen.getByPlaceholderText('e.g. Number of cards')).toBeInTheDocument()
     expect(screen.getAllByDisplayValue('Highest score')).toHaveLength(2)
@@ -97,8 +103,12 @@ describe('GameTypeScreen', () => {
   it('shows detail rows without trailing colons, including tie-break condition and question', () => {
     renderScreen()
     fireEvent.change(nameInput(), { target: { value: 'Tarot' } })
-    fireEvent.change(screen.getByDisplayValue('No tie-break'), { target: { value: 'SECONDARY_SCORE' } })
-    fireEvent.change(screen.getByPlaceholderText('e.g. Number of cards'), { target: { value: 'Number of cards' } })
+    fireEvent.change(screen.getByDisplayValue('No tie-break'), {
+      target: { value: 'SECONDARY_SCORE' },
+    })
+    fireEvent.change(screen.getByPlaceholderText('e.g. Number of cards'), {
+      target: { value: 'Number of cards' },
+    })
     fireEvent.click(screen.getByText('Add game type'))
 
     fireEvent.click(screen.getByLabelText('View details'))
@@ -126,7 +136,7 @@ describe('GameTypeScreen', () => {
     })
     fireEvent.click(within(editDialog).getByText('Save changes'))
 
-    expect(screen.getByText('Belote', { selector: '.list-item-name' })).toBeInTheDocument()
+    expect(screen.getByText('Belote', { selector: '.sc-row__title' })).toBeInTheDocument()
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
 
     fireEvent.click(screen.getByLabelText('View details'))
@@ -159,7 +169,7 @@ describe('GameTypeScreen', () => {
     fireEvent.click(screen.getByLabelText('Edit'))
     fireEvent.click(screen.getByText('Cancel'))
 
-    expect(screen.getByText('Belote', { selector: '.list-item-name' })).toBeInTheDocument()
+    expect(screen.getByText('Belote', { selector: '.sc-row__title' })).toBeInTheDocument()
     expect(nameInput()).toHaveValue('')
   })
 
@@ -172,12 +182,12 @@ describe('GameTypeScreen', () => {
     expect(screen.getByText('Archive Belote?')).toBeInTheDocument()
 
     fireEvent.click(screen.getByText('Cancel'))
-    expect(screen.getByText('Belote', { selector: '.list-item-name' })).toBeInTheDocument()
+    expect(screen.getByText('Belote', { selector: '.sc-row__title' })).toBeInTheDocument()
 
     fireEvent.click(screen.getByLabelText('Delete'))
     fireEvent.click(within(screen.getByRole('dialog')).getByText('Archive'))
 
-    expect(screen.queryByText('Belote', { selector: '.list-item-name' })).not.toBeInTheDocument()
+    expect(screen.queryByText('Belote', { selector: '.sc-row__title' })).not.toBeInTheDocument()
     expect(screen.getByText('No game types yet. Add one.')).toBeInTheDocument()
   })
 
@@ -191,7 +201,11 @@ describe('GameTypeScreen', () => {
         findGameTypeById={new FindGameTypeByIdUseCase(repo)}
         archiveGameType={new ArchiveGameTypeUseCase(repo)}
         mergeGameTypes={
-          new MergeGameTypesUseCase(repo, new InMemoryMatchRepository(), new InMemoryMatchDraftRepository())
+          new MergeGameTypesUseCase(
+            repo,
+            new InMemoryMatchRepository(),
+            new InMemoryMatchDraftRepository(),
+          )
         }
         showTitle={false}
       />,
@@ -260,7 +274,9 @@ describe('GameTypeScreen', () => {
         getGameTypes={new GetGameTypesUseCase(repo)}
         findGameTypeById={new FindGameTypeByIdUseCase(repo)}
         archiveGameType={new ArchiveGameTypeUseCase(repo)}
-        mergeGameTypes={new MergeGameTypesUseCase(repo, matchRepo, new InMemoryMatchDraftRepository())}
+        mergeGameTypes={
+          new MergeGameTypesUseCase(repo, matchRepo, new InMemoryMatchDraftRepository())
+        }
       />,
     )
 
@@ -303,7 +319,11 @@ describe('GameTypeScreen', () => {
     fireEvent.click(screen.getByText('Merge'))
     const dialog = screen.getByRole('dialog')
 
-    expect(within(dialog).getByText('Belote coinchee (archived)', { selector: 'option' })).toBeInTheDocument()
-    expect(within(dialog).getByText('(archived)', { selector: '.sc-row__subtitle' })).toBeInTheDocument()
+    expect(
+      within(dialog).getByText('Belote coinchee (archived)', { selector: 'option' }),
+    ).toBeInTheDocument()
+    expect(
+      within(dialog).getByText('(archived)', { selector: '.sc-row__subtitle' }),
+    ).toBeInTheDocument()
   })
 })
