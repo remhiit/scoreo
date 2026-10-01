@@ -70,17 +70,28 @@ function buildChoices(allGameTypes: readonly GameType[]): GameChoice[] {
  * module from that game: "Play on the module" then lets `BindModuleUseCase`
  * stamp the `moduleId` onto it (its rule 2). A module already bound to another
  * game type is not offered: binding would open that other game instead.
+ *
+ * Rule 2 stamps the *first* game type, archived ones included and in repository
+ * order, whose name matches any of the module's names — not necessarily the one
+ * selected here. So the module is only offered when that first match is this
+ * very game type: with two homonyms (say an older archived "Skyjo" and an
+ * active "skyjo"), offering it on the second would bind, reactivate and open
+ * the first. `allGameTypes` is `getAll(true)`, the same list in the same order
+ * the use case reads.
  */
-function moduleClaimingName(
-  name: string,
+function moduleClaimingGameType(
+  gameType: GameType,
   allGameTypes: readonly GameType[],
 ): ScoringModuleManifest | undefined {
-  const normalized = normalizeName(name)
-  return MODULE_MANIFESTS.find(
-    (m) =>
-      m.gameNames.some((n) => normalizeName(n) === normalized) &&
-      !allGameTypes.some((gt) => gt.moduleId === m.moduleId),
-  )
+  const normalized = normalizeName(gameType.name)
+  return MODULE_MANIFESTS.find((m) => {
+    const aliases = new Set(m.gameNames.map(normalizeName))
+    return (
+      aliases.has(normalized) &&
+      !allGameTypes.some((gt) => gt.moduleId === m.moduleId) &&
+      allGameTypes.find((gt) => aliases.has(normalizeName(gt.name)))?.id === gameType.id
+    )
+  })
 }
 
 function domainErrorMessage(e: unknown): string {
@@ -132,7 +143,7 @@ export const GameSelectModalContainer = forwardRef<
     if (selectedChoice.kind === 'module') return selectedChoice.manifest
     const moduleId = selectedChoice.gameType.moduleId
     if (moduleId !== null) return findManifest(moduleId)
-    return moduleClaimingName(selectedChoice.gameType.name, allGameTypes)
+    return moduleClaimingGameType(selectedChoice.gameType, allGameTypes)
   }, [selectedChoice, allGameTypes])
 
   const moduleFitsPlayers =

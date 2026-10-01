@@ -37,7 +37,8 @@
      module never played does not appear on the **Games** screen. A module already bound to a game
      type (even an archived one), or whose name an active game already carries, is not listed a
      second time. Such a same-name game (e.g. imported before the module was ever played) offers
-     **Play on the module** itself, which binds it to the module.
+     **Play on the module** itself, which binds it to the module — only the oldest such game when
+     several carry the name (archived ones included), since that is the one the binding picks.
    - When the number of players selected falls outside the module's range, the game stays listed and
      **Play in Scoreo** stays available, but **Play on the module** is disabled and the range is shown.
 3. **Score Detail** → enter rounds (auto-saved after each score) → **Finish match**

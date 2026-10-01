@@ -1,6 +1,7 @@
 import { act, fireEvent, render, screen, within } from '@testing-library/react'
 import { createRef } from 'react'
 import { describe, expect, it, vi } from 'vitest'
+import { BindModuleUseCase } from '../../application/bindModuleUseCase'
 import type { GameType } from '../../domain/model/gameType'
 import { InMemoryGameTypeRepository } from '../../infrastructure/testing/inMemoryGameTypeRepository'
 import { MODULE_MANIFESTS } from '../../modules/registry'
@@ -127,6 +128,41 @@ describe('GameSelectModalContainer', () => {
       within(dialog).queryByRole('button', { name: 'Play on the module' }),
     ).not.toBeInTheDocument()
     expect(within(dialog).getByRole('button', { name: 'Start match' })).toBeEnabled()
+  })
+
+  it('does not offer the module on an unbound homonym the binding would not pick', () => {
+    // BindModuleUseCase rule 2 stamps the first name match of getAll(true),
+    // archived included: here the older archived "Skyjo", not the selected one.
+    const repo = new InMemoryGameTypeRepository()
+    repo.save(gameType({ id: 'gt-old', name: 'Skyjo', active: false }))
+    repo.save(gameType({ id: 'gt-new', name: 'skyjo' }))
+    const { dialog, select } = renderModal(repo)
+
+    select('skyjo')
+
+    expect(
+      within(dialog).queryByRole('button', { name: 'Play on the module' }),
+    ).not.toBeInTheDocument()
+    expect(within(dialog).getByRole('button', { name: 'Start match' })).toBeEnabled()
+  })
+
+  it('offers the module on the unbound homonym the binding picks, and binds that very game', () => {
+    const repo = new InMemoryGameTypeRepository()
+    repo.save(gameType({ id: 'gt-new', name: 'skyjo' }))
+    repo.save(gameType({ id: 'gt-old', name: 'Skyjo', active: false }))
+    const bound: GameType[] = []
+    const { dialog, select } = renderModal(repo, ['p1', 'p2'], {
+      onStartModule: (moduleId) => {
+        const manifest = MODULE_MANIFESTS.find((m) => m.moduleId === moduleId)
+        if (manifest) bound.push(new BindModuleUseCase(repo).invoke(manifest))
+      },
+    })
+
+    select('skyjo')
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Play on the module' }))
+
+    expect(bound.map((gt) => gt.id)).toEqual(['gt-new'])
+    expect(repo.findById('gt-old')).toMatchObject({ moduleId: null, active: false })
   })
 
   it('offers both ways in for an unbound module entry', () => {

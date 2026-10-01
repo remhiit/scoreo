@@ -137,7 +137,9 @@ blanks). Both buttons are offered on such an entry; **Play on the module** is di
 manifest's player range shown, when the selected players fall outside `[minPlayers, maxPlayers]`.
 An unbound `GameType` carrying one of the module's names — typically created by a v1.1 import —
 stands for the module instead: selecting it offers **Play on the module** too (unless the module is
-already bound to another `GameType`), which binds it through rule 2 below. The **Games** screen lists only
+already bound to another `GameType`), which binds it through rule 2 below. Rule 2 stamps the first
+name match of `getAll(true)`, archived games included, so with several homonyms the button is only
+offered on that first one — on any other, it would bind and open a different game. The **Games** screen lists only
 real `GameType`s, so a module never played does not appear there.
 
 A module's game becomes real the first time someone plays it — on the module or in Scoreo's generic
