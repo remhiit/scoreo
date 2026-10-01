@@ -115,7 +115,7 @@ describe('App', () => {
     render(<App />)
     fireEvent.click(screen.getByLabelText('Menu'))
     fireEvent.click(screen.getByText('History'))
-    expect(screen.getByText('Test Game', { selector: '.list-item-name' })).toBeInTheDocument()
+    expect(screen.getByText('Test Game', { selector: '.sc-row__title' })).toBeInTheDocument()
 
     fireEvent.click(screen.getByLabelText('Edit'))
 
@@ -237,9 +237,9 @@ describe('App', () => {
     fireEvent.click(screen.getByText('Exit'))
 
     expect(screen.getByLabelText('Menu')).toBeInTheDocument()
-    const rows = document.querySelectorAll('.list-item-row')
+    const rows = document.querySelectorAll('.sc-row')
     expect(rows).toHaveLength(1)
-    expect(rows[0]).toHaveClass('list-item-row--highlighted')
+    expect(rows[0]).toHaveClass('sc-row--highlighted')
   })
 
   it('ModuleScore: the highlight does not linger once History is left and revisited', async () => {
@@ -250,13 +250,13 @@ describe('App', () => {
     })
     fireEvent.click(await screen.findByText('Save'))
     fireEvent.click(screen.getByText('Exit'))
-    expect(document.querySelector('.list-item-row--highlighted')).not.toBeNull()
+    expect(document.querySelector('.sc-row--highlighted')).not.toBeNull()
 
     fireEvent.click(screen.getByRole('button', { name: 'History' }))
     fireEvent.click(screen.getByLabelText('Menu'))
     fireEvent.click(screen.getByText('History'))
 
-    expect(document.querySelector('.list-item-row--highlighted')).toBeNull()
+    expect(document.querySelector('.sc-row--highlighted')).toBeNull()
   })
 
   it('ModuleScore: exiting without saving keeps the current behaviour (Home for a new match)', async () => {

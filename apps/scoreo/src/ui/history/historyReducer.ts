@@ -124,7 +124,10 @@ export function loadDisplays(
 }
 
 /** Mirrors HistoryHandler's DeleteMatch try/catch around the use case call. */
-export function deleteMatch(deleteMatchUseCase: DeleteMatchUseCase, matchId: string): string | undefined {
+export function deleteMatch(
+  deleteMatchUseCase: DeleteMatchUseCase,
+  matchId: string,
+): string | undefined {
   try {
     deleteMatchUseCase.invoke(matchId)
     return undefined

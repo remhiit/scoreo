@@ -204,8 +204,8 @@ compiler-oriented lint can't verify that from.
 `AppShell` (`App.tsx`) decides where that lands: a defined `savedMatchId` navigates to `History` and
 sets `highlightMatchId`, a plain React state var owned by `AppShell` — never the hash, so a refresh
 always shows the plain, unhighlighted history. `HistoryScreen` takes it as a `highlightMatchId` prop
-and forwards `highlighted={match.id === highlightMatchId}` to that row's `ListItemRow`
-(`.list-item-row--highlighted`). `AppShell` drops the highlight the next time the screen leaves
+and forwards `highlighted={match.id === highlightMatchId}` to that row's design-system `ListRow`
+(`.sc-row--highlighted`). `AppShell` drops the highlight the next time the screen leaves
 `History` for any reason other than that same module-exit navigation, so it never lingers into a
 later, unrelated visit. Exiting without having saved anything this session keeps the pre-#390
 behaviour: `History` when reopening an existing match, `Home` for a new one.

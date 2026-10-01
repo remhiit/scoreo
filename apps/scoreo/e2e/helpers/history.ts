@@ -4,7 +4,7 @@ import type { Page } from '@playwright/test'
 export async function openMatchFromHistory(page: Page, index: number): Promise<void> {
   await page.getByRole('button', { name: 'Menu' }).click()
   await page.getByRole('button', { name: 'History' }).click()
-  await page.locator('.list-item-row').nth(index).getByRole('button', { name: 'Edit' }).click()
+  await page.getByRole('main').getByRole('button', { name: 'Edit', exact: true }).nth(index).click()
 }
 
 /** Edits a given round's score for a player, matched by player name in its "Round N" card. */
@@ -23,7 +23,11 @@ export async function editMatchScore(
 export async function deleteMatchFromHistory(page: Page, index: number): Promise<void> {
   await page.getByRole('button', { name: 'Menu' }).click()
   await page.getByRole('button', { name: 'History' }).click()
-  await page.locator('.list-item-row').nth(index).getByRole('button', { name: 'Delete' }).click()
+  await page
+    .getByRole('main')
+    .getByRole('button', { name: 'Delete', exact: true })
+    .nth(index)
+    .click()
   await page
     .getByRole('dialog', { name: 'Delete match?' })
     .getByRole('button', { name: 'Delete' })

@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, within } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import type { GameType } from '../../domain/model/gameType'
 import type { Match } from '../../domain/model/match'
@@ -61,29 +61,33 @@ function renderHistory(
   gameTypeRepo.save(gameType('gt1', 'Chess'))
   gameTypeRepo.save(gameType('gt2', 'Darts'))
   const matchRepo = new InMemoryMatchRepository()
-  matchRepo.save(match(
-    'm1',
-    2000,
-    'gt1',
-    [
-      { playerId: 'p1', score: 10 },
-      { playerId: 'p2', score: 5 },
-    ],
-    [
+  matchRepo.save(
+    match(
+      'm1',
+      2000,
+      'gt1',
       [
-        { playerId: 'p1', score: 6 },
-        { playerId: 'p2', score: 2 },
+        { playerId: 'p1', score: 10 },
+        { playerId: 'p2', score: 5 },
       ],
       [
-        { playerId: 'p1', score: 4 },
-        { playerId: 'p2', score: 3 },
+        [
+          { playerId: 'p1', score: 6 },
+          { playerId: 'p2', score: 2 },
+        ],
+        [
+          { playerId: 'p1', score: 4 },
+          { playerId: 'p2', score: 3 },
+        ],
       ],
-    ],
-  ))
-  matchRepo.save(match('m2', 1000, 'gt2', [
-    { playerId: 'p1', score: 3 },
-    { playerId: 'p2', score: 10 },
-  ]))
+    ),
+  )
+  matchRepo.save(
+    match('m2', 1000, 'gt2', [
+      { playerId: 'p1', score: 3 },
+      { playerId: 'p2', score: 10 },
+    ]),
+  )
 
   return render(
     <HistoryScreen
@@ -98,11 +102,11 @@ function renderHistory(
 }
 
 function itemName(name: string) {
-  return screen.getByText(name, { selector: '.list-item-name' })
+  return screen.getByText(name, { selector: '.sc-row__title' })
 }
 
 function queryItemName(name: string) {
-  return screen.queryByText(name, { selector: '.list-item-name' })
+  return screen.queryByText(name, { selector: '.sc-row__title' })
 }
 
 describe('HistoryScreen', () => {
@@ -134,16 +138,16 @@ describe('HistoryScreen', () => {
   it('renders each match over three lines: name, scores with the winner in bold, then date', () => {
     renderHistory()
 
-    const chessRow = itemName('Chess').closest('.list-item-row')
+    const chessRow = itemName('Chess').closest('.sc-row')
     expect(chessRow).not.toBeNull()
 
-    const scoresLine = chessRow!.querySelector('.list-item-players')
+    const scoresLine = chessRow!.querySelector('.sc-row__players')
     expect(scoresLine).toHaveTextContent('Alice 10 · Bob 5')
-    expect(scoresLine!.querySelector('strong')).toHaveTextContent('Alice 10')
+    expect(scoresLine!.querySelector('.sc-text--strong')).toHaveTextContent('Alice 10')
 
-    const dateLine = chessRow!.querySelector('.list-item-date')
+    const dateLine = chessRow!.querySelector('.sc-row__date')
     expect(dateLine).toHaveTextContent(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/)
-    expect(chessRow!.querySelector('.list-item-subtitle')).not.toBeInTheDocument()
+    expect(chessRow!.querySelector('.sc-row__subtitle')).not.toBeInTheDocument()
   })
 
   // React state passed in by the caller (App.tsx, after a module exit) —
@@ -151,15 +155,15 @@ describe('HistoryScreen', () => {
   it('highlights the row named by highlightMatchId, and no other', () => {
     renderHistory(undefined, 'm2')
 
-    expect(itemName('Chess').closest('.list-item-row')).not.toHaveClass('list-item-row--highlighted')
-    expect(itemName('Darts').closest('.list-item-row')).toHaveClass('list-item-row--highlighted')
+    expect(itemName('Chess').closest('.sc-row')).not.toHaveClass('sc-row--highlighted')
+    expect(itemName('Darts').closest('.sc-row')).toHaveClass('sc-row--highlighted')
   })
 
   it('highlights nothing when highlightMatchId is undefined', () => {
     renderHistory()
 
-    expect(itemName('Chess').closest('.list-item-row')).not.toHaveClass('list-item-row--highlighted')
-    expect(itemName('Darts').closest('.list-item-row')).not.toHaveClass('list-item-row--highlighted')
+    expect(itemName('Chess').closest('.sc-row')).not.toHaveClass('sc-row--highlighted')
+    expect(itemName('Darts').closest('.sc-row')).not.toHaveClass('sc-row--highlighted')
   })
 
   it('shows the generic empty message once every match is deleted', () => {
@@ -240,7 +244,7 @@ describe('HistoryScreen', () => {
     fireEvent.click(screen.getAllByLabelText('View details')[0])
 
     expect(screen.getByText('Round detail')).toBeInTheDocument()
-    const roundCards = document.querySelectorAll('.rounds-detail-round')
+    const roundCards = within(screen.getByRole('dialog')).getAllByRole('region')
     expect(roundCards).toHaveLength(2)
     expect(roundCards[0]).toHaveTextContent('Round 1')
     expect(roundCards[0]).toHaveTextContent('Alice6')
@@ -249,9 +253,9 @@ describe('HistoryScreen', () => {
     expect(roundCards[1]).toHaveTextContent('Alice4')
     expect(roundCards[1]).toHaveTextContent('Bob3')
 
-    const totals = document.querySelector('.rounds-detail-totals')
+    const totals = within(screen.getByRole('dialog')).getByText(/Total:/, { selector: 'p' })
     expect(totals).toHaveTextContent('Alice 10 · Bob 5')
-    expect(totals!.querySelector('strong')).toHaveTextContent('Alice 10')
+    expect(within(totals).getByText('Alice 10')).toBeInTheDocument()
   })
 
   it('explains that a match stored without round detail has none to show', () => {
@@ -260,8 +264,10 @@ describe('HistoryScreen', () => {
     fireEvent.click(screen.getAllByLabelText('View details')[1])
 
     expect(screen.getByText('No round detail was recorded for this match.')).toBeInTheDocument()
-    expect(document.querySelectorAll('.rounds-detail-round')).toHaveLength(0)
-    expect(document.querySelector('.rounds-detail-totals')).toHaveTextContent('Bob 10')
+    expect(within(screen.getByRole('dialog')).queryAllByRole('region')).toHaveLength(0)
+    expect(
+      within(screen.getByRole('dialog')).getByText(/Total:/, { selector: 'p' }),
+    ).toHaveTextContent('Bob 10')
   })
 
   it('closes the round detail modal on Close', () => {
@@ -280,7 +286,7 @@ describe('HistoryScreen', () => {
     fireEvent.click(screen.getAllByLabelText('View details')[0])
 
     expect(screen.getByText('Détail des manches')).toBeInTheDocument()
-    expect(document.querySelector('.rounds-detail-round')).toHaveTextContent('Manche 1')
+    expect(document.querySelector('[role="dialog"] .sc-round')).toHaveTextContent('Manche 1')
 
     await i18n.changeLanguage('en')
   })

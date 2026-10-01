@@ -10,7 +10,13 @@ import { GetPlayersUseCase } from '../../application/getPlayersUseCase'
 import { InMemoryGameTypeRepository } from '../../infrastructure/testing/inMemoryGameTypeRepository'
 import { InMemoryMatchRepository } from '../../infrastructure/testing/inMemoryMatchRepository'
 import { InMemoryPlayerRepository } from '../../infrastructure/testing/inMemoryPlayerRepository'
-import { buildRoundBreakdown, buildScoreSummary, deleteMatch, historyReducer, loadDisplays } from './historyReducer'
+import {
+  buildRoundBreakdown,
+  buildScoreSummary,
+  deleteMatch,
+  historyReducer,
+  loadDisplays,
+} from './historyReducer'
 import type { MatchDisplay } from './historyTypes'
 import { initialHistoryState } from './historyTypes'
 
@@ -43,7 +49,17 @@ function match(
   playerScores: Match['playerScores'],
   overrides: Partial<Match> = {},
 ): Match {
-  return { id, date, gameTypeId, playerScores, manualWinners: [], secondaryPlayerScores: [], rounds: [], moduleData: null, ...overrides }
+  return {
+    id,
+    date,
+    gameTypeId,
+    playerScores,
+    manualWinners: [],
+    secondaryPlayerScores: [],
+    rounds: [],
+    moduleData: null,
+    ...overrides,
+  }
 }
 
 function buildUseCases(
@@ -71,11 +87,17 @@ describe('historyReducer', () => {
     const gameTypeRepo = new InMemoryGameTypeRepository()
     gameTypeRepo.save(gameType('gt1', 'TestGame'))
     const matchRepo = new InMemoryMatchRepository()
-    matchRepo.save(match('m1', 1000, 'gt1', [
-      { playerId: 'p1', score: 10 },
-      { playerId: 'p2', score: 5 },
-    ]))
-    const { getMatches, getPlayers, getGameTypes } = buildUseCases(playerRepo, gameTypeRepo, matchRepo)
+    matchRepo.save(
+      match('m1', 1000, 'gt1', [
+        { playerId: 'p1', score: 10 },
+        { playerId: 'p2', score: 5 },
+      ]),
+    )
+    const { getMatches, getPlayers, getGameTypes } = buildUseCases(
+      playerRepo,
+      gameTypeRepo,
+      matchRepo,
+    )
 
     const displays = loadDisplays(getMatches, getPlayers, getGameTypes)
 
@@ -101,11 +123,17 @@ describe('historyReducer', () => {
     const gameTypeRepo = new InMemoryGameTypeRepository()
     gameTypeRepo.save(gameType('gt1', 'Test'))
     const matchRepo = new InMemoryMatchRepository()
-    matchRepo.save(match('m1', 1000, 'gt1', [
-      { playerId: 'p1', score: 10 },
-      { playerId: 'p2', score: 5 },
-    ]))
-    const { getMatches, getPlayers, getGameTypes } = buildUseCases(playerRepo, gameTypeRepo, matchRepo)
+    matchRepo.save(
+      match('m1', 1000, 'gt1', [
+        { playerId: 'p1', score: 10 },
+        { playerId: 'p2', score: 5 },
+      ]),
+    )
+    const { getMatches, getPlayers, getGameTypes } = buildUseCases(
+      playerRepo,
+      gameTypeRepo,
+      matchRepo,
+    )
 
     const [display] = loadDisplays(getMatches, getPlayers, getGameTypes)
 
@@ -131,11 +159,17 @@ describe('historyReducer', () => {
     const gameTypeRepo = new InMemoryGameTypeRepository()
     gameTypeRepo.save(gameType('gt1', 'Test'))
     const matchRepo = new InMemoryMatchRepository()
-    matchRepo.save(match('m1', 1000, 'gt1', [
-      { playerId: 'p1', score: 10 },
-      { playerId: 'p2', score: 5 },
-    ]))
-    const { getMatches, getPlayers, getGameTypes } = buildUseCases(playerRepo, gameTypeRepo, matchRepo)
+    matchRepo.save(
+      match('m1', 1000, 'gt1', [
+        { playerId: 'p1', score: 10 },
+        { playerId: 'p2', score: 5 },
+      ]),
+    )
+    const { getMatches, getPlayers, getGameTypes } = buildUseCases(
+      playerRepo,
+      gameTypeRepo,
+      matchRepo,
+    )
 
     const [display] = loadDisplays(getMatches, getPlayers, getGameTypes)
 
@@ -159,7 +193,11 @@ describe('historyReducer', () => {
     gameTypeRepo.save(gameType('gt1', 'Test'))
     const matchRepo = new InMemoryMatchRepository()
     matchRepo.save(match('m1', 1000, 'gt1', [{ playerId: 'p1', score: 10 }]))
-    const { getMatches, getPlayers, getGameTypes } = buildUseCases(playerRepo, gameTypeRepo, matchRepo)
+    const { getMatches, getPlayers, getGameTypes } = buildUseCases(
+      playerRepo,
+      gameTypeRepo,
+      matchRepo,
+    )
 
     const [display] = loadDisplays(getMatches, getPlayers, getGameTypes)
 
@@ -199,7 +237,11 @@ describe('historyReducer', () => {
         { playerId: 'p2', score: 10 },
       ]),
     )
-    const { getMatches, getPlayers, getGameTypes } = buildUseCases(undefined, gameTypeRepo, matchRepo)
+    const { getMatches, getPlayers, getGameTypes } = buildUseCases(
+      undefined,
+      gameTypeRepo,
+      matchRepo,
+    )
 
     const [display] = loadDisplays(getMatches, getPlayers, getGameTypes)
 
@@ -222,7 +264,11 @@ describe('historyReducer', () => {
         { manualWinners: ['p1'] },
       ),
     )
-    const { getMatches, getPlayers, getGameTypes } = buildUseCases(undefined, gameTypeRepo, matchRepo)
+    const { getMatches, getPlayers, getGameTypes } = buildUseCases(
+      undefined,
+      gameTypeRepo,
+      matchRepo,
+    )
 
     const [display] = loadDisplays(getMatches, getPlayers, getGameTypes)
 
@@ -239,7 +285,11 @@ describe('historyReducer', () => {
         { playerId: 'p2', score: 5 },
       ]),
     )
-    const { getMatches, getPlayers, getGameTypes } = buildUseCases(undefined, gameTypeRepo, matchRepo)
+    const { getMatches, getPlayers, getGameTypes } = buildUseCases(
+      undefined,
+      gameTypeRepo,
+      matchRepo,
+    )
 
     const [display] = loadDisplays(getMatches, getPlayers, getGameTypes)
 
@@ -247,7 +297,10 @@ describe('historyReducer', () => {
   })
 
   it('showDeleteConfirm sets deleteConfirmMatchId', () => {
-    const state = historyReducer(initialHistoryState, { type: 'showDeleteConfirm', matchId: 'match123' })
+    const state = historyReducer(initialHistoryState, {
+      type: 'showDeleteConfirm',
+      matchId: 'match123',
+    })
     expect(state.deleteConfirmMatchId).toBe('match123')
   })
 
@@ -321,7 +374,10 @@ describe('historyReducer', () => {
   })
 
   it('dismissDeleteConfirm clears the id', () => {
-    let state = historyReducer(initialHistoryState, { type: 'showDeleteConfirm', matchId: 'match123' })
+    let state = historyReducer(initialHistoryState, {
+      type: 'showDeleteConfirm',
+      matchId: 'match123',
+    })
     expect(state.deleteConfirmMatchId).toBe('match123')
 
     state = historyReducer(state, { type: 'dismissDeleteConfirm' })
@@ -350,7 +406,10 @@ describe('historyReducer', () => {
   })
 
   it('selectGameTypeFilter with undefined resets the filter', () => {
-    let state = historyReducer(initialHistoryState, { type: 'selectGameTypeFilter', gameTypeId: 'gt1' })
+    let state = historyReducer(initialHistoryState, {
+      type: 'selectGameTypeFilter',
+      gameTypeId: 'gt1',
+    })
     expect(state.selectedGameTypeFilter).toBe('gt1')
 
     state = historyReducer(state, { type: 'selectGameTypeFilter', gameTypeId: undefined })

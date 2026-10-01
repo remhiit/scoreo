@@ -33,10 +33,10 @@ Screen: `apps/scoreo/src/ui/history/HistoryScreen.tsx`.
 ## Screen: HistoryScreen
 
 - **Filter dropdown** at top: "Filter by game type" — shows all game types from loaded matches, or "All games" for no filter
-- List of match rows (`ListItemRow`) sorted by date descending (most recent first), each spanning three lines:
-  1. Game type name (`.list-item-name`)
-  2. Per-player scores (`.list-item-players`), players separated by ` · `, winner(s) rendered in `<strong>` (all tied winners are bold)
-  3. Match date **with time-of-day** (`.list-item-date`, HH:mm in local timezone)
+- List of match rows (design-system `ListRow`) sorted by date descending (most recent first), each spanning three lines:
+  1. Game type name (design-system `ListRow` title)
+  2. Per-player scores (`ListRow` players line), players separated by ` · `, winner(s) rendered as `<Text variant="strong">` (all tied winners are bold)
+  3. Match date **with time-of-day** (`ListRow` date line, HH:mm in local timezone)
 - The winner(s) are read from `MatchDisplay.winners` (already computed by `loadDisplays`) — no extra use case call to build the row
 - `highlightMatchId` (optional prop, React state owned by the caller — not this screen's own state, not the hash) calls out one row: exiting a scoring module right after it saved a match lands here with that match's id passed in, so the row that was just written stands out instead of the player having to scan the list
 - Each row has action icons:

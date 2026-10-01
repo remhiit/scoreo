@@ -27,7 +27,7 @@ test('deleting a match from History removes it and resets the players stats', as
 
   await deleteMatchFromHistory(page, 0)
 
-  await expect(page.locator('.list-item-row')).toHaveCount(0)
+  await expect(page.getByRole('button', { name: 'View details' })).toHaveCount(0)
   await expect(page.getByText('No matches yet.')).toBeVisible()
 
   await page.getByRole('button', { name: 'Menu' }).click()
