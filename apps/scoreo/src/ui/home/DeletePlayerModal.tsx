@@ -1,6 +1,5 @@
+import { Button, ButtonRow, Checkbox, Dialog, Text } from '@scoreboards/design-system'
 import { useTranslation } from 'react-i18next'
-import { LudoButton } from '../shared/LudoButton'
-import { LudoModal } from '../shared/LudoModal'
 
 export interface DeletePlayerModalProps {
   open: boolean
@@ -22,22 +21,26 @@ export function DeletePlayerModal({
   const { t } = useTranslation()
 
   return (
-    <LudoModal
+    <Dialog
       open={open}
       title={t('home.deleteTitle', { name: playerName ?? '?' })}
       onClose={onClose}
-      footer={
-        <>
-          <LudoButton text={t('common.cancel')} variant="secondary" onClick={onClose} />
-          <LudoButton text={t('common.delete')} variant="danger" onClick={onConfirmDelete} />
-        </>
+      closeLabel={t('common.close')}
+      actions={
+        <ButtonRow>
+          <Button variant="secondary" onClick={onClose}>
+            {t('common.cancel')}
+          </Button>
+          <Button variant="danger" onClick={onConfirmDelete}>
+            {t('common.delete')}
+          </Button>
+        </ButtonRow>
       }
     >
-      <div className="modal-body">{t('home.matchesPreserved')}</div>
-      <div className="modal-row">
-        <input type="checkbox" checked={anonymize} onChange={onToggleAnonymize} />
-        <span>{t('home.eraseNameFromHistory')}</span>
-      </div>
-    </LudoModal>
+      <Text block>{t('home.matchesPreserved')}</Text>
+      <Checkbox checked={anonymize} onChange={onToggleAnonymize}>
+        {t('home.eraseNameFromHistory')}
+      </Checkbox>
+    </Dialog>
   )
 }

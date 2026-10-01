@@ -21,9 +21,9 @@ export async function createGameType(
 ): Promise<void> {
   if (options.tieBreakRule === undefined) {
     const dialog = page.getByRole('dialog', { name: 'Select a game' })
-    await dialog.getByRole('button', { name: '＋' }).click()
+    await dialog.getByRole('button', { name: 'Add new game' }).click()
     await dialog.getByPlaceholder('Game name').fill(name)
-    await dialog.locator('.inline-form').getByRole('combobox').selectOption(winCondition)
+    await dialog.getByRole('combobox', { name: 'Win condition' }).selectOption(winCondition)
     await dialog.getByRole('button', { name: 'Add game' }).click()
     return
   }
@@ -46,5 +46,8 @@ export async function createGameType(
 export async function archiveGameType(page: Page, name: string): Promise<void> {
   const row = page.locator('.list-item-row', { hasText: name })
   await row.getByRole('button', { name: 'Delete' }).click()
-  await page.getByRole('dialog', { name: `Archive ${name}?` }).getByRole('button', { name: 'Archive' }).click()
+  await page
+    .getByRole('dialog', { name: `Archive ${name}?` })
+    .getByRole('button', { name: 'Archive' })
+    .click()
 }

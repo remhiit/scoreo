@@ -36,8 +36,22 @@ function gameType(id: string, name: string): GameType {
   }
 }
 
-function match(id: string, date: number, gameTypeId: string, playerScores: Match['playerScores']): Match {
-  return { id, date, gameTypeId, playerScores, manualWinners: [], secondaryPlayerScores: [], rounds: [], moduleData: null }
+function match(
+  id: string,
+  date: number,
+  gameTypeId: string,
+  playerScores: Match['playerScores'],
+): Match {
+  return {
+    id,
+    date,
+    gameTypeId,
+    playerScores,
+    manualWinners: [],
+    secondaryPlayerScores: [],
+    rounds: [],
+    moduleData: null,
+  }
 }
 
 function buildUseCases(
@@ -51,7 +65,11 @@ function buildUseCases(
     addPlayer: new AddPlayerUseCase(playerRepo),
     deletePlayer: new DeletePlayerUseCase(playerRepo),
     renamePlayerUseCase: new RenamePlayerUseCase(playerRepo),
-    mergePlayersUseCase: new MergePlayersUseCase(playerRepo, matchRepo, new InMemoryMatchDraftRepository()),
+    mergePlayersUseCase: new MergePlayersUseCase(
+      playerRepo,
+      matchRepo,
+      new InMemoryMatchDraftRepository(),
+    ),
     sources: {
       getPlayers: new GetPlayersUseCase(playerRepo),
       getPlayerStats: new GetPlayerStatsUseCase(matchRepo, gameTypeRepo),
@@ -75,7 +93,10 @@ describe('playerReducer', () => {
 
   it('updateInput updates inputName and clears the error', () => {
     const uc = buildUseCases()
-    let state = playerReducer(initialPlayerState, submitAddPlayer(uc.addPlayer, uc.sources, initialPlayerState))
+    let state = playerReducer(
+      initialPlayerState,
+      submitAddPlayer(uc.addPlayer, uc.sources, initialPlayerState),
+    )
     state = playerReducer(state, { type: 'updateInput', name: 'Alice' })
 
     expect(state.inputName).toBe('Alice')
@@ -102,7 +123,10 @@ describe('playerReducer', () => {
 
   it('adding with an empty input sets an error', () => {
     const uc = buildUseCases()
-    const state = playerReducer(initialPlayerState, submitAddPlayer(uc.addPlayer, uc.sources, initialPlayerState))
+    const state = playerReducer(
+      initialPlayerState,
+      submitAddPlayer(uc.addPlayer, uc.sources, initialPlayerState),
+    )
 
     expect(state.players).toEqual([])
     expect(state.error).toBe('name: Player name must not be blank')
@@ -140,10 +164,7 @@ describe('playerReducer', () => {
     let state = playerReducer(initialPlayerState, { type: 'loaded', ...loadPlayers(uc.sources) })
     state = playerReducer(state, { type: 'showDeleteConfirm', id: 'p1' })
 
-    state = playerReducer(
-      state,
-      submitDeletePlayer(uc.deletePlayer, uc.sources, 'p1', false),
-    )
+    state = playerReducer(state, submitDeletePlayer(uc.deletePlayer, uc.sources, 'p1', false))
 
     expect(state.players).toHaveLength(1)
     expect(state.players[0].name).toBe('Bob')
@@ -185,10 +206,12 @@ describe('playerReducer', () => {
     const gameTypeRepo = new InMemoryGameTypeRepository()
     gameTypeRepo.save(gameType('gt1', 'Test'))
     const matchRepo = new InMemoryMatchRepository()
-    matchRepo.save(match('m1', 1000, 'gt1', [
-      { playerId: 'p1', score: 10 },
-      { playerId: 'p2', score: 5 },
-    ]))
+    matchRepo.save(
+      match('m1', 1000, 'gt1', [
+        { playerId: 'p1', score: 10 },
+        { playerId: 'p2', score: 5 },
+      ]),
+    )
     const uc2 = buildUseCases(uc.playerRepo, matchRepo, gameTypeRepo)
     let state = playerReducer(initialPlayerState, { type: 'loaded', ...loadPlayers(uc2.sources) })
 
@@ -206,10 +229,12 @@ describe('playerReducer', () => {
     const gameTypeRepo = new InMemoryGameTypeRepository()
     gameTypeRepo.save(gameType('gt1', 'Test'))
     const matchRepo = new InMemoryMatchRepository()
-    matchRepo.save(match('m1', 1000, 'gt1', [
-      { playerId: 'p1', score: 10 },
-      { playerId: 'p2', score: 5 },
-    ]))
+    matchRepo.save(
+      match('m1', 1000, 'gt1', [
+        { playerId: 'p1', score: 10 },
+        { playerId: 'p2', score: 5 },
+      ]),
+    )
     const uc = buildUseCases(playerRepo, matchRepo, gameTypeRepo)
 
     const state = playerReducer(initialPlayerState, { type: 'loaded', ...loadPlayers(uc.sources) })
@@ -229,9 +254,11 @@ describe('playerReducer', () => {
     gameTypeRepo.save(gameType('gt1', 'Test'))
     const matchRepo = new InMemoryMatchRepository()
     for (let month = 0; month < 5; month++) {
-      matchRepo.save(match(`m${month}`, new Date(2020, month, 15).getTime(), 'gt1', [
-        { playerId: 'p1', score: 10 },
-      ]))
+      matchRepo.save(
+        match(`m${month}`, new Date(2020, month, 15).getTime(), 'gt1', [
+          { playerId: 'p1', score: 10 },
+        ]),
+      )
     }
     const uc = buildUseCases(playerRepo, matchRepo, gameTypeRepo)
 
@@ -249,10 +276,12 @@ describe('playerReducer', () => {
     const gameTypeRepo = new InMemoryGameTypeRepository()
     gameTypeRepo.save(gameType('gt1', 'Test'))
     const matchRepo = new InMemoryMatchRepository()
-    matchRepo.save(match('m1', 1000, 'gt1', [
-      { playerId: 'p1', score: 10 },
-      { playerId: 'p2', score: 5 },
-    ]))
+    matchRepo.save(
+      match('m1', 1000, 'gt1', [
+        { playerId: 'p1', score: 10 },
+        { playerId: 'p2', score: 5 },
+      ]),
+    )
     const uc = buildUseCases(playerRepo, matchRepo, gameTypeRepo)
     let state = playerReducer(initialPlayerState, { type: 'loaded', ...loadPlayers(uc.sources) })
 
@@ -274,7 +303,10 @@ describe('playerReducer', () => {
   })
 
   it('startRename with a nonexistent player does not update state', () => {
-    const state = playerReducer(initialPlayerState, { type: 'startRename', playerId: 'nonexistent' })
+    const state = playerReducer(initialPlayerState, {
+      type: 'startRename',
+      playerId: 'nonexistent',
+    })
 
     expect(state.renamingPlayerId).toBeUndefined()
     expect(state.renameInput).toBe('')

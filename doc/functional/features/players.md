@@ -45,7 +45,7 @@ Screen: `apps/scoreo/src/ui/home/HomeScreen.tsx`. See `doc/reference.md` for the
   - Checkbox: "Erase name from history" (controls `anonymize` flag)
   - **Cancel** / **Delete** buttons
 - "Merge" button (shown as soon as at least 2 players exist, soft-deleted ones included — next to "Clean up" in the same row under the list): opens the merge dialog
-  - One dropdown, **Player to keep**, then below it **Duplicates to remove**: the multi-select list (○/●) of every other player. Several duplicates can be folded in one pass — an import can spell the same person three ways
+  - One dropdown, **Player to keep**, then below it **Duplicates to remove**: the multi-select list of every other player (a selected row is tinted in the accent). Several duplicates can be folded in one pass — an import can spell the same person three ways
   - The player picked as the one to keep is dropped from the duplicates list (and unticked if it was already ticked), so it can never be its own duplicate
   - Both the dropdown and the list include soft-deleted players, marked "(deleted)" — an import can duplicate a player who was already deleted
   - Once a kept player and at least one duplicate are picked, the dialog states how many matches will move

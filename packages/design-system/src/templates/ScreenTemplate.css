@@ -44,3 +44,12 @@
   flex: 1;
   overflow-y: auto;
 }
+
+/* A screen can also render its own <ActionBar> inside the content (the header
+   and column are laid by the app shell): the room is reserved the same way. */
+.sc-screen:has(.sc-action-bar) {
+  padding-bottom: 160px;
+}
+.sc-screen:has(.sc-action-bar--center) {
+  padding-bottom: 104px;
+}

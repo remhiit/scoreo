@@ -6,7 +6,12 @@ import { CleanupConfirmModal } from './CleanupConfirmModal'
 import { DeletePlayerModal } from './DeletePlayerModal'
 import { MergePlayersModal } from './MergePlayersModal'
 import type { PlayerAction, PlayerDataSources } from './playerReducer'
-import { submitCleanup, submitConfirmRename, submitDeletePlayer, submitMergePlayers } from './playerReducer'
+import {
+  submitCleanup,
+  submitConfirmRename,
+  submitDeletePlayer,
+  submitMergePlayers,
+} from './playerReducer'
 import type { PlayerState } from './playerTypes'
 import { RenamePlayerModal } from './RenamePlayerModal'
 

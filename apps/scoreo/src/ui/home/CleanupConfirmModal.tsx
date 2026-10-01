@@ -1,7 +1,6 @@
+import { BulletList, Button, ButtonRow, Dialog, Text } from '@scoreboards/design-system'
 import { useTranslation } from 'react-i18next'
 import type { Player } from '../../domain/model/player'
-import { LudoButton } from '../shared/LudoButton'
-import { LudoModal } from '../shared/LudoModal'
 
 export interface CleanupConfirmModalProps {
   open: boolean
@@ -19,23 +18,24 @@ export function CleanupConfirmModal({
   const { t } = useTranslation()
 
   return (
-    <LudoModal
+    <Dialog
       open={open}
       title={t('home.cleanupTitle', { count: candidates.length })}
       onClose={onClose}
-      footer={
-        <>
-          <LudoButton text={t('common.cancel')} variant="secondary" onClick={onClose} />
-          <LudoButton text={t('home.deletePermanently')} variant="danger" onClick={onConfirmCleanup} />
-        </>
+      closeLabel={t('common.close')}
+      actions={
+        <ButtonRow>
+          <Button variant="secondary" onClick={onClose}>
+            {t('common.cancel')}
+          </Button>
+          <Button variant="danger" onClick={onConfirmCleanup}>
+            {t('home.deletePermanently')}
+          </Button>
+        </ButtonRow>
       }
     >
-      <div className="modal-body">{t('home.cleanupBody')}</div>
-      <ul>
-        {candidates.map((player) => (
-          <li key={player.id}>{player.name || t('home.unnamedPlayer')}</li>
-        ))}
-      </ul>
-    </LudoModal>
+      <Text block>{t('home.cleanupBody')}</Text>
+      <BulletList items={candidates.map((player) => player.name || t('home.unnamedPlayer'))} />
+    </Dialog>
   )
 }

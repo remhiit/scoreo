@@ -16,7 +16,10 @@ export async function editMatchScore(
 ): Promise<void> {
   await page.getByRole('button', { name: 'History' }).click()
   const round = page.locator('.hist-round').nth(roundIndex)
-  await round.locator('.hist-cell', { hasText: playerName }).getByRole('spinbutton').fill(String(newScore))
+  await round
+    .locator('.hist-cell', { hasText: playerName })
+    .getByRole('spinbutton')
+    .fill(String(newScore))
 }
 
 /** Navigates to History (via the burger menu) and deletes the given match (0-indexed, in list order), confirming the modal. */
@@ -24,5 +27,8 @@ export async function deleteMatchFromHistory(page: Page, index: number): Promise
   await page.getByRole('button', { name: 'Menu' }).click()
   await page.getByRole('button', { name: 'History' }).click()
   await page.locator('.list-item-row').nth(index).getByRole('button', { name: 'Delete' }).click()
-  await page.getByRole('dialog', { name: 'Delete match?' }).getByRole('button', { name: 'Delete' }).click()
+  await page
+    .getByRole('dialog', { name: 'Delete match?' })
+    .getByRole('button', { name: 'Delete' })
+    .click()
 }

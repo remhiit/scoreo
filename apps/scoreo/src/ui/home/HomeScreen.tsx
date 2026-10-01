@@ -1,4 +1,4 @@
-import { Play } from 'lucide-react'
+import { ActionBar, Banner, Button, Stack } from '@scoreboards/design-system'
 import { useMemo, useReducer, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { AddPlayerUseCase } from '../../application/addPlayerUseCase'
@@ -12,7 +12,6 @@ import type { RenamePlayerUseCase } from '../../application/renamePlayerUseCase'
 import type { WinCondition } from '../../domain/model/enums'
 import type { GameType } from '../../domain/model/gameType'
 import type { MatchDraftRepository } from '../../domain/port/matchDraftRepository'
-import { LudoButton } from '../shared/LudoButton'
 import { AddPlayerField } from './AddPlayerField'
 import { GameSelectModalContainer, type GameSelectModalHandle } from './GameSelectModalContainer'
 import { PlayerActionModals } from './PlayerActionModals'
@@ -84,20 +83,15 @@ export function HomeScreen({
   const isFirstLaunch = state.players.length === 0 && matchCount === 0
 
   return (
-    <>
+    <Stack gap={4}>
       {draft && (
-        <div className="draft-resume-banner">
-          <button
-            type="button"
-            className="draft-resume-button"
-            onClick={() => onResumeDraft(draft.gameTypeId, draft.playerIds)}
-          >
-            <span>
-              <Play size={16} aria-hidden />
-            </span>
-            <span>{t('home.resumeMatch')}</span>
-          </button>
-        </div>
+        <Banner
+          action={{
+            icon: 'play',
+            label: t('home.resumeMatch'),
+            onClick: () => onResumeDraft(draft.gameTypeId, draft.playerIds),
+          }}
+        />
       )}
 
       <AddPlayerField
@@ -108,14 +102,10 @@ export function HomeScreen({
       />
 
       {isFirstLaunch && (
-        <div className="onboarding-guide">
-          <h3>{t('home.gettingStarted')}</h3>
-          <ol>
-            <li>{t('home.onboardingStep1')}</li>
-            <li>{t('home.onboardingStep2')}</li>
-            <li>{t('home.onboardingStep3')}</li>
-          </ol>
-        </div>
+        <Banner
+          title={t('home.gettingStarted')}
+          steps={[t('home.onboardingStep1'), t('home.onboardingStep2'), t('home.onboardingStep3')]}
+        />
       )}
 
       <PlayerListSection
@@ -133,18 +123,17 @@ export function HomeScreen({
       />
 
       {state.players.length > 0 && (
-        <LudoButton
-          text={
-            <>
-              <Play size={18} aria-hidden /> {t('home.newMatch')}
-            </>
-          }
-          variant="primary"
-          size="lg"
-          disabled={selectedPlayers.size < 2}
-          className="fab-position"
-          onClick={() => gameModalRef.current?.open()}
-        />
+        <ActionBar layout="center">
+          <Button
+            size="lg"
+            shape="pill"
+            icon="play"
+            disabled={selectedPlayers.size < 2}
+            onClick={() => gameModalRef.current?.open()}
+          >
+            {t('home.newMatch')}
+          </Button>
+        </ActionBar>
       )}
 
       <GameSelectModalContainer
@@ -164,6 +153,6 @@ export function HomeScreen({
         mergePlayersUseCase={mergePlayersUseCase}
         sources={sources}
       />
-    </>
+    </Stack>
   )
 }

@@ -1,11 +1,18 @@
 import type { ScoringModuleManifest } from '@scoreboards/module-api'
+import {
+  Button,
+  ButtonRow,
+  Dialog,
+  EmptyState,
+  Select,
+  Stack,
+  Text,
+  TextInput,
+} from '@scoreboards/design-system'
 import { useTranslation } from 'react-i18next'
 import type { WinCondition } from '../../domain/model/enums'
 import { winConditionLabel } from '../../domain/model/enums'
 import type { GameType } from '../../domain/model/gameType'
-import { LudoButton } from '../shared/LudoButton'
-import { LudoModal } from '../shared/LudoModal'
-import { LudoTextInput } from '../shared/LudoTextInput'
 
 export interface GameSelectModalProps {
   open: boolean
@@ -55,118 +62,105 @@ export function GameSelectModal({
 }: GameSelectModalProps) {
   const { t } = useTranslation()
 
+  const addInlineGame = () => {
+    if (inlineGameName.trim() !== '') onAddInlineGameType()
+  }
+
   return (
-    <LudoModal
+    <Dialog
       open={open}
       title={t('home.selectGameTitle')}
       onClose={onClose}
-      footer={
-        <>
-          <LudoButton text={t('common.cancel')} variant="secondary" onClick={onClose} />
-          <LudoButton
-            text={moduleForSelectedGame ? t('modules.playInScoreo') : t('home.startMatch')}
-            variant={moduleForSelectedGame ? 'secondary' : 'primary'}
-            onClick={onStartMatch}
-          />
+      closeLabel={t('common.close')}
+      actions={
+        <ButtonRow>
+          <Button variant="secondary" onClick={onClose}>
+            {t('common.cancel')}
+          </Button>
+          <Button variant={moduleForSelectedGame ? 'secondary' : 'primary'} onClick={onStartMatch}>
+            {moduleForSelectedGame ? t('modules.playInScoreo') : t('home.startMatch')}
+          </Button>
           {/* A module augments a game, it never replaces it: both ways in stay
               offered for a game type that has one. */}
           {moduleForSelectedGame && (
-            <LudoButton
-              text={t('modules.playOnModule')}
-              variant="primary"
-              onClick={() => onStartOnModule(moduleForSelectedGame.moduleId)}
-            />
+            <Button onClick={() => onStartOnModule(moduleForSelectedGame.moduleId)}>
+              {t('modules.playOnModule')}
+            </Button>
           )}
-        </>
+        </ButtonRow>
       }
     >
       {gameTypes.length === 0 ? (
-        <div className="empty-inline">{t('home.noGameTypesYet')}</div>
+        <EmptyState>{t('home.noGameTypesYet')}</EmptyState>
       ) : (
-        <div className="select-chevron">
-          <select
-            className="select"
-            value={selectedGameType?.id ?? ''}
-            onChange={(e) => {
-              const gt = gameTypes.find((g) => g.id === e.target.value)
-              if (gt) onSelectGameType(gt)
-            }}
-          >
-            <option value="">{t('home.selectGamePlaceholder')}</option>
-            {gameTypes.map((gt) => (
-              <option key={gt.id} value={gt.id}>
-                {gt.name}
-              </option>
-            ))}
-          </select>
-        </div>
+        <Select
+          ariaLabel={t('home.selectGameTitle')}
+          value={selectedGameType?.id ?? ''}
+          placeholder={t('home.selectGamePlaceholder')}
+          options={gameTypes.map((gt) => ({ value: gt.id, label: gt.name }))}
+          onChange={(id) => {
+            const gt = gameTypes.find((g) => g.id === id)
+            if (gt) onSelectGameType(gt)
+          }}
+        />
       )}
 
       {availableModules.length > 0 && (
-        <div className="module-section">
-          <div className="module-section-title">{t('modules.availableModules')}</div>
+        <Stack gap={2}>
+          <Text variant="label">{t('modules.availableModules')}</Text>
           {availableModules.map((manifest) => (
-            <LudoButton
+            <Button
               key={manifest.moduleId}
-              text={`${manifest.displayName} — ${t('modules.playerRange', {
+              variant="secondary"
+              width="full"
+              onClick={() => onStartOnModule(manifest.moduleId)}
+            >
+              {`${manifest.displayName} — ${t('modules.playerRange', {
                 min: manifest.minPlayers,
                 max: manifest.maxPlayers,
               })}`}
-              variant="secondary"
-              className="ludo-btn--full"
-              onClick={() => onStartOnModule(manifest.moduleId)}
-            />
+            </Button>
           ))}
-        </div>
+        </Stack>
       )}
 
-      <div className="modal-row">
-        <LudoButton
-          text={showAddGameForm ? '−' : '＋'}
+      <Stack direction="row" justify="center">
+        <Button
           variant="secondary"
-          iconOnly
+          icon={showAddGameForm ? 'minus' : 'plus'}
           onClick={onToggleAddGameForm}
-        />
-        <span>{t('home.addNewGame')}</span>
-      </div>
+        >
+          {t('home.addNewGame')}
+        </Button>
+      </Stack>
 
       {showAddGameForm && (
-        <div className="inline-form">
-          <LudoTextInput
+        <Stack gap={2}>
+          <TextInput
             value={inlineGameName}
             onChange={onChangeInlineGameName}
+            ariaLabel={t('home.gameNamePlaceholder')}
             placeholder={t('home.gameNamePlaceholder')}
             invalid={inlineGameError !== undefined}
-            onEnter={() => {
-              if (inlineGameName.trim() !== '') onAddInlineGameType()
-            }}
+            onEnter={addInlineGame}
           />
-          <div className="select-chevron">
-            <select
-              className="select"
-              value={inlineGameWinCondition}
-              onChange={(e) => onChangeInlineGameWinCondition(e.target.value as WinCondition)}
-            >
-              {(['HIGHEST_SCORE', 'LOWEST_SCORE', 'MANUAL'] as WinCondition[]).map((wc) => (
-                <option key={wc} value={wc}>
-                  {winConditionLabel(wc)}
-                </option>
-              ))}
-            </select>
-          </div>
-          {inlineGameError && <div className="error-msg">{inlineGameError}</div>}
-          <LudoButton
-            text={t('home.addGame')}
-            variant="primary"
-            className="ludo-btn--full"
-            onClick={() => {
-              if (inlineGameName.trim() !== '') onAddInlineGameType()
-            }}
+          <Select
+            ariaLabel={t('gametype.winCondition')}
+            value={inlineGameWinCondition}
+            options={(['HIGHEST_SCORE', 'LOWEST_SCORE', 'MANUAL'] as WinCondition[]).map((wc) => ({
+              value: wc,
+              label: winConditionLabel(wc),
+            }))}
+            onChange={(wc) => onChangeInlineGameWinCondition(wc as WinCondition)}
           />
-        </div>
+          {inlineGameError && <Text variant="error">{inlineGameError}</Text>}
+          <Button width="full" onClick={addInlineGame}>
+            {t('home.addGame')}
+          </Button>
+        </Stack>
       )}
 
-      {error && <div className="error-msg">{error}</div>}
-    </LudoModal>
+      {error && <Text variant="error">{error}</Text>}
+    </Dialog>
   )
 }
