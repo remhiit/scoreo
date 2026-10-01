@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Fails if a raw px/duration/easing value in the design system's stylesheets
-// (packages/design-system/src/**/*.css) or the host's remaining ones
-// (apps/scoreo/public/css/*.css) exactly matches a design token
+// (packages/design-system/src/**/*.css — the only CSS the host ships) exactly
+// matches a design token
 // (packages/design-system/src/tokens/), locking in the mechanical
 // var(...) substitution done for issue #238 (Ludo Design System adherence).
 // Modeled on check-doc-links.mjs.
@@ -16,8 +16,7 @@ import { existsSync, readFileSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 
-// The host's own folder disappears once every screen composes the design system.
-const CSS_ROOTS = ['packages/design-system/src', 'apps/scoreo/public/css']
+const CSS_ROOTS = ['packages/design-system/src']
 const TOKENS_DIR = 'tokens'
 
 // Keyed by the exact px integer a token resolves to.

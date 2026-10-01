@@ -25,4 +25,4 @@ createRoot(container).render(
   </StrictMode>,
 )
 
-document.getElementById('splash')?.classList.add('hidden')
+document.getElementById('splash')?.classList.add('sc-splash--hidden')

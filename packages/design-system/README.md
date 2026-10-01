@@ -35,8 +35,7 @@ The host composes; it never styles.
 - **Missing something?** Add a prop or a component here, with its CSS and a test —
   not a local workaround in the app.
 
-Files not yet migrated are listed in `NOT_YET_ON_DESIGN_SYSTEM` in
-`eslint.config.js`; the list only shrinks.
+The rule has no exceptions: every host screen composes the system.
 
 ## Conventions
 

@@ -34,7 +34,7 @@ inside a 44px tap target). No host CSS.
 | `apps/scoreo/src/ui/theme/themeContext.ts` | `ThemeContext` (`createContext`) + `ThemeState` type — no component, so importing it doesn't break Fast Refresh |
 | `apps/scoreo/src/ui/theme/ThemeContext.tsx` | `ThemeProvider` — wraps `themeManager.ts`, provides `ThemeContext` so the picker and the rest of the app share live state |
 | `apps/scoreo/src/ui/theme/useTheme.ts` | `useTheme()` hook, reads `ThemeContext` |
-| `apps/scoreo/src/ui/theme/ThemePickerDialog.tsx` | Flavor chips + accent swatches, rendered via `LudoModal` |
+| `apps/scoreo/src/ui/theme/ThemePickerDialog.tsx` | Flavor chips + accent swatches: the design system's `Dialog` + `ThemePicker` |
 | `apps/scoreo/src/App.tsx` | Renders the burger menu entry + dialog |
 
 No dedicated reducer (global concern, no dedicated screen) — state lives in `ThemeContext`.

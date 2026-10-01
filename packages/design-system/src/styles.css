@@ -17,6 +17,7 @@
 
 /* foundations */
 @import './foundations/base.css';
+@import './foundations/splash.css';
 
 /* 01 · atoms */
 @import './atoms/Icon.css';

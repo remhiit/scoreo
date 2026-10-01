@@ -34,7 +34,9 @@ function createEnv({
     keys: vi.fn().mockResolvedValue(cacheKeys),
     delete: vi.fn().mockResolvedValue(true),
   }
-  const fetchImpl = vi.fn(() => (networkError ? Promise.reject(networkError) : Promise.resolve(networkResponse)))
+  const fetchImpl = vi.fn(() =>
+    networkError ? Promise.reject(networkError) : Promise.resolve(networkResponse),
+  )
   const self = {
     addEventListener: (type: string, handler: (event: unknown) => void) => {
       listeners[type] = handler
@@ -73,17 +75,20 @@ function dispatchFetch(env: ReturnType<typeof createEnv>, request: ReturnType<ty
 
 describe('public/sw.js activate handler', () => {
   it('keeps the caches owned by the sibling PWAs sharing the origin', async () => {
-    const env = createEnv({ cacheKeys: ['scoreo-v3', 'tori-valley-v1', 'ksabord-v1'] })
+    const env = createEnv({ cacheKeys: ['scoreo-v4', 'tori-valley-v1', 'ksabord-v1'] })
     await dispatchActivate(env)
     expect(env.caches.delete).not.toHaveBeenCalled()
   })
 
   it('still purges the previous Scoreo caches', async () => {
-    const env = createEnv({ cacheKeys: ['scoreo-v1', 'scoreo-v2', 'scoreo-v3', 'tori-valley-v1'] })
+    const env = createEnv({
+      cacheKeys: ['scoreo-v1', 'scoreo-v2', 'scoreo-v3', 'scoreo-v4', 'tori-valley-v1'],
+    })
     await dispatchActivate(env)
     expect(env.caches.delete).toHaveBeenCalledWith('scoreo-v1')
     expect(env.caches.delete).toHaveBeenCalledWith('scoreo-v2')
-    expect(env.caches.delete).toHaveBeenCalledTimes(2)
+    expect(env.caches.delete).toHaveBeenCalledWith('scoreo-v3')
+    expect(env.caches.delete).toHaveBeenCalledTimes(3)
   })
 })
 
@@ -94,17 +99,24 @@ describe('public/sw.js fetch handler', () => {
     env = createEnv()
   })
 
-  it('bumps CACHE_NAME to scoreo-v3 so activation purges the previous cache', () => {
-    expect(SW_SOURCE).toMatch(/CACHE_NAME\s*=\s*['"]scoreo-v3['"]/)
+  it('bumps CACHE_NAME to scoreo-v4 so activation purges the previous cache', () => {
+    expect(SW_SOURCE).toMatch(/CACHE_NAME\s*=\s*['"]scoreo-v4['"]/)
   })
 
   it('does not intercept non-GET requests', () => {
-    const { respondWithCalled } = dispatchFetch(env, makeRequest('/assets/index-abc123.js', { method: 'POST' }))
+    const { respondWithCalled } = dispatchFetch(
+      env,
+      makeRequest('/assets/index-abc123.js', { method: 'POST' }),
+    )
     expect(respondWithCalled).toBe(false)
   })
 
   it('does not intercept cross-origin requests', () => {
-    const request = { url: 'https://accounts.google.com/o/oauth2/auth', method: 'GET', mode: 'cors' }
+    const request = {
+      url: 'https://accounts.google.com/o/oauth2/auth',
+      method: 'GET',
+      mode: 'cors',
+    }
     const { respondWithCalled } = dispatchFetch(env, request)
     expect(respondWithCalled).toBe(false)
   })
@@ -139,7 +151,7 @@ describe('public/sw.js fetch handler', () => {
   it('serves non-hashed same-origin resources network-first and refreshes the cache on success', async () => {
     const networkResponse = makeResponse(true)
     env = createEnv({ networkResponse })
-    const request = makeRequest('/css/styles.css')
+    const request = makeRequest('/manifest.json')
     const { result } = dispatchFetch(env, request)
     const response = await result
     expect(env.fetch).toHaveBeenCalledWith(request)

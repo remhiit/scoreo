@@ -22,7 +22,6 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="Scoreo" />
     <title>Scoreo</title>
-    <link rel="stylesheet" href="/css/styles.css" />
     <!-- Google Identity Services (for OAuth login). Deferred so a slow/blocked
          request to Google (ad blockers, restrictive networks) can't stall HTML
          parsing and delay the page's own CSS/content from rendering. -->
@@ -30,11 +29,11 @@
   </head>
   <body>
     <!-- Splash/Loader (visible until bundle loads) -->
-    <div id="splash" class="splash">
-      <div class="splash-content">
-        <h1>Scoreo</h1>
-        <div class="spinner"></div>
-        <p>Loading...</p>
+    <div id="splash" class="sc-splash">
+      <div>
+        <h1 class="sc-splash__title">Scoreo</h1>
+        <div class="sc-splash__spinner"></div>
+        <p class="sc-splash__caption">Loading...</p>
       </div>
     </div>
 

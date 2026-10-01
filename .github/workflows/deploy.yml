@@ -72,7 +72,7 @@ jobs:
         env:
           BASE: ${{ needs.deploy.outputs.page_url }}
         run: |
-          for path in "" manifest.json sw.js css/styles.css; do
+          for path in "" manifest.json sw.js; do
             url="${BASE}${path}"
             echo "Checking $url..."
             for i in 1 2 3 4 5; do
