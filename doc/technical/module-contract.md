@@ -156,15 +156,14 @@ resolves the module from the registry, builds a `ModuleHostAdapter` bound to tha
 type, and renders the module's screen behind `React.lazy` + `Suspense` + an error boundary — a module
 that fails to load, or throws, must not take Scoreo down with it.
 
-The route is rendered full-screen: `AppShell` (`apps/scoreo/src/App.tsx`) skips `.app-header`
-entirely on `ModuleScore` and renders `ModuleScoreScreen` inside `.app-module-route` — a direct
-child of `#root`, `flex: 1`, with no `max-width` and no route padding, instead of `.app-content`'s
-600px-capped column. During a game the host's back arrow, title and burger menu would only
-duplicate the exit a module already draws itself; every other route keeps that chrome unchanged.
-`.app-module-route` carries `padding-top: env(safe-area-inset-top)`, the one thing `.app-header`
-was absorbing for this route.
+The route is rendered full-screen: `AppShell` (`apps/scoreo/src/App.tsx`) skips the `ScreenTemplate`
+header (`AppHeader`) entirely on `ModuleScore` and renders `ModuleScoreScreen` inside the design
+system's `ImmersiveTemplate` instead of the capped-width `ScreenTemplate` column. During a game the
+host's back arrow, title and burger menu would only duplicate the exit a module already draws itself;
+every other route keeps that chrome unchanged. `.sc-immersive` carries
+`padding-top: env(safe-area-inset-top)`, the one thing the header was absorbing for this route.
 
-In its place, `ModuleScoreScreen` renders a fine `.app-module-bar` — the manifest's `displayName`
+In its place, `ModuleScoreScreen` renders the `ImmersiveTemplate` bar (a `banner`) — the manifest's `displayName`
 and a ✕, nothing else — as a sibling of the `React.lazy` + `Suspense` + error-boundary tree, never a
 child of it: a module that fails to load, throws while rendering, or is unknown (`findModule` finds
 nothing) still leaves the ✕ standing, because none of those failures can unmount a sibling. The ✕
@@ -227,7 +226,7 @@ registered module — it runs its two checks over a table of them, so a new modu
 a new test.
 
 Scoping runs **one way**. It keeps the module out of the host; nothing keeps the host out of the
-module. Scoreo's `theme.css` and `layout.css` carry generic rules — `.card`, `.empty`, `.app-title`
+module. Scoreo's `theme.css` and `layout.css` carry generic rules — `.card`, `.empty`
 — that land on a module's markup like any other, and a class name the two happen to share is settled
 property by property: the module's `.module-<id> .card` wins the ones it declares, the host's `.card`
 supplies the rest. Torī Valley shipped for a while with every player card laid out in a row for

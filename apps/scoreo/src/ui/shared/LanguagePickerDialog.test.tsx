@@ -13,8 +13,8 @@ describe('LanguagePickerDialog', () => {
 
     const english = screen.getByText('English').closest('button')
     const french = screen.getByText('French').closest('button')
-    expect(english?.className).toContain('theme-chip--active')
-    expect(french?.className).not.toContain('theme-chip--active')
+    expect(english).toHaveAttribute('aria-pressed', 'true')
+    expect(french).toHaveAttribute('aria-pressed', 'false')
   })
 
   it('switches language and persists the choice to localStorage', async () => {

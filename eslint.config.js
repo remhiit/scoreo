@@ -11,8 +11,6 @@ import tseslint from 'typescript-eslint'
  * Once empty, the host has no visual decision left of its own.
  */
 const NOT_YET_ON_DESIGN_SYSTEM = [
-  'apps/scoreo/src/App.tsx',
-  'apps/scoreo/src/modules/ModuleScoreScreen.tsx',
   'apps/scoreo/src/ui/gametype/GameTypeForm.tsx',
   'apps/scoreo/src/ui/gametype/GameTypeScreen.tsx',
   'apps/scoreo/src/ui/halloffame/HallOfFameScreen.tsx',
@@ -30,7 +28,6 @@ const NOT_YET_ON_DESIGN_SYSTEM = [
   'apps/scoreo/src/ui/scoredetail/RoundHistoryList.tsx',
   'apps/scoreo/src/ui/scoredetail/ScoreDetailScreen.tsx',
   'apps/scoreo/src/ui/scoredetail/SecondaryScoreDialog.tsx',
-  'apps/scoreo/src/ui/shared/LanguagePickerDialog.tsx',
   'apps/scoreo/src/ui/shared/ListContainer.test.tsx',
   'apps/scoreo/src/ui/shared/ListContainer.tsx',
   'apps/scoreo/src/ui/shared/ListItemRow.tsx',
@@ -42,7 +39,6 @@ const NOT_YET_ON_DESIGN_SYSTEM = [
   'apps/scoreo/src/ui/stats/StatsScreen.tsx',
   'apps/scoreo/src/ui/stats/trophyIcons.ts',
   'apps/scoreo/src/ui/sync/SyncScreen.tsx',
-  'apps/scoreo/src/ui/theme/ThemePickerDialog.tsx',
 ]
 
 export default tseslint.config(
