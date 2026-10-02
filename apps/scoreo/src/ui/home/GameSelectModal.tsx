@@ -17,9 +17,14 @@ import type { GameType } from '../../domain/model/gameType'
 export interface GameSelectModalProps {
   open: boolean
   onClose: () => void
-  gameTypes: GameType[]
-  selectedGameType: GameType | undefined
-  onSelectGameType: (gameType: GameType) => void
+  /**
+   * Every game the user can start: existing game types first, then the
+   * registered modules no game type is bound to yet, which only become a
+   * `GameType` once one of them is actually played.
+   */
+  choices: readonly GameChoice[]
+  selectedValue: string | undefined
+  onSelectChoice: (choice: GameChoice) => void
   onStartMatch: () => void
   error: string | undefined
   showAddGameForm: boolean
@@ -30,22 +35,27 @@ export interface GameSelectModalProps {
   onChangeInlineGameWinCondition: (winCondition: WinCondition) => void
   inlineGameError: string | undefined
   onAddInlineGameType: () => void
-  /**
-   * Modules that can count this many players and have no game type of their own
-   * yet — a module already bound shows up in the list above instead.
-   */
-  availableModules: readonly ScoringModuleManifest[]
-  /** Set when the selected game type is one a module can count. */
+  /** Set when the selected game is one a module can count, bound or not. */
   moduleForSelectedGame: ScoringModuleManifest | undefined
+  /**
+   * Whether the selected players fit the module's range: outside it the game
+   * stays playable in Scoreo, only the module's own screen is off.
+   */
+  moduleFitsPlayers: boolean
   onStartOnModule: (moduleId: string) => void
 }
+
+/** One entry of the game list: a game type, or a module not bound to one yet. */
+export type GameChoice =
+  | { kind: 'gameType'; value: string; label: string; gameType: GameType }
+  | { kind: 'module'; value: string; label: string; manifest: ScoringModuleManifest }
 
 export function GameSelectModal({
   open,
   onClose,
-  gameTypes,
-  selectedGameType,
-  onSelectGameType,
+  choices,
+  selectedValue,
+  onSelectChoice,
   onStartMatch,
   error,
   showAddGameForm,
@@ -56,8 +66,8 @@ export function GameSelectModal({
   onChangeInlineGameWinCondition,
   inlineGameError,
   onAddInlineGameType,
-  availableModules,
   moduleForSelectedGame,
+  moduleFitsPlayers,
   onStartOnModule,
 }: GameSelectModalProps) {
   const { t } = useTranslation()
@@ -77,51 +87,47 @@ export function GameSelectModal({
           <Button variant="secondary" onClick={onClose}>
             {t('common.cancel')}
           </Button>
-          <Button variant={moduleForSelectedGame ? 'secondary' : 'primary'} onClick={onStartMatch}>
+          <Button
+            variant={moduleForSelectedGame && moduleFitsPlayers ? 'secondary' : 'primary'}
+            onClick={onStartMatch}
+          >
             {moduleForSelectedGame ? t('modules.playInScoreo') : t('home.startMatch')}
           </Button>
           {/* A module augments a game, it never replaces it: both ways in stay
-              offered for a game type that has one. */}
+              offered for a game that has one. */}
           {moduleForSelectedGame && (
-            <Button onClick={() => onStartOnModule(moduleForSelectedGame.moduleId)}>
+            <Button
+              disabled={!moduleFitsPlayers}
+              onClick={() => onStartOnModule(moduleForSelectedGame.moduleId)}
+            >
               {t('modules.playOnModule')}
             </Button>
           )}
         </ButtonRow>
       }
     >
-      {gameTypes.length === 0 ? (
+      {choices.length === 0 ? (
         <EmptyState>{t('home.noGameTypesYet')}</EmptyState>
       ) : (
         <Select
           ariaLabel={t('home.selectGameTitle')}
-          value={selectedGameType?.id ?? ''}
+          value={selectedValue ?? ''}
           placeholder={t('home.selectGamePlaceholder')}
-          options={gameTypes.map((gt) => ({ value: gt.id, label: gt.name }))}
-          onChange={(id) => {
-            const gt = gameTypes.find((g) => g.id === id)
-            if (gt) onSelectGameType(gt)
+          options={choices.map((c) => ({ value: c.value, label: c.label }))}
+          onChange={(value) => {
+            const choice = choices.find((c) => c.value === value)
+            if (choice) onSelectChoice(choice)
           }}
         />
       )}
 
-      {availableModules.length > 0 && (
-        <Stack gap={2}>
-          <Text variant="label">{t('modules.availableModules')}</Text>
-          {availableModules.map((manifest) => (
-            <Button
-              key={manifest.moduleId}
-              variant="secondary"
-              width="full"
-              onClick={() => onStartOnModule(manifest.moduleId)}
-            >
-              {`${manifest.displayName} — ${t('modules.playerRange', {
-                min: manifest.minPlayers,
-                max: manifest.maxPlayers,
-              })}`}
-            </Button>
-          ))}
-        </Stack>
+      {moduleForSelectedGame && !moduleFitsPlayers && (
+        <Text variant="hint">
+          {t('modules.playerRange', {
+            min: moduleForSelectedGame.minPlayers,
+            max: moduleForSelectedGame.maxPlayers,
+          })}
+        </Text>
       )}
 
       <Stack direction="row" justify="center">

@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
-import { startMatch } from './helpers/match'
+import { chooseGame, startMatch } from './helpers/match'
 import { addPlayer } from './helpers/players'
 
 /**
@@ -17,9 +17,9 @@ import { addPlayer } from './helpers/players'
  */
 
 interface ModuleUnderTest {
-  /** The button offering the module in "Select a game". */
-  name: RegExp
-  /** From that button to a screen actually wearing the module's stylesheet. */
+  /** The module's entry in the "Select a game" list. */
+  game: string
+  /** From that entry to a screen actually wearing the module's stylesheet. */
   reach: (page: Page) => Promise<void>
   /** One of the module's own surfaces, which must not be the host's. */
   surface: string
@@ -27,7 +27,7 @@ interface ModuleUnderTest {
 
 const MODULES: Record<string, ModuleUnderTest> = {
   'Torī Valley': {
-    name: /La Vallée des Torī/,
+    game: 'La Vallée des Torī',
     reach: async (page) => {
       await page.getByRole('button', { name: 'Start match' }).click()
       await expect(page.getByRole('button', { name: 'Save match' })).toBeVisible()
@@ -35,7 +35,7 @@ const MODULES: Record<string, ModuleUnderTest> = {
     surface: '.module-tori-valley .tv-card',
   },
   '1000 Sabords': {
-    name: /1000 Sabords/,
+    game: '1000 Sabords',
     // No setup step of its own: the module opens straight onto the turn screen,
     // scoreboard included.
     reach: async (page) => {
@@ -44,7 +44,7 @@ const MODULES: Record<string, ModuleUnderTest> = {
     surface: '.module-mille-sabords .ms-table-wrap',
   },
   Skyjo: {
-    name: /Skyjo/,
+    game: 'Skyjo',
     // No setup step of its own: the module opens straight onto the round-entry
     // screen, scoreboard included.
     reach: async (page) => {
@@ -71,7 +71,7 @@ test.beforeEach(async ({ page }) => {
   await page.reload()
 })
 
-for (const [module, { name, reach, surface }] of Object.entries(MODULES)) {
+for (const [module, { game, reach, surface }] of Object.entries(MODULES)) {
   test(`opening ${module} leaves Scoreo’s own theme untouched`, async ({ page }) => {
     const alice = `Alice ${Date.now()}`
     const bob = `Bob ${Date.now()}`
@@ -84,7 +84,8 @@ for (const [module, { name, reach, surface }] of Object.entries(MODULES)) {
     const fontBefore = await page.evaluate(BODY_FONT)
 
     await startMatch(page, [alice, bob])
-    await page.getByRole('button', { name }).click()
+    await chooseGame(page, game)
+    await page.getByRole('button', { name: 'Play on the module' }).click()
     await reach(page)
 
     // The module's stylesheet is loaded now — and must have changed nothing here.
@@ -106,7 +107,8 @@ for (const [module, { name, reach, surface }] of Object.entries(MODULES)) {
     await addPlayer(page, alice)
     await addPlayer(page, bob)
     await startMatch(page, [alice, bob])
-    await page.getByRole('button', { name }).click()
+    await chooseGame(page, game)
+    await page.getByRole('button', { name: 'Play on the module' }).click()
     await reach(page)
 
     const moduleSurface = await page.evaluate(
