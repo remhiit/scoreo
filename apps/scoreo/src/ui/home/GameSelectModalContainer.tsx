@@ -1,7 +1,7 @@
 import type { ScoringModuleManifest } from '@scoreboards/module-api'
 import { forwardRef, useImperativeHandle, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { manifestClaimsGameName, resolveBindingTarget } from '../../application/bindModuleUseCase'
+import { resolveBindingTarget } from '../../application/bindModuleUseCase'
 import { NotFoundError, ValidationError } from '../../domain/model/errors'
 import type { WinCondition } from '../../domain/model/enums'
 import type { GameType } from '../../domain/model/gameType'
@@ -31,9 +31,13 @@ const MODULE_CHOICE_PREFIX = 'module:'
  * every registered module no game type stands for yet, sorted by label.
  *
  * A module is left out when a game type — even an archived one — is bound to
- * it, or when an active game type already carries one of its names (matched by
- * `manifestClaimsGameName`, the rule `BindModuleUseCase` applies): either would
- * list the same game twice.
+ * it, or when the game type its binding would pick by name
+ * (`resolveBindingTarget`, the rules `BindModuleUseCase` applies) is active:
+ * that game then offers the module itself (`moduleClaimingGameType`). In every
+ * other case the module stays listed, so it is always reachable — including
+ * when the binding would pick an archived homonym, which launching it then
+ * reactivates. Two same-name games may then show side by side; merging them is
+ * left to the Games screen.
  */
 function buildChoices(allGameTypes: readonly GameType[]): GameChoice[] {
   const active = allGameTypes.filter((gt) => gt.active)
@@ -44,11 +48,13 @@ function buildChoices(allGameTypes: readonly GameType[]): GameChoice[] {
     label: gt.name,
     gameType: gt,
   }))
-  const moduleChoices: GameChoice[] = MODULE_MANIFESTS.filter(
-    (m) =>
-      resolveBindingTarget(m, allGameTypes)?.kind !== 'bound' &&
-      !active.some((gt) => manifestClaimsGameName(m, gt.name)),
-  )
+  const moduleChoices: GameChoice[] = MODULE_MANIFESTS.filter((m) => {
+    const target = resolveBindingTarget(m, allGameTypes)
+    if (target === undefined) return true
+    // Bound, or offered on the active game type its binding would pick
+    // (`moduleClaimingGameType`): listing the module too would show it twice.
+    return target.kind === 'byName' && !target.gameType.active
+  })
     .map((m): GameChoice => ({
       kind: 'module',
       value: `${MODULE_CHOICE_PREFIX}${m.moduleId}`,

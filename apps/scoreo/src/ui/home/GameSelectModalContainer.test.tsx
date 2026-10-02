@@ -146,6 +146,27 @@ describe('GameSelectModalContainer', () => {
     expect(within(dialog).getByRole('button', { name: 'Start match' })).toBeEnabled()
   })
 
+  it('keeps the module reachable through its own entry when the binding would pick an archived homonym', () => {
+    const repo = new InMemoryGameTypeRepository()
+    repo.save(gameType({ id: 'gt-old', name: 'Skyjo', active: false }))
+    repo.save(gameType({ id: 'gt-new', name: 'skyjo' }))
+    const bound: GameType[] = []
+    const { dialog, options, select } = renderModal(repo, ['p1', 'p2'], {
+      onStartModule: (moduleId) => {
+        const manifest = MODULE_MANIFESTS.find((m) => m.moduleId === moduleId)
+        if (manifest) bound.push(new BindModuleUseCase(repo).invoke(manifest))
+      },
+    })
+
+    expect(options()).toEqual(['skyjo', ...sortedModuleLabels])
+
+    select('Skyjo')
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Play on the module' }))
+
+    expect(bound.map((gt) => gt.id)).toEqual(['gt-old'])
+    expect(repo.findById('gt-old')).toMatchObject({ moduleId: 'skyjo', active: true })
+  })
+
   it('offers the module on the unbound homonym the binding picks, and binds that very game', () => {
     const repo = new InMemoryGameTypeRepository()
     repo.save(gameType({ id: 'gt-new', name: 'skyjo' }))
