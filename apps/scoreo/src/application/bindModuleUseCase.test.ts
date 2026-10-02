@@ -2,7 +2,11 @@ import type { ScoringModuleManifest } from '@scoreboards/module-api'
 import { describe, expect, it } from 'vitest'
 import type { GameType } from '../domain/model/gameType'
 import { InMemoryGameTypeRepository } from '../infrastructure/testing/inMemoryGameTypeRepository'
-import { BindModuleUseCase } from './bindModuleUseCase'
+import {
+  BindModuleUseCase,
+  manifestClaimsGameName,
+  resolveBindingTarget,
+} from './bindModuleUseCase'
 
 const manifest: ScoringModuleManifest = {
   moduleId: 'test-module',
@@ -160,5 +164,51 @@ describe('BindModuleUseCase', () => {
       expect(repo.findById('g1')?.moduleId).toBe('other-module')
       expect(repo.getAll(true)).toHaveLength(2)
     })
+  })
+})
+
+describe('manifestClaimsGameName', () => {
+  it('matches every alias, case-insensitive, ignoring surrounding blanks', () => {
+    expect(manifestClaimsGameName(manifest, 'Test Game')).toBe(true)
+    expect(manifestClaimsGameName(manifest, '  le jeu de TEST ')).toBe(true)
+    expect(manifestClaimsGameName(manifest, 'Test  Game')).toBe(false)
+    expect(manifestClaimsGameName(manifest, 'Another Game')).toBe(false)
+  })
+})
+
+describe('resolveBindingTarget', () => {
+  it('returns the game already bound to the module, before any name match (rule 1)', () => {
+    const byName = gameType({ id: 'g1', name: 'Test Game' })
+    const bound = gameType({ id: 'g2', name: 'Renamed', moduleId: 'test-module', active: false })
+
+    expect(resolveBindingTarget(manifest, [byName, bound])).toEqual({
+      kind: 'bound',
+      gameType: bound,
+    })
+  })
+
+  it('returns the first name match, archived games included (rule 2)', () => {
+    const archived = gameType({ id: 'g1', name: 'Test Game', active: false })
+    const active = gameType({ id: 'g2', name: 'test game' })
+
+    expect(resolveBindingTarget(manifest, [archived, active])).toEqual({
+      kind: 'byName',
+      gameType: archived,
+    })
+  })
+
+  it('returns undefined when the binding would create a game (rule 3)', () => {
+    expect(resolveBindingTarget(manifest, [])).toBeUndefined()
+  })
+
+  it('previews exactly the game type invoke() binds', () => {
+    const repo = new InMemoryGameTypeRepository()
+    repo.save(gameType({ id: 'g1', name: 'Le Jeu de Test', active: false }))
+    repo.save(gameType({ id: 'g2', name: 'Test Game' }))
+
+    const preview = resolveBindingTarget(manifest, repo.getAll(true))
+    const bound = new BindModuleUseCase(repo).invoke(manifest)
+
+    expect(preview?.gameType.id).toBe(bound.id)
   })
 })

@@ -36,10 +36,11 @@ function buildProps(overrides: Partial<HomeScreenProps> = {}) {
     mergePlayersUseCase: new MergePlayersUseCase(playerRepo, matchRepo, draftRepo),
     cleanupInactivePlayers: new CleanupInactivePlayersUseCase(playerRepo, matchRepo),
     getTrophies: new GetTrophiesUseCase(matchRepo, gameTypeRepo, playerRepo),
-    getGameTypes: () => getGameTypesUseCase.invoke(),
+    getGameTypes: (includeInactive) => getGameTypesUseCase.invoke(includeInactive),
     onAddGameType: (name, winCondition) => addGameTypeUseCase.invoke(name, winCondition),
     onStartGame,
     onStartModule,
+    onStartModuleInScoreo: vi.fn(),
     ...overrides,
   }
   return { props, playerRepo, matchRepo, gameTypeRepo, draftRepo, onStartGame }
@@ -156,8 +157,6 @@ describe('HomeScreen', () => {
     fireEvent.click(screen.getByText('Alice', { selector: '.sc-row__title' }))
     fireEvent.click(screen.getByText('Bob', { selector: '.sc-row__title' }))
     fireEvent.click(screen.getByText('New Match'))
-
-    expect(screen.getByText('No game types yet. Add one.')).toBeInTheDocument()
 
     fireEvent.click(screen.getByText('Add new game'))
     fireEvent.change(screen.getByPlaceholderText('Game name'), { target: { value: 'Chess' } })

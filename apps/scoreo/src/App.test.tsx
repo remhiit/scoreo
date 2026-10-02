@@ -1,5 +1,5 @@
 import type { ScoringModuleScreenProps } from '@scoreboards/module-api'
-import { act, fireEvent, render, screen } from '@testing-library/react'
+import { act, fireEvent, render, screen, within } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { App } from './App'
 
@@ -127,6 +127,36 @@ describe('App', () => {
 
     fireEvent.click(screen.getByText('History', { selector: '.sc-seg__option' }))
     expect(document.querySelector('.sc-hcell')).toHaveTextContent('Alice')
+  })
+
+  it('Home: "Play in Scoreo" on a module never played binds it, then opens the generic score screen', () => {
+    localStorage.setItem(
+      'scoreo_players',
+      JSON.stringify([
+        { id: 'p1', name: 'Alice', active: true },
+        { id: 'p2', name: 'Bob', active: true },
+      ]),
+    )
+    render(<App />)
+    fireEvent.click(screen.getByText('Alice', { selector: '.sc-row__title' }))
+    fireEvent.click(screen.getByText('Bob', { selector: '.sc-row__title' }))
+    fireEvent.click(screen.getByText('New Match'))
+
+    const dialog = screen.getByRole('dialog')
+    const combobox = within(dialog).getByRole('combobox')
+    const option = within(combobox).getByRole('option', { name: 'Skyjo' }) as HTMLOptionElement
+    fireEvent.change(combobox, { target: { value: option.value } })
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Play in Scoreo' }))
+
+    const gameTypes = JSON.parse(localStorage.getItem('scoreo_gametypes') ?? '[]') as {
+      id: string
+      name: string
+      moduleId: string | null
+    }[]
+    expect(gameTypes).toHaveLength(1)
+    expect(gameTypes[0]).toMatchObject({ name: 'Skyjo', moduleId: 'skyjo' })
+    expect(window.location.hash).toBe(`#/score/${gameTypes[0].id}/p1,p2`)
+    expect(screen.getByText('Finish match')).toBeInTheDocument()
   })
 
   it('clicking the title navigates Home from any screen', () => {

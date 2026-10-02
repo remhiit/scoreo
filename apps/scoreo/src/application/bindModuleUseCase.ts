@@ -4,6 +4,50 @@ import type { GameTypeRepository } from '../domain/port/gameTypeRepository'
 import { newId } from './idGenerator'
 
 /**
+ * How game names are compared when matching a game type to a module:
+ * case-insensitive, ignoring surrounding blanks.
+ */
+export function normalizeGameName(name: string): string {
+  return name.trim().toLowerCase()
+}
+
+/**
+ * Whether `name` is one of the names the module claims. Every alias counts, not
+ * just the display name: a history imported from an older export may carry a
+ * name the module has since stopped showing.
+ */
+export function manifestClaimsGameName(manifest: ScoringModuleManifest, name: string): boolean {
+  const normalized = normalizeGameName(name)
+  return manifest.gameNames.some((n) => normalizeGameName(n) === normalized)
+}
+
+/** The existing game type `BindModuleUseCase` would bind a module to, and by which rule. */
+export type BindingTarget =
+  { kind: 'bound'; gameType: GameType } | { kind: 'byName'; gameType: GameType }
+
+/**
+ * Rules 1 and 2 of `BindModuleUseCase`, without writing anything: the game type
+ * binding `manifest` would land on, or `undefined` when it would create one
+ * (rule 3). `allGameTypes` must be `GameTypeRepository.getAll(true)` — archived
+ * games included, in repository order, since rule 2 takes the *first* match.
+ *
+ * Shared so a caller can tell in advance which game a binding will pick (the
+ * game selection modal only offers a module on the game type it resolves to).
+ */
+export function resolveBindingTarget(
+  manifest: ScoringModuleManifest,
+  allGameTypes: readonly GameType[],
+): BindingTarget | undefined {
+  const bound = allGameTypes.find((gt) => gt.moduleId === manifest.moduleId)
+  if (bound) return { kind: 'bound', gameType: bound }
+
+  const byName = allGameTypes.find((gt) => manifestClaimsGameName(manifest, gt.name))
+  if (byName) return { kind: 'byName', gameType: byName }
+
+  return undefined
+}
+
+/**
  * Returns the `GameType` a module counts, binding the two on first use.
  *
  * Nothing is materialized when the app starts: a fresh profile shows no game
@@ -15,7 +59,8 @@ import { newId } from './idGenerator'
  *    `moduleId` onto it, the common case for a history created by a v1.1 import;
  * 3. otherwise create the game now, from the manifest.
  *
- * Idempotent: rule 1 catches every call after the first.
+ * Idempotent: rule 1 catches every call after the first. Rules 1 and 2 are
+ * `resolveBindingTarget`, so a caller can preview the outcome without binding.
  */
 export class BindModuleUseCase {
   constructor(private readonly repository: GameTypeRepository) {}
@@ -25,15 +70,10 @@ export class BindModuleUseCase {
     // game the user only meant to hide.
     const all = this.repository.getAll(true)
 
-    const bound = all.find((gt) => gt.moduleId === manifest.moduleId)
-    if (bound) return this.reactivate(bound)
-
-    // Every alias counts, not just the display name: a history imported from an
-    // older export may carry a name the module has since stopped showing.
-    const aliases = new Set(manifest.gameNames.map((n) => n.trim().toLowerCase()))
-    const byName = all.find((gt) => aliases.has(gt.name.trim().toLowerCase()))
-    if (byName) {
-      const stamped: GameType = { ...byName, moduleId: manifest.moduleId, active: true }
+    const target = resolveBindingTarget(manifest, all)
+    if (target?.kind === 'bound') return this.reactivate(target.gameType)
+    if (target?.kind === 'byName') {
+      const stamped: GameType = { ...target.gameType, moduleId: manifest.moduleId, active: true }
       this.repository.save(stamped)
       return stamped
     }
