@@ -14,6 +14,10 @@
 //     Valley shipped from #331 to #348 with every player card laid out in a row
 //     for exactly that reason.
 //
+// Both `src/styles.css` (a module still wearing its own look) and every sheet
+// under `src/design/` (a module composing the design system, its game pieces
+// only) are held to it.
+//
 // See doc/technical/module-contract.md.
 import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
@@ -94,20 +98,39 @@ function hostClasses() {
   return new Set(files.flatMap((file) => [...classNames(readFileSync(file, 'utf8'))]))
 }
 
-function moduleStylesheets() {
-  return readdirSync(PACKAGES_DIR)
+/**
+ * Every stylesheet a scoring module ships: its legacy `src/styles.css` while it
+ * still has one, plus every sheet under `src/design/` — the one folder where a
+ * module composing the design system writes its game pieces' CSS. Either may be
+ * absent; a module with neither simply contributes nothing.
+ */
+export function moduleStylesheets(packagesDir = PACKAGES_DIR) {
+  return modulePackages(packagesDir).flatMap((dir) => {
+    const legacy = join(dir, 'src/styles.css')
+    const design = join(dir, 'src/design')
+    return [
+      ...(existsSync(legacy) ? [legacy] : []),
+      ...(existsSync(design) ? cssFiles(design).sort() : []),
+    ]
+  })
+}
+
+function modulePackages(packagesDir) {
+  return readdirSync(packagesDir)
     .filter((name) => name.startsWith('module-') && name !== 'module-api')
-    .map((name) => join(PACKAGES_DIR, name, 'src/styles.css'))
+    .sort()
+    .map((name) => join(packagesDir, name))
 }
 
 function main() {
   const host = hostClasses()
-  const sheets = moduleStylesheets()
 
-  if (sheets.length === 0) {
-    console.error('No module stylesheet found under packages/ — has the layout changed?')
+  if (modulePackages(PACKAGES_DIR).length === 0) {
+    console.error('No module package found under packages/ — has the layout changed?')
     process.exit(1)
   }
+
+  const sheets = moduleStylesheets()
 
   const violations = sheets.flatMap((file) =>
     findViolations(readFileSync(file, 'utf8'), file, host),

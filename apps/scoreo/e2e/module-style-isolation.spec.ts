@@ -3,9 +3,10 @@ import { chooseGame, startMatch } from './helpers/match'
 import { addPlayer } from './helpers/players'
 
 /**
- * A scoring module keeps the identity of the game it counts — Torī Valley's
- * warm palette stays Torī Valley's inside Scoreo, 1000 Sabords' night sky stays
- * its own. That only works as long as none of it escapes the module's screen.
+ * A scoring module adopts Scoreo's identity by composing the design system;
+ * until it has migrated, it still wears its legacy palette — Torī Valley's warm
+ * washi, 1000 Sabords' night sky. Either way, none of a module's own CSS may
+ * escape the module's screen.
  *
  * The risk is concrete: the stylesheets name tokens alike (`--color-primary`,
  * `--space-5`, `--radius-lg`…) with different values, and a stylesheet is not
@@ -21,8 +22,18 @@ interface ModuleUnderTest {
   game: string
   /** From that entry to a screen actually wearing the module's stylesheet. */
   reach: (page: Page) => Promise<void>
-  /** One of the module's own surfaces, which must not be the host's. */
+  /**
+   * The module's reference surface: its own colour while `identity` is `'own'`,
+   * the host's `--surface-card` once it is `'scoreo'`.
+   */
   surface: string
+  /**
+   * Whose look the module wears. `'own'`: its legacy palette, kept apart from
+   * Scoreo's. `'scoreo'`: it composes the design system and adopts the host's
+   * identity (doc/technical/module-contract.md). Every module moves to
+   * `'scoreo'` with its migration; a new module starts there.
+   */
+  identity: 'own' | 'scoreo'
 }
 
 const MODULES: Record<string, ModuleUnderTest> = {
@@ -33,6 +44,7 @@ const MODULES: Record<string, ModuleUnderTest> = {
       await expect(page.getByRole('button', { name: 'Save match' })).toBeVisible()
     },
     surface: '.module-tori-valley .tv-card',
+    identity: 'own',
   },
   '1000 Sabords': {
     game: '1000 Sabords',
@@ -42,6 +54,7 @@ const MODULES: Record<string, ModuleUnderTest> = {
       await expect(page.locator('.module-mille-sabords .ms-table-wrap')).toBeVisible()
     },
     surface: '.module-mille-sabords .ms-table-wrap',
+    identity: 'own',
   },
   Skyjo: {
     game: 'Skyjo',
@@ -51,6 +64,7 @@ const MODULES: Record<string, ModuleUnderTest> = {
       await expect(page.locator('.module-skyjo .sj-table-wrap')).toBeVisible()
     },
     surface: '.module-skyjo .sj-table-wrap',
+    identity: 'own',
   },
 }
 
@@ -71,7 +85,22 @@ test.beforeEach(async ({ page }) => {
   await page.reload()
 })
 
-for (const [module, { game, reach, surface }] of Object.entries(MODULES)) {
+const openModule = async (page: Page, game: string, reach: (page: Page) => Promise<void>) => {
+  const alice = `Alice ${Date.now()}`
+  const bob = `Bob ${Date.now()}`
+
+  await addPlayer(page, alice)
+  await addPlayer(page, bob)
+  await startMatch(page, [alice, bob])
+  await chooseGame(page, game)
+  await page.getByRole('button', { name: 'Play on the module' }).click()
+  await reach(page)
+}
+
+const surfaceColour = (page: Page, surface: string) =>
+  page.evaluate(`getComputedStyle(document.querySelector('${surface}')).backgroundColor`)
+
+for (const [module, { game, reach, surface, identity }] of Object.entries(MODULES)) {
   test(`opening ${module} leaves Scoreo’s own theme untouched`, async ({ page }) => {
     const alice = `Alice ${Date.now()}`
     const bob = `Bob ${Date.now()}`
@@ -100,22 +129,24 @@ for (const [module, { game, reach, surface }] of Object.entries(MODULES)) {
     expect(await page.evaluate(BODY_FONT)).toBe(fontBefore)
   })
 
-  test(`${module} wears its own colours, not Scoreo’s`, async ({ page }) => {
-    const alice = `Alice ${Date.now()}`
-    const bob = `Bob ${Date.now()}`
+  if (identity === 'own') {
+    test(`${module} wears its own colours, not Scoreo’s`, async ({ page }) => {
+      await openModule(page, game, reach)
 
-    await addPlayer(page, alice)
-    await addPlayer(page, bob)
-    await startMatch(page, [alice, bob])
-    await chooseGame(page, game)
-    await page.getByRole('button', { name: 'Play on the module' }).click()
-    await reach(page)
+      // The module's own surface, whatever flavor Scoreo is wearing.
+      expect(await surfaceColour(page, surface)).not.toBe(
+        await page.evaluate(readToken('--surface-card')),
+      )
+    })
+  } else {
+    test(`${module} wears Scoreo’s colours`, async ({ page }) => {
+      await openModule(page, game, reach)
 
-    const moduleSurface = await page.evaluate(
-      `getComputedStyle(document.querySelector('${surface}')).backgroundColor`,
-    )
-
-    // The module's own surface, whatever flavor Scoreo is wearing.
-    expect(moduleSurface).not.toBe(await page.evaluate(readToken('--surface-card')))
-  })
+      // Composed from the design system: the host's card surface, in whichever
+      // flavor Scoreo is wearing.
+      expect(await surfaceColour(page, surface)).toBe(
+        await page.evaluate(readToken('--surface-card')),
+      )
+    })
+  }
 }

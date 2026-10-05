@@ -12,6 +12,7 @@
     "typecheck": "tsc -b --noEmit"
   },
   "dependencies": {
+    "@scoreboards/design-system": "workspace:*",
     "@scoreboards/module-api": "workspace:*",
     "@scoreboards/shared-domain": "workspace:*",
     "i18next": "^26.4.2",

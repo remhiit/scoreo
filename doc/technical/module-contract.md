@@ -107,7 +107,7 @@ not anything was saved.
 cost real bugs here. This section says what a module *is*; the skill says what to type.
 
 A module is a package, and **everything about the game it counts lives in that package** — its
-source, its stylesheet, its tests, and its documentation under `packages/module-<game>/doc/`: rules,
+source, its game pieces, its tests, and its documentation under `packages/module-<game>/doc/`: rules,
 user guide, resources, technical notes. The workspace's own `doc/` keeps what belongs to the
 repository as a whole. A module you delete takes its documentation with it, and nothing is left
 behind describing a game nobody can play.
@@ -230,42 +230,77 @@ and forwards `highlighted={match.id === highlightMatchId}` to that row's design-
 later, unrelated visit. Exiting without having saved anything this session keeps the pre-#390
 behaviour: `History` when reopening an existing match, `Home` for a new one.
 
-## A module's look is its own, and stays its own
+## A module wears Scoreo's look
 
-A module keeps the identity of the game it counts: Torī Valley wears its warm washi palette inside
-Scoreo, not the flavor and accent the user picked for the host.
+A module adopts **Scoreo's identity**: inside the app it wears the flavor and accent the user picked,
+not a palette of its own. Its screen **composes `@scoreboards/design-system`** the way the host does —
+no `className`, no `style`, no `lucide-react` import, only the system's components and `<Icon />` —
+and the design system's **semantic** tokens (`--surface-*`, `--text-*`, `--color-*`, `--space-*`,
+`--radius-*`) are the only values it reads. `@scoreboards/design-system` is a `workspace:*` dependency
+of every module package.
 
-That only holds if none of it escapes. **Scope every rule of a module's stylesheet under a class of
-its own** (`.module-<moduleId>`), carried by whatever the module renders. A bare `:root`, or a bare
-element selector like `input` or `label`, applies to the whole document — and a stylesheet is never
-unloaded on navigation, so the leak follows the player for the rest of the session.
+### Game pieces live in `src/design/`
 
-The names collide by design: both sides speak of `--color-primary`, `--space-5`, `--radius-lg`, with
-different values. `apps/scoreo/e2e/module-style-isolation.spec.ts` guards the boundary for **every**
-registered module — it runs its two checks over a table of them, so a new module is a row there, not
-a new test.
+Not everything a game draws belongs in the design system: a die face, a card, a score cell exist for
+one game only. Those pieces live in the module's **`src/design/`** folder — the one place in a module
+where `className` and CSS may be written:
 
-Scoping runs **one way**. It keeps the module out of the host; nothing keeps the host out of the
-module. Host rules land on a module's markup like any other — Scoreo's old `theme.css` styled plain
-`.card` and `.empty` — and a class name the two happen to share is settled
-property by property: the module's `.module-<id> .card` wins the ones it declares, the host's `.card`
-supplies the rest. Torī Valley shipped for a while with every player card laid out in a row for
-exactly that reason, its own sheet never having had to declare `display`.
+- every rule scoped under `.module-<moduleId>`, carried by the module's root;
+- every class prefixed with the module's own prefix (`ms-` for 1000 Sabords, `tv-` for Torī Valley,
+  `sj-` for Skyjo), never `sc-`;
+- only the design system's semantic tokens — never a raw `--ctp-*` value, never a raw value equal to
+  a token.
 
-Hence the second half of the rule: **every class a module renders carries a prefix of its own** —
-`ms-` for 1000 Sabords, `tv-` for Torī Valley, `sj-` for Skyjo. The scope and the prefix guard
-opposite directions of the same border, and only the pair of them makes a module's look actually
-its own.
+**A component two modules need moves into the design system.** The second module to want a piece is
+the signal: it is promoted (renamed `sc-`, with its CSS and test, in the right atomic layer) and both
+modules compose it from there. `src/design/` holds what is specific to one game, never a component
+waiting to be shared.
 
-`scripts/check-module-styles.mjs` holds both halves — it fails on a rule that is not scoped under
-`.module-<moduleId>` and on a class name Scoreo also styles (every host class now lives in
-`packages/design-system/`, prefixed `sc-`) — and runs in CI. The design system's one deliberate
-reach into modules is the pair of `h1`/`h2` defaults the host used to set globally, now scoped to a
-module's root and kept until the modules compose the design system themselves. What it cannot see,
-`apps/scoreo/tests/visual/` does: see [`visual-testing.md`](visual-testing.md).
+### The border, both ways
 
-Anything that must paint before scripts run belongs in the module's own shell, not in the
-stylesheet: the sheet ships inside the JS chunk, so it arrives too late for a splash.
+The CSS a module still writes must never escape it. A bare `:root`, or a bare element selector like
+`input` or `label`, applies to the whole document — and a stylesheet is never unloaded on navigation,
+so the leak follows the player for the rest of the session. Hence the scope.
+
+Scoping runs **one way**: it keeps the module out of the host; nothing keeps the host out of the
+module. A class name the two happen to share is settled property by property — Scoreo's old
+`theme.css` styled plain `.card` and `.empty`, and Torī Valley shipped for a while with every player
+card laid out in a row because its own `.module-tori-valley .card` never declared `display`. Hence the
+prefix. The scope and the prefix guard opposite directions of the same border; only the pair holds it.
+
+### What enforces it
+
+- `eslint.config.js` — `MODULES_COMPOSING_DS` lists the modules that compose the design system. For
+  each, the host's `className`/`style`/`lucide-react` rules apply to `packages/module-<id>/src/**`,
+  except `src/design/**` and component tests (`*.test.tsx`). A listed id with no
+  `packages/module-<id>/` makes the config throw rather than silently lint nothing.
+- `scripts/check-module-styles.mjs` — every `src/design/**/*.css` (and a legacy `src/styles.css`,
+  while one remains) must be scoped under `.module-<moduleId>` and share no class name with the
+  design system. Runs in CI.
+- `scripts/check-design-tokens.mjs` — a raw px/duration/easing value equal to a token fails in
+  `src/design/**/*.css` exactly as in the design system.
+- `apps/scoreo/e2e/module-style-isolation.spec.ts` — a table of every registered module, so a new
+  module is a row there, not a new test. Each row carries `identity`: `'scoreo'` checks that the
+  module's reference surface wears the host's `--surface-card`; for every row, opening the module
+  must leave Scoreo's own theme untouched.
+- What none of these can see, `apps/scoreo/tests/visual/` does: see
+  [`visual-testing.md`](visual-testing.md).
+
+### Transition
+
+The three existing modules predate this rule and still wear their own palette from a single
+`src/styles.css` (legacy tokens named like the host's — `--color-primary`, `--space-5` — with
+different values, which is why the border matters so much for them). Each migrates in its own issue:
+it composes the design system, moves its game pieces to `src/design/`, deletes `src/styles.css`, joins
+`MODULES_COMPOSING_DS`, and its row in the e2e table switches from `identity: 'own'` (its surface must
+*not* be the host's) to `identity: 'scoreo'`. A new module starts directly in the target state.
+
+Until then, the design system's one deliberate reach into modules — the pair of `h1`/`h2` defaults
+the host used to set globally, scoped to a module's root — stays, and is removed once every module
+composes the system.
+
+Anything that must paint before scripts run belongs in the module's own shell, not in a stylesheet:
+the sheet ships inside the JS chunk, so it arrives too late for a splash.
 
 ## What is deliberately _not_ shared
 

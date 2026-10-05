@@ -36,7 +36,8 @@ run" step (`doc/automation/skill-contract.md` §1.4).
 `packages/module-<game>/`, modelled on the two that exist:
 
 - `package.json` — **no `build` script, no `vite` dependency.** A module builds nothing: Scoreo
-  bundles it. Scripts are `test`, `test:watch`, `typecheck`.
+  bundles it. Scripts are `test`, `test:watch`, `typecheck`. Dependencies include
+  `"@scoreboards/design-system": "workspace:*"`: the screen composes it (step 5).
 - `vitest.config.ts` — declares `@vitejs/plugin-react` itself; there is no `vite.config.ts` to extend.
 - A tsconfig. The two existing modules differ — `module-mille-sabords` has a single
   `tsconfig.json`, `module-tori-valley` splits `src` and `vitest.config.ts` into project references —
@@ -83,17 +84,39 @@ Conforms to `ScoringModuleScreenProps`, MVI like every Scoreo screen: a pure red
   in the state makes the reducer's output depend on who else holds a reference.
 - The result goes back through `host.saveMatch`, and must satisfy `assertRoundsSumToRanking`.
 
-### 5. The styles — the leak trap, both ways
+### 5. The look — compose the design system, game pieces in `src/design/`
 
-Every rule scoped under `.module-<moduleId>`, **and** every class prefixed (`ms-`, `tv-`).
+A new module adopts Scoreo's identity: no palette of its own. Its screen **composes
+`@scoreboards/design-system`** exactly as the host does — no `className`, no `style`, no
+`lucide-react` import (`<Icon name="…" />` instead) — and the design system's semantic tokens are the
+only colours, spacings and radii it uses. The contract is `doc/technical/module-contract.md` §
+"A module wears Scoreo's look".
+
+- **Add the module's id to `MODULES_COMPOSING_DS` in `eslint.config.js`** — from the first commit.
+  That list is what applies the host's lint rules to `packages/module-<id>/src/`; a module left off
+  it is linted like a legacy one and can write `className` anywhere. A listed id with no package
+  behind it makes the config throw, so a typo cannot silently lint nothing.
+- **Game pieces live in `src/design/`** — a die, a card, a score cell the design system has no
+  component for. That folder (and the component tests) is the only place the lint rule lets
+  `className` through. Its CSS stays under the border rules below, and reads only the design
+  system's semantic tokens (`--surface-*`, `--text-*`, `--color-*`, `--space-*`, `--radius-*`): a
+  raw value equal to a token fails `scripts/check-design-tokens.mjs`, which inspects
+  `packages/module-*/src/design/**/*.css` too.
+- **A piece a second module needs moves into the design system** (with its CSS and test, renamed
+  `sc-`), and both modules compose it from there. `src/design/` holds what is specific to one game,
+  never a shared component waiting to be found.
+
+The border rules still hold for every sheet under `src/design/`: every rule scoped under
+`.module-<moduleId>`, **and** every class prefixed (`ms-`, `tv-`, `sj-`, never `sc-`).
 
 Scoping protects the host from the module. It does **nothing** in the other direction: Scoreo's
-`theme.css` styles plain `.card` and `.empty`, and a module reusing those names inherits whatever it
-does not itself declare. Torī Valley did exactly that, and every player card was laid out in a row
+old `theme.css` styled plain `.card` and `.empty`, and a module reusing those names inherited whatever
+it did not itself declare. Torī Valley did exactly that, and every player card was laid out in a row
 on the deployed site for 35 hours (#331 → #348) before anything could see it: no static check knew,
 and the visual suite was still photographing the module's own standalone shell.
 
-`scripts/check-module-styles.mjs` fails on either breach, and runs in CI.
+`scripts/check-module-styles.mjs` fails on either breach — in `src/design/**/*.css` and in a
+legacy `src/styles.css` alike — and runs in CI.
 
 ### 6. Registration
 
@@ -106,8 +129,9 @@ Until both are done the screen is reachable by no route at all, and every test s
 
 A new module is a **row in an existing table**, not a new test:
 
-- `apps/scoreo/e2e/module-style-isolation.spec.ts` — one entry: how to reach the screen, and a
-  surface of the module's whose colour must not be the host's.
+- `apps/scoreo/e2e/module-style-isolation.spec.ts` — one entry: how to reach the screen, a
+  reference surface, and `identity: 'scoreo'` — the surface must then wear the host's
+  `--surface-card` (`'own'` is only for the modules not migrated yet).
 - `apps/scoreo/tests/visual/` — one spec plus baselines, recorded **in the container**
   (`pnpm --filter scoreo test:visual:container --update-snapshots`), never on your own machine.
   Read `doc/technical/visual-testing.md` first; two traps live there:
@@ -185,12 +209,16 @@ allowed fix round — this step is satisfied and § Sorties obligatoires can be 
   `src/styles.d.ts`, `src/index.ts` exporting only the manifest and module).
 - `src/module.ts` manifest and a `src/ui/module/` reducer + screen conforming
   to `ScoringModuleScreenProps` (step 3–4).
-- Styles scoped under `.module-<moduleId>` with prefixed classes (step 5).
+- `@scoreboards/design-system` in the module's dependencies (step 1), its id
+  in `MODULES_COMPOSING_DS` (`eslint.config.js`), its screen composing the
+  design system, and its game pieces only under `src/design/`, CSS scoped
+  under `.module-<moduleId>` with prefixed classes and semantic tokens only
+  (step 5).
 - The module registered in `apps/scoreo/src/modules/registry.ts` and the
   workspace dependency added to `apps/scoreo/package.json` (step 6).
-- `apps/scoreo/e2e/module-style-isolation.spec.ts` and
-  `apps/scoreo/tests/visual/` each carry a new entry/spec with baselines
-  recorded in the container (step 7).
+- `apps/scoreo/e2e/module-style-isolation.spec.ts` carries a new row with
+  `identity: 'scoreo'`, and `apps/scoreo/tests/visual/` a new spec with
+  baselines recorded in the container (step 7).
 - `packages/module-<game>/doc/` populated and one row added to
   `doc/reference.md` (step 8).
 - Step 9's quality review passed: both isolated sub-agents (contract-
@@ -203,7 +231,8 @@ allowed fix round — this step is satisfied and § Sorties obligatoires can be 
 `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build`, the e2e suite and
 the visual suite are all green; the module's domain is absent from the
 host's main bundle, verified with the build-and-grep of step 2 (not by
-reading); `scripts/check-module-styles.mjs` passes; and the target scenario
+reading); `scripts/check-module-styles.mjs` and
+`scripts/check-design-tokens.mjs` pass; and the target scenario
 works end to end: home → players → new match → the game → score → the match
 is in Scoreo's history, and reopening it comes back on the module with its
 grid restored.

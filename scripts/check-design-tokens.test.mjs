@@ -1,5 +1,8 @@
+import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { dirname, join } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { findViolations } from './check-design-tokens.mjs'
+import { cssRoots, findCssFiles, findViolations } from './check-design-tokens.mjs'
 
 describe('findViolations', () => {
   it('flags a padding value that exactly matches a spacing token', () => {
@@ -96,5 +99,41 @@ describe('findViolations', () => {
   it('ignores a declaration inside a comment', () => {
     const css = '.card {\n  /* padding: 16px; */\n  color: red;\n}\n'
     expect(findViolations(css, 'f.css')).toEqual([])
+  })
+})
+
+describe('cssRoots', () => {
+  function packagesTree(files) {
+    const root = mkdtempSync(join(tmpdir(), 'design-tokens-'))
+    for (const [path, content] of Object.entries(files)) {
+      mkdirSync(dirname(join(root, path)), { recursive: true })
+      writeFileSync(join(root, path), content)
+    }
+    return root
+  }
+
+  it('covers the design system and each module’s src/design/, nothing else', () => {
+    const root = packagesTree({
+      'design-system/src/atoms/button.css': '',
+      'module-a/src/design/Card.css': '',
+      'module-a/src/styles.css': '',
+      'module-b/src/index.ts': '',
+      'module-api/src/design/x.css': '',
+    })
+    expect(cssRoots(root, join(root, 'design-system/src'))).toEqual([
+      join(root, 'design-system/src'),
+      join(root, 'module-a/src/design'),
+    ])
+  })
+
+  it('flags a raw value equal to a token in a module’s src/design/', () => {
+    const root = packagesTree({
+      'module-a/src/design/Card.css': '.module-a .a-card {\n  padding: 16px;\n}\n',
+    })
+    const [designRoot] = cssRoots(root, join(root, 'design-system/src'))
+    const [file] = findCssFiles(designRoot)
+    expect(findViolations(readFileSync(file, 'utf8'), file)).toEqual([
+      { file, line: 2, property: 'padding', found: '16px', expected: 'var(--space-4)' },
+    ])
   })
 })
