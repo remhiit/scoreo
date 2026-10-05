@@ -58,7 +58,10 @@ async function removeLabel(issueNumber, label) {
   }
 }
 
-const QUEUE_LABELS = ['automation:queued', 'automation:ready', 'automation:in-progress']
+// `automation:manual` : un run manuel du coordinateur possède déjà l'issue,
+// hors file — la remettre en `automation:queued` la ferait repartir dans le
+// pipeline des routines.
+const QUEUE_LABELS = ['automation:queued', 'automation:ready', 'automation:in-progress', 'automation:manual']
 
 // Pure decision: given a dependent's current labels and its native
 // `blocked_by` list (each with at least a `state`), decide the two

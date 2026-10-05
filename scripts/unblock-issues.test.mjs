@@ -37,6 +37,13 @@ describe('decideUnblockActions', () => {
     })
   })
 
+  it('automation:manual + blocked, blockers closed: does not re-queue, but does unblock', () => {
+    expect(decideUnblockActions(['automation:manual', 'blocked'], [CLOSED])).toEqual({
+      shouldQueue: false,
+      shouldUnblock: true,
+    })
+  })
+
   it('automation:in-progress + blocked, blockers closed: does not re-queue, but does unblock', () => {
     expect(decideUnblockActions(['automation:in-progress', 'blocked'], [CLOSED])).toEqual({
       shouldQueue: false,

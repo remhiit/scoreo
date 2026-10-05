@@ -31,6 +31,7 @@ const RECENT_CLOSED_WINDOW_DAYS = 30
 //   - automation:needs-review → In progress (file d'attente R3)
 //   - automation:review-pass  → In progress (verdict R3 conforme, en attente de merge)
 //   - automation:in-progress  → In progress (générique, une routine travaille dessus)
+//   - automation:manual       → In progress (run manuel du coordinateur, hors file)
 //   - automation:ready        → Todo (spec validée, en attente de R2)
 //   - blocked                 → Todo (dépendance externe ouverte ; peut temporairement
 //                    coexister avec n'importe quel label de file — `automation:queued`/
@@ -42,6 +43,7 @@ const LABEL_STATUS_PRIORITY = [
   ['automation:needs-review', 'In progress'],
   ['automation:review-pass', 'In progress'],
   ['automation:in-progress', 'In progress'],
+  ['automation:manual', 'In progress'],
   ['automation:ready', 'Todo'],
   ['blocked', 'Todo'],
 ]

@@ -17,6 +17,7 @@ declare -A LABELS=(
   ["automation:ready"]="0e8a16:État/déclencheur R2 — spec validée, prête pour implémentation (déclenche R2)"
   ["automation:in-progress"]="fbca04:Contrôle/état — une routine travaille dessus"
   ["automation:coordinator-owned"]="d4c5f9:Contrôle — posé par le coordinateur sur sa propre PR ; needs-review-label.yml saute la pose de automation:needs-review tant qu'il est présent"
+  ["automation:manual"]="d4c5f9:Contrôle — run manuel du coordinateur sur cette issue, hors file ; jamais promue ni remise en file par l'automatisation"
   ["automation:needs-review"]="1d76db:File/déclencheur R3 — en attente de pr-review (R3), pose ce label pour (re)déclencher une review"
   ["automation:review-pass"]="0e8a16:Verdict R3 — pr-review (R3) a validé la PR, claude/review passe au vert"
   ["automation:needs-fix"]="d93f0b:Verdict R3 + déclencheur R4 — claude/review a échoué (déclenche R4)"
