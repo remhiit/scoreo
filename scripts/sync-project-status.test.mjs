@@ -15,6 +15,10 @@ describe('desiredStatus', () => {
     expect(desiredStatus(open(['automation:in-progress']))).toBe('In progress')
   })
 
+  it('maps manual (run manuel du coordinateur) to "In progress"', () => {
+    expect(desiredStatus(open(['automation:manual']))).toBe('In progress')
+  })
+
   it('maps ready to "Todo"', () => {
     expect(desiredStatus(open(['automation:ready']))).toBe('Todo')
   })

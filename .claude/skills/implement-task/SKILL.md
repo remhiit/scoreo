@@ -19,9 +19,11 @@ When launched by `.claude/skills/coordinator/SKILL.md` (#469) rather than by
 the routine's own GitHub trigger, this procedure runs unchanged except for
 two deltas, both stated again at the exact step they replace below: the
 `automation:ready` → `automation:in-progress` claim (§ "Claim the run") is
-already done by the coordinator before this sub-agent starts, and once the
-PR opens (step 10) this sub-agent adds `automation:coordinator-owned` to it
-as its last action, before returning. Whatever this sub-agent writes here —
+already done by the coordinator before this sub-agent starts, and the PR
+(step 10) is opened as a draft, labelled `automation:coordinator-owned`, and
+only then marked ready for review, before returning. In the coordinator's
+manual mode (`coordinator/SKILL.md` § "Mode manuel"), step 11 is skipped
+too: `automation:enabled` is never posed, the merge stays the human's. Whatever this sub-agent writes here —
 its plan, this run's own reasoning, the PR description — is never relayed to
 the coordinator's review sub-agent of the same run; that isolation is the
 coordinator's responsibility to maintain (`coordinator/SKILL.md` § "Review
@@ -242,10 +244,15 @@ same field/trailer.
     the PR itself as `automation:needs-review`; that label is posed
     automatically by the deterministic `needs-review-label.yml` action on PR
     open, and it should find a PR whose author-side checks already passed.
-    **As the coordinator's sub-agent** (#469): immediately after opening the
-    PR, add `automation:coordinator-owned` to it, in its own call, as this
-    step's last action — that label is what keeps `needs-review-label.yml`
-    from ever queuing this PR for standalone R3 (#468). The coordinator, not
+    **As the coordinator's sub-agent** (#469): open the PR as a **draft**,
+    add `automation:coordinator-owned` to it in its own call, and only then
+    mark it ready for review (`update_pull_request`, `draft: false`) as this
+    step's last action. That label is what keeps `needs-review-label.yml`
+    from ever queuing this PR for standalone R3 (#468) — but that Action
+    reads the labels carried by the event itself, so a PR opened non-draft
+    and labelled afterwards would already have been queued by its `opened`
+    event. Draft first, label, then `ready_for_review`: the only event that
+    reaches the Action non-draft already carries the guard. The coordinator, not
     this sub-agent, decides afterwards whether/when `automation:needs-review`
     ever applies to this PR.
 11. **Label `automation:enabled`** only if the issue's spec marked risk as
@@ -264,6 +271,8 @@ same field/trailer.
     (`scripts/risk-controls.mjs#checkEnabledLabelAllowed`), which fails the
     PR naming the linked issue and the violated rule even if this step's own
     re-check somehow let it through.
+    **In the coordinator's manual mode**: skip this step entirely — never
+    pose `automation:enabled`, whatever the risk level.
 12. Move to the next `automation:ready` issue rather than batching multiple
     issues into one PR.
 

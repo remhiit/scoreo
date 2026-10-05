@@ -52,6 +52,13 @@ describe('decideDispatchPromotion', () => {
     })
   })
 
+  it('automation:manual present: refuses even with no native blocker', () => {
+    expect(decideDispatchPromotion(['automation:manual'], [])).toEqual({
+      promote: false,
+      reason: expect.stringContaining('automation:manual'),
+    })
+  })
+
   it('label check takes precedence over blocker check', () => {
     expect(decideDispatchPromotion(['automation:needs-human'], [OPEN(1)])).toEqual({
       promote: false,

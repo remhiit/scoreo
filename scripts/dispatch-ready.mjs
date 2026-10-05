@@ -98,6 +98,10 @@ export function decideDispatchPromotion(labelNames, blockers) {
   if (labelNames.includes('automation:in-progress')) {
     return { promote: false, reason: 'porte automation:in-progress' }
   }
+  // Mode manuel du coordinateur : le run est piloté en session, hors file.
+  if (labelNames.includes('automation:manual')) {
+    return { promote: false, reason: 'porte automation:manual (run manuel du coordinateur)' }
+  }
   const openBlockers = blockers.filter((blocker) => blocker.state !== 'closed')
   if (openBlockers.length > 0) {
     const names = openBlockers.map((blocker) => `#${blocker.number}`).join(', ')

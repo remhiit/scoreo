@@ -1,6 +1,6 @@
 ---
 name: coordinator
-description: Fuses R2 (implementation), R3 (review) and R4 (fix) into a single Claude Code session that drives an issue from `automation:ready` to a reviewed, corrected PR without any label-driven handoff between steps. Invoked in place of `implement-task` on the same GitHub trigger (`issues.labeled`, filter `automation:ready`). Delegates each step to a fresh sub-agent running that step's own skill (`implement-task`, `pr-review`, `address-feedback`) via the `Agent` tool — review runs as two isolated sub-agents on disjoint corpora, functional and technical, neither getting context from the implementation step or from each other (see "Context isolation" below), arbitrated by the mechanical rule in `scripts/review-verdict.mjs`. This is tranches 3 and 4 of #430 in doc/technical/automation-plan.md.
+description: Fuses R2 (implementation), R3 (review) and R4 (fix) into a single Claude Code session that drives an issue from `automation:ready` to a reviewed, corrected PR without any label-driven handoff between steps. Invoked in place of `implement-task` on the same GitHub trigger (`issues.labeled`, filter `automation:ready`) — or by hand, in manual mode, on any issue Rémi names (`/coordinator #N`), bypassing the routine pipeline entirely (see "Mode manuel"). Delegates each step to a fresh sub-agent running that step's own skill (`implement-task`, `pr-review`, `address-feedback`) via the `Agent` tool — review runs as two isolated sub-agents on disjoint corpora, functional and technical, neither getting context from the implementation step or from each other (see "Context isolation" below), arbitrated by the mechanical rule in `scripts/review-verdict.mjs`. This is tranches 3 and 4 of #430 in doc/technical/automation-plan.md.
 ---
 
 # Coordinator
@@ -39,6 +39,87 @@ human or by R5 (`site-quality`) never goes through this skill — it still
 gets queued for review the existing way, `automation:needs-review` →
 standalone R3 (`doc/automation/state-machine.md` row #12/#13). This skill
 only ever owns a PR it opened itself, on an issue it claimed.
+
+## Mode manuel (run demandé par Rémi, hors routines)
+
+The automated run above starts from a GitHub trigger (`automation:ready`).
+The **manual mode** starts from a human instead: Rémi invokes this skill in
+a session (`/coordinator #N`, or "coordinateur, fais #N") and names the
+issue himself, whatever its labels. It exists so a task can be driven end to
+end **without** the label pipeline (dispatch, R2/R3/R4 routines, in-flight
+cap, stale sweep) ever seeing it — the routines keep running in parallel on
+everything else.
+
+Recognise it by its origin: invoked by a human in the conversation, not by
+an `issues.labeled` webhook. Everything else in this skill applies
+unchanged — sub-agents, context isolation between implementer and
+reviewers, the mechanical verdict (`scripts/review-verdict.mjs`), the
+three-round fix cap, arbitration, budgets `subagentsLaunched`/
+`fixIterations`/`arbitrations`, the routing journal, traceability, the
+synthesis comment, never merging — except for these deltas, which
+replace the step they name:
+
+1. **Which issue.** Any open issue Rémi names — `automation:ready` is not
+   required; `automation:queued`, no queue label at all, or no label at all
+   are all accepted. When he gives a description instead of an issue
+   number, run `issue-to-spec` interactively first (it creates the issue
+   without `automation:queued` — the manual run is what takes it), then
+   continue on that issue. Still refused, and said to Rémi rather than
+   worked around: a closed issue, an issue whose
+   `closed_by_pull_requests` already lists an open PR, and an issue
+   carrying `automation:in-progress` (a routine already owns it — two
+   sessions on one branch is exactly the race this skill exists to avoid).
+2. **Claim the run.** Add `automation:manual` to the issue first, then
+   remove `automation:queued` and `automation:ready` if present — in that
+   order, so there is no window where the issue carries neither a guard
+   nor a queue label. **Never** pose `automation:in-progress` on the issue:
+   it would count against `dispatch-ready.mjs`'s in-flight cap (stalling
+   the pipeline for the run's duration), and `requeue-lost-events.mjs`
+   would escalate a run longer than 180 min to `automation:needs-human` +
+   `automation:queued`, putting the issue straight back into the pipeline.
+   `automation:manual` is what keeps it out instead: `dispatch-ready.mjs`
+   never promotes it, `unblock-issues.mjs` never re-queues it, and the
+   project board shows it "In progress".
+3. **Verify readiness.** Rémi is present, so he answers instead of a label
+   escalation: `blocked` → tell him which native blocker is still open and
+   ask whether to proceed anyway. A missing/ambiguous spec still goes
+   through § "Spec (sous-agent issue-to-spec, optional)"; on
+   `NEEDS_CLARIFICATION`, ask him the missing elements verbatim, write his
+   answers into the issue, and continue — the once-per-run limit protects
+   unattended runs, not a run with its requester in the loop.
+4. **Budgets.** Skip the `runsPerDay` check (§ "Budgets" step 3): it caps
+   unattended routine runs, and a manual run is a deliberate request. The
+   other budgets apply unchanged.
+5. **Implementation sub-agent.** Its prompt says it runs "as the
+   coordinator's implementation sub-agent, in manual mode": the claim is
+   already done, the PR is opened draft → `automation:coordinator-owned` →
+   ready (as in every coordinator run, `implement-task/SKILL.md` step 10),
+   and step 11 is skipped — never `automation:enabled`.
+6. **Converged (§ 4).** Post `automation:review-pass` as usual — it feeds
+   `review-status-sync.yml`, a deterministic Action (not a routine) that
+   sets the required `claude/review` status. Then, unlike the automated
+   run: never post `automation:enabled` (the merge stays Rémi's, by hand
+   or via `merge-review-pass`), **keep** `automation:coordinator-owned` on
+   the PR (removing it would let any later push queue a standalone R3
+   review — Rémi removes it himself if he wants one), and remove
+   `automation:manual` from the issue last; the PR's `Closes #N` closes
+   the issue at merge.
+7. **Escalade.** No label that re-enters the pipeline: never
+   `automation:queued` and never `automation:needs-human` on the issue,
+   which keeps `automation:manual` until Rémi decides (relaunch manually,
+   or remove it and queue the issue himself). On the PR, post
+   `automation:needs-human` and keep `automation:coordinator-owned`
+   (instead of § Escalade steps 1 and 4) — no R3/R4 picks it up behind
+   his back. Post the escalation comment as usual (§ Escalade step 5) and
+   tell Rémi in the conversation what is blocking and what he can decide.
+8. **Labels never posted in manual mode**, on the issue or the PR:
+   `automation:ready`, `automation:in-progress` (issue),
+   `automation:needs-review`, `automation:needs-fix`, `automation:queued`,
+   `automation:enabled`. Each one is either a routine's live trigger or a
+   door back into the dispatch queue.
+
+One issue per run, unchanged: several tasks given at once are several
+runs, one after the other or in separate sessions.
 
 ## Entrées requises
 
