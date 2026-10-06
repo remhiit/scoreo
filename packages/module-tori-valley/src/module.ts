@@ -29,7 +29,7 @@ export const toriValleyManifest: ScoringModuleManifest = {
  * The module as the host's registry lists it.
  *
  * `load` is a thunk holding a dynamic import, so the screen and everything it
- * drags in — the scoring rules, the translations, lucide — become a separate
+ * drags in — the scoring rules, the translations — become a separate
  * chunk. Only this closure lands in Scoreo's main bundle.
  */
 export const toriValleyModule: ScoringModule = {

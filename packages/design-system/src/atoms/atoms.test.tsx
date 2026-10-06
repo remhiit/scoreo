@@ -170,6 +170,15 @@ describe('Checkbox', () => {
     fireEvent.click(screen.getByText('Merge'))
     expect(onChange).toHaveBeenCalledWith(true)
   })
+
+  it('takes a fuller accessible name than its visible label', () => {
+    render(
+      <Checkbox checked={false} onChange={() => {}} ariaLabel="Alice — Merge">
+        Merge
+      </Checkbox>,
+    )
+    expect(screen.getByRole('checkbox', { name: 'Alice — Merge' })).toBeInTheDocument()
+  })
 })
 
 describe('Chip and Swatch', () => {
@@ -232,5 +241,13 @@ describe('DateInput and NumberField', () => {
     render(<NumberField ariaLabel="Léa" value="4" onChange={onChange} />)
     fireEvent.change(screen.getByRole('spinbutton', { name: 'Léa' }), { target: { value: '' } })
     expect(onChange).toHaveBeenCalledWith('')
+  })
+
+  it('carries native bounds for the stepper arrows', async () => {
+    const { NumberField } = await import('./NumberField')
+    render(<NumberField ariaLabel="Léa" value="4" min={0} max={7} onChange={() => {}} />)
+    const field = screen.getByRole('spinbutton', { name: 'Léa' })
+    expect(field).toHaveAttribute('min', '0')
+    expect(field).toHaveAttribute('max', '7')
   })
 })

@@ -33,11 +33,15 @@ The package is a scoring module Scoreo loads — nothing else. What the host use
 
 `ScoreDetailScreen` takes a `save(results, objectifCards)` callback rather than a use case: where the scores go is the host's business, and the screen stays ignorant of it.
 
-## Shared Components
+## Game pieces (`src/design/`)
 
-| Component   | Props                                                                                                                                           | Usage                                    |
-| ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------- |
-| `AppButton` | `text`, `variant?` (`'primary' \| 'secondary' \| 'ghost' \| 'danger'`, default `primary`), `iconOnly?`, `ariaLabel?`, `...ButtonHTMLAttributes` | The single interactive-action primitive. |
+| Component | Props | Usage |
+| --- | --- | --- |
+| `ModuleRoot` | `children` | The `.module-tori-valley` scope and page shell |
+| `ToriiBadge` | `color` (`green` \| `red` \| `blue` \| `yellow` \| `purple`), `children` | A Torī colour name drawn on that colour |
+| `VariantPicker` | `name`, `variants`, `value`, `onChange`, `ariaLabel(variant)` | One Objectif variant out of A/B/C, as native radios |
+
+Everything else — buttons, fields, panels, layout — is `@scoreboards/design-system`.
 
 ## Tests
 

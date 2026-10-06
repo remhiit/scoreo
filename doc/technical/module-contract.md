@@ -304,17 +304,19 @@ prefix. The scope and the prefix guard opposite directions of the same border; o
 
 ### Transition
 
-1000 Sabords (#561) and Skyjo have migrated: each composes the design system, keeps its game pieces
-in its own `src/design/`, and its row reads `identity: 'scoreo'`. Torī Valley predates this rule and
-still wears its own palette from a single `src/styles.css` (legacy tokens named like the host's — `--color-primary`, `--space-5` — with
-different values, which is why the border matters so much for it). It migrates in its own issue:
-it composes the design system, moves its game pieces to `src/design/`, deletes `src/styles.css`, joins
-`MODULES_COMPOSING_DS`, and its row in the e2e table switches from `identity: 'own'` (its surface must
-_not_ be the host's) to `identity: 'scoreo'`. A new module starts directly in the target state.
+Every registered module has migrated — 1000 Sabords (#561), Skyjo and Torī Valley (#563): each
+composes the design system, keeps its game pieces in its own `src/design/`, and its row reads
+`identity: 'scoreo'`. A module that predated this rule wore its own palette from a single
+`src/styles.css` (legacy tokens named like the host's — `--color-primary`, `--space-5` — with
+different values, which is why the border mattered so much for it). Migrating one meant composing
+the design system, moving its game pieces to `src/design/`, deleting `src/styles.css`, joining
+`MODULES_COMPOSING_DS`, and switching its row in the e2e table from `identity: 'own'` (its surface
+must _not_ be the host's) to `identity: 'scoreo'`. A new module starts directly in the target state.
 
-Until then, the design system's one deliberate reach into modules — the pair of `h1`/`h2` defaults
-the host used to set globally, scoped to a module's root — stays, and is removed once every module
-composes the system.
+The design system's one deliberate reach into modules — the pair of `h1`/`h2` defaults the host used
+to set globally, scoped to a module's root (`packages/design-system/src/foundations/base.css`) — was
+kept until every module composed the system. That is now the case, so it can be removed in its own
+change.
 
 Anything that must paint before scripts run belongs in the module's own shell, not in a stylesheet:
 the sheet ships inside the JS chunk, so it arrives too late for a splash.

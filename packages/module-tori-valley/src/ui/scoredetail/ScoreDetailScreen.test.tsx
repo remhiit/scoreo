@@ -75,7 +75,7 @@ describe('ScoreDetailScreen', () => {
 
   it('only one player can hold the Pinceau at a time', () => {
     renderScreen()
-    const select = screen.getByLabelText('Pinceau holder (+2 VP)')
+    const select = screen.getByRole('combobox', { name: 'Pinceau holder (+2 VP)' })
     fireEvent.change(select, { target: { value: 'p1' } })
     expect(screen.getByText('Alice — 2 VP')).toBeInTheDocument()
     fireEvent.change(select, { target: { value: 'p2' } })
