@@ -1,3 +1,4 @@
+import { Button, ButtonRow, Panel, Stack, Text } from '@scoreboards/design-system'
 import { useReducer } from 'react'
 import { useTranslation } from 'react-i18next'
 import { TORI_VALLEY_NS } from '../../i18n'
@@ -6,7 +7,7 @@ import {
   OBJECTIF_VARIANTS,
   type ObjectifCardSelection,
 } from '../../domain/model/landscape'
-import { AppButton } from '../shared/AppButton'
+import { VariantPicker } from '../../design'
 import { matchSetupReducer } from './matchSetupReducer'
 import { buildInitialMatchSetupState } from './matchSetupTypes'
 
@@ -31,46 +32,40 @@ export function MatchSetupScreen({
   )
 
   return (
-    <div>
-      <div className="tv-card">
-        <h2>{t('matchSetup.heading')}</h2>
-        <p className="tv-empty">{t('matchSetup.intro')}</p>
-
-        <div className="tv-list">
+    <Stack gap={4}>
+      <Panel title={t('matchSetup.heading')} description={t('matchSetup.intro')}>
+        <Stack gap={2}>
           {LANDSCAPE_TYPES.map((landscape) => (
-            <div className="tv-list-item" key={landscape}>
-              <span>{t(`landscape.${landscape}`)}</span>
-              <span>
-                {OBJECTIF_VARIANTS.map((variant) => (
-                  <label key={variant}>
-                    <input
-                      type="radio"
-                      name={`variant-${landscape}`}
-                      aria-label={t('matchSetup.variantAria', {
-                        landscape: t(`landscape.${landscape}`),
-                        variant,
-                      })}
-                      checked={state.selection[landscape] === variant}
-                      onChange={() => dispatch({ type: 'selectVariant', landscape, variant })}
-                    />{' '}
-                    {variant}{' '}
-                  </label>
-                ))}
-              </span>
-            </div>
+            <Stack direction="row" align="center" justify="between" gap={2} key={landscape}>
+              <Text variant="strong">{t(`landscape.${landscape}`)}</Text>
+              <VariantPicker
+                name={`variant-${landscape}`}
+                variants={OBJECTIF_VARIANTS}
+                value={state.selection[landscape]}
+                ariaLabel={(variant) =>
+                  t('matchSetup.variantAria', {
+                    landscape: t(`landscape.${landscape}`),
+                    variant,
+                  })
+                }
+                onChange={(variant) => dispatch({ type: 'selectVariant', landscape, variant })}
+              />
+            </Stack>
           ))}
 
-          <div className="tv-list-item">
-            <span>Torī</span>
-            <span className="tv-empty">{t('matchSetup.toriiAlwaysInPlay')}</span>
-          </div>
-        </div>
-      </div>
+          <Stack direction="row" align="center" justify="between" gap={2}>
+            <Text variant="strong">Torī</Text>
+            <Text variant="muted">{t('matchSetup.toriiAlwaysInPlay')}</Text>
+          </Stack>
+        </Stack>
+      </Panel>
 
-      <div className="tv-list-item">
-        <AppButton text={t('matchSetup.back')} variant="secondary" onClick={onCancel} />
-        <AppButton text={t('matchSetup.start')} onClick={() => onConfirm(state.selection)} />
-      </div>
-    </div>
+      <ButtonRow>
+        <Button variant="secondary" onClick={onCancel}>
+          {t('matchSetup.back')}
+        </Button>
+        <Button onClick={() => onConfirm(state.selection)}>{t('matchSetup.start')}</Button>
+      </ButtonRow>
+    </Stack>
   )
 }

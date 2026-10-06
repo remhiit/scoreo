@@ -62,15 +62,19 @@ test.describe('1000 Sabords module', () => {
 })
 
 /**
- * The module's palette is a single dark one of its own — it is not derived from
- * `prefers-color-scheme`. The point of this baseline is the opposite of Torī's:
- * to prove the module keeps that palette while the *host* around it turns dark.
+ * The module composes the design system and wears Scoreo's identity (#561): the
+ * baselines above are Latte, this one Mocha, so both ends of the flavor range are
+ * photographed — the game pieces of `src/design/` must stay legible in each.
  */
 test.describe('1000 Sabords module, dark host', () => {
   test.use({ colorScheme: 'dark' })
 
   test('a game in progress', async ({ page }) => {
     await openApp(page, route(SABORDS_IN_PROGRESS_ID), { ...seed, flavor: 'mocha' })
-    await expectScreenshot(page, page.getByText('4500', { exact: true }), 'sabords-in-progress-dark.png')
+    await expectScreenshot(
+      page,
+      page.getByText('4500', { exact: true }),
+      'sabords-in-progress-dark.png',
+    )
   })
 })

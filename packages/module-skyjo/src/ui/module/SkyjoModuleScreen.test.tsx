@@ -34,7 +34,7 @@ function fakeHost(draft?: unknown) {
 }
 
 function playRound(enderName: string, scoreByName: Record<string, string>) {
-  fireEvent.click(screen.getByRole('radio', { name: enderName }))
+  fireEvent.click(screen.getByRole('button', { name: enderName }))
   for (const [name, value] of Object.entries(scoreByName)) {
     fireEvent.change(screen.getByLabelText(name), { target: { value } })
   }
@@ -64,7 +64,7 @@ describe('SkyjoModuleScreen', () => {
     const submit = screen.getByRole('button', { name: 'Valider la manche' })
     expect(submit).toBeDisabled()
 
-    fireEvent.click(screen.getByRole('radio', { name: 'Alice' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Alice' }))
     expect(submit).toBeDisabled()
 
     fireEvent.change(screen.getByLabelText('Alice'), { target: { value: '3' } })
@@ -86,7 +86,7 @@ describe('SkyjoModuleScreen', () => {
   it('persists the turn in progress through the draft', () => {
     const { host, stored } = fakeHost()
     render(<SkyjoModuleScreen host={host} playerIds={['p1', 'p2']} onExit={vi.fn()} />)
-    fireEvent.click(screen.getByRole('radio', { name: 'Alice' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Alice' }))
     fireEvent.change(screen.getByLabelText('Alice'), { target: { value: '5' } })
 
     const draft = stored() as { enderPlayerId?: string; scoreInputs: Record<string, string> }
@@ -154,7 +154,14 @@ describe('SkyjoModuleScreen', () => {
     it('restores the round log and saves with the same id, so the host updates instead of duplicating', () => {
       const onExit = vi.fn()
       const { host, saved } = fakeHost()
-      render(<SkyjoModuleScreen host={host} playerIds={['p1', 'p2']} editing={editing} onExit={onExit} />)
+      render(
+        <SkyjoModuleScreen
+          host={host}
+          playerIds={['p1', 'p2']}
+          editing={editing}
+          onExit={onExit}
+        />,
+      )
 
       // Bob's total already crosses 100 -> restored straight onto the end screen.
       expect(screen.getByText('Alice remporte la partie !')).toBeInTheDocument()

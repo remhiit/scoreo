@@ -12,6 +12,9 @@ export interface NumberFieldProps {
   mode?: 'cell' | 'plain'
   disabled?: boolean
   invalid?: boolean
+  /** Native bounds: the stepper arrows stop there; a typed value is still the caller's to validate. */
+  min?: number
+  max?: number
 }
 
 /** Bare numeric field in the score font, for editing a stored score in place. */
@@ -22,6 +25,8 @@ export function NumberField({
   mode = 'cell',
   disabled = false,
   invalid = false,
+  min,
+  max,
 }: NumberFieldProps) {
   return (
     <input
@@ -35,6 +40,8 @@ export function NumberField({
         invalid && 'sc-input--invalid',
       )}
       value={value}
+      min={min}
+      max={max}
       disabled={disabled}
       aria-label={ariaLabel}
       aria-invalid={invalid || undefined}

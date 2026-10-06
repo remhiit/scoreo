@@ -6,16 +6,25 @@ export interface CheckboxProps {
   onChange: (checked: boolean) => void
   children: ReactNode
   disabled?: boolean
+  /** Accessible name when it must say more than the visible label (e.g. who it applies to). */
+  ariaLabel?: string
 }
 
 /** The label is the tap target and carries the full 44px — never a bare box. */
-export function Checkbox({ checked, onChange, children, disabled = false }: CheckboxProps) {
+export function Checkbox({
+  checked,
+  onChange,
+  children,
+  disabled = false,
+  ariaLabel,
+}: CheckboxProps) {
   return (
     <label className={cx('sc-checkbox', disabled && 'sc-checkbox--disabled')}>
       <input
         type="checkbox"
         checked={checked}
         disabled={disabled}
+        aria-label={ariaLabel}
         onChange={(e) => onChange(e.target.checked)}
       />
       <span>{children}</span>

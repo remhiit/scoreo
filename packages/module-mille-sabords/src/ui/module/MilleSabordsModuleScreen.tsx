@@ -1,11 +1,30 @@
+import {
+  Badge,
+  Button,
+  ButtonRow,
+  Chip,
+  Column,
+  Columns,
+  Dialog,
+  Icon,
+  NumberField,
+  Panel,
+  Score,
+  Select,
+  Stack,
+  StandingsCard,
+  StandingsGrid,
+  StatusLine,
+  TabPanel,
+  Tabs,
+  Text,
+  WideLayout,
+} from '@scoreboards/design-system'
 import type { ScoringModuleScreenProps } from '@scoreboards/module-api'
-import { useEffect, useMemo, useReducer } from 'react'
-// Bundled with this chunk, so the module arrives styled and costs the host
-// nothing until someone opens it.
-import '../../styles.css'
+import { useEffect, useMemo, useReducer, type ReactNode } from 'react'
 import { buildModuleMatchResult, classementFinal } from '../../application/moduleResult'
 import { calculerScore } from '../../domain/calculateurScore'
-import { CARTES, COULEURS_JOUEURS, EMOJIS_RANG, TYPES_DES } from '../../domain/constantes'
+import { CARTES, EMOJIS_RANG, TYPES_DES } from '../../domain/constantes'
 import { totalDes, valeurDe } from '../../domain/lancerDes'
 import type { EvenementCoup } from '../../domain/modeles'
 import type { Partie } from '../../domain/partie'
@@ -16,8 +35,21 @@ import {
   partieDeLEtat,
   versBrouillon,
 } from './milleSabordsModuleReducer'
-import type { MilleSabordsAction, MilleSabordsState } from './milleSabordsModuleTypes'
+import type {
+  MilleSabordsAction,
+  MilleSabordsState,
+  MilleSabordsTab,
+} from './milleSabordsModuleTypes'
 import { CRANES_ILE_RAPIDE, GROUPES_RAPIDES, INFOS_CARTE } from './scoresRapides'
+import {
+  DieCounter,
+  ModuleRoot,
+  ScorePreview,
+  ScoreTable,
+  type PreviewTone,
+  type ScoreCell,
+  type TotalTone,
+} from '../../design'
 
 type Dispatch = (action: MilleSabordsAction) => void
 
@@ -28,6 +60,10 @@ type Dispatch = (action: MilleSabordsAction) => void
  * players, the history and the storage. Nothing here reads `localStorage`: the
  * live game goes through `host.saveDraft`, the finished one through
  * `host.saveMatch`, and the standalone Kotlin app's own keys are left alone.
+ *
+ * It wears Scoreo's look: the screen composes `@scoreboards/design-system`, and
+ * the few pieces only this game draws — the dice, the scoreboard, the score
+ * preview — live in `src/design/`.
  */
 export default function MilleSabordsModuleScreen({
   host,
@@ -76,12 +112,11 @@ export default function MilleSabordsModuleScreen({
   }
 
   return (
-    <div className="module-mille-sabords">
-      <div className="ms-shell">
-        <header className="ms-header">
-          <h1 className="ms-title">🏴‍☠️ 1000 Sabords</h1>
+    <ModuleRoot>
+      <WideLayout>
+        <Stack direction="row" justify="end">
           <BadgeManche state={state} partie={partie} />
-        </header>
+        </Stack>
 
         {estFinie(state, partie) ? (
           <EcranFin
@@ -95,40 +130,43 @@ export default function MilleSabordsModuleScreen({
           <EcranJeu state={state} partie={partie} noms={noms} dispatch={dispatch} />
         )}
 
-        {state.confirmationAbandon && (
-          <div className="ms-modal-overlay">
-            <div className="ms-modal" role="dialog" aria-label="Abandonner la partie">
-              <h2>Abandonner la partie ?</h2>
-              <p>La partie en cours sera perdue et rien ne sera enregistré dans Scoreo.</p>
-              <div className="ms-modal-actions">
-                <button
-                  type="button"
-                  className="ms-btn ms-btn-secondary"
-                  onClick={() => dispatch({ type: 'dismissAbandonConfirm' })}
-                >
-                  Continuer à jouer
-                </button>
-                <button type="button" className="ms-btn ms-btn-danger" onClick={abandonner}>
-                  Abandonner
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
+        <Dialog
+          open={state.confirmationAbandon}
+          title="Abandonner la partie ?"
+          closeLabel="Fermer"
+          onClose={() => dispatch({ type: 'dismissAbandonConfirm' })}
+          actions={
+            <ButtonRow align="end">
+              <Button
+                variant="secondary"
+                onClick={() => dispatch({ type: 'dismissAbandonConfirm' })}
+              >
+                Continuer à jouer
+              </Button>
+              <Button variant="danger" onClick={abandonner}>
+                Abandonner
+              </Button>
+            </ButtonRow>
+          }
+        >
+          <Text variant="muted" block>
+            La partie en cours sera perdue et rien ne sera enregistré dans Scoreo.
+          </Text>
+        </Dialog>
+      </WideLayout>
+    </ModuleRoot>
   )
 }
 
 function BadgeManche({ state, partie }: { state: MilleSabordsState; partie: Partie }) {
   if (state.finDemandee || partie.estTerminee()) {
-    return <span className="ms-badge ms-badge-final">🏁 Partie terminée</span>
+    return <Badge tone="warning">🏁 Partie terminée</Badge>
   }
-  if (partie.dernierTour) return <span className="ms-badge ms-badge-final">⚠️ Dernier tour !</span>
+  if (partie.dernierTour) return <Badge tone="warning">⚠️ Dernier tour !</Badge>
 
   const enCours = state.historique.length % state.joueurs.length > 0
   const manche = Math.max(1, partie.mancheActuelle() + (enCours ? 1 : 0))
-  return <span className="ms-badge">Tour {manche}</span>
+  return <Badge>Tour {manche}</Badge>
 }
 
 interface VueProps {
@@ -138,82 +176,67 @@ interface VueProps {
   dispatch: Dispatch
 }
 
+const ONGLETS: { value: MilleSabordsTab; label: string }[] = [
+  { value: 'calc', label: '🎲 Calculateur' },
+  { value: 'manual', label: '✏️ Saisie rapide' },
+]
+
 function EcranJeu(props: VueProps) {
   const { state, partie, noms, dispatch } = props
   const index = partie.indexJoueurActuel
 
   return (
-    <div className="ms-layout">
-      <section className="ms-col" aria-label="Tableau de bord">
+    <Columns>
+      <Column label="Tableau de bord">
         <Tableau state={state} partie={partie} noms={noms} />
-        <div className="ms-actions">
-          <button
-            type="button"
-            className="ms-btn ms-btn-secondary"
+        <Stack direction="row" gap={2} wrap>
+          <Button
+            variant="secondary"
+            size="sm"
             disabled={state.historique.length === 0}
             onClick={() => dispatch({ type: 'undoLast' })}
           >
             ↩ Annuler le coup
-          </button>
-          <button
-            type="button"
-            className="ms-btn ms-btn-secondary"
+          </Button>
+          <Button
+            variant="secondary"
+            size="sm"
             disabled={state.historique.length === 0}
             onClick={() => dispatch({ type: 'requestEnd' })}
           >
             🏁 Terminer la partie
-          </button>
-          <button
-            type="button"
-            className="ms-btn ms-btn-danger"
+          </Button>
+          <Button
+            variant="danger"
+            size="sm"
             onClick={() => dispatch({ type: 'showAbandonConfirm' })}
           >
             🗑 Abandonner
-          </button>
-        </div>
-      </section>
+          </Button>
+        </Stack>
+      </Column>
 
-      <section className="ms-col" aria-label="Tour en cours">
-        <div className="ms-turn">
-          <div className="ms-turn-label">Au tour de</div>
-          <div className="ms-turn-player" style={{ color: COULEURS_JOUEURS[index] }}>
-            {noms[index]}
-          </div>
-        </div>
+      <Column label="Tour en cours">
+        <Stack gap={1} align="center">
+          <Text variant="label">Au tour de</Text>
+          <Text variant="heading">{noms[index]}</Text>
+        </Stack>
 
-        <div className="ms-tabs" role="tablist">
-          <button
-            type="button"
-            role="tab"
-            aria-selected={state.tab === 'calc'}
-            className={onglet(state.tab === 'calc')}
-            onClick={() => dispatch({ type: 'selectTab', tab: 'calc' })}
-          >
-            🎲 Calculateur
-          </button>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={state.tab === 'manual'}
-            className={onglet(state.tab === 'manual')}
-            onClick={() => dispatch({ type: 'selectTab', tab: 'manual' })}
-          >
-            ✏️ Saisie rapide
-          </button>
-        </div>
+        <Tabs
+          ariaLabel="Mode de saisie"
+          options={ONGLETS}
+          value={state.tab}
+          onChange={(tab) => dispatch({ type: 'selectTab', tab })}
+        />
 
         {state.tab === 'calc' ? (
           <OngletCalcul state={state} dispatch={dispatch} />
         ) : (
           <OngletManuel state={state} dispatch={dispatch} />
         )}
-      </section>
-    </div>
+      </Column>
+    </Columns>
   )
-}
-
-function onglet(actif: boolean): string {
-  return actif ? 'ms-tab ms-tab-active' : 'ms-tab'
 }
 
 function OngletCalcul({ state, dispatch }: { state: MilleSabordsState; dispatch: Dispatch }) {
@@ -222,191 +245,154 @@ function OngletCalcul({ state, dispatch }: { state: MilleSabordsState; dispatch:
   const info = INFOS_CARTE[state.carte]
 
   return (
-    <div className="ms-panel" role="tabpanel" aria-label="Calculateur">
-      <div className="ms-field">
-        <label htmlFor="ms-card">Carte piochée</label>
-        <select
-          id="ms-card"
-          value={state.carte}
-          onChange={(event) => dispatch({ type: 'selectCard', carte: event.target.value })}
-        >
-          {CARTES.map((carte) => (
-            <option key={carte.id} value={carte.id}>
-              {carte.label}
-            </option>
-          ))}
-        </select>
-      </div>
+    <TabPanel ariaLabel="Calculateur">
+      <Select
+        label="Carte piochée"
+        value={state.carte}
+        options={CARTES.map((carte) => ({ value: carte.id, label: carte.label }))}
+        onChange={(carte) => dispatch({ type: 'selectCard', carte })}
+      />
 
-      <div className="ms-dice">
+      <Stack gap={1}>
         {TYPES_DES.map((type) => (
-          <div className="ms-dice-row" key={type.id}>
-            <span className="ms-dice-icon" aria-hidden="true">
-              {type.icone}
-            </span>
-            <span className="ms-dice-label">{type.label}</span>
-            <div className="ms-dice-controls">
-              <button
-                type="button"
-                className="ms-step"
-                aria-label={`Retirer un ${type.label}`}
-                onClick={() => dispatch({ type: 'changeDie', de: type.id, delta: -1 })}
-              >
-                −
-              </button>
-              <output className="ms-dice-count" aria-label={`${type.label} : compteur`}>
-                {valeurDe(state.des, type.id)}
-              </output>
-              <button
-                type="button"
-                className="ms-step"
-                aria-label={`Ajouter un ${type.label}`}
-                onClick={() => dispatch({ type: 'changeDie', de: type.id, delta: 1 })}
-              >
-                +
-              </button>
-            </div>
-          </div>
+          <DieCounter
+            key={type.id}
+            face={type.icone}
+            label={type.label}
+            count={valeurDe(state.des, type.id)}
+            onDecrease={() => dispatch({ type: 'changeDie', de: type.id, delta: -1 })}
+            onIncrease={() => dispatch({ type: 'changeDie', de: type.id, delta: 1 })}
+          />
         ))}
-      </div>
+      </Stack>
 
-      <div className={total === 8 ? 'ms-dice-total ms-valid' : 'ms-dice-total ms-warning'}>
-        {total === 8 ? '✅' : '⚠️'} {total} / 8 dés
-      </div>
+      <StatusLine tone={total === 8 ? 'success' : 'warning'}>{total} / 8 dés</StatusLine>
 
-      <button
-        type="button"
-        className="ms-btn ms-btn-primary ms-btn-wide"
-        onClick={() => dispatch({ type: 'submitCalcScore' })}
-      >
+      <Button width="full" onClick={() => dispatch({ type: 'submitCalcScore' })}>
         Valider le score
-      </button>
+      </Button>
 
-      {info !== undefined && <p className="ms-card-info">{info}</p>}
+      {info !== undefined && (
+        <Text variant="hint" block>
+          {info}
+        </Text>
+      )}
 
       {resultat !== undefined && (
-        <div className="ms-preview">
-          <div className={`ms-preview-score ${classeScore(resultat.score, resultat.ileCranes)}`}>
-            {resultat.ileCranes ? '☠️ ' : ''}
-            {resultat.score} pts
-          </div>
-          <div className="ms-preview-details">{resultat.details}</div>
+        <ScorePreview
+          score={`${resultat.ileCranes ? '☠️ ' : ''}${resultat.score} pts`}
+          tone={previewTone(resultat.score, resultat.ileCranes)}
+          details={resultat.details}
+        >
           {resultat.magiquePirate && (
-            <div className="ms-magie">🪄 MAGIE PIRATE — Victoire légendaire !</div>
+            <Stack align="center">
+              <Badge tone="solid">🪄 MAGIE PIRATE — Victoire légendaire !</Badge>
+            </Stack>
           )}
           {resultat.ileCranes && (
-            <div className="ms-island">
-              <strong>☠️ Île de la Tête de Mort</strong>
-              <span>Chaque adversaire perdra {-resultat.penaliteIle} pts</span>
-            </div>
+            <StatusLine
+              tone="danger"
+              details={[`Chaque adversaire perdra ${-resultat.penaliteIle} pts`]}
+            >
+              ☠️ Île de la Tête de Mort
+            </StatusLine>
           )}
-        </div>
+        </ScorePreview>
       )}
-    </div>
+    </TabPanel>
   )
 }
 
-function classeScore(score: number, ileCranes: boolean): string {
-  if (ileCranes) return 'ms-score-island'
-  if (score > 0) return 'ms-score-positive'
-  if (score < 0) return 'ms-score-negative'
-  return 'ms-score-zero'
+function previewTone(score: number, ileCranes: boolean): PreviewTone {
+  if (ileCranes) return 'island'
+  if (score > 0) return 'positive'
+  if (score < 0) return 'negative'
+  return 'zero'
 }
 
 function OngletManuel({ state, dispatch }: { state: MilleSabordsState; dispatch: Dispatch }) {
   return (
-    <div className="ms-panel" role="tabpanel" aria-label="Saisie rapide">
-      <div className="ms-manual">
-        <label htmlFor="ms-manual-score">Score</label>
-        <div className="ms-manual-row">
-          <input
-            id="ms-manual-score"
-            type="number"
-            inputMode="numeric"
+    <TabPanel ariaLabel="Saisie rapide">
+      <Stack gap={1}>
+        <Text variant="label">Score</Text>
+        <Stack direction="row" gap={2} align="center" wrap>
+          <NumberField
+            mode="plain"
+            ariaLabel="Score"
             value={state.scoreManuel}
-            onChange={(event) => dispatch({ type: 'updateManualScore', value: event.target.value })}
+            onChange={(value) => dispatch({ type: 'updateManualScore', value })}
           />
           {state.multiplicateur === 2 && (
-            <button
-              type="button"
-              className="ms-multiplier"
-              aria-label="Retirer le multiplicateur"
+            <Button
+              size="sm"
+              title="Retirer le multiplicateur"
               onClick={() => dispatch({ type: 'toggleMultiplier' })}
             >
               ×2 🎩
-            </button>
+            </Button>
           )}
-          <button
-            type="button"
-            className="ms-btn ms-btn-secondary"
-            aria-label="Remettre le score à zéro"
+          <Button
+            variant="secondary"
+            icon="delete"
+            label="Remettre le score à zéro"
             onClick={() => dispatch({ type: 'resetManualScore' })}
-          >
-            🗑
-          </button>
-          <button
-            type="button"
-            className="ms-btn ms-btn-primary"
-            onClick={() => dispatch({ type: 'submitManualScore' })}
-          >
-            Valider
-          </button>
-        </div>
-      </div>
+          />
+          <Button onClick={() => dispatch({ type: 'submitManualScore' })}>Valider</Button>
+        </Stack>
+      </Stack>
 
-      <div className="ms-quick">
+      <Stack gap={3}>
         {GROUPES_RAPIDES.map((groupe) => (
-          <div className="ms-quick-group" key={groupe.titre}>
-            <div className="ms-quick-title">{groupe.titre}</div>
-            <div className="ms-quick-row">
-              {groupe.boutons.map((bouton) => (
-                <button
-                  type="button"
-                  key={bouton.label}
-                  className="ms-chip"
-                  title={bouton.titre}
-                  onClick={() => dispatch({ type: 'quickScore', points: bouton.points })}
-                >
-                  {bouton.label}
-                </button>
-              ))}
-            </div>
-          </div>
+          <GroupeRapide titre={groupe.titre} key={groupe.titre}>
+            {groupe.boutons.map((bouton) => (
+              <Button
+                key={bouton.label}
+                variant="secondary"
+                size="sm"
+                title={bouton.titre}
+                onClick={() => dispatch({ type: 'quickScore', points: bouton.points })}
+              >
+                {bouton.label}
+              </Button>
+            ))}
+          </GroupeRapide>
         ))}
 
-        <div className="ms-quick-group">
-          <div className="ms-quick-title">🎩 Capitaine</div>
-          <div className="ms-quick-row">
-            <button
-              type="button"
-              className={state.multiplicateur === 2 ? 'ms-chip ms-chip-active' : 'ms-chip'}
-              aria-pressed={state.multiplicateur === 2}
-              title="Double le score saisi"
-              onClick={() => dispatch({ type: 'toggleMultiplier' })}
-            >
-              ×2
-            </button>
-          </div>
-        </div>
+        <GroupeRapide titre="🎩 Capitaine">
+          <Chip
+            selected={state.multiplicateur === 2}
+            onClick={() => dispatch({ type: 'toggleMultiplier' })}
+          >
+            ×2
+          </Chip>
+        </GroupeRapide>
 
-        <div className="ms-quick-group">
-          <div className="ms-quick-title">☠️ Île de la Tête de Mort</div>
-          <div className="ms-quick-row">
-            {CRANES_ILE_RAPIDE.map((cranes) => (
-              <button
-                type="button"
-                key={cranes}
-                className="ms-chip ms-chip-danger"
-                title={`-${cranes * 100} pts pour chaque adversaire`}
-                onClick={() => dispatch({ type: 'quickSkullIsland', cranes })}
-              >
-                {cranes}💀
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
-    </div>
+        <GroupeRapide titre="☠️ Île de la Tête de Mort">
+          {CRANES_ILE_RAPIDE.map((cranes) => (
+            <Button
+              key={cranes}
+              variant="danger"
+              size="sm"
+              title={`-${cranes * 100} pts pour chaque adversaire`}
+              onClick={() => dispatch({ type: 'quickSkullIsland', cranes })}
+            >
+              {`${cranes}💀`}
+            </Button>
+          ))}
+        </GroupeRapide>
+      </Stack>
+    </TabPanel>
+  )
+}
+
+function GroupeRapide({ titre, children }: { titre: string; children: ReactNode }) {
+  return (
+    <Stack gap={1}>
+      <Text variant="label">{titre}</Text>
+      <Stack direction="row" gap={1} wrap>
+        {children}
+      </Stack>
+    </Stack>
   )
 }
 
@@ -419,70 +405,29 @@ function Tableau({
   partie: Partie
   noms: readonly string[]
 }) {
-  const manches = partie.manches()
   const totaux = state.joueurs.map((_, index) => partie.totalJoueur(index))
   const totalMax = Math.max(0, ...totaux)
 
   return (
-    <div className="ms-table-wrap">
-      <table className="ms-table">
-        <thead>
-          <tr>
-            <th scope="col">
-              <span className="ms-sr-only">Tour</span>
-            </th>
-            {noms.map((nom, index) => (
-              <th
-                scope="col"
-                key={state.joueurs[index]}
-                className={index === partie.indexJoueurActuel ? 'ms-current' : undefined}
-                style={{ color: COULEURS_JOUEURS[index] }}
-              >
-                {nom}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {manches.map((coups, manche) => (
-            <tr key={manche}>
-              <th scope="row" className="ms-round-label">
-                Tour {manche + 1}
-              </th>
-              {state.joueurs.map((id, index) => (
-                <CelluleCoup key={id} coup={coups[index]} />
-              ))}
-            </tr>
-          ))}
-          {manches.length === 0 && (
-            <tr>
-              <td className="ms-empty" colSpan={state.joueurs.length + 1}>
-                Aucun coup joué pour l'instant.
-              </td>
-            </tr>
-          )}
-        </tbody>
-        <tfoot>
-          <tr>
-            <th scope="row" className="ms-round-label">
-              Total
-            </th>
-            {totaux.map((total, index) => (
-              <td key={state.joueurs[index]} className={classeTotal(total, totalMax)}>
-                {total}
-              </td>
-            ))}
-          </tr>
-        </tfoot>
-      </table>
-    </div>
+    <ScoreTable
+      cornerLabel="Tour"
+      players={noms.map((nom, index) => ({ key: state.joueurs[index], name: nom }))}
+      currentIndex={partie.indexJoueurActuel}
+      rounds={partie.manches().map((coups, manche) => ({
+        label: `Tour ${manche + 1}`,
+        cells: state.joueurs.map((_, index) => celluleCoup(coups[index])),
+      }))}
+      emptyLabel="Aucun coup joué pour l'instant."
+      totalLabel="Total"
+      totals={totaux.map((total) => ({ value: total, tone: tonTotal(total, totalMax) }))}
+    />
   )
 }
 
-function classeTotal(total: number, totalMax: number): string {
-  if (total >= 6000) return 'ms-total ms-over-6000'
-  if (total === totalMax && totalMax > 0) return 'ms-total ms-leading'
-  return 'ms-total'
+function tonTotal(total: number, totalMax: number): TotalTone {
+  if (total >= 6000) return 'over'
+  if (total === totalMax && totalMax > 0) return 'leading'
+  return 'default'
 }
 
 /**
@@ -490,45 +435,33 @@ function classeTotal(total: number, totalMax: number): string {
  * everyone else rather than a score of its own, because that is the only number
  * the table would otherwise never show.
  */
-function CelluleCoup({ coup }: { coup: EvenementCoup | undefined }) {
-  if (coup === undefined) return <td className="ms-cell">—</td>
+function celluleCoup(coup: EvenementCoup | undefined): ScoreCell {
+  if (coup === undefined) return { text: '—' }
 
   switch (coup.type) {
     case 'ile':
-      return (
-        <td
-          className="ms-cell ms-cell-island"
-          title={`☠️ ${coup.nombreCranes} crânes → ${coup.penaliteParAdversaire} pts par adversaire`}
-        >
-          ☠️ ({coup.penaliteParAdversaire})
-        </td>
-      )
+      return {
+        text: `☠️ (${coup.penaliteParAdversaire})`,
+        tone: 'island',
+        title: `☠️ ${coup.nombreCranes} crânes → ${coup.penaliteParAdversaire} pts par adversaire`,
+      }
     case 'manuel':
-      return (
-        <td
-          className={`ms-cell ${classeCellule(coup.score)}`}
-          title={`Saisie : ${coup.scoreEntre}${coup.multiplicateur > 1 ? ` ×${coup.multiplicateur}` : ''}`}
-        >
-          {coup.score}
-        </td>
-      )
+      return {
+        text: String(coup.score),
+        tone: tonCellule(coup.score),
+        title: `Saisie : ${coup.scoreEntre}${coup.multiplicateur > 1 ? ` ×${coup.multiplicateur}` : ''}`,
+      }
     case 'calculateur':
-      return coup.ileCranes ? (
-        <td className="ms-cell ms-cell-island" title={coup.details}>
-          ☠️ ({coup.penaliteIle})
-        </td>
-      ) : (
-        <td className={`ms-cell ${classeCellule(coup.score)}`} title={coup.details}>
-          {coup.score}
-        </td>
-      )
+      return coup.ileCranes
+        ? { text: `☠️ (${coup.penaliteIle})`, tone: 'island', title: coup.details }
+        : { text: String(coup.score), tone: tonCellule(coup.score), title: coup.details }
   }
 }
 
-function classeCellule(score: number): string {
-  if (score === 0) return 'ms-cell-zero'
-  if (score < 0) return 'ms-cell-negative'
-  return ''
+function tonCellule(score: number): ScoreCell['tone'] {
+  if (score === 0) return 'zero'
+  if (score < 0) return 'negative'
+  return 'default'
 }
 
 function EcranFin({
@@ -542,52 +475,41 @@ function EcranFin({
   const vainqueur = classement[0]
 
   return (
-    <div className="ms-end">
-      <div className="ms-trophy" aria-hidden="true">
-        {partie.magiquePirate ? '🪄' : '🏆'}
-      </div>
-      <h2>
-        {noms[vainqueur.indexCouleur]} remporte la partie
-        {partie.magiquePirate ? ' avec la Magie Pirate !' : ' !'}
-      </h2>
-      <p className="ms-winner-score">{vainqueur.score} points</p>
+    <Panel
+      title={`${noms[vainqueur.indexCouleur]} remporte la partie${
+        partie.magiquePirate ? ' avec la Magie Pirate !' : ' !'
+      }`}
+      trailing={<Icon name={partie.magiquePirate ? 'sparkles' : 'trophy'} size="lg" />}
+    >
+      <Score size="xl" tone="accent">{`${vainqueur.score} points`}</Score>
 
-      <ol className="ms-ranking">
+      <StandingsGrid ariaLabel="Classement final">
         {classement.map((joueur, rang) => (
-          <li key={joueur.nom}>
-            <span className="ms-rank" aria-hidden="true">
-              {EMOJIS_RANG[rang]}
-            </span>
-            <span className="ms-rank-name" style={{ color: COULEURS_JOUEURS[joueur.indexCouleur] }}>
-              {noms[joueur.indexCouleur]}
-            </span>
-            <span className="ms-rank-score">{joueur.score} pts</span>
-          </li>
+          <StandingsCard
+            key={joueur.nom}
+            rank={EMOJIS_RANG[rang]}
+            name={noms[joueur.indexCouleur]}
+            total={`${joueur.score} pts`}
+            lead={rang === 0}
+          />
         ))}
-      </ol>
+      </StandingsGrid>
 
-      <div className="ms-actions">
-        <button type="button" className="ms-btn ms-btn-primary" onClick={onEnregistrer}>
-          💾 Enregistrer la partie
-        </button>
-        <button
-          type="button"
-          className="ms-btn ms-btn-secondary"
+      <Stack direction="row" gap={2} wrap>
+        <Button onClick={onEnregistrer}>💾 Enregistrer la partie</Button>
+        <Button
+          variant="secondary"
           disabled={state.historique.length === 0}
           onClick={() => dispatch({ type: 'undoLast' })}
         >
           ↩ Annuler le dernier coup
-        </button>
+        </Button>
         {state.finDemandee && (
-          <button
-            type="button"
-            className="ms-btn ms-btn-ghost"
-            onClick={() => dispatch({ type: 'resumeGame' })}
-          >
+          <Button variant="ghost" onClick={() => dispatch({ type: 'resumeGame' })}>
             ⚓ Reprendre la partie
-          </button>
+          </Button>
         )}
-      </div>
-    </div>
+      </Stack>
+    </Panel>
   )
 }

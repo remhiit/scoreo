@@ -39,9 +39,11 @@ export {
 } from './molecules/ListRow'
 export {
   SegmentedControl,
+  TabPanel,
   Tabs,
   type ChoiceOption,
   type SegmentedControlProps,
+  type TabPanelProps,
   type TabsProps,
 } from './molecules/SegmentedControl'
 export { StandingsCard, type StandingsCardProps } from './molecules/StandingsCard'
@@ -63,6 +65,7 @@ export { StandingsGrid } from './organisms/StandingsGrid'
 export { ThemePicker, type ThemePickerProps } from './organisms/ThemePicker'
 
 // 04 · templates
+export { Column, Columns, WideLayout } from './templates/Columns'
 export {
   ImmersiveTemplate,
   ScreenTemplate,

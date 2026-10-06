@@ -74,27 +74,25 @@ origin — see the workspace's `doc/technical/architecture.md`.
 
 ## Styling
 
-Single `src/styles.css`, imported by the module's screen rather than linked from a shell: Vite emits
-it as a CSS chunk loaded alongside the module's JS chunk. That is what makes the module arrive
-**styled** inside Scoreo, at zero cost until someone opens it.
+The module wears Scoreo's look: its screens compose `@scoreboards/design-system` (`Button`, `Panel`,
+`Select`, `NumberField`, `Checkbox`, `Stack`, `Text`…) and write no `className`, `style` or
+`lucide-react` import — ESLint enforces it through `MODULES_COMPOSING_DS`. Labels stay translated by
+the module's i18n and are passed as props.
 
-**Every rule is scoped under `.module-tori-valley`**, carried by the wrapper the screen renders, and
-**every class is prefixed `tv-`**. The module keeps the identity of the game it counts (Torī Valley's
-warm washi palette, its own spacing and radii), and none of it escapes into the host.
+What the design system has no equivalent for lives in `src/design/` — `ModuleRoot` (the
+`.module-tori-valley` scope), `ToriiBadge` (a Torī colour name on that colour) and `VariantPicker`
+(the A/B/C Objectif variant, as native radios). Each piece imports its own CSS, so Vite emits it in
+the module's chunk: the module arrives **styled** inside Scoreo, at zero cost until someone opens it.
 
-That scoping is not cosmetic. The two stylesheets name tokens alike with different values —
-`--color-primary` (Torī red vs Catppuccin mauve), `--space-5` (24px vs 20px), `--radius-lg` (16px vs
-14px), plus `--color-danger`, `--shadow-sm`, `--shadow-md` — and element selectors like `input`,
-`select` and `label` would have restyled the whole app. A stylesheet is not unloaded on navigation,
-so an unscoped rule would have followed the player for the rest of the session.
-
-The prefix guards the other direction, which scoping cannot: Scoreo's `theme.css` styles plain
-`.card` and `.empty`, and this module shipped for a while with every player card laid out in a row
-because it reused the name (#349). `scripts/check-module-styles.mjs` fails on either breach,
+**Every rule is scoped under `.module-tori-valley`** and **every class is prefixed `tv-`**, so
+nothing escapes into the host and the host's generic names (`.card`, `.empty`) never reach the
+module (that collision is how every player card once ended up laid out in a row, #349). The CSS reads
+semantic tokens only (`--surface-*`, `--text-*`, `--color-success` / `--color-danger` /
+`--color-info` / `--color-warning` for four Torī colours, a danger/info blend for purple) and
+declares no variable named like a design-system token: the module follows the flavor and accent the
+player picked. `scripts/check-module-styles.mjs` fails on a breach,
 `apps/scoreo/e2e/module-style-isolation.spec.ts` and `apps/scoreo/tests/visual/` catch what it
 cannot see.
 
 Anything that must paint before scripts run belongs to the host: the stylesheet ships inside the JS
 chunk, so it arrives too late for a splash.
-
-It still defines its own colour custom properties for light/dark (`prefers-color-scheme`) rather than Scoreo's Catppuccin tokens — moving onto them is tracked separately, and needs the tokens to become a package first.

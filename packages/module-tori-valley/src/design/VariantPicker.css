@@ -1,0 +1,43 @@
+.module-tori-valley .tv-variants {
+  display: inline-flex;
+  gap: var(--space-1);
+}
+
+.module-tori-valley .tv-variant {
+  position: relative;
+  display: inline-flex;
+}
+
+/* The radio stays in the page for keyboards and screen readers; its face is the drawn chip. */
+.module-tori-valley .tv-variant input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  margin: 0;
+  cursor: pointer;
+}
+
+.module-tori-valley .tv-variant__face {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--tap-target);
+  min-height: var(--tap-target);
+  border-radius: var(--radius-md);
+  border: var(--border-width) solid var(--border-default);
+  background: var(--surface-raised);
+  color: var(--text-body);
+  font-family: var(--font-score);
+  font-weight: 600;
+}
+
+.module-tori-valley .tv-variant input:checked + .tv-variant__face {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: var(--text-on-accent);
+}
+
+.module-tori-valley .tv-variant input:focus-visible + .tv-variant__face {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}

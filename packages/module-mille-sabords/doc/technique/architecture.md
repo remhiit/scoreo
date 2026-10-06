@@ -42,7 +42,7 @@ n'a pas été portée, parce que l'hôte la fournit déjà :
 | Historique des parties | L'historique de Scoreo |
 | Statistiques (`Stats.kt`) | L'écran Stats et le Hall of Fame de Scoreo |
 | Export v1.1, import, compression LZW | L'import/export de Scoreo — le module lui rend un `ModuleMatchResult` en processus |
-| Thème (`basculerTheme`) | Le thème de Scoreo ; le module garde sa propre identité visuelle, scopée |
+| Thème (`basculerTheme`) | Le thème de Scoreo, que le module porte : il compose le design system (voir `ui/vue-d-ensemble.md`) |
 | Persistance de la partie (`Persistence.kt`) | `host.saveDraft` / `host.saveMatch` |
 
 Reste le cœur du jeu : saisir un tour, voir le score courant, annuler, terminer.
@@ -53,7 +53,12 @@ Reste le cœur du jeu : saisir un tour, voir le score courant, annuler, terminer
 src/
 ├── index.ts                  # n'exporte QUE le manifeste et le module
 ├── module.ts                 # manifeste + import dynamique de l'écran
-├── styles.css                # scopé .module-mille-sabords, classes préfixées ms-
+├── design/                   # les pièces de jeu : seul dossier qui écrit className et CSS
+│   ├── ModuleRoot.tsx        # racine .module-mille-sabords (la mise en page vient du design system)
+│   ├── ScoreTable.tsx        # la grille tours × joueurs
+│   ├── DieCounter.tsx        # un compteur de face de dé
+│   ├── ScorePreview.tsx      # la valeur de la main en cours
+│   └── *.css                 # scopé .module-mille-sabords, classes ms-, tokens sémantiques seuls
 ├── domain/                   # le noyau, sans aucune dépendance de plateforme
 │   ├── constantes.ts
 │   ├── lancerDes.ts

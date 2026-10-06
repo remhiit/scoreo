@@ -12,9 +12,9 @@ import tseslint from 'typescript-eslint'
  * `packages/module-<id>/src/`, its component tests aside. Its `src/design/`
  * folder — where a module writes its game pieces' classes and CSS — lifts the
  * className rule alone: no inline style and no lucide-react there either.
- * Empty while the modules migrate one by one; a new module starts here.
+ * The modules migrate one by one; a new module starts here.
  */
-export const MODULES_COMPOSING_DS = []
+export const MODULES_COMPOSING_DS = ['mille-sabords', 'skyjo', 'tori-valley']
 
 // The host composes design-system components and nothing else: every visual
 // decision (class, inline style, icon glyph) lives in packages/design-system.

@@ -69,7 +69,7 @@ pieces no one else needs, scoped and prefixed, reading only the semantic tokens
 Catppuccin in four flavors (`colors-*.css`, switched by `data-theme` on `<html>`),
 the semantic layer and 14 accent presets (`semantic.css`, `data-accent`), type,
 spacing, radius/shadow/motion. Foundations (`src/foundations/base.css`): reset,
-page background, `--header-height`, `--screen-max`.
+page background, `--header-height`, `--screen-max`, `--screen-max-wide`.
 
 ### 01 · Atoms — `src/atoms/`
 
@@ -81,7 +81,7 @@ page background, `--header-height`, `--screen-max`.
 | `Stack`                  | The layout primitive: direction, gap, align, justify, wrap, grow                                                                                                   |
 | `TextInput`              | Text field with label, `invalid`/`error`/`hint`, `onEnter`                                                                                                         |
 | `DateInput`              | Native date field (`YYYY-MM-DD`) with label, `layout` `stacked`/`inline`, `max`                                                                                    |
-| `NumberField`            | Bare numeric field controlled as text (empty and `-` survive mid-edit), modes `cell`/`plain`, `invalid`                                                            |
+| `NumberField`            | Bare numeric field controlled as text (empty and `-` survive mid-edit), modes `cell`/`plain`, `invalid`, `min`/`max`                                               |
 | `NumberInput`            | `stepper` (−, value, +), `plain`, or `cell` (60px history cell)                                                                                                    |
 | `Select`                 | Native select with a themed chevron, `md` or `sm` (filter)                                                                                                         |
 | `Checkbox`               | Label is the 44px tap target                                                                                                                                       |
@@ -93,19 +93,19 @@ page background, `--header-height`, `--screen-max`.
 
 ### 02 · Molecules — `src/molecules/`
 
-| Component                  | Role                                                                                                                                                   |
-| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `ListRow` + `List`         | The row that carries the app: title, subtitle, players, date, badge; `selectable`/`selected` tints the whole row; square `actions` flush to the edge   |
-| `StandingsCard`            | Rank, name, total, delta; `lead` bordered in the accent                                                                                                |
-| `StatRow`                  | Leaderboard line: name, record, meter, value, `score` (accented ELO), trailing badge; `variant` `card` (default) or `line` (compact, inside a `Panel`) |
-| `HistoryCell`              | Name + score (or editable cell) on a two-column grid                                                                                                   |
-| `SegmentedControl`, `Tabs` | Switch views inside a screen / filter a list                                                                                                           |
-| `FormRow`, `ButtonRow`     | Field + submit; buttons sharing a row                                                                                                                  |
-| `DetailList` + `DetailRow` | Label/value pairs, optionally `boxed`                                                                                                                  |
-| `StatusLine`               | success / warning / danger / info outcome, with detail lines                                                                                           |
-| `FilterBar`                | Label + compact select                                                                                                                                 |
-| `EmptyState`               | What is missing, how to fill it                                                                                                                        |
-| `BulletList`               | The records a destructive dialog affects, one per line                                                                                                 |
+| Component                              | Role                                                                                                                                                   |
+| -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `ListRow` + `List`                     | The row that carries the app: title, subtitle, players, date, badge; `selectable`/`selected` tints the whole row; square `actions` flush to the edge   |
+| `StandingsCard`                        | Rank, name, total, delta; `lead` bordered in the accent                                                                                                |
+| `StatRow`                              | Leaderboard line: name, record, meter, value, `score` (accented ELO), trailing badge; `variant` `card` (default) or `line` (compact, inside a `Panel`) |
+| `HistoryCell`                          | Name + score (or editable cell) on a two-column grid                                                                                                   |
+| `SegmentedControl`, `Tabs`, `TabPanel` | Switch views inside a screen / filter a list; `TabPanel` is the card a tab shows                                                                       |
+| `FormRow`, `ButtonRow`                 | Field + submit; buttons sharing a row                                                                                                                  |
+| `DetailList` + `DetailRow`             | Label/value pairs, optionally `boxed`                                                                                                                  |
+| `StatusLine`                           | success / warning / danger / info outcome, with detail lines                                                                                           |
+| `FilterBar`                            | Label + compact select                                                                                                                                 |
+| `EmptyState`                           | What is missing, how to fill it                                                                                                                        |
+| `BulletList`                           | The records a destructive dialog affects, one per line                                                                                                 |
 
 ### 03 · Organisms — `src/organisms/`
 
@@ -126,10 +126,12 @@ page background, `--header-height`, `--screen-max`.
 
 ### 04 · Templates — `src/templates/`
 
-| Component           | Role                                                                                                                                                                                                                |
-| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `ScreenTemplate`    | Header + 600px scrolling column + optional `actionBar` + `overlays`. Covers the "scrolling list" and "list + action bar" templates; "bottom sheet" and "centred dialog" are `Sheet` and `Dialog` passed as overlays |
-| `ImmersiveTemplate` | For a scoring module: a fine bar with the way out, the module fills the rest                                                                                                                                        |
+| Component            | Role                                                                                                                                                                                                                |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ScreenTemplate`     | Header + 600px scrolling column + optional `actionBar` + `overlays`. Covers the "scrolling list" and "list + action bar" templates; "bottom sheet" and "centred dialog" are `Sheet` and `Dialog` passed as overlays |
+| `ImmersiveTemplate`  | For a scoring module: a fine bar with the way out, the module fills the rest                                                                                                                                        |
+| `WideLayout`         | The capped (1100px, `--screen-max-wide`), padded column an `ImmersiveTemplate`'s content is laid in — what a scoring module wraps its screen in                                                                     |
+| `Columns` + `Column` | Two named regions side by side from 900px, stacked below (a module's scoreboard next to the turn being counted)                                                                                                     |
 
 ### 05 · Pages
 

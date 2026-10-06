@@ -1,0 +1,39 @@
+/*
+ * The five Torī colours are the design system's semantic status colours, so they follow the
+ * flavor (Latte included) and stay distinguishable from one another in every
+ * theme. The colour is carried by a tinted fill and a solid border, never by the
+ * label: white on Latte's yellow or green falls under 3.5:1, while the heading
+ * text on a light tint stays readable in every flavor.
+ */
+.module-tori-valley .tv-torii-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--space-1) var(--space-2);
+  border: var(--border-width) solid var(--tv-torii-colour);
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--tv-torii-colour) 18%, var(--surface-card));
+  font-size: var(--text-xs);
+  font-weight: 600;
+  color: var(--text-heading);
+}
+
+.module-tori-valley .tv-torii-badge--green {
+  --tv-torii-colour: var(--color-success);
+}
+
+.module-tori-valley .tv-torii-badge--red {
+  --tv-torii-colour: var(--color-danger);
+}
+
+.module-tori-valley .tv-torii-badge--blue {
+  --tv-torii-colour: var(--color-info);
+}
+
+.module-tori-valley .tv-torii-badge--yellow {
+  --tv-torii-colour: var(--color-warning);
+}
+
+.module-tori-valley .tv-torii-badge--purple {
+  /* No semantic purple: blending danger and info keeps it apart from the other four in every flavor. */
+  --tv-torii-colour: color-mix(in srgb, var(--color-danger) 50%, var(--color-info));
+}
