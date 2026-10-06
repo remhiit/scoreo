@@ -1,0 +1,26 @@
+/*
+ * Torī Valley wears Scoreo's look: the surface, text and accent come from the
+ * design system's semantic tokens, so the module follows whichever flavor and
+ * accent the player picked. Every rule is scoped under `.module-tori-valley` and
+ * every class is prefixed `tv-`; `scripts/check-module-styles.mjs` and
+ * `apps/scoreo/e2e/module-style-isolation.spec.ts` guard that boundary.
+ */
+
+.module-tori-valley {
+  background: var(--surface-app);
+  color: var(--text-body);
+  font-family: var(--font-ui);
+  min-height: 100%;
+}
+
+.module-tori-valley *,
+.module-tori-valley *::before,
+.module-tori-valley *::after {
+  box-sizing: border-box;
+}
+
+.module-tori-valley .tv-shell {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: var(--space-4);
+}

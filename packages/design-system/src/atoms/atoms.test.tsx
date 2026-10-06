@@ -170,6 +170,15 @@ describe('Checkbox', () => {
     fireEvent.click(screen.getByText('Merge'))
     expect(onChange).toHaveBeenCalledWith(true)
   })
+
+  it('takes a fuller accessible name than its visible label', () => {
+    render(
+      <Checkbox checked={false} onChange={() => {}} ariaLabel="Alice — Merge">
+        Merge
+      </Checkbox>,
+    )
+    expect(screen.getByRole('checkbox', { name: 'Alice — Merge' })).toBeInTheDocument()
+  })
 })
 
 describe('Chip and Swatch', () => {

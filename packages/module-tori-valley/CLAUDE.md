@@ -54,10 +54,9 @@ The rulebook PDF and cropped photos of all 16 Objectif cards live in `doc/resour
 | ----------------- | ------------------------------------------------------------------------------------------------- |
 | `src/domain/`     | `model/` — types, zod schemas and the pure scoring logic. All that is left of the hexagon: the module owns no port and no adapter, because it owns no storage |
 | `src/ui/*/`       | One folder per screen: `<screen>Reducer.ts` (+ test), `<screen>Types.ts`, `<Screen>.tsx` (+ test). Two screens — `matchsetup/` and `scoredetail/` — plus `module/`, which strings them together for the host |
-| `src/ui/shared/`  | Shared React components (`AppButton`)                                                             |
 | `src/i18n/`       | The `tori-valley` namespace and its dictionaries, added to the host's i18next instance            |
 | `src/module.ts`   | The manifest and the lazily-loaded module, the only things Scoreo imports                         |
-| `src/styles.css`  | The module's own look. Every rule scoped under `.module-tori-valley`, every class prefixed `tv-`  |
+| `src/design/`     | Game pieces with no design-system equivalent (`ModuleRoot`, `ToriiBadge`, `VariantPicker`): React + CSS, rules scoped under `.module-tori-valley`, classes prefixed `tv-`, semantic tokens only |
 | `src/test/`       | Vitest harness: `setup.ts` and the i18next instance the component tests render against            |
 
 ## Workflow

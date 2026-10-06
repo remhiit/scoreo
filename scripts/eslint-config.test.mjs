@@ -5,7 +5,7 @@ import config, { MODULES_COMPOSING_DS, moduleComposingDsConfigs } from '../eslin
 
 // The module-composes-the-design-system rule, checked on real paths of the
 // workspace (eslint.config.js § MODULES_COMPOSING_DS). `skyjo` stands in for a
-// listed module, `tori-valley` for one still wearing its own look.
+// listed module; a test that needs an unlisted one passes its own list.
 const ROOT = fileURLToPath(new URL('..', import.meta.url))
 
 const SNIPPET = 'export const Piece = () => <div className="sj-card" />\n'
@@ -27,8 +27,8 @@ const classNameErrors = (filePath, listed) =>
   errors(SNIPPET, filePath, listed, 'no-restricted-syntax')
 
 describe('eslint.config.js — modules composing the design system', () => {
-  it('lists the modules that have migrated, 1000 Sabords then Skyjo', () => {
-    expect(MODULES_COMPOSING_DS).toEqual(['mille-sabords', 'skyjo'])
+  it('lists the modules that have migrated, 1000 Sabords, Skyjo then Torī Valley', () => {
+    expect(MODULES_COMPOSING_DS).toEqual(['mille-sabords', 'skyjo', 'tori-valley'])
   })
 
   it('holds 1000 Sabords to the rule through the real list alone', async () => {
@@ -40,7 +40,10 @@ describe('eslint.config.js — modules composing the design system', () => {
   })
 
   it('refuses a className outside src/design/ of a listed module', async () => {
-    const errors = await classNameErrors('packages/module-skyjo/src/ui/Round.tsx', ['skyjo'])
+    const errors = await classNameErrors('packages/module-skyjo/src/ui/Round.tsx', [
+      'skyjo',
+      'tori-valley',
+    ])
     expect(errors).toHaveLength(1)
     expect(errors[0].severity).toBe(2)
   })
@@ -116,7 +119,10 @@ describe('eslint.config.js — modules composing the design system', () => {
 
   it('accepts a className in a module that is not listed', async () => {
     expect(
-      await classNameErrors('packages/module-tori-valley/src/ui/Board.tsx', ['skyjo']),
+      await classNameErrors('packages/module-mille-sabords/src/ui/Board.tsx', [
+        'skyjo',
+        'tori-valley',
+      ]),
     ).toEqual([])
   })
 

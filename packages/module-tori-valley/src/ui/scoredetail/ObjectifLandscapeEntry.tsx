@@ -1,3 +1,4 @@
+import { Checkbox, NumberField, Stack, Text } from '@scoreboards/design-system'
 import { useTranslation } from 'react-i18next'
 import { TORI_VALLEY_NS } from '../../i18n'
 import type { LandscapeType, ObjectifVariant } from '../../domain/model/landscape'
@@ -32,36 +33,40 @@ export function ObjectifLandscapeEntry({
   const points = result.objectifPoints[landscape]
 
   return (
-    <div className="tv-objectif-entry">
-      <div className="tv-list-item">
-        <strong>
+    <Stack gap={2}>
+      <Stack direction="row" align="center" justify="between">
+        <Text variant="strong">
           {landscapeLabel} {t('scoreDetail.objectifVariant', { variant })}
-        </strong>
-        <span>{t('scoreDetail.vp', { value: points })}</span>
-      </div>
+        </Text>
+        <Text variant="mono">{t('scoreDetail.vp', { value: points })}</Text>
+      </Stack>
 
-      {!card.computable && <p className="tv-empty">{t(card.notComputableReasonKey ?? '')}</p>}
+      {!card.computable && (
+        <Text block variant="muted">
+          {t(card.notComputableReasonKey ?? '')}
+        </Text>
+      )}
 
       {isManual ? (
-        <label>
-          {t('scoreDetail.objectifTotalLabel')}{' '}
-          <input
-            type="number"
-            value={points}
-            aria-label={t('scoreDetail.objectifPointsAria', {
+        <Stack direction="row" align="center" justify="between">
+          <Text>{t('scoreDetail.objectifTotalLabel')}</Text>
+          <NumberField
+            mode="plain"
+            value={String(points)}
+            ariaLabel={t('scoreDetail.objectifPointsAria', {
               name: playerName,
               landscape: landscapeLabel,
             })}
-            onChange={(e) =>
+            onChange={(value) =>
               dispatch({
                 type: 'updateObjectifPoints',
                 playerId: result.playerId,
                 landscape,
-                points: Number(e.target.value),
+                points: Number(value),
               })
             }
           />
-        </label>
+        </Stack>
       ) : (
         card.fields.map((field) => {
           const value = result.objectifInputs[landscape][field.key] ?? 0
@@ -69,68 +74,63 @@ export function ObjectifLandscapeEntry({
           const aria = `${playerName} — ${label}`
 
           return field.kind === 'flag' ? (
-            <label key={field.key} className="tv-list-item">
-              <span>{label}</span>
-              <input
-                type="checkbox"
-                aria-label={aria}
-                checked={value === 1}
-                onChange={(e) =>
-                  dispatch({
-                    type: 'updateObjectifInput',
-                    playerId: result.playerId,
-                    landscape,
-                    key: field.key,
-                    value: e.target.checked ? 1 : 0,
-                  })
-                }
-              />
-            </label>
+            <Checkbox
+              key={field.key}
+              ariaLabel={aria}
+              checked={value === 1}
+              onChange={(checked) =>
+                dispatch({
+                  type: 'updateObjectifInput',
+                  playerId: result.playerId,
+                  landscape,
+                  key: field.key,
+                  value: checked ? 1 : 0,
+                })
+              }
+            >
+              {label}
+            </Checkbox>
           ) : (
-            <label key={field.key} className="tv-list-item">
-              <span>{label}</span>
-              <input
-                type="number"
-                min={field.min}
-                max={field.max}
-                aria-label={aria}
-                value={value}
-                onChange={(e) =>
+            <Stack direction="row" align="center" justify="between" key={field.key}>
+              <Text>{label}</Text>
+              <NumberField
+                mode="plain"
+                value={String(value)}
+                ariaLabel={aria}
+                onChange={(next) =>
                   dispatch({
                     type: 'updateObjectifInput',
                     playerId: result.playerId,
                     landscape,
                     key: field.key,
-                    value: Number(e.target.value),
+                    value: Number(next),
                   })
                 }
               />
-            </label>
+            </Stack>
           )
         })
       )}
 
       {card.computable && (
-        <label className="tv-list-item">
-          <span>{t('scoreDetail.manualToggle')}</span>
-          <input
-            type="checkbox"
-            aria-label={t('scoreDetail.manualToggleAria', {
-              name: playerName,
-              landscape: landscapeLabel,
-            })}
-            checked={isManual}
-            onChange={(e) =>
-              dispatch({
-                type: 'setObjectifManual',
-                playerId: result.playerId,
-                landscape,
-                manual: e.target.checked,
-              })
-            }
-          />
-        </label>
+        <Checkbox
+          ariaLabel={t('scoreDetail.manualToggleAria', {
+            name: playerName,
+            landscape: landscapeLabel,
+          })}
+          checked={isManual}
+          onChange={(manual) =>
+            dispatch({
+              type: 'setObjectifManual',
+              playerId: result.playerId,
+              landscape,
+              manual,
+            })
+          }
+        >
+          {t('scoreDetail.manualToggle')}
+        </Checkbox>
       )}
-    </div>
+    </Stack>
   )
 }
