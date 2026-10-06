@@ -5,7 +5,7 @@ import { DetailList, DetailRow } from './DetailList'
 import { EmptyState } from './EmptyState'
 import { FilterBar } from './FilterBar'
 import { ListRow } from './ListRow'
-import { SegmentedControl, Tabs } from './SegmentedControl'
+import { SegmentedControl, TabPanel, Tabs } from './SegmentedControl'
 import { StandingsCard } from './StandingsCard'
 import { StatRow } from './StatRow'
 import { StatusLine } from './StatusLine'
@@ -94,6 +94,17 @@ describe('SegmentedControl and Tabs', () => {
     )
     fireEvent.click(screen.getByRole('button', { name: 'History' }))
     expect(onChange).toHaveBeenCalledWith('history')
+  })
+
+  it('a tab panel is a named tabpanel holding its content', () => {
+    render(
+      <TabPanel ariaLabel="History">
+        <p>Round 1</p>
+      </TabPanel>,
+    )
+    const panel = screen.getByRole('tabpanel', { name: 'History' })
+    expect(panel).toHaveClass('sc-tabpanel')
+    expect(panel).toHaveTextContent('Round 1')
   })
 
   it('tabs expose the selected tab', () => {

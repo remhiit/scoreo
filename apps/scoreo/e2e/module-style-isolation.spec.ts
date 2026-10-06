@@ -3,9 +3,9 @@ import { chooseGame, startMatch } from './helpers/match'
 import { addPlayer } from './helpers/players'
 
 /**
- * A scoring module adopts Scoreo's identity by composing the design system;
- * until it has migrated, it still wears its legacy palette — Torī Valley's warm
- * washi, 1000 Sabords' night sky. Either way, none of a module's own CSS may
+ * A scoring module adopts Scoreo's identity by composing the design system, as
+ * 1000 Sabords does; until it has migrated, it still wears its legacy palette —
+ * Torī Valley's warm washi. Either way, none of a module's own CSS may
  * escape the module's screen.
  *
  * The risk is concrete: the stylesheets name tokens alike (`--color-primary`,
@@ -54,7 +54,7 @@ const MODULES: Record<string, ModuleUnderTest> = {
       await expect(page.locator('.module-mille-sabords .ms-table-wrap')).toBeVisible()
     },
     surface: '.module-mille-sabords .ms-table-wrap',
-    identity: 'own',
+    identity: 'scoreo',
   },
   Skyjo: {
     game: 'Skyjo',
