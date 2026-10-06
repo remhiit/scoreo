@@ -1,20 +1,8 @@
-import { existsSync } from 'node:fs'
 import js from '@eslint/js'
 import globals from 'globals'
 import reactHooks from 'eslint-plugin-react-hooks'
 import reactRefresh from 'eslint-plugin-react-refresh'
 import tseslint from 'typescript-eslint'
-
-/**
- * Scoring modules that compose @scoreboards/design-system the way the host
- * does (doc/technical/module-contract.md § "A module wears Scoreo's look").
- * Listing `<id>` applies the host's no-className/no-style/no-lucide rules to
- * `packages/module-<id>/src/`, its component tests aside. Its `src/design/`
- * folder — where a module writes its game pieces' classes and CSS — lifts the
- * className rule alone: no inline style and no lucide-react there either.
- * The modules migrate one by one; a new module starts here.
- */
-export const MODULES_COMPOSING_DS = ['mille-sabords', 'skyjo', 'tori-valley']
 
 // The host composes design-system components and nothing else: every visual
 // decision (class, inline style, icon glyph) lives in packages/design-system.
@@ -55,31 +43,28 @@ const GAME_PIECE_RULES = {
 }
 
 /**
- * Two config blocks per listed module: the full rule set outside `src/design/`,
- * the game-piece rule set inside it. A listed id with no package behind it is
- * a typo, and an ignored typo would silently lint nothing: it throws instead.
+ * Every scoring module composes @scoreboards/design-system the way the host
+ * does (doc/technical/module-contract.md § "A module wears Scoreo's look"):
+ * the host's no-className/no-style/no-lucide rules over each
+ * `packages/module-*` source, its component tests aside. Its `src/design/`
+ * folder — where a module writes its game pieces' classes and CSS — lifts the
+ * className rule alone: no inline style and no lucide-react there either.
+ * A glob, not a list: a new module falls under the rule from its first file.
+ * `module-api` is the host ↔ module contract, not a module
+ * (scripts/module-packages.mjs holds the same definition).
  */
-export function moduleComposingDsConfigs(moduleIds) {
-  return moduleIds.flatMap((id) => {
-    if (!existsSync(new URL(`./packages/module-${id}/`, import.meta.url))) {
-      throw new Error(
-        `eslint.config.js: MODULES_COMPOSING_DS lists "${id}" but packages/module-${id}/ does not exist.`,
-      )
-    }
-    return [
-      {
-        files: [`packages/module-${id}/src/**/*.{ts,tsx}`],
-        ignores: [`packages/module-${id}/src/design/**`, '**/*.test.tsx'],
-        rules: COMPOSE_DS_RULES,
-      },
-      {
-        files: [`packages/module-${id}/src/design/**/*.{ts,tsx}`],
-        ignores: ['**/*.test.tsx'],
-        rules: GAME_PIECE_RULES,
-      },
-    ]
-  })
-}
+const MODULE_CONFIGS = [
+  {
+    files: ['packages/module-*/src/**/*.{ts,tsx}'],
+    ignores: ['packages/module-api/**', 'packages/module-*/src/design/**', '**/*.test.tsx'],
+    rules: COMPOSE_DS_RULES,
+  },
+  {
+    files: ['packages/module-*/src/design/**/*.{ts,tsx}'],
+    ignores: ['packages/module-api/**', '**/*.test.tsx'],
+    rules: GAME_PIECE_RULES,
+  },
+]
 
 export default tseslint.config(
   {
@@ -116,5 +101,5 @@ export default tseslint.config(
     files: ['apps/scoreo/src/**/*.{ts,tsx}'],
     rules: COMPOSE_DS_RULES,
   },
-  ...moduleComposingDsConfigs(MODULES_COMPOSING_DS),
+  ...MODULE_CONFIGS,
 )

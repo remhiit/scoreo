@@ -76,7 +76,7 @@ origin — see the workspace's `doc/technical/architecture.md`.
 
 The module wears Scoreo's look: its screens compose `@scoreboards/design-system` (`Button`, `Panel`,
 `Select`, `NumberField`, `Checkbox`, `Stack`, `Text`…) and write no `className`, `style` or
-`lucide-react` import — ESLint enforces it through `MODULES_COMPOSING_DS`. Labels stay translated by
+`lucide-react` import — ESLint enforces it, as for every module (`eslint.config.js`). Labels stay translated by
 the module's i18n and are passed as props.
 
 What the design system has no equivalent for lives in `src/design/` — `ModuleRoot` (the

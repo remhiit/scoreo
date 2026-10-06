@@ -25,43 +25,31 @@ export function modulePackages(packagesDir = PACKAGES_DIR) {
 }
 
 /**
- * The legacy stylesheets still present in modules listed as composing the
- * design system. A migrated module has given its own palette up: a
+ * The legacy stylesheets still present in module packages. Every module
+ * composes the design system and has given its own palette up: a
  * `src/styles.css` left behind is dead weight at best, a second look at worst.
  */
-export function legacyStylesheetsOfComposingModules(composingIds, packagesDir = PACKAGES_DIR) {
-  return composingIds
-    .map((id) => join(packagesDir, `module-${id}`, 'src/styles.css'))
+export function legacyStylesheets(packagesDir = PACKAGES_DIR) {
+  return modulePackages(packagesDir)
+    .map((dir) => join(dir, 'src/styles.css'))
     .filter((path) => existsSync(path))
 }
 
 const MODULES_BLOCK = /const MODULES\b[^=]*=\s*\{([\s\S]*?)\n\}\n/
 const SURFACE = /surface:\s*'\.module-([\w-]+)/g
-const IDENTITY = /identity:\s*'(own|scoreo)'/g
 
 /**
  * Reads the `MODULES` table of `apps/scoreo/e2e/module-style-isolation.spec.ts`
- * statically (the spec imports Playwright, so it cannot be loaded here): one
- * `{ id, identity }` per row, the id taken from the row's `.module-<id>` surface.
- * Throws when the table cannot be read row by row, rather than return nothing.
+ * statically (the spec imports Playwright, so it cannot be loaded here): the
+ * module id of each row, taken from the row's `.module-<id>` surface.
+ * Throws when the table cannot be found or holds no row, rather than return nothing.
  */
-export function styleIsolationRows(specText) {
+export function styleIsolationIds(specText) {
   const block = specText.match(MODULES_BLOCK)?.[1]
   if (!block) throw new Error('module-style-isolation.spec.ts: no MODULES table found')
   const ids = [...block.matchAll(SURFACE)].map((m) => m[1])
-  const identities = [...block.matchAll(IDENTITY)].map((m) => m[1])
-  if (ids.length === 0 || ids.length !== identities.length) {
-    throw new Error(
-      `module-style-isolation.spec.ts: ${ids.length} surface(s) for ${identities.length} identity field(s) in MODULES`,
-    )
+  if (ids.length === 0) {
+    throw new Error('module-style-isolation.spec.ts: no `.module-<id>` surface in MODULES')
   }
-  return ids.map((id, i) => ({ id, identity: identities[i] }))
-}
-
-/**
- * Rows whose `identity` disagrees with `MODULES_COMPOSING_DS`: a module composes
- * the design system (lint) exactly when it wears Scoreo's look (e2e).
- */
-export function identityMismatches(rows, composingIds) {
-  return rows.filter(({ id, identity }) => (identity === 'scoreo') !== composingIds.includes(id))
+  return ids
 }
