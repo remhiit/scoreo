@@ -1,5 +1,8 @@
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { findViolations } from './check-design-tokens.mjs'
+import { cssRoots, findCssFiles, findViolations } from './check-design-tokens.mjs'
+import { packagesTree } from './packages-tree.test-helper.mjs'
 
 describe('findViolations', () => {
   it('flags a padding value that exactly matches a spacing token', () => {
@@ -36,7 +39,13 @@ describe('findViolations', () => {
   it('flags border-radius: 999px as the pill token', () => {
     const css = '.chip { border-radius: 999px; }'
     expect(findViolations(css, 'f.css')).toEqual([
-      { file: 'f.css', line: 1, property: 'border-radius', found: '999px', expected: 'var(--radius-pill)' },
+      {
+        file: 'f.css',
+        line: 1,
+        property: 'border-radius',
+        found: '999px',
+        expected: 'var(--radius-pill)',
+      },
     ])
   })
 
@@ -46,7 +55,8 @@ describe('findViolations', () => {
   })
 
   it('ignores properties outside the substitution scope (width, height, border, outline...)', () => {
-    const css = '.box { width: 12px; height: 44px; border: 8px solid red; outline: 24px; background-position: right 11px center; }'
+    const css =
+      '.box { width: 12px; height: 44px; border: 8px solid red; outline: 24px; background-position: right 11px center; }'
     expect(findViolations(css, 'f.css')).toEqual([])
   })
 
@@ -63,7 +73,13 @@ describe('findViolations', () => {
   it('flags a transition duration that exactly equals --duration-fast', () => {
     const css = '.btn { transition: background 0.1s; }'
     expect(findViolations(css, 'f.css')).toEqual([
-      { file: 'f.css', line: 1, property: 'transition', found: '0.1s', expected: 'var(--duration-fast)' },
+      {
+        file: 'f.css',
+        line: 1,
+        property: 'transition',
+        found: '0.1s',
+        expected: 'var(--duration-fast)',
+      },
     ])
   })
 
@@ -75,7 +91,13 @@ describe('findViolations', () => {
   it('flags a cubic-bezier matching --ease-standard', () => {
     const css = '.btn { transition: background 160ms cubic-bezier(0.2, 0, 0, 1); }'
     expect(findViolations(css, 'f.css')).toEqual([
-      { file: 'f.css', line: 1, property: 'transition', found: '160ms', expected: 'var(--duration-normal)' },
+      {
+        file: 'f.css',
+        line: 1,
+        property: 'transition',
+        found: '160ms',
+        expected: 'var(--duration-normal)',
+      },
       {
         file: 'f.css',
         line: 1,
@@ -96,5 +118,32 @@ describe('findViolations', () => {
   it('ignores a declaration inside a comment', () => {
     const css = '.card {\n  /* padding: 16px; */\n  color: red;\n}\n'
     expect(findViolations(css, 'f.css')).toEqual([])
+  })
+})
+
+describe('cssRoots', () => {
+  it('covers the design system and each module’s src/design/, nothing else', () => {
+    const root = packagesTree({
+      'design-system/src/atoms/button.css': '',
+      'module-a/src/design/Card.css': '',
+      'module-a/src/styles.css': '',
+      'module-b/src/index.ts': '',
+      'module-api/src/design/x.css': '',
+    })
+    expect(cssRoots(root, join(root, 'design-system/src'))).toEqual([
+      join(root, 'design-system/src'),
+      join(root, 'module-a/src/design'),
+    ])
+  })
+
+  it('flags a raw value equal to a token in a module’s src/design/', () => {
+    const root = packagesTree({
+      'module-a/src/design/Card.css': '.module-a .a-card {\n  padding: 16px;\n}\n',
+    })
+    const [designRoot] = cssRoots(root, join(root, 'design-system/src'))
+    const [file] = findCssFiles(designRoot)
+    expect(findViolations(readFileSync(file, 'utf8'), file)).toEqual([
+      { file, line: 2, property: 'padding', found: '16px', expected: 'var(--space-4)' },
+    ])
   })
 })

@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 // Fails if a raw px/duration/easing value in the design system's stylesheets
-// (packages/design-system/src/**/*.css — the only CSS the host ships) exactly
+// (packages/design-system/src/**/*.css — the only CSS the host ships) or in a
+// scoring module's game pieces (packages/module-*/src/design/**/*.css) exactly
 // matches a design token
 // (packages/design-system/src/tokens/), locking in the mechanical
 // var(...) substitution done for issue #238 (Ludo Design System adherence).
@@ -15,9 +16,23 @@
 import { existsSync, readFileSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
+import { PACKAGES_DIR, modulePackages } from './module-packages.mjs'
 
-const CSS_ROOTS = ['packages/design-system/src']
+const DESIGN_SYSTEM_ROOT = 'packages/design-system/src'
 const TOKENS_DIR = 'tokens'
+
+/**
+ * Every folder whose CSS is held to the tokens: the design system's own, plus
+ * each scoring module's `src/design/` — the game pieces of a module composing
+ * the design system read the same semantic tokens, so a raw value equal to one
+ * fails there exactly as it does here (doc/technical/module-contract.md). A
+ * module without `src/design/` contributes nothing. A module's legacy
+ * `src/styles.css` keeps its own palette and is not inspected.
+ */
+export function cssRoots(packagesDir = PACKAGES_DIR, designSystemRoot = DESIGN_SYSTEM_ROOT) {
+  const modules = modulePackages(packagesDir).map((dir) => join(dir, 'src/design'))
+  return [designSystemRoot, ...modules].filter((root) => existsSync(root))
+}
 
 // Keyed by the exact px integer a token resolves to.
 const SPACING_PX = {
@@ -157,7 +172,7 @@ export function findViolations(cssText, filePath) {
   return violations
 }
 
-function findCssFiles(dir) {
+export function findCssFiles(dir) {
   const out = []
   for (const entry of readdirSync(dir, { withFileTypes: true })) {
     if (entry.isDirectory()) {
@@ -172,7 +187,7 @@ function findCssFiles(dir) {
 
 function main() {
   const violations = []
-  const roots = CSS_ROOTS.filter((root) => existsSync(root))
+  const roots = cssRoots()
   for (const file of roots.flatMap(findCssFiles)) {
     const content = readFileSync(file, 'utf-8')
     violations.push(...findViolations(content, file))

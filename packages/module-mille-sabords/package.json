@@ -12,6 +12,7 @@
     "typecheck": "tsc --noEmit -p tsconfig.json"
   },
   "dependencies": {
+    "@scoreboards/design-system": "workspace:*",
     "@scoreboards/module-api": "workspace:*",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",

@@ -37,6 +37,18 @@ The host composes; it never styles.
 
 The rule has no exceptions: every host screen composes the system.
 
+## Scoring modules use it too
+
+The scoring modules under `packages/module-*/` consume this package as well
+(`workspace:*` dependency) and adopt Scoreo's look instead of a palette of their
+own. A module listed in `MODULES_COMPOSING_DS` (`eslint.config.js`) is held to
+the same rule as the app, with one exception: its `src/design/` folder, where it
+may write `className` (never `style` or a `lucide-react` import) for the game
+pieces no one else needs, scoped and prefixed, reading only the semantic tokens
+— no `--ctp-*` value, no raw colour. A piece a second module needs moves here. See
+[`doc/technical/module-contract.md`](../../doc/technical/module-contract.md) §
+"A module wears Scoreo's look".
+
 ## Conventions
 
 - Every class is prefixed `sc-` and owned by exactly one component

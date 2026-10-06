@@ -163,6 +163,9 @@ importers:
 
   packages/module-mille-sabords:
     dependencies:
+      '@scoreboards/design-system':
+        specifier: workspace:*
+        version: link:../design-system
       '@scoreboards/module-api':
         specifier: workspace:*
         version: link:../module-api
@@ -200,6 +203,9 @@ importers:
 
   packages/module-skyjo:
     dependencies:
+      '@scoreboards/design-system':
+        specifier: workspace:*
+        version: link:../design-system
       '@scoreboards/module-api':
         specifier: workspace:*
         version: link:../module-api
@@ -240,6 +246,9 @@ importers:
 
   packages/module-tori-valley:
     dependencies:
+      '@scoreboards/design-system':
+        specifier: workspace:*
+        version: link:../design-system
       '@scoreboards/module-api':
         specifier: workspace:*
         version: link:../module-api
