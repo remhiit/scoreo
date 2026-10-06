@@ -1,0 +1,16 @@
+/*
+ * 1000 Sabords wears Scoreo's identity: no palette of its own, only the design
+ * system's semantic tokens, so a flavour or accent change in Scoreo reaches the
+ * module as soon as it is drawn again. Every rule of `src/design/` is scoped
+ * under `.module-mille-sabords` and every class prefixed `ms-` — see
+ * doc/technical/module-contract.md § "A module wears Scoreo's look".
+ */
+
+.module-mille-sabords .ms-shell {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: var(--space-4);
+}

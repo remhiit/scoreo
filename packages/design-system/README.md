@@ -93,19 +93,19 @@ page background, `--header-height`, `--screen-max`.
 
 ### 02 · Molecules — `src/molecules/`
 
-| Component                  | Role                                                                                                                                                   |
-| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `ListRow` + `List`         | The row that carries the app: title, subtitle, players, date, badge; `selectable`/`selected` tints the whole row; square `actions` flush to the edge   |
-| `StandingsCard`            | Rank, name, total, delta; `lead` bordered in the accent                                                                                                |
-| `StatRow`                  | Leaderboard line: name, record, meter, value, `score` (accented ELO), trailing badge; `variant` `card` (default) or `line` (compact, inside a `Panel`) |
-| `HistoryCell`              | Name + score (or editable cell) on a two-column grid                                                                                                   |
-| `SegmentedControl`, `Tabs` | Switch views inside a screen / filter a list                                                                                                           |
-| `FormRow`, `ButtonRow`     | Field + submit; buttons sharing a row                                                                                                                  |
-| `DetailList` + `DetailRow` | Label/value pairs, optionally `boxed`                                                                                                                  |
-| `StatusLine`               | success / warning / danger / info outcome, with detail lines                                                                                           |
-| `FilterBar`                | Label + compact select                                                                                                                                 |
-| `EmptyState`               | What is missing, how to fill it                                                                                                                        |
-| `BulletList`               | The records a destructive dialog affects, one per line                                                                                                 |
+| Component                              | Role                                                                                                                                                   |
+| -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `ListRow` + `List`                     | The row that carries the app: title, subtitle, players, date, badge; `selectable`/`selected` tints the whole row; square `actions` flush to the edge   |
+| `StandingsCard`                        | Rank, name, total, delta; `lead` bordered in the accent                                                                                                |
+| `StatRow`                              | Leaderboard line: name, record, meter, value, `score` (accented ELO), trailing badge; `variant` `card` (default) or `line` (compact, inside a `Panel`) |
+| `HistoryCell`                          | Name + score (or editable cell) on a two-column grid                                                                                                   |
+| `SegmentedControl`, `Tabs`, `TabPanel` | Switch views inside a screen / filter a list; `TabPanel` is the card a tab shows                                                                       |
+| `FormRow`, `ButtonRow`                 | Field + submit; buttons sharing a row                                                                                                                  |
+| `DetailList` + `DetailRow`             | Label/value pairs, optionally `boxed`                                                                                                                  |
+| `StatusLine`                           | success / warning / danger / info outcome, with detail lines                                                                                           |
+| `FilterBar`                            | Label + compact select                                                                                                                                 |
+| `EmptyState`                           | What is missing, how to fill it                                                                                                                        |
+| `BulletList`                           | The records a destructive dialog affects, one per line                                                                                                 |
 
 ### 03 · Organisms — `src/organisms/`
 

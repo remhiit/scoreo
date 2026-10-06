@@ -1,0 +1,97 @@
+/* The scoreboard's card is the host's own card surface: the module's reference
+   surface in apps/scoreo/e2e/module-style-isolation.spec.ts. */
+.module-mille-sabords .ms-table-wrap {
+  overflow-x: auto;
+  background: var(--surface-card);
+  border: var(--border-width) solid var(--border-subtle);
+  border-radius: var(--radius-md);
+}
+
+.module-mille-sabords .ms-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-body);
+}
+
+.module-mille-sabords .ms-table th,
+.module-mille-sabords .ms-table td {
+  padding: var(--space-2) var(--space-3);
+  text-align: center;
+  border-bottom: var(--border-width) solid var(--border-subtle);
+  white-space: nowrap;
+}
+
+.module-mille-sabords .ms-table thead th {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  color: var(--text-heading);
+  background: var(--surface-raised);
+}
+
+.module-mille-sabords .ms-table thead th.ms-current {
+  box-shadow: inset 0 -3px 0 var(--color-primary);
+}
+
+.module-mille-sabords .ms-round-label {
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  color: var(--text-muted);
+}
+
+/* Specific enough to beat the centred cells of `.ms-table th`. */
+.module-mille-sabords .ms-table .ms-round-label {
+  text-align: left;
+}
+
+.module-mille-sabords .ms-cell {
+  font-family: var(--font-score);
+}
+
+.module-mille-sabords .ms-cell--zero {
+  color: var(--text-faint);
+}
+
+.module-mille-sabords .ms-cell--negative {
+  color: var(--color-danger);
+}
+
+.module-mille-sabords .ms-cell--island {
+  color: var(--color-danger);
+  font-weight: var(--weight-semibold);
+}
+
+.module-mille-sabords .ms-empty {
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+.module-mille-sabords .ms-table .ms-empty {
+  padding: var(--space-4);
+}
+
+.module-mille-sabords .ms-total {
+  font-family: var(--font-score);
+  font-weight: var(--weight-bold);
+  background: var(--surface-raised);
+}
+
+.module-mille-sabords .ms-total--leading {
+  color: var(--color-primary);
+}
+
+.module-mille-sabords .ms-total--over {
+  color: var(--color-success);
+}
+
+/* Visually hidden, still read out: the grid's empty corner header. */
+.module-mille-sabords .ms-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}

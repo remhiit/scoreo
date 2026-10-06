@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import { cx } from '../cx'
 
 export interface ChoiceOption<T extends string> {
@@ -59,6 +60,21 @@ export function Tabs<T extends string>({ options, value, onChange, ariaLabel }: 
           {option.label}
         </button>
       ))}
+    </div>
+  )
+}
+
+export interface TabPanelProps {
+  /** Accessible name — usually the label of the tab that shows it. */
+  ariaLabel: string
+  children: ReactNode
+}
+
+/** The content a `<Tabs>` choice shows, on a card under the tabs. */
+export function TabPanel({ ariaLabel, children }: TabPanelProps) {
+  return (
+    <div className="sc-tabpanel" role="tabpanel" aria-label={ariaLabel}>
+      {children}
     </div>
   )
 }

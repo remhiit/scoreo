@@ -27,8 +27,16 @@ const classNameErrors = (filePath, listed) =>
   errors(SNIPPET, filePath, listed, 'no-restricted-syntax')
 
 describe('eslint.config.js — modules composing the design system', () => {
-  it('starts with no module listed', () => {
-    expect(MODULES_COMPOSING_DS).toEqual([])
+  it('lists the modules that have migrated, 1000 Sabords first (#561)', () => {
+    expect(MODULES_COMPOSING_DS).toEqual(['mille-sabords'])
+  })
+
+  it('holds 1000 Sabords to the rule through the real list alone', async () => {
+    const screen = 'packages/module-mille-sabords/src/ui/module/MilleSabordsModuleScreen.tsx'
+    expect(await classNameErrors(screen, [])).toHaveLength(1)
+    expect(
+      await classNameErrors('packages/module-mille-sabords/src/design/ScoreTable.tsx', []),
+    ).toEqual([])
   })
 
   it('refuses a className outside src/design/ of a listed module', async () => {

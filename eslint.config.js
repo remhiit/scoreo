@@ -14,7 +14,7 @@ import tseslint from 'typescript-eslint'
  * className rule alone: no inline style and no lucide-react there either.
  * Empty while the modules migrate one by one; a new module starts here.
  */
-export const MODULES_COMPOSING_DS = []
+export const MODULES_COMPOSING_DS = ['mille-sabords']
 
 // The host composes design-system components and nothing else: every visual
 // decision (class, inline style, icon glyph) lives in packages/design-system.
