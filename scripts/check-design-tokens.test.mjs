@@ -1,8 +1,8 @@
-import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs'
-import { tmpdir } from 'node:os'
-import { dirname, join } from 'node:path'
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { cssRoots, findCssFiles, findViolations } from './check-design-tokens.mjs'
+import { packagesTree } from './packages-tree.test-helper.mjs'
 
 describe('findViolations', () => {
   it('flags a padding value that exactly matches a spacing token', () => {
@@ -39,7 +39,13 @@ describe('findViolations', () => {
   it('flags border-radius: 999px as the pill token', () => {
     const css = '.chip { border-radius: 999px; }'
     expect(findViolations(css, 'f.css')).toEqual([
-      { file: 'f.css', line: 1, property: 'border-radius', found: '999px', expected: 'var(--radius-pill)' },
+      {
+        file: 'f.css',
+        line: 1,
+        property: 'border-radius',
+        found: '999px',
+        expected: 'var(--radius-pill)',
+      },
     ])
   })
 
@@ -49,7 +55,8 @@ describe('findViolations', () => {
   })
 
   it('ignores properties outside the substitution scope (width, height, border, outline...)', () => {
-    const css = '.box { width: 12px; height: 44px; border: 8px solid red; outline: 24px; background-position: right 11px center; }'
+    const css =
+      '.box { width: 12px; height: 44px; border: 8px solid red; outline: 24px; background-position: right 11px center; }'
     expect(findViolations(css, 'f.css')).toEqual([])
   })
 
@@ -66,7 +73,13 @@ describe('findViolations', () => {
   it('flags a transition duration that exactly equals --duration-fast', () => {
     const css = '.btn { transition: background 0.1s; }'
     expect(findViolations(css, 'f.css')).toEqual([
-      { file: 'f.css', line: 1, property: 'transition', found: '0.1s', expected: 'var(--duration-fast)' },
+      {
+        file: 'f.css',
+        line: 1,
+        property: 'transition',
+        found: '0.1s',
+        expected: 'var(--duration-fast)',
+      },
     ])
   })
 
@@ -78,7 +91,13 @@ describe('findViolations', () => {
   it('flags a cubic-bezier matching --ease-standard', () => {
     const css = '.btn { transition: background 160ms cubic-bezier(0.2, 0, 0, 1); }'
     expect(findViolations(css, 'f.css')).toEqual([
-      { file: 'f.css', line: 1, property: 'transition', found: '160ms', expected: 'var(--duration-normal)' },
+      {
+        file: 'f.css',
+        line: 1,
+        property: 'transition',
+        found: '160ms',
+        expected: 'var(--duration-normal)',
+      },
       {
         file: 'f.css',
         line: 1,
@@ -103,15 +122,6 @@ describe('findViolations', () => {
 })
 
 describe('cssRoots', () => {
-  function packagesTree(files) {
-    const root = mkdtempSync(join(tmpdir(), 'design-tokens-'))
-    for (const [path, content] of Object.entries(files)) {
-      mkdirSync(dirname(join(root, path)), { recursive: true })
-      writeFileSync(join(root, path), content)
-    }
-    return root
-  }
-
   it('covers the design system and each module’s src/design/, nothing else', () => {
     const root = packagesTree({
       'design-system/src/atoms/button.css': '',

@@ -243,13 +243,15 @@ of every module package.
 
 Not everything a game draws belongs in the design system: a die face, a card, a score cell exist for
 one game only. Those pieces live in the module's **`src/design/`** folder — the one place in a module
-where `className` and CSS may be written:
+where `className` and CSS may be written. `src/design/` lifts the `className` rule and nothing
+else: no inline `style` there either, and icons still come through `<Icon />`, never a `lucide-react`
+import. Its CSS follows three rules:
 
 - every rule scoped under `.module-<moduleId>`, carried by the module's root;
 - every class prefixed with the module's own prefix (`ms-` for 1000 Sabords, `tv-` for Torī Valley,
   `sj-` for Skyjo), never `sc-`;
-- only the design system's semantic tokens — never a raw `--ctp-*` value, never a raw value equal to
-  a token.
+- only the design system's semantic tokens — never a `var(--ctp-*)` palette token, never a raw
+  colour (hex, `rgb()`/`rgba()`, `hsl()`/`hsla()`), never a raw value equal to a token.
 
 **A component two modules need moves into the design system.** The second module to want a piece is
 the signal: it is promoted (renamed `sc-`, with its CSS and test, in the right atomic layer) and both
@@ -272,17 +274,25 @@ prefix. The scope and the prefix guard opposite directions of the same border; o
 
 - `eslint.config.js` — `MODULES_COMPOSING_DS` lists the modules that compose the design system. For
   each, the host's `className`/`style`/`lucide-react` rules apply to `packages/module-<id>/src/**`,
-  except `src/design/**` and component tests (`*.test.tsx`). A listed id with no
-  `packages/module-<id>/` makes the config throw rather than silently lint nothing.
+  component tests (`*.test.tsx`) aside; in `src/design/**` only the `className` rule is lifted —
+  `style` and `lucide-react` stay refused. A listed id with no `packages/module-<id>/` makes the
+  config throw rather than silently lint nothing. `scripts/eslint-config.test.mjs` proves each case.
 - `scripts/check-module-styles.mjs` — every `src/design/**/*.css` (and a legacy `src/styles.css`,
   while one remains) must be scoped under `.module-<moduleId>` and share no class name with the
-  design system. Runs in CI.
+  design system. Under `src/design/` it also fails on any `var(--ctp-…)` palette token and any raw
+  colour (hex, `rgb()`/`rgba()`, `hsl()`/`hsla()`); a legacy `src/styles.css` keeps its own palette
+  and is not held to that. Runs in CI.
 - `scripts/check-design-tokens.mjs` — a raw px/duration/easing value equal to a token fails in
   `src/design/**/*.css` exactly as in the design system.
 - `apps/scoreo/e2e/module-style-isolation.spec.ts` — a table of every registered module, so a new
   module is a row there, not a new test. Each row carries `identity`: `'scoreo'` checks that the
   module's reference surface wears the host's `--surface-card`; for every row, opening the module
   must leave Scoreo's own theme untouched.
+- `scripts/module-packages.test.mjs` — ties the transition state together: a module listed in
+  `MODULES_COMPOSING_DS` may no longer have a `src/styles.css`, and each row of the e2e table has
+  `identity: 'scoreo'` exactly when its id is in `MODULES_COMPOSING_DS` (the table is read
+  statically, and must hold one row per module package). `scripts/module-packages.mjs` is also the
+  one definition of "a module package" (`packages/module-*` but `module-api`) both CSS guards walk.
 - What none of these can see, `apps/scoreo/tests/visual/` does: see
   [`visual-testing.md`](visual-testing.md).
 

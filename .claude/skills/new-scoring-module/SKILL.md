@@ -98,10 +98,14 @@ only colours, spacings and radii it uses. The contract is `doc/technical/module-
   behind it makes the config throw, so a typo cannot silently lint nothing.
 - **Game pieces live in `src/design/`** — a die, a card, a score cell the design system has no
   component for. That folder (and the component tests) is the only place the lint rule lets
-  `className` through. Its CSS stays under the border rules below, and reads only the design
-  system's semantic tokens (`--surface-*`, `--text-*`, `--color-*`, `--space-*`, `--radius-*`): a
-  raw value equal to a token fails `scripts/check-design-tokens.mjs`, which inspects
+  `className` through — and only `className`: `style` and `lucide-react` stay refused there too.
+  Its CSS stays under the border rules below, and reads only the design system's semantic tokens
+  (`--surface-*`, `--text-*`, `--color-*`, `--space-*`, `--radius-*`): a `var(--ctp-…)` or a raw
+  colour (hex, `rgb()`, `hsl()`…) fails `scripts/check-module-styles.mjs`, and a raw value equal to
+  a token fails `scripts/check-design-tokens.mjs`, which inspects
   `packages/module-*/src/design/**/*.css` too.
+- **No `src/styles.css`.** A module listed in `MODULES_COMPOSING_DS` with one fails
+  `scripts/module-packages.test.mjs`.
 - **A piece a second module needs moves into the design system** (with its CSS and test, renamed
   `sc-`), and both modules compose it from there. `src/design/` holds what is specific to one game,
   never a shared component waiting to be found.
@@ -217,7 +221,10 @@ allowed fix round — this step is satisfied and § Sorties obligatoires can be 
 - The module registered in `apps/scoreo/src/modules/registry.ts` and the
   workspace dependency added to `apps/scoreo/package.json` (step 6).
 - `apps/scoreo/e2e/module-style-isolation.spec.ts` carries a new row with
-  `identity: 'scoreo'`, and `apps/scoreo/tests/visual/` a new spec with
+  `identity: 'scoreo'` — the pair of its `MODULES_COMPOSING_DS` entry:
+  `scripts/module-packages.test.mjs` fails unless `identity === 'scoreo'` ⇔
+  the id is in `MODULES_COMPOSING_DS`, and unless every module package has a
+  row — and `apps/scoreo/tests/visual/` a new spec with
   baselines recorded in the container (step 7).
 - `packages/module-<game>/doc/` populated and one row added to
   `doc/reference.md` (step 8).

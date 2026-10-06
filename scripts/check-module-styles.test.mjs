@@ -1,8 +1,15 @@
-import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs'
-import { tmpdir } from 'node:os'
-import { dirname, join } from 'node:path'
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { classNames, findViolations, moduleStylesheets, selectors } from './check-module-styles.mjs'
+import {
+  classNames,
+  findColourViolations,
+  findViolations,
+  isDesignStylesheet,
+  moduleStylesheets,
+  selectors,
+} from './check-module-styles.mjs'
+import { packagesTree } from './packages-tree.test-helper.mjs'
 
 const HOST = new Set(['card', 'empty', 'app-title'])
 
@@ -62,15 +69,6 @@ describe('findViolations', () => {
 })
 
 describe('moduleStylesheets', () => {
-  function packagesTree(files) {
-    const root = mkdtempSync(join(tmpdir(), 'module-styles-'))
-    for (const [path, content] of Object.entries(files)) {
-      mkdirSync(dirname(join(root, path)), { recursive: true })
-      writeFileSync(join(root, path), content)
-    }
-    return root
-  }
-
   it('finds a module’s legacy styles.css and every sheet under src/design/', () => {
     const root = packagesTree({
       'module-a/src/styles.css': '.module-a {}',
@@ -108,6 +106,60 @@ describe('moduleStylesheets', () => {
     const [file] = moduleStylesheets(root)
     expect(findViolations(readFileSync(file, 'utf8'), file, new Set(['sc-card']))).toEqual([
       { file, kind: 'collides-with-host', detail: '.sc-card' },
+    ])
+  })
+})
+
+describe('findColourViolations', () => {
+  it('passes a game piece coloured through semantic tokens only', () => {
+    const css = '.module-a .a-card { background: var(--surface-card); color: var(--color-primary) }'
+    expect(findColourViolations(css, 'f.css')).toEqual([])
+  })
+
+  it('flags a Catppuccin palette token', () => {
+    const css = '.module-a .a-card { border-color: var(--ctp-mauve); }'
+    expect(findColourViolations(css, 'f.css')).toEqual([
+      { file: 'f.css', kind: 'palette-token', detail: 'border-color: var(--ctp-mauve)' },
+    ])
+  })
+
+  it('flags every kind of raw colour, custom properties included', () => {
+    const css = [
+      '.module-a .a-card {',
+      '  color: #fff;',
+      '  --a-glow: #1e1e2eCC;',
+      '  background: rgb(0 0 0);',
+      '  outline-color: rgba(0, 0, 0, 0.5);',
+      '  border-color: hsl(10 20% 30%);',
+      '  box-shadow: 0 0 2px hsla(10, 20%, 30%, 0.4)',
+      '}',
+    ].join('\n')
+    expect(findColourViolations(css, 'f.css').map(({ kind, detail }) => [kind, detail])).toEqual([
+      ['raw-colour', 'color: #fff'],
+      ['raw-colour', '--a-glow: #1e1e2eCC'],
+      ['raw-colour', 'background: rgb('],
+      ['raw-colour', 'outline-color: rgba('],
+      ['raw-colour', 'border-color: hsl('],
+      ['raw-colour', 'box-shadow: hsla('],
+    ])
+  })
+
+  it('ignores colours that only appear in a comment', () => {
+    expect(
+      findColourViolations('.module-a .a-x { /* was #fff */ color: var(--text) }', 'f.css'),
+    ).toEqual([])
+  })
+
+  it('applies to src/design/ sheets, not to a legacy styles.css', () => {
+    const root = packagesTree({
+      'module-a/src/styles.css': '.module-a { --a-bg: #fff; color: var(--ctp-text) }',
+      'module-a/src/design/Card.css': '.module-a .a-card { color: #fff }',
+    })
+    const [legacy, design] = moduleStylesheets(root)
+    expect(isDesignStylesheet(legacy)).toBe(false)
+    expect(isDesignStylesheet(design)).toBe(true)
+    expect(findColourViolations(readFileSync(design, 'utf8'), design)).toEqual([
+      { file: design, kind: 'raw-colour', detail: 'color: #fff' },
     ])
   })
 })

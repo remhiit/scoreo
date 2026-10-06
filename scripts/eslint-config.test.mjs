@@ -9,16 +9,22 @@ import config, { MODULES_COMPOSING_DS, moduleComposingDsConfigs } from '../eslin
 const ROOT = fileURLToPath(new URL('..', import.meta.url))
 
 const SNIPPET = 'export const Piece = () => <div className="sj-card" />\n'
+const STYLE_SNIPPET = 'export const Piece = () => <div style={{ color: "red" }} />\n'
+const LUCIDE_SNIPPET =
+  "import { Dice5 } from 'lucide-react'\nexport const Piece = () => <Dice5 />\n"
 
-async function classNameErrors(filePath, listed) {
+async function errors(snippet, filePath, listed, ruleId) {
   const eslint = new ESLint({
     cwd: ROOT,
     overrideConfigFile: true,
     overrideConfig: [...config, ...moduleComposingDsConfigs(listed)],
   })
-  const [result] = await eslint.lintText(SNIPPET, { filePath })
-  return result.messages.filter((m) => m.ruleId === 'no-restricted-syntax')
+  const [result] = await eslint.lintText(snippet, { filePath })
+  return result.messages.filter((m) => m.ruleId === ruleId)
 }
+
+const classNameErrors = (filePath, listed) =>
+  errors(SNIPPET, filePath, listed, 'no-restricted-syntax')
 
 describe('eslint.config.js — modules composing the design system', () => {
   it('starts with no module listed', () => {
@@ -35,6 +41,28 @@ describe('eslint.config.js — modules composing the design system', () => {
     expect(await classNameErrors('packages/module-skyjo/src/design/Card.tsx', ['skyjo'])).toEqual(
       [],
     )
+  })
+
+  it('refuses an inline style inside src/design/ of a listed module', async () => {
+    const found = await errors(
+      STYLE_SNIPPET,
+      'packages/module-skyjo/src/design/Card.tsx',
+      ['skyjo'],
+      'no-restricted-syntax',
+    )
+    expect(found).toHaveLength(1)
+    expect(found[0].message).toMatch(/no inline style/)
+  })
+
+  it('refuses a lucide-react import inside src/design/ of a listed module', async () => {
+    const found = await errors(
+      LUCIDE_SNIPPET,
+      'packages/module-skyjo/src/design/Card.tsx',
+      ['skyjo'],
+      'no-restricted-imports',
+    )
+    expect(found).toHaveLength(1)
+    expect(found[0].severity).toBe(2)
   })
 
   it('accepts a className in a listed module’s component test', async () => {

@@ -16,9 +16,9 @@
 import { existsSync, readFileSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
+import { PACKAGES_DIR, modulePackages } from './module-packages.mjs'
 
 const DESIGN_SYSTEM_ROOT = 'packages/design-system/src'
-const PACKAGES_DIR = 'packages'
 const TOKENS_DIR = 'tokens'
 
 /**
@@ -30,12 +30,7 @@ const TOKENS_DIR = 'tokens'
  * `src/styles.css` keeps its own palette and is not inspected.
  */
 export function cssRoots(packagesDir = PACKAGES_DIR, designSystemRoot = DESIGN_SYSTEM_ROOT) {
-  const modules = existsSync(packagesDir)
-    ? readdirSync(packagesDir)
-        .filter((name) => name.startsWith('module-') && name !== 'module-api')
-        .sort()
-        .map((name) => join(packagesDir, name, 'src/design'))
-    : []
+  const modules = modulePackages(packagesDir).map((dir) => join(dir, 'src/design'))
   return [designSystemRoot, ...modules].filter((root) => existsSync(root))
 }
 
