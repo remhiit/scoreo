@@ -113,6 +113,11 @@ only colours, spacings and radii it uses. The contract is `doc/technical/module-
 The border rules still hold for every sheet under `src/design/`: every rule scoped under
 `.module-<moduleId>`, **and** every class prefixed (`ms-`, `tv-`, `sj-`, never `sc-`).
 
+The root wrapper that carries `.module-<moduleId>` is itself a game piece: it sets a `className`, so
+it lives in `src/design/` (e.g. `src/design/ModuleRoot.tsx`, rendering
+`<div className="module-<moduleId>">{children}</div>`) and the screen composes it. A screen under
+`src/ui/` writing `className="module-<id>"` itself is refused by the lint rule.
+
 Scoping protects the host from the module. It does **nothing** in the other direction: Scoreo's
 old `theme.css` styled plain `.card` and `.empty`, and a module reusing those names inherited whatever
 it did not itself declare. Torī Valley did exactly that, and every player card was laid out in a row

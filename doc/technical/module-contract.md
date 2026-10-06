@@ -258,6 +258,12 @@ the signal: it is promoted (renamed `sc-`, with its CSS and test, in the right a
 modules compose it from there. `src/design/` holds what is specific to one game, never a component
 waiting to be shared.
 
+**The root wrapper is a game piece too.** The element carrying `.module-<moduleId>` sets a
+`className`, so for a module listed in `MODULES_COMPOSING_DS` it lives in `src/design/` (e.g.
+`src/design/ModuleRoot.tsx`, rendering `<div className="module-<moduleId>">{children}</div>`), and the
+screen under `src/ui/` composes it — never writes the class itself, which the lint rule refuses
+outside `src/design/`.
+
 ### The border, both ways
 
 The CSS a module still writes must never escape it. A bare `:root`, or a bare element selector like

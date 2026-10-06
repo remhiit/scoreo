@@ -144,6 +144,14 @@ describe('findColourViolations', () => {
     ])
   })
 
+  it('flags a custom property whose name holds a digit, under its full name', () => {
+    const css = '.module-a .a-card { --a-shade2: #fff; --a-col-2: var(--ctp-red) }'
+    expect(findColourViolations(css, 'f.css')).toEqual([
+      { file: 'f.css', kind: 'raw-colour', detail: '--a-shade2: #fff' },
+      { file: 'f.css', kind: 'palette-token', detail: '--a-col-2: var(--ctp-red)' },
+    ])
+  })
+
   it('ignores colours that only appear in a comment', () => {
     expect(
       findColourViolations('.module-a .a-x { /* was #fff */ color: var(--text) }', 'f.css'),

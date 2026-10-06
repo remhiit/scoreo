@@ -89,7 +89,7 @@ export function findViolations(css, moduleFile, hostClasses) {
   return violations
 }
 
-const DECLARATION = /([a-zA-Z-]+)\s*:\s*([^;{}]+)(?:;|(?=\}))/g
+const DECLARATION = /(-{0,2}[a-zA-Z_][\w-]*)\s*:\s*([^;{}]+)(?:;|(?=\}))/g
 const PALETTE_TOKEN = /var\(\s*(--ctp-[\w-]+)/g
 const RAW_COLOUR = /#[0-9a-fA-F]{3,8}\b|\b(?:rgba?|hsla?)\(/g
 

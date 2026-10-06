@@ -43,6 +43,41 @@ describe('eslint.config.js — modules composing the design system', () => {
     )
   })
 
+  it('accepts the module root wrapper in src/design/, composed by the screen', async () => {
+    const root =
+      'export const ModuleRoot = ({ children }) => <div className="module-skyjo">{children}</div>\n'
+    const screen =
+      "import { ModuleRoot } from '../../design/ModuleRoot'\nexport const Screen = () => <ModuleRoot />\n"
+    expect(
+      await errors(
+        root,
+        'packages/module-skyjo/src/design/ModuleRoot.tsx',
+        ['skyjo'],
+        'no-restricted-syntax',
+      ),
+    ).toEqual([])
+    expect(
+      await errors(
+        screen,
+        'packages/module-skyjo/src/ui/module/SkyjoModuleScreen.tsx',
+        ['skyjo'],
+        'no-restricted-syntax',
+      ),
+    ).toEqual([])
+  })
+
+  it('refuses the module root class written by the screen itself', async () => {
+    const screen = 'export const Screen = () => <div className="module-skyjo" />\n'
+    expect(
+      await errors(
+        screen,
+        'packages/module-skyjo/src/ui/module/SkyjoModuleScreen.tsx',
+        ['skyjo'],
+        'no-restricted-syntax',
+      ),
+    ).toHaveLength(1)
+  })
+
   it('refuses an inline style inside src/design/ of a listed module', async () => {
     const found = await errors(
       STYLE_SNIPPET,
