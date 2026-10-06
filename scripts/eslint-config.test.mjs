@@ -118,12 +118,8 @@ describe('eslint.config.js — modules composing the design system', () => {
   })
 
   it('accepts a className in a module that is not listed', async () => {
-    expect(
-      await classNameErrors('packages/module-mille-sabords/src/ui/Board.tsx', [
-        'skyjo',
-        'tori-valley',
-      ]),
-    ).toEqual([])
+    // Every real module is listed now, so the unlisted one is hypothetical.
+    expect(await classNameErrors('packages/module-unlisted/src/ui/Board.tsx', [])).toEqual([])
   })
 
   it('still refuses a className in the host app', async () => {
