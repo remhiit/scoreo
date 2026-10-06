@@ -1,9 +1,25 @@
+import {
+  Badge,
+  Button,
+  ButtonRow,
+  Chip,
+  Dialog,
+  NumberField,
+  Panel,
+  Stack,
+  StandingsCard,
+  StandingsGrid,
+  Text,
+} from '@scoreboards/design-system'
 import type { ScoringModuleScreenProps } from '@scoreboards/module-api'
 import { useEffect, useMemo, useReducer } from 'react'
-// Bundled with this chunk, so the module arrives styled and costs the host
-// nothing until someone opens it.
-import '../../styles.css'
-import { appliedRoundScores, cumulativeTotals, END_THRESHOLD, type SkyjoRound } from '../../domain/round'
+import { ModuleRoot, SkyjoTable, SkyjoWinner } from '../../design'
+import {
+  appliedRoundScores,
+  cumulativeTotals,
+  END_THRESHOLD,
+  type SkyjoRound,
+} from '../../domain/round'
 import { buildRanking, toModuleMatchResult } from '../../domain/moduleResult'
 import {
   buildInitialState,
@@ -22,7 +38,12 @@ type Dispatch = (action: SkyjoAction) => void
  * enter the total here; the module tracks the running totals, the doubling
  * rule and the end-of-game threshold.
  */
-export default function SkyjoModuleScreen({ host, playerIds, editing, onExit }: ScoringModuleScreenProps) {
+export default function SkyjoModuleScreen({
+  host,
+  playerIds,
+  editing,
+  onExit,
+}: ScoringModuleScreenProps) {
   const [state, dispatch] = useReducer(skyjoModuleReducer, undefined, () =>
     // Reopening a match wins over the draft: the host asked for *that* game.
     buildInitialState(playerIds, editing === undefined ? host.loadDraft() : editing.data),
@@ -63,47 +84,52 @@ export default function SkyjoModuleScreen({ host, playerIds, editing, onExit }: 
   }
 
   return (
-    <div className="module-skyjo">
-      <div className="sj-shell">
-        <header className="sj-header">
-          <h1 className="sj-title">🃏 Skyjo</h1>
+    <ModuleRoot>
+      <Stack gap={4}>
+        <Stack direction="row" align="center" justify="between" wrap>
+          <Text variant="heading">🃏 Skyjo</Text>
           <RoundBadge state={state} finished={finished} />
-        </header>
+        </Stack>
 
         {finished ? (
-          <EndScreen state={state} names={names} totals={totals} dispatch={dispatch} onSave={save} />
+          <EndScreen
+            state={state}
+            names={names}
+            totals={totals}
+            dispatch={dispatch}
+            onSave={save}
+          />
         ) : (
           <PlayScreen state={state} names={names} totals={totals} dispatch={dispatch} />
         )}
+      </Stack>
 
-        {state.confirmAbandon && (
-          <div className="sj-modal-overlay">
-            <div className="sj-modal" role="dialog" aria-label="Abandonner la partie">
-              <h2>Abandonner la partie ?</h2>
-              <p>La partie en cours sera perdue et rien ne sera enregistré dans Scoreo.</p>
-              <div className="sj-modal-actions">
-                <button
-                  type="button"
-                  className="sj-btn sj-btn-secondary"
-                  onClick={() => dispatch({ type: 'dismissAbandonConfirm' })}
-                >
-                  Continuer à jouer
-                </button>
-                <button type="button" className="sj-btn sj-btn-danger" onClick={abandon}>
-                  Abandonner
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
+      <Dialog
+        open={state.confirmAbandon}
+        title="Abandonner la partie ?"
+        onClose={() => dispatch({ type: 'dismissAbandonConfirm' })}
+        actions={
+          <ButtonRow align="end">
+            <Button variant="secondary" onClick={() => dispatch({ type: 'dismissAbandonConfirm' })}>
+              Continuer à jouer
+            </Button>
+            <Button variant="danger" onClick={abandon}>
+              Abandonner
+            </Button>
+          </ButtonRow>
+        }
+      >
+        <Text block variant="muted">
+          La partie en cours sera perdue et rien ne sera enregistré dans Scoreo.
+        </Text>
+      </Dialog>
+    </ModuleRoot>
   )
 }
 
 function RoundBadge({ state, finished }: { state: SkyjoState; finished: boolean }) {
-  if (finished) return <span className="sj-badge sj-badge-final">🏁 Partie terminée</span>
-  return <span className="sj-badge">Manche {state.rounds.length + 1}</span>
+  if (finished) return <Badge tone="success">🏁 Partie terminée</Badge>
+  return <Badge>Manche {state.rounds.length + 1}</Badge>
 }
 
 interface ViewProps {
@@ -118,23 +144,18 @@ function PlayScreen({ state, names, totals, dispatch }: ViewProps) {
     <>
       <RoundEntryPanel state={state} names={names} dispatch={dispatch} />
       <Scoreboard state={state} names={names} totals={totals} />
-      <div className="sj-actions">
-        <button
-          type="button"
-          className="sj-btn sj-btn-secondary"
+      <Stack direction="row" gap={2} wrap>
+        <Button
+          variant="secondary"
           disabled={state.rounds.length === 0}
           onClick={() => dispatch({ type: 'undoLastRound' })}
         >
           ↩ Annuler la dernière manche
-        </button>
-        <button
-          type="button"
-          className="sj-btn sj-btn-danger"
-          onClick={() => dispatch({ type: 'showAbandonConfirm' })}
-        >
+        </Button>
+        <Button variant="danger" onClick={() => dispatch({ type: 'showAbandonConfirm' })}>
           🗑 Abandonner
-        </button>
-      </div>
+        </Button>
+      </Stack>
     </>
   )
 }
@@ -149,51 +170,43 @@ function RoundEntryPanel({
   dispatch: Dispatch
 }) {
   return (
-    <section className="sj-panel" aria-label="Manche en cours">
-      <h2 className="sj-panel-title">Qui a terminé la manche ?</h2>
-      <div className="sj-ender-row" role="radiogroup" aria-label="Qui a terminé la manche">
+    <Panel title="Manche en cours">
+      <Stack gap={3}>
+        <Text variant="label">Qui a terminé la manche ?</Text>
+        <Stack direction="row" gap={2} wrap>
+          {state.playerIds.map((id) => (
+            <Chip
+              key={id}
+              selected={state.enderPlayerId === id}
+              onClick={() => dispatch({ type: 'selectEnder', playerId: id })}
+            >
+              {names.get(id)}
+            </Chip>
+          ))}
+        </Stack>
+
+        <Text variant="label">Score de la manche</Text>
         {state.playerIds.map((id) => (
-          <button
-            type="button"
-            key={id}
-            role="radio"
-            aria-checked={state.enderPlayerId === id}
-            className={state.enderPlayerId === id ? 'sj-chip sj-chip-active' : 'sj-chip'}
-            onClick={() => dispatch({ type: 'selectEnder', playerId: id })}
-          >
-            {names.get(id)}
-          </button>
+          <Stack direction="row" align="center" justify="between" key={id}>
+            <Text variant="strong">{names.get(id)}</Text>
+            <NumberField
+              mode="plain"
+              ariaLabel={names.get(id) ?? ''}
+              value={state.scoreInputs[id] ?? ''}
+              onChange={(value) => dispatch({ type: 'updateScoreInput', playerId: id, value })}
+            />
+          </Stack>
         ))}
-      </div>
 
-      <h2 className="sj-panel-title">Score de la manche</h2>
-      {state.playerIds.map((id) => (
-        <div className="sj-score-row" key={id}>
-          <label htmlFor={`sj-score-${id}`} className="sj-score-name">
-            {names.get(id)}
-          </label>
-          <input
-            id={`sj-score-${id}`}
-            className="sj-score-input"
-            type="number"
-            inputMode="numeric"
-            value={state.scoreInputs[id] ?? ''}
-            onChange={(event) =>
-              dispatch({ type: 'updateScoreInput', playerId: id, value: event.target.value })
-            }
-          />
-        </div>
-      ))}
-
-      <button
-        type="button"
-        className="sj-btn sj-btn-primary"
-        disabled={!canSubmitRound(state)}
-        onClick={() => dispatch({ type: 'submitRound' })}
-      >
-        Valider la manche
-      </button>
-    </section>
+        <Button
+          width="full"
+          disabled={!canSubmitRound(state)}
+          onClick={() => dispatch({ type: 'submitRound' })}
+        >
+          Valider la manche
+        </Button>
+      </Stack>
+    </Panel>
   )
 }
 
@@ -203,124 +216,67 @@ function Scoreboard({ state, names, totals }: Omit<ViewProps, 'dispatch'>) {
   const minTotal = totals.size === 0 ? 0 : Math.min(...totals.values())
 
   return (
-    <div className="sj-table-wrap">
-      <table className="sj-table">
-        <thead>
-          <tr>
-            <th scope="col" />
-            {state.playerIds.map((id) => (
-              <th scope="col" key={id}>
-                {names.get(id)}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {state.rounds.map((round, index) => (
-            <RoundRow key={index} round={round} index={index} playerIds={state.playerIds} />
-          ))}
-          {state.rounds.length === 0 && (
-            <tr>
-              <td className="sj-empty" colSpan={state.playerIds.length + 1}>
-                Aucune manche jouée pour l'instant.
-              </td>
-            </tr>
-          )}
-        </tbody>
-        <tfoot>
-          <tr>
-            <th scope="row" className="sj-round-label">
-              Total
-            </th>
-            {state.playerIds.map((id) => {
-              const total = totals.get(id) ?? 0
-              const leading = total === minTotal ? 'sj-leading' : undefined
-              return (
-                <td key={id} className={['sj-total', total >= END_THRESHOLD ? undefined : leading].join(' ')}>
-                  {total}
-                </td>
-              )
-            })}
-          </tr>
-        </tfoot>
-      </table>
-    </div>
-  )
-}
-
-function RoundRow({
-  round,
-  index,
-  playerIds,
-}: {
-  round: SkyjoRound
-  index: number
-  playerIds: readonly string[]
-}) {
-  const applied = appliedRoundScores(round)
-  return (
-    <tr>
-      <th scope="row" className="sj-round-label">
-        Manche {index + 1}
-      </th>
-      {playerIds.map((id) => {
-        const entry = round.entries.find((e) => e.playerId === id)
-        const score = applied.get(id) ?? 0
-        const doubled = id === round.enderPlayerId && entry !== undefined && score !== entry.rawScore
-        return (
-          <td key={id} className={doubled ? 'sj-cell-doubled' : undefined} title={doubled ? 'Doublé' : undefined}>
-            {score}
-            {doubled ? ' ×2' : ''}
-          </td>
-        )
+    <SkyjoTable
+      playerNames={state.playerIds.map((id) => names.get(id) ?? '')}
+      rows={state.rounds.map((round, index) => roundRow(round, index, state.playerIds))}
+      totals={state.playerIds.map((id) => {
+        const value = totals.get(id) ?? 0
+        return { value, leading: value === minTotal && value < END_THRESHOLD }
       })}
-    </tr>
+      totalLabel="Total"
+      emptyLabel="Aucune manche jouée pour l'instant."
+      doubledLabel="Doublé"
+    />
   )
 }
 
-function EndScreen({
-  state,
-  names,
-  dispatch,
-  onSave,
-}: ViewProps & { onSave: () => void }) {
+function roundRow(round: SkyjoRound, index: number, playerIds: readonly string[]) {
+  const applied = appliedRoundScores(round)
+  return {
+    label: `Manche ${index + 1}`,
+    cells: playerIds.map((id) => {
+      const entry = round.entries.find((e) => e.playerId === id)
+      const score = applied.get(id) ?? 0
+      const doubled = id === round.enderPlayerId && entry !== undefined && score !== entry.rawScore
+      return { text: doubled ? `${score} ×2` : `${score}`, doubled }
+    }),
+  }
+}
+
+function EndScreen({ state, names, dispatch, onSave }: ViewProps & { onSave: () => void }) {
   const ranking = buildRanking(state.playerIds, state.rounds)
   const winners = ranking.filter((entry) => entry.rank === 1)
   const winnerNames = new Intl.ListFormat('fr', { style: 'long', type: 'conjunction' }).format(
     winners.map((entry) => names.get(entry.playerId) ?? ''),
   )
-  const title = winners.length > 1 ? `Égalité entre ${winnerNames} !` : `${winnerNames} remporte la partie !`
+  const title =
+    winners.length > 1 ? `Égalité entre ${winnerNames} !` : `${winnerNames} remporte la partie !`
 
   return (
-    <div className="sj-end">
-      <div className="sj-trophy" aria-hidden="true">
-        🏆
-      </div>
-      <h2>{title}</h2>
-      <p className="sj-winner-score">{winners[0]?.score ?? 0} points</p>
+    <>
+      <SkyjoWinner>
+        <Text variant="title">{title}</Text>
+        <Text variant="mono">{winners[0]?.score ?? 0} points</Text>
+      </SkyjoWinner>
 
-      <ol className="sj-ranking">
+      <StandingsGrid ariaLabel="Classement">
         {ranking.map((entry) => (
-          <li key={entry.playerId}>
-            <span className="sj-rank-position">{entry.rank}.</span>
-            <span className="sj-rank-name">{names.get(entry.playerId)}</span>
-            <span className="sj-rank-score">{entry.score} pts</span>
-          </li>
+          <StandingsCard
+            key={entry.playerId}
+            rank={`${entry.rank}.`}
+            name={names.get(entry.playerId) ?? ''}
+            total={`${entry.score} pts`}
+            lead={entry.rank === 1}
+          />
         ))}
-      </ol>
+      </StandingsGrid>
 
-      <div className="sj-actions">
-        <button type="button" className="sj-btn sj-btn-primary" onClick={onSave}>
-          💾 Enregistrer la partie
-        </button>
-        <button
-          type="button"
-          className="sj-btn sj-btn-secondary"
-          onClick={() => dispatch({ type: 'undoLastRound' })}
-        >
+      <Stack direction="row" gap={2} wrap>
+        <Button onClick={onSave}>💾 Enregistrer la partie</Button>
+        <Button variant="secondary" onClick={() => dispatch({ type: 'undoLastRound' })}>
           ↩ Annuler la dernière manche
-        </button>
-      </div>
-    </div>
+        </Button>
+      </Stack>
+    </>
   )
 }

@@ -27,8 +27,8 @@ const classNameErrors = (filePath, listed) =>
   errors(SNIPPET, filePath, listed, 'no-restricted-syntax')
 
 describe('eslint.config.js — modules composing the design system', () => {
-  it('starts with no module listed', () => {
-    expect(MODULES_COMPOSING_DS).toEqual([])
+  it('lists the modules that have migrated', () => {
+    expect(MODULES_COMPOSING_DS).toEqual(['skyjo'])
   })
 
   it('refuses a className outside src/design/ of a listed module', async () => {
