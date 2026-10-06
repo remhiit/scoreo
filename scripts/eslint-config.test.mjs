@@ -27,8 +27,8 @@ const classNameErrors = (filePath, listed) =>
   errors(SNIPPET, filePath, listed, 'no-restricted-syntax')
 
 describe('eslint.config.js — modules composing the design system', () => {
-  it('lists the modules that have migrated, 1000 Sabords first (#561)', () => {
-    expect(MODULES_COMPOSING_DS).toEqual(['mille-sabords'])
+  it('lists the modules that have migrated, 1000 Sabords then Skyjo', () => {
+    expect(MODULES_COMPOSING_DS).toEqual(['mille-sabords', 'skyjo'])
   })
 
   it('holds 1000 Sabords to the rule through the real list alone', async () => {

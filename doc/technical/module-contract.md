@@ -304,11 +304,10 @@ prefix. The scope and the prefix guard opposite directions of the same border; o
 
 ### Transition
 
-1000 Sabords has migrated (#561): it composes the design system, its game pieces live in
-`packages/module-mille-sabords/src/design/`, and its row reads `identity: 'scoreo'`. Torī Valley and
-Skyjo predate this rule and still wear their own palette from a single
-`src/styles.css` (legacy tokens named like the host's — `--color-primary`, `--space-5` — with
-different values, which is why the border matters so much for them). Each migrates in its own issue:
+1000 Sabords (#561) and Skyjo have migrated: each composes the design system, keeps its game pieces
+in its own `src/design/`, and its row reads `identity: 'scoreo'`. Torī Valley predates this rule and
+still wears its own palette from a single `src/styles.css` (legacy tokens named like the host's — `--color-primary`, `--space-5` — with
+different values, which is why the border matters so much for it). It migrates in its own issue:
 it composes the design system, moves its game pieces to `src/design/`, deletes `src/styles.css`, joins
 `MODULES_COMPOSING_DS`, and its row in the e2e table switches from `identity: 'own'` (its surface must
 _not_ be the host's) to `identity: 'scoreo'`. A new module starts directly in the target state.
