@@ -242,4 +242,12 @@ describe('DateInput and NumberField', () => {
     fireEvent.change(screen.getByRole('spinbutton', { name: 'Léa' }), { target: { value: '' } })
     expect(onChange).toHaveBeenCalledWith('')
   })
+
+  it('carries native bounds for the stepper arrows', async () => {
+    const { NumberField } = await import('./NumberField')
+    render(<NumberField ariaLabel="Léa" value="4" min={0} max={7} onChange={() => {}} />)
+    const field = screen.getByRole('spinbutton', { name: 'Léa' })
+    expect(field).toHaveAttribute('min', '0')
+    expect(field).toHaveAttribute('max', '7')
+  })
 })

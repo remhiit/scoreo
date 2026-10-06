@@ -18,7 +18,7 @@ import {
   type ParcheminValue,
   type PlayerResult,
 } from '../../domain/model/match'
-import { TORII_COLORS } from '../../domain/model/torii'
+import { MAX_TORII_PER_COLOR, TORII_COLORS } from '../../domain/model/torii'
 import { NotFoundError, ValidationError } from '../../domain/model/errors'
 import { ToriiBadge } from '../../design'
 import { ObjectifLandscapeEntry } from './ObjectifLandscapeEntry'
@@ -109,6 +109,8 @@ export function ScoreDetailScreen({
                   <NumberField
                     mode="plain"
                     value={String(result.toriiCounts[color])}
+                    min={0}
+                    max={MAX_TORII_PER_COLOR}
                     ariaLabel={t('scoreDetail.toriiCountAria', { name: player.name, color })}
                     onChange={(value) =>
                       dispatch({

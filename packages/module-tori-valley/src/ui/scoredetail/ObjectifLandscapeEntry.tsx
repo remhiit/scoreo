@@ -96,6 +96,8 @@ export function ObjectifLandscapeEntry({
               <NumberField
                 mode="plain"
                 value={String(value)}
+                min={field.min}
+                max={field.max}
                 ariaLabel={aria}
                 onChange={(next) =>
                   dispatch({
