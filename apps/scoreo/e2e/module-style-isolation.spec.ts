@@ -64,7 +64,7 @@ const MODULES: Record<string, ModuleUnderTest> = {
       await expect(page.locator('.module-skyjo .sj-table-wrap')).toBeVisible()
     },
     surface: '.module-skyjo .sj-table-wrap',
-    identity: 'own',
+    identity: 'scoreo',
   },
 }
 

@@ -1,0 +1,26 @@
+/*
+ * Skyjo wears Scoreo's look: the surface, text and accent come from the design
+ * system's semantic tokens, so the module follows whichever flavor and accent
+ * the player picked. Every rule is scoped under `.module-skyjo` and every class
+ * is prefixed `sj-`; `scripts/check-module-styles.mjs` and
+ * `apps/scoreo/e2e/module-style-isolation.spec.ts` guard that boundary.
+ */
+
+.module-skyjo {
+  background: var(--surface-app);
+  color: var(--text-body);
+  font-family: var(--font-ui);
+  min-height: 100%;
+}
+
+.module-skyjo *,
+.module-skyjo *::before,
+.module-skyjo *::after {
+  box-sizing: border-box;
+}
+
+.module-skyjo .sj-shell {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: var(--space-4);
+}
