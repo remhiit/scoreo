@@ -2,7 +2,6 @@
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { DieCounter } from './DieCounter'
-import { GameColumn, GameColumns } from './GameColumns'
 import { ModuleRoot } from './ModuleRoot'
 import { ScorePreview } from './ScorePreview'
 import { ScoreTable } from './ScoreTable'
@@ -13,17 +12,6 @@ describe('ModuleRoot', () => {
   it('carries the scope every game-piece rule hangs from', () => {
     const { container } = render(<ModuleRoot>partie</ModuleRoot>)
     expect((container.firstChild as HTMLElement).className).toBe('module-mille-sabords')
-  })
-})
-
-describe('GameColumns', () => {
-  it('names each column as a landmark', () => {
-    render(
-      <GameColumns>
-        <GameColumn label="Tableau de bord">grille</GameColumn>
-      </GameColumns>,
-    )
-    expect(screen.getByRole('region', { name: 'Tableau de bord' }).textContent).toBe('grille')
   })
 })
 

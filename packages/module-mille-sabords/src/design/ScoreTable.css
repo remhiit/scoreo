@@ -49,15 +49,17 @@
 }
 
 .module-mille-sabords .ms-cell--zero {
-  color: var(--text-faint);
+  color: var(--text-muted);
 }
 
-.module-mille-sabords .ms-cell--negative {
-  color: var(--color-danger);
+/* Latte's red reads 4.46:1 on the card; drawn a little towards the text it
+   clears 4.5:1 in every flavour (5.07:1 in Latte) and stays red. */
+.module-mille-sabords .ms-cell--negative,
+.module-mille-sabords .ms-cell--island {
+  color: color-mix(in srgb, var(--color-danger) 85%, var(--text-heading));
 }
 
 .module-mille-sabords .ms-cell--island {
-  color: var(--color-danger);
   font-weight: var(--weight-semibold);
 }
 
@@ -70,18 +72,25 @@
   padding: var(--space-4);
 }
 
+/* A total is always written in the heading colour: Latte's accents and green
+   fall to 1.7–3.5:1 as text. The tone is a tint of the card under it (the
+   heading colour keeps ≥ 5:1 on it for every accent and flavour) and a bar
+   along its foot, like the header of the player on turn. */
 .module-mille-sabords .ms-total {
   font-family: var(--font-score);
   font-weight: var(--weight-bold);
-  background: var(--surface-raised);
+  color: var(--text-heading);
+  border-top: var(--border-width) solid var(--border-strong);
 }
 
 .module-mille-sabords .ms-total--leading {
-  color: var(--color-primary);
+  background: color-mix(in srgb, var(--color-primary) 16%, var(--surface-card));
+  box-shadow: inset 0 -3px 0 var(--color-primary);
 }
 
 .module-mille-sabords .ms-total--over {
-  color: var(--color-success);
+  background: color-mix(in srgb, var(--color-success) 16%, var(--surface-card));
+  box-shadow: inset 0 -3px 0 var(--color-success);
 }
 
 /* Visually hidden, still read out: the grid's empty corner header. */

@@ -54,8 +54,7 @@ src/
 ├── index.ts                  # n'exporte QUE le manifeste et le module
 ├── module.ts                 # manifeste + import dynamique de l'écran
 ├── design/                   # les pièces de jeu : seul dossier qui écrit className et CSS
-│   ├── ModuleRoot.tsx        # racine .module-mille-sabords
-│   ├── GameColumns.tsx       # les deux colonnes de l'écran de jeu
+│   ├── ModuleRoot.tsx        # racine .module-mille-sabords (la mise en page vient du design system)
 │   ├── ScoreTable.tsx        # la grille tours × joueurs
 │   ├── DieCounter.tsx        # un compteur de face de dé
 │   ├── ScorePreview.tsx      # la valeur de la main en cours

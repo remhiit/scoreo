@@ -4,7 +4,6 @@
  * doc/technical/module-contract.md § "Game pieces live in `src/design/`".
  */
 export { DieCounter, type DieCounterProps } from './DieCounter'
-export { GameColumn, GameColumns } from './GameColumns'
 export { ModuleRoot } from './ModuleRoot'
 export { ScorePreview, type PreviewTone, type ScorePreviewProps } from './ScorePreview'
 export {

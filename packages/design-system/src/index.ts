@@ -65,6 +65,7 @@ export { StandingsGrid } from './organisms/StandingsGrid'
 export { ThemePicker, type ThemePickerProps } from './organisms/ThemePicker'
 
 // 04 · templates
+export { Column, Columns, WideLayout } from './templates/Columns'
 export {
   ImmersiveTemplate,
   ScreenTemplate,

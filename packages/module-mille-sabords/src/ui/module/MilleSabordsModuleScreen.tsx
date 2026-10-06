@@ -3,6 +3,8 @@ import {
   Button,
   ButtonRow,
   Chip,
+  Column,
+  Columns,
   Dialog,
   Icon,
   NumberField,
@@ -16,6 +18,7 @@ import {
   TabPanel,
   Tabs,
   Text,
+  WideLayout,
 } from '@scoreboards/design-system'
 import type { ScoringModuleScreenProps } from '@scoreboards/module-api'
 import { useEffect, useMemo, useReducer, type ReactNode } from 'react'
@@ -40,8 +43,6 @@ import type {
 import { CRANES_ILE_RAPIDE, GROUPES_RAPIDES, INFOS_CARTE } from './scoresRapides'
 import {
   DieCounter,
-  GameColumn,
-  GameColumns,
   ModuleRoot,
   ScorePreview,
   ScoreTable,
@@ -112,42 +113,47 @@ export default function MilleSabordsModuleScreen({
 
   return (
     <ModuleRoot>
-      <Stack direction="row" justify="end">
-        <BadgeManche state={state} partie={partie} />
-      </Stack>
+      <WideLayout>
+        <Stack direction="row" justify="end">
+          <BadgeManche state={state} partie={partie} />
+        </Stack>
 
-      {estFinie(state, partie) ? (
-        <EcranFin
-          state={state}
-          partie={partie}
-          noms={noms}
-          dispatch={dispatch}
-          onEnregistrer={enregistrer}
-        />
-      ) : (
-        <EcranJeu state={state} partie={partie} noms={noms} dispatch={dispatch} />
-      )}
+        {estFinie(state, partie) ? (
+          <EcranFin
+            state={state}
+            partie={partie}
+            noms={noms}
+            dispatch={dispatch}
+            onEnregistrer={enregistrer}
+          />
+        ) : (
+          <EcranJeu state={state} partie={partie} noms={noms} dispatch={dispatch} />
+        )}
 
-      <Dialog
-        open={state.confirmationAbandon}
-        title="Abandonner la partie ?"
-        closeLabel="Fermer"
-        onClose={() => dispatch({ type: 'dismissAbandonConfirm' })}
-        actions={
-          <ButtonRow align="end">
-            <Button variant="secondary" onClick={() => dispatch({ type: 'dismissAbandonConfirm' })}>
-              Continuer à jouer
-            </Button>
-            <Button variant="danger" onClick={abandonner}>
-              Abandonner
-            </Button>
-          </ButtonRow>
-        }
-      >
-        <Text variant="muted" block>
-          La partie en cours sera perdue et rien ne sera enregistré dans Scoreo.
-        </Text>
-      </Dialog>
+        <Dialog
+          open={state.confirmationAbandon}
+          title="Abandonner la partie ?"
+          closeLabel="Fermer"
+          onClose={() => dispatch({ type: 'dismissAbandonConfirm' })}
+          actions={
+            <ButtonRow align="end">
+              <Button
+                variant="secondary"
+                onClick={() => dispatch({ type: 'dismissAbandonConfirm' })}
+              >
+                Continuer à jouer
+              </Button>
+              <Button variant="danger" onClick={abandonner}>
+                Abandonner
+              </Button>
+            </ButtonRow>
+          }
+        >
+          <Text variant="muted" block>
+            La partie en cours sera perdue et rien ne sera enregistré dans Scoreo.
+          </Text>
+        </Dialog>
+      </WideLayout>
     </ModuleRoot>
   )
 }
@@ -180,8 +186,8 @@ function EcranJeu(props: VueProps) {
   const index = partie.indexJoueurActuel
 
   return (
-    <GameColumns>
-      <GameColumn label="Tableau de bord">
+    <Columns>
+      <Column label="Tableau de bord">
         <Tableau state={state} partie={partie} noms={noms} />
         <Stack direction="row" gap={2} wrap>
           <Button
@@ -208,9 +214,9 @@ function EcranJeu(props: VueProps) {
             🗑 Abandonner
           </Button>
         </Stack>
-      </GameColumn>
+      </Column>
 
-      <GameColumn label="Tour en cours">
+      <Column label="Tour en cours">
         <Stack gap={1} align="center">
           <Text variant="label">Au tour de</Text>
           <Text variant="heading">{noms[index]}</Text>
@@ -228,8 +234,8 @@ function EcranJeu(props: VueProps) {
         ) : (
           <OngletManuel state={state} dispatch={dispatch} />
         )}
-      </GameColumn>
-    </GameColumns>
+      </Column>
+    </Columns>
   )
 }
 

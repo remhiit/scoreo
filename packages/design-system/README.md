@@ -69,7 +69,7 @@ pieces no one else needs, scoped and prefixed, reading only the semantic tokens
 Catppuccin in four flavors (`colors-*.css`, switched by `data-theme` on `<html>`),
 the semantic layer and 14 accent presets (`semantic.css`, `data-accent`), type,
 spacing, radius/shadow/motion. Foundations (`src/foundations/base.css`): reset,
-page background, `--header-height`, `--screen-max`.
+page background, `--header-height`, `--screen-max`, `--screen-max-wide`.
 
 ### 01 · Atoms — `src/atoms/`
 
@@ -126,10 +126,12 @@ page background, `--header-height`, `--screen-max`.
 
 ### 04 · Templates — `src/templates/`
 
-| Component           | Role                                                                                                                                                                                                                |
-| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `ScreenTemplate`    | Header + 600px scrolling column + optional `actionBar` + `overlays`. Covers the "scrolling list" and "list + action bar" templates; "bottom sheet" and "centred dialog" are `Sheet` and `Dialog` passed as overlays |
-| `ImmersiveTemplate` | For a scoring module: a fine bar with the way out, the module fills the rest                                                                                                                                        |
+| Component            | Role                                                                                                                                                                                                                |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ScreenTemplate`     | Header + 600px scrolling column + optional `actionBar` + `overlays`. Covers the "scrolling list" and "list + action bar" templates; "bottom sheet" and "centred dialog" are `Sheet` and `Dialog` passed as overlays |
+| `ImmersiveTemplate`  | For a scoring module: a fine bar with the way out, the module fills the rest                                                                                                                                        |
+| `WideLayout`         | The capped (1100px, `--screen-max-wide`), padded column an `ImmersiveTemplate`'s content is laid in — what a scoring module wraps its screen in                                                                     |
+| `Columns` + `Column` | Two named regions side by side from 900px, stacked below (a module's scoreboard next to the turn being counted)                                                                                                     |
 
 ### 05 · Pages
 

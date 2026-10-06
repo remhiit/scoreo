@@ -52,7 +52,9 @@ tokens sémantiques du design system. Le contrat est celui de
 L'écran **compose `@scoreboards/design-system`** comme l'hôte : `Button`, `Select`, `NumberField`,
 `Tabs` + `TabPanel`, `Text`, `Stack`, `Badge`, `StatusLine`, `Dialog` (confirmation d'abandon),
 `Panel`, `StandingsGrid` + `StandingsCard` (classement final), `Score`, `Icon`, `Chip` (le ×2 du
-capitaine). Il n'écrit ni `className`, ni `style`, ni import `lucide-react` — `eslint.config.js` le
+capitaine), et pour la mise en page `WideLayout` (la colonne bornée à 1100px dans
+`ImmersiveTemplate`) et `Columns` + `Column` (le tableau de bord et le tour en cours côte à côte à
+partir de 900px, chacun une région nommée). Il n'écrit ni `className`, ni `style`, ni import `lucide-react` — `eslint.config.js` le
 refuse, le module étant listé dans `MODULES_COMPOSING_DS`.
 
 Ce que le design system n'a pas, parce que seul ce jeu le dessine, vit dans **`src/design/`** — le
@@ -60,11 +62,10 @@ seul dossier du paquet qui écrit des classes et du CSS :
 
 | Pièce | Rôle |
 |---|---|
-| `ModuleRoot` | La racine `.module-mille-sabords`, à laquelle toutes les règles sont scopées ; borne la colonne sur grand écran |
-| `GameColumns` + `GameColumn` | Les deux colonnes de l'écran de jeu (tableau de bord, tour en cours), côte à côte à partir de 900px ; chacune est une région nommée |
-| `ScoreTable` | La grille tours × joueurs : joueur courant souligné dans l'accent, cellules teintées (zéro, perte, île), totaux (en tête, au-delà de 6000) ; sa carte porte `--surface-card`, la surface de référence de l'e2e |
+| `ModuleRoot` | La racine `.module-mille-sabords`, à laquelle toutes les règles sont scopées — rien d'autre : la mise en page vient du design system |
+| `ScoreTable` | La grille tours × joueurs : joueur courant souligné dans l'accent, cellules teintées (zéro, perte, île), totaux (en tête, au-delà de 6000) écrits dans la couleur des titres, leur ton porté par une teinte de fond et une barre au pied — les accents de Latte, en texte, tombent sous 4,5:1 ; sa carte porte `--surface-card`, la surface de référence de l'e2e |
 | `DieCounter` | Une face de dé : la face, son nom, le compteur (un `<output>`, pas un champ) entre deux `Button` du design system |
-| `ScorePreview` | Ce que vaut la main en cours avant de l'enregistrer, teinté selon le résultat, avec le détail ligne à ligne de `calculerScore` |
+| `ScorePreview` | Ce que vaut la main en cours avant de l'enregistrer, sur une pastille teintée et bordée selon le résultat (le score reste dans la couleur des titres), avec le détail ligne à ligne de `calculerScore` |
 
 Chaque pièce importe sa propre feuille (`src/design/*.css`), qui voyage donc dans le chunk de
 l'écran : le module ne coûte rien tant que personne ne l'ouvre. Ces feuilles suivent les trois

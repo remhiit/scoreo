@@ -7,24 +7,35 @@
   border-radius: var(--radius-md);
 }
 
+/* The score is written in the heading colour on a pastille of the card
+   surface: Latte's green reads 2.17:1 as text on the raised panel. The tone is
+   the pastille's tint (the heading colour keeps ≥ 5:1 on it in every flavour)
+   and its border. */
 .module-mille-sabords .ms-preview__score {
   font-family: var(--font-score);
   font-size: var(--text-xl);
   font-weight: var(--weight-bold);
   text-align: center;
+  color: var(--text-heading);
+  background: var(--surface-card);
+  border: 2px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: var(--space-1) var(--space-3);
 }
 
 .module-mille-sabords .ms-preview__score--positive {
-  color: var(--color-success);
+  background: color-mix(in srgb, var(--color-success) 16%, var(--surface-card));
+  border-color: var(--color-success);
 }
 
 .module-mille-sabords .ms-preview__score--negative,
 .module-mille-sabords .ms-preview__score--island {
-  color: var(--color-danger);
+  background: color-mix(in srgb, var(--color-danger) 16%, var(--surface-card));
+  border-color: var(--color-danger);
 }
 
 .module-mille-sabords .ms-preview__score--zero {
-  color: var(--text-faint);
+  color: var(--text-muted);
 }
 
 .module-mille-sabords .ms-preview__details {
