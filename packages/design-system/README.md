@@ -41,8 +41,8 @@ The rule has no exceptions: every host screen composes the system.
 
 The scoring modules under `packages/module-*/` consume this package as well
 (`workspace:*` dependency) and adopt Scoreo's look instead of a palette of their
-own. A module listed in `MODULES_COMPOSING_DS` (`eslint.config.js`) is held to
-the same rule as the app, with one exception: its `src/design/` folder, where it
+own. Every module is held to the same rule as the app (`eslint.config.js`),
+with one exception: its `src/design/` folder, where it
 may write `className` (never `style` or a `lucide-react` import) for the game
 pieces no one else needs, scoped and prefixed, reading only the semantic tokens
 — no `--ctp-*` value, no raw colour. A piece a second module needs moves here. See

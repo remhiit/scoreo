@@ -55,7 +55,7 @@ L'écran **compose `@scoreboards/design-system`** comme l'hôte : `Button`, `Sel
 capitaine), et pour la mise en page `WideLayout` (la colonne bornée à 1100px dans
 `ImmersiveTemplate`) et `Columns` + `Column` (le tableau de bord et le tour en cours côte à côte à
 partir de 900px, chacun une région nommée). Il n'écrit ni `className`, ni `style`, ni import `lucide-react` — `eslint.config.js` le
-refuse, le module étant listé dans `MODULES_COMPOSING_DS`.
+refuse, comme pour tout module.
 
 Ce que le design system n'a pas, parce que seul ce jeu le dessine, vit dans **`src/design/`** — le
 seul dossier du paquet qui écrit des classes et du CSS :
