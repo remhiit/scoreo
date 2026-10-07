@@ -19,6 +19,20 @@ updates:
     # means the exact time-of-day drifts).
     cooldown:
       default-days: 2
+    # One PR per run instead of one PR per dependency (#575): fewer
+    # lockfile conflicts between sibling PRs and a single merge pass.
+    # Security updates are grouped separately so an alert-driven bump
+    # never waits on (or gets blocked by) the routine version group.
+    # Ignored versions (TypeScript >=7 below) never enter either group.
+    groups:
+      npm-version-updates:
+        applies-to: version-updates
+        patterns:
+          - "*"
+      npm-security-updates:
+        applies-to: security-updates
+        patterns:
+          - "*"
     ignore:
       # TypeScript 7.x crashes typescript-eslint (peer dependency caps at
       # <6.1.0): https://github.com/remhiit/scoreo/pull/172. Keep taking
