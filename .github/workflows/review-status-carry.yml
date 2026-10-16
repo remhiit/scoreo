@@ -1,0 +1,92 @@
+name: Review Status Carry
+
+# `claude/review` is a commit status, tied to one SHA. On a PR the coordinator
+# owns (`automation:coordinator-owned`), `needs-review-label.yml` never queues
+# a standalone R3, so a push after the coordinator's own review (a rebase by
+# `merge-review-pass`, "Update branch") would leave the new head without the
+# required status and block the merge for good.
+#
+# This Action carries the previous head's `claude/review=success` to the new
+# head **only** when the PR's own diff is unchanged — same `git patch-id` of
+# the diff against the base, before and after the push (a pure rebase or a
+# conflict-free merge of the base). Any other change to the diff sets
+# `claude/review=failure` and removes `automation:review-pass`: the review no
+# longer covers what would be merged. Rerun the coordinator, or remove
+# `automation:coordinator-owned` to hand the PR back to R3.
+#
+# A push while the previous head had no `claude/review=success` (the
+# coordinator's own fix rounds, before it converges) is left alone.
+
+on:
+  pull_request:
+    types: [synchronize]
+
+permissions:
+  contents: read
+  statuses: write
+  issues: write
+  pull-requests: write
+
+jobs:
+  carry:
+    if: contains(github.event.pull_request.labels.*.name, 'automation:coordinator-owned')
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPO: ${{ github.repository }}
+      NUMBER: ${{ github.event.pull_request.number }}
+      BASE_REF: ${{ github.event.pull_request.base.ref }}
+      BEFORE: ${{ github.event.before }}
+      AFTER: ${{ github.event.pull_request.head.sha }}
+    steps:
+      - name: Read claude/review on the previous head
+        id: previous
+        run: |
+          state=$(gh api "repos/$REPO/commits/$BEFORE/status" \
+            --jq '[.statuses[] | select(.context == "claude/review")][0].state // ""' || true)
+          echo "state=$state" >> "$GITHUB_OUTPUT"
+          echo "claude/review on $BEFORE: ${state:-none}"
+
+      - uses: actions/checkout@v4
+        if: steps.previous.outputs.state == 'success'
+        with:
+          fetch-depth: 0
+
+      - name: Compare the PR diff before and after the push
+        id: compare
+        if: steps.previous.outputs.state == 'success'
+        run: |
+          git fetch --quiet origin "$BASE_REF" "$BEFORE" "$AFTER" || true
+          patch_id() {
+            git diff -U0 "$(git merge-base "origin/$BASE_REF" "$1")" "$1" \
+              | git patch-id --stable | cut -d' ' -f1
+          }
+          if git cat-file -e "$BEFORE^{commit}" 2>/dev/null; then
+            before=$(patch_id "$BEFORE")
+          else
+            before=""
+          fi
+          after=$(patch_id "$AFTER")
+          echo "patch-id before=${before:-unavailable} after=$after"
+          if [ -n "$before" ] && [ "$before" = "$after" ]; then
+            echo "same=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "same=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Carry claude/review to the new head
+        if: steps.compare.outputs.same == 'true'
+        run: |
+          gh api "repos/$REPO/statuses/$AFTER" \
+            -f state=success \
+            -f context="claude/review" \
+            -f description="coordinateur : revue reportée, diff identique à ${BEFORE:0:7}"
+
+      - name: Invalidate the review on a changed diff
+        if: steps.compare.outputs.same == 'false'
+        run: |
+          gh api "repos/$REPO/statuses/$AFTER" \
+            -f state=failure \
+            -f context="claude/review" \
+            -f description="diff modifié après revue : relancer le coordinateur ou retirer coordinator-owned"
+          gh api -X DELETE "repos/$REPO/issues/$NUMBER/labels/automation:review-pass" || true

@@ -99,19 +99,18 @@ replace the step they name:
    `review-status-sync.yml`, a deterministic Action (not a routine) that
    sets the required `claude/review` status. Then, unlike the automated
    run: never post `automation:enabled` (the merge stays Rémi's, by hand
-   or via `merge-review-pass`), **keep** `automation:coordinator-owned` on
-   the PR (removing it would let any later push queue a standalone R3
-   review — Rémi removes it himself if he wants one), and remove
+   or via `merge-review-pass`), keep `automation:coordinator-owned` on
+   the PR exactly as the automated run does (§ 4 step 3), and remove
    `automation:manual` from the issue last; the PR's `Closes #N` closes
    the issue at merge.
 7. **Escalade.** No label that re-enters the pipeline: never
    `automation:queued` and never `automation:needs-human` on the issue,
    which keeps `automation:manual` until Rémi decides (relaunch manually,
    or remove it and queue the issue himself). On the PR, post
-   `automation:needs-human` and keep `automation:coordinator-owned`
-   (instead of § Escalade steps 1 and 4) — no R3/R4 picks it up behind
-   his back. Post the escalation comment as usual (§ Escalade step 5) and
-   tell Rémi in the conversation what is blocking and what he can decide.
+   `automation:needs-human` (instead of § Escalade step 1) and keep
+   `automation:coordinator-owned` as § Escalade step 4 always does — no
+   R3/R4 picks it up behind his back. Post the escalation comment as
+   usual (§ Escalade step 5) and tell Rémi in the conversation what is blocking and what he can decide.
 8. **Labels never posted in manual mode**, on the issue or the PR:
    `automation:ready`, `automation:in-progress` (issue),
    `automation:needs-review`, `automation:needs-fix`, `automation:queued`,
@@ -690,8 +689,14 @@ Reached when a review round (§ 2, first pass or after a fix round) finds no
    full stop — `risk-controls.yml`'s `risk-controls` job
    (`checkEnabledLabelAllowed`) is the same rule applied in depth, on the
    actual label combination, in case this step is ever skipped or wrong.
-3. Remove `automation:coordinator-owned` — this run is done with the PR;
-   any future push (a human's) should go through standalone R3 normally.
+3. **Keep** `automation:coordinator-owned` on the PR. This run already
+   reviewed and fixed it, so no later push may queue a standalone R3/R4
+   behind it: `needs-review-label.yml` skips a PR carrying the label, and
+   `review-status-carry.yml` carries `claude/review` to the new head on a
+   pure rebase (same diff), or sets it to `failure` and removes
+   `automation:review-pass` when the diff changed. Handing the PR back to
+   R3 is a human's call: removing the label queues it
+   (`needs-review-label.yml`, `unlabeled`).
 4. Close the issue's routing dry-run journal opened in § "Routage (dry-run,
    #406)" step 5 (`scripts/automation-log.mjs#upsertAutomationLog`,
    `number` = the issue, routine `coordinator-implement`,
@@ -766,8 +771,8 @@ On a converged run (§ 4):
 - `automation:review-pass` and, if still eligible, `automation:enabled`
   (§ 4); `automation:arbitrated` if arbitration rendered a valid verdict
   (§ Arbitrage step 8).
-- `automation:coordinator-owned` removed, issue's `automation:in-progress`
-  removed, in that order (§ 4).
+- `automation:coordinator-owned` kept on the PR, issue's
+  `automation:in-progress` removed (§ 4).
 - One synthesis comment on the PR (`add_issue_comment`) — this skill's own
   instance of `doc/automation/skill-contract.md` §2's six fields: Statut
   (converged / escalated), Résumé (rounds run, final verdict), Artefacts
@@ -1145,11 +1150,11 @@ issue's `automation:in-progress` for the whole run):
    limit and the observed value that triggered the stop
    (`scripts/automation-log.mjs` § budget rendering), rather than leaving an
    operator to reconstruct it from this comment's own prose alone.
-4. Remove `automation:coordinator-owned` from the PR if present — a human
-   taking over should get the normal standalone R3/R4 loop back, not a
-   silently orphaned guard label (its own § "Cleared by" already allows
-   this: only a dead, non-graceful run leaves it stuck, which is exactly
-   what the stale-ownership sweeper, not this skill, then catches).
+4. **Keep** `automation:coordinator-owned` on the PR if present, same as §
+   "Converged" step 3: no standalone R3/R4 picks up a PR this skill already
+   drove through review/fix rounds. The human taking over removes it
+   themselves when they want the standalone R3/R4 loop back — that removal
+   queues the PR for R3 (`needs-review-label.yml`, `unlabeled`).
 5. Post one comment naming precisely what's blocking — which step, which
    sub-agent, and its own stop reason verbatim, so a human doesn't have to
    reconstruct it from label history. For condition 3 above (the fix loop
