@@ -748,8 +748,15 @@ coordinateur n'arbitre jamais ce verdict lui-même dans les deux cas.
 
 **Labels réutilisés, et un piège structurel évité.** Le coordinateur pose
 `automation:coordinator-owned` sur sa PR dès sa création (garde
-`needs-review-label.yml`, #468, déjà livrée) et le retire à la fin de son
-run, succès ou escalade. Pour le compteur de tours de correctif, il pose
+`needs-review-label.yml`, #468, déjà livrée) et le **garde** après son
+run, succès ou escalade : une PR déjà passée par son cycle revue/correctif
+n'est jamais reprise par une R3/R4 autonome. Un push ultérieur (rebase de
+`merge-review-pass`, « Update branch ») ne fait donc pas repasser R3 :
+`review-status-carry.yml` reporte `claude/review` sur le nouveau commit si
+le diff de la PR est identique (même `git patch-id` avant et après), et le
+passe sinon en `failure` en retirant `automation:review-pass`. Rendre la PR
+à R3 est un geste humain : retirer le label la remet en file
+(`needs-review-label.yml`, événement `unlabeled`). Pour le compteur de tours de correctif, il pose
 `automation:attempt-N` (label sûr — aucun déclencheur GitHub n'y filtre) et,
 une fois convergé, `automation:review-pass` (ce qui fait tourner
 `review-status-sync.yml` normalement : statut `claude/review`, journal
