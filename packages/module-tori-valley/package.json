@@ -15,11 +15,11 @@
     "@scoreboards/design-system": "workspace:*",
     "@scoreboards/module-api": "workspace:*",
     "@scoreboards/shared-domain": "workspace:*",
-    "i18next": "^26.4.3",
+    "i18next": "^26.4.4",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
     "react-i18next": "^17.0.16",
-    "zod": "^4.6.5"
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^7.0.1",
@@ -30,6 +30,6 @@
     "@vitejs/plugin-react": "^6.1.2",
     "jsdom": "^30.1.2",
     "typescript": "^6.0.3",
-    "vitest": "^5.0.3"
+    "vitest": "^5.0.4"
   }
 }
