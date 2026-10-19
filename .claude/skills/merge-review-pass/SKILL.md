@@ -114,7 +114,12 @@ something) else in the meantime.
 ### 5. Wait for CI and review
 
 The push triggers `needs-review-label.yml`, which sends the PR back
-through R3 on the new SHA. Wait until every check-run is green **and** the
+through R3 on the new SHA. On a PR carrying `automation:coordinator-owned`, R3 is
+skipped instead: `review-status-carry.yml` carries `claude/review=success`
+to the new SHA when the rebase left the PR's diff unchanged, or sets it to
+`failure` (and removes `automation:review-pass`) when resolving a conflict
+changed it — set that PR aside like a failed check (§6), it needs a new
+coordinator run or Rémi removing the label. Wait until every check-run is green **and** the
 `claude/review` status is `success` before merging — never merge on a PR
 looking green in the UI alone, which can lag a check still in flight.
 

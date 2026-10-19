@@ -2,7 +2,7 @@ name: Queue PR for Review
 
 on:
   pull_request:
-    types: [opened, ready_for_review, synchronize]
+    types: [opened, ready_for_review, synchronize, unlabeled]
 
 permissions:
   issues: write
@@ -10,7 +10,14 @@ permissions:
 
 jobs:
   label:
-    if: github.event.pull_request.draft == false && !contains(github.event.pull_request.labels.*.name, 'automation:coordinator-owned')
+    # A PR the coordinator owns is never queued for a standalone R3: its run
+    # already reviewed it, and `review-status-carry.yml` keeps `claude/review`
+    # on a pure rebase. Removing `automation:coordinator-owned` by hand is the
+    # handoff back to R3 — hence `unlabeled`, filtered to that one label.
+    if: >-
+      github.event.pull_request.draft == false &&
+      !contains(github.event.pull_request.labels.*.name, 'automation:coordinator-owned') &&
+      (github.event.action != 'unlabeled' || github.event.label.name == 'automation:coordinator-owned')
     runs-on: ubuntu-latest
     steps:
       - name: Remove stale verdict labels
