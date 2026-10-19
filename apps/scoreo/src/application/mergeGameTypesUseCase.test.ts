@@ -164,6 +164,12 @@ describe('MergeGameTypesUseCase', () => {
     expect(useCase.preview('keep', ['dup']).rulesDiffer).toBe(true)
   })
 
+  it('preview reports differing rules on the scoring mode', () => {
+    const { useCase } = buildUseCase({}, { scoringMode: 'ROUNDS_WON' })
+
+    expect(useCase.preview('keep', ['dup']).rulesDiffer).toBe(true)
+  })
+
   it('preview reports differing rules on the tie-break rule', () => {
     const { useCase } = buildUseCase({}, { tieBreakRule: 'MANUAL_SELECTION' })
 

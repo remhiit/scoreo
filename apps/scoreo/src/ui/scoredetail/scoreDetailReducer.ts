@@ -377,13 +377,19 @@ function performSave(
       const original = deps.mode.matchRepository.findById(deps.mode.matchId)
       if (!original) return { type: 'saveFailed', error: 'Could not find original match to update' }
       const date = combineDateWithTimeOfDay(state.matchDate, original.date)
+      // A rounds-won match without usable round detail (imported, legacy, mode
+      // switched) keeps its stored scores: the editor only holds a single round of
+      // totals, which would be re-read as points and overwrite them with 1/0.
+      const keepStored =
+        usesRoundsWon(state.gameType) &&
+        !(original.rounds.length > 0 && roundsAgreeWithTotals(original, state.gameType))
       const updated: Match = {
         ...original,
         date,
-        playerScores,
+        playerScores: keepStored ? original.playerScores : playerScores,
         manualWinners,
         secondaryPlayerScores,
-        rounds,
+        rounds: keepStored ? original.rounds : rounds,
       }
       deps.mode.updateMatchUseCase.invoke(updated)
       deps.matchDraftRepository?.clear()

@@ -1,5 +1,5 @@
 import { NotFoundError, ValidationError } from '../domain/model/errors'
-import type { GameType } from '../domain/model/gameType'
+import { usesRoundsWon, type GameType } from '../domain/model/gameType'
 import type { GameTypeRepository } from '../domain/port/gameTypeRepository'
 import type { MatchDraftRepository } from '../domain/port/matchDraftRepository'
 import type { MatchRepository } from '../domain/port/matchRepository'
@@ -19,6 +19,7 @@ export interface MergeGameTypesPreview {
 /** `tieBreakCondition` only matters under SECONDARY_SCORE; comparing it otherwise flags a difference nothing acts on. */
 function sameScoringRules(a: GameType, b: GameType): boolean {
   if (a.winCondition !== b.winCondition) return false
+  if (usesRoundsWon(a) !== usesRoundsWon(b)) return false
   if (a.tieBreakRule !== b.tieBreakRule) return false
   if (a.tieBreakRule !== 'SECONDARY_SCORE') return true
   return a.tieBreakCondition === b.tieBreakCondition

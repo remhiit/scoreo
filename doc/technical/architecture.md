@@ -235,7 +235,7 @@ This applies to: `Player`, `GameType`, `Match`, `PlayerScore`, `WinCondition`.
 | Entity | Fields |
 |---|---|
 | `Player` | `id: string` (UUID v4), `name: string`, `active: boolean` (default `true`) |
-| `GameType` | `id: string` (UUID v4), `name: string`, `winCondition: WinCondition`, `tieBreakRule: TieBreakRule` (default `'NONE'`), `tieBreakCondition: WinCondition` (default `'HIGHEST_SCORE'`), `tieBreakLabel: string \| null` (default `null`), `active: boolean` (default `true`) |
+| `GameType` | `id: string` (UUID v4), `name: string`, `winCondition: WinCondition`, `scoringMode: ScoringMode` (default `'POINTS'`), `tieBreakRule: TieBreakRule` (default `'NONE'`), `tieBreakCondition: WinCondition` (default `'HIGHEST_SCORE'`), `tieBreakLabel: string \| null` (default `null`), `active: boolean` (default `true`) |
 | `Match` | `id: string` (UUID v4), `date: number` (epoch ms), `gameTypeId: string`, `playerScores: PlayerScore[]`, `manualWinners: string[]` (default `[]`), `secondaryPlayerScores: PlayerScore[]` (default `[]`), `rounds: PlayerScore[][]` (default `[]`) |
 | `PlayerScore` | `playerId: string`, `score: number` |
 | `WinCondition` | union: `'HIGHEST_SCORE'`, `'LOWEST_SCORE'`, `'MANUAL'` |

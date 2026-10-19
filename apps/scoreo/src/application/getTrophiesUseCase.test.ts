@@ -528,6 +528,21 @@ describe('GetTrophiesUseCase', () => {
       expect(holders).toEqual([{ playerId: 'p2', name: 'Bob', value: 68, detail: 'Golf' }])
     })
 
+    it('crowns the most rounds won for a LOWEST_SCORE game type played in rounds-won mode', () => {
+      const playerRepo = new InMemoryPlayerRepository()
+      playerRepo.save(player('p1', 'Alice'))
+      playerRepo.save(player('p2', 'Bob'))
+      const gameTypeRepo = new InMemoryGameTypeRepository()
+      gameTypeRepo.save({ ...gameType('gt1', 'Tarot', 'LOWEST_SCORE'), scoringMode: 'ROUNDS_WON' })
+      const matchRepo = new InMemoryMatchRepository()
+      matchRepo.save(match('m1', 1000, 'gt1', [{ playerId: 'p1', score: 3 }, { playerId: 'p2', score: 1 }]))
+      matchRepo.save(match('m2', 2000, 'gt1', [{ playerId: 'p1', score: 0 }, { playerId: 'p2', score: 2 }]))
+
+      const holders = trophy(buildUseCase(matchRepo, gameTypeRepo, playerRepo).invoke(), 'd1').holders
+
+      expect(holders).toEqual([{ playerId: 'p1', name: 'Alice', value: 3, detail: 'Tarot' }])
+    })
+
     it('produces multiple holders on a tied record', () => {
       const playerRepo = new InMemoryPlayerRepository()
       playerRepo.save(player('p1', 'Alice'))

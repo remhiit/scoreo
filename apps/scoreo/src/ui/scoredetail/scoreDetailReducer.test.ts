@@ -1841,6 +1841,47 @@ describe('rounds-won scoring mode', () => {
     expect(action.type).toBe('openManualSelectionDialog')
   })
 
+  it('keeps stored scores when re-saving a rounds-won match that has no round detail', () => {
+    const gt = roundsWonGame('HIGHEST_SCORE')
+    const gameTypeRepo = new InMemoryGameTypeRepository()
+    gameTypeRepo.save(gt)
+    const matchRepo = new InMemoryMatchRepository()
+    const playerRepo = new InMemoryPlayerRepository()
+    playerRepo.save(alice)
+    playerRepo.save(bob)
+    matchRepo.save({
+      id: 'm1',
+      gameTypeId: gt.id,
+      date: 1000,
+      playerScores: [
+        { playerId: 'alice', score: 7 },
+        { playerId: 'bob', score: 3 },
+      ],
+      manualWinners: [],
+      secondaryPlayerScores: [],
+      rounds: [],
+      moduleData: null,
+    })
+    const mode: ScoreDetailMode = {
+      type: 'Edit',
+      matchId: 'm1',
+      updateMatchUseCase: new UpdateMatchUseCase(matchRepo),
+      matchRepository: matchRepo,
+      playerRepository: playerRepo,
+      gameTypeRepository: gameTypeRepo,
+    }
+    const { deps } = setup(gt, [], mode)
+    const reopened = buildInitialState(gt, [alice, bob], mode, deps.currentDate)
+    const next = scoreDetailReducer(reopened, submitTerminate(reopened, deps))
+    expect(next.saved).toBe(true)
+    const match = matchRepo.findById('m1')!
+    expect(match.playerScores).toEqual([
+      { playerId: 'alice', score: 7 },
+      { playerId: 'bob', score: 3 },
+    ])
+    expect(match.rounds).toEqual([])
+  })
+
   it('restores raw points when reopening a match for editing', () => {
     const gt = roundsWonGame('HIGHEST_SCORE')
     const gameTypeRepo = new InMemoryGameTypeRepository()
