@@ -19,6 +19,7 @@ function gameType(
     id: 'gt1',
     name: 'TestGame',
     winCondition,
+    scoringMode: 'POINTS' as const,
     tieBreakRule,
     tieBreakCondition: 'HIGHEST_SCORE',
     tieBreakLabel: null,

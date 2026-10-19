@@ -11,6 +11,7 @@ function buildGameType(overrides: Partial<GameType> = {}): GameType {
     id: 'gt1',
     name: 'Belote',
     winCondition: 'HIGHEST_SCORE',
+    scoringMode: 'POINTS' as const,
     tieBreakRule: 'NONE',
     tieBreakCondition: 'HIGHEST_SCORE',
     tieBreakLabel: null,

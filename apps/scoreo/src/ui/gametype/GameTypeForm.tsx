@@ -3,9 +3,11 @@ import { useTranslation } from 'react-i18next'
 import type { GameTypeAction } from './gameTypeReducer'
 import type { GameTypeState } from './gameTypeTypes'
 import {
+  ScoringModeSchema,
   TieBreakRuleSchema,
   WinConditionSchema,
   tieBreakRuleLabel,
+  scoringModeLabel,
   winConditionLabel,
 } from '../../domain/model/enums'
 
@@ -34,6 +36,23 @@ export function GameTypeFields({ state, dispatch }: GameTypeFieldsProps) {
           })
         }
       />
+
+      {state.selectedWinCondition !== 'MANUAL' && (
+        <Select
+          label={t('gametype.scoringMode')}
+          value={state.selectedScoringMode}
+          options={ScoringModeSchema.options.map((mode) => ({
+            value: mode,
+            label: t(`gametype.scoringModes.${mode}`, { defaultValue: scoringModeLabel(mode) }),
+          }))}
+          onChange={(mode) =>
+            dispatch({
+              type: 'selectScoringMode',
+              scoringMode: mode as GameTypeState['selectedScoringMode'],
+            })
+          }
+        />
+      )}
 
       <Select
         label={t('gametype.tieBreakRule')}

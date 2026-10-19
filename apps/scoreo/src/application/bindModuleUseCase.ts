@@ -82,6 +82,7 @@ export class BindModuleUseCase {
       id: newId(),
       name: manifest.gameNames[0],
       winCondition: manifest.winCondition,
+      scoringMode: 'POINTS',
       tieBreakRule: 'NONE',
       tieBreakCondition: 'HIGHEST_SCORE',
       tieBreakLabel: null,

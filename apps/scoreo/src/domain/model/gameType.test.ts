@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { computeWinners, type GameType } from './gameType'
+import { computeRoundsWon, computeWinners, type GameType } from './gameType'
 import type { PlayerScore } from './playerScore'
 
 function scores(...pairs: [string, number][]): PlayerScore[] {
@@ -11,6 +11,7 @@ function gameType(overrides: Partial<GameType> = {}): GameType {
     id: '1',
     name: 'Game',
     winCondition: 'HIGHEST_SCORE',
+    scoringMode: 'POINTS' as const,
     tieBreakRule: 'NONE',
     tieBreakCondition: 'HIGHEST_SCORE',
     tieBreakLabel: null,
@@ -69,5 +70,52 @@ describe('computeWinners', () => {
     const gt = gameType({ winCondition: 'HIGHEST_SCORE' })
     const winners = computeWinners(gt, scores(['alice', 1], ['bob', 1], ['charlie', 3]), 'LOWEST_SCORE')
     expect(new Set(winners)).toEqual(new Set(['alice', 'bob']))
+  })
+})
+
+describe('computeRoundsWon', () => {
+  const rounds = [
+    scores(['alice', 10], ['bob', 5], ['carol', 1]),
+    scores(['alice', 2], ['bob', 8], ['carol', 1]),
+    scores(['alice', 7], ['bob', 7], ['carol', 0]),
+  ]
+
+  it('HIGHEST_SCORE gives the round to the top score, ties included', () => {
+    const won = computeRoundsWon(rounds, 'HIGHEST_SCORE')
+    expect(won.get('alice')).toBe(2)
+    expect(won.get('bob')).toBe(2)
+    expect(won.get('carol')).toBe(0)
+  })
+
+  it('LOWEST_SCORE gives the round to the lowest score, ties included', () => {
+    const won = computeRoundsWon(rounds, 'LOWEST_SCORE')
+    expect(won.get('alice')).toBe(0)
+    expect(won.get('bob')).toBe(0)
+    expect(won.get('carol')).toBe(3)
+  })
+
+  it('every player wins a round they all tie', () => {
+    const won = computeRoundsWon([scores(['alice', 4], ['bob', 4])], 'HIGHEST_SCORE')
+    expect([...won.entries()]).toEqual([
+      ['alice', 1],
+      ['bob', 1],
+    ])
+  })
+
+  it('MANUAL wins nothing and no rounds yields no entries', () => {
+    expect(computeRoundsWon(rounds, 'MANUAL').get('alice')).toBe(0)
+    expect(computeRoundsWon([], 'HIGHEST_SCORE').size).toBe(0)
+  })
+})
+
+describe('computeWinners with ROUNDS_WON', () => {
+  it('rewards the highest count even when the win condition is LOWEST_SCORE', () => {
+    const gt = gameType({ winCondition: 'LOWEST_SCORE', scoringMode: 'ROUNDS_WON' })
+    expect(computeWinners(gt, scores(['alice', 1], ['bob', 3]))).toEqual(['bob'])
+  })
+
+  it('ignores ROUNDS_WON under a MANUAL win condition', () => {
+    const gt = gameType({ winCondition: 'MANUAL', scoringMode: 'ROUNDS_WON' })
+    expect(computeWinners(gt, scores(['alice', 1]))).toEqual([])
   })
 })

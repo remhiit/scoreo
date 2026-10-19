@@ -1,5 +1,5 @@
 import { ValidationError } from '../domain/model/errors'
-import type { TieBreakRule, WinCondition } from '../domain/model/enums'
+import type { ScoringMode, TieBreakRule, WinCondition } from '../domain/model/enums'
 import type { GameType } from '../domain/model/gameType'
 import type { GameTypeRepository } from '../domain/port/gameTypeRepository'
 import { newId } from './idGenerator'
@@ -7,6 +7,7 @@ import { newId } from './idGenerator'
 const MAX_NAME_LENGTH = 50
 
 export interface AddGameTypeOptions {
+  scoringMode?: ScoringMode
   tieBreakRule?: TieBreakRule
   tieBreakCondition?: WinCondition
   tieBreakLabel?: string | null
@@ -27,6 +28,8 @@ export class AddGameTypeUseCase {
       id: newId(),
       name: trimmed,
       winCondition,
+      // Rounds won only makes sense when the app decides who wins each round.
+      scoringMode: winCondition === 'MANUAL' ? 'POINTS' : (options.scoringMode ?? 'POINTS'),
       tieBreakRule: options.tieBreakRule ?? 'NONE',
       tieBreakCondition: options.tieBreakCondition ?? 'HIGHEST_SCORE',
       tieBreakLabel: options.tieBreakLabel ?? null,

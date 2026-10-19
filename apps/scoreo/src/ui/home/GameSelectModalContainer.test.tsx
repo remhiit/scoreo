@@ -14,6 +14,7 @@ import {
 function gameType(overrides: Partial<GameType> & Pick<GameType, 'id' | 'name'>): GameType {
   return {
     winCondition: 'HIGHEST_SCORE',
+    scoringMode: 'POINTS' as const,
     tieBreakRule: 'NONE',
     tieBreakCondition: 'HIGHEST_SCORE',
     tieBreakLabel: null,

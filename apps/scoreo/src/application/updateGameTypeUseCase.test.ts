@@ -45,4 +45,22 @@ describe('UpdateGameTypeUseCase', () => {
 
     expect(repo.findById(originalId)?.id).toBe(originalId)
   })
+
+  it('updates the scoring mode', () => {
+    const repo = new InMemoryGameTypeRepository()
+    const created = new AddGameTypeUseCase(repo).invoke('Tarot', 'HIGHEST_SCORE')
+    new UpdateGameTypeUseCase(repo).invoke({ ...created, scoringMode: 'ROUNDS_WON' })
+    expect(repo.findById(created.id)?.scoringMode).toBe('ROUNDS_WON')
+  })
+
+  it('forces POINTS when the win condition is MANUAL', () => {
+    const repo = new InMemoryGameTypeRepository()
+    const created = new AddGameTypeUseCase(repo).invoke('Tarot', 'HIGHEST_SCORE')
+    new UpdateGameTypeUseCase(repo).invoke({
+      ...created,
+      winCondition: 'MANUAL',
+      scoringMode: 'ROUNDS_WON',
+    })
+    expect(repo.findById(created.id)?.scoringMode).toBe('POINTS')
+  })
 })

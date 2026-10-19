@@ -4,7 +4,7 @@ import type { FindGameTypeByIdUseCase } from '../../application/findGameTypeById
 import type { GetGameTypesUseCase } from '../../application/getGameTypesUseCase'
 import type { MergeGameTypesUseCase } from '../../application/mergeGameTypesUseCase'
 import type { UpdateGameTypeUseCase } from '../../application/updateGameTypeUseCase'
-import type { TieBreakRule, WinCondition } from '../../domain/model/enums'
+import type { ScoringMode, TieBreakRule, WinCondition } from '../../domain/model/enums'
 import type { GameType } from '../../domain/model/gameType'
 import type { GameTypeState } from './gameTypeTypes'
 
@@ -21,6 +21,7 @@ export type GameTypeAction =
   | ({ type: 'loaded' } & LoadedGameTypes)
   | { type: 'updateName'; name: string }
   | { type: 'selectWinCondition'; winCondition: WinCondition }
+  | { type: 'selectScoringMode'; scoringMode: ScoringMode }
   | { type: 'updateTieBreakRule'; rule: TieBreakRule }
   | { type: 'updateTieBreakCondition'; condition: WinCondition }
   | { type: 'updateTieBreakLabel'; label: string }
@@ -56,6 +57,7 @@ function resetForm(state: GameTypeState, loaded: LoadedGameTypes): GameTypeState
     ...loaded,
     inputName: '',
     selectedWinCondition: 'HIGHEST_SCORE',
+    selectedScoringMode: 'POINTS',
     selectedTieBreakRule: 'NONE',
     selectedTieBreakCondition: 'HIGHEST_SCORE',
     selectedTieBreakLabel: undefined,
@@ -72,6 +74,8 @@ export function gameTypeReducer(state: GameTypeState, action: GameTypeAction): G
       return { ...state, inputName: action.name, error: undefined }
     case 'selectWinCondition':
       return { ...state, selectedWinCondition: action.winCondition }
+    case 'selectScoringMode':
+      return { ...state, selectedScoringMode: action.scoringMode }
     case 'updateTieBreakRule':
       return { ...state, selectedTieBreakRule: action.rule }
     case 'updateTieBreakCondition':
@@ -94,6 +98,7 @@ export function gameTypeReducer(state: GameTypeState, action: GameTypeAction): G
         ...state,
         inputName: action.gameType.name,
         selectedWinCondition: action.gameType.winCondition,
+        selectedScoringMode: action.gameType.scoringMode,
         selectedTieBreakRule: action.gameType.tieBreakRule,
         selectedTieBreakCondition: action.gameType.tieBreakCondition,
         selectedTieBreakLabel: action.gameType.tieBreakLabel ?? undefined,
@@ -172,6 +177,7 @@ export function submitAddGameType(
 ): LoadedGameTypes | { error: string } {
   try {
     addGameTypeUseCase.invoke(state.inputName.trim(), state.selectedWinCondition, {
+      scoringMode: state.selectedScoringMode,
       tieBreakRule: state.selectedTieBreakRule,
       tieBreakCondition: state.selectedTieBreakCondition,
       tieBreakLabel: state.selectedTieBreakLabel ?? null,

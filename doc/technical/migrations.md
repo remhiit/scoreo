@@ -383,6 +383,34 @@ Le cas 1 rend l'opération idempotente. Les cas 1 et 2 réactivent un jeu archiv
 
 ---
 
+## `GameType.scoringMode` — mode de calcul « manches gagnées » (issue #568)
+
+Nouveau champ optionnel sérialisé sur `GameType` : `scoringMode: 'POINTS' | 'ROUNDS_WON'`. `POINTS` (défaut) additionne les manches ; `ROUNDS_WON` enregistre comme score final le nombre de manches gagnées par chaque joueur (le gagnant d'une manche suit `winCondition`, tous les ex æquo la gagnent). C'est un champ à part et non une 4e valeur de `WinCondition` : une version plus ancienne de l'app relisant un jeu synchronisé via Drive n'aurait plus su parser `winCondition`, et `localStorageGameTypeRepository` renvoie `[]` sur échec de parsing.
+
+**Ancien format :** pas de `scoringMode`.
+
+**Nouveau format :**
+
+```json
+{
+  "id": "gt1",
+  "name": "Tarot",
+  "winCondition": "LOWEST_SCORE",
+  "scoringMode": "ROUNDS_WON",
+  "tieBreakRule": "NONE",
+  "tieBreakCondition": "HIGHEST_SCORE",
+  "tieBreakLabel": null,
+  "active": true,
+  "moduleId": null
+}
+```
+
+**Compatibilité ascendante :** `scoringMode` est déclaré `.default('POINTS')` — un `GameType` sans le champ (données antérieures, Drive, import) se relit en mode points, sans perte. Une version plus ancienne de l'app ignore le champ inconnu (zod le strip) : le jeu se relit en mode points, dégradé mais sans plantage. Couvert par `serialization.contract.test.ts` (cas legacy sans `scoringMode`, cas `ROUNDS_WON`).
+
+**Pas de recalcul rétroactif :** changer le mode d'un jeu ne touche pas les parties déjà enregistrées (leurs `playerScores` restent ceux enregistrés) ; seules les nouvelles saisies suivent le nouveau mode. `Match.rounds` garde toujours les points bruts. Le format d'import (`schemas/import/`) ne porte pas le champ : les jeux importés restent en `POINTS`.
+
+---
+
 ## Clés du 1kSaBord → préfixe `sabords_`
 
 **Contexte :** GitHub Pages sert Scoreo et l'app Kotlin autonome 1kSaBord depuis la **même origine**

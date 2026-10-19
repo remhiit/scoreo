@@ -4,8 +4,8 @@
 
 | Use Case | Input | Output | Business Rule |
 |----------|-------|--------|---------------|
-| `AddGameTypeUseCase` | `name, winCondition, tieBreakRule = NONE, tieBreakCondition = HIGHEST_SCORE, tieBreakLabel = null` | `GameType` | Generates UUID v4 |
-| `UpdateGameTypeUseCase` | `gameType: GameType` | `Unit` | Overwrites existing game type |
+| `AddGameTypeUseCase` | `name, winCondition, scoringMode = POINTS, tieBreakRule = NONE, tieBreakCondition = HIGHEST_SCORE, tieBreakLabel = null` | `GameType` | Generates UUID v4; `scoringMode` is forced to `POINTS` when `winCondition` is `MANUAL` |
+| `UpdateGameTypeUseCase` | `gameType: GameType` | `Unit` | Overwrites existing game type (same `MANUAL` → `POINTS` rule for `scoringMode`) |
 | `GetGameTypesUseCase` | — | `List<GameType>` | Returns all game types |
 | `CreateMatchUseCase` | `gameTypeId, playerScores, date, manualWinners, secondaryPlayerScores` | `Match` | Validates players match scores list |
 | `ArchiveGameTypeUseCase` | `gameTypeId: String` | `Unit` | Soft-delete (`active = false`); matches stay attached to it |
@@ -145,6 +145,10 @@ When I click "Cancel"
 Then the modal closes and the game remains active
 ```
 
+## Scoring mode
+
+The game type form offers a **Scoring** choice next to the win condition: "Total points" (default) or "Rounds won". It is hidden when the win condition is `MANUAL` (stored as `POINTS`). In rounds-won mode the entry screen still takes each player's points per round; the winner of a round is the highest (`HIGHEST_SCORE`) or lowest (`LOWEST_SCORE`) score, all tied players win it, and the saved final score is the count of rounds won. See [scoring](scoring.md). Changing the mode does not recompute matches already saved. Games bound to a module are counted by the module; the mode only applies to the generic entry screen.
+
 ## JSON Schema
 
 ```json
@@ -152,6 +156,7 @@ Then the modal closes and the game remains active
   "id": "UUID v4",
   "name": "String",
   "winCondition": "HIGHEST_SCORE | LOWEST_SCORE | MANUAL",
+  "scoringMode": "POINTS | ROUNDS_WON",
   "tieBreakRule": "NONE | MANUAL_SELECTION | SECONDARY_SCORE",
   "tieBreakCondition": "HIGHEST_SCORE | LOWEST_SCORE | MANUAL",
   "tieBreakLabel": "String | null"

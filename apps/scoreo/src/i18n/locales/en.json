@@ -24,6 +24,11 @@
   "gametype": {
     "title": "Game Types",
     "winCondition": "Win condition",
+    "scoringMode": "Scoring",
+    "scoringModes": {
+      "POINTS": "Total points",
+      "ROUNDS_WON": "Rounds won"
+    },
     "tieBreakRule": "Tie-break rule",
     "tieBreak": "Tie break",
     "tieBreakConditionLabel": "Tie break condition:",

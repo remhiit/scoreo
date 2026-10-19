@@ -40,6 +40,7 @@ function buildGameType(id: string, name: string) {
     id,
     name,
     winCondition: 'HIGHEST_SCORE' as const,
+    scoringMode: 'POINTS' as const,
     tieBreakRule: 'NONE' as const,
     tieBreakCondition: 'HIGHEST_SCORE' as const,
     tieBreakLabel: null,
@@ -325,5 +326,12 @@ describe('GameTypeScreen', () => {
     expect(
       within(dialog).getByText('(archived)', { selector: '.sc-row__subtitle' }),
     ).toBeInTheDocument()
+  })
+
+  it('offers the scoring mode choice, except for a MANUAL win condition', () => {
+    renderScreen()
+    expect(screen.getByText('Scoring')).toBeInTheDocument()
+    fireEvent.change(screen.getByLabelText('Win condition'), { target: { value: 'MANUAL' } })
+    expect(screen.queryByText('Scoring')).not.toBeInTheDocument()
   })
 })

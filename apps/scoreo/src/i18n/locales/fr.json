@@ -24,6 +24,11 @@
   "gametype": {
     "title": "Types de jeu",
     "winCondition": "Condition de victoire",
+    "scoringMode": "Décompte",
+    "scoringModes": {
+      "POINTS": "Total des points",
+      "ROUNDS_WON": "Manches gagnées"
+    },
     "tieBreakRule": "Règle de départage",
     "tieBreak": "Départage",
     "tieBreakConditionLabel": "Condition de départage :",

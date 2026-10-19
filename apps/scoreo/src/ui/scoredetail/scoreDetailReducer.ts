@@ -1,4 +1,4 @@
-import { computeWinners, type GameType } from '../../domain/model/gameType'
+import { computeRoundsWon, computeWinners, usesRoundsWon, type GameType } from '../../domain/model/gameType'
 import type { Match } from '../../domain/model/match'
 import type { Player } from '../../domain/model/player'
 import type { PlayerScore } from '../../domain/model/playerScore'
@@ -73,22 +73,40 @@ export function computeTotals(
   return totals
 }
 
+/**
+ * The per-player figure the game is decided on: the points sum, or for a
+ * rounds-won game the number of rounds each player won (blank rounds skipped).
+ */
+export function computeScores(
+  gameType: GameType,
+  players: Player[],
+  rounds: Record<string, string>[],
+): Map<string, number> {
+  if (!usesRoundsWon(gameType)) return computeTotals(players, rounds)
+  const won = computeRoundsWon(playedRounds(players, rounds), gameType.winCondition)
+  return new Map(players.map((p) => [p.id, won.get(p.id) ?? 0]))
+}
+
 function playerScoresFromTotals(state: ScoreDetailState): PlayerScore[] {
-  const totals = computeTotals(state.players, state.rounds)
+  const totals = computeScores(state.gameType, state.players, state.rounds)
   return state.players.map((p) => ({ playerId: p.id, score: totals.get(p.id) ?? 0 }))
 }
 
 /** Converts the played rounds (skipping the trailing not-yet-played one) into Match.rounds' PlayerScore[][] shape. */
-function roundsForSave(state: ScoreDetailState): PlayerScore[][] {
-  return state.rounds
+function playedRounds(players: Player[], rounds: Record<string, string>[]): PlayerScore[][] {
+  return rounds
     .filter((round) => Object.values(round).some((v) => v.trim() !== ''))
     .map((round) =>
-      state.players.map((p) => {
+      players.map((p) => {
         const raw = round[p.id]
         const parsed = raw !== undefined ? toIntOrNull(raw.trim()) : null
         return { playerId: p.id, score: parsed ?? 0 }
       }),
     )
+}
+
+function roundsForSave(state: ScoreDetailState): PlayerScore[][] {
+  return playedRounds(state.players, state.rounds)
 }
 
 export interface StandingRow {
@@ -111,15 +129,19 @@ function lastRoundDeltas(players: Player[], rounds: Record<string, string>[]): M
   return deltas
 }
 
-/** Ranks players by gameType.winCondition (LOWEST_SCORE ascending, otherwise descending); tied totals share a rank. */
+/**
+ * Ranks players by gameType.winCondition (LOWEST_SCORE ascending, otherwise
+ * descending); tied totals share a rank. A rounds-won game ranks by rounds won,
+ * most first, whatever the win condition.
+ */
 export function computeStandings(
   gameType: GameType,
   players: Player[],
   rounds: Record<string, string>[],
 ): StandingRow[] {
-  const totals = computeTotals(players, rounds)
+  const totals = computeScores(gameType, players, rounds)
   const deltas = lastRoundDeltas(players, rounds)
-  const ascending = gameType.winCondition === 'LOWEST_SCORE'
+  const ascending = !usesRoundsWon(gameType) && gameType.winCondition === 'LOWEST_SCORE'
   const sorted = [...players].sort((a, b) => {
     const diff = (totals.get(a.id) ?? 0) - (totals.get(b.id) ?? 0)
     return ascending ? diff : -diff
@@ -155,8 +177,11 @@ export function nextRoundNumber(rounds: Record<string, string>[]): number {
 }
 
 export function leadHintLabel(gameType: GameType, roundsPlayed: number): string {
-  const direction =
-    gameType.winCondition === 'LOWEST_SCORE' ? 'lowest score leads' : 'highest score leads'
+  const direction = usesRoundsWon(gameType)
+    ? 'most rounds won leads'
+    : gameType.winCondition === 'LOWEST_SCORE'
+      ? 'lowest score leads'
+      : 'highest score leads'
   if (roundsPlayed === 0) return `No rounds played yet · ${direction}`
   const roundWord = roundsPlayed === 1 ? 'round' : 'rounds'
   return `After ${roundsPlayed} ${roundWord} · ${direction}`
@@ -509,7 +534,7 @@ export function saveDraft(
  * the detail and the totals disagree (partial sync, match written by an older
  * build): rebuilding from it would silently change the match's scores.
  */
-function roundsAgreeWithTotals(match: Match): boolean {
+function roundsAgreeWithTotals(match: Match, gameType: GameType): boolean {
   const totals = new Map(match.playerScores.map((ps) => [ps.playerId, ps.score]))
   const sums = new Map<string, number>()
   for (const round of match.rounds) {
@@ -518,7 +543,11 @@ function roundsAgreeWithTotals(match: Match): boolean {
       sums.set(ps.playerId, (sums.get(ps.playerId) ?? 0) + ps.score)
     }
   }
-  return match.playerScores.every((ps) => (sums.get(ps.playerId) ?? 0) === ps.score)
+  if (match.playerScores.every((ps) => (sums.get(ps.playerId) ?? 0) === ps.score)) return true
+  // A rounds-won match records the count of rounds won, not the points sum.
+  if (!usesRoundsWon(gameType)) return false
+  const won = computeRoundsWon(match.rounds, gameType.winCondition)
+  return match.playerScores.every((ps) => (won.get(ps.playerId) ?? 0) === ps.score)
 }
 
 /**
@@ -528,8 +557,8 @@ function roundsAgreeWithTotals(match: Match): boolean {
  * no detail was stored (matches saved before `Match.rounds` existed, or
  * imported) or when the stored detail disagrees with the totals.
  */
-function reconstructRounds(match: Match): Record<string, string>[] {
-  if (match.rounds.length > 0 && roundsAgreeWithTotals(match)) {
+function reconstructRounds(match: Match, gameType: GameType): Record<string, string>[] {
+  if (match.rounds.length > 0 && roundsAgreeWithTotals(match, gameType)) {
     return match.rounds.map((round) =>
       Object.fromEntries(round.map((ps) => [ps.playerId, String(ps.score)])),
     )
@@ -601,7 +630,7 @@ export function buildInitialState(
       ...base,
       gameType: editGameType,
       players: editPlayers,
-      rounds: reconstructRounds(match),
+      rounds: reconstructRounds(match, editGameType),
       matchDate: toDateOnly(match.date),
       editingMatchId: mode.matchId,
     }

@@ -288,6 +288,7 @@ export class ImportMatchesUseCase {
       id: newId(),
       name,
       winCondition: wc,
+      scoringMode: 'POINTS',
       tieBreakRule: 'NONE',
       tieBreakCondition: 'HIGHEST_SCORE',
       tieBreakLabel: null,

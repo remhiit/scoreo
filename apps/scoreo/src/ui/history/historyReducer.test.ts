@@ -34,6 +34,7 @@ function gameType(
     id,
     name,
     winCondition,
+    scoringMode: 'POINTS' as const,
     tieBreakRule,
     tieBreakCondition: 'HIGHEST_SCORE',
     tieBreakLabel: null,

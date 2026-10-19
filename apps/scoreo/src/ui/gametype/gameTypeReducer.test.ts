@@ -68,6 +68,37 @@ describe('gameTypeReducer', () => {
     expect(state.error).toBeUndefined()
   })
 
+  it('selectScoringMode updates selectedScoringMode and defaults to POINTS', () => {
+    expect(initialGameTypeState.selectedScoringMode).toBe('POINTS')
+    const state = gameTypeReducer(initialGameTypeState, {
+      type: 'selectScoringMode',
+      scoringMode: 'ROUNDS_WON',
+    })
+    expect(state.selectedScoringMode).toBe('ROUNDS_WON')
+  })
+
+  it('adds a ROUNDS_WON game type, then edits and updates it', () => {
+    const useCases = buildUseCases()
+    let state = gameTypeReducer(initialGameTypeState, {
+      type: 'selectScoringMode',
+      scoringMode: 'ROUNDS_WON',
+    })
+    state = add(state, useCases, 'Tarot')
+    expect(state.gameTypes[0].scoringMode).toBe('ROUNDS_WON')
+    expect(state.selectedScoringMode).toBe('POINTS')
+
+    state = gameTypeReducer(state, { type: 'editGameType', gameType: state.gameTypes[0] })
+    expect(state.selectedScoringMode).toBe('ROUNDS_WON')
+
+    state = gameTypeReducer(state, { type: 'selectScoringMode', scoringMode: 'POINTS' })
+    const result = submitUpdateGameType(useCases.updateGameType, useCases.getGameTypes, {
+      ...state.gameTypes[0],
+      scoringMode: state.selectedScoringMode,
+    })
+    expect('error' in result).toBe(false)
+    expect(useCases.repo.getAll()[0].scoringMode).toBe('POINTS')
+  })
+
   it('selectWinCondition updates selectedWinCondition', () => {
     const state = gameTypeReducer(initialGameTypeState, {
       type: 'selectWinCondition',

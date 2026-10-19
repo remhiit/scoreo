@@ -1,4 +1,4 @@
-import type { TieBreakRule, WinCondition } from '../../domain/model/enums'
+import type { ScoringMode, TieBreakRule, WinCondition } from '../../domain/model/enums'
 import type { GameType } from '../../domain/model/gameType'
 
 export interface GameTypeState {
@@ -11,6 +11,7 @@ export interface GameTypeState {
   allGameTypes: GameType[]
   inputName: string
   selectedWinCondition: WinCondition
+  selectedScoringMode: ScoringMode
   selectedTieBreakRule: TieBreakRule
   selectedTieBreakCondition: WinCondition
   selectedTieBreakLabel: string | undefined
@@ -32,6 +33,7 @@ export const initialGameTypeState: GameTypeState = {
   allGameTypes: [],
   inputName: '',
   selectedWinCondition: 'HIGHEST_SCORE',
+  selectedScoringMode: 'POINTS',
   selectedTieBreakRule: 'NONE',
   selectedTieBreakCondition: 'HIGHEST_SCORE',
   selectedTieBreakLabel: undefined,

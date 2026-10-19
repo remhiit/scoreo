@@ -10,6 +10,7 @@ import { InMemoryMatchRepository } from '../../infrastructure/testing/inMemoryMa
 import { InMemoryPlayerRepository } from '../../infrastructure/testing/inMemoryPlayerRepository'
 import {
   buildInitialState,
+  computeScores,
   computeStandings,
   computeTotals,
   countRoundsPlayed,
@@ -40,6 +41,7 @@ function gameType(
     id,
     name,
     winCondition,
+    scoringMode: 'POINTS' as const,
     tieBreakRule,
     tieBreakCondition: 'HIGHEST_SCORE',
     tieBreakLabel,
@@ -1737,5 +1739,151 @@ describe('leadHintLabel', () => {
     expect(leadHintLabel(gameType('gt1', 'TestGame', 'HIGHEST_SCORE'), 0)).toBe(
       'No rounds played yet · highest score leads',
     )
+  })
+})
+
+describe('rounds-won scoring mode', () => {
+  function roundsWonGame(winCondition: GameType['winCondition']): GameType {
+    return { ...gameType('gt1', 'Tarot', winCondition), scoringMode: 'ROUNDS_WON' }
+  }
+
+  function setup(gt: GameType, rounds: Record<string, string>[], mode?: ScoreDetailMode) {
+    const gameTypeRepo = new InMemoryGameTypeRepository()
+    gameTypeRepo.save(gt)
+    const matchRepo = new InMemoryMatchRepository()
+    const deps: ScoreDetailDeps = {
+      createMatch: new CreateMatchUseCase(matchRepo, gameTypeRepo),
+      mode: mode ?? { type: 'Create' },
+      currentDate: () => 1767225600000,
+    }
+    const state = { ...buildInitialState(gt, [alice, bob], deps.mode, deps.currentDate), rounds }
+    return { state, deps, matchRepo }
+  }
+
+  const rounds: Record<string, string>[] = [
+    { alice: '10', bob: '3' },
+    { alice: '1', bob: '4' },
+    { alice: '9', bob: '9' },
+    {},
+  ]
+
+  it('counts rounds won, ignoring the blank trailing round', () => {
+    const scores = computeScores(roundsWonGame('HIGHEST_SCORE'), [alice, bob], rounds)
+    expect(scores.get('alice')).toBe(2)
+    expect(scores.get('bob')).toBe(2)
+  })
+
+  it('reports zero for everyone when no round was played', () => {
+    const scores = computeScores(roundsWonGame('HIGHEST_SCORE'), [alice, bob], [{}])
+    expect([...scores.values()]).toEqual([0, 0])
+  })
+
+  it('treats a blank cell in a played round as 0', () => {
+    const scores = computeScores(roundsWonGame('LOWEST_SCORE'), [alice, bob], [{ alice: '5' }])
+    expect(scores.get('bob')).toBe(1)
+    expect(scores.get('alice')).toBe(0)
+  })
+
+  it('ranks standings by rounds won, most first, even for LOWEST_SCORE', () => {
+    const standings = computeStandings(roundsWonGame('LOWEST_SCORE'), [alice, bob], [
+      { alice: '1', bob: '9' },
+      { alice: '2', bob: '9' },
+      { alice: '9', bob: '1' },
+    ])
+    expect(standings.map((r) => [r.playerId, r.total, r.rank])).toEqual([
+      ['alice', 2, 1],
+      ['bob', 1, 2],
+    ])
+  })
+
+  it('keeps POINTS standings unchanged', () => {
+    const standings = computeStandings(gameType('gt1', 'G'), [alice, bob], rounds)
+    expect(standings.map((r) => r.total)).toEqual([20, 16])
+  })
+
+  it('saves rounds won as the score and the raw points as rounds', () => {
+    const { state, deps, matchRepo } = setup(roundsWonGame('LOWEST_SCORE'), [
+      { alice: '1', bob: '9' },
+      { alice: '2', bob: '9' },
+      { alice: '9', bob: '1' },
+      {},
+    ])
+    const next = scoreDetailReducer(state, submitTerminate(state, deps))
+    expect(next.saved).toBe(true)
+    const match = matchRepo.getAll()[0]
+    expect(match.playerScores).toEqual([
+      { playerId: 'alice', score: 2 },
+      { playerId: 'bob', score: 1 },
+    ])
+    expect(match.rounds).toEqual([
+      [
+        { playerId: 'alice', score: 1 },
+        { playerId: 'bob', score: 9 },
+      ],
+      [
+        { playerId: 'alice', score: 2 },
+        { playerId: 'bob', score: 9 },
+      ],
+      [
+        { playerId: 'alice', score: 9 },
+        { playerId: 'bob', score: 1 },
+      ],
+    ])
+  })
+
+  it('uses the tie-break rule when rounds won are tied', () => {
+    const gt: GameType = { ...roundsWonGame('HIGHEST_SCORE'), tieBreakRule: 'MANUAL_SELECTION' }
+    const { state, deps } = setup(gt, [
+      { alice: '5', bob: '1' },
+      { alice: '1', bob: '5' },
+    ])
+    const action = submitTerminate(state, deps)
+    expect(action.type).toBe('openManualSelectionDialog')
+  })
+
+  it('restores raw points when reopening a match for editing', () => {
+    const gt = roundsWonGame('HIGHEST_SCORE')
+    const gameTypeRepo = new InMemoryGameTypeRepository()
+    gameTypeRepo.save(gt)
+    const matchRepo = new InMemoryMatchRepository()
+    const playerRepo = new InMemoryPlayerRepository()
+    playerRepo.save(alice)
+    playerRepo.save(bob)
+    matchRepo.save({
+      id: 'm1',
+      gameTypeId: gt.id,
+      date: 1000,
+      playerScores: [
+        { playerId: 'alice', score: 1 },
+        { playerId: 'bob', score: 1 },
+      ],
+      manualWinners: [],
+      secondaryPlayerScores: [],
+      rounds: [
+        [
+          { playerId: 'alice', score: 10 },
+          { playerId: 'bob', score: 3 },
+        ],
+        [
+          { playerId: 'alice', score: 1 },
+          { playerId: 'bob', score: 4 },
+        ],
+      ],
+      moduleData: null,
+    })
+    const mode: ScoreDetailMode = {
+      type: 'Edit',
+      matchId: 'm1',
+      updateMatchUseCase: new UpdateMatchUseCase(matchRepo),
+      matchRepository: matchRepo,
+      playerRepository: playerRepo,
+      gameTypeRepository: gameTypeRepo,
+    }
+    const state = buildInitialState(gt, [alice, bob], mode, () => 1767225600000)
+    expect(state.rounds).toEqual([
+      { alice: '10', bob: '3' },
+      { alice: '1', bob: '4' },
+    ])
+    expect(computeScores(gt, state.players, state.rounds).get('alice')).toBe(1)
   })
 })

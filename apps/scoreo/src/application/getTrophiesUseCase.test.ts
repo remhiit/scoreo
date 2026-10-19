@@ -27,6 +27,7 @@ function gameType(id: string, name: string, winCondition: GameType['winCondition
     id,
     name,
     winCondition,
+    scoringMode: 'POINTS' as const,
     tieBreakRule: 'NONE',
     tieBreakCondition: 'HIGHEST_SCORE',
     tieBreakLabel: null,

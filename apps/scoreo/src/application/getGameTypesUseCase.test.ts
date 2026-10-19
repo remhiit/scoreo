@@ -7,6 +7,7 @@ function gt(id: string, name: string, winCondition: 'HIGHEST_SCORE' | 'LOWEST_SC
     id,
     name,
     winCondition,
+    scoringMode: 'POINTS' as const,
     tieBreakRule: 'NONE' as const,
     tieBreakCondition: 'HIGHEST_SCORE' as const,
     tieBreakLabel: null,

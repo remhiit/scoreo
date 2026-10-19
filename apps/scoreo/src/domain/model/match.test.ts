@@ -12,6 +12,7 @@ function gameType(overrides: Partial<GameType> = {}): GameType {
     id: '1',
     name: 'Game',
     winCondition: 'HIGHEST_SCORE',
+    scoringMode: 'POINTS' as const,
     tieBreakRule: 'NONE',
     tieBreakCondition: 'HIGHEST_SCORE',
     tieBreakLabel: null,

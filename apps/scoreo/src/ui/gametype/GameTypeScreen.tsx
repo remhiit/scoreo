@@ -83,6 +83,7 @@ export function GameTypeScreen({
       ...editing,
       name: state.inputName.trim(),
       winCondition: state.selectedWinCondition,
+      scoringMode: state.selectedScoringMode,
       tieBreakRule: state.selectedTieBreakRule,
       tieBreakCondition: state.selectedTieBreakCondition,
       tieBreakLabel: state.selectedTieBreakLabel ?? null,

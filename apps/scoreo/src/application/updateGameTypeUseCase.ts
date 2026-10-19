@@ -5,6 +5,8 @@ export class UpdateGameTypeUseCase {
   constructor(private readonly repository: GameTypeRepository) {}
 
   invoke(gameType: GameType): void {
-    this.repository.save(gameType)
+    // Rounds won only makes sense when the app decides who wins each round.
+    const scoringMode = gameType.winCondition === 'MANUAL' ? 'POINTS' : gameType.scoringMode
+    this.repository.save(scoringMode === gameType.scoringMode ? gameType : { ...gameType, scoringMode })
   }
 }

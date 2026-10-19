@@ -49,9 +49,14 @@ A 2-column card grid (design-system `StandingsGrid`), one `StandingsCard` per pl
 
 - A hint line above the grid states how many rounds have been played and the win direction (e.g. "After 3 rounds · highest score leads").
 - Cards are ranked by `gameType.winCondition` (`HIGHEST_SCORE` descending, `LOWEST_SCORE` ascending); players tied on total share the same rank.
+- In a `ROUNDS_WON` game (`gameType.scoringMode`), the card's total is the number of rounds won and cards are ranked most rounds first, whatever the `winCondition` (which then only decides who wins each round). Blank rounds are skipped, a blank cell in a played round counts 0, and every player tied for a round's best score wins it. The hint line reads "most rounds won leads".
 - The card's bottom-right number is the delta: the score entered in the **last** round only (not the cumulative total).
 - The leading card(s) — rank 1, possibly several on a tie — get an accented border/total (`StandingsCard`'s `lead`).
 - This view is read-only: no inputs, no add/remove-round controls.
+
+### Rounds-won saving
+
+On save, a `ROUNDS_WON` game stores `Match.playerScores[i].score` = rounds won by that player, while `Match.rounds` keeps the raw points entered per round. Winners are the players with the most rounds won (also for `LOWEST_SCORE`); a tie applies the game's `tieBreakRule`. Reopening such a match for editing restores the raw points and recomputes the count; a match with no stored round detail keeps its scores as-is.
 
 ### History view: one card per round (`RoundHistoryList`, `apps/scoreo/src/ui/scoredetail/RoundHistoryList.tsx`)
 
