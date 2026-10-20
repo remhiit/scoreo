@@ -29,6 +29,7 @@
       "POINTS": "Total points",
       "ROUNDS_WON": "Rounds won"
     },
+    "scoringModeChangeWarning": "This game already has matches: their winners, stats, Elo and trophies will be re-read with the new scoring.",
     "tieBreakRule": "Tie-break rule",
     "tieBreak": "Tie break",
     "tieBreakConditionLabel": "Tie break condition:",
@@ -202,6 +203,8 @@
     "finishMatch": "Finish match",
     "selectWinners": "Select winner(s)",
     "pointsSuffix": "{{points}} pts",
+    "roundsWonSuffix_one": "{{count}} round won",
+    "roundsWonSuffix_other": "{{count}} rounds won",
     "discardScoresTitle": "Discard scores?",
     "discardScoresBody": "All entered scores will be lost.",
     "discard": "Discard",

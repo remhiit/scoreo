@@ -472,6 +472,7 @@ function AppShell() {
           findGameTypeById={findGameTypeById}
           archiveGameType={archiveGameType}
           mergeGameTypes={mergeGameTypes}
+          getMatches={getMatches}
         />
       )}
       {current.type === 'Sync' &&

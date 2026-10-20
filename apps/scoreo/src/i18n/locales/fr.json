@@ -29,6 +29,7 @@
       "POINTS": "Total des points",
       "ROUNDS_WON": "Manches gagnées"
     },
+    "scoringModeChangeWarning": "Ce jeu a déjà des parties : leurs gagnants, statistiques, Elo et trophées seront relus avec le nouveau décompte.",
     "tieBreakRule": "Règle de départage",
     "tieBreak": "Départage",
     "tieBreakConditionLabel": "Condition de départage :",
@@ -202,6 +203,8 @@
     "finishMatch": "Terminer la partie",
     "selectWinners": "Sélectionner le(s) gagnant(s)",
     "pointsSuffix": "{{points}} pts",
+    "roundsWonSuffix_one": "{{count}} manche gagnée",
+    "roundsWonSuffix_other": "{{count}} manches gagnées",
     "discardScoresTitle": "Abandonner les scores ?",
     "discardScoresBody": "Tous les scores saisis seront perdus.",
     "discard": "Abandonner",

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { computeRoundsWon, computeWinners, type GameType } from './gameType'
+import { computeRoundsWon, computeWinners, newGameType, type GameType } from './gameType'
+import { GameTypeSchema } from './gameType.schema'
 import type { PlayerScore } from './playerScore'
 
 function scores(...pairs: [string, number][]): PlayerScore[] {
@@ -56,19 +57,31 @@ describe('computeWinners', () => {
 
   it('with custom condition uses that condition', () => {
     const gt = gameType({ winCondition: 'HIGHEST_SCORE' })
-    const winners = computeWinners(gt, scores(['alice', 10], ['bob', 5], ['charlie', 3]), 'LOWEST_SCORE')
+    const winners = computeWinners(
+      gt,
+      scores(['alice', 10], ['bob', 5], ['charlie', 3]),
+      'LOWEST_SCORE',
+    )
     expect(winners).toEqual(['charlie'])
   })
 
   it('with HIGHEST_SCORE condition returns max', () => {
     const gt = gameType({ name: 'Belote', winCondition: 'LOWEST_SCORE' })
-    const winners = computeWinners(gt, scores(['alice', 5], ['bob', 10], ['charlie', 3]), 'HIGHEST_SCORE')
+    const winners = computeWinners(
+      gt,
+      scores(['alice', 5], ['bob', 10], ['charlie', 3]),
+      'HIGHEST_SCORE',
+    )
     expect(winners).toEqual(['bob'])
   })
 
   it('with custom condition returns all tied', () => {
     const gt = gameType({ winCondition: 'HIGHEST_SCORE' })
-    const winners = computeWinners(gt, scores(['alice', 1], ['bob', 1], ['charlie', 3]), 'LOWEST_SCORE')
+    const winners = computeWinners(
+      gt,
+      scores(['alice', 1], ['bob', 1], ['charlie', 3]),
+      'LOWEST_SCORE',
+    )
     expect(new Set(winners)).toEqual(new Set(['alice', 'bob']))
   })
 })
@@ -117,5 +130,37 @@ describe('computeWinners with ROUNDS_WON', () => {
   it('ignores ROUNDS_WON under a MANUAL win condition', () => {
     const gt = gameType({ winCondition: 'MANUAL', scoringMode: 'ROUNDS_WON' })
     expect(computeWinners(gt, scores(['alice', 1]))).toEqual([])
+  })
+})
+
+describe('newGameType', () => {
+  it('applies the same defaults as reading a minimal game type back', () => {
+    expect(newGameType('1', 'Game', 'LOWEST_SCORE')).toEqual(
+      GameTypeSchema.parse({ id: '1', name: 'Game', winCondition: 'LOWEST_SCORE' }),
+    )
+  })
+
+  it('keeps the provided values', () => {
+    const gt = newGameType('1', 'Game', 'HIGHEST_SCORE', {
+      scoringMode: 'ROUNDS_WON',
+      tieBreakRule: 'SECONDARY_SCORE',
+      tieBreakCondition: 'LOWEST_SCORE',
+      tieBreakLabel: 'Bonus',
+      moduleId: 'mod',
+    })
+    expect(gt).toMatchObject({
+      scoringMode: 'ROUNDS_WON',
+      tieBreakRule: 'SECONDARY_SCORE',
+      tieBreakCondition: 'LOWEST_SCORE',
+      tieBreakLabel: 'Bonus',
+      moduleId: 'mod',
+      active: true,
+    })
+  })
+
+  it('forces points under a MANUAL win condition', () => {
+    expect(newGameType('1', 'Game', 'MANUAL', { scoringMode: 'ROUNDS_WON' }).scoringMode).toBe(
+      'POINTS',
+    )
   })
 })

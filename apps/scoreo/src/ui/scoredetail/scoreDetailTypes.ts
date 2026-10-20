@@ -41,6 +41,12 @@ export interface ScoreDetailState {
   collectedSecondaryScores: PlayerScore[]
   // Edit mode
   editingMatchId: string | undefined
+  /**
+   * Re-editing a rounds-won match that has no usable round detail (imported,
+   * saved before `Match.rounds`, or played in points before the game switched
+   * mode): the grid then holds final scores, saved as typed, highest wins.
+   */
+  finalScoresOnly: boolean
   // Cancel confirm
   showCancelConfirm: boolean
   // Round entry sheet

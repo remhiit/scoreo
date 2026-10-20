@@ -1,4 +1,9 @@
-import { computeRoundsWon, computeWinners, usesRoundsWon, type GameType } from '../../domain/model/gameType'
+import {
+  computeRoundsWon,
+  computeWinners,
+  usesRoundsWon,
+  type GameType,
+} from '../../domain/model/gameType'
 import type { Match } from '../../domain/model/match'
 import type { Player } from '../../domain/model/player'
 import type { PlayerScore } from '../../domain/model/playerScore'
@@ -87,8 +92,19 @@ export function computeScores(
   return new Map(players.map((p) => [p.id, won.get(p.id) ?? 0]))
 }
 
+/**
+ * The rules the editor scores with. Normally the game type itself; while
+ * re-editing a rounds-won match without round detail (`finalScoresOnly`) the grid
+ * holds final scores, so they are summed as points and the highest wins, as for
+ * any rounds-won game.
+ */
+export function scoringGameType(state: ScoreDetailState): GameType {
+  if (!state.finalScoresOnly) return state.gameType
+  return { ...state.gameType, scoringMode: 'POINTS', winCondition: 'HIGHEST_SCORE' }
+}
+
 function playerScoresFromTotals(state: ScoreDetailState): PlayerScore[] {
-  const totals = computeScores(state.gameType, state.players, state.rounds)
+  const totals = computeScores(scoringGameType(state), state.players, state.rounds)
   return state.players.map((p) => ({ playerId: p.id, score: totals.get(p.id) ?? 0 }))
 }
 
@@ -114,12 +130,25 @@ export interface StandingRow {
   playerName: string
   rank: number
   total: number
-  delta: number
+  /** What the last round added to `total`; `null` when it added nothing worth showing. */
+  delta: number | null
   isLead: boolean
 }
 
-function lastRoundDeltas(players: Player[], rounds: Record<string, string>[]): Map<string, number> {
-  const deltas = new Map<string, number>()
+function lastRoundDeltas(
+  gameType: GameType,
+  players: Player[],
+  rounds: Record<string, string>[],
+): Map<string, number | null> {
+  const deltas = new Map<string, number | null>()
+  if (usesRoundsWon(gameType)) {
+    // +1 for every winner of the last entered round (ties included), nothing otherwise.
+    const played = playedRounds(players, rounds)
+    const last = played.slice(-1)
+    const won = computeRoundsWon(last, gameType.winCondition)
+    for (const player of players) deltas.set(player.id, (won.get(player.id) ?? 0) > 0 ? 1 : null)
+    return deltas
+  }
   const lastRound = rounds[rounds.length - 1]
   for (const player of players) {
     const raw = lastRound?.[player.id]
@@ -140,7 +169,7 @@ export function computeStandings(
   rounds: Record<string, string>[],
 ): StandingRow[] {
   const totals = computeScores(gameType, players, rounds)
-  const deltas = lastRoundDeltas(players, rounds)
+  const deltas = lastRoundDeltas(gameType, players, rounds)
   const ascending = !usesRoundsWon(gameType) && gameType.winCondition === 'LOWEST_SCORE'
   const sorted = [...players].sort((a, b) => {
     const diff = (totals.get(a.id) ?? 0) - (totals.get(b.id) ?? 0)
@@ -159,7 +188,7 @@ export function computeStandings(
       playerName: player.name,
       rank,
       total,
-      delta: deltas.get(player.id) ?? 0,
+      delta: deltas.get(player.id) ?? null,
       isLead: rank === 1,
     })
   })
@@ -377,19 +406,16 @@ function performSave(
       const original = deps.mode.matchRepository.findById(deps.mode.matchId)
       if (!original) return { type: 'saveFailed', error: 'Could not find original match to update' }
       const date = combineDateWithTimeOfDay(state.matchDate, original.date)
-      // A rounds-won match without usable round detail (imported, legacy, mode
-      // switched) keeps its stored scores: the editor only holds a single round of
-      // totals, which would be re-read as points and overwrite them with 1/0.
-      const keepStored =
-        usesRoundsWon(state.gameType) &&
-        !(original.rounds.length > 0 && roundsAgreeWithTotals(original, state.gameType))
+      // Final scores typed over a rounds-won match without usable detail are not
+      // rounds: saving the grid as detail would have the next edit re-read it as
+      // points per round and rewrite the scores as 1/0. The stored detail stays.
       const updated: Match = {
         ...original,
         date,
-        playerScores: keepStored ? original.playerScores : playerScores,
+        playerScores,
         manualWinners,
         secondaryPlayerScores,
-        rounds: keepStored ? original.rounds : rounds,
+        rounds: state.finalScoresOnly ? original.rounds : rounds,
       }
       deps.mode.updateMatchUseCase.invoke(updated)
       deps.matchDraftRepository?.clear()
@@ -430,7 +456,7 @@ export function submitTerminate(state: ScoreDetailState, deps: ScoreDetailDeps):
   }
 
   const playerScores = playerScoresFromTotals(state)
-  const primaryWinners = computeWinners(state.gameType, playerScores)
+  const primaryWinners = computeWinners(scoringGameType(state), playerScores)
 
   if (primaryWinners.length <= 1) {
     return performSave(deps, state, playerScores, [])
@@ -556,6 +582,10 @@ function roundsAgreeWithTotals(match: Match, gameType: GameType): boolean {
   return match.playerScores.every((ps) => (won.get(ps.playerId) ?? 0) === ps.score)
 }
 
+function hasUsableRounds(match: Match, gameType: GameType): boolean {
+  return match.rounds.length > 0 && roundsAgreeWithTotals(match, gameType)
+}
+
 /**
  * Rebuilds the editor's round grid from the match's stored per-round detail, so
  * editing an existing match keeps its rounds instead of flattening them into a
@@ -564,7 +594,7 @@ function roundsAgreeWithTotals(match: Match, gameType: GameType): boolean {
  * imported) or when the stored detail disagrees with the totals.
  */
 function reconstructRounds(match: Match, gameType: GameType): Record<string, string>[] {
-  if (match.rounds.length > 0 && roundsAgreeWithTotals(match, gameType)) {
+  if (hasUsableRounds(match, gameType)) {
     return match.rounds.map((round) =>
       Object.fromEntries(round.map((ps) => [ps.playerId, String(ps.score)])),
     )
@@ -599,6 +629,7 @@ function freshState(
     manualSelectionWinners: new Set(),
     collectedSecondaryScores: [],
     editingMatchId: undefined,
+    finalScoresOnly: false,
     showCancelConfirm: false,
     showRoundSheet: false,
     roundSheetInputs: {},
@@ -639,6 +670,7 @@ export function buildInitialState(
       rounds: reconstructRounds(match, editGameType),
       matchDate: toDateOnly(match.date),
       editingMatchId: mode.matchId,
+      finalScoresOnly: usesRoundsWon(editGameType) && !hasUsableRounds(match, editGameType),
     }
   }
 

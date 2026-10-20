@@ -1,5 +1,5 @@
 import type { ScoringModuleManifest } from '@scoreboards/module-api'
-import type { GameType } from '../domain/model/gameType'
+import { newGameType, type GameType } from '../domain/model/gameType'
 import type { GameTypeRepository } from '../domain/port/gameTypeRepository'
 import { newId } from './idGenerator'
 
@@ -78,17 +78,9 @@ export class BindModuleUseCase {
       return stamped
     }
 
-    const created: GameType = {
-      id: newId(),
-      name: manifest.gameNames[0],
-      winCondition: manifest.winCondition,
-      scoringMode: 'POINTS',
-      tieBreakRule: 'NONE',
-      tieBreakCondition: 'HIGHEST_SCORE',
-      tieBreakLabel: null,
+    const created = newGameType(newId(), manifest.gameNames[0], manifest.winCondition, {
       moduleId: manifest.moduleId,
-      active: true,
-    }
+    })
     this.repository.save(created)
     return created
   }

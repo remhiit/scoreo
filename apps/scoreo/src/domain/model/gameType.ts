@@ -23,6 +23,34 @@ export interface GameType {
   moduleId: string | null
 }
 
+/** Everything but the identity and the win condition, each defaulted by {@link newGameType}. */
+export type GameTypeDefaults = Partial<Omit<GameType, 'id' | 'name' | 'winCondition'>>
+
+/**
+ * Builds a game type with the same defaults the zod schema applies when reading
+ * one back: plain points, no tie-break, active, not bound to any module. A
+ * `MANUAL` game always scores in points, since rounds won need the app to decide
+ * who wins each round.
+ */
+export function newGameType(
+  id: string,
+  name: string,
+  winCondition: WinCondition,
+  defaults: GameTypeDefaults = {},
+): GameType {
+  return {
+    id,
+    name,
+    winCondition,
+    scoringMode: winCondition === 'MANUAL' ? 'POINTS' : (defaults.scoringMode ?? 'POINTS'),
+    tieBreakRule: defaults.tieBreakRule ?? 'NONE',
+    tieBreakCondition: defaults.tieBreakCondition ?? 'HIGHEST_SCORE',
+    tieBreakLabel: defaults.tieBreakLabel ?? null,
+    active: defaults.active ?? true,
+    moduleId: defaults.moduleId ?? null,
+  }
+}
+
 /** True when the final score is a count of rounds won (never with a `MANUAL` win condition). */
 export function usesRoundsWon(gameType: GameType): boolean {
   return gameType.scoringMode === 'ROUNDS_WON' && gameType.winCondition !== 'MANUAL'

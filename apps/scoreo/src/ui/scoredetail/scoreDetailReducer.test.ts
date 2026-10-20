@@ -12,6 +12,7 @@ import {
   buildInitialState,
   computeScores,
   computeStandings,
+  scoringGameType,
   computeTotals,
   countRoundsPlayed,
   leadHintLabel,
@@ -56,6 +57,7 @@ function player(id: string, name: string): Player {
 
 const alice = player('alice', 'Alice')
 const bob = player('bob', 'Bob')
+const carol = player('carol', 'Carol')
 
 /** Mirrors the Kotlin `ScoreDetailHandler`, wiring the pure reducer + submit* side-effecting helpers together. */
 class Harness {
@@ -1785,11 +1787,15 @@ describe('rounds-won scoring mode', () => {
   })
 
   it('ranks standings by rounds won, most first, even for LOWEST_SCORE', () => {
-    const standings = computeStandings(roundsWonGame('LOWEST_SCORE'), [alice, bob], [
-      { alice: '1', bob: '9' },
-      { alice: '2', bob: '9' },
-      { alice: '9', bob: '1' },
-    ])
+    const standings = computeStandings(
+      roundsWonGame('LOWEST_SCORE'),
+      [alice, bob],
+      [
+        { alice: '1', bob: '9' },
+        { alice: '2', bob: '9' },
+        { alice: '9', bob: '1' },
+      ],
+    )
     expect(standings.map((r) => [r.playerId, r.total, r.rank])).toEqual([
       ['alice', 2, 1],
       ['bob', 1, 2],
@@ -1880,6 +1886,92 @@ describe('rounds-won scoring mode', () => {
       { playerId: 'bob', score: 3 },
     ])
     expect(match.rounds).toEqual([])
+  })
+
+  function legacyRoundsWonMatch() {
+    const gt = roundsWonGame('HIGHEST_SCORE')
+    const gameTypeRepo = new InMemoryGameTypeRepository()
+    gameTypeRepo.save(gt)
+    const matchRepo = new InMemoryMatchRepository()
+    const playerRepo = new InMemoryPlayerRepository()
+    playerRepo.save(alice)
+    playerRepo.save(bob)
+    matchRepo.save({
+      id: 'm1',
+      gameTypeId: gt.id,
+      date: 1000,
+      playerScores: [
+        { playerId: 'alice', score: 7 },
+        { playerId: 'bob', score: 3 },
+      ],
+      manualWinners: [],
+      secondaryPlayerScores: [],
+      rounds: [],
+      moduleData: null,
+    })
+    const mode: ScoreDetailMode = {
+      type: 'Edit',
+      matchId: 'm1',
+      updateMatchUseCase: new UpdateMatchUseCase(matchRepo),
+      matchRepository: matchRepo,
+      playerRepository: playerRepo,
+      gameTypeRepository: gameTypeRepo,
+    }
+    const { deps } = setup(gt, [], mode)
+    const reopened = buildInitialState(gt, [alice, bob], mode, deps.currentDate)
+    return { gt, deps, matchRepo, reopened }
+  }
+
+  it('saves the entered scores as final scores when re-editing a match without round detail', () => {
+    const { deps, matchRepo, reopened } = legacyRoundsWonMatch()
+    expect(reopened.finalScoresOnly).toBe(true)
+    let state = scoreDetailReducer(reopened, {
+      type: 'updateScore',
+      roundIndex: 0,
+      playerId: 'alice',
+      value: '2',
+    })
+    state = scoreDetailReducer(state, {
+      type: 'updateScore',
+      roundIndex: 0,
+      playerId: 'bob',
+      value: '9',
+    })
+    const next = scoreDetailReducer(state, submitTerminate(state, deps))
+    expect(next.saved).toBe(true)
+    const match = matchRepo.findById('m1')!
+    expect(match.playerScores).toEqual([
+      { playerId: 'alice', score: 2 },
+      { playerId: 'bob', score: 9 },
+    ])
+    expect(match.rounds).toEqual([])
+  })
+
+  it('ranks the entered final scores highest first while re-editing a match without round detail', () => {
+    const { reopened } = legacyRoundsWonMatch()
+    const gt = scoringGameType(reopened)
+    const standings = computeStandings(gt, reopened.players, reopened.rounds)
+    expect(standings.map((r) => [r.playerId, r.total])).toEqual([
+      ['alice', 7],
+      ['bob', 3],
+    ])
+  })
+
+  it('gives +1 to every winner of the last entered round and no delta to the others', () => {
+    const standings = computeStandings(
+      roundsWonGame('LOWEST_SCORE'),
+      [alice, bob, carol],
+      [{ alice: '9', bob: '1', carol: '5' }, { alice: '2', bob: '2', carol: '7' }, {}],
+    )
+    const byId = new Map(standings.map((r) => [r.playerId, r.delta]))
+    expect(byId.get('alice')).toBe(1)
+    expect(byId.get('bob')).toBe(1)
+    expect(byId.get('carol')).toBeNull()
+  })
+
+  it('shows no delta before any round was played in a rounds-won game', () => {
+    const standings = computeStandings(roundsWonGame('HIGHEST_SCORE'), [alice, bob], [{}])
+    expect(standings.map((r) => r.delta)).toEqual([null, null])
   })
 
   it('restores raw points when reopening a match for editing', () => {

@@ -50,13 +50,19 @@ A 2-column card grid (design-system `StandingsGrid`), one `StandingsCard` per pl
 - A hint line above the grid states how many rounds have been played and the win direction (e.g. "After 3 rounds · highest score leads").
 - Cards are ranked by `gameType.winCondition` (`HIGHEST_SCORE` descending, `LOWEST_SCORE` ascending); players tied on total share the same rank.
 - In a `ROUNDS_WON` game (`gameType.scoringMode`), the card's total is the number of rounds won and cards are ranked most rounds first, whatever the `winCondition` (which then only decides who wins each round). Blank rounds are skipped, a blank cell in a played round counts 0, and every player tied for a round's best score wins it. The hint line reads "most rounds won leads".
-- The card's bottom-right number is the delta: the score entered in the **last** round only (not the cumulative total).
+- The card's bottom-right number is the delta: the score entered in the **last** round only (not the cumulative total). In a `ROUNDS_WON` game it reads "+1" on the card of every player who won the last entered round (all tied winners included) and is absent on the others.
 - The leading card(s) — rank 1, possibly several on a tie — get an accented border/total (`StandingsCard`'s `lead`).
 - This view is read-only: no inputs, no add/remove-round controls.
 
 ### Rounds-won saving
 
-On save, a `ROUNDS_WON` game stores `Match.playerScores[i].score` = rounds won by that player, while `Match.rounds` keeps the raw points entered per round. Winners are the players with the most rounds won (also for `LOWEST_SCORE`); a tie applies the game's `tieBreakRule`. Reopening such a match for editing restores the raw points and recomputes the count; a match with no stored round detail keeps its scores as-is.
+On save, a `ROUNDS_WON` game stores `Match.playerScores[i].score` = rounds won by that player, while `Match.rounds` keeps the raw points entered per round. Winners are the players with the most rounds won (also for `LOWEST_SCORE`); a tie applies the game's `tieBreakRule`. Reopening such a match for editing restores the raw points and recomputes the count.
+
+The game's **current** mode decides, for every match: switching a game's mode never rewrites the stored `playerScores`, but they are read (winners, stats, Elo, trophies) with the current mode, and re-saving a match recomputes it with that mode. A match saved in points whose game later switched to rounds won is therefore saved with rounds won when it is reopened and saved again (its per-round points are the stored `Match.rounds`).
+
+A `ROUNDS_WON` match with no usable round detail (imported, saved before `Match.rounds`, or whose stored rounds disagree with its scores) reopens with a single row holding its final scores. Editing it stays possible: the scores entered there are saved as-is as the final scores (`Match.rounds` is left untouched), and the highest wins, as in any rounds-won game. Saving it without any change therefore keeps the stored scores — it is never rewritten as 1/0.
+
+In the winner-selection dialog, each player's subtitle shows the figure the game is decided on — rounds won in a `ROUNDS_WON` game, points otherwise. The round entry sheet always shows points, since that is what it takes.
 
 ### History view: one card per round (`RoundHistoryList`, `apps/scoreo/src/ui/scoredetail/RoundHistoryList.tsx`)
 

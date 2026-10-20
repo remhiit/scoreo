@@ -17,6 +17,8 @@ export interface GameTypeState {
   selectedTieBreakLabel: string | undefined
   selectedGameId: string | undefined
   editingGameId: string | undefined
+  /** The game type being edited already has matches: changing its scoring mode re-reads them. */
+  editingGameHasMatches: boolean
   error: string | undefined
   archiveConfirmGameTypeId: string | undefined
   showMergeDialog: boolean
@@ -39,6 +41,7 @@ export const initialGameTypeState: GameTypeState = {
   selectedTieBreakLabel: undefined,
   selectedGameId: undefined,
   editingGameId: undefined,
+  editingGameHasMatches: false,
   error: undefined,
   archiveConfirmGameTypeId: undefined,
   showMergeDialog: false,

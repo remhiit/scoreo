@@ -147,7 +147,11 @@ Then the modal closes and the game remains active
 
 ## Scoring mode
 
-The game type form offers a **Scoring** choice next to the win condition: "Total points" (default) or "Rounds won". It is hidden when the win condition is `MANUAL` (stored as `POINTS`). In rounds-won mode the entry screen still takes each player's points per round; the winner of a round is the highest (`HIGHEST_SCORE`) or lowest (`LOWEST_SCORE`) score, all tied players win it, and the saved final score is the count of rounds won. See [scoring](scoring.md). Changing the mode does not recompute matches already saved. Games bound to a module are counted by the module; the mode only applies to the generic entry screen.
+The game type form offers a **Scoring** choice next to the win condition: "Total points" (default) or "Rounds won". It is hidden when the win condition is `MANUAL` (stored as `POINTS`). In rounds-won mode the entry screen still takes each player's points per round; the winner of a round is the highest (`HIGHEST_SCORE`) or lowest (`LOWEST_SCORE`) score, all tied players win it, and the saved final score is the count of rounds won. See [scoring](scoring.md).
+
+A game's rules apply to its whole history: changing the mode does not rewrite the `playerScores` already saved, but they are read with the game's **current** mode — winners, stats, Elo and trophies follow it, exactly as they already follow a `winCondition` change (`computeWinners` runs on the current `GameType`). When the edited game already has matches and the mode is changed, the form shows a warning saying so. Reopening and saving an old match recomputes it with the current mode: a match played in points, re-saved after the game switched to rounds won, gets its rounds won as `playerScores` (see [scoring](scoring.md#rounds-won-saving)).
+
+Games bound to a module are counted by the module; the mode only applies to the generic entry screen.
 
 ## JSON Schema
 

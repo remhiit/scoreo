@@ -407,7 +407,7 @@ Nouveau champ optionnel sérialisé sur `GameType` : `scoringMode: 'POINTS' | 'R
 
 **Compatibilité ascendante :** `scoringMode` est déclaré `.default('POINTS')` — un `GameType` sans le champ (données antérieures, Drive, import) se relit en mode points, sans perte. Une version plus ancienne de l'app ignore le champ inconnu (zod le strip) : le jeu se relit en mode points, dégradé mais sans plantage. Couvert par `serialization.contract.test.ts` (cas legacy sans `scoringMode`, cas `ROUNDS_WON`).
 
-**Pas de recalcul rétroactif :** changer le mode d'un jeu ne touche pas les parties déjà enregistrées (leurs `playerScores` restent ceux enregistrés) ; seules les nouvelles saisies suivent le nouveau mode. `Match.rounds` garde toujours les points bruts. Le format d'import (`schemas/import/`) ne porte pas le champ : les jeux importés restent en `POINTS`.
+**Pas de réécriture, mais relecture avec le mode courant :** changer le mode d'un jeu ne réécrit pas les parties déjà enregistrées (leurs `playerScores` restent ceux enregistrés, aucune migration de données), mais leur lecture — gagnants, stats, Elo, trophées — suit le mode **courant** du jeu, exactement comme pour `winCondition` (`computeWinners` est appelé avec le `GameType` courant). Les règles d'un jeu valent pour tout son historique ; le formulaire d'édition en avertit quand le jeu a déjà des parties. Rééditer et enregistrer une ancienne partie la recalcule avec le mode courant. `Match.rounds` garde toujours les points bruts. Le format d'import (`schemas/import/`) ne porte pas le champ : les jeux importés restent en `POINTS`.
 
 ---
 

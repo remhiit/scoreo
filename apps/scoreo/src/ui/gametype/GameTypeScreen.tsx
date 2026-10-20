@@ -16,11 +16,13 @@ import type { AddGameTypeUseCase } from '../../application/addGameTypeUseCase'
 import type { ArchiveGameTypeUseCase } from '../../application/archiveGameTypeUseCase'
 import type { FindGameTypeByIdUseCase } from '../../application/findGameTypeByIdUseCase'
 import type { GetGameTypesUseCase } from '../../application/getGameTypesUseCase'
+import type { GetMatchesUseCase } from '../../application/getMatchesUseCase'
 import type { MergeGameTypesUseCase } from '../../application/mergeGameTypesUseCase'
 import type { UpdateGameTypeUseCase } from '../../application/updateGameTypeUseCase'
 import { tieBreakRuleLabel, winConditionLabel } from '../../domain/model/enums'
 import { GameTypeFields, GameTypeForm } from './GameTypeForm'
 import {
+  gameTypeHasMatches,
   gameTypeReducer,
   loadGameTypes,
   resolveGameTypeForEdit,
@@ -39,6 +41,7 @@ export interface GameTypeScreenProps {
   findGameTypeById: FindGameTypeByIdUseCase
   archiveGameType: ArchiveGameTypeUseCase
   mergeGameTypes: MergeGameTypesUseCase
+  getMatches: GetMatchesUseCase
   showTitle?: boolean
 }
 
@@ -49,6 +52,7 @@ export function GameTypeScreen({
   findGameTypeById,
   archiveGameType,
   mergeGameTypes,
+  getMatches,
   showTitle = true,
 }: GameTypeScreenProps) {
   const { t } = useTranslation()
@@ -70,7 +74,12 @@ export function GameTypeScreen({
 
   const handleEdit = (id: string) => {
     const gameType = resolveGameTypeForEdit(findGameTypeById, id)
-    if (gameType) dispatch({ type: 'editGameType', gameType })
+    if (gameType)
+      dispatch({
+        type: 'editGameType',
+        gameType,
+        hasMatches: gameTypeHasMatches(getMatches, gameType.id),
+      })
   }
 
   const handleUpdate = () => {

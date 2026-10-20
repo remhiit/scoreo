@@ -2,6 +2,7 @@ import type { AddGameTypeUseCase } from '../../application/addGameTypeUseCase'
 import type { ArchiveGameTypeUseCase } from '../../application/archiveGameTypeUseCase'
 import type { FindGameTypeByIdUseCase } from '../../application/findGameTypeByIdUseCase'
 import type { GetGameTypesUseCase } from '../../application/getGameTypesUseCase'
+import type { GetMatchesUseCase } from '../../application/getMatchesUseCase'
 import type { MergeGameTypesUseCase } from '../../application/mergeGameTypesUseCase'
 import type { UpdateGameTypeUseCase } from '../../application/updateGameTypeUseCase'
 import type { ScoringMode, TieBreakRule, WinCondition } from '../../domain/model/enums'
@@ -29,7 +30,7 @@ export type GameTypeAction =
   | { type: 'deselectGame' }
   | ({ type: 'addSucceeded' } & LoadedGameTypes)
   | { type: 'addFailed'; error: string }
-  | { type: 'editGameType'; gameType: GameType }
+  | { type: 'editGameType'; gameType: GameType; hasMatches?: boolean }
   | { type: 'cancelEdit' }
   | ({ type: 'updateSucceeded' } & LoadedGameTypes)
   | { type: 'updateFailed'; error: string }
@@ -62,6 +63,7 @@ function resetForm(state: GameTypeState, loaded: LoadedGameTypes): GameTypeState
     selectedTieBreakCondition: 'HIGHEST_SCORE',
     selectedTieBreakLabel: undefined,
     editingGameId: undefined,
+    editingGameHasMatches: false,
     error: undefined,
   }
 }
@@ -103,6 +105,7 @@ export function gameTypeReducer(state: GameTypeState, action: GameTypeAction): G
         selectedTieBreakCondition: action.gameType.tieBreakCondition,
         selectedTieBreakLabel: action.gameType.tieBreakLabel ?? undefined,
         editingGameId: action.gameType.id,
+        editingGameHasMatches: action.hasMatches ?? false,
         error: undefined,
       }
     case 'cancelEdit':
@@ -186,6 +189,22 @@ export function submitAddGameType(
   } catch (e) {
     return { error: errorMessage(e) }
   }
+}
+
+/** True when at least one saved match was played under this game type. */
+export function gameTypeHasMatches(getMatches: GetMatchesUseCase, gameTypeId: string): boolean {
+  return getMatches.invoke().some((match) => match.gameTypeId === gameTypeId)
+}
+
+/**
+ * The edit form is about to change the scoring mode of a game type that already
+ * has matches: their winners, stats, Elo and trophies will be re-read with the
+ * new mode, since a game's rules apply to its whole history.
+ */
+export function scoringModeChangeWarning(state: GameTypeState): boolean {
+  if (!state.editingGameHasMatches || state.selectedWinCondition === 'MANUAL') return false
+  const editing = state.gameTypes.find((gt) => gt.id === state.editingGameId)
+  return editing !== undefined && editing.scoringMode !== state.selectedScoringMode
 }
 
 export function resolveGameTypeForEdit(

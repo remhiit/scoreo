@@ -1,6 +1,6 @@
 import type { ScoringModuleManifest } from '@scoreboards/module-api'
 import { WinConditionSchema, type WinCondition } from '../domain/model/enums'
-import type { GameType } from '../domain/model/gameType'
+import { newGameType, type GameType } from '../domain/model/gameType'
 import type { Player } from '../domain/model/player'
 import type { PlayerScore } from '../domain/model/playerScore'
 import type { GameTypeRepository } from '../domain/port/gameTypeRepository'
@@ -284,17 +284,7 @@ export class ImportMatchesUseCase {
       }
       wc = found
     }
-    const gameType: GameType = {
-      id: newId(),
-      name,
-      winCondition: wc,
-      scoringMode: 'POINTS',
-      tieBreakRule: 'NONE',
-      tieBreakCondition: 'HIGHEST_SCORE',
-      tieBreakLabel: null,
-      moduleId: null,
-      active: true,
-    }
+    const gameType = newGameType(newId(), name, wc)
     this.gameTypeRepository.save(gameType)
     return gameType
   }

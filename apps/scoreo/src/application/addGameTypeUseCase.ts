@@ -1,6 +1,6 @@
 import { ValidationError } from '../domain/model/errors'
 import type { ScoringMode, TieBreakRule, WinCondition } from '../domain/model/enums'
-import type { GameType } from '../domain/model/gameType'
+import { newGameType, type GameType } from '../domain/model/gameType'
 import type { GameTypeRepository } from '../domain/port/gameTypeRepository'
 import { newId } from './idGenerator'
 
@@ -24,18 +24,12 @@ export class AddGameTypeUseCase {
     if (trimmed.length > MAX_NAME_LENGTH) {
       throw new ValidationError('name', `Game type name must be ${MAX_NAME_LENGTH} characters or less`)
     }
-    const gameType: GameType = {
-      id: newId(),
-      name: trimmed,
-      winCondition,
-      // Rounds won only makes sense when the app decides who wins each round.
-      scoringMode: winCondition === 'MANUAL' ? 'POINTS' : (options.scoringMode ?? 'POINTS'),
-      tieBreakRule: options.tieBreakRule ?? 'NONE',
-      tieBreakCondition: options.tieBreakCondition ?? 'HIGHEST_SCORE',
-      tieBreakLabel: options.tieBreakLabel ?? null,
-      moduleId: null,
-      active: true,
-    }
+    const gameType = newGameType(newId(), trimmed, winCondition, {
+      scoringMode: options.scoringMode,
+      tieBreakRule: options.tieBreakRule,
+      tieBreakCondition: options.tieBreakCondition,
+      tieBreakLabel: options.tieBreakLabel,
+    })
     this.repository.save(gameType)
     return gameType
   }
