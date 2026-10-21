@@ -172,6 +172,35 @@ describe('MergeGameTypesUseCase', () => {
     expect(useCase.preview('keep', ['dup']).rulesDiffer).toBe(true)
   })
 
+  it('preview warns when a module match would move unconverted into a rounds-won game', () => {
+    // Same rules on both sides, but a module's match is never rescored (#590):
+    // its points would be read as rounds won, so the merge is flagged.
+    const { matchRepo, useCase } = buildUseCase(
+      { scoringMode: 'ROUNDS_WON' },
+      { scoringMode: 'ROUNDS_WON' },
+    )
+    matchRepo.save(buildMatch({ moduleData: { moduleId: 'skyjo', version: 1, data: {} } }))
+
+    expect(useCase.preview('keep', ['dup']).rulesDiffer).toBe(true)
+  })
+
+  it('preview warns when a module-bound duplicate is merged into a rounds-won game', () => {
+    const { matchRepo, useCase } = buildUseCase(
+      { moduleId: 'skyjo' },
+      { scoringMode: 'ROUNDS_WON' },
+    )
+    matchRepo.save(buildMatch())
+
+    expect(useCase.preview('keep', ['dup']).rulesDiffer).toBe(true)
+  })
+
+  it('preview does not flag a module match moved into a game scored in points', () => {
+    const { matchRepo, useCase } = buildUseCase()
+    matchRepo.save(buildMatch({ moduleData: { moduleId: 'skyjo', version: 1, data: {} } }))
+
+    expect(useCase.preview('keep', ['dup']).rulesDiffer).toBe(false)
+  })
+
   it('preview reports differing rules on the tie-break rule', () => {
     const { useCase } = buildUseCase({}, { tieBreakRule: 'MANUAL_SELECTION' })
 

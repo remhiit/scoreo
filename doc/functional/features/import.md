@@ -96,7 +96,7 @@ Supports versions `1.0` and `1.1`. `version` is optional and defaults to `1.0` w
 
 The file always carries points. A match imported into an **existing** game in "Rounds won" scoring (`ROUNDS_WON`) is stored in that game's unit, since a game's rules apply to its whole history (see [games](games.md#scoring-mode)):
 - **with `details`**: its score is the count of rounds each player won, computed from `details` with the game's win condition (a round goes to the highest or lowest score, every tied player wins it); `details` is still stored as the match's `rounds`, in raw points. A player ranked 1st in the file stays a recorded winner only if they also have the most rounds won;
-- **without `details`**: nothing to count rounds from, so the file's scores are kept as they are (and read as rounds won by the game).
+- **without `details`**: the match becomes a single round holding the file's scores, stored as its `rounds`, then scored in rounds won like any detail (the best player(s) under the win condition win that round).
 
 A game bound to a scoring module always scores in points, so a match imported into it keeps the file's scores.
 

@@ -179,6 +179,12 @@ Known gap: binding by name (rule 2 above) stamps a `moduleId` onto an existing g
 stores its effective `scoringMode` (`POINTS`), without recomputing its matches; were that game in
 rounds won, its stored counts would then be read as points. Left to #590.
 
+Known gap: merging game types (`MergeGameTypesUseCase`) never rescores a module's match — one
+from a module-bound duplicate, or carrying `moduleData` — so, moved into a kept game scored in
+rounds won, its points are read as rounds won (inverted winners under `LOWEST_SCORE`). The merge
+is not refused: its preview sets `rulesDiffer`, so the dialog warns that winners can change.
+Left to #590.
+
 The id never leaves the installation: it is absent from the v1.1 export, which travels to other
 installations where module ids mean nothing. `ImportMatchesUseCase` compensates by consulting the
 manifests after a failed name lookup, so a game bound to a module and then renamed is not imported a

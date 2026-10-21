@@ -24,6 +24,9 @@ export class UpdateGameTypeUseCase {
    *
    * The rescored matches are written before the game type: if that write fails
    * (storage quota), the game keeps its former rules, matching its matches.
+   * The two writes are not atomic, though: if `save(updated)` then fails, the
+   * matches are already rescored under the new rules while the game keeps its
+   * former ones — silently, as the detail can still look consistent.
    */
   invoke(gameType: GameType): void {
     const scoringMode = effectiveScoringMode(gameType)
