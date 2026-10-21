@@ -4,6 +4,7 @@ import { AddGameTypeUseCase } from '../../application/addGameTypeUseCase'
 import { ArchiveGameTypeUseCase } from '../../application/archiveGameTypeUseCase'
 import { FindGameTypeByIdUseCase } from '../../application/findGameTypeByIdUseCase'
 import { GetGameTypesUseCase } from '../../application/getGameTypesUseCase'
+import { GetMatchesUseCase } from '../../application/getMatchesUseCase'
 import { MergeGameTypesUseCase } from '../../application/mergeGameTypesUseCase'
 import { UpdateGameTypeUseCase } from '../../application/updateGameTypeUseCase'
 import { InMemoryGameTypeRepository } from '../../infrastructure/testing/inMemoryGameTypeRepository'
@@ -12,21 +13,21 @@ import { InMemoryMatchRepository } from '../../infrastructure/testing/inMemoryMa
 import i18n from '../../i18n/i18n'
 import { GameTypeScreen } from './GameTypeScreen'
 
-function renderScreen(repo = new InMemoryGameTypeRepository()) {
+function renderScreen(
+  repo = new InMemoryGameTypeRepository(),
+  matchRepo = new InMemoryMatchRepository(),
+) {
   return render(
     <GameTypeScreen
       addGameType={new AddGameTypeUseCase(repo)}
-      updateGameType={new UpdateGameTypeUseCase(repo)}
+      updateGameType={new UpdateGameTypeUseCase(repo, matchRepo)}
       getGameTypes={new GetGameTypesUseCase(repo)}
       findGameTypeById={new FindGameTypeByIdUseCase(repo)}
       archiveGameType={new ArchiveGameTypeUseCase(repo)}
       mergeGameTypes={
-        new MergeGameTypesUseCase(
-          repo,
-          new InMemoryMatchRepository(),
-          new InMemoryMatchDraftRepository(),
-        )
+        new MergeGameTypesUseCase(repo, matchRepo, new InMemoryMatchDraftRepository())
       }
+      getMatches={new GetMatchesUseCase(matchRepo)}
     />,
   )
 }
@@ -40,6 +41,7 @@ function buildGameType(id: string, name: string) {
     id,
     name,
     winCondition: 'HIGHEST_SCORE' as const,
+    scoringMode: 'POINTS' as const,
     tieBreakRule: 'NONE' as const,
     tieBreakCondition: 'HIGHEST_SCORE' as const,
     tieBreakLabel: null,
@@ -161,6 +163,15 @@ describe('GameTypeScreen', () => {
     expect(repo.findById('gt1')?.moduleId).toBe('tori-valley')
   })
 
+  it('hides the scoring choice when editing a game bound to a scoring module', () => {
+    const repo = new InMemoryGameTypeRepository()
+    repo.save({ ...buildGameType('gt1', 'Skyjo'), moduleId: 'skyjo' })
+    renderScreen(repo)
+
+    fireEvent.click(screen.getByLabelText('Edit'))
+    expect(within(screen.getByRole('dialog')).queryByLabelText('Scoring')).not.toBeInTheDocument()
+  })
+
   it('cancelling edit restores the add form without changes', () => {
     renderScreen()
     fireEvent.change(nameInput(), { target: { value: 'Belote' } })
@@ -196,7 +207,7 @@ describe('GameTypeScreen', () => {
     render(
       <GameTypeScreen
         addGameType={new AddGameTypeUseCase(repo)}
-        updateGameType={new UpdateGameTypeUseCase(repo)}
+        updateGameType={new UpdateGameTypeUseCase(repo, new InMemoryMatchRepository())}
         getGameTypes={new GetGameTypesUseCase(repo)}
         findGameTypeById={new FindGameTypeByIdUseCase(repo)}
         archiveGameType={new ArchiveGameTypeUseCase(repo)}
@@ -207,6 +218,7 @@ describe('GameTypeScreen', () => {
             new InMemoryMatchDraftRepository(),
           )
         }
+        getMatches={new GetMatchesUseCase(new InMemoryMatchRepository())}
         showTitle={false}
       />,
     )
@@ -270,13 +282,14 @@ describe('GameTypeScreen', () => {
     render(
       <GameTypeScreen
         addGameType={new AddGameTypeUseCase(repo)}
-        updateGameType={new UpdateGameTypeUseCase(repo)}
+        updateGameType={new UpdateGameTypeUseCase(repo, matchRepo)}
         getGameTypes={new GetGameTypesUseCase(repo)}
         findGameTypeById={new FindGameTypeByIdUseCase(repo)}
         archiveGameType={new ArchiveGameTypeUseCase(repo)}
         mergeGameTypes={
           new MergeGameTypesUseCase(repo, matchRepo, new InMemoryMatchDraftRepository())
         }
+        getMatches={new GetMatchesUseCase(matchRepo)}
       />,
     )
 
@@ -325,5 +338,47 @@ describe('GameTypeScreen', () => {
     expect(
       within(dialog).getByText('(archived)', { selector: '.sc-row__subtitle' }),
     ).toBeInTheDocument()
+  })
+
+  it('offers the scoring mode choice, except for a MANUAL win condition', () => {
+    renderScreen()
+    expect(screen.getByText('Scoring')).toBeInTheDocument()
+    fireEvent.change(screen.getByLabelText('Win condition'), { target: { value: 'MANUAL' } })
+    expect(screen.queryByText('Scoring')).not.toBeInTheDocument()
+  })
+  it('warns that matches will be recomputed when the scoring mode of a played game changes', () => {
+    const repo = new InMemoryGameTypeRepository()
+    const matchRepo = new InMemoryMatchRepository()
+    repo.save(buildGameType('gt1', 'Tarot'))
+    matchRepo.save({
+      id: 'm1',
+      date: 1000,
+      gameTypeId: 'gt1',
+      playerScores: [{ playerId: 'p1', score: 10 }],
+      manualWinners: [],
+      secondaryPlayerScores: [],
+      rounds: [],
+      moduleData: null,
+    })
+    renderScreen(repo, matchRepo)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Edit' }))
+    const dialog = screen.getByRole('dialog')
+    const warning = /recomputed with the new scoring/
+    expect(within(dialog).queryByText(warning)).not.toBeInTheDocument()
+
+    fireEvent.change(within(dialog).getByLabelText('Scoring'), { target: { value: 'ROUNDS_WON' } })
+    expect(within(dialog).getByText(warning)).toBeInTheDocument()
+  })
+
+  it('does not warn when changing the scoring mode of a game without matches', () => {
+    const repo = new InMemoryGameTypeRepository()
+    repo.save(buildGameType('gt1', 'Tarot'))
+    renderScreen(repo)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Edit' }))
+    const dialog = screen.getByRole('dialog')
+    fireEvent.change(within(dialog).getByLabelText('Scoring'), { target: { value: 'ROUNDS_WON' } })
+    expect(within(dialog).queryByText(/recomputed with the new scoring/)).not.toBeInTheDocument()
   })
 })

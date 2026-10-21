@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { newGameType } from '../domain/model/gameType'
 import { InMemoryGameTypeRepository } from '../infrastructure/testing/inMemoryGameTypeRepository'
 import { InMemoryMatchRepository } from '../infrastructure/testing/inMemoryMatchRepository'
 import { InMemoryPlayerRepository } from '../infrastructure/testing/inMemoryPlayerRepository'
@@ -12,7 +13,13 @@ function useCase(
   matchRepo = new InMemoryMatchRepository(),
   currentDate = () => 1767225600000,
 ) {
-  return new ImportMatchesUseCase(playerRepo, gameTypeRepo, matchRepo, currentDate, MODULE_MANIFESTS)
+  return new ImportMatchesUseCase(
+    playerRepo,
+    gameTypeRepo,
+    matchRepo,
+    currentDate,
+    MODULE_MANIFESTS,
+  )
 }
 
 describe('ImportMatchesUseCase', () => {
@@ -80,6 +87,7 @@ describe('ImportMatchesUseCase', () => {
         id: 'existing',
         name: 'TestGame',
         winCondition: 'MANUAL',
+        scoringMode: 'POINTS' as const,
         tieBreakRule: 'NONE',
         tieBreakCondition: 'HIGHEST_SCORE',
         tieBreakLabel: null,
@@ -117,6 +125,7 @@ describe('ImportMatchesUseCase', () => {
           id: 'bound',
           name: 'Torī, chez moi',
           winCondition: 'HIGHEST_SCORE',
+          scoringMode: 'POINTS' as const,
           tieBreakRule: 'NONE',
           tieBreakCondition: 'HIGHEST_SCORE',
           tieBreakLabel: null,
@@ -136,6 +145,7 @@ describe('ImportMatchesUseCase', () => {
           id: 'by-name',
           name: 'La Vallée des Torī',
           winCondition: 'HIGHEST_SCORE',
+          scoringMode: 'POINTS' as const,
           tieBreakRule: 'NONE',
           tieBreakCondition: 'HIGHEST_SCORE',
           tieBreakLabel: null,
@@ -166,6 +176,7 @@ describe('ImportMatchesUseCase', () => {
           id: 'other',
           name: 'Renamed',
           winCondition: 'HIGHEST_SCORE',
+          scoringMode: 'POINTS' as const,
           tieBreakRule: 'NONE',
           tieBreakCondition: 'HIGHEST_SCORE',
           tieBreakLabel: null,
@@ -197,7 +208,16 @@ describe('ImportMatchesUseCase', () => {
 
     it('skips matches with duplicate IDs', () => {
       const matchRepo = new InMemoryMatchRepository()
-      matchRepo.save({ id: 'm1', date: 0, gameTypeId: '', playerScores: [], manualWinners: [], secondaryPlayerScores: [], rounds: [], moduleData: null })
+      matchRepo.save({
+        id: 'm1',
+        date: 0,
+        gameTypeId: '',
+        playerScores: [],
+        manualWinners: [],
+        secondaryPlayerScores: [],
+        rounds: [],
+        moduleData: null,
+      })
       const result = useCase(undefined, undefined, matchRepo).execute(TestImportData.validJson)
       expect(result.ok).toBe(true)
       if (result.ok) {
@@ -208,7 +228,9 @@ describe('ImportMatchesUseCase', () => {
 
     it('with detail verification passes when sums match', () => {
       const matchRepo = new InMemoryMatchRepository()
-      const result = useCase(undefined, undefined, matchRepo).execute(TestImportData.withDetailsJson)
+      const result = useCase(undefined, undefined, matchRepo).execute(
+        TestImportData.withDetailsJson,
+      )
       expect(result.ok).toBe(true)
       if (result.ok) expect(result.value.imported).toBe(1)
     })
@@ -231,6 +253,65 @@ describe('ImportMatchesUseCase', () => {
       ])
     })
 
+    it('scores an existing rounds-won game in rounds won, from the round detail', () => {
+      const gameTypeRepo = new InMemoryGameTypeRepository()
+      gameTypeRepo.save(
+        newGameType('rw', 'TestGame', 'LOWEST_SCORE', { scoringMode: 'ROUNDS_WON' }),
+      )
+      const matchRepo = new InMemoryMatchRepository()
+      const playerRepo = new InMemoryPlayerRepository()
+      useCase(playerRepo, gameTypeRepo, matchRepo).execute(TestImportData.withDetailsJson)
+      const alice = playerRepo.getAll().find((p) => p.name === 'Alice')!
+      const bob = playerRepo.getAll().find((p) => p.name === 'Bob')!
+      const match = matchRepo.getAll()[0]
+      // Rounds 10/5 and 3/2, lowest wins a round: Bob takes both.
+      expect(match.playerScores).toEqual([
+        { playerId: alice.id, score: 0 },
+        { playerId: bob.id, score: 2 },
+      ])
+      expect(match.rounds).toHaveLength(2)
+      // Alice is rank 1 in the file (on points), but not a winner in rounds won.
+      expect(match.manualWinners).toEqual([])
+    })
+
+    it('keeps a file rank-1 player as recorded winner when the rounds won make them one', () => {
+      const gameTypeRepo = new InMemoryGameTypeRepository()
+      gameTypeRepo.save(
+        newGameType('rw', 'TestGame', 'HIGHEST_SCORE', { scoringMode: 'ROUNDS_WON' }),
+      )
+      const matchRepo = new InMemoryMatchRepository()
+      const playerRepo = new InMemoryPlayerRepository()
+      useCase(playerRepo, gameTypeRepo, matchRepo).execute(TestImportData.withDetailsJson)
+      const alice = playerRepo.getAll().find((p) => p.name === 'Alice')!
+      expect(matchRepo.getAll()[0].manualWinners).toEqual([alice.id])
+    })
+
+    it('turns a match without details into a single round in an existing rounds-won game', () => {
+      const gameTypeRepo = new InMemoryGameTypeRepository()
+      gameTypeRepo.save(
+        newGameType('rw', 'TestGame', 'LOWEST_SCORE', { scoringMode: 'ROUNDS_WON' }),
+      )
+      const matchRepo = new InMemoryMatchRepository()
+      const playerRepo = new InMemoryPlayerRepository()
+      useCase(playerRepo, gameTypeRepo, matchRepo).execute(TestImportData.validJson)
+      const alice = playerRepo.getAll().find((p) => p.name === 'Alice')!
+      const bob = playerRepo.getAll().find((p) => p.name === 'Bob')!
+      const match = matchRepo.getAll()[0]
+      // File scores Alice 10, Bob 5: a single round, lowest wins it.
+      expect(match.rounds).toEqual([
+        [
+          { playerId: alice.id, score: 10 },
+          { playerId: bob.id, score: 5 },
+        ],
+      ])
+      expect(match.playerScores).toEqual([
+        { playerId: alice.id, score: 0 },
+        { playerId: bob.id, score: 1 },
+      ])
+      // Alice is rank 1 in the file (on points), but not a winner in rounds won.
+      expect(match.manualWinners).toEqual([])
+    })
+
     it('leaves rounds empty when the game has no details', () => {
       const matchRepo = new InMemoryMatchRepository()
       useCase(undefined, undefined, matchRepo).execute(TestImportData.validJson)
@@ -239,7 +320,9 @@ describe('ImportMatchesUseCase', () => {
 
     it('with detail verification fails when sums mismatch', () => {
       const matchRepo = new InMemoryMatchRepository()
-      const result = useCase(undefined, undefined, matchRepo).execute(TestImportData.withMismatchedDetailsJson)
+      const result = useCase(undefined, undefined, matchRepo).execute(
+        TestImportData.withMismatchedDetailsJson,
+      )
       expect(result.ok).toBe(true)
       if (result.ok) {
         expect(result.value.imported).toBe(0)
@@ -264,7 +347,16 @@ describe('ImportMatchesUseCase', () => {
 
     it('with duplicate in first game still imports others', () => {
       const matchRepo = new InMemoryMatchRepository()
-      matchRepo.save({ id: 'm1', date: 0, gameTypeId: '', playerScores: [], manualWinners: [], secondaryPlayerScores: [], rounds: [], moduleData: null })
+      matchRepo.save({
+        id: 'm1',
+        date: 0,
+        gameTypeId: '',
+        playerScores: [],
+        manualWinners: [],
+        secondaryPlayerScores: [],
+        rounds: [],
+        moduleData: null,
+      })
       const result = useCase(undefined, undefined, matchRepo).execute(TestImportData.multiGameJson)
       expect(result.ok).toBe(true)
       if (result.ok) {
@@ -296,23 +388,28 @@ describe('ImportMatchesUseCase', () => {
       if (result.ok) expect(result.value.imported).toBe(1)
       expect(matchRepo.getAll()[0].date).toBe(1000000)
       expect(matchRepo.getAll()[0].playerScores.map((s) => s.score)).toEqual([10, 5])
-      expect(matchRepo.getAll()[0].manualWinners).toEqual([matchRepo.getAll()[0].playerScores[0].playerId])
+      expect(matchRepo.getAll()[0].manualWinners).toEqual([
+        matchRepo.getAll()[0].playerScores[0].playerId,
+      ])
     })
   })
 
   describe('version parsing', () => {
     it('rejects a version with a missing minor part', () => {
-      const json = '{"version": "1.", "game": "X", "games": [{"id":"m1","ranking":[{"name":"A","score":1,"rank":1},{"name":"B","score":2,"rank":2}]}]}'
+      const json =
+        '{"version": "1.", "game": "X", "games": [{"id":"m1","ranking":[{"name":"A","score":1,"rank":1},{"name":"B","score":2,"rank":2}]}]}'
       expect(useCase().preview(json).ok).toBe(false)
     })
 
     it('rejects a version using scientific notation', () => {
-      const json = '{"version": "1e0.1", "game": "X", "games": [{"id":"m1","ranking":[{"name":"A","score":1,"rank":1},{"name":"B","score":2,"rank":2}]}]}'
+      const json =
+        '{"version": "1e0.1", "game": "X", "games": [{"id":"m1","ranking":[{"name":"A","score":1,"rank":1},{"name":"B","score":2,"rank":2}]}]}'
       expect(useCase().preview(json).ok).toBe(false)
     })
 
     it('accepts a valid 1.x version', () => {
-      const json = '{"version": "1.5", "game": "X", "games": [{"id":"m1","ranking":[{"name":"A","score":1,"rank":1},{"name":"B","score":2,"rank":2}]}]}'
+      const json =
+        '{"version": "1.5", "game": "X", "games": [{"id":"m1","ranking":[{"name":"A","score":1,"rank":1},{"name":"B","score":2,"rank":2}]}]}'
       expect(useCase().preview(json).ok).toBe(true)
     })
 

@@ -1,11 +1,17 @@
-import { Button, Select, Stack, TextInput } from '@scoreboards/design-system'
+import { Button, Select, Stack, Text, TextInput } from '@scoreboards/design-system'
 import { useTranslation } from 'react-i18next'
-import type { GameTypeAction } from './gameTypeReducer'
+import {
+  scoringModeChangeWarning,
+  showsScoringModeChoice,
+  type GameTypeAction,
+} from './gameTypeReducer'
 import type { GameTypeState } from './gameTypeTypes'
 import {
+  ScoringModeSchema,
   TieBreakRuleSchema,
   WinConditionSchema,
   tieBreakRuleLabel,
+  scoringModeLabel,
   winConditionLabel,
 } from '../../domain/model/enums'
 
@@ -34,6 +40,27 @@ export function GameTypeFields({ state, dispatch }: GameTypeFieldsProps) {
           })
         }
       />
+
+      {showsScoringModeChoice(state) && (
+        <Select
+          label={t('gametype.scoringMode')}
+          value={state.selectedScoringMode}
+          options={ScoringModeSchema.options.map((mode) => ({
+            value: mode,
+            label: t(`gametype.scoringModes.${mode}`, { defaultValue: scoringModeLabel(mode) }),
+          }))}
+          onChange={(mode) =>
+            dispatch({
+              type: 'selectScoringMode',
+              scoringMode: mode as GameTypeState['selectedScoringMode'],
+            })
+          }
+        />
+      )}
+
+      {scoringModeChangeWarning(state) && (
+        <Text variant="warning">{t('gametype.scoringModeChangeWarning')}</Text>
+      )}
 
       <Select
         label={t('gametype.tieBreakRule')}

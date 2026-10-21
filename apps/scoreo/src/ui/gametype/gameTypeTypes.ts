@@ -1,4 +1,4 @@
-import type { TieBreakRule, WinCondition } from '../../domain/model/enums'
+import type { ScoringMode, TieBreakRule, WinCondition } from '../../domain/model/enums'
 import type { GameType } from '../../domain/model/gameType'
 
 export interface GameTypeState {
@@ -11,11 +11,14 @@ export interface GameTypeState {
   allGameTypes: GameType[]
   inputName: string
   selectedWinCondition: WinCondition
+  selectedScoringMode: ScoringMode
   selectedTieBreakRule: TieBreakRule
   selectedTieBreakCondition: WinCondition
   selectedTieBreakLabel: string | undefined
   selectedGameId: string | undefined
   editingGameId: string | undefined
+  /** The game type being edited already has matches: changing its scoring mode rescores them (`rescoreMatch`). */
+  editingGameHasMatches: boolean
   error: string | undefined
   archiveConfirmGameTypeId: string | undefined
   showMergeDialog: boolean
@@ -32,11 +35,13 @@ export const initialGameTypeState: GameTypeState = {
   allGameTypes: [],
   inputName: '',
   selectedWinCondition: 'HIGHEST_SCORE',
+  selectedScoringMode: 'POINTS',
   selectedTieBreakRule: 'NONE',
   selectedTieBreakCondition: 'HIGHEST_SCORE',
   selectedTieBreakLabel: undefined,
   selectedGameId: undefined,
   editingGameId: undefined,
+  editingGameHasMatches: false,
   error: undefined,
   archiveConfirmGameTypeId: undefined,
   showMergeDialog: false,

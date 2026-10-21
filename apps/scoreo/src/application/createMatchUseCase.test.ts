@@ -11,6 +11,7 @@ function setup(winCondition: WinCondition) {
     id: 'gt1',
     name: 'TestGame',
     winCondition,
+    scoringMode: 'POINTS' as const,
     tieBreakRule: 'NONE',
     tieBreakCondition: 'HIGHEST_SCORE',
     tieBreakLabel: null,

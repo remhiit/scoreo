@@ -1,5 +1,6 @@
 import { NotFoundError, ValidationError } from '../domain/model/errors'
-import type { GameType } from '../domain/model/gameType'
+import { usesRoundsWon, type GameType } from '../domain/model/gameType'
+import { rescoreMatch, type Match } from '../domain/model/match'
 import type { GameTypeRepository } from '../domain/port/gameTypeRepository'
 import type { MatchDraftRepository } from '../domain/port/matchDraftRepository'
 import type { MatchRepository } from '../domain/port/matchRepository'
@@ -10,15 +11,23 @@ export interface MergeGameTypesPreview {
   /**
    * At least one duplicate doesn't score like the game type being kept. Not a
    * blocker — the kept game type's rules simply become the ones applied to the
-   * moved matches — but the winners of those matches can change, so the UI
-   * warns about it.
+   * moved matches (rescored by `rescoreMatch` when the scoring differs) — but the winners of those matches can change, so
+   * the UI warns about it. Also set when a module's match would move into a
+   * game scored in rounds won: it is never rescored, so its points would be
+   * read as rounds won (known gap, #590).
    */
   rulesDiffer: boolean
+}
+
+/** A module's match keeps the scores the module returned: merging never rescores it (#590). */
+function isFromModule(match: Match, source: GameType | undefined): boolean {
+  return source?.moduleId != null || match.moduleData !== null
 }
 
 /** `tieBreakCondition` only matters under SECONDARY_SCORE; comparing it otherwise flags a difference nothing acts on. */
 function sameScoringRules(a: GameType, b: GameType): boolean {
   if (a.winCondition !== b.winCondition) return false
+  if (usesRoundsWon(a) !== usesRoundsWon(b)) return false
   if (a.tieBreakRule !== b.tieBreakRule) return false
   if (a.tieBreakRule !== 'SECONDARY_SCORE') return true
   return a.tieBreakCondition === b.tieBreakCondition
@@ -26,9 +35,12 @@ function sameScoringRules(a: GameType, b: GameType): boolean {
 
 /**
  * Folds one or more duplicate game types into the one to keep: every match moves
- * to the kept game type, then each duplicate is hard-deleted. Archiving isn't
- * enough — it only hides a duplicate, leaving its matches under a separate game
- * and splitting History's filter, per-game trophies and the game record apart.
+ * to the kept game type (rescored by `rescoreMatch` when the duplicate scored
+ * rounds differently, a module's matches excepted), then each duplicate is
+ * hard-deleted.
+ * Archiving isn't enough — it only hides a duplicate, leaving its matches under a
+ * separate game and splitting History's filter, per-game trophies and the game
+ * record apart.
  */
 export class MergeGameTypesUseCase {
   constructor(
@@ -44,10 +56,19 @@ export class MergeGameTypesUseCase {
 
     const kept = this.gameTypeRepository.findById(keptId)
     const merged = [...duplicates].map((id) => this.gameTypeRepository.findById(id))
+    const matches = this.matchesOf(duplicates)
+    if (kept === undefined) return { affectedMatches: matches.length, rulesDiffer: false }
+    const duplicateById = new Map(merged.flatMap((gt) => (gt ? [[gt.id, gt] as const] : [])))
+    // Known gap (#590): a module's match moved into a rounds-won game keeps its
+    // points, read there as rounds won — warn even when the rules match.
+    const moduleMatchIntoRoundsWon =
+      usesRoundsWon(kept) &&
+      matches.some((match) => isFromModule(match, duplicateById.get(match.gameTypeId)))
     return {
-      affectedMatches: this.matchesOf(duplicates).length,
+      affectedMatches: matches.length,
       rulesDiffer:
-        kept !== undefined && merged.some((gt) => gt !== undefined && !sameScoringRules(gt, kept)),
+        moduleMatchIntoRoundsWon ||
+        merged.some((gt) => gt !== undefined && !sameScoringRules(gt, kept)),
     }
   }
 
@@ -68,7 +89,21 @@ export class MergeGameTypesUseCase {
       return gameType
     })
 
-    const moved = this.matchesOf(duplicates).map((match) => ({ ...match, gameTypeId: keptId }))
+    // A game's rules apply to its whole history: a moved match whose duplicate
+    // turned rounds into a final score differently (scoring mode, or who wins a
+    // round in rounds won) is rescored as a scoring mode change would
+    // (`UpdateGameTypeUseCase`, `rescoreMatch`). A module's matches keep the
+    // scores the module returned: they are never rescored, whether the
+    // duplicate is module-bound or the match carries module data. Known gap
+    // (#590): moved into a rounds-won game, their points are read as rounds
+    // won — `preview` flags it (`rulesDiffer`) so the user is warned.
+    const duplicateById = new Map(merged.map((gt) => [gt.id, gt]))
+    const moved = this.matchesOf(duplicates).map((match) => {
+      const source = duplicateById.get(match.gameTypeId)
+      const rescored =
+        source && !isFromModule(match, source) ? rescoreMatch(match, source, kept) : match
+      return { ...rescored, gameTypeId: keptId }
+    })
     // One saveAll rather than one save per match: a single change notification,
     // hence a single debounced auto-sync push.
     if (moved.length > 0) this.matchRepository.saveAll(moved)

@@ -201,7 +201,7 @@ function AppShell() {
   )
   const addGameType = useMemo(() => new AddGameTypeUseCase(services.gameTypeRepository), [services])
   const updateGameType = useMemo(
-    () => new UpdateGameTypeUseCase(services.gameTypeRepository),
+    () => new UpdateGameTypeUseCase(services.gameTypeRepository, services.matchRepository),
     [services],
   )
   const findGameTypeById = useMemo(
@@ -472,6 +472,7 @@ function AppShell() {
           findGameTypeById={findGameTypeById}
           archiveGameType={archiveGameType}
           mergeGameTypes={mergeGameTypes}
+          getMatches={getMatches}
         />
       )}
       {current.type === 'Sync' &&

@@ -49,9 +49,22 @@ A 2-column card grid (design-system `StandingsGrid`), one `StandingsCard` per pl
 
 - A hint line above the grid states how many rounds have been played and the win direction (e.g. "After 3 rounds · highest score leads").
 - Cards are ranked by `gameType.winCondition` (`HIGHEST_SCORE` descending, `LOWEST_SCORE` ascending); players tied on total share the same rank.
-- The card's bottom-right number is the delta: the score entered in the **last** round only (not the cumulative total).
+- In a `ROUNDS_WON` game (`gameType.scoringMode`), the card's total is the number of rounds won and cards are ranked most rounds first, whatever the `winCondition` (which then only decides who wins each round). Blank rounds are skipped, a blank cell in a played round counts 0, and every player tied for a round's best score wins it. The hint line reads "most rounds won leads".
+- The card's bottom-right number is the delta: the score entered in the **last** round only (not the cumulative total). In a `ROUNDS_WON` game it reads "+1" on the card of every player who won the last entered round (all tied winners included) and is absent on the others.
 - The leading card(s) — rank 1, possibly several on a tie — get an accented border/total (`StandingsCard`'s `lead`).
 - This view is read-only: no inputs, no add/remove-round controls.
+
+### Rounds-won saving
+
+On save, a `ROUNDS_WON` game stores `Match.playerScores[i].score` = rounds won by that player, while `Match.rounds` keeps the raw points entered per round. Winners are the players with the most rounds won (also for `LOWEST_SCORE`); a tie applies the game's `tieBreakRule`. Reopening such a match for editing restores the raw points and recomputes the count.
+
+The game's **current** mode decides, for every match. Switching a game's mode recomputes and rewrites the stored `playerScores` of every match of that game whose round detail agrees with its score (see [games](games.md#scoring-mode)). Re-editing a match whose detail agrees with its stored score — as the points sum **or** as the count of rounds won, whatever the current mode — restores the raw rounds, and saving recomputes it with the current mode: rounds 10/2, 1/8, 9/3 stored as 2/1 in rounds won, game switched back to points, reopened and saved unchanged → 20/13, raw rounds kept.
+
+A match stored **without** round detail (imported, or saved before `Match.rounds`) reopens with a **synthetic detail** that gives back exactly its stored score under the current mode, then behaves like any match whose detail agrees with its score (see [Data Reconstruction](#data-reconstruction)): in rounds won, one round per round won, each won by a single player — Alice 3, Bob 2 reopens as 5 rounds, 3 won by Alice and 2 by Bob. Saving it unchanged keeps 3/2; adding a round Alice wins saves 4/2.
+
+A match whose detail is **inconsistent** (the stored score is neither the sum nor the rounds won) reopens with its **stored rounds** and an "Inconsistent data" warning above the views. The detail is authoritative: on save the score is recomputed from those rounds (as corrected or completed by the user, rounds added the usual way) with the current mode, and they are saved as the match's detail — the match becomes consistent and the warning goes away. Until it is re-edited, it keeps counting with its stored score.
+
+In the winner-selection dialog, each player's subtitle shows the figure the game is decided on — rounds won in a `ROUNDS_WON` game, points otherwise. The round entry sheet always shows points, since that is what it takes.
 
 ### History view: one card per round (`RoundHistoryList`, `apps/scoreo/src/ui/scoredetail/RoundHistoryList.tsx`)
 
@@ -125,16 +138,24 @@ When navigating to `ScoreDetailScreen` with a `matchId` parameter (from History)
 
 All matches are stored with `playerScores` (total score per player) and `rounds` (per-round detail, `PlayerScore[][]`, one entry per round played — empty for matches saved before this was tracked, or imported without round detail). When editing, the screen rebuilds the editor from the stored `rounds`: one editor round per stored round, so the History tab shows the match exactly as it was played, and re-saving it untouched leaves `Match.rounds` unchanged.
 
-Two cases fall back to a single round holding the `playerScores` totals:
-- the match has **no** stored round detail (`rounds: []` — saved before this was tracked, or imported);
-- the stored rounds **disagree** with the totals: a round names a player who isn't in the match, or the per-player sums don't equal `playerScores`. Rebuilding from such data would silently change the match's scores, so the totals win.
+The stored rounds are used when they agree with `playerScores`: every round names only players of the match (a participant missing from a round counts 0 in it), and the scores are either the per-player sums or the counts of rounds won under the current `winCondition` (`roundDetailStatus`, `domain/model/match.ts`), whatever the current scoring mode.
 
-In both cases the user can then split the single round into several, exactly as before. On save, whatever rounds are present in the editor become the new `Match.rounds` — so a fallback edit replaces the (missing or inconsistent) detail with the editor's rounds.
+A match whose game switches from points to rounds won (mode change, merge, import into a rounds-won game) never stays without detail: it is converted into a single round holding its stored points, then scored in rounds won (see [games](games.md#scoring-mode)). A match with **no** stored round detail (`rounds: []` — saved before this was tracked, or imported into a points game) gets a **synthetic detail** (`syntheticRounds`, `domain/model/match.ts`) whose recompute under the current mode gives back exactly the stored `playerScores`, and is then edited like a match whose detail agrees with its scores:
+- **points**: a single round holding the final scores (the editor shows one round with the totals, as before);
+- **rounds won**: as many rounds as rounds won in total, each won by exactly one player. Under `HIGHEST_SCORE` the round's winner has 1 and the others 0; under `LOWEST_SCORE` the winner has 0 and the others 1, so that `computeRoundsWon` gives the stored counts back. Alice 3, Bob 2 → 5 rounds. When nobody won a round (0/0), the editor opens on an empty round.
+
+The synthetic detail is **saved** as the match's `Match.rounds` like any entered rounds (the editor does not tell it apart from rounds the user typed): from then on the match has a detail that agrees with its score, so a later mode change recomputes it from that detail — the 1/0 rounds of a rounds-won match then sum, in points, to the same counts under `HIGHEST_SCORE`; a points match's single round becomes one round won by its leader. Saving unchanged never alters the stored scores.
+
+There is no cap on that synthetic detail: a match without detail gets one synthetic round per round won in rounds won (one round in points), however many that is.
+
+When the stored rounds **disagree** with the scores (a round names a player who isn't in the match, or the scores are neither the sums nor the rounds won), the editor still shows the **stored rounds** (a score of a player outside the match is left out) and an "Inconsistent data" warning (`inconsistentRoundDetail`). The detail is authoritative: on save, `playerScores` is recomputed from the rounds in the editor (corrected, completed or extended the usual way) with the current mode, and those rounds are saved as `Match.rounds`. The match is then consistent and no longer flagged. Until it is re-edited, it counts with its stored scores.
+
+A rounds-won match without detail whose stored scores cannot be counts of rounds won (negative, or not whole numbers) has no synthetic detail that gives them back: it reopens with a single round holding the stored scores, flagged "Inconsistent data" as well, and is then saved like any other shown detail (that round is stored and scored with the current mode).
 
 ### Workflow
 
 1. User clicks match card in History
-2. `ScoreDetailScreen` loads match + rebuilds its stored rounds (1 round with totals as a fallback, see above)
+2. `ScoreDetailScreen` loads match + rebuilds its stored rounds (a synthetic detail without stored rounds, the stored rounds with a warning for inconsistent detail, see above)
 3. Title changes to "Edit match"
 4. User edits rounds/scores (the History tab lists the match's own rounds)
 5. Clicks "Finish match" (button text unchanged, intent same)
@@ -275,10 +296,40 @@ Then the match is saved with the same 3 rounds (no round detail is lost)
 ### Editing a match whose rounds disagree with its totals
 
 ```
-Given a match whose stored rounds don't sum to its recorded totals
+Given a points match stored as Alice=100, Bob=12 with a single stored round Alice=10, Bob=5
 When I open it for editing from History
-Then the editor shows a single round holding the recorded totals
-   And the totals displayed match the ones stored
+Then the History tab shows that stored round, Alice=10, Bob=5
+   And an "Inconsistent data" warning is shown
+When I click "Finish match" without changing anything
+Then the match is saved as Alice=10, Bob=5, with that round as its detail
+   And it is no longer flagged as inconsistent
+When I reopen it, enter a round Alice=3, Bob=7 and click "Finish match"
+Then the match is saved as Alice=13, Bob=12, with both rounds as its detail
+```
+
+### Editing a rounds-won match stored without round detail
+
+```
+Given a "Rounds won" game where the lowest score wins a round
+   And a match imported without round detail, stored as Alice=3, Bob=2
+When I open it for editing from History
+Then the History tab shows 5 rounds: 3 where Alice has 0 and Bob 1, 2 where Alice has 1 and Bob 0
+   And the standings show Alice 3, Bob 2 rounds won
+When I click "Finish match" without changing anything
+Then the match is still saved as Alice=3, Bob=2, with those 5 rounds as its detail
+When I reopen it, enter a round Alice=10, Bob=2 and click "Finish match"
+Then the match is saved as Alice=3, Bob=3
+```
+
+### Reopening a rounds-won match after the game went back to points
+
+```
+Given a match played in rounds won, rounds 10/2, 1/8, 9/3, stored as 2/1
+   And its game switched back to "Total points"
+When I open it for editing from History
+Then the History tab shows the 3 raw rounds
+When I click "Finish match" without changing anything
+Then the match is saved as 20/13 with the same 3 rounds
 ```
 
 ### Edit match preserves original date

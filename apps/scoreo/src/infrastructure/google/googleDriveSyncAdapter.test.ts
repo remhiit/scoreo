@@ -316,6 +316,7 @@ describe('GoogleDriveSyncAdapter', () => {
             id: 'g1',
             name: 'Tennis',
             winCondition: 'HIGHEST_SCORE',
+            scoringMode: 'POINTS' as const,
             tieBreakRule: 'NONE',
             tieBreakCondition: 'HIGHEST_SCORE',
             tieBreakLabel: null,

@@ -89,8 +89,16 @@ Supports versions `1.0` and `1.1`. `version` is optional and defaults to `1.0` w
 - If mismatch → match marked as **Failed**, not stored
 - If the sums match, `details` is stored as the match's `rounds` (round detail, resolved to internal player ids, in file order) — displayed in History exactly like a match scored directly in Scoreo
 - Duplicate match ID → marked as **Skipped**
-- Unknown game type → auto-created
+- Unknown game type → auto-created, always in "Total points" scoring (`POINTS`): the file carries points
 - Unknown player name → auto-created
+
+### Scoring mode of the target game
+
+The file always carries points. A match imported into an **existing** game in "Rounds won" scoring (`ROUNDS_WON`) is stored in that game's unit, since a game's rules apply to its whole history (see [games](games.md#scoring-mode)):
+- **with `details`**: its score is the count of rounds each player won, computed from `details` with the game's win condition (a round goes to the highest or lowest score, every tied player wins it); `details` is still stored as the match's `rounds`, in raw points. A player ranked 1st in the file stays a recorded winner only if they also have the most rounds won;
+- **without `details`**: the match becomes a single round holding the file's scores, stored as its `rounds`, then scored in rounds won like any detail (the best player(s) under the win condition win that round).
+
+A game bound to a scoring module always scores in points, so a match imported into it keeps the file's scores.
 
 ## Functional Tests
 
@@ -125,6 +133,19 @@ Given a JSON with ranking score 25 (Alice) and details summing to 25 across 2 ro
 When I execute the import
 Then the match is Imported ✅
 And opening it from History shows both rounds, with each player's per-round score
+```
+
+### Import into an existing rounds-won game
+```
+Given an existing game "Tarot" in "Rounds won" scoring, where the lowest score wins a round
+And a JSON with a "Tarot" match ranking Alice 13 (rank 1) and Bob 7, with details 10/5 and 3/2
+When I execute the import
+Then the match is Imported ✅ with Alice 0 and Bob 2 rounds won, and Bob as its winner
+And opening it from History shows both rounds with their raw points
+Given the same match without details
+When I execute the import
+Then the match is stored as a single round 13/7, Bob winning it: Alice 0 and Bob 1 round won, Bob as its winner
+And a game created by an import ("Belote", unknown so far) is in "Total points" scoring
 ```
 
 ### Score mismatch detection

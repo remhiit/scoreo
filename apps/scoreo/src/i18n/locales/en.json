@@ -24,6 +24,12 @@
   "gametype": {
     "title": "Game Types",
     "winCondition": "Win condition",
+    "scoringMode": "Scoring",
+    "scoringModes": {
+      "POINTS": "Total points",
+      "ROUNDS_WON": "Rounds won"
+    },
+    "scoringModeChangeWarning": "This game already has matches: their scores will be recomputed with the new scoring from their round detail (when switching to rounds won, a match without detail becomes a single round), and their winners, stats, Elo and trophies will follow.",
     "tieBreakRule": "Tie-break rule",
     "tieBreak": "Tie break",
     "tieBreakConditionLabel": "Tie break condition:",
@@ -64,6 +70,8 @@
     "matchDataWillBeLost": "Match data will be lost.",
     "roundsTitle": "Round detail",
     "noRoundDetail": "No round detail was recorded for this match.",
+    "inconsistentData": "Inconsistent data",
+    "inconsistentDataDetail": "Inconsistent data: the round detail does not add up to the recorded scores. The match counts with its recorded scores.",
     "totals": "Total:"
   },
   "home": {
@@ -195,8 +203,11 @@
     "history": "History",
     "enterRound": "Enter round {{number}}",
     "finishMatch": "Finish match",
+    "inconsistentData": "Inconsistent data: the round detail of this match does not add up to its recorded scores. The grid shows that detail: saving recomputes the score from the rounds.",
     "selectWinners": "Select winner(s)",
     "pointsSuffix": "{{points}} pts",
+    "roundsWonSuffix_one": "{{count}} round won",
+    "roundsWonSuffix_other": "{{count}} rounds won",
     "discardScoresTitle": "Discard scores?",
     "discardScoresBody": "All entered scores will be lost.",
     "discard": "Discard",

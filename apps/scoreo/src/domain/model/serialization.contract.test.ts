@@ -22,6 +22,7 @@ describe('serialization contract (backward compatibility)', () => {
       id: 'gt1',
       name: 'Belote',
       winCondition: 'HIGHEST_SCORE',
+      scoringMode: 'POINTS',
       tieBreakRule: 'NONE',
       tieBreakCondition: 'HIGHEST_SCORE',
       tieBreakLabel: null,
@@ -36,6 +37,7 @@ describe('serialization contract (backward compatibility)', () => {
       id: 'gt2',
       name: 'Custom',
       winCondition: 'MANUAL',
+      scoringMode: 'POINTS',
       tieBreakRule: 'NONE',
       tieBreakCondition: 'HIGHEST_SCORE',
       tieBreakLabel: null,
@@ -50,6 +52,7 @@ describe('serialization contract (backward compatibility)', () => {
       id: 'gt3',
       name: 'La Vallée des Torī',
       winCondition: 'HIGHEST_SCORE',
+      scoringMode: 'POINTS',
       tieBreakRule: 'NONE',
       tieBreakCondition: 'HIGHEST_SCORE',
       tieBreakLabel: null,
@@ -69,7 +72,40 @@ describe('serialization contract (backward compatibility)', () => {
       tieBreakLabel: null,
       active: true,
     }
-    expect(roundTrip(GameTypeSchema, legacy)).toEqual({ ...legacy, moduleId: null })
+    expect(roundTrip(GameTypeSchema, legacy)).toEqual({
+      ...legacy,
+      scoringMode: 'POINTS',
+      moduleId: null,
+    })
+  })
+
+  it('GameType saved before scoring modes existed reads back as POINTS', () => {
+    const legacy = {
+      id: 'gt5',
+      name: 'Belote',
+      winCondition: 'HIGHEST_SCORE',
+      tieBreakRule: 'NONE',
+      tieBreakCondition: 'HIGHEST_SCORE',
+      tieBreakLabel: null,
+      active: true,
+      moduleId: null,
+    }
+    expect(roundTrip(GameTypeSchema, legacy).scoringMode).toBe('POINTS')
+  })
+
+  it('GameType with ROUNDS_WON scoring mode serialization round-trip', () => {
+    const original = {
+      id: 'gt6',
+      name: 'Tarot',
+      winCondition: 'LOWEST_SCORE',
+      scoringMode: 'ROUNDS_WON',
+      tieBreakRule: 'NONE',
+      tieBreakCondition: 'HIGHEST_SCORE',
+      tieBreakLabel: null,
+      active: true,
+      moduleId: null,
+    }
+    expect(roundTrip(GameTypeSchema, original)).toEqual(original)
   })
 
   it('PlayerScore serialization round-trip', () => {
@@ -246,6 +282,7 @@ describe('serialization contract (backward compatibility)', () => {
       id: 'gt1',
       name: 'Test',
       winCondition: 'HIGHEST_SCORE',
+      scoringMode: 'POINTS',
       tieBreakRule: 'NONE',
       tieBreakCondition: 'HIGHEST_SCORE',
       tieBreakLabel: null,
@@ -259,6 +296,7 @@ describe('serialization contract (backward compatibility)', () => {
       id: 'gt3',
       name: 'Belote with tie-break',
       winCondition: 'HIGHEST_SCORE',
+      scoringMode: 'POINTS',
       tieBreakRule: 'SECONDARY_SCORE',
       tieBreakCondition: 'LOWEST_SCORE',
       tieBreakLabel: 'Best Secondary',
@@ -274,6 +312,7 @@ describe('serialization contract (backward compatibility)', () => {
       id: 'gt1',
       name: 'Classic',
       winCondition: 'HIGHEST_SCORE',
+      scoringMode: 'POINTS',
       tieBreakRule: 'NONE',
       tieBreakCondition: 'HIGHEST_SCORE',
       tieBreakLabel: null,
@@ -293,6 +332,7 @@ describe('serialization contract (backward compatibility)', () => {
       id: 'gt4',
       name: 'Tournament',
       winCondition: 'HIGHEST_SCORE',
+      scoringMode: 'POINTS',
       tieBreakRule: 'MANUAL_SELECTION',
       tieBreakCondition: 'HIGHEST_SCORE',
       tieBreakLabel: null,

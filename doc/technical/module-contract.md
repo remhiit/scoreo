@@ -164,6 +164,27 @@ by construction, the one the binding will pick.
 for a game that has a module, which is what lets the host offer "play in Scoreo" _or_ "play on the
 module".
 
+### Scoring mode of a module-bound game
+
+The module is the source of truth of its game's scoring: it computes the final scores it hands back
+(`ModuleHostAdapter.saveMatch` stores them as they are), and every module counts **points** today.
+So a `GameType` with `moduleId !== null` always scores in `POINTS`, whatever its stored
+`scoringMode`: `effectiveScoringMode()` (`domain/model/gameType.ts`) returns `POINTS` for it,
+`newGameType`/`UpdateGameTypeUseCase` store `POINTS`, the game type form hides the scoring mode
+choice, and none of its matches is ever recomputed into rounds won (`roundScoringChanged` sees no
+change). Scoreo's generic score screen, when used on such a game, sums the rounds too. A module
+declaring its own scoring mode, and Scoreo aligning on it, is tracked in #590.
+
+Known gap: binding by name (rule 2 above) stamps a `moduleId` onto an existing game type, and
+stores its effective `scoringMode` (`POINTS`), without recomputing its matches; were that game in
+rounds won, its stored counts would then be read as points. Left to #590.
+
+Known gap: merging game types (`MergeGameTypesUseCase`) never rescores a module's match — one
+from a module-bound duplicate, or carrying `moduleData` — so, moved into a kept game scored in
+rounds won, its points are read as rounds won (inverted winners under `LOWEST_SCORE`). The merge
+is not refused: its preview sets `rulesDiffer`, so the dialog warns that winners can change.
+Left to #590.
+
 The id never leaves the installation: it is absent from the v1.1 export, which travels to other
 installations where module ids mean nothing. `ImportMatchesUseCase` compensates by consulting the
 manifests after a failed name lookup, so a game bound to a module and then renamed is not imported a

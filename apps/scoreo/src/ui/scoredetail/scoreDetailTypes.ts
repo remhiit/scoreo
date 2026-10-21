@@ -41,6 +41,12 @@ export interface ScoreDetailState {
   collectedSecondaryScores: PlayerScore[]
   // Edit mode
   editingMatchId: string | undefined
+  /**
+   * The match being re-edited has round detail that disagrees with its stored
+   * scores (or, without detail, stored scores that cannot be counts of rounds
+   * won). The grid still shows that detail; saving recomputes the scores from it.
+   */
+  inconsistentRoundDetail: boolean
   // Cancel confirm
   showCancelConfirm: boolean
   // Round entry sheet

@@ -1,4 +1,5 @@
 import {
+  Badge,
   BulletList,
   Button,
   ButtonRow,
@@ -172,6 +173,11 @@ export function HistoryScreen({
                 key={display.match.id}
                 title={gameType?.name ?? t('history.unknownGame')}
                 highlighted={display.match.id === highlightMatchId}
+                badge={
+                  display.hasInconsistentRounds ? (
+                    <Badge tone="warning">{t('history.inconsistentData')}</Badge>
+                  ) : undefined
+                }
                 players={<ScoreSummary parts={buildScoreSummary(display)} />}
                 date={display.dateFormatted}
                 actions={actions}
@@ -199,6 +205,11 @@ export function HistoryScreen({
             <Text variant="muted" block>
               {matchToView.gameType?.name ?? t('history.unknownGame')} · {matchToView.dateFormatted}
             </Text>
+            {matchToView.hasInconsistentRounds && (
+              <Text variant="warning" block>
+                {t('history.inconsistentDataDetail')}
+              </Text>
+            )}
             {roundBreakdown.length === 0 ? (
               <Text variant="hint" block>
                 {t('history.noRoundDetail')}

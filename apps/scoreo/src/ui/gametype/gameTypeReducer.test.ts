@@ -3,6 +3,7 @@ import { AddGameTypeUseCase } from '../../application/addGameTypeUseCase'
 import { ArchiveGameTypeUseCase } from '../../application/archiveGameTypeUseCase'
 import { FindGameTypeByIdUseCase } from '../../application/findGameTypeByIdUseCase'
 import { GetGameTypesUseCase } from '../../application/getGameTypesUseCase'
+import { GetMatchesUseCase } from '../../application/getMatchesUseCase'
 import { MergeGameTypesUseCase } from '../../application/mergeGameTypesUseCase'
 import { UpdateGameTypeUseCase } from '../../application/updateGameTypeUseCase'
 import { InMemoryGameTypeRepository } from '../../infrastructure/testing/inMemoryGameTypeRepository'
@@ -11,7 +12,10 @@ import { InMemoryMatchRepository } from '../../infrastructure/testing/inMemoryMa
 import {
   gameTypeReducer,
   loadGameTypes,
+  gameTypeHasMatches,
   resolveGameTypeForEdit,
+  scoringModeChangeWarning,
+  showsScoringModeChoice,
   submitAddGameType,
   submitArchiveGameType,
   submitMergeGameTypes,
@@ -19,6 +23,7 @@ import {
   type LoadedGameTypes,
 } from './gameTypeReducer'
 import { initialGameTypeState, type GameTypeState } from './gameTypeTypes'
+import type { GameType } from '../../domain/model/gameType'
 
 function buildUseCases(
   repo = new InMemoryGameTypeRepository(),
@@ -28,7 +33,7 @@ function buildUseCases(
     repo,
     matchRepo,
     addGameType: new AddGameTypeUseCase(repo),
-    updateGameType: new UpdateGameTypeUseCase(repo),
+    updateGameType: new UpdateGameTypeUseCase(repo, matchRepo),
     getGameTypes: new GetGameTypesUseCase(repo),
     findGameTypeById: new FindGameTypeByIdUseCase(repo),
     archiveGameType: new ArchiveGameTypeUseCase(repo),
@@ -66,6 +71,41 @@ describe('gameTypeReducer', () => {
     state = gameTypeReducer(state, { type: 'updateName', name: 'Belote' })
     expect(state.inputName).toBe('Belote')
     expect(state.error).toBeUndefined()
+  })
+
+  it('selectScoringMode updates selectedScoringMode and defaults to POINTS', () => {
+    expect(initialGameTypeState.selectedScoringMode).toBe('POINTS')
+    const state = gameTypeReducer(initialGameTypeState, {
+      type: 'selectScoringMode',
+      scoringMode: 'ROUNDS_WON',
+    })
+    expect(state.selectedScoringMode).toBe('ROUNDS_WON')
+  })
+
+  it('adds a ROUNDS_WON game type, then edits and updates it', () => {
+    const useCases = buildUseCases()
+    let state = gameTypeReducer(initialGameTypeState, {
+      type: 'selectScoringMode',
+      scoringMode: 'ROUNDS_WON',
+    })
+    state = add(state, useCases, 'Tarot')
+    expect(state.gameTypes[0].scoringMode).toBe('ROUNDS_WON')
+    expect(state.selectedScoringMode).toBe('POINTS')
+
+    state = gameTypeReducer(state, {
+      type: 'editGameType',
+      gameType: state.gameTypes[0],
+      hasMatches: false,
+    })
+    expect(state.selectedScoringMode).toBe('ROUNDS_WON')
+
+    state = gameTypeReducer(state, { type: 'selectScoringMode', scoringMode: 'POINTS' })
+    const result = submitUpdateGameType(useCases.updateGameType, useCases.getGameTypes, {
+      ...state.gameTypes[0],
+      scoringMode: state.selectedScoringMode,
+    })
+    expect('error' in result).toBe(false)
+    expect(useCases.repo.getAll()[0].scoringMode).toBe('POINTS')
   })
 
   it('selectWinCondition updates selectedWinCondition', () => {
@@ -173,7 +213,7 @@ describe('gameTypeReducer', () => {
 
     const gameTypeId = state.gameTypes[0].id
     const gameType = resolveGameTypeForEdit(useCases.findGameTypeById, gameTypeId)!
-    state = gameTypeReducer(state, { type: 'editGameType', gameType })
+    state = gameTypeReducer(state, { type: 'editGameType', gameType, hasMatches: false })
 
     expect(state.inputName).toBe('Belote')
     expect(state.editingGameId).toBe(gameTypeId)
@@ -190,7 +230,7 @@ describe('gameTypeReducer', () => {
 
     const gameTypeId = state.gameTypes[0].id
     const gameType = resolveGameTypeForEdit(useCases.findGameTypeById, gameTypeId)!
-    state = gameTypeReducer(state, { type: 'editGameType', gameType })
+    state = gameTypeReducer(state, { type: 'editGameType', gameType, hasMatches: false })
 
     expect(state.selectedTieBreakRule).toBe('SECONDARY_SCORE')
     expect(state.selectedTieBreakCondition).toBe('LOWEST_SCORE')
@@ -203,7 +243,7 @@ describe('gameTypeReducer', () => {
 
     const gameTypeId = state.gameTypes[0].id
     const gameType = resolveGameTypeForEdit(useCases.findGameTypeById, gameTypeId)!
-    state = gameTypeReducer(state, { type: 'editGameType', gameType })
+    state = gameTypeReducer(state, { type: 'editGameType', gameType, hasMatches: false })
     expect(state.editingGameId).toBe(gameTypeId)
 
     state = gameTypeReducer(state, { type: 'cancelEdit' })
@@ -224,7 +264,7 @@ describe('gameTypeReducer', () => {
       name: 'Belote Updated',
       tieBreakRule: 'MANUAL_SELECTION' as const,
     }
-    state = gameTypeReducer(state, { type: 'editGameType', gameType: original })
+    state = gameTypeReducer(state, { type: 'editGameType', gameType: original, hasMatches: false })
     const result = submitUpdateGameType(useCases.updateGameType, useCases.getGameTypes, updated)
     state =
       'error' in result
@@ -241,7 +281,7 @@ describe('gameTypeReducer', () => {
     let state = add(initialGameTypeState, useCases, 'Belote')
 
     const gameType = state.gameTypes[0]
-    state = gameTypeReducer(state, { type: 'editGameType', gameType })
+    state = gameTypeReducer(state, { type: 'editGameType', gameType, hasMatches: false })
     const result = submitUpdateGameType(useCases.updateGameType, useCases.getGameTypes, gameType)
     state = gameTypeReducer(state, { type: 'updateSucceeded', ...(result as LoadedGameTypes) })
 
@@ -466,5 +506,115 @@ describe('gameTypeReducer', () => {
       gameTypes: useCases.repo.getAll(),
       allGameTypes: useCases.repo.getAll(true),
     })
+  })
+})
+
+describe('scoring mode change warning', () => {
+  const tarot: GameType = {
+    id: 'gt1',
+    name: 'Tarot',
+    winCondition: 'HIGHEST_SCORE',
+    scoringMode: 'POINTS',
+    tieBreakRule: 'NONE',
+    tieBreakCondition: 'HIGHEST_SCORE',
+    tieBreakLabel: null,
+    moduleId: null,
+    active: true,
+  }
+
+  function editing(hasMatches: boolean, gameType: GameType = tarot): GameTypeState {
+    const loaded = gameTypeReducer(initialGameTypeState, {
+      type: 'loaded',
+      gameTypes: [gameType],
+      allGameTypes: [gameType],
+    })
+    return gameTypeReducer(loaded, { type: 'editGameType', gameType, hasMatches })
+  }
+
+  it('warns when a rounds-won game with matches becomes MANUAL', () => {
+    const state = gameTypeReducer(editing(true, { ...tarot, scoringMode: 'ROUNDS_WON' }), {
+      type: 'selectWinCondition',
+      winCondition: 'MANUAL',
+    })
+    expect(scoringModeChangeWarning(state)).toBe(true)
+  })
+
+  it('warns when only the win condition of a rounds-won game with matches changes', () => {
+    const state = gameTypeReducer(editing(true, { ...tarot, scoringMode: 'ROUNDS_WON' }), {
+      type: 'selectWinCondition',
+      winCondition: 'LOWEST_SCORE',
+    })
+    expect(scoringModeChangeWarning(state)).toBe(true)
+  })
+
+  it('does not warn when only the win condition of a points game changes', () => {
+    const state = gameTypeReducer(editing(true), {
+      type: 'selectWinCondition',
+      winCondition: 'LOWEST_SCORE',
+    })
+    expect(scoringModeChangeWarning(state)).toBe(false)
+  })
+
+  it('hides the scoring mode choice for a module-bound game, which never warns', () => {
+    const bound = editing(true, { ...tarot, moduleId: 'skyjo' })
+    expect(showsScoringModeChoice(bound)).toBe(false)
+    const state = gameTypeReducer(bound, { type: 'selectScoringMode', scoringMode: 'ROUNDS_WON' })
+    expect(scoringModeChangeWarning(state)).toBe(false)
+  })
+
+  it('shows the scoring mode choice in the add form and for an unbound game', () => {
+    expect(showsScoringModeChoice(initialGameTypeState)).toBe(true)
+    expect(showsScoringModeChoice(editing(false))).toBe(true)
+  })
+
+  it('warns when the mode of a game type that has matches changes', () => {
+    const state = gameTypeReducer(editing(true), {
+      type: 'selectScoringMode',
+      scoringMode: 'ROUNDS_WON',
+    })
+    expect(scoringModeChangeWarning(state)).toBe(true)
+  })
+
+  it('does not warn while the mode is unchanged', () => {
+    expect(scoringModeChangeWarning(editing(true))).toBe(false)
+  })
+
+  it('does not warn for a game type without matches', () => {
+    const state = gameTypeReducer(editing(false), {
+      type: 'selectScoringMode',
+      scoringMode: 'ROUNDS_WON',
+    })
+    expect(scoringModeChangeWarning(state)).toBe(false)
+  })
+
+  it('does not warn once the win condition is MANUAL, where the mode is hidden', () => {
+    let state = gameTypeReducer(editing(true), {
+      type: 'selectScoringMode',
+      scoringMode: 'ROUNDS_WON',
+    })
+    state = gameTypeReducer(state, { type: 'selectWinCondition', winCondition: 'MANUAL' })
+    expect(scoringModeChangeWarning(state)).toBe(false)
+  })
+
+  it('forgets the matches once the edit is cancelled', () => {
+    const state = gameTypeReducer(editing(true), { type: 'cancelEdit' })
+    expect(state.editingGameHasMatches).toBe(false)
+  })
+
+  it('detects whether a game type has matches', () => {
+    const matchRepo = new InMemoryMatchRepository()
+    matchRepo.save({
+      id: 'm1',
+      gameTypeId: 'gt1',
+      date: 1000,
+      playerScores: [{ playerId: 'p1', score: 3 }],
+      manualWinners: [],
+      secondaryPlayerScores: [],
+      rounds: [],
+      moduleData: null,
+    })
+    const getMatches = new GetMatchesUseCase(matchRepo)
+    expect(gameTypeHasMatches(getMatches, 'gt1')).toBe(true)
+    expect(gameTypeHasMatches(getMatches, 'other')).toBe(false)
   })
 })

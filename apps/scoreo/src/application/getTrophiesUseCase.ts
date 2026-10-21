@@ -1,6 +1,6 @@
 import { getWinners } from '../domain/model/match'
 import type { Match } from '../domain/model/match'
-import type { GameType } from '../domain/model/gameType'
+import { usesRoundsWon, type GameType } from '../domain/model/gameType'
 import type { GameTypeRepository } from '../domain/port/gameTypeRepository'
 import type { MatchRepository } from '../domain/port/matchRepository'
 import type { PlayerRepository } from '../domain/port/playerRepository'
@@ -99,10 +99,12 @@ function gameRecordHolders(matches: Match[], gameTypes: Map<string, GameType>, n
     const gameType = gameTypes.get(gameTypeId)
     if (!gameType) continue
 
+    // Same effective condition as computeWinners: rounds won are always "most is best".
+    const highest = usesRoundsWon(gameType) || gameType.winCondition === 'HIGHEST_SCORE'
     let best: number | undefined
     for (const match of gtMatches) {
       for (const ps of match.playerScores) {
-        if (best === undefined || (gameType.winCondition === 'HIGHEST_SCORE' ? ps.score > best : ps.score < best)) {
+        if (best === undefined || (highest ? ps.score > best : ps.score < best)) {
           best = ps.score
         }
       }
