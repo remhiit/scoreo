@@ -32,7 +32,7 @@ function buildUseCases(
     repo,
     matchRepo,
     addGameType: new AddGameTypeUseCase(repo),
-    updateGameType: new UpdateGameTypeUseCase(repo),
+    updateGameType: new UpdateGameTypeUseCase(repo, matchRepo),
     getGameTypes: new GetGameTypesUseCase(repo),
     findGameTypeById: new FindGameTypeByIdUseCase(repo),
     archiveGameType: new ArchiveGameTypeUseCase(repo),

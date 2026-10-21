@@ -116,6 +116,12 @@ export function ScoreDetailScreen({
         onChange={(mode) => dispatch({ type: 'setViewMode', mode })}
       />
 
+      {state.inconsistentRoundDetail && (
+        <Text variant="warning" block>
+          {t('scoreDetail.inconsistentData')}
+        </Text>
+      )}
+
       {state.viewMode === 'standings' ? (
         <Stack gap={2}>
           <Text variant="caption">{leadHint}</Text>

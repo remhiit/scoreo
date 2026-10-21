@@ -20,7 +20,7 @@ function renderScreen(
   return render(
     <GameTypeScreen
       addGameType={new AddGameTypeUseCase(repo)}
-      updateGameType={new UpdateGameTypeUseCase(repo)}
+      updateGameType={new UpdateGameTypeUseCase(repo, matchRepo)}
       getGameTypes={new GetGameTypesUseCase(repo)}
       findGameTypeById={new FindGameTypeByIdUseCase(repo)}
       archiveGameType={new ArchiveGameTypeUseCase(repo)}
@@ -198,7 +198,7 @@ describe('GameTypeScreen', () => {
     render(
       <GameTypeScreen
         addGameType={new AddGameTypeUseCase(repo)}
-        updateGameType={new UpdateGameTypeUseCase(repo)}
+        updateGameType={new UpdateGameTypeUseCase(repo, new InMemoryMatchRepository())}
         getGameTypes={new GetGameTypesUseCase(repo)}
         findGameTypeById={new FindGameTypeByIdUseCase(repo)}
         archiveGameType={new ArchiveGameTypeUseCase(repo)}
@@ -273,7 +273,7 @@ describe('GameTypeScreen', () => {
     render(
       <GameTypeScreen
         addGameType={new AddGameTypeUseCase(repo)}
-        updateGameType={new UpdateGameTypeUseCase(repo)}
+        updateGameType={new UpdateGameTypeUseCase(repo, matchRepo)}
         getGameTypes={new GetGameTypesUseCase(repo)}
         findGameTypeById={new FindGameTypeByIdUseCase(repo)}
         archiveGameType={new ArchiveGameTypeUseCase(repo)}
@@ -337,7 +337,7 @@ describe('GameTypeScreen', () => {
     fireEvent.change(screen.getByLabelText('Win condition'), { target: { value: 'MANUAL' } })
     expect(screen.queryByText('Scoring')).not.toBeInTheDocument()
   })
-  it('warns that matches will be re-read when the scoring mode of a played game changes', () => {
+  it('warns that matches will be recomputed when the scoring mode of a played game changes', () => {
     const repo = new InMemoryGameTypeRepository()
     const matchRepo = new InMemoryMatchRepository()
     repo.save(buildGameType('gt1', 'Tarot'))
@@ -355,7 +355,7 @@ describe('GameTypeScreen', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Edit' }))
     const dialog = screen.getByRole('dialog')
-    const warning = /will be re-read with the new scoring/
+    const warning = /recomputed with the new scoring/
     expect(within(dialog).queryByText(warning)).not.toBeInTheDocument()
 
     fireEvent.change(within(dialog).getByLabelText('Scoring'), { target: { value: 'ROUNDS_WON' } })
@@ -370,6 +370,6 @@ describe('GameTypeScreen', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Edit' }))
     const dialog = screen.getByRole('dialog')
     fireEvent.change(within(dialog).getByLabelText('Scoring'), { target: { value: 'ROUNDS_WON' } })
-    expect(within(dialog).queryByText(/will be re-read/)).not.toBeInTheDocument()
+    expect(within(dialog).queryByText(/recomputed with the new scoring/)).not.toBeInTheDocument()
   })
 })

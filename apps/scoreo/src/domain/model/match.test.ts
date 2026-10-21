@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest'
-import type { GameType } from './gameType'
-import { getWinners, isTieBreakIndeterminate, type Match } from './match'
+import { newGameType, type GameType } from './gameType'
+import {
+  getWinners,
+  isTieBreakIndeterminate,
+  roundDetailStatus,
+  scoresFromRounds,
+  type Match,
+} from './match'
 import type { PlayerScore } from './playerScore'
 
 function scores(...pairs: [string, number][]): PlayerScore[] {
@@ -124,5 +130,91 @@ describe('getWinners fallback', () => {
       secondaryPlayerScores: scores(['alice', 5], ['bob', 5]),
     })
     expect(new Set(getWinners(m, gt))).toEqual(new Set(['alice', 'bob']))
+  })
+})
+
+describe('roundDetailStatus', () => {
+  const rounds: PlayerScore[][] = [
+    [
+      { playerId: 'a', score: 10 },
+      { playerId: 'b', score: 2 },
+    ],
+    [
+      { playerId: 'a', score: 1 },
+      { playerId: 'b', score: 8 },
+    ],
+    [
+      { playerId: 'a', score: 9 },
+      { playerId: 'b', score: 3 },
+    ],
+  ]
+  const match = (a: number, b: number, detail = rounds): Match => ({
+    id: 'm',
+    date: 0,
+    gameTypeId: 'g',
+    playerScores: [
+      { playerId: 'a', score: a },
+      { playerId: 'b', score: b },
+    ],
+    manualWinners: [],
+    secondaryPlayerScores: [],
+    rounds: detail,
+    moduleData: null,
+  })
+
+  it('is none without round detail', () => {
+    expect(roundDetailStatus(match(20, 13, []), 'HIGHEST_SCORE')).toBe('none')
+  })
+
+  it('recognises the points sum', () => {
+    expect(roundDetailStatus(match(20, 13), 'HIGHEST_SCORE')).toBe('consistent')
+  })
+
+  it('recognises the count of rounds won under the win condition', () => {
+    expect(roundDetailStatus(match(2, 1), 'HIGHEST_SCORE')).toBe('consistent')
+    expect(roundDetailStatus(match(1, 2), 'LOWEST_SCORE')).toBe('consistent')
+    expect(roundDetailStatus(match(2, 1), 'LOWEST_SCORE')).toBe('inconsistent')
+  })
+
+  it('only accepts the sum for a MANUAL game', () => {
+    expect(roundDetailStatus(match(0, 0), 'MANUAL')).toBe('inconsistent')
+    expect(roundDetailStatus(match(20, 13), 'MANUAL')).toBe('consistent')
+  })
+
+  it('is inconsistent when the scores match neither', () => {
+    expect(roundDetailStatus(match(50, 40), 'HIGHEST_SCORE')).toBe('inconsistent')
+  })
+
+  it('is inconsistent when a round names a non-participant', () => {
+    const stranger = [[...rounds[0], { playerId: 'z', score: 0 }], rounds[1], rounds[2]]
+    expect(roundDetailStatus(match(20, 13, stranger), 'HIGHEST_SCORE')).toBe('inconsistent')
+  })
+})
+
+describe('scoresFromRounds', () => {
+  const rounds: PlayerScore[][] = [
+    [
+      { playerId: 'a', score: 10 },
+      { playerId: 'b', score: 2 },
+    ],
+    [
+      { playerId: 'a', score: 1 },
+      { playerId: 'b', score: 8 },
+    ],
+  ]
+
+  it('sums the rounds in points', () => {
+    expect(scoresFromRounds(newGameType('g', 'G', 'HIGHEST_SCORE'), rounds, ['a', 'b'])).toEqual([
+      { playerId: 'a', score: 11 },
+      { playerId: 'b', score: 10 },
+    ])
+  })
+
+  it('counts the rounds won in rounds-won mode', () => {
+    const gameType = newGameType('g', 'G', 'LOWEST_SCORE', { scoringMode: 'ROUNDS_WON' })
+    expect(scoresFromRounds(gameType, rounds, ['b', 'a'])).toEqual([
+      { playerId: 'b', score: 1 },
+      { playerId: 'a', score: 1 },
+    ])
   })
 })

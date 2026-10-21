@@ -4,7 +4,7 @@ import {
   usesRoundsWon,
   type GameType,
 } from '../../domain/model/gameType'
-import type { Match } from '../../domain/model/match'
+import { roundDetailStatus, type Match, type RoundDetailStatus } from '../../domain/model/match'
 import type { Player } from '../../domain/model/player'
 import type { PlayerScore } from '../../domain/model/playerScore'
 import type { MatchDraftRepository } from '../../domain/port/matchDraftRepository'
@@ -94,12 +94,12 @@ export function computeScores(
 
 /**
  * The rules the editor scores with. Normally the game type itself; while
- * re-editing a rounds-won match without round detail (`finalScoresOnly`) the grid
- * holds final scores, so they are summed as points and the highest wins, as for
- * any rounds-won game.
+ * re-editing a match without replayable round detail (`finalScoresOnly`) the grid
+ * holds final scores, so they are taken as points — and in a rounds-won game,
+ * where a final score is a count of rounds won, the highest wins.
  */
 export function scoringGameType(state: ScoreDetailState): GameType {
-  if (!state.finalScoresOnly) return state.gameType
+  if (!state.finalScoresOnly || !usesRoundsWon(state.gameType)) return state.gameType
   return { ...state.gameType, scoringMode: 'POINTS', winCondition: 'HIGHEST_SCORE' }
 }
 
@@ -406,9 +406,10 @@ function performSave(
       const original = deps.mode.matchRepository.findById(deps.mode.matchId)
       if (!original) return { type: 'saveFailed', error: 'Could not find original match to update' }
       const date = combineDateWithTimeOfDay(state.matchDate, original.date)
-      // Final scores typed over a rounds-won match without usable detail are not
-      // rounds: saving the grid as detail would have the next edit re-read it as
-      // points per round and rewrite the scores as 1/0. The stored detail stays.
+      // Final scores typed over a match without replayable detail are not rounds:
+      // saving the grid as detail would invent a one-round match that a later
+      // change of scoring mode would recompute (as 1/0 in rounds won). The stored
+      // detail, if any, stays as it is.
       const updated: Match = {
         ...original,
         date,
@@ -561,40 +562,14 @@ export function saveDraft(
 }
 
 /**
- * Stored rounds are only trusted when every round entry names a participant of
- * the match and the per-player sums match the recorded totals. A mismatch means
- * the detail and the totals disagree (partial sync, match written by an older
- * build): rebuilding from it would silently change the match's scores.
+ * Rebuilds the editor's round grid from the match's stored per-round detail when
+ * it agrees with the stored scores (as a points sum or as rounds won, whatever
+ * the game's current mode), so re-saving recomputes the match with the current
+ * mode. Otherwise — no detail, or detail that disagrees — the grid is a single
+ * row of the stored final scores, and the stored detail is left untouched.
  */
-function roundsAgreeWithTotals(match: Match, gameType: GameType): boolean {
-  const totals = new Map(match.playerScores.map((ps) => [ps.playerId, ps.score]))
-  const sums = new Map<string, number>()
-  for (const round of match.rounds) {
-    for (const ps of round) {
-      if (!totals.has(ps.playerId)) return false
-      sums.set(ps.playerId, (sums.get(ps.playerId) ?? 0) + ps.score)
-    }
-  }
-  if (match.playerScores.every((ps) => (sums.get(ps.playerId) ?? 0) === ps.score)) return true
-  // A rounds-won match records the count of rounds won, not the points sum.
-  if (!usesRoundsWon(gameType)) return false
-  const won = computeRoundsWon(match.rounds, gameType.winCondition)
-  return match.playerScores.every((ps) => (won.get(ps.playerId) ?? 0) === ps.score)
-}
-
-function hasUsableRounds(match: Match, gameType: GameType): boolean {
-  return match.rounds.length > 0 && roundsAgreeWithTotals(match, gameType)
-}
-
-/**
- * Rebuilds the editor's round grid from the match's stored per-round detail, so
- * editing an existing match keeps its rounds instead of flattening them into a
- * single round of totals on the next save. Falls back to that single round when
- * no detail was stored (matches saved before `Match.rounds` existed, or
- * imported) or when the stored detail disagrees with the totals.
- */
-function reconstructRounds(match: Match, gameType: GameType): Record<string, string>[] {
-  if (hasUsableRounds(match, gameType)) {
+function reconstructRounds(match: Match, detail: RoundDetailStatus): Record<string, string>[] {
+  if (detail === 'consistent') {
     return match.rounds.map((round) =>
       Object.fromEntries(round.map((ps) => [ps.playerId, String(ps.score)])),
     )
@@ -630,6 +605,7 @@ function freshState(
     collectedSecondaryScores: [],
     editingMatchId: undefined,
     finalScoresOnly: false,
+    inconsistentRoundDetail: false,
     showCancelConfirm: false,
     showRoundSheet: false,
     roundSheetInputs: {},
@@ -663,14 +639,16 @@ export function buildInitialState(
     if (!editGameType) return base
     const matchPlayerIds = new Set(match.playerScores.map((ps) => ps.playerId))
     const editPlayers = mode.playerRepository.getAll(true).filter((p) => matchPlayerIds.has(p.id))
+    const detail = roundDetailStatus(match, editGameType.winCondition)
     return {
       ...base,
       gameType: editGameType,
       players: editPlayers,
-      rounds: reconstructRounds(match, editGameType),
+      rounds: reconstructRounds(match, detail),
       matchDate: toDateOnly(match.date),
       editingMatchId: mode.matchId,
-      finalScoresOnly: usesRoundsWon(editGameType) && !hasUsableRounds(match, editGameType),
+      finalScoresOnly: detail !== 'consistent',
+      inconsistentRoundDetail: detail === 'inconsistent',
     }
   }
 

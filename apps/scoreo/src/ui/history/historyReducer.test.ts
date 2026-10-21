@@ -458,6 +458,7 @@ function buildDisplay(overrides: Partial<MatchDisplay> = {}): MatchDisplay {
     winners: ['p1'],
     dateFormatted: '2026-01-01 10:00',
     isTieBreakIndeterminate: false,
+    hasInconsistentRounds: false,
     ...overrides,
   }
 }

@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { newGameType } from '../domain/model/gameType'
 import { InMemoryGameTypeRepository } from '../infrastructure/testing/inMemoryGameTypeRepository'
 import { InMemoryMatchRepository } from '../infrastructure/testing/inMemoryMatchRepository'
 import { InMemoryPlayerRepository } from '../infrastructure/testing/inMemoryPlayerRepository'
@@ -233,6 +234,35 @@ describe('ImportMatchesUseCase', () => {
           { playerId: bob.id, score: 2 },
         ],
       ])
+    })
+
+    it('scores an existing rounds-won game in rounds won, from the round detail', () => {
+      const gameTypeRepo = new InMemoryGameTypeRepository()
+      gameTypeRepo.save(
+        newGameType('rw', 'TestGame', 'LOWEST_SCORE', { scoringMode: 'ROUNDS_WON' }),
+      )
+      const matchRepo = new InMemoryMatchRepository()
+      const playerRepo = new InMemoryPlayerRepository()
+      useCase(playerRepo, gameTypeRepo, matchRepo).execute(TestImportData.withDetailsJson)
+      const alice = playerRepo.getAll().find((p) => p.name === 'Alice')!
+      const bob = playerRepo.getAll().find((p) => p.name === 'Bob')!
+      const match = matchRepo.getAll()[0]
+      // Rounds 10/5 and 3/2, lowest wins a round: Bob takes both.
+      expect(match.playerScores).toEqual([
+        { playerId: alice.id, score: 0 },
+        { playerId: bob.id, score: 2 },
+      ])
+      expect(match.rounds).toHaveLength(2)
+    })
+
+    it('keeps the file scores of a rounds-won game when the file has no details', () => {
+      const gameTypeRepo = new InMemoryGameTypeRepository()
+      gameTypeRepo.save(
+        newGameType('rw', 'TestGame', 'HIGHEST_SCORE', { scoringMode: 'ROUNDS_WON' }),
+      )
+      const matchRepo = new InMemoryMatchRepository()
+      useCase(undefined, gameTypeRepo, matchRepo).execute(TestImportData.validJson)
+      expect(matchRepo.getAll()[0].playerScores.map((ps) => ps.score)).toEqual([10, 5])
     })
 
     it('leaves rounds empty when the game has no details', () => {

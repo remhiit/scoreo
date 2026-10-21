@@ -42,7 +42,7 @@ export function newGameType(
     id,
     name,
     winCondition,
-    scoringMode: winCondition === 'MANUAL' ? 'POINTS' : (defaults.scoringMode ?? 'POINTS'),
+    scoringMode: effectiveScoringMode(winCondition, defaults.scoringMode ?? 'POINTS'),
     tieBreakRule: defaults.tieBreakRule ?? 'NONE',
     tieBreakCondition: defaults.tieBreakCondition ?? 'HIGHEST_SCORE',
     tieBreakLabel: defaults.tieBreakLabel ?? null,
@@ -51,9 +51,20 @@ export function newGameType(
   }
 }
 
+/**
+ * The scoring mode a game type actually stores: rounds won only makes sense when
+ * the app decides who wins each round, so a `MANUAL` game always scores in points.
+ */
+export function effectiveScoringMode(
+  winCondition: WinCondition,
+  scoringMode: ScoringMode,
+): ScoringMode {
+  return winCondition === 'MANUAL' ? 'POINTS' : scoringMode
+}
+
 /** True when the final score is a count of rounds won (never with a `MANUAL` win condition). */
 export function usesRoundsWon(gameType: GameType): boolean {
-  return gameType.scoringMode === 'ROUNDS_WON' && gameType.winCondition !== 'MANUAL'
+  return effectiveScoringMode(gameType.winCondition, gameType.scoringMode) === 'ROUNDS_WON'
 }
 
 /**

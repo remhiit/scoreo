@@ -1,4 +1,5 @@
-import { computeWinners, type GameType } from './gameType'
+import type { WinCondition } from './enums'
+import { computeRoundsWon, computeWinners, usesRoundsWon, type GameType } from './gameType'
 import type { PlayerScore } from './playerScore'
 
 export interface Match {
@@ -73,4 +74,57 @@ export function getWinners(match: Match, gameType: GameType): string[] {
       return result.length === 0 ? primaryWinners : result
     }
   }
+}
+
+/**
+ * How a match's round detail relates to its stored final scores:
+ * - `none`: no detail (saved before `Match.rounds` existed, or imported without it);
+ * - `consistent`: every entry names a participant, and the scores are either the
+ *   points sum of the rounds or the count of rounds won under `winCondition`,
+ *   whatever mode the game type uses today — a match saved under the other mode
+ *   is still recognised;
+ * - `inconsistent`: neither (older build synced via Drive, data edited outside
+ *   the app). The detail is kept, the match counts with its stored scores.
+ */
+export type RoundDetailStatus = 'none' | 'consistent' | 'inconsistent'
+
+export function roundDetailStatus(match: Match, winCondition: WinCondition): RoundDetailStatus {
+  if (match.rounds.length === 0) return 'none'
+  const participants = new Set(match.playerScores.map((ps) => ps.playerId))
+  const sums = new Map<string, number>()
+  for (const round of match.rounds) {
+    for (const ps of round) {
+      if (!participants.has(ps.playerId)) return 'inconsistent'
+      sums.set(ps.playerId, (sums.get(ps.playerId) ?? 0) + ps.score)
+    }
+  }
+  if (match.playerScores.every((ps) => (sums.get(ps.playerId) ?? 0) === ps.score)) {
+    return 'consistent'
+  }
+  if (winCondition === 'MANUAL') return 'inconsistent'
+  const won = computeRoundsWon(match.rounds, winCondition)
+  return match.playerScores.every((ps) => (won.get(ps.playerId) ?? 0) === ps.score)
+    ? 'consistent'
+    : 'inconsistent'
+}
+
+/**
+ * The final scores `gameType` derives from round detail, one per player of
+ * `playerIds` (in that order): the points sum, or the count of rounds won.
+ */
+export function scoresFromRounds(
+  gameType: GameType,
+  rounds: PlayerScore[][],
+  playerIds: readonly string[],
+): PlayerScore[] {
+  const won = usesRoundsWon(gameType) ? computeRoundsWon(rounds, gameType.winCondition) : null
+  return playerIds.map((playerId) => ({
+    playerId,
+    score: won
+      ? (won.get(playerId) ?? 0)
+      : rounds.reduce(
+          (sum, round) => sum + (round.find((ps) => ps.playerId === playerId)?.score ?? 0),
+          0,
+        ),
+  }))
 }

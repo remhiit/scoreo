@@ -29,7 +29,7 @@
       "POINTS": "Total points",
       "ROUNDS_WON": "Rounds won"
     },
-    "scoringModeChangeWarning": "This game already has matches: their winners, stats, Elo and trophies will be re-read with the new scoring.",
+    "scoringModeChangeWarning": "This game already has matches: those with round detail will have their scores recomputed with the new scoring, and their winners, stats, Elo and trophies will follow.",
     "tieBreakRule": "Tie-break rule",
     "tieBreak": "Tie break",
     "tieBreakConditionLabel": "Tie break condition:",
@@ -70,6 +70,8 @@
     "matchDataWillBeLost": "Match data will be lost.",
     "roundsTitle": "Round detail",
     "noRoundDetail": "No round detail was recorded for this match.",
+    "inconsistentData": "Inconsistent data",
+    "inconsistentDataDetail": "Inconsistent data: the round detail does not add up to the recorded scores. The match counts with its recorded scores.",
     "totals": "Total:"
   },
   "home": {
@@ -201,6 +203,7 @@
     "history": "History",
     "enterRound": "Enter round {{number}}",
     "finishMatch": "Finish match",
+    "inconsistentData": "Inconsistent data: the round detail of this match does not add up to its recorded scores. It is kept as is, and the grid shows the recorded final scores.",
     "selectWinners": "Select winner(s)",
     "pointsSuffix": "{{points}} pts",
     "roundsWonSuffix_one": "{{count}} round won",

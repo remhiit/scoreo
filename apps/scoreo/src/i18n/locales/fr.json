@@ -29,7 +29,7 @@
       "POINTS": "Total des points",
       "ROUNDS_WON": "Manches gagnées"
     },
-    "scoringModeChangeWarning": "Ce jeu a déjà des parties : leurs gagnants, statistiques, Elo et trophées seront relus avec le nouveau décompte.",
+    "scoringModeChangeWarning": "Ce jeu a déjà des parties : celles qui ont un détail des manches verront leur score recalculé avec le nouveau décompte, et leurs gagnants, statistiques, Elo et trophées suivront.",
     "tieBreakRule": "Règle de départage",
     "tieBreak": "Départage",
     "tieBreakConditionLabel": "Condition de départage :",
@@ -70,6 +70,8 @@
     "matchDataWillBeLost": "Les données de la partie seront perdues.",
     "roundsTitle": "Détail des manches",
     "noRoundDetail": "Le détail des manches n'a pas été enregistré pour cette partie.",
+    "inconsistentData": "Données incohérentes",
+    "inconsistentDataDetail": "Données incohérentes : le détail des manches ne correspond pas aux scores enregistrés. La partie compte avec ses scores enregistrés.",
     "totals": "Total :"
   },
   "home": {
@@ -201,6 +203,7 @@
     "history": "Historique",
     "enterRound": "Saisir la manche {{number}}",
     "finishMatch": "Terminer la partie",
+    "inconsistentData": "Données incohérentes : le détail des manches de cette partie ne correspond pas à ses scores enregistrés. Il est conservé tel quel, et la grille affiche les scores finaux enregistrés.",
     "selectWinners": "Sélectionner le(s) gagnant(s)",
     "pointsSuffix": "{{points}} pts",
     "roundsWonSuffix_one": "{{count}} manche gagnée",

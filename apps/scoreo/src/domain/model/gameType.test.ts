@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { computeRoundsWon, computeWinners, newGameType, type GameType } from './gameType'
+import {
+  computeRoundsWon,
+  computeWinners,
+  effectiveScoringMode,
+  newGameType,
+  type GameType,
+} from './gameType'
 import { GameTypeSchema } from './gameType.schema'
 import type { PlayerScore } from './playerScore'
 
@@ -162,5 +168,16 @@ describe('newGameType', () => {
     expect(newGameType('1', 'Game', 'MANUAL', { scoringMode: 'ROUNDS_WON' }).scoringMode).toBe(
       'POINTS',
     )
+  })
+})
+
+describe('effectiveScoringMode', () => {
+  it('keeps the chosen mode when the app decides who wins', () => {
+    expect(effectiveScoringMode('HIGHEST_SCORE', 'ROUNDS_WON')).toBe('ROUNDS_WON')
+    expect(effectiveScoringMode('LOWEST_SCORE', 'POINTS')).toBe('POINTS')
+  })
+
+  it('forces POINTS for a MANUAL game', () => {
+    expect(effectiveScoringMode('MANUAL', 'ROUNDS_WON')).toBe('POINTS')
   })
 })

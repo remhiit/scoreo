@@ -198,8 +198,9 @@ export function gameTypeHasMatches(getMatches: GetMatchesUseCase, gameTypeId: st
 
 /**
  * The edit form is about to change the scoring mode of a game type that already
- * has matches: their winners, stats, Elo and trophies will be re-read with the
- * new mode, since a game's rules apply to its whole history.
+ * has matches: saving recomputes the scores of those with round detail
+ * (`UpdateGameTypeUseCase`), and their winners, stats, Elo and trophies follow,
+ * since a game's rules apply to its whole history.
  */
 export function scoringModeChangeWarning(state: GameTypeState): boolean {
   if (!state.editingGameHasMatches || state.selectedWinCondition === 'MANUAL') return false

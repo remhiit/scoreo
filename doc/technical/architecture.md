@@ -228,7 +228,7 @@ In practice:
 - **Renaming / removing a field**: requires a migration step — read old key, transform, write to new key. Document the migration in `doc/technical/migrations.md`.
 - **Never change the type of an existing field** without a migration.
 
-This applies to: `Player`, `GameType`, `Match`, `PlayerScore`, `WinCondition`.
+This applies to: `Player`, `GameType`, `Match`, `PlayerScore`, `WinCondition`, `ScoringMode`.
 
 **Current entity formats:**
 
@@ -239,6 +239,7 @@ This applies to: `Player`, `GameType`, `Match`, `PlayerScore`, `WinCondition`.
 | `Match` | `id: string` (UUID v4), `date: number` (epoch ms), `gameTypeId: string`, `playerScores: PlayerScore[]`, `manualWinners: string[]` (default `[]`), `secondaryPlayerScores: PlayerScore[]` (default `[]`), `rounds: PlayerScore[][]` (default `[]`) |
 | `PlayerScore` | `playerId: string`, `score: number` |
 | `WinCondition` | union: `'HIGHEST_SCORE'`, `'LOWEST_SCORE'`, `'MANUAL'` |
+| `ScoringMode` | union: `'POINTS'`, `'ROUNDS_WON'` |
 
 **Migration mechanism:** `LocalStorageMatchRepository.getAll()` runs `migrateMatches()` once per instance before the first read. It detects old-format data (string dates, non-UUID ids) and converts them, writing the migrated array back. Idempotent — a second call is a no-op. See `doc/technical/migrations.md` for details, and `apps/scoreo/src/infrastructure/crossMigration.test.ts` for the end-to-end backward-compat test replaying a realistic old-format export.
 

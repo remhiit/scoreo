@@ -1,6 +1,7 @@
 import type { ScoringModuleManifest } from '@scoreboards/module-api'
 import { WinConditionSchema, type WinCondition } from '../domain/model/enums'
-import { newGameType, type GameType } from '../domain/model/gameType'
+import { newGameType, usesRoundsWon, type GameType } from '../domain/model/gameType'
+import { scoresFromRounds } from '../domain/model/match'
 import type { Player } from '../domain/model/player'
 import type { PlayerScore } from '../domain/model/playerScore'
 import type { GameTypeRepository } from '../domain/port/gameTypeRepository'
@@ -172,11 +173,18 @@ export class ImportMatchesUseCase {
           )
         }
 
+        // The file always carries points. A rounds-won game scores its matches
+        // in rounds won, recomputed from the detail; without detail there is
+        // nothing to recompute and the file's scores are kept as they are.
+        const finalScores =
+          usesRoundsWon(gameType) && rounds.length > 0
+            ? scoresFromRounds(gameType, rounds, playerIds)
+            : scores
         const match = rankingToMatch({
           id: game.id,
           date: game.date ?? this.currentDate(),
           gameTypeId: gameType.id,
-          ranking: scores.map((score) => ({
+          ranking: finalScores.map((score) => ({
             playerId: score.playerId,
             score: score.score,
             rank: rankingMap.get(score.playerId) ?? 0,

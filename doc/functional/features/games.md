@@ -5,7 +5,7 @@
 | Use Case | Input | Output | Business Rule |
 |----------|-------|--------|---------------|
 | `AddGameTypeUseCase` | `name, winCondition, scoringMode = POINTS, tieBreakRule = NONE, tieBreakCondition = HIGHEST_SCORE, tieBreakLabel = null` | `GameType` | Generates UUID v4; `scoringMode` is forced to `POINTS` when `winCondition` is `MANUAL` |
-| `UpdateGameTypeUseCase` | `gameType: GameType` | `Unit` | Overwrites existing game type (same `MANUAL` → `POINTS` rule for `scoringMode`) |
+| `UpdateGameTypeUseCase` | `gameType: GameType` | `Unit` | Overwrites existing game type (same `MANUAL` → `POINTS` rule for `scoringMode`, via `effectiveScoringMode`). When the change alters how rounds become a score (effective scoring mode, or `winCondition` of a rounds-won game), recomputes from `Match.rounds` and rewrites the `playerScores` of every match of that game whose round detail agrees with its stored scores — module-bound games included; `manualWinners`/`secondaryPlayerScores` untouched |
 | `GetGameTypesUseCase` | — | `List<GameType>` | Returns all game types |
 | `CreateMatchUseCase` | `gameTypeId, playerScores, date, manualWinners, secondaryPlayerScores` | `Match` | Validates players match scores list |
 | `ArchiveGameTypeUseCase` | `gameTypeId: String` | `Unit` | Soft-delete (`active = false`); matches stay attached to it |
@@ -58,7 +58,7 @@ Screen: `apps/scoreo/src/ui/gametype/GameTypeScreen.tsx`. See `doc/reference.md`
 - Confirming moves every match from the duplicates onto the game type kept, then permanently deletes them (`GameTypeRepository.hardDelete`, unlike archiving)
 - A draft match in progress that named a duplicate is discarded (its game type id no longer exists)
 - If the kept game type was archived and any duplicate was active, the kept one is unarchived — otherwise the merge would hide the result
-- **Warning, not a blocker**: if any selected duplicate doesn't score like the kept game type (`winCondition`, `tieBreakRule`, or `tieBreakCondition` under `SECONDARY_SCORE`), the dialog warns that the kept game type's rules will apply to the moved matches and may change their winners. Merging is still allowed — picking the target *is* picking the rules
+- **Warning, not a blocker**: if any selected duplicate doesn't score like the kept game type (`winCondition`, scoring mode — points or rounds won —, `tieBreakRule`, or `tieBreakCondition` under `SECONDARY_SCORE`), the dialog warns that the kept game type's rules will apply to the moved matches and may change their winners. Merging is still allowed — picking the target *is* picking the rules
 
 ### Detail view
 - Shows: game name, win condition, tie-break rule, tie-break condition/label (if SECONDARY_SCORE)
@@ -76,6 +76,7 @@ Screen: `apps/scoreo/src/ui/gametype/GameTypeScreen.tsx`. See `doc/reference.md`
 ### Form mode (add / edit)
 - Text input: game name
 - Dropdown: win condition (HIGHEST_SCORE, LOWEST_SCORE, MANUAL)
+- Dropdown: scoring (POINTS "Total points", ROUNDS_WON "Rounds won"), hidden when the win condition is MANUAL (saved as POINTS). In edit mode, when the game already has matches and the scoring is changed, a warning says that the matches with round detail will have their scores recomputed with the new scoring (see [Scoring mode](#scoring-mode))
 - Dropdown: tie-break rule (NONE, MANUAL_SELECTION, SECONDARY_SCORE)
 - If SECONDARY_SCORE: additional dropdown for tie-break condition + text input for label
 - Button: "Add game type" (create mode) or "Save changes" + "Cancel" (edit mode)
@@ -149,9 +150,13 @@ Then the modal closes and the game remains active
 
 The game type form offers a **Scoring** choice next to the win condition: "Total points" (default) or "Rounds won". It is hidden when the win condition is `MANUAL` (stored as `POINTS`). In rounds-won mode the entry screen still takes each player's points per round; the winner of a round is the highest (`HIGHEST_SCORE`) or lowest (`LOWEST_SCORE`) score, all tied players win it, and the saved final score is the count of rounds won. See [scoring](scoring.md).
 
-A game's rules apply to its whole history: changing the mode does not rewrite the `playerScores` already saved, but they are read with the game's **current** mode — winners, stats, Elo and trophies follow it, exactly as they already follow a `winCondition` change (`computeWinners` runs on the current `GameType`). When the edited game already has matches and the mode is changed, the form shows a warning saying so. Reopening and saving an old match recomputes it with the current mode: a match played in points, re-saved after the game switched to rounds won, gets its rounds won as `playerScores` (see [scoring](scoring.md#rounds-won-saving)).
+A game's rules apply to its whole history. **Changing the mode recomputes the matches already played**: saving the game type (`UpdateGameTypeUseCase`) recomputes, from its round detail and with the new mode, the score of every match of that game that has round detail (`Match.rounds` non-empty), and rewrites it — games bound to a module included. The same happens when the win condition of a rounds-won game changes, since it decides who wins each round. Winners, stats, Elo and trophies then follow. When the edited game already has matches and the mode is changed, the form shows a warning saying so.
 
-Games bound to a module are counted by the module; the mode only applies to the generic entry screen.
+- **Match without round detail** (saved before `Match.rounds` existed, or imported without detail): nothing to recompute, it keeps its stored score, read with the current mode. Re-editing it shows its final scores and saves them as entered (highest wins in a rounds-won game), without inventing round detail; saving it unchanged rewrites nothing.
+- **Match whose detail agrees with its score** (as the points sum or as the count of rounds won, whatever the current mode): re-editing it restores the raw rounds and saving recomputes it with the current mode. Example: rounds 10/2, 1/8, 9/3 stored as 2/1 in rounds won, game switched back to points, match reopened and saved unchanged → 20/13, raw rounds kept.
+- **Match whose detail disagrees with its score** (neither the sum nor the rounds won — an older app version synced via Drive, data edited outside the app): the detail is kept (never replaced by a single row), the match counts with its stored score and is not recomputed by a mode change, and a **"Inconsistent data"** warning is shown on it, in the history list, in its round detail and in the editor.
+
+Matches saved by a module keep the scores the module hands back; the recompute on a mode change covers them like any match with round detail.
 
 ## JSON Schema
 
