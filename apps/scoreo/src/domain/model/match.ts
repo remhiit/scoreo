@@ -76,11 +76,7 @@ export function getWinners(match: Match, gameType: GameType): string[] {
     case 'MANUAL_SELECTION':
       return match.manualWinners
     case 'SECONDARY_SCORE': {
-      const result = computeWinners(
-        gameType,
-        match.secondaryPlayerScores,
-        gameType.tieBreakCondition,
-      )
+      const result = computeWinners(gameType, match.secondaryPlayerScores, gameType.tieBreakCondition)
       return result.length === 0 ? primaryWinners : result
     }
   }

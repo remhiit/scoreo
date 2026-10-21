@@ -239,8 +239,7 @@ export class ImportMatchesUseCase {
     if (typeof id !== 'string') throw new Error("Missing game 'id'")
     const date = parseIntLike(obj.date)
     const rankingRaw = asArray(obj.ranking, `'ranking' in game ${id}`)
-    if (rankingRaw.length < 2)
-      throw new Error(`'ranking' must have at least 2 entries in game ${id}`)
+    if (rankingRaw.length < 2) throw new Error(`'ranking' must have at least 2 entries in game ${id}`)
     const details = Array.isArray(obj.details) ? obj.details.map((r) => this.parseRound(r)) : null
     return {
       id,
@@ -294,9 +293,7 @@ export class ImportMatchesUseCase {
     if (winCondition) {
       const found = WIN_CONDITIONS.find((c) => c.toLowerCase() === winCondition.toLowerCase())
       if (!found) {
-        throw new Error(
-          `Unknown winCondition '${winCondition}'. Valid values: ${WIN_CONDITIONS.join(', ')}`,
-        )
+        throw new Error(`Unknown winCondition '${winCondition}'. Valid values: ${WIN_CONDITIONS.join(', ')}`)
       }
       wc = found
     }

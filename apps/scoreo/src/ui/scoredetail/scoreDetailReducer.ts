@@ -92,19 +92,8 @@ export function computeScores(
   return new Map(players.map((p) => [p.id, won.get(p.id) ?? 0]))
 }
 
-/**
- * The rules the editor scores with. Normally the game type itself; while
- * re-editing a match whose round detail cannot be replayed (`finalScoresOnly`)
- * the grid holds final scores, so they are taken as points — and in a rounds-won
- * game, where a final score is a count of rounds won, the highest wins.
- */
-export function scoringGameType(state: ScoreDetailState): GameType {
-  if (!state.finalScoresOnly || !usesRoundsWon(state.gameType)) return state.gameType
-  return { ...state.gameType, scoringMode: 'POINTS', winCondition: 'HIGHEST_SCORE' }
-}
-
 function playerScoresFromTotals(state: ScoreDetailState): PlayerScore[] {
-  const totals = computeScores(scoringGameType(state), state.players, state.rounds)
+  const totals = computeScores(state.gameType, state.players, state.rounds)
   return state.players.map((p) => ({ playerId: p.id, score: totals.get(p.id) ?? 0 }))
 }
 
@@ -406,17 +395,17 @@ function performSave(
       const original = deps.mode.matchRepository.findById(deps.mode.matchId)
       if (!original) return { type: 'saveFailed', error: 'Could not find original match to update' }
       const date = combineDateWithTimeOfDay(state.matchDate, original.date)
-      // Final scores typed over a match whose detail disagrees with its scores are
-      // not rounds: the stored detail stays as it is. A match stored without detail
-      // was given a synthetic one on opening (`buildInitialState`), saved here like
-      // any entered rounds.
+      // The rounds shown in the editor are authoritative: the stored detail (even
+      // when it disagreed with the stored scores), or the synthetic one a match
+      // stored without detail got on opening (`buildInitialState`), is saved like
+      // any entered rounds, and the scores are recomputed from it.
       const updated: Match = {
         ...original,
         date,
         playerScores,
         manualWinners,
         secondaryPlayerScores,
-        rounds: state.finalScoresOnly ? original.rounds : rounds,
+        rounds,
       }
       deps.mode.updateMatchUseCase.invoke(updated)
       deps.matchDraftRepository?.clear()
@@ -457,7 +446,7 @@ export function submitTerminate(state: ScoreDetailState, deps: ScoreDetailDeps):
   }
 
   const playerScores = playerScoresFromTotals(state)
-  const primaryWinners = computeWinners(scoringGameType(state), playerScores)
+  const primaryWinners = computeWinners(state.gameType, playerScores)
 
   if (primaryWinners.length <= 1) {
     return performSave(deps, state, playerScores, [])
@@ -561,39 +550,46 @@ export function saveDraft(
   })
 }
 
-function toGrid(rounds: PlayerScore[][]): Record<string, string>[] {
+/** The editor grid of `rounds`, leaving out any score of a player outside `playerIds`. */
+function toGrid(rounds: PlayerScore[][], playerIds: ReadonlySet<string>): Record<string, string>[] {
   return rounds.map((round) =>
-    Object.fromEntries(round.map((ps) => [ps.playerId, String(ps.score)])),
+    Object.fromEntries(
+      round.filter((ps) => playerIds.has(ps.playerId)).map((ps) => [ps.playerId, String(ps.score)]),
+    ),
   )
 }
 
 /**
- * The editor's round grid for a re-edited match, and whether it only holds final
- * scores (`finalScoresOnly`):
- * - detail that agrees with the stored scores (as a points sum or as rounds won,
- *   whatever the game's current mode) is replayed as is, so re-saving recomputes
- *   the match with the current mode;
+ * The editor's round grid for a re-edited match, and whether its stored data was
+ * inconsistent (`inconsistentRoundDetail`). Whatever the grid shows is what the
+ * save stores in `Match.rounds` and recomputes the scores from with the current
+ * mode — the detail is authoritative:
+ * - stored detail is replayed as is, whether it agrees with the stored scores (as
+ *   a points sum or as rounds won, whatever the game's current mode) or not — in
+ *   the latter case the match is flagged inconsistent, and re-saving it makes it
+ *   consistent again;
  * - no detail at all (`rounds: []`): a synthetic detail giving back exactly the
  *   stored scores under the current mode (`syntheticRounds`) is replayed the same
- *   way — re-saving unchanged keeps the scores, and adding a round works as usual;
- * - detail that disagrees with the stored scores (or stored scores no rounds-won
- *   detail can produce): the grid is a single row of the stored final scores, and
- *   the stored detail is left untouched on save.
+ *   way — re-saving unchanged keeps the scores;
+ * - no detail, and rounds-won scores no detail can produce (negative or not whole
+ *   numbers): a single round holding the stored scores, flagged inconsistent.
  */
 function reconstructRounds(
   match: Match,
   gameType: GameType,
-): { rounds: Record<string, string>[]; finalScoresOnly: boolean } {
+): { rounds: Record<string, string>[]; inconsistent: boolean } {
+  const playerIds = new Set(match.playerScores.map((ps) => ps.playerId))
   const detail = roundDetailStatus(match, gameType.winCondition)
-  if (detail === 'consistent') return { rounds: toGrid(match.rounds), finalScoresOnly: false }
-  if (detail === 'none') {
-    const synthetic = syntheticRounds(gameType, match.playerScores)
-    if (synthetic) {
-      // Nobody won a round: an empty row to enter the first one in.
-      return { rounds: synthetic.length > 0 ? toGrid(synthetic) : [{}], finalScoresOnly: false }
-    }
+  if (detail !== 'none') {
+    return { rounds: toGrid(match.rounds, playerIds), inconsistent: detail === 'inconsistent' }
   }
-  return { rounds: toGrid([match.playerScores]), finalScoresOnly: true }
+  const synthetic = syntheticRounds(gameType, match.playerScores)
+  if (!synthetic) return { rounds: toGrid([match.playerScores], playerIds), inconsistent: true }
+  // Nobody won a round: an empty row to enter the first one in.
+  return {
+    rounds: synthetic.length > 0 ? toGrid(synthetic, playerIds) : [{}],
+    inconsistent: false,
+  }
 }
 
 function freshState(
@@ -619,7 +615,6 @@ function freshState(
     manualSelectionWinners: new Set(),
     collectedSecondaryScores: [],
     editingMatchId: undefined,
-    finalScoresOnly: false,
     inconsistentRoundDetail: false,
     showCancelConfirm: false,
     showRoundSheet: false,
@@ -654,7 +649,7 @@ export function buildInitialState(
     if (!editGameType) return base
     const matchPlayerIds = new Set(match.playerScores.map((ps) => ps.playerId))
     const editPlayers = mode.playerRepository.getAll(true).filter((p) => matchPlayerIds.has(p.id))
-    const { rounds, finalScoresOnly } = reconstructRounds(match, editGameType)
+    const { rounds, inconsistent } = reconstructRounds(match, editGameType)
     return {
       ...base,
       gameType: editGameType,
@@ -662,9 +657,7 @@ export function buildInitialState(
       rounds,
       matchDate: toDateOnly(match.date),
       editingMatchId: mode.matchId,
-      finalScoresOnly,
-      inconsistentRoundDetail:
-        roundDetailStatus(match, editGameType.winCondition) === 'inconsistent',
+      inconsistentRoundDetail: inconsistent,
     }
   }
 

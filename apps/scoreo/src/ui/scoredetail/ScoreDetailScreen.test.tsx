@@ -432,7 +432,7 @@ describe('ScoreDetailScreen', () => {
     rerender(<></>)
     render(
       <ScoreDetailScreen
-        initialState={{ ...base, inconsistentRoundDetail: true, finalScoresOnly: true }}
+        initialState={{ ...base, inconsistentRoundDetail: true }}
         {...deps}
         onSaved={vi.fn()}
         onCancel={vi.fn()}

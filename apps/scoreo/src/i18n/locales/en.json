@@ -203,7 +203,7 @@
     "history": "History",
     "enterRound": "Enter round {{number}}",
     "finishMatch": "Finish match",
-    "inconsistentData": "Inconsistent data: the round detail of this match does not add up to its recorded scores. It is kept as is, and the grid shows the recorded final scores.",
+    "inconsistentData": "Inconsistent data: the round detail of this match does not add up to its recorded scores. The grid shows that detail: saving recomputes the score from the rounds.",
     "selectWinners": "Select winner(s)",
     "pointsSuffix": "{{points}} pts",
     "roundsWonSuffix_one": "{{count}} round won",

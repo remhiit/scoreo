@@ -175,9 +175,9 @@ choice, and none of its matches is ever recomputed into rounds won (`roundScorin
 change). Scoreo's generic score screen, when used on such a game, sums the rounds too. A module
 declaring its own scoring mode, and Scoreo aligning on it, is tracked in #590.
 
-Known gap: binding by name (rule 2 above) stamps a `moduleId` onto an existing game type without
-recomputing its matches; were that game in rounds won, its stored counts would then be read as
-points. Left to #590.
+Known gap: binding by name (rule 2 above) stamps a `moduleId` onto an existing game type, and
+stores its effective `scoringMode` (`POINTS`), without recomputing its matches; were that game in
+rounds won, its stored counts would then be read as points. Left to #590.
 
 The id never leaves the installation: it is absent from the v1.1 export, which travels to other
 installations where module ids mean nothing. `ImportMatchesUseCase` compensates by consulting the

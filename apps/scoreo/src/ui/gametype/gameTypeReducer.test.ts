@@ -92,7 +92,11 @@ describe('gameTypeReducer', () => {
     expect(state.gameTypes[0].scoringMode).toBe('ROUNDS_WON')
     expect(state.selectedScoringMode).toBe('POINTS')
 
-    state = gameTypeReducer(state, { type: 'editGameType', gameType: state.gameTypes[0] })
+    state = gameTypeReducer(state, {
+      type: 'editGameType',
+      gameType: state.gameTypes[0],
+      hasMatches: false,
+    })
     expect(state.selectedScoringMode).toBe('ROUNDS_WON')
 
     state = gameTypeReducer(state, { type: 'selectScoringMode', scoringMode: 'POINTS' })
@@ -209,7 +213,7 @@ describe('gameTypeReducer', () => {
 
     const gameTypeId = state.gameTypes[0].id
     const gameType = resolveGameTypeForEdit(useCases.findGameTypeById, gameTypeId)!
-    state = gameTypeReducer(state, { type: 'editGameType', gameType })
+    state = gameTypeReducer(state, { type: 'editGameType', gameType, hasMatches: false })
 
     expect(state.inputName).toBe('Belote')
     expect(state.editingGameId).toBe(gameTypeId)
@@ -226,7 +230,7 @@ describe('gameTypeReducer', () => {
 
     const gameTypeId = state.gameTypes[0].id
     const gameType = resolveGameTypeForEdit(useCases.findGameTypeById, gameTypeId)!
-    state = gameTypeReducer(state, { type: 'editGameType', gameType })
+    state = gameTypeReducer(state, { type: 'editGameType', gameType, hasMatches: false })
 
     expect(state.selectedTieBreakRule).toBe('SECONDARY_SCORE')
     expect(state.selectedTieBreakCondition).toBe('LOWEST_SCORE')
@@ -239,7 +243,7 @@ describe('gameTypeReducer', () => {
 
     const gameTypeId = state.gameTypes[0].id
     const gameType = resolveGameTypeForEdit(useCases.findGameTypeById, gameTypeId)!
-    state = gameTypeReducer(state, { type: 'editGameType', gameType })
+    state = gameTypeReducer(state, { type: 'editGameType', gameType, hasMatches: false })
     expect(state.editingGameId).toBe(gameTypeId)
 
     state = gameTypeReducer(state, { type: 'cancelEdit' })
@@ -260,7 +264,7 @@ describe('gameTypeReducer', () => {
       name: 'Belote Updated',
       tieBreakRule: 'MANUAL_SELECTION' as const,
     }
-    state = gameTypeReducer(state, { type: 'editGameType', gameType: original })
+    state = gameTypeReducer(state, { type: 'editGameType', gameType: original, hasMatches: false })
     const result = submitUpdateGameType(useCases.updateGameType, useCases.getGameTypes, updated)
     state =
       'error' in result
@@ -277,7 +281,7 @@ describe('gameTypeReducer', () => {
     let state = add(initialGameTypeState, useCases, 'Belote')
 
     const gameType = state.gameTypes[0]
-    state = gameTypeReducer(state, { type: 'editGameType', gameType })
+    state = gameTypeReducer(state, { type: 'editGameType', gameType, hasMatches: false })
     const result = submitUpdateGameType(useCases.updateGameType, useCases.getGameTypes, gameType)
     state = gameTypeReducer(state, { type: 'updateSucceeded', ...(result as LoadedGameTypes) })
 

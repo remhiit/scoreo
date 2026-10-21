@@ -62,7 +62,7 @@ The game's **current** mode decides, for every match. Switching a game's mode re
 
 A match stored **without** round detail (imported, or saved before `Match.rounds`) reopens with a **synthetic detail** that gives back exactly its stored score under the current mode, then behaves like any match whose detail agrees with its score (see [Data Reconstruction](#data-reconstruction)): in rounds won, one round per round won, each won by a single player — Alice 3, Bob 2 reopens as 5 rounds, 3 won by Alice and 2 by Bob. Saving it unchanged keeps 3/2; adding a round Alice wins saves 4/2.
 
-A match whose detail is **inconsistent** (the stored score is neither the sum nor the rounds won) reopens with a single row holding its final scores: the scores entered are saved as-is as the final scores (in a rounds-won game the highest wins), the stored detail is kept as it is, and the screen shows an "Inconsistent data" warning above the views.
+A match whose detail is **inconsistent** (the stored score is neither the sum nor the rounds won) reopens with its **stored rounds** and an "Inconsistent data" warning above the views. The detail is authoritative: on save the score is recomputed from those rounds (as corrected or completed by the user, rounds added the usual way) with the current mode, and they are saved as the match's detail — the match becomes consistent and the warning goes away. Until it is re-edited, it keeps counting with its stored score.
 
 In the winner-selection dialog, each player's subtitle shows the figure the game is decided on — rounds won in a `ROUNDS_WON` game, points otherwise. The round entry sheet always shows points, since that is what it takes.
 
@@ -146,16 +146,16 @@ A match with **no** stored round detail (`rounds: []` — saved before this was 
 
 The synthetic detail is **saved** as the match's `Match.rounds` like any entered rounds (the editor does not tell it apart from rounds the user typed): from then on the match has a detail that agrees with its score, so a later mode change recomputes it from that detail — the 1/0 rounds of a rounds-won match then sum, in points, to the same counts under `HIGHEST_SCORE`; a points match's single round becomes one round won by its leader. Saving unchanged never alters the stored scores.
 
-Two cases keep a single round holding the stored `playerScores` (`finalScoresOnly`):
-- the stored rounds **disagree** with the scores (a round names a player who isn't in the match, or the scores are neither the sums nor the rounds won). Rebuilding from such data would silently change the match's scores, so the stored scores win, and the screen shows an "Inconsistent data" warning (`inconsistentRoundDetail`);
-- a rounds-won match without detail whose stored scores cannot be counts of rounds won (negative, or not whole numbers): no synthetic detail can give them back.
+There is no cap on that synthetic detail: a match without detail gets one synthetic round per round won in rounds won (one round in points), however many that is.
 
-There the row holds final scores, not a round: on save the entered scores become the match's `playerScores`, and `Match.rounds` is left as it was (the inconsistent detail, or empty) — never replaced by that single row.
+When the stored rounds **disagree** with the scores (a round names a player who isn't in the match, or the scores are neither the sums nor the rounds won), the editor still shows the **stored rounds** (a score of a player outside the match is left out) and an "Inconsistent data" warning (`inconsistentRoundDetail`). The detail is authoritative: on save, `playerScores` is recomputed from the rounds in the editor (corrected, completed or extended the usual way) with the current mode, and those rounds are saved as `Match.rounds`. The match is then consistent and no longer flagged. Until it is re-edited, it counts with its stored scores.
+
+A rounds-won match without detail whose stored scores cannot be counts of rounds won (negative, or not whole numbers) has no synthetic detail that gives them back: it reopens with a single round holding the stored scores, flagged "Inconsistent data" as well, and is then saved like any other shown detail (that round is stored and scored with the current mode).
 
 ### Workflow
 
 1. User clicks match card in History
-2. `ScoreDetailScreen` loads match + rebuilds its stored rounds (a synthetic detail without stored rounds, 1 round with totals for inconsistent detail, see above)
+2. `ScoreDetailScreen` loads match + rebuilds its stored rounds (a synthetic detail without stored rounds, the stored rounds with a warning for inconsistent detail, see above)
 3. Title changes to "Edit match"
 4. User edits rounds/scores (the History tab lists the match's own rounds)
 5. Clicks "Finish match" (button text unchanged, intent same)
@@ -296,13 +296,15 @@ Then the match is saved with the same 3 rounds (no round detail is lost)
 ### Editing a match whose rounds disagree with its totals
 
 ```
-Given a match whose stored rounds don't sum to its recorded totals
+Given a points match stored as Alice=100, Bob=12 with a single stored round Alice=10, Bob=5
 When I open it for editing from History
-Then the editor shows a single round holding the recorded totals
-   And the totals displayed match the ones stored
+Then the History tab shows that stored round, Alice=10, Bob=5
    And an "Inconsistent data" warning is shown
 When I click "Finish match" without changing anything
-Then the match keeps its recorded totals and its stored rounds
+Then the match is saved as Alice=10, Bob=5, with that round as its detail
+   And it is no longer flagged as inconsistent
+When I reopen it, enter a round Alice=3, Bob=7 and click "Finish match"
+Then the match is saved as Alice=13, Bob=12, with both rounds as its detail
 ```
 
 ### Editing a rounds-won match stored without round detail

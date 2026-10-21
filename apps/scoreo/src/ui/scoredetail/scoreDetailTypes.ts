@@ -42,14 +42,10 @@ export interface ScoreDetailState {
   // Edit mode
   editingMatchId: string | undefined
   /**
-   * Re-editing a match whose round detail cannot be replayed: it disagrees with
-   * the stored scores (or, without detail, the stored scores cannot be counts of
-   * rounds won). The grid then holds the final scores, saved as typed (highest
-   * wins in a rounds-won game), and the stored detail is kept as it is. A match
-   * simply stored without detail is not one: it gets a synthetic detail instead.
+   * The match being re-edited has round detail that disagrees with its stored
+   * scores (or, without detail, stored scores that cannot be counts of rounds
+   * won). The grid still shows that detail; saving recomputes the scores from it.
    */
-  finalScoresOnly: boolean
-  /** The match being re-edited has round detail that disagrees with its stored scores. */
   inconsistentRoundDetail: boolean
   // Cancel confirm
   showCancelConfirm: boolean

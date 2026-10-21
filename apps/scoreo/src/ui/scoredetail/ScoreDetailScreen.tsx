@@ -27,7 +27,6 @@ import {
   nextRoundNumber,
   saveDraft,
   scoreDetailReducer,
-  scoringGameType,
   submitCancelMatch,
   submitConfirmCancel,
   submitConfirmManualWinners,
@@ -81,20 +80,19 @@ export function ScoreDetailScreen({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.cancelled])
 
-  const scoring = scoringGameType(state)
   // The round entry sheet shows points, since points are what it takes.
   const totals = computeTotals(state.players, state.rounds)
   // What the game is decided on: rounds won in a rounds-won game, points otherwise.
-  const scores = computeScores(scoring, state.players, state.rounds)
+  const scores = computeScores(state.gameType, state.players, state.rounds)
   const scoreLabel = (playerId: string) => {
     const value = scores.get(playerId) ?? 0
-    return usesRoundsWon(scoring)
+    return usesRoundsWon(state.gameType)
       ? t('scoreDetail.roundsWonSuffix', { count: value })
       : t('scoreDetail.pointsSuffix', { points: value })
   }
   const tiedPlayers = state.players.filter((p) => state.tiedPlayerIds.includes(p.id))
-  const standings = computeStandings(scoring, state.players, state.rounds)
-  const leadHint = leadHintLabel(scoring, countRoundsPlayed(state.rounds))
+  const standings = computeStandings(state.gameType, state.players, state.rounds)
+  const leadHint = leadHintLabel(state.gameType, countRoundsPlayed(state.rounds))
 
   return (
     <Stack gap={3}>

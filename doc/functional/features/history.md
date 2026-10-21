@@ -49,7 +49,7 @@ Screen: `apps/scoreo/src/ui/history/HistoryScreen.tsx`.
 - Empty state is context-aware:
    - If no matches at all: "No matches yet."
    - If filtered to a game type with no matches: "No matches for {gameName}"
-- Matches with `hasInconsistentRounds = true` (round detail that agrees with the recorded scores neither as a points sum nor as rounds won — `roundDetailStatus`, see [games](games.md#scoring-mode)) show a warning **Inconsistent data** badge on their row; the match still counts with its recorded scores
+- Matches with `hasInconsistentRounds = true` (round detail that agrees with the recorded scores neither as a points sum nor as rounds won — `roundDetailStatus`, see [games](games.md#scoring-mode)) show a warning **Inconsistent data** badge on their row; the match still counts with its recorded scores until it is re-edited: the editor (✏️) shows its stored rounds, and saving recomputes the scores from them, which clears the badge (see [scoring](scoring.md#data-reconstruction))
 - Matches with `isTieBreakIndeterminate = true` show:
     - **⚠️ Missing info** badge next to the game type name
     - Explanatory message below scores: *"This match was recorded before tie-break rules were introduced. The result is based on equality."*
@@ -200,6 +200,9 @@ Then its History row shows an "Inconsistent data" badge
 When I click 👁 on its History row
 Then the modal warns that the data is inconsistent
    And the stored rounds and the recorded totals are still shown
+When I click ✏️ on its row and click "Finish match" without changing anything
+Then its scores are recomputed from the stored rounds
+   And its History row no longer shows the "Inconsistent data" badge
 ```
 
 ### View a match recorded without round detail

@@ -30,7 +30,7 @@ export type GameTypeAction =
   | { type: 'deselectGame' }
   | ({ type: 'addSucceeded' } & LoadedGameTypes)
   | { type: 'addFailed'; error: string }
-  | { type: 'editGameType'; gameType: GameType; hasMatches?: boolean }
+  | { type: 'editGameType'; gameType: GameType; hasMatches: boolean }
   | { type: 'cancelEdit' }
   | ({ type: 'updateSucceeded' } & LoadedGameTypes)
   | { type: 'updateFailed'; error: string }
@@ -105,7 +105,7 @@ export function gameTypeReducer(state: GameTypeState, action: GameTypeAction): G
         selectedTieBreakCondition: action.gameType.tieBreakCondition,
         selectedTieBreakLabel: action.gameType.tieBreakLabel ?? undefined,
         editingGameId: action.gameType.id,
-        editingGameHasMatches: action.hasMatches ?? false,
+        editingGameHasMatches: action.hasMatches,
         error: undefined,
       }
     case 'cancelEdit':

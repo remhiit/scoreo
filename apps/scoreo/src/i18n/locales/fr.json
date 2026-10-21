@@ -203,7 +203,7 @@
     "history": "Historique",
     "enterRound": "Saisir la manche {{number}}",
     "finishMatch": "Terminer la partie",
-    "inconsistentData": "Données incohérentes : le détail des manches de cette partie ne correspond pas à ses scores enregistrés. Il est conservé tel quel, et la grille affiche les scores finaux enregistrés.",
+    "inconsistentData": "Données incohérentes : le détail des manches de cette partie ne correspond pas à ses scores enregistrés. La grille affiche ce détail : à l'enregistrement, le score sera recalculé à partir des manches.",
     "selectWinners": "Sélectionner le(s) gagnant(s)",
     "pointsSuffix": "{{points}} pts",
     "roundsWonSuffix_one": "{{count}} manche gagnée",

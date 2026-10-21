@@ -1,5 +1,5 @@
 import type { ScoringModuleManifest } from '@scoreboards/module-api'
-import { newGameType, type GameType } from '../domain/model/gameType'
+import { effectiveScoringMode, newGameType, type GameType } from '../domain/model/gameType'
 import type { GameTypeRepository } from '../domain/port/gameTypeRepository'
 import { newId } from './idGenerator'
 
@@ -73,7 +73,11 @@ export class BindModuleUseCase {
     const target = resolveBindingTarget(manifest, all)
     if (target?.kind === 'bound') return this.reactivate(target.gameType)
     if (target?.kind === 'byName') {
-      const stamped: GameType = { ...target.gameType, moduleId: manifest.moduleId, active: true }
+      const bound: GameType = { ...target.gameType, moduleId: manifest.moduleId, active: true }
+      // A module-bound game always scores in points: store that effective mode,
+      // so the serialized game says what it does. Its matches are not recomputed
+      // here (#590).
+      const stamped: GameType = { ...bound, scoringMode: effectiveScoringMode(bound) }
       this.repository.save(stamped)
       return stamped
     }
