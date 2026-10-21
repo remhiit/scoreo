@@ -1,5 +1,6 @@
 import { NotFoundError, ValidationError } from '../domain/model/errors'
 import { usesRoundsWon, type GameType } from '../domain/model/gameType'
+import { rescoreMatch } from '../domain/model/match'
 import type { GameTypeRepository } from '../domain/port/gameTypeRepository'
 import type { MatchDraftRepository } from '../domain/port/matchDraftRepository'
 import type { MatchRepository } from '../domain/port/matchRepository'
@@ -10,8 +11,9 @@ export interface MergeGameTypesPreview {
   /**
    * At least one duplicate doesn't score like the game type being kept. Not a
    * blocker — the kept game type's rules simply become the ones applied to the
-   * moved matches — but the winners of those matches can change, so the UI
-   * warns about it.
+   * moved matches (their scores are recomputed from consistent round detail
+   * when the scoring differs) — but the winners of those matches can change, so
+   * the UI warns about it.
    */
   rulesDiffer: boolean
 }
@@ -27,9 +29,11 @@ function sameScoringRules(a: GameType, b: GameType): boolean {
 
 /**
  * Folds one or more duplicate game types into the one to keep: every match moves
- * to the kept game type, then each duplicate is hard-deleted. Archiving isn't
- * enough — it only hides a duplicate, leaving its matches under a separate game
- * and splitting History's filter, per-game trophies and the game record apart.
+ * to the kept game type (its scores recomputed from consistent round detail when
+ * the duplicate scored rounds differently), then each duplicate is hard-deleted.
+ * Archiving isn't enough — it only hides a duplicate, leaving its matches under a
+ * separate game and splitting History's filter, per-game trophies and the game
+ * record apart.
  */
 export class MergeGameTypesUseCase {
   constructor(
@@ -69,7 +73,16 @@ export class MergeGameTypesUseCase {
       return gameType
     })
 
-    const moved = this.matchesOf(duplicates).map((match) => ({ ...match, gameTypeId: keptId }))
+    // A game's rules apply to its whole history: a moved match whose duplicate
+    // turned rounds into a final score differently (scoring mode, or who wins a
+    // round in rounds won) is recomputed from its round detail, as a scoring
+    // mode change would (`UpdateGameTypeUseCase`).
+    const duplicateById = new Map(merged.map((gt) => [gt.id, gt]))
+    const moved = this.matchesOf(duplicates).map((match) => {
+      const source = duplicateById.get(match.gameTypeId)
+      const rescored = source ? rescoreMatch(match, source, kept) : match
+      return { ...rescored, gameTypeId: keptId }
+    })
     // One saveAll rather than one save per match: a single change notification,
     // hence a single debounced auto-sync push.
     if (moved.length > 0) this.matchRepository.saveAll(moved)

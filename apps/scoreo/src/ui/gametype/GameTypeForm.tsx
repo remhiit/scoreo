@@ -1,6 +1,10 @@
 import { Button, Select, Stack, Text, TextInput } from '@scoreboards/design-system'
 import { useTranslation } from 'react-i18next'
-import { scoringModeChangeWarning, type GameTypeAction } from './gameTypeReducer'
+import {
+  scoringModeChangeWarning,
+  showsScoringModeChoice,
+  type GameTypeAction,
+} from './gameTypeReducer'
 import type { GameTypeState } from './gameTypeTypes'
 import {
   ScoringModeSchema,
@@ -37,26 +41,25 @@ export function GameTypeFields({ state, dispatch }: GameTypeFieldsProps) {
         }
       />
 
-      {state.selectedWinCondition !== 'MANUAL' && (
-        <Stack gap={1}>
-          <Select
-            label={t('gametype.scoringMode')}
-            value={state.selectedScoringMode}
-            options={ScoringModeSchema.options.map((mode) => ({
-              value: mode,
-              label: t(`gametype.scoringModes.${mode}`, { defaultValue: scoringModeLabel(mode) }),
-            }))}
-            onChange={(mode) =>
-              dispatch({
-                type: 'selectScoringMode',
-                scoringMode: mode as GameTypeState['selectedScoringMode'],
-              })
-            }
-          />
-          {scoringModeChangeWarning(state) && (
-            <Text variant="warning">{t('gametype.scoringModeChangeWarning')}</Text>
-          )}
-        </Stack>
+      {showsScoringModeChoice(state) && (
+        <Select
+          label={t('gametype.scoringMode')}
+          value={state.selectedScoringMode}
+          options={ScoringModeSchema.options.map((mode) => ({
+            value: mode,
+            label: t(`gametype.scoringModes.${mode}`, { defaultValue: scoringModeLabel(mode) }),
+          }))}
+          onChange={(mode) =>
+            dispatch({
+              type: 'selectScoringMode',
+              scoringMode: mode as GameTypeState['selectedScoringMode'],
+            })
+          }
+        />
+      )}
+
+      {scoringModeChangeWarning(state) && (
+        <Text variant="warning">{t('gametype.scoringModeChangeWarning')}</Text>
       )}
 
       <Select

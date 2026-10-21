@@ -4,7 +4,7 @@ import {
   usesRoundsWon,
   type GameType,
 } from '../../domain/model/gameType'
-import { roundDetailStatus, type Match, type RoundDetailStatus } from '../../domain/model/match'
+import { roundDetailStatus, syntheticRounds, type Match } from '../../domain/model/match'
 import type { Player } from '../../domain/model/player'
 import type { PlayerScore } from '../../domain/model/playerScore'
 import type { MatchDraftRepository } from '../../domain/port/matchDraftRepository'
@@ -94,9 +94,9 @@ export function computeScores(
 
 /**
  * The rules the editor scores with. Normally the game type itself; while
- * re-editing a match without replayable round detail (`finalScoresOnly`) the grid
- * holds final scores, so they are taken as points — and in a rounds-won game,
- * where a final score is a count of rounds won, the highest wins.
+ * re-editing a match whose round detail cannot be replayed (`finalScoresOnly`)
+ * the grid holds final scores, so they are taken as points — and in a rounds-won
+ * game, where a final score is a count of rounds won, the highest wins.
  */
 export function scoringGameType(state: ScoreDetailState): GameType {
   if (!state.finalScoresOnly || !usesRoundsWon(state.gameType)) return state.gameType
@@ -406,10 +406,10 @@ function performSave(
       const original = deps.mode.matchRepository.findById(deps.mode.matchId)
       if (!original) return { type: 'saveFailed', error: 'Could not find original match to update' }
       const date = combineDateWithTimeOfDay(state.matchDate, original.date)
-      // Final scores typed over a match without replayable detail are not rounds:
-      // saving the grid as detail would invent a one-round match that a later
-      // change of scoring mode would recompute (as 1/0 in rounds won). The stored
-      // detail, if any, stays as it is.
+      // Final scores typed over a match whose detail disagrees with its scores are
+      // not rounds: the stored detail stays as it is. A match stored without detail
+      // was given a synthetic one on opening (`buildInitialState`), saved here like
+      // any entered rounds.
       const updated: Match = {
         ...original,
         date,
@@ -561,24 +561,39 @@ export function saveDraft(
   })
 }
 
+function toGrid(rounds: PlayerScore[][]): Record<string, string>[] {
+  return rounds.map((round) =>
+    Object.fromEntries(round.map((ps) => [ps.playerId, String(ps.score)])),
+  )
+}
+
 /**
- * Rebuilds the editor's round grid from the match's stored per-round detail when
- * it agrees with the stored scores (as a points sum or as rounds won, whatever
- * the game's current mode), so re-saving recomputes the match with the current
- * mode. Otherwise — no detail, or detail that disagrees — the grid is a single
- * row of the stored final scores, and the stored detail is left untouched.
+ * The editor's round grid for a re-edited match, and whether it only holds final
+ * scores (`finalScoresOnly`):
+ * - detail that agrees with the stored scores (as a points sum or as rounds won,
+ *   whatever the game's current mode) is replayed as is, so re-saving recomputes
+ *   the match with the current mode;
+ * - no detail at all (`rounds: []`): a synthetic detail giving back exactly the
+ *   stored scores under the current mode (`syntheticRounds`) is replayed the same
+ *   way — re-saving unchanged keeps the scores, and adding a round works as usual;
+ * - detail that disagrees with the stored scores (or stored scores no rounds-won
+ *   detail can produce): the grid is a single row of the stored final scores, and
+ *   the stored detail is left untouched on save.
  */
-function reconstructRounds(match: Match, detail: RoundDetailStatus): Record<string, string>[] {
-  if (detail === 'consistent') {
-    return match.rounds.map((round) =>
-      Object.fromEntries(round.map((ps) => [ps.playerId, String(ps.score)])),
-    )
+function reconstructRounds(
+  match: Match,
+  gameType: GameType,
+): { rounds: Record<string, string>[]; finalScoresOnly: boolean } {
+  const detail = roundDetailStatus(match, gameType.winCondition)
+  if (detail === 'consistent') return { rounds: toGrid(match.rounds), finalScoresOnly: false }
+  if (detail === 'none') {
+    const synthetic = syntheticRounds(gameType, match.playerScores)
+    if (synthetic) {
+      // Nobody won a round: an empty row to enter the first one in.
+      return { rounds: synthetic.length > 0 ? toGrid(synthetic) : [{}], finalScoresOnly: false }
+    }
   }
-  const round: Record<string, string> = {}
-  for (const ps of match.playerScores) {
-    round[ps.playerId] = String(ps.score)
-  }
-  return [round]
+  return { rounds: toGrid([match.playerScores]), finalScoresOnly: true }
 }
 
 function freshState(
@@ -639,16 +654,17 @@ export function buildInitialState(
     if (!editGameType) return base
     const matchPlayerIds = new Set(match.playerScores.map((ps) => ps.playerId))
     const editPlayers = mode.playerRepository.getAll(true).filter((p) => matchPlayerIds.has(p.id))
-    const detail = roundDetailStatus(match, editGameType.winCondition)
+    const { rounds, finalScoresOnly } = reconstructRounds(match, editGameType)
     return {
       ...base,
       gameType: editGameType,
       players: editPlayers,
-      rounds: reconstructRounds(match, detail),
+      rounds,
       matchDate: toDateOnly(match.date),
       editingMatchId: mode.matchId,
-      finalScoresOnly: detail !== 'consistent',
-      inconsistentRoundDetail: detail === 'inconsistent',
+      finalScoresOnly,
+      inconsistentRoundDetail:
+        roundDetailStatus(match, editGameType.winCondition) === 'inconsistent',
     }
   }
 

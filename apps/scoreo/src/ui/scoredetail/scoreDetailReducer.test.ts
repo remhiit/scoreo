@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import type { GameType } from '../../domain/model/gameType'
-import type { Match } from '../../domain/model/match'
+import { roundDetailStatus, type Match } from '../../domain/model/match'
 import type { Player } from '../../domain/model/player'
 import { CreateMatchUseCase } from '../../application/createMatchUseCase'
 import { UpdateMatchUseCase } from '../../application/updateMatchUseCase'
@@ -12,7 +12,6 @@ import {
   buildInitialState,
   computeScores,
   computeStandings,
-  scoringGameType,
   computeTotals,
   countRoundsPlayed,
   leadHintLabel,
@@ -1063,7 +1062,7 @@ describe('scoreDetailReducer', () => {
     expect(updated?.playerScores.find((s) => s.playerId === 'bob')?.score).toBe(10)
   })
 
-  it('terminate saves edited final scores without inventing round detail in edit mode', () => {
+  it('terminate saves edited scores of a match stored without detail as a single round in edit mode', () => {
     const gt = gameType('gt1', 'TestGame')
     const gameTypeRepo = new InMemoryGameTypeRepository()
     gameTypeRepo.save(gt)
@@ -1095,7 +1094,7 @@ describe('scoreDetailReducer', () => {
     }
     const harness = new Harness(gt, [alice, bob], matchRepo, gameTypeRepo, mode)
 
-    expect(harness.state.finalScoresOnly).toBe(true)
+    expect(harness.state.finalScoresOnly).toBe(false)
     harness.updateScore(0, 'alice', '15')
     harness.updateScore(0, 'bob', '10')
     harness.terminate()
@@ -1105,9 +1104,14 @@ describe('scoreDetailReducer', () => {
       { playerId: 'alice', score: 15 },
       { playerId: 'bob', score: 10 },
     ])
-    // A single row of final scores is not a round: a later switch to rounds won
-    // would otherwise recompute this match as 1/0.
-    expect(updated?.rounds).toEqual([])
+    // In points, the synthetic detail of a match stored without any is a single
+    // round holding the final scores, saved like any entered round.
+    expect(updated?.rounds).toEqual([
+      [
+        { playerId: 'alice', score: 15 },
+        { playerId: 'bob', score: 10 },
+      ],
+    ])
   })
 
   it('edit mode preserves the match id', () => {
@@ -1891,8 +1895,11 @@ describe('rounds-won scoring mode', () => {
     expect(action.type).toBe('openManualSelectionDialog')
   })
 
-  it('keeps stored scores when re-saving a rounds-won match that has no round detail', () => {
-    const gt = roundsWonGame('HIGHEST_SCORE')
+  function legacyRoundsWonMatch(
+    winCondition: GameType['winCondition'] = 'HIGHEST_SCORE',
+    stored: [number, number] = [3, 2],
+  ) {
+    const gt = roundsWonGame(winCondition)
     const gameTypeRepo = new InMemoryGameTypeRepository()
     gameTypeRepo.save(gt)
     const matchRepo = new InMemoryMatchRepository()
@@ -1904,49 +1911,8 @@ describe('rounds-won scoring mode', () => {
       gameTypeId: gt.id,
       date: 1000,
       playerScores: [
-        { playerId: 'alice', score: 7 },
-        { playerId: 'bob', score: 3 },
-      ],
-      manualWinners: [],
-      secondaryPlayerScores: [],
-      rounds: [],
-      moduleData: null,
-    })
-    const mode: ScoreDetailMode = {
-      type: 'Edit',
-      matchId: 'm1',
-      updateMatchUseCase: new UpdateMatchUseCase(matchRepo),
-      matchRepository: matchRepo,
-      playerRepository: playerRepo,
-      gameTypeRepository: gameTypeRepo,
-    }
-    const { deps } = setup(gt, [], mode)
-    const reopened = buildInitialState(gt, [alice, bob], mode, deps.currentDate)
-    const next = scoreDetailReducer(reopened, submitTerminate(reopened, deps))
-    expect(next.saved).toBe(true)
-    const match = matchRepo.findById('m1')!
-    expect(match.playerScores).toEqual([
-      { playerId: 'alice', score: 7 },
-      { playerId: 'bob', score: 3 },
-    ])
-    expect(match.rounds).toEqual([])
-  })
-
-  function legacyRoundsWonMatch() {
-    const gt = roundsWonGame('HIGHEST_SCORE')
-    const gameTypeRepo = new InMemoryGameTypeRepository()
-    gameTypeRepo.save(gt)
-    const matchRepo = new InMemoryMatchRepository()
-    const playerRepo = new InMemoryPlayerRepository()
-    playerRepo.save(alice)
-    playerRepo.save(bob)
-    matchRepo.save({
-      id: 'm1',
-      gameTypeId: gt.id,
-      date: 1000,
-      playerScores: [
-        { playerId: 'alice', score: 7 },
-        { playerId: 'bob', score: 3 },
+        { playerId: 'alice', score: stored[0] },
+        { playerId: 'bob', score: stored[1] },
       ],
       manualWinners: [],
       secondaryPlayerScores: [],
@@ -1966,39 +1932,91 @@ describe('rounds-won scoring mode', () => {
     return { gt, deps, matchRepo, reopened }
   }
 
-  it('saves the entered scores as final scores when re-editing a match without round detail', () => {
-    const { deps, matchRepo, reopened } = legacyRoundsWonMatch()
-    expect(reopened.finalScoresOnly).toBe(true)
-    let state = scoreDetailReducer(reopened, {
-      type: 'updateScore',
-      roundIndex: 0,
+  function addRound(state: ScoreDetailState, aliceScore: number, bobScore: number) {
+    let next = scoreDetailReducer(state, { type: 'openRoundSheet' })
+    next = scoreDetailReducer(next, {
+      type: 'updateRoundSheetInput',
       playerId: 'alice',
-      value: '2',
+      value: aliceScore,
     })
-    state = scoreDetailReducer(state, {
-      type: 'updateScore',
-      roundIndex: 0,
+    next = scoreDetailReducer(next, {
+      type: 'updateRoundSheetInput',
       playerId: 'bob',
-      value: '9',
+      value: bobScore,
     })
-    const next = scoreDetailReducer(state, submitTerminate(state, deps))
-    expect(next.saved).toBe(true)
-    const match = matchRepo.findById('m1')!
-    expect(match.playerScores).toEqual([
-      { playerId: 'alice', score: 2 },
-      { playerId: 'bob', score: 9 },
+    return scoreDetailReducer(next, { type: 'submitRoundSheet' })
+  }
+
+  const storedScores = (matchRepo: InMemoryMatchRepository) =>
+    matchRepo.findById('m1')!.playerScores.map((ps) => ps.score)
+
+  it('replays a match without round detail as one won round per round won (HIGHEST_SCORE)', () => {
+    const { gt, reopened } = legacyRoundsWonMatch('HIGHEST_SCORE', [3, 2])
+    expect(reopened.finalScoresOnly).toBe(false)
+    expect(reopened.inconsistentRoundDetail).toBe(false)
+    expect(reopened.rounds).toEqual([
+      { alice: '1', bob: '0' },
+      { alice: '1', bob: '0' },
+      { alice: '1', bob: '0' },
+      { alice: '0', bob: '1' },
+      { alice: '0', bob: '1' },
     ])
-    expect(match.rounds).toEqual([])
+    const scores = computeScores(gt, reopened.players, reopened.rounds)
+    expect([scores.get('alice'), scores.get('bob')]).toEqual([3, 2])
   })
 
-  it('ranks the entered final scores highest first while re-editing a match without round detail', () => {
-    const { reopened } = legacyRoundsWonMatch()
-    const gt = scoringGameType(reopened)
-    const standings = computeStandings(gt, reopened.players, reopened.rounds)
-    expect(standings.map((r) => [r.playerId, r.total])).toEqual([
-      ['alice', 7],
-      ['bob', 3],
+  it('replays a match without round detail with the winner at 0 and the others at 1 (LOWEST_SCORE)', () => {
+    const { gt, reopened } = legacyRoundsWonMatch('LOWEST_SCORE', [3, 2])
+    expect(reopened.finalScoresOnly).toBe(false)
+    expect(reopened.rounds).toEqual([
+      { alice: '0', bob: '1' },
+      { alice: '0', bob: '1' },
+      { alice: '0', bob: '1' },
+      { alice: '1', bob: '0' },
+      { alice: '1', bob: '0' },
     ])
+    const scores = computeScores(gt, reopened.players, reopened.rounds)
+    expect([scores.get('alice'), scores.get('bob')]).toEqual([3, 2])
+  })
+
+  it('keeps the stored scores when a match without round detail is re-saved unchanged', () => {
+    for (const winCondition of ['HIGHEST_SCORE', 'LOWEST_SCORE'] as const) {
+      const { deps, matchRepo, reopened } = legacyRoundsWonMatch(winCondition, [3, 2])
+      const next = scoreDetailReducer(reopened, submitTerminate(reopened, deps))
+      expect(next.saved).toBe(true)
+      expect(storedScores(matchRepo)).toEqual([3, 2])
+      // The synthetic detail is saved like any entered rounds, and agrees with the scores.
+      const match = matchRepo.findById('m1')!
+      expect(match.rounds).toHaveLength(5)
+      expect(roundDetailStatus(match, winCondition)).toBe('consistent')
+    }
+  })
+
+  it('counts a round added to a match without round detail on top of its stored rounds won', () => {
+    const highest = legacyRoundsWonMatch('HIGHEST_SCORE', [3, 2])
+    const afterHighest = addRound(highest.reopened, 10, 2)
+    scoreDetailReducer(afterHighest, submitTerminate(afterHighest, highest.deps))
+    expect(storedScores(highest.matchRepo)).toEqual([4, 2])
+
+    const lowest = legacyRoundsWonMatch('LOWEST_SCORE', [3, 2])
+    const afterLowest = addRound(lowest.reopened, 10, 2)
+    scoreDetailReducer(afterLowest, submitTerminate(afterLowest, lowest.deps))
+    expect(storedScores(lowest.matchRepo)).toEqual([3, 3])
+  })
+
+  it('opens an empty round for a match without round detail where nobody won a round', () => {
+    const { reopened } = legacyRoundsWonMatch('HIGHEST_SCORE', [0, 0])
+    expect(reopened.finalScoresOnly).toBe(false)
+    expect(reopened.rounds).toEqual([{}])
+  })
+
+  it('falls back to final scores when the stored scores cannot be counts of rounds won', () => {
+    const { deps, matchRepo, reopened } = legacyRoundsWonMatch('HIGHEST_SCORE', [-1, 2])
+    expect(reopened.finalScoresOnly).toBe(true)
+    expect(reopened.rounds).toEqual([{ alice: '-1', bob: '2' }])
+    scoreDetailReducer(reopened, submitTerminate(reopened, deps))
+    expect(storedScores(matchRepo)).toEqual([-1, 2])
+    expect(matchRepo.findById('m1')!.rounds).toEqual([])
   })
 
   it('gives +1 to every winner of the last entered round and no delta to the others', () => {

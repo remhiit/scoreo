@@ -15,6 +15,7 @@ import {
   gameTypeHasMatches,
   resolveGameTypeForEdit,
   scoringModeChangeWarning,
+  showsScoringModeChoice,
   submitAddGameType,
   submitArchiveGameType,
   submitMergeGameTypes,
@@ -517,14 +518,50 @@ describe('scoring mode change warning', () => {
     active: true,
   }
 
-  function editing(hasMatches: boolean): GameTypeState {
+  function editing(hasMatches: boolean, gameType: GameType = tarot): GameTypeState {
     const loaded = gameTypeReducer(initialGameTypeState, {
       type: 'loaded',
-      gameTypes: [tarot],
-      allGameTypes: [tarot],
+      gameTypes: [gameType],
+      allGameTypes: [gameType],
     })
-    return gameTypeReducer(loaded, { type: 'editGameType', gameType: tarot, hasMatches })
+    return gameTypeReducer(loaded, { type: 'editGameType', gameType, hasMatches })
   }
+
+  it('warns when a rounds-won game with matches becomes MANUAL', () => {
+    const state = gameTypeReducer(editing(true, { ...tarot, scoringMode: 'ROUNDS_WON' }), {
+      type: 'selectWinCondition',
+      winCondition: 'MANUAL',
+    })
+    expect(scoringModeChangeWarning(state)).toBe(true)
+  })
+
+  it('warns when only the win condition of a rounds-won game with matches changes', () => {
+    const state = gameTypeReducer(editing(true, { ...tarot, scoringMode: 'ROUNDS_WON' }), {
+      type: 'selectWinCondition',
+      winCondition: 'LOWEST_SCORE',
+    })
+    expect(scoringModeChangeWarning(state)).toBe(true)
+  })
+
+  it('does not warn when only the win condition of a points game changes', () => {
+    const state = gameTypeReducer(editing(true), {
+      type: 'selectWinCondition',
+      winCondition: 'LOWEST_SCORE',
+    })
+    expect(scoringModeChangeWarning(state)).toBe(false)
+  })
+
+  it('hides the scoring mode choice for a module-bound game, which never warns', () => {
+    const bound = editing(true, { ...tarot, moduleId: 'skyjo' })
+    expect(showsScoringModeChoice(bound)).toBe(false)
+    const state = gameTypeReducer(bound, { type: 'selectScoringMode', scoringMode: 'ROUNDS_WON' })
+    expect(scoringModeChangeWarning(state)).toBe(false)
+  })
+
+  it('shows the scoring mode choice in the add form and for an unbound game', () => {
+    expect(showsScoringModeChoice(initialGameTypeState)).toBe(true)
+    expect(showsScoringModeChoice(editing(false))).toBe(true)
+  })
 
   it('warns when the mode of a game type that has matches changes', () => {
     const state = gameTypeReducer(editing(true), {

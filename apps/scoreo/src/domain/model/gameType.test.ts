@@ -4,6 +4,7 @@ import {
   computeWinners,
   effectiveScoringMode,
   newGameType,
+  roundScoringChanged,
   type GameType,
 } from './gameType'
 import { GameTypeSchema } from './gameType.schema'
@@ -121,6 +122,14 @@ describe('computeRoundsWon', () => {
     ])
   })
 
+  it('counts a participant missing from a round as having scored 0 in it', () => {
+    const partial = [scores(['alice', 3], ['bob', 5])]
+    const won = computeRoundsWon(partial, 'LOWEST_SCORE', ['alice', 'bob', 'carol'])
+    expect(won.get('carol')).toBe(1)
+    expect(won.get('alice')).toBe(0)
+    expect(computeRoundsWon([], 'HIGHEST_SCORE', ['alice']).get('alice')).toBe(0)
+  })
+
   it('MANUAL wins nothing and no rounds yields no entries', () => {
     expect(computeRoundsWon(rounds, 'MANUAL').get('alice')).toBe(0)
     expect(computeRoundsWon([], 'HIGHEST_SCORE').size).toBe(0)
@@ -152,16 +161,24 @@ describe('newGameType', () => {
       tieBreakRule: 'SECONDARY_SCORE',
       tieBreakCondition: 'LOWEST_SCORE',
       tieBreakLabel: 'Bonus',
-      moduleId: 'mod',
+      active: false,
     })
     expect(gt).toMatchObject({
       scoringMode: 'ROUNDS_WON',
       tieBreakRule: 'SECONDARY_SCORE',
       tieBreakCondition: 'LOWEST_SCORE',
       tieBreakLabel: 'Bonus',
-      moduleId: 'mod',
-      active: true,
+      moduleId: null,
+      active: false,
     })
+  })
+
+  it('forces points for a module-bound game', () => {
+    const gt = newGameType('1', 'Game', 'HIGHEST_SCORE', {
+      scoringMode: 'ROUNDS_WON',
+      moduleId: 'mod',
+    })
+    expect(gt).toMatchObject({ scoringMode: 'POINTS', moduleId: 'mod' })
   })
 
   it('forces points under a MANUAL win condition', () => {
@@ -172,12 +189,50 @@ describe('newGameType', () => {
 })
 
 describe('effectiveScoringMode', () => {
+  const inputs = (
+    winCondition: GameType['winCondition'],
+    scoringMode: GameType['scoringMode'],
+    moduleId: string | null = null,
+  ) => ({ winCondition, scoringMode, moduleId })
+
   it('keeps the chosen mode when the app decides who wins', () => {
-    expect(effectiveScoringMode('HIGHEST_SCORE', 'ROUNDS_WON')).toBe('ROUNDS_WON')
-    expect(effectiveScoringMode('LOWEST_SCORE', 'POINTS')).toBe('POINTS')
+    expect(effectiveScoringMode(inputs('HIGHEST_SCORE', 'ROUNDS_WON'))).toBe('ROUNDS_WON')
+    expect(effectiveScoringMode(inputs('LOWEST_SCORE', 'POINTS'))).toBe('POINTS')
   })
 
   it('forces POINTS for a MANUAL game', () => {
-    expect(effectiveScoringMode('MANUAL', 'ROUNDS_WON')).toBe('POINTS')
+    expect(effectiveScoringMode(inputs('MANUAL', 'ROUNDS_WON'))).toBe('POINTS')
+  })
+
+  it('forces POINTS for a module-bound game, the module computing its own scores', () => {
+    expect(effectiveScoringMode(inputs('HIGHEST_SCORE', 'ROUNDS_WON', 'skyjo'))).toBe('POINTS')
+    expect(effectiveScoringMode(inputs('LOWEST_SCORE', 'ROUNDS_WON', 'skyjo'))).toBe('POINTS')
+  })
+})
+
+describe('roundScoringChanged', () => {
+  it('is true when the effective scoring mode changes', () => {
+    expect(roundScoringChanged(gameType(), gameType({ scoringMode: 'ROUNDS_WON' }))).toBe(true)
+    expect(
+      roundScoringChanged(
+        gameType({ scoringMode: 'ROUNDS_WON' }),
+        gameType({ scoringMode: 'ROUNDS_WON', winCondition: 'MANUAL' }),
+      ),
+    ).toBe(true)
+  })
+
+  it('is true when who wins a round changes in rounds won', () => {
+    const before = gameType({ scoringMode: 'ROUNDS_WON' })
+    expect(roundScoringChanged(before, { ...before, winCondition: 'LOWEST_SCORE' })).toBe(true)
+  })
+
+  it('is false when the final score of the rounds stays the same', () => {
+    expect(roundScoringChanged(gameType(), gameType({ winCondition: 'LOWEST_SCORE' }))).toBe(false)
+    expect(
+      roundScoringChanged(
+        gameType({ moduleId: 'skyjo' }),
+        gameType({ moduleId: 'skyjo', scoringMode: 'ROUNDS_WON' }),
+      ),
+    ).toBe(false)
   })
 })

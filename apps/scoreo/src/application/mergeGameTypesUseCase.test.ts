@@ -95,7 +95,9 @@ describe('MergeGameTypesUseCase', () => {
   it('refuses to merge a game type into itself', () => {
     const { useCase } = buildUseCase()
 
-    expect(() => useCase.invoke('keep', ['keep'])).toThrow('gameTypeId: A game type cannot be merged into itself')
+    expect(() => useCase.invoke('keep', ['keep'])).toThrow(
+      'gameTypeId: A game type cannot be merged into itself',
+    )
   })
 
   it('throws NotFoundError for an unknown duplicate or target', () => {
@@ -219,7 +221,9 @@ describe('MergeGameTypesUseCase', () => {
   it('refuses a merge with no duplicate selected', () => {
     const { useCase } = buildUseCase()
 
-    expect(() => useCase.invoke('keep', [])).toThrow('gameTypeId: Select at least one duplicate to merge')
+    expect(() => useCase.invoke('keep', [])).toThrow(
+      'gameTypeId: Select at least one duplicate to merge',
+    )
   })
 
   it('writes nothing when one duplicate of the group is unknown', () => {
@@ -236,5 +240,76 @@ describe('MergeGameTypesUseCase', () => {
 
     expect(useCase.preview('keep', ['dup']).rulesDiffer).toBe(false)
     expect(useCase.preview('keep', ['dup', 'dup2']).rulesDiffer).toBe(true)
+  })
+
+  describe('recomputing moved matches when the scoring differs', () => {
+    // Raw rounds 10/2, 1/8, 9/3: 20/13 in points, 2/1 rounds won (highest wins a round).
+    const rawRounds = [
+      [
+        { playerId: 'a', score: 10 },
+        { playerId: 'b', score: 2 },
+      ],
+      [
+        { playerId: 'a', score: 1 },
+        { playerId: 'b', score: 8 },
+      ],
+      [
+        { playerId: 'a', score: 9 },
+        { playerId: 'b', score: 3 },
+      ],
+    ]
+    const scored = (a: number, b: number, rounds = rawRounds) =>
+      buildMatch({
+        playerScores: [
+          { playerId: 'a', score: a },
+          { playerId: 'b', score: b },
+        ],
+        rounds,
+      })
+    const movedScores = (matchRepo: InMemoryMatchRepository) =>
+      matchRepo.findById('m1')?.playerScores.map((ps) => ps.score)
+
+    it('rewrites rounds won as points when merging a ROUNDS_WON duplicate into a POINTS game', () => {
+      const { matchRepo, useCase } = buildUseCase({ scoringMode: 'ROUNDS_WON' })
+      matchRepo.save(scored(2, 1))
+      useCase.invoke('keep', ['dup'])
+      expect(movedScores(matchRepo)).toEqual([20, 13])
+      expect(matchRepo.findById('m1')?.gameTypeId).toBe('keep')
+      expect(matchRepo.findById('m1')?.rounds).toEqual(rawRounds)
+    })
+
+    it('rewrites points as rounds won when merging into a ROUNDS_WON game', () => {
+      const { matchRepo, useCase } = buildUseCase({}, { scoringMode: 'ROUNDS_WON' })
+      matchRepo.save(scored(20, 13))
+      useCase.invoke('keep', ['dup'])
+      expect(movedScores(matchRepo)).toEqual([2, 1])
+    })
+
+    it('recounts the rounds won when the win condition differs in ROUNDS_WON', () => {
+      const { matchRepo, useCase } = buildUseCase(
+        { scoringMode: 'ROUNDS_WON' },
+        { scoringMode: 'ROUNDS_WON', winCondition: 'LOWEST_SCORE' },
+      )
+      matchRepo.save(scored(2, 1))
+      useCase.invoke('keep', ['dup'])
+      expect(movedScores(matchRepo)).toEqual([1, 2])
+    })
+
+    it('keeps the stored scores without detail, with inconsistent detail, or with the same scoring', () => {
+      const { matchRepo, useCase } = buildUseCase(
+        { scoringMode: 'ROUNDS_WON' },
+        {},
+        { winCondition: 'LOWEST_SCORE' },
+      )
+      matchRepo.save({ ...scored(2, 1, []), id: 'm1' })
+      matchRepo.save({ ...scored(5, 4), id: 'm2' })
+      matchRepo.save({ ...scored(20, 13), id: 'm3', gameTypeId: 'dup2' })
+      useCase.invoke('keep', ['dup', 'dup2'])
+      const scoresOf = (id: string) => matchRepo.findById(id)?.playerScores.map((ps) => ps.score)
+      expect(scoresOf('m1')).toEqual([2, 1])
+      expect(scoresOf('m2')).toEqual([5, 4])
+      // POINTS → POINTS: a points sum does not depend on the win condition.
+      expect(scoresOf('m3')).toEqual([20, 13])
+    })
   })
 })

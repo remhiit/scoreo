@@ -6,7 +6,7 @@ import type { GetMatchesUseCase } from '../../application/getMatchesUseCase'
 import type { MergeGameTypesUseCase } from '../../application/mergeGameTypesUseCase'
 import type { UpdateGameTypeUseCase } from '../../application/updateGameTypeUseCase'
 import type { ScoringMode, TieBreakRule, WinCondition } from '../../domain/model/enums'
-import type { GameType } from '../../domain/model/gameType'
+import { roundScoringChanged, type GameType } from '../../domain/model/gameType'
 import type { GameTypeState } from './gameTypeTypes'
 
 /**
@@ -196,16 +196,36 @@ export function gameTypeHasMatches(getMatches: GetMatchesUseCase, gameTypeId: st
   return getMatches.invoke().some((match) => match.gameTypeId === gameTypeId)
 }
 
+function editedGameType(state: GameTypeState): GameType | undefined {
+  return state.gameTypes.find((gt) => gt.id === state.editingGameId)
+}
+
 /**
- * The edit form is about to change the scoring mode of a game type that already
- * has matches: saving recomputes the scores of those with round detail
- * (`UpdateGameTypeUseCase`), and their winners, stats, Elo and trophies follow,
- * since a game's rules apply to its whole history.
+ * The form offers the scoring mode choice: not under a `MANUAL` win condition
+ * (rounds won need the app to decide who wins each round), nor for a game bound
+ * to a scoring module, which computes its own scores in points.
+ */
+export function showsScoringModeChoice(state: GameTypeState): boolean {
+  if (state.selectedWinCondition === 'MANUAL') return false
+  return (editedGameType(state)?.moduleId ?? null) === null
+}
+
+/**
+ * Saving the edit form will recompute the scores of the game's matches that have
+ * round detail (`UpdateGameTypeUseCase`, same rule: `roundScoringChanged`), and
+ * their winners, stats, Elo and trophies follow, since a game's rules apply to
+ * its whole history. Covers a scoring mode change, a rounds-won game going
+ * `MANUAL`, and a win condition change on a rounds-won game.
  */
 export function scoringModeChangeWarning(state: GameTypeState): boolean {
-  if (!state.editingGameHasMatches || state.selectedWinCondition === 'MANUAL') return false
-  const editing = state.gameTypes.find((gt) => gt.id === state.editingGameId)
-  return editing !== undefined && editing.scoringMode !== state.selectedScoringMode
+  if (!state.editingGameHasMatches) return false
+  const editing = editedGameType(state)
+  if (!editing) return false
+  return roundScoringChanged(editing, {
+    winCondition: state.selectedWinCondition,
+    scoringMode: state.selectedScoringMode,
+    moduleId: editing.moduleId,
+  })
 }
 
 export function resolveGameTypeForEdit(

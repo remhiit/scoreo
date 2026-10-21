@@ -136,11 +136,12 @@ describe('UpdateGameTypeUseCase', () => {
       expect(scoresOf(matches, 'm1')).toEqual([20, 13])
     })
 
-    it('recomputes the matches of a module-bound game too', () => {
-      const { matches, created, update } = setup('POINTS', 'tori-valley')
+    it('never recomputes the matches of a module-bound game into rounds won', () => {
+      const { gameTypes, matches, created, update } = setup('POINTS', 'tori-valley')
       matches.save(match('m1', created.id, 20, 13))
       update.invoke({ ...created, scoringMode: 'ROUNDS_WON' })
-      expect(scoresOf(matches, 'm1')).toEqual([2, 1])
+      expect(scoresOf(matches, 'm1')).toEqual([20, 13])
+      expect(gameTypes.findById(created.id)?.scoringMode).toBe('POINTS')
     })
 
     it('recounts the rounds won when the win condition flips in ROUNDS_WON', () => {

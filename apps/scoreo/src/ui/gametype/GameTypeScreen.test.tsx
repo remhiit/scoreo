@@ -163,6 +163,15 @@ describe('GameTypeScreen', () => {
     expect(repo.findById('gt1')?.moduleId).toBe('tori-valley')
   })
 
+  it('hides the scoring choice when editing a game bound to a scoring module', () => {
+    const repo = new InMemoryGameTypeRepository()
+    repo.save({ ...buildGameType('gt1', 'Skyjo'), moduleId: 'skyjo' })
+    renderScreen(repo)
+
+    fireEvent.click(screen.getByLabelText('Edit'))
+    expect(within(screen.getByRole('dialog')).queryByLabelText('Scoring')).not.toBeInTheDocument()
+  })
+
   it('cancelling edit restores the add form without changes', () => {
     renderScreen()
     fireEvent.change(nameInput(), { target: { value: 'Belote' } })

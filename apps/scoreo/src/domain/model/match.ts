@@ -1,5 +1,11 @@
 import type { WinCondition } from './enums'
-import { computeRoundsWon, computeWinners, usesRoundsWon, type GameType } from './gameType'
+import {
+  computeRoundsWon,
+  computeWinners,
+  roundScoringChanged,
+  usesRoundsWon,
+  type GameType,
+} from './gameType'
 import type { PlayerScore } from './playerScore'
 
 export interface Match {
@@ -70,7 +76,11 @@ export function getWinners(match: Match, gameType: GameType): string[] {
     case 'MANUAL_SELECTION':
       return match.manualWinners
     case 'SECONDARY_SCORE': {
-      const result = computeWinners(gameType, match.secondaryPlayerScores, gameType.tieBreakCondition)
+      const result = computeWinners(
+        gameType,
+        match.secondaryPlayerScores,
+        gameType.tieBreakCondition,
+      )
       return result.length === 0 ? primaryWinners : result
     }
   }
@@ -102,7 +112,7 @@ export function roundDetailStatus(match: Match, winCondition: WinCondition): Rou
     return 'consistent'
   }
   if (winCondition === 'MANUAL') return 'inconsistent'
-  const won = computeRoundsWon(match.rounds, winCondition)
+  const won = computeRoundsWon(match.rounds, winCondition, [...participants])
   return match.playerScores.every((ps) => (won.get(ps.playerId) ?? 0) === ps.score)
     ? 'consistent'
     : 'inconsistent'
@@ -117,7 +127,9 @@ export function scoresFromRounds(
   rounds: PlayerScore[][],
   playerIds: readonly string[],
 ): PlayerScore[] {
-  const won = usesRoundsWon(gameType) ? computeRoundsWon(rounds, gameType.winCondition) : null
+  const won = usesRoundsWon(gameType)
+    ? computeRoundsWon(rounds, gameType.winCondition, playerIds)
+    : null
   return playerIds.map((playerId) => ({
     playerId,
     score: won
@@ -127,4 +139,58 @@ export function scoresFromRounds(
           0,
         ),
   }))
+}
+
+/**
+ * `match` as it scores once its game's rules go from `previous` to `updated`
+ * (a scoring mode change, a game type merge): when that changes how rounds turn
+ * into a final score ({@link roundScoringChanged}) and the match's round detail
+ * agrees with its stored scores, `playerScores` is recomputed from that detail.
+ * Otherwise — nothing to recompute, no detail, or detail that disagrees with the
+ * stored scores — the match is returned as is (same reference). Tie-break data
+ * (`manualWinners`, `secondaryPlayerScores`) is never touched.
+ */
+export function rescoreMatch(match: Match, previous: GameType, updated: GameType): Match {
+  if (!roundScoringChanged(previous, updated)) return match
+  if (roundDetailStatus(match, previous.winCondition) !== 'consistent') return match
+  const playerScores = scoresFromRounds(
+    updated,
+    match.rounds,
+    match.playerScores.map((ps) => ps.playerId),
+  )
+  const unchanged = playerScores.every((ps, i) => ps.score === match.playerScores[i].score)
+  return unchanged ? match : { ...match, playerScores }
+}
+
+/**
+ * Round detail made up for a match stored without any (`rounds: []`: imported
+ * without detail, or saved before `Match.rounds` existed), such that
+ * `scoresFromRounds(gameType, …)` gives back exactly `playerScores`:
+ * - in points, a single round holding the final scores;
+ * - in rounds won, one round per round won, each won by exactly one player
+ *   (Alice 3, Bob 2 → 5 rounds). Under `HIGHEST_SCORE` the round's winner scores
+ *   1 and the others 0; under `LOWEST_SCORE` the winner scores 0 and the others 1.
+ *
+ * `undefined` when the stored scores cannot be counts of rounds won (negative or
+ * not whole numbers): no such detail exists.
+ */
+export function syntheticRounds(
+  gameType: GameType,
+  playerScores: readonly PlayerScore[],
+): PlayerScore[][] | undefined {
+  if (!usesRoundsWon(gameType)) return [playerScores.map((ps) => ({ ...ps }))]
+  if (playerScores.some((ps) => !Number.isInteger(ps.score) || ps.score < 0)) return undefined
+  const [win, lose] = gameType.winCondition === 'LOWEST_SCORE' ? [0, 1] : [1, 0]
+  const rounds: PlayerScore[][] = []
+  for (const winner of playerScores) {
+    for (let i = 0; i < winner.score; i++) {
+      rounds.push(
+        playerScores.map((ps) => ({
+          playerId: ps.playerId,
+          score: ps.playerId === winner.playerId ? win : lose,
+        })),
+      )
+    }
+  }
+  return rounds
 }
