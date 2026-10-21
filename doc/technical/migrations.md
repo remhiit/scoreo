@@ -285,7 +285,7 @@ to a pre-Catppuccin build would still find a valid (if stale) value.
 
 **Hors scope de #249 :** ce changement ne faisait que stocker la donnée — aucune exploitation n'était ajoutée à ce stade.
 
-**Restitution (issue #303) :** la donnée est désormais relue. `buildInitialState()` reconstruit l'éditeur à partir de `match.rounds` en mode édition (au lieu d'une manche unique portant les totaux), et l'écran Historique expose une modale en lecture seule listant les manches (action 👁). Deux replis conservent le comportement d'origine — une manche unique portant les `playerScores` — quand `rounds` est vide (match antérieur à #249 ou importé) ou quand le détail stocké contredit les totaux (`roundsAgreeWithTotals()` : joueur inconnu du match, ou somme par joueur ≠ `playerScores`). Conséquence : rouvrir puis réenregistrer une partie ne détruit plus son détail de manches, alors que le comportement antérieur le remplaçait par une manche unique. Statistiques et trophées au niveau manche restent hors scope.
+**Restitution (issue #303) :** la donnée est désormais relue. `buildInitialState()` reconstruit l'éditeur à partir de `match.rounds` en mode édition (au lieu d'une manche unique portant les totaux), et l'écran Historique expose une modale en lecture seule listant les manches (action 👁). Deux replis conservent le comportement d'origine — une manche unique portant les `playerScores` — quand `rounds` est vide (match antérieur à #249 ou importé) ou quand le détail stocké contredit les totaux (à l'époque `roundsAgreeWithTotals()` : joueur inconnu du match, ou somme par joueur ≠ `playerScores` ; depuis #568, `roundDetailStatus()` accepte aussi le compte de manches gagnées, et le détail incohérent est affiché tel quel en réédition puis fait foi à l'enregistrement — voir la section `GameType.scoringMode`). Conséquence : rouvrir puis réenregistrer une partie ne détruit plus son détail de manches, alors que le comportement antérieur le remplaçait par une manche unique. Statistiques et trophées au niveau manche restent hors scope.
 
 ## `GameType.moduleId` — liaison d'un jeu à un module de comptage (issue #326)
 
@@ -380,6 +380,46 @@ Le cas 1 rend l'opération idempotente. Les cas 1 et 2 réactivent un jeu archiv
 **Nouvelle clé localStorage :** `scoreo_module_draft_<moduleId>`, une par module. Le `MatchDraftRepository` de Scoreo n'a qu'un emplacement anonyme (`scoreo_match_draft`) et ne pouvait pas servir : deux modules s'y écraseraient. Un brouillon illisible est jeté, jamais réparé — ce n'est pas une source de vérité.
 
 ---
+
+---
+
+## `GameType.scoringMode` — mode de calcul « manches gagnées » (issue #568)
+
+Nouveau champ optionnel sérialisé sur `GameType` : `scoringMode: 'POINTS' | 'ROUNDS_WON'`. `POINTS` (défaut) additionne les manches ; `ROUNDS_WON` enregistre comme score final le nombre de manches gagnées par chaque joueur (le gagnant d'une manche suit `winCondition`, tous les ex æquo la gagnent). C'est un champ à part et non une 4e valeur de `WinCondition` : une version plus ancienne de l'app relisant un jeu synchronisé via Drive n'aurait plus su parser `winCondition`, et `localStorageGameTypeRepository` renvoie `[]` sur échec de parsing.
+
+**Ancien format :** pas de `scoringMode`.
+
+**Nouveau format :**
+
+```json
+{
+  "id": "gt1",
+  "name": "Tarot",
+  "winCondition": "LOWEST_SCORE",
+  "scoringMode": "ROUNDS_WON",
+  "tieBreakRule": "NONE",
+  "tieBreakCondition": "HIGHEST_SCORE",
+  "tieBreakLabel": null,
+  "active": true,
+  "moduleId": null
+}
+```
+
+**Compatibilité ascendante :** `scoringMode` est déclaré `.default('POINTS')` — un `GameType` sans le champ (données antérieures, Drive, import) se relit en mode points, sans perte. Couvert par `serialization.contract.test.ts` (cas legacy sans `scoringMode`, cas `ROUNDS_WON`).
+
+**Cohabitation avec une version antérieure de l'app (sync Drive) :** une version qui ne connaît pas le champ l'ignore (zod le strip) et relit le jeu en mode points, sans plantage. Deux effets à connaître pendant la période de cohabitation : (1) les `playerScores` d'une partie `ROUNDS_WON` sont des comptes de manches gagnées, que l'ancienne version relit comme des points — pour un jeu `LOWEST_SCORE` + `ROUNDS_WON`, elle désigne donc comme gagnant le joueur qui a gagné le **moins** de manches (gagnants, Elo et trophées inversés sur cet appareil) ; (2) si cette version réenregistre les types de jeu, `scoringMode` disparaît et la sync propage la perte : le jeu repasse en `POINTS` partout, sans que ses parties soient recalculées (ce recalcul n'a lieu que via `UpdateGameTypeUseCase`). Ces parties sont alors signalées « données incohérentes » si leur score stocké ne correspond plus à leur détail sous aucun des deux modes, et sinon relues telles quelles ; rééditer le jeu pour remettre `ROUNDS_WON` les recalcule.
+
+**Changer le mode recalcule et réécrit les parties :** `Match.playerScores` stocke le score selon le mode du jeu (somme des points, ou manches gagnées), et `Match.rounds` garde toujours les points bruts. Quand `UpdateGameTypeUseCase` change la façon dont les manches deviennent un score (mode effectif, ou `winCondition` d'un jeu en `ROUNDS_WON`), il recalcule depuis `Match.rounds`, avec les nouvelles règles, le `playerScores` de chaque partie du jeu dont le détail concorde avec le score stocké, convertit les parties sans détail quand le jeu passe des points aux manches gagnées (ci-dessous), puis réécrit les parties (`MatchRepository.saveAll`) **avant** d'enregistrer le type de jeu : si l'écriture des parties échoue, le jeu garde ses anciennes règles. L'enchaînement n'est pas atomique : si c'est l'enregistrement du type de jeu qui échoue ensuite (quota), les parties sont déjà recalculées avec les nouvelles règles alors que le jeu garde les anciennes, sans avertissement (le détail peut rester jugé cohérent). `manualWinners` et `secondaryPlayerScores` ne sont pas touchés. Aucune migration au chargement : le recalcul n'a lieu qu'au moment du changement. La règle (`roundScoringChanged`) et le recalcul d'une partie (`rescoreMatch`, `domain/model/match.ts`) sont partagés avec la fusion de types de jeu.
+
+**Fusion de types de jeu :** `MergeGameTypesUseCase` applique la même règle aux parties déplacées : quand un doublon transforme les manches en score autrement que le jeu conservé (mode effectif, ou `winCondition` en `ROUNDS_WON`), chaque partie déplacée est recalculée par `rescoreMatch` avec les règles du jeu conservé (détail cohérent recalculé, partie en points sans détail convertie en manche unique quand le jeu conservé est en `ROUNDS_WON`) ; les parties au détail incohérent gardent leur score stocké. Les parties d'un doublon lié à un module, ou portant `moduleData`, ne sont jamais recalculées : elles gardent les scores rendus par le module (#590). **Écart connu (#590)** : déplacées dans un jeu conservé en `ROUNDS_WON`, leurs points y sont relus comme des manches gagnées (vainqueurs inversés en `LOWEST_SCORE`). La fusion n'est pas refusée : `preview` lève alors `rulesDiffer`, et la modale de fusion avertit que les vainqueurs peuvent changer.
+
+**Jeu lié à un module :** un `GameType` dont `moduleId !== null` a toujours le mode effectif `POINTS` (`effectiveScoringMode`) : le module calcule lui-même ses scores, en points pour tous les modules actuels. `UpdateGameTypeUseCase` y enregistre `POINTS`, le formulaire masque le choix du mode, et ses parties ne sont jamais recalculées en manches gagnées. La déclaration du mode par le module est suivie dans #590.
+
+- **Partie sans détail** (`rounds: []`, partie antérieure à `Match.rounds` ou importée sans détail) : quand son jeu passe du mode effectif `POINTS` à `ROUNDS_WON` (changement de mode, fusion dans un jeu en `ROUNDS_WON`, import dans un jeu existant en `ROUNDS_WON`), elle est **convertie** : elle devient une manche unique portant ses `playerScores` stockés, enregistrée dans `Match.rounds`, puis elle est recalculée comme une partie au détail cohérent — le ou les meilleurs joueurs selon la `winCondition` gagnent cette manche (Skyjo, `LOWEST_SCORE`, Alice 40 / Bob 90 → manche 40/90, score 1/0, Alice reste vainqueur). Une partie d'un jeu lié à un module n'est jamais convertie (mode effectif `POINTS`). Dans tout autre changement, elle garde son score stocké, relu avec le mode courant. La rééditer crée un détail synthétique (`syntheticRounds`) qui redonne exactement ce score avec le mode courant — en points une manche unique portant les scores finaux, en manches gagnées une manche par manche gagnée, chacune gagnée par un seul joueur — puis elle se comporte comme une partie au détail cohérent : un enregistrement sans modification garde le score, et ce détail synthétique est enregistré dans `rounds`.
+- **Détail cohérent** : le score stocké est soit la somme des manches, soit le compte de manches gagnées sous la `winCondition` courante (`roundDetailStatus`, `domain/model/match.ts`), quel que soit le mode courant. La rééditer restitue les manches brutes, et l'enregistrement recalcule le score avec le mode courant (ex. manches 10/2, 1/8, 9/3 stockées 2/1, jeu repassé en `POINTS` : 20/13).
+- **Détail incohérent** (ni l'un ni l'autre : ancienne version synchronisée via Drive, données modifiées hors de l'app) : le détail est **conservé** et jamais remplacé par une ligne unique, la partie compte avec son score stocké (le changement de mode ne la recalcule pas), et un avertissement « données incohérentes » est affiché dans l'historique et dans l'éditeur. La rééditer affiche ses manches stockées avec l'avertissement ; l'enregistrement recalcule le score à partir de ces manches (éventuellement corrigées ou complétées) avec le mode courant et les enregistre : le détail fait foi, la partie redevient cohérente. Une partie `ROUNDS_WON` sans détail dont les scores ne peuvent pas être des comptes de manches gagnées (négatifs, non entiers) est traitée de même : une manche unique portant ces scores, signalée incohérente.
+
+**Import :** le format d'import (`schemas/import/`) ne porte pas le champ et donne toujours des points ; les jeux créés par l'import sont en `POINTS`. Un import dans un jeu existant en `ROUNDS_WON` calcule le score de chaque partie en manches gagnées à partir de son détail (`details`), et ne garde dans `manualWinners` que les joueurs classés 1ers dans le fichier qui sont aussi gagnants en manches gagnées ; une partie importée sans détail y devient une manche unique portant les scores du fichier, puis est comptée en manches gagnées (même conversion qu'au changement de mode, `rescoreMatch`).
 
 ---
 

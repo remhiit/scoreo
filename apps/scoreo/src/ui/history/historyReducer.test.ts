@@ -34,6 +34,7 @@ function gameType(
     id,
     name,
     winCondition,
+    scoringMode: 'POINTS' as const,
     tieBreakRule,
     tieBreakCondition: 'HIGHEST_SCORE',
     tieBreakLabel: null,
@@ -457,6 +458,7 @@ function buildDisplay(overrides: Partial<MatchDisplay> = {}): MatchDisplay {
     winners: ['p1'],
     dateFormatted: '2026-01-01 10:00',
     isTieBreakIndeterminate: false,
+    hasInconsistentRounds: false,
     ...overrides,
   }
 }

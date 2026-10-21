@@ -21,6 +21,7 @@ const manifest: ScoringModuleManifest = {
 function gameType(overrides: Partial<GameType> & Pick<GameType, 'id' | 'name'>): GameType {
   return {
     winCondition: 'HIGHEST_SCORE',
+    scoringMode: 'POINTS' as const,
     tieBreakRule: 'NONE',
     tieBreakCondition: 'HIGHEST_SCORE',
     tieBreakLabel: null,
@@ -93,6 +94,16 @@ describe('BindModuleUseCase', () => {
       expect(bound.name).toBe('test game')
       expect(bound.winCondition).toBe('HIGHEST_SCORE')
       expect(bound.tieBreakRule).toBe('MANUAL_SELECTION')
+    })
+
+    it('stores the effective scoring mode, POINTS, on a rounds-won game it binds to', () => {
+      const repo = new InMemoryGameTypeRepository()
+      repo.save(gameType({ id: 'g1', name: 'Test Game', scoringMode: 'ROUNDS_WON' }))
+
+      const bound = new BindModuleUseCase(repo).invoke(manifest)
+
+      expect(bound.scoringMode).toBe('POINTS')
+      expect(repo.findById('g1')?.scoringMode).toBe('POINTS')
     })
 
     it('un-archives the game it binds to', () => {

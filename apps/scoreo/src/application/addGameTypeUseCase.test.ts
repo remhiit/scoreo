@@ -116,4 +116,21 @@ describe('AddGameTypeUseCase', () => {
     useCase.invoke('Belote', 'HIGHEST_SCORE')
     expect(repo.getAll()[0].tieBreakLabel).toBeNull()
   })
+
+  it('defaults scoringMode to POINTS', () => {
+    const repo = new InMemoryGameTypeRepository()
+    expect(new AddGameTypeUseCase(repo).invoke('Belote', 'HIGHEST_SCORE').scoringMode).toBe('POINTS')
+  })
+
+  it('stores the ROUNDS_WON scoring mode', () => {
+    const repo = new InMemoryGameTypeRepository()
+    new AddGameTypeUseCase(repo).invoke('Tarot', 'LOWEST_SCORE', { scoringMode: 'ROUNDS_WON' })
+    expect(repo.getAll()[0].scoringMode).toBe('ROUNDS_WON')
+  })
+
+  it('forces POINTS when the win condition is MANUAL', () => {
+    const repo = new InMemoryGameTypeRepository()
+    new AddGameTypeUseCase(repo).invoke('Custom', 'MANUAL', { scoringMode: 'ROUNDS_WON' })
+    expect(repo.getAll()[0].scoringMode).toBe('POINTS')
+  })
 })

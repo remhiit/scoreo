@@ -10,6 +10,8 @@ export interface MatchDisplay {
   winners: string[]
   dateFormatted: string
   isTieBreakIndeterminate: boolean
+  /** The round detail agrees with the stored scores neither as a points sum nor as rounds won. */
+  hasInconsistentRounds: boolean
 }
 
 export interface HistoryState {

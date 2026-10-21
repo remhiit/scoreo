@@ -17,7 +17,9 @@ import { useTranslation } from 'react-i18next'
 import { ManualSelectionDialog } from './ManualSelectionDialog'
 import { RoundEntrySheet } from './RoundEntrySheet'
 import { RoundHistoryList } from './RoundHistoryList'
+import { usesRoundsWon } from '../../domain/model/gameType'
 import {
+  computeScores,
   computeStandings,
   computeTotals,
   countRoundsPlayed,
@@ -38,7 +40,8 @@ import {
 import { SecondaryScoreDialog } from './SecondaryScoreDialog'
 import type { ScoreDetailState } from './scoreDetailTypes'
 
-function formatDelta(delta: number): string {
+function formatDelta(delta: number | null): string | undefined {
+  if (delta === null) return undefined
   return delta > 0 ? `+${delta}` : `${delta}`
 }
 
@@ -77,7 +80,16 @@ export function ScoreDetailScreen({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.cancelled])
 
+  // The round entry sheet shows points, since points are what it takes.
   const totals = computeTotals(state.players, state.rounds)
+  // What the game is decided on: rounds won in a rounds-won game, points otherwise.
+  const scores = computeScores(state.gameType, state.players, state.rounds)
+  const scoreLabel = (playerId: string) => {
+    const value = scores.get(playerId) ?? 0
+    return usesRoundsWon(state.gameType)
+      ? t('scoreDetail.roundsWonSuffix', { count: value })
+      : t('scoreDetail.pointsSuffix', { points: value })
+  }
   const tiedPlayers = state.players.filter((p) => state.tiedPlayerIds.includes(p.id))
   const standings = computeStandings(state.gameType, state.players, state.rounds)
   const leadHint = leadHintLabel(state.gameType, countRoundsPlayed(state.rounds))
@@ -101,6 +113,12 @@ export function ScoreDetailScreen({
         value={state.viewMode}
         onChange={(mode) => dispatch({ type: 'setViewMode', mode })}
       />
+
+      {state.inconsistentRoundDetail && (
+        <Text variant="warning" block>
+          {t('scoreDetail.inconsistentData')}
+        </Text>
+      )}
 
       {state.viewMode === 'standings' ? (
         <Stack gap={2}>
@@ -183,7 +201,7 @@ export function ScoreDetailScreen({
             <ListRow
               key={player.id}
               title={player.name}
-              subtitle={t('scoreDetail.pointsSuffix', { points: totals.get(player.id) ?? 0 })}
+              subtitle={scoreLabel(player.id)}
               selectable
               selected={state.modalWinners.has(player.id)}
               onSelect={() => dispatch({ type: 'toggleModalWinner', playerId: player.id })}

@@ -19,6 +19,7 @@ function gameType(
     id: 'gt1',
     name: 'TestGame',
     winCondition,
+    scoringMode: 'POINTS' as const,
     tieBreakRule,
     tieBreakCondition: 'HIGHEST_SCORE',
     tieBreakLabel: null,
@@ -410,5 +411,33 @@ describe('ScoreDetailScreen', () => {
     expect(screen.getByText('Terminer la partie')).toBeInTheDocument()
 
     await i18n.changeLanguage('en')
+  })
+
+  it('warns when the match being edited has round detail inconsistent with its scores', () => {
+    const gt = gameType()
+    const gameTypeRepo = new InMemoryGameTypeRepository()
+    gameTypeRepo.save(gt)
+    const matchRepo = new InMemoryMatchRepository()
+    const deps: ScoreDetailDeps = {
+      createMatch: new CreateMatchUseCase(matchRepo, gameTypeRepo),
+      mode: { type: 'Create' },
+      currentDate: () => 1767225600000,
+    }
+    const base = buildInitialState(gt, [alice, bob], deps.mode, deps.currentDate)
+    const { rerender } = render(
+      <ScoreDetailScreen initialState={base} {...deps} onSaved={vi.fn()} onCancel={vi.fn()} />,
+    )
+    expect(screen.queryByText(/^Inconsistent data/)).not.toBeInTheDocument()
+
+    rerender(<></>)
+    render(
+      <ScoreDetailScreen
+        initialState={{ ...base, inconsistentRoundDetail: true }}
+        {...deps}
+        onSaved={vi.fn()}
+        onCancel={vi.fn()}
+      />,
+    )
+    expect(screen.getByText(/^Inconsistent data/)).toBeInTheDocument()
   })
 })

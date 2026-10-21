@@ -3,7 +3,7 @@
 | # | Feature | Description | File |
 |---|---------|-------------|------|
 | 1 | **Players** | Add, list, soft-delete with optional anonymization, per-player stats (wins/losses) | [`features/players.md`](features/players.md) |
-| 2 | **Games** | Game types with configurable win conditions (highest score, lowest score, manual) | [`features/games.md`](features/games.md) |
+| 2 | **Games** | Game types with configurable win conditions (highest score, lowest score, manual) and scoring mode (total points or rounds won) | [`features/games.md`](features/games.md) |
 | 3 | **Scoring** | Multi-round score table, auto-calculated totals, winner determination | [`features/scoring.md`](features/scoring.md) |
 | 4 | **History** | Past matches list, player name resolution with deleted-player markers | [`features/history.md`](features/history.md) |
 | 5 | **Stats** | Leaderboard ELO, head-to-head, per-game-type filter | [`features/stats.md`](features/stats.md) |

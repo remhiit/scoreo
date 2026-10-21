@@ -22,6 +22,7 @@ function gameType(id: string, name: string): GameType {
     id,
     name,
     winCondition: 'HIGHEST_SCORE',
+    scoringMode: 'POINTS' as const,
     tieBreakRule: 'NONE',
     tieBreakCondition: 'HIGHEST_SCORE',
     tieBreakLabel: null,
@@ -289,5 +290,61 @@ describe('HistoryScreen', () => {
     expect(document.querySelector('[role="dialog"] .sc-round')).toHaveTextContent('Manche 1')
 
     await i18n.changeLanguage('en')
+  })
+
+  it('flags a match whose round detail disagrees with its scores, in the list and its detail', () => {
+    const playerRepo = new InMemoryPlayerRepository()
+    playerRepo.save(player('p1', 'Alice'))
+    playerRepo.save(player('p2', 'Bob'))
+    const gameTypeRepo = new InMemoryGameTypeRepository()
+    gameTypeRepo.save(gameType('gt1', 'Chess'))
+    const matchRepo = new InMemoryMatchRepository()
+    const detail = [
+      [
+        { playerId: 'p1', score: 6 },
+        { playerId: 'p2', score: 2 },
+      ],
+    ]
+    matchRepo.save(
+      match(
+        'bad',
+        2000,
+        'gt1',
+        [
+          { playerId: 'p1', score: 50 },
+          { playerId: 'p2', score: 40 },
+        ],
+        detail,
+      ),
+    )
+    matchRepo.save(
+      match(
+        'good',
+        1000,
+        'gt1',
+        [
+          { playerId: 'p1', score: 6 },
+          { playerId: 'p2', score: 2 },
+        ],
+        detail,
+      ),
+    )
+    render(
+      <HistoryScreen
+        getMatches={new GetMatchesUseCase(matchRepo)}
+        getPlayers={new GetPlayersUseCase(playerRepo)}
+        getGameTypes={new GetGameTypesUseCase(gameTypeRepo)}
+        deleteMatchUseCase={new DeleteMatchUseCase(matchRepo)}
+      />,
+    )
+
+    expect(screen.getAllByText('Inconsistent data')).toHaveLength(1)
+
+    fireEvent.click(screen.getAllByLabelText('View details')[0])
+    const dialog = within(screen.getByRole('dialog'))
+    expect(dialog.getByText(/^Inconsistent data: the round detail/)).toBeInTheDocument()
+    // The detail is still shown, and the match counts with its stored scores.
+    expect(dialog.getAllByRole('region')).toHaveLength(1)
+    expect(dialog.getByText(/Total:/, { selector: 'p' })).toHaveTextContent('Alice 50 · Bob 40')
   })
 })

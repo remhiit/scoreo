@@ -1,6 +1,7 @@
 import type { ScoringModuleManifest } from '@scoreboards/module-api'
 import { WinConditionSchema, type WinCondition } from '../domain/model/enums'
-import type { GameType } from '../domain/model/gameType'
+import { computeWinners, newGameType, usesRoundsWon, type GameType } from '../domain/model/gameType'
+import { rescoreMatch } from '../domain/model/match'
 import type { Player } from '../domain/model/player'
 import type { PlayerScore } from '../domain/model/playerScore'
 import type { GameTypeRepository } from '../domain/port/gameTypeRepository'
@@ -172,7 +173,11 @@ export class ImportMatchesUseCase {
           )
         }
 
-        const match = rankingToMatch({
+        // The file always carries points. A rounds-won game scores its matches
+        // in rounds won: the match is rescored from points into the game's mode
+        // (`rescoreMatch`), from the detail when the file has one, otherwise
+        // from a single round holding the file's scores.
+        const fromFile = rankingToMatch({
           id: game.id,
           date: game.date ?? this.currentDate(),
           gameTypeId: gameType.id,
@@ -183,6 +188,17 @@ export class ImportMatchesUseCase {
           })),
           rounds,
         })
+        const recomputed = usesRoundsWon(gameType)
+        const ranked = recomputed
+          ? rescoreMatch(fromFile, { ...gameType, scoringMode: 'POINTS' }, gameType)
+          : fromFile
+        // The file's ranks are set on points: once the score is recounted in
+        // rounds won, a rank-1 player only stays a recorded winner if the rounds
+        // won make them one (a tie-break among the tied players).
+        const winners = new Set(recomputed ? computeWinners(gameType, ranked.playerScores) : [])
+        const match = recomputed
+          ? { ...ranked, manualWinners: ranked.manualWinners.filter((id) => winners.has(id)) }
+          : ranked
         this.matchRepository.save(match)
         imported++
       }
@@ -226,7 +242,8 @@ export class ImportMatchesUseCase {
     if (typeof id !== 'string') throw new Error("Missing game 'id'")
     const date = parseIntLike(obj.date)
     const rankingRaw = asArray(obj.ranking, `'ranking' in game ${id}`)
-    if (rankingRaw.length < 2) throw new Error(`'ranking' must have at least 2 entries in game ${id}`)
+    if (rankingRaw.length < 2)
+      throw new Error(`'ranking' must have at least 2 entries in game ${id}`)
     const details = Array.isArray(obj.details) ? obj.details.map((r) => this.parseRound(r)) : null
     return {
       id,
@@ -280,20 +297,13 @@ export class ImportMatchesUseCase {
     if (winCondition) {
       const found = WIN_CONDITIONS.find((c) => c.toLowerCase() === winCondition.toLowerCase())
       if (!found) {
-        throw new Error(`Unknown winCondition '${winCondition}'. Valid values: ${WIN_CONDITIONS.join(', ')}`)
+        throw new Error(
+          `Unknown winCondition '${winCondition}'. Valid values: ${WIN_CONDITIONS.join(', ')}`,
+        )
       }
       wc = found
     }
-    const gameType: GameType = {
-      id: newId(),
-      name,
-      winCondition: wc,
-      tieBreakRule: 'NONE',
-      tieBreakCondition: 'HIGHEST_SCORE',
-      tieBreakLabel: null,
-      moduleId: null,
-      active: true,
-    }
+    const gameType = newGameType(newId(), name, wc)
     this.gameTypeRepository.save(gameType)
     return gameType
   }

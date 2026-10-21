@@ -14,6 +14,18 @@ export function winConditionLabel(condition: WinCondition): string {
   }
 }
 
+export const ScoringModeSchema = z.enum(['POINTS', 'ROUNDS_WON'])
+export type ScoringMode = z.infer<typeof ScoringModeSchema>
+
+export function scoringModeLabel(mode: ScoringMode): string {
+  switch (mode) {
+    case 'POINTS':
+      return 'Total points'
+    case 'ROUNDS_WON':
+      return 'Rounds won'
+  }
+}
+
 export const TieBreakRuleSchema = z.enum(['NONE', 'MANUAL_SELECTION', 'SECONDARY_SCORE'])
 export type TieBreakRule = z.infer<typeof TieBreakRuleSchema>
 

@@ -1,5 +1,10 @@
-import { computeWinners, type GameType } from '../../domain/model/gameType'
-import type { Match } from '../../domain/model/match'
+import {
+  computeRoundsWon,
+  computeWinners,
+  usesRoundsWon,
+  type GameType,
+} from '../../domain/model/gameType'
+import { roundDetailStatus, syntheticRounds, type Match } from '../../domain/model/match'
 import type { Player } from '../../domain/model/player'
 import type { PlayerScore } from '../../domain/model/playerScore'
 import type { MatchDraftRepository } from '../../domain/port/matchDraftRepository'
@@ -73,17 +78,31 @@ export function computeTotals(
   return totals
 }
 
+/**
+ * The per-player figure the game is decided on: the points sum, or for a
+ * rounds-won game the number of rounds each player won (blank rounds skipped).
+ */
+export function computeScores(
+  gameType: GameType,
+  players: Player[],
+  rounds: Record<string, string>[],
+): Map<string, number> {
+  if (!usesRoundsWon(gameType)) return computeTotals(players, rounds)
+  const won = computeRoundsWon(playedRounds(players, rounds), gameType.winCondition)
+  return new Map(players.map((p) => [p.id, won.get(p.id) ?? 0]))
+}
+
 function playerScoresFromTotals(state: ScoreDetailState): PlayerScore[] {
-  const totals = computeTotals(state.players, state.rounds)
+  const totals = computeScores(state.gameType, state.players, state.rounds)
   return state.players.map((p) => ({ playerId: p.id, score: totals.get(p.id) ?? 0 }))
 }
 
 /** Converts the played rounds (skipping the trailing not-yet-played one) into Match.rounds' PlayerScore[][] shape. */
-function roundsForSave(state: ScoreDetailState): PlayerScore[][] {
-  return state.rounds
+function playedRounds(players: Player[], rounds: Record<string, string>[]): PlayerScore[][] {
+  return rounds
     .filter((round) => Object.values(round).some((v) => v.trim() !== ''))
     .map((round) =>
-      state.players.map((p) => {
+      players.map((p) => {
         const raw = round[p.id]
         const parsed = raw !== undefined ? toIntOrNull(raw.trim()) : null
         return { playerId: p.id, score: parsed ?? 0 }
@@ -91,17 +110,34 @@ function roundsForSave(state: ScoreDetailState): PlayerScore[][] {
     )
 }
 
+function roundsForSave(state: ScoreDetailState): PlayerScore[][] {
+  return playedRounds(state.players, state.rounds)
+}
+
 export interface StandingRow {
   playerId: string
   playerName: string
   rank: number
   total: number
-  delta: number
+  /** What the last round added to `total`; `null` when it added nothing worth showing. */
+  delta: number | null
   isLead: boolean
 }
 
-function lastRoundDeltas(players: Player[], rounds: Record<string, string>[]): Map<string, number> {
-  const deltas = new Map<string, number>()
+function lastRoundDeltas(
+  gameType: GameType,
+  players: Player[],
+  rounds: Record<string, string>[],
+): Map<string, number | null> {
+  const deltas = new Map<string, number | null>()
+  if (usesRoundsWon(gameType)) {
+    // +1 for every winner of the last entered round (ties included), nothing otherwise.
+    const played = playedRounds(players, rounds)
+    const last = played.slice(-1)
+    const won = computeRoundsWon(last, gameType.winCondition)
+    for (const player of players) deltas.set(player.id, (won.get(player.id) ?? 0) > 0 ? 1 : null)
+    return deltas
+  }
   const lastRound = rounds[rounds.length - 1]
   for (const player of players) {
     const raw = lastRound?.[player.id]
@@ -111,15 +147,19 @@ function lastRoundDeltas(players: Player[], rounds: Record<string, string>[]): M
   return deltas
 }
 
-/** Ranks players by gameType.winCondition (LOWEST_SCORE ascending, otherwise descending); tied totals share a rank. */
+/**
+ * Ranks players by gameType.winCondition (LOWEST_SCORE ascending, otherwise
+ * descending); tied totals share a rank. A rounds-won game ranks by rounds won,
+ * most first, whatever the win condition.
+ */
 export function computeStandings(
   gameType: GameType,
   players: Player[],
   rounds: Record<string, string>[],
 ): StandingRow[] {
-  const totals = computeTotals(players, rounds)
-  const deltas = lastRoundDeltas(players, rounds)
-  const ascending = gameType.winCondition === 'LOWEST_SCORE'
+  const totals = computeScores(gameType, players, rounds)
+  const deltas = lastRoundDeltas(gameType, players, rounds)
+  const ascending = !usesRoundsWon(gameType) && gameType.winCondition === 'LOWEST_SCORE'
   const sorted = [...players].sort((a, b) => {
     const diff = (totals.get(a.id) ?? 0) - (totals.get(b.id) ?? 0)
     return ascending ? diff : -diff
@@ -137,7 +177,7 @@ export function computeStandings(
       playerName: player.name,
       rank,
       total,
-      delta: deltas.get(player.id) ?? 0,
+      delta: deltas.get(player.id) ?? null,
       isLead: rank === 1,
     })
   })
@@ -155,8 +195,11 @@ export function nextRoundNumber(rounds: Record<string, string>[]): number {
 }
 
 export function leadHintLabel(gameType: GameType, roundsPlayed: number): string {
-  const direction =
-    gameType.winCondition === 'LOWEST_SCORE' ? 'lowest score leads' : 'highest score leads'
+  const direction = usesRoundsWon(gameType)
+    ? 'most rounds won leads'
+    : gameType.winCondition === 'LOWEST_SCORE'
+      ? 'lowest score leads'
+      : 'highest score leads'
   if (roundsPlayed === 0) return `No rounds played yet · ${direction}`
   const roundWord = roundsPlayed === 1 ? 'round' : 'rounds'
   return `After ${roundsPlayed} ${roundWord} · ${direction}`
@@ -352,6 +395,10 @@ function performSave(
       const original = deps.mode.matchRepository.findById(deps.mode.matchId)
       if (!original) return { type: 'saveFailed', error: 'Could not find original match to update' }
       const date = combineDateWithTimeOfDay(state.matchDate, original.date)
+      // The rounds shown in the editor are authoritative: the stored detail (even
+      // when it disagreed with the stored scores), or the synthetic one a match
+      // stored without detail got on opening (`buildInitialState`), is saved like
+      // any entered rounds, and the scores are recomputed from it.
       const updated: Match = {
         ...original,
         date,
@@ -503,42 +550,46 @@ export function saveDraft(
   })
 }
 
-/**
- * Stored rounds are only trusted when every round entry names a participant of
- * the match and the per-player sums match the recorded totals. A mismatch means
- * the detail and the totals disagree (partial sync, match written by an older
- * build): rebuilding from it would silently change the match's scores.
- */
-function roundsAgreeWithTotals(match: Match): boolean {
-  const totals = new Map(match.playerScores.map((ps) => [ps.playerId, ps.score]))
-  const sums = new Map<string, number>()
-  for (const round of match.rounds) {
-    for (const ps of round) {
-      if (!totals.has(ps.playerId)) return false
-      sums.set(ps.playerId, (sums.get(ps.playerId) ?? 0) + ps.score)
-    }
-  }
-  return match.playerScores.every((ps) => (sums.get(ps.playerId) ?? 0) === ps.score)
+/** The editor grid of `rounds`, leaving out any score of a player outside `playerIds`. */
+function toGrid(rounds: PlayerScore[][], playerIds: ReadonlySet<string>): Record<string, string>[] {
+  return rounds.map((round) =>
+    Object.fromEntries(
+      round.filter((ps) => playerIds.has(ps.playerId)).map((ps) => [ps.playerId, String(ps.score)]),
+    ),
+  )
 }
 
 /**
- * Rebuilds the editor's round grid from the match's stored per-round detail, so
- * editing an existing match keeps its rounds instead of flattening them into a
- * single round of totals on the next save. Falls back to that single round when
- * no detail was stored (matches saved before `Match.rounds` existed, or
- * imported) or when the stored detail disagrees with the totals.
+ * The editor's round grid for a re-edited match, and whether its stored data was
+ * inconsistent (`inconsistentRoundDetail`). Whatever the grid shows is what the
+ * save stores in `Match.rounds` and recomputes the scores from with the current
+ * mode — the detail is authoritative:
+ * - stored detail is replayed as is, whether it agrees with the stored scores (as
+ *   a points sum or as rounds won, whatever the game's current mode) or not — in
+ *   the latter case the match is flagged inconsistent, and re-saving it makes it
+ *   consistent again;
+ * - no detail at all (`rounds: []`): a synthetic detail giving back exactly the
+ *   stored scores under the current mode (`syntheticRounds`) is replayed the same
+ *   way — re-saving unchanged keeps the scores;
+ * - no detail, and rounds-won scores no detail can produce (negative or not whole
+ *   numbers): a single round holding the stored scores, flagged inconsistent.
  */
-function reconstructRounds(match: Match): Record<string, string>[] {
-  if (match.rounds.length > 0 && roundsAgreeWithTotals(match)) {
-    return match.rounds.map((round) =>
-      Object.fromEntries(round.map((ps) => [ps.playerId, String(ps.score)])),
-    )
+function reconstructRounds(
+  match: Match,
+  gameType: GameType,
+): { rounds: Record<string, string>[]; inconsistent: boolean } {
+  const playerIds = new Set(match.playerScores.map((ps) => ps.playerId))
+  const detail = roundDetailStatus(match, gameType.winCondition)
+  if (detail !== 'none') {
+    return { rounds: toGrid(match.rounds, playerIds), inconsistent: detail === 'inconsistent' }
   }
-  const round: Record<string, string> = {}
-  for (const ps of match.playerScores) {
-    round[ps.playerId] = String(ps.score)
+  const synthetic = syntheticRounds(gameType, match.playerScores)
+  if (!synthetic) return { rounds: toGrid([match.playerScores], playerIds), inconsistent: true }
+  // Nobody won a round: an empty row to enter the first one in.
+  return {
+    rounds: synthetic.length > 0 ? toGrid(synthetic, playerIds) : [{}],
+    inconsistent: false,
   }
-  return [round]
 }
 
 function freshState(
@@ -564,6 +615,7 @@ function freshState(
     manualSelectionWinners: new Set(),
     collectedSecondaryScores: [],
     editingMatchId: undefined,
+    inconsistentRoundDetail: false,
     showCancelConfirm: false,
     showRoundSheet: false,
     roundSheetInputs: {},
@@ -597,13 +649,15 @@ export function buildInitialState(
     if (!editGameType) return base
     const matchPlayerIds = new Set(match.playerScores.map((ps) => ps.playerId))
     const editPlayers = mode.playerRepository.getAll(true).filter((p) => matchPlayerIds.has(p.id))
+    const { rounds, inconsistent } = reconstructRounds(match, editGameType)
     return {
       ...base,
       gameType: editGameType,
       players: editPlayers,
-      rounds: reconstructRounds(match),
+      rounds,
       matchDate: toDateOnly(match.date),
       editingMatchId: mode.matchId,
+      inconsistentRoundDetail: inconsistent,
     }
   }
 

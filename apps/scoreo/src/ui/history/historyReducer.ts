@@ -1,4 +1,4 @@
-import { getWinners, isTieBreakIndeterminate } from '../../domain/model/match'
+import { getWinners, isTieBreakIndeterminate, roundDetailStatus } from '../../domain/model/match'
 import type { DeleteMatchUseCase } from '../../application/deleteMatchUseCase'
 import type { GetGameTypesUseCase } from '../../application/getGameTypesUseCase'
 import type { GetMatchesUseCase } from '../../application/getMatchesUseCase'
@@ -119,6 +119,9 @@ export function loadDisplays(
         winners: gameType ? getWinners(match, gameType) : [],
         dateFormatted: formatMatchDate(match.date),
         isTieBreakIndeterminate: gameType ? isTieBreakIndeterminate(match, gameType) : false,
+        hasInconsistentRounds: gameType
+          ? roundDetailStatus(match, gameType.winCondition) === 'inconsistent'
+          : false,
       }
     })
 }
