@@ -144,7 +144,7 @@ Then the match is Imported ✅ with Alice 0 and Bob 2 rounds won, and Bob as its
 And opening it from History shows both rounds with their raw points
 Given the same match without details
 When I execute the import
-Then the match is stored with the file's scores, Alice 13 and Bob 7
+Then the match is stored as a single round 13/7, Bob winning it: Alice 0 and Bob 1 round won, Bob as its winner
 And a game created by an import ("Belote", unknown so far) is in "Total points" scoring
 ```
 

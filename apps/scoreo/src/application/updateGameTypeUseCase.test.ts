@@ -158,11 +158,46 @@ describe('UpdateGameTypeUseCase', () => {
       expect(scoresOf(matches, 'm1')).toEqual([20, 13])
     })
 
-    it('leaves matches without round detail as they are', () => {
-      const { matches, created, update } = setup('POINTS')
-      matches.save(match('m1', created.id, 20, 13, []))
+    it('turns a match without round detail into a single round when switching to ROUNDS_WON', () => {
+      // Skyjo: lowest wins. Alice (a) 40, Bob (b) 90, no detail.
+      const { gameTypes, matches, created, update } = setup('POINTS')
+      const skyjo = { ...created, winCondition: 'LOWEST_SCORE' as const }
+      gameTypes.save(skyjo)
+      matches.save(match('m1', created.id, 40, 90, []))
+      update.invoke({ ...skyjo, scoringMode: 'ROUNDS_WON' })
+      expect(scoresOf(matches, 'm1')).toEqual([1, 0])
+      expect(matches.findById('m1')?.rounds).toEqual([
+        [
+          { playerId: 'a', score: 40 },
+          { playerId: 'b', score: 90 },
+        ],
+      ])
+    })
+
+    it('leaves matches without round detail as they are when leaving ROUNDS_WON', () => {
+      const { matches, created, update } = setup('ROUNDS_WON')
+      matches.save(match('m1', created.id, 2, 1, []))
+      update.invoke({ ...created, scoringMode: 'POINTS' })
+      expect(scoresOf(matches, 'm1')).toEqual([2, 1])
+      expect(matches.findById('m1')?.rounds).toEqual([])
+    })
+
+    it('never converts the matches without detail of a module-bound game', () => {
+      const { matches, created, update } = setup('POINTS', 'tori-valley')
+      matches.save(match('m1', created.id, 40, 90, []))
       update.invoke({ ...created, scoringMode: 'ROUNDS_WON' })
-      expect(scoresOf(matches, 'm1')).toEqual([20, 13])
+      expect(scoresOf(matches, 'm1')).toEqual([40, 90])
+      expect(matches.findById('m1')?.rounds).toEqual([])
+    })
+
+    it('writes the recomputed matches before the game type', () => {
+      const { gameTypes, matches, created, update } = setup('POINTS')
+      matches.save(match('m1', created.id, 20, 13))
+      matches.saveAll = () => {
+        throw new Error('quota')
+      }
+      expect(() => update.invoke({ ...created, scoringMode: 'ROUNDS_WON' })).toThrow('quota')
+      expect(gameTypes.findById(created.id)?.scoringMode).toBe('POINTS')
     })
 
     it('leaves matches whose detail disagrees with their scores as they are', () => {

@@ -252,14 +252,40 @@ describe('rescoreMatch', () => {
     expect(rescoreMatch(consistent, points, gameType({ winCondition: 'LOWEST_SCORE' }))).toBe(
       consistent,
     )
-    expect(rescoreMatch(none, points, roundsWon)).toBe(none)
+    expect(rescoreMatch(none, roundsWon, points)).toBe(none)
     expect(rescoreMatch(inconsistent, points, roundsWon)).toBe(inconsistent)
+  })
+
+  it('turns a match without detail into a single round when the game switches to rounds won', () => {
+    // Skyjo: lowest wins. Alice 40, Bob 90, no detail.
+    const skyjo = gameType({ winCondition: 'LOWEST_SCORE' })
+    const m = match({ playerScores: scores(['alice', 40], ['bob', 90]) })
+    const converted = rescoreMatch(m, skyjo, { ...skyjo, scoringMode: 'ROUNDS_WON' })
+    expect(converted.rounds).toEqual([scores(['alice', 40], ['bob', 90])])
+    expect(converted.playerScores).toEqual(scores(['alice', 1], ['bob', 0]))
+    expect(getWinners(converted, { ...skyjo, scoringMode: 'ROUNDS_WON' })).toEqual(['alice'])
+  })
+
+  it('gives the single round to every tied best player', () => {
+    const m = match({ playerScores: scores(['a', 7], ['b', 7], ['c', 3]) })
+    expect(rescoreMatch(m, points, roundsWon).playerScores).toEqual(
+      scores(['a', 1], ['b', 1], ['c', 0]),
+    )
+  })
+
+  it('leaves a match without detail alone unless points turn into rounds won', () => {
+    const none = match({ playerScores: scores(['a', 2], ['b', 1]) })
+    const lowestRoundsWon = gameType({ scoringMode: 'ROUNDS_WON', winCondition: 'LOWEST_SCORE' })
+    expect(rescoreMatch(none, roundsWon, lowestRoundsWon)).toBe(none)
+    expect(rescoreMatch(none, roundsWon, points)).toBe(none)
   })
 
   it('never turns a module-bound game into rounds won', () => {
     const m = match({ playerScores: scores(['a', 20], ['b', 13]), rounds })
     const bound = gameType({ moduleId: 'skyjo' })
     expect(rescoreMatch(m, bound, { ...bound, scoringMode: 'ROUNDS_WON' })).toBe(m)
+    const none = match({ playerScores: scores(['a', 20], ['b', 13]) })
+    expect(rescoreMatch(none, bound, { ...bound, scoringMode: 'ROUNDS_WON' })).toBe(none)
   })
 })
 

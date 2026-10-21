@@ -29,7 +29,7 @@
       "POINTS": "Total des points",
       "ROUNDS_WON": "Manches gagnées"
     },
-    "scoringModeChangeWarning": "Ce jeu a déjà des parties : celles qui ont un détail des manches verront leur score recalculé avec le nouveau décompte, et leurs gagnants, statistiques, Elo et trophées suivront.",
+    "scoringModeChangeWarning": "Ce jeu a déjà des parties : leur score sera recalculé avec le nouveau décompte à partir du détail des manches (en passant aux manches gagnées, une partie sans détail devient une manche unique), et leurs gagnants, statistiques, Elo et trophées suivront.",
     "tieBreakRule": "Règle de départage",
     "tieBreak": "Départage",
     "tieBreakConditionLabel": "Condition de départage :",

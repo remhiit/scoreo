@@ -17,7 +17,7 @@ export interface GameTypeState {
   selectedTieBreakLabel: string | undefined
   selectedGameId: string | undefined
   editingGameId: string | undefined
-  /** The game type being edited already has matches: changing its scoring mode recomputes those with round detail. */
+  /** The game type being edited already has matches: changing its scoring mode rescores them (`rescoreMatch`). */
   editingGameHasMatches: boolean
   error: string | undefined
   archiveConfirmGameTypeId: string | undefined

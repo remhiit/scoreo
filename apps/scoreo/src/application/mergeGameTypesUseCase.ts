@@ -11,8 +11,7 @@ export interface MergeGameTypesPreview {
   /**
    * At least one duplicate doesn't score like the game type being kept. Not a
    * blocker — the kept game type's rules simply become the ones applied to the
-   * moved matches (their scores are recomputed from consistent round detail
-   * when the scoring differs) — but the winners of those matches can change, so
+   * moved matches (rescored by `rescoreMatch` when the scoring differs) — but the winners of those matches can change, so
    * the UI warns about it.
    */
   rulesDiffer: boolean
@@ -29,8 +28,9 @@ function sameScoringRules(a: GameType, b: GameType): boolean {
 
 /**
  * Folds one or more duplicate game types into the one to keep: every match moves
- * to the kept game type (its scores recomputed from consistent round detail when
- * the duplicate scored rounds differently), then each duplicate is hard-deleted.
+ * to the kept game type (rescored by `rescoreMatch` when the duplicate scored
+ * rounds differently, a module's matches excepted), then each duplicate is
+ * hard-deleted.
  * Archiving isn't enough — it only hides a duplicate, leaving its matches under a
  * separate game and splitting History's filter, per-game trophies and the game
  * record apart.
@@ -75,12 +75,15 @@ export class MergeGameTypesUseCase {
 
     // A game's rules apply to its whole history: a moved match whose duplicate
     // turned rounds into a final score differently (scoring mode, or who wins a
-    // round in rounds won) is recomputed from its round detail, as a scoring
-    // mode change would (`UpdateGameTypeUseCase`).
+    // round in rounds won) is rescored as a scoring mode change would
+    // (`UpdateGameTypeUseCase`, `rescoreMatch`). A module's matches keep the
+    // scores the module returned: they are never rescored, whether the
+    // duplicate is module-bound or the match carries module data (#590).
     const duplicateById = new Map(merged.map((gt) => [gt.id, gt]))
     const moved = this.matchesOf(duplicates).map((match) => {
       const source = duplicateById.get(match.gameTypeId)
-      const rescored = source ? rescoreMatch(match, source, kept) : match
+      const fromModule = source?.moduleId != null || match.moduleData !== null
+      const rescored = source && !fromModule ? rescoreMatch(match, source, kept) : match
       return { ...rescored, gameTypeId: keptId }
     })
     // One saveAll rather than one save per match: a single change notification,

@@ -285,6 +285,49 @@ describe('MergeGameTypesUseCase', () => {
       expect(movedScores(matchRepo)).toEqual([2, 1])
     })
 
+    it('turns a POINTS match without detail into a single round when merging into a ROUNDS_WON game', () => {
+      // Skyjo: lowest wins. Alice (a) 40, Bob (b) 90, no detail.
+      const { matchRepo, useCase } = buildUseCase(
+        { winCondition: 'LOWEST_SCORE' },
+        { winCondition: 'LOWEST_SCORE', scoringMode: 'ROUNDS_WON' },
+      )
+      matchRepo.save(scored(40, 90, []))
+      useCase.invoke('keep', ['dup'])
+      expect(movedScores(matchRepo)).toEqual([1, 0])
+      expect(matchRepo.findById('m1')?.rounds).toEqual([
+        [
+          { playerId: 'a', score: 40 },
+          { playerId: 'b', score: 90 },
+        ],
+      ])
+    })
+
+    it('never recomputes the matches of a module-bound duplicate', () => {
+      const { matchRepo, useCase } = buildUseCase(
+        { moduleId: 'skyjo' },
+        { scoringMode: 'ROUNDS_WON' },
+      )
+      matchRepo.save(scored(20, 13))
+      matchRepo.save({ ...scored(40, 90, []), id: 'm2' })
+      useCase.invoke('keep', ['dup'])
+      const stored = (id: string) => matchRepo.findById(id)
+      expect(stored('m1')?.playerScores.map((ps) => ps.score)).toEqual([20, 13])
+      expect(stored('m1')?.rounds).toEqual(rawRounds)
+      expect(stored('m2')?.playerScores.map((ps) => ps.score)).toEqual([40, 90])
+      expect(stored('m2')?.rounds).toEqual([])
+      expect(stored('m1')?.gameTypeId).toBe('keep')
+    })
+
+    it('never recomputes a match carrying module data', () => {
+      const { matchRepo, useCase } = buildUseCase({}, { scoringMode: 'ROUNDS_WON' })
+      matchRepo.save({
+        ...scored(20, 13),
+        moduleData: { moduleId: 'skyjo', version: 1, data: {} },
+      })
+      useCase.invoke('keep', ['dup'])
+      expect(movedScores(matchRepo)).toEqual([20, 13])
+    })
+
     it('recounts the rounds won when the win condition differs in ROUNDS_WON', () => {
       const { matchRepo, useCase } = buildUseCase(
         { scoringMode: 'ROUNDS_WON' },

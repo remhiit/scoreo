@@ -286,14 +286,30 @@ describe('ImportMatchesUseCase', () => {
       expect(matchRepo.getAll()[0].manualWinners).toEqual([alice.id])
     })
 
-    it('keeps the file scores of a rounds-won game when the file has no details', () => {
+    it('turns a match without details into a single round in an existing rounds-won game', () => {
       const gameTypeRepo = new InMemoryGameTypeRepository()
       gameTypeRepo.save(
-        newGameType('rw', 'TestGame', 'HIGHEST_SCORE', { scoringMode: 'ROUNDS_WON' }),
+        newGameType('rw', 'TestGame', 'LOWEST_SCORE', { scoringMode: 'ROUNDS_WON' }),
       )
       const matchRepo = new InMemoryMatchRepository()
-      useCase(undefined, gameTypeRepo, matchRepo).execute(TestImportData.validJson)
-      expect(matchRepo.getAll()[0].playerScores.map((ps) => ps.score)).toEqual([10, 5])
+      const playerRepo = new InMemoryPlayerRepository()
+      useCase(playerRepo, gameTypeRepo, matchRepo).execute(TestImportData.validJson)
+      const alice = playerRepo.getAll().find((p) => p.name === 'Alice')!
+      const bob = playerRepo.getAll().find((p) => p.name === 'Bob')!
+      const match = matchRepo.getAll()[0]
+      // File scores Alice 10, Bob 5: a single round, lowest wins it.
+      expect(match.rounds).toEqual([
+        [
+          { playerId: alice.id, score: 10 },
+          { playerId: bob.id, score: 5 },
+        ],
+      ])
+      expect(match.playerScores).toEqual([
+        { playerId: alice.id, score: 0 },
+        { playerId: bob.id, score: 1 },
+      ])
+      // Alice is rank 1 in the file (on points), but not a winner in rounds won.
+      expect(match.manualWinners).toEqual([])
     })
 
     it('leaves rounds empty when the game has no details', () => {

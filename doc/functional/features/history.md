@@ -58,7 +58,7 @@ Screen: `apps/scoreo/src/ui/history/HistoryScreen.tsx`.
    - One card per round played, in the order played: "Round N" then that round's score for each player, players in the match's own order so the cells line up from one round to the next
    - A player absent from a stored round shows 0 for that round
    - A totals line closes the modal: same content as the row's score line, winner(s) in bold
-   - A match stored **without** round detail (played before rounds were kept, or imported) shows *"No round detail was recorded for this match."* instead of the cards — the totals line is still shown
+   - A match stored **without** round detail (played before rounds were kept, or imported) shows *"No round detail was recorded for this match."* instead of the cards — the totals line is still shown; once its game switches from points to rounds won (or it is merged or imported into a rounds-won game), it is converted into a single round holding its points and shows that round (see [games](games.md#scoring-mode))
    - A match whose round detail disagrees with its recorded scores (neither their sum nor the count of rounds won) shows a warning *"Inconsistent data: the round detail does not add up to the recorded scores. The match counts with its recorded scores."* above the cards — the cards are still shown
    - Read-only: scores are not editable here, editing stays on `ScoreDetailScreen` (✏️)
    - Closes on "Close", on the scrim, or on Escape

@@ -76,7 +76,11 @@ export function getWinners(match: Match, gameType: GameType): string[] {
     case 'MANUAL_SELECTION':
       return match.manualWinners
     case 'SECONDARY_SCORE': {
-      const result = computeWinners(gameType, match.secondaryPlayerScores, gameType.tieBreakCondition)
+      const result = computeWinners(
+        gameType,
+        match.secondaryPlayerScores,
+        gameType.tieBreakCondition,
+      )
       return result.length === 0 ? primaryWinners : result
     }
   }
@@ -139,21 +143,34 @@ export function scoresFromRounds(
 
 /**
  * `match` as it scores once its game's rules go from `previous` to `updated`
- * (a scoring mode change, a game type merge): when that changes how rounds turn
- * into a final score ({@link roundScoringChanged}) and the match's round detail
- * agrees with its stored scores, `playerScores` is recomputed from that detail.
- * Otherwise — nothing to recompute, no detail, or detail that disagrees with the
- * stored scores — the match is returned as is (same reference). Tie-break data
- * (`manualWinners`, `secondaryPlayerScores`) is never touched.
+ * (a scoring mode change, a game type merge, an import into an existing game):
+ * when that changes how rounds turn into a final score
+ * ({@link roundScoringChanged}), the match is recomputed:
+ * - its round detail agrees with its stored scores: `playerScores` is
+ *   recomputed from that detail;
+ * - it has no detail (`rounds: []`) and its points now turn into rounds won
+ *   (effective mode `POINTS` → `ROUNDS_WON`): it becomes a single round holding
+ *   its stored scores, saved in `rounds`, then scored like any other detail —
+ *   the best player(s) under `winCondition` win that round (Skyjo, Alice 40 /
+ *   Bob 90 → round 40/90, scores 1/0). A module-bound game never scores in
+ *   rounds won, so its matches are never converted.
+ *
+ * Otherwise — nothing to recompute, detail that disagrees with the stored
+ * scores, or no detail in any other change (stored counts of rounds won cannot
+ * be turned back into points) — the match is returned as is (same reference).
+ * Tie-break data (`manualWinners`, `secondaryPlayerScores`) is never touched.
  */
 export function rescoreMatch(match: Match, previous: GameType, updated: GameType): Match {
   if (!roundScoringChanged(previous, updated)) return match
-  if (roundDetailStatus(match, previous.winCondition) !== 'consistent') return match
-  const playerScores = scoresFromRounds(
-    updated,
-    match.rounds,
-    match.playerScores.map((ps) => ps.playerId),
-  )
+  const playerIds = match.playerScores.map((ps) => ps.playerId)
+  const status = roundDetailStatus(match, previous.winCondition)
+  if (status === 'none') {
+    if (usesRoundsWon(previous) || !usesRoundsWon(updated) || playerIds.length === 0) return match
+    const rounds = [match.playerScores.map((ps) => ({ ...ps }))]
+    return { ...match, rounds, playerScores: scoresFromRounds(updated, rounds, playerIds) }
+  }
+  if (status !== 'consistent') return match
+  const playerScores = scoresFromRounds(updated, match.rounds, playerIds)
   const unchanged = playerScores.every((ps, i) => ps.score === match.playerScores[i].score)
   return unchanged ? match : { ...match, playerScores }
 }

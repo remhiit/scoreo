@@ -29,7 +29,7 @@
       "POINTS": "Total points",
       "ROUNDS_WON": "Rounds won"
     },
-    "scoringModeChangeWarning": "This game already has matches: those with round detail will have their scores recomputed with the new scoring, and their winners, stats, Elo and trophies will follow.",
+    "scoringModeChangeWarning": "This game already has matches: their scores will be recomputed with the new scoring from their round detail (when switching to rounds won, a match without detail becomes a single round), and their winners, stats, Elo and trophies will follow.",
     "tieBreakRule": "Tie-break rule",
     "tieBreak": "Tie break",
     "tieBreakConditionLabel": "Tie break condition:",
