@@ -49,7 +49,7 @@ Screen: `apps/scoreo/src/ui/history/HistoryScreen.tsx`.
 - Empty state is context-aware:
    - If no matches at all: "No matches yet."
    - If filtered to a game type with no matches: "No matches for {gameName}"
-- Matches with `hasInconsistentRounds = true` (round detail that agrees with the recorded scores neither as a points sum nor as rounds won — `roundDetailStatus`, see [games](games.md#scoring-mode)) show a warning **Inconsistent data** badge on their row; the match still counts with its recorded scores until it is re-edited: the editor (✏️) shows its stored rounds, and saving recomputes the scores from them, which clears the badge (see [scoring](scoring.md#data-reconstruction))
+- Matches with `hasInconsistentRounds = true` (round detail that agrees with the recorded scores neither as a points sum nor as rounds won — `roundDetailStatus`, see [games](games.md#scoring-mode)) — or a rounds-won game's match with no round detail whose recorded scores cannot be round counts (negative or fractional, `syntheticRounds` returns `undefined`) — show a warning **Inconsistent data** badge on their row; the match still counts with its recorded scores until it is re-edited: the editor (✏️) shows its stored rounds, and saving recomputes the scores from them, which clears the badge (see [scoring](scoring.md#data-reconstruction))
 - Matches with `isTieBreakIndeterminate = true` show:
     - **⚠️ Missing info** badge next to the game type name
     - Explanatory message below scores: *"This match was recorded before tie-break rules were introduced. The result is based on equality."*
@@ -59,7 +59,7 @@ Screen: `apps/scoreo/src/ui/history/HistoryScreen.tsx`.
    - A player absent from a stored round shows 0 for that round
    - A totals line closes the modal: same content as the row's score line, winner(s) in bold
    - A match stored **without** round detail (played before rounds were kept, or imported) shows *"No round detail was recorded for this match."* instead of the cards — the totals line is still shown; once its game switches from points to rounds won (or it is merged or imported into a rounds-won game), it is converted into a single round holding its points and shows that round (see [games](games.md#scoring-mode))
-   - A match whose round detail disagrees with its recorded scores (neither their sum nor the count of rounds won) shows a warning *"Inconsistent data: the round detail does not add up to the recorded scores. The match counts with its recorded scores."* above the cards — the cards are still shown
+   - A match whose round detail disagrees with its recorded scores (neither their sum nor the count of rounds won) shows a warning *"Inconsistent data: the round detail does not add up to the recorded scores. The match counts with its recorded scores."* above the cards — the cards are still shown. The same warning text also appears (above the "No round detail" hint) for a rounds-won match with no round detail whose recorded scores cannot be round counts (negative or fractional), the wording then being only approximate
    - Read-only: scores are not editable here, editing stays on `ScoreDetailScreen` (✏️)
    - Closes on "Close", on the scrim, or on Escape
 - **Delete confirmation modal** (when 🗑 clicked):

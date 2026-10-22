@@ -1,4 +1,11 @@
-import { getWinners, isTieBreakIndeterminate, roundDetailStatus } from '../../domain/model/match'
+import { usesRoundsWon, type GameType } from '../../domain/model/gameType'
+import {
+  getWinners,
+  isTieBreakIndeterminate,
+  roundDetailStatus,
+  syntheticRounds,
+  type Match,
+} from '../../domain/model/match'
 import type { DeleteMatchUseCase } from '../../application/deleteMatchUseCase'
 import type { GetGameTypesUseCase } from '../../application/getGameTypesUseCase'
 import type { GetMatchesUseCase } from '../../application/getMatchesUseCase'
@@ -119,11 +126,24 @@ export function loadDisplays(
         winners: gameType ? getWinners(match, gameType) : [],
         dateFormatted: formatMatchDate(match.date),
         isTieBreakIndeterminate: gameType ? isTieBreakIndeterminate(match, gameType) : false,
-        hasInconsistentRounds: gameType
-          ? roundDetailStatus(match, gameType.winCondition) === 'inconsistent'
-          : false,
+        hasInconsistentRounds: gameType ? hasInconsistentData(match, gameType) : false,
       }
     })
+}
+
+/**
+ * Inconsistent round detail, or, for a rounds-won game with no detail, stored
+ * scores that cannot be round counts (negative or fractional): the editor
+ * flags those too (`syntheticRounds` returns `undefined`).
+ */
+function hasInconsistentData(match: Match, gameType: GameType): boolean {
+  const status = roundDetailStatus(match, gameType.winCondition)
+  if (status === 'inconsistent') return true
+  return (
+    status === 'none' &&
+    usesRoundsWon(gameType) &&
+    syntheticRounds(gameType, match.playerScores) === undefined
+  )
 }
 
 /** Mirrors HistoryHandler's DeleteMatch try/catch around the use case call. */

@@ -217,6 +217,34 @@ describe('historyReducer', () => {
     expect(display.playerLabels['p1']).toBe('Deleted player')
   })
 
+  it('flags a rounds-won match without detail whose scores cannot be round counts', () => {
+    const gameTypeRepo = new InMemoryGameTypeRepository()
+    gameTypeRepo.save({ ...gameType('gt1', 'Manches'), scoringMode: 'ROUNDS_WON' })
+    const matchRepo = new InMemoryMatchRepository()
+    matchRepo.save(
+      match('bad', 2000, 'gt1', [
+        { playerId: 'p1', score: -1 },
+        { playerId: 'p2', score: 2.5 },
+      ]),
+    )
+    matchRepo.save(
+      match('ok', 1000, 'gt1', [
+        { playerId: 'p1', score: 3 },
+        { playerId: 'p2', score: 1 },
+      ]),
+    )
+    const { getMatches, getPlayers, getGameTypes } = buildUseCases(
+      undefined,
+      gameTypeRepo,
+      matchRepo,
+    )
+
+    const displays = loadDisplays(getMatches, getPlayers, getGameTypes)
+
+    expect(displays.find((d) => d.match.id === 'bad')?.hasInconsistentRounds).toBe(true)
+    expect(displays.find((d) => d.match.id === 'ok')?.hasInconsistentRounds).toBe(false)
+  })
+
   it('reloading reflects data changes', () => {
     const matchRepo = new InMemoryMatchRepository()
     const { getMatches, getPlayers, getGameTypes } = buildUseCases(undefined, undefined, matchRepo)
