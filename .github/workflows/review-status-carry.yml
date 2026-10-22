@@ -11,7 +11,8 @@ name: Review Status Carry
 # the diff against the base, before and after the push (a pure rebase or a
 # conflict-free merge of the base). Any other change to the diff sets
 # `claude/review=failure` and removes `automation:review-pass`: the review no
-# longer covers what would be merged. Rerun the coordinator, or remove
+# longer covers what would be merged. When the previous head cannot be fetched
+# (comparison impossible), the status says so instead of claiming a changed diff. Rerun the coordinator, or remove
 # `automation:coordinator-owned` to hand the PR back to R3.
 #
 # A push while the previous head had no `claude/review=success` (the
@@ -57,24 +58,12 @@ jobs:
         if: steps.previous.outputs.state == 'success'
         run: |
           git fetch --quiet origin "$BASE_REF" "$BEFORE" "$AFTER" || true
-          patch_id() {
-            git diff -U0 "$(git merge-base "origin/$BASE_REF" "$1")" "$1" \
-              | git patch-id --stable | cut -d' ' -f1
-          }
-          if git cat-file -e "$BEFORE^{commit}" 2>/dev/null; then
-            before=$(patch_id "$BEFORE")
-          else
-            before=""
-          fi
-          after=$(patch_id "$AFTER")
-          echo "patch-id before=${before:-unavailable} after=$after"
-          if [ -z "$before" ]; then
-            echo "same=unavailable" >> "$GITHUB_OUTPUT"
-          elif [ "$before" = "$after" ]; then
-            echo "same=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "same=false" >> "$GITHUB_OUTPUT"
-          fi
+          node scripts/review-status-carry.mjs
+          case "$(grep '^result=' "$GITHUB_OUTPUT" | tail -1)" in
+            result=same) echo "same=true" >> "$GITHUB_OUTPUT" ;;
+            result=unavailable) echo "same=unavailable" >> "$GITHUB_OUTPUT" ;;
+            *) echo "same=false" >> "$GITHUB_OUTPUT" ;;
+          esac
 
       - name: Carry claude/review to the new head
         if: steps.compare.outputs.same == 'true'
@@ -84,7 +73,7 @@ jobs:
             -f context="claude/review" \
             -f description="coordinateur : revue reportée, diff identique à ${BEFORE:0:7}"
 
-      - name: Invalidate the review when the previous commit is unavailable
+      - name: Invalidate the review when the previous head cannot be compared
         if: steps.compare.outputs.same == 'unavailable'
         run: |
           gh api "repos/$REPO/statuses/$AFTER" \
