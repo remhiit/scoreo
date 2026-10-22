@@ -3,6 +3,7 @@ import {
   computeRoundsWon,
   computeWinners,
   effectiveScoringMode,
+  scoringModeIsSelectable,
   newGameType,
   roundScoringChanged,
   type GameType,
@@ -184,6 +185,23 @@ describe('newGameType', () => {
   it('forces points under a MANUAL win condition', () => {
     expect(newGameType('1', 'Game', 'MANUAL', { scoringMode: 'ROUNDS_WON' }).scoringMode).toBe(
       'POINTS',
+    )
+  })
+})
+
+describe('scoringModeIsSelectable', () => {
+  it('is true for a free game with a non-MANUAL win condition', () => {
+    expect(scoringModeIsSelectable({ winCondition: 'HIGHEST_SCORE', moduleId: null })).toBe(true)
+    expect(scoringModeIsSelectable({ winCondition: 'LOWEST_SCORE', moduleId: null })).toBe(true)
+  })
+
+  it('is false under a MANUAL win condition', () => {
+    expect(scoringModeIsSelectable({ winCondition: 'MANUAL', moduleId: null })).toBe(false)
+  })
+
+  it('is false for a game bound to a module', () => {
+    expect(scoringModeIsSelectable({ winCondition: 'HIGHEST_SCORE', moduleId: 'skyjo' })).toBe(
+      false,
     )
   })
 })

@@ -6,7 +6,11 @@ import type { GetMatchesUseCase } from '../../application/getMatchesUseCase'
 import type { MergeGameTypesUseCase } from '../../application/mergeGameTypesUseCase'
 import type { UpdateGameTypeUseCase } from '../../application/updateGameTypeUseCase'
 import type { ScoringMode, TieBreakRule, WinCondition } from '../../domain/model/enums'
-import { roundScoringChanged, type GameType } from '../../domain/model/gameType'
+import {
+  roundScoringChanged,
+  scoringModeIsSelectable,
+  type GameType,
+} from '../../domain/model/gameType'
 import type { GameTypeState } from './gameTypeTypes'
 
 /**
@@ -206,8 +210,10 @@ function editedGameType(state: GameTypeState): GameType | undefined {
  * to a scoring module, which computes its own scores in points.
  */
 export function showsScoringModeChoice(state: GameTypeState): boolean {
-  if (state.selectedWinCondition === 'MANUAL') return false
-  return (editedGameType(state)?.moduleId ?? null) === null
+  return scoringModeIsSelectable({
+    winCondition: state.selectedWinCondition,
+    moduleId: editedGameType(state)?.moduleId ?? null,
+  })
 }
 
 /**
