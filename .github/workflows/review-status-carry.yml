@@ -11,7 +11,8 @@ name: Review Status Carry
 # the diff against the base, before and after the push (a pure rebase or a
 # conflict-free merge of the base). Any other change to the diff sets
 # `claude/review=failure` and removes `automation:review-pass`: the review no
-# longer covers what would be merged. Rerun the coordinator, or remove
+# longer covers what would be merged. When the previous head cannot be fetched
+# (comparison impossible), the status says so instead of claiming a changed diff. Rerun the coordinator, or remove
 # `automation:coordinator-owned` to hand the PR back to R3.
 #
 # A push while the previous head had no `claude/review=success` (the
@@ -58,12 +59,11 @@ jobs:
         run: |
           git fetch --quiet origin "$BASE_REF" "$BEFORE" "$AFTER" || true
           node scripts/review-status-carry.mjs
-          # `unavailable` (previous head purged) is treated like `changed`: no carry.
-          if [ "$(grep '^result=' "$GITHUB_OUTPUT" | tail -1)" = "result=same" ]; then
-            echo "same=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "same=false" >> "$GITHUB_OUTPUT"
-          fi
+          case "$(grep '^result=' "$GITHUB_OUTPUT" | tail -1)" in
+            result=same) echo "same=true" >> "$GITHUB_OUTPUT" ;;
+            result=unavailable) echo "same=unavailable" >> "$GITHUB_OUTPUT" ;;
+            *) echo "same=false" >> "$GITHUB_OUTPUT" ;;
+          esac
 
       - name: Carry claude/review to the new head
         if: steps.compare.outputs.same == 'true'
@@ -72,6 +72,15 @@ jobs:
             -f state=success \
             -f context="claude/review" \
             -f description="coordinateur : revue reportée, diff identique à ${BEFORE:0:7}"
+
+      - name: Invalidate the review when the previous head cannot be compared
+        if: steps.compare.outputs.same == 'unavailable'
+        run: |
+          gh api "repos/$REPO/statuses/$AFTER" \
+            -f state=failure \
+            -f context="claude/review" \
+            -f description="revue non reportée : commit précédent introuvable, relancer le coordinateur ou retirer coordinator-owned"
+          gh api -X DELETE "repos/$REPO/issues/$NUMBER/labels/automation:review-pass" || true
 
       - name: Invalidate the review on a changed diff
         if: steps.compare.outputs.same == 'false'
