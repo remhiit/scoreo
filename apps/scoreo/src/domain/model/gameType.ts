@@ -61,6 +61,19 @@ export function newGameType(
 export type ScoringModeInputs = Pick<GameType, 'winCondition' | 'scoringMode' | 'moduleId'>
 
 /**
+ * True when the scoring mode is a real choice for a game type: not under a
+ * `MANUAL` win condition (rounds won need the app to decide who wins each
+ * round), nor for a game bound to a scoring module (it computes its own scores
+ * in points). The single source of truth for {@link effectiveScoringMode} and
+ * the game type form.
+ */
+export function scoringModeIsSelectable(
+  gameType: Pick<GameType, 'winCondition' | 'moduleId'>,
+): boolean {
+  return gameType.moduleId === null && gameType.winCondition !== 'MANUAL'
+}
+
+/**
  * The scoring mode a game type actually scores with, and stores:
  * - a game bound to a scoring module (`moduleId !== null`) scores in points,
  *   since the module computes its own scores and every module counts points
@@ -69,8 +82,7 @@ export type ScoringModeInputs = Pick<GameType, 'winCondition' | 'scoringMode' | 
  *   `MANUAL` game scores in points too.
  */
 export function effectiveScoringMode(gameType: ScoringModeInputs): ScoringMode {
-  if (gameType.moduleId !== null) return 'POINTS'
-  return gameType.winCondition === 'MANUAL' ? 'POINTS' : gameType.scoringMode
+  return scoringModeIsSelectable(gameType) ? gameType.scoringMode : 'POINTS'
 }
 
 /** True when the final score is a count of rounds won (never for a `MANUAL` or module-bound game). */
