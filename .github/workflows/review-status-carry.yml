@@ -68,7 +68,9 @@ jobs:
           fi
           after=$(patch_id "$AFTER")
           echo "patch-id before=${before:-unavailable} after=$after"
-          if [ -n "$before" ] && [ "$before" = "$after" ]; then
+          if [ -z "$before" ]; then
+            echo "same=unavailable" >> "$GITHUB_OUTPUT"
+          elif [ "$before" = "$after" ]; then
             echo "same=true" >> "$GITHUB_OUTPUT"
           else
             echo "same=false" >> "$GITHUB_OUTPUT"
@@ -81,6 +83,15 @@ jobs:
             -f state=success \
             -f context="claude/review" \
             -f description="coordinateur : revue reportée, diff identique à ${BEFORE:0:7}"
+
+      - name: Invalidate the review when the previous commit is unavailable
+        if: steps.compare.outputs.same == 'unavailable'
+        run: |
+          gh api "repos/$REPO/statuses/$AFTER" \
+            -f state=failure \
+            -f context="claude/review" \
+            -f description="revue non reportée : commit précédent introuvable, relancer le coordinateur ou retirer coordinator-owned"
+          gh api -X DELETE "repos/$REPO/issues/$NUMBER/labels/automation:review-pass" || true
 
       - name: Invalidate the review on a changed diff
         if: steps.compare.outputs.same == 'false'
