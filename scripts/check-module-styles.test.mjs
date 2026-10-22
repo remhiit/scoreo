@@ -69,7 +69,7 @@ describe('findViolations', () => {
 })
 
 describe('moduleStylesheets', () => {
-  it('finds a module’s legacy styles.css and every sheet under src/design/', () => {
+  it('finds every sheet under src/design/ and ignores any src/styles.css', () => {
     const root = packagesTree({
       'module-a/src/styles.css': '.module-a {}',
       'module-a/src/design/Card.css': '.module-a .a-card {}',
@@ -79,13 +79,12 @@ describe('moduleStylesheets', () => {
       'design-system/src/styles.css': '.sc-x {}',
     })
     expect(moduleStylesheets(root)).toEqual([
-      join(root, 'module-a/src/styles.css'),
       join(root, 'module-a/src/design/Card.css'),
       join(root, 'module-a/src/design/dice/Die.css'),
     ])
   })
 
-  it('treats a missing styles.css or src/design/ as empty', () => {
+  it('treats a missing src/design/ as empty', () => {
     const root = packagesTree({
       'module-a/src/index.ts': '',
       'module-b/src/design/Piece.css': '.module-b .b-piece {}',
@@ -152,19 +151,77 @@ describe('findColourViolations', () => {
     ])
   })
 
+  it.each([
+    'hwb(12 0% 0%)',
+    'lab(50% 40 59)',
+    'lch(50% 40 30)',
+    'oklab(0.5 0.1 0.1)',
+    'oklch(0.5 0.2 30)',
+    'color(display-p3 1 0 0)',
+  ])('flags the modern colour function %s', (value) => {
+    const found = findColourViolations(`.module-a .a-x { color: ${value} }`, 'f.css')
+    expect(found).toEqual([
+      { file: 'f.css', kind: 'raw-colour', detail: `color: ${value.split('(')[0]}(` },
+    ])
+  })
+
+  it.each(['white', 'black', 'red', 'RebeccaPurple', 'grey'])(
+    'flags the named colour %s',
+    (name) => {
+      expect(findColourViolations(`.module-a .a-x { border: 1px solid ${name} }`, 'f.css')).toEqual(
+        [{ file: 'f.css', kind: 'raw-colour', detail: `border: ${name}` }],
+      )
+    },
+  )
+
+  it('flags a named colour inside a gradient or a shadow, word by word', () => {
+    const css = '.module-a .a-x { background: linear-gradient(to right, red, var(--surface-card)) }'
+    expect(findColourViolations(css, 'f.css')).toEqual([
+      { file: 'f.css', kind: 'raw-colour', detail: 'background: red' },
+    ])
+  })
+
+  it.each(['transparent', 'currentColor', 'inherit', 'initial', 'unset', 'revert'])(
+    'permits the keyword %s',
+    (keyword) => {
+      expect(findColourViolations(`.module-a .a-x { color: ${keyword} }`, 'f.css')).toEqual([])
+    },
+  )
+
+  it('does not flag a colour name that is only part of an identifier', () => {
+    const css = [
+      '.module-a .a-x {',
+      '  --a-red-shadow: 0 0 2px var(--sc-white-ish);',
+      '  color: var(--a-red-shadow);',
+      '  animation: a-white-fade 1s;',
+      '  margin: 1e3px;',
+      '}',
+    ].join('\n')
+    expect(findColourViolations(css, 'f.css')).toEqual([])
+  })
+
+  it('does not flag a url(#…) reference as a hexadecimal colour', () => {
+    const css = '.module-a .a-x { fill: url(#bad); mask: url(#face1) no-repeat; }'
+    expect(findColourViolations(css, 'f.css')).toEqual([])
+  })
+
+  it('ignores a colour name inside a string', () => {
+    expect(findColourViolations('.module-a .a-x::after { content: "red" }', 'f.css')).toEqual([])
+  })
+
   it('ignores colours that only appear in a comment', () => {
     expect(
       findColourViolations('.module-a .a-x { /* was #fff */ color: var(--text) }', 'f.css'),
     ).toEqual([])
   })
 
-  it('applies to src/design/ sheets, not to a legacy styles.css', () => {
+  it('applies to src/design/ sheets, the only ones a module ships', () => {
     const root = packagesTree({
       'module-a/src/styles.css': '.module-a { --a-bg: #fff; color: var(--ctp-text) }',
       'module-a/src/design/Card.css': '.module-a .a-card { color: #fff }',
     })
-    const [legacy, design] = moduleStylesheets(root)
-    expect(isDesignStylesheet(legacy)).toBe(false)
+    const [design, ...others] = moduleStylesheets(root)
+    expect(others).toEqual([])
     expect(isDesignStylesheet(design)).toBe(true)
     expect(findColourViolations(readFileSync(design, 'utf8'), design)).toEqual([
       { file: design, kind: 'raw-colour', detail: 'color: #fff' },

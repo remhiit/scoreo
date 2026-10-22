@@ -16,11 +16,10 @@
 //     host's plain `.card`;
 //   - in `src/design/` only, colour through the design system's semantic tokens
 //     alone: no Catppuccin palette token (`var(--ctp-…)`) and no raw colour
-//     (hex, rgb()/rgba(), hsl()/hsla()) — the semantic tokens are what follow
+//     (hex, rgb()/hsl() and their modern siblings hwb()/lab()/lch()/oklab()/oklch()/
+//     color(), CSS named colours) — the semantic tokens are what follow
 //     Scoreo's flavour, the rest would pin one.
 //
-// A module that has not migrated yet still ships its legacy `src/styles.css`,
-// with its own palette: it is held to the first two checks only.
 //
 // See doc/technical/module-contract.md.
 import { existsSync, readdirSync, readFileSync } from 'node:fs'
@@ -91,14 +90,199 @@ export function findViolations(css, moduleFile, hostClasses) {
 
 const DECLARATION = /(-{0,2}[a-zA-Z_][\w-]*)\s*:\s*([^;{}]+)(?:;|(?=\}))/g
 const PALETTE_TOKEN = /var\(\s*(--ctp-[\w-]+)/g
-const RAW_COLOUR = /#[0-9a-fA-F]{3,8}\b|\b(?:rgba?|hsla?)\(/g
+// A function never counts as part of an identifier: `(?<![\w-])` keeps `color(` apart
+// from `--a-color(` and from `color-mix(`.
+const RAW_COLOUR = /#[0-9a-fA-F]{3,8}\b|(?<![\w-])(?:rgba?|hsla?|hwb|lab|lch|oklab|oklch|color)\(/g
+// What a value may hold that is not a colour, though it can look like one.
+const URL_REFERENCE = /url\([^)]*\)/g // `url(#face1)` is a reference, not `#fac`
+const QUOTED = /"[^"]*"|'[^']*'/g
+const CUSTOM_IDENT = /--[\w-]+/g // `var(--sc-white-ish)`: a name, not a colour
+const WORD = /(?<![\w#.-])[a-zA-Z]+(?![\w(-])/g
+
+// CSS named colours. `transparent`, `currentColor` and the global keywords
+// (`inherit`, `initial`, `unset`, `revert`) are deliberately absent: they are
+// permitted.
+const NAMED_COLOURS = new Set([
+  'aliceblue',
+  'antiquewhite',
+  'aqua',
+  'aquamarine',
+  'azure',
+  'beige',
+  ,
+  'bisque',
+  'black',
+  'blanchedalmond',
+  'blue',
+  'blueviolet',
+  'brown',
+  ,
+  'burlywood',
+  'cadetblue',
+  'chartreuse',
+  'chocolate',
+  'coral',
+  'cornflowerblue',
+  ,
+  'cornsilk',
+  'crimson',
+  'cyan',
+  'darkblue',
+  'darkcyan',
+  'darkgoldenrod',
+  ,
+  'darkgray',
+  'darkgreen',
+  'darkgrey',
+  'darkkhaki',
+  'darkmagenta',
+  'darkolivegreen',
+  ,
+  'darkorange',
+  'darkorchid',
+  'darkred',
+  'darksalmon',
+  'darkseagreen',
+  'darkslateblue',
+  ,
+  'darkslategray',
+  'darkslategrey',
+  'darkturquoise',
+  'darkviolet',
+  'deeppink',
+  'deepskyblue',
+  ,
+  'dimgray',
+  'dimgrey',
+  'dodgerblue',
+  'firebrick',
+  'floralwhite',
+  'forestgreen',
+  ,
+  'fuchsia',
+  'gainsboro',
+  'ghostwhite',
+  'gold',
+  'goldenrod',
+  'gray',
+  ,
+  'green',
+  'greenyellow',
+  'grey',
+  'honeydew',
+  'hotpink',
+  'indianred',
+  ,
+  'indigo',
+  'ivory',
+  'khaki',
+  'lavender',
+  'lavenderblush',
+  'lawngreen',
+  ,
+  'lemonchiffon',
+  'lightblue',
+  'lightcoral',
+  'lightcyan',
+  'lightgoldenrodyellow',
+  'lightgray',
+  ,
+  'lightgreen',
+  'lightgrey',
+  'lightpink',
+  'lightsalmon',
+  'lightseagreen',
+  'lightskyblue',
+  ,
+  'lightslategray',
+  'lightslategrey',
+  'lightsteelblue',
+  'lightyellow',
+  'lime',
+  'limegreen',
+  ,
+  'linen',
+  'magenta',
+  'maroon',
+  'mediumaquamarine',
+  'mediumblue',
+  'mediumorchid',
+  ,
+  'mediumpurple',
+  'mediumseagreen',
+  'mediumslateblue',
+  'mediumspringgreen',
+  'mediumturquoise',
+  'mediumvioletred',
+  ,
+  'midnightblue',
+  'mintcream',
+  'mistyrose',
+  'moccasin',
+  'navajowhite',
+  'navy',
+  ,
+  'oldlace',
+  'olive',
+  'olivedrab',
+  'orange',
+  'orangered',
+  'orchid',
+  ,
+  'palegoldenrod',
+  'palegreen',
+  'paleturquoise',
+  'palevioletred',
+  'papayawhip',
+  'peachpuff',
+  ,
+  'peru',
+  'pink',
+  'plum',
+  'powderblue',
+  'purple',
+  'rebeccapurple',
+  ,
+  'red',
+  'rosybrown',
+  'royalblue',
+  'saddlebrown',
+  'salmon',
+  'sandybrown',
+  ,
+  'seagreen',
+  'seashell',
+  'sienna',
+  'silver',
+  'skyblue',
+  'slateblue',
+  ,
+  'slategray',
+  'slategrey',
+  'snow',
+  'springgreen',
+  'steelblue',
+  'tan',
+  ,
+  'teal',
+  'thistle',
+  'tomato',
+  'turquoise',
+  'violet',
+  'wheat',
+  ,
+  'white',
+  'whitesmoke',
+  'yellow',
+  'yellowgreen',
+  ,
+])
 
 /**
  * Colours a game piece may not write: a Catppuccin palette token or a raw
  * colour, anywhere in a declaration's value. Only the semantic tokens of the
  * design system (`--surface-card`, `--color-primary`…) follow Scoreo's flavour.
- * Applied to `src/design/` sheets only — a legacy `src/styles.css` keeps its own
- * palette until its module migrates.
+ * Applied to `src/design/` sheets only.
  */
 export function findColourViolations(css, moduleFile) {
   const violations = []
@@ -110,12 +294,23 @@ export function findColourViolations(css, moduleFile) {
         detail: `${property.trim()}: var(${token})`,
       })
     }
-    for (const [found] of value.matchAll(RAW_COLOUR)) {
+    // A reference to an element, a string and a custom property name are not colours.
+    const plain = value.replace(URL_REFERENCE, '').replace(QUOTED, '').replace(CUSTOM_IDENT, '')
+    for (const [found] of plain.matchAll(RAW_COLOUR)) {
       violations.push({
         file: moduleFile,
         kind: 'raw-colour',
         detail: `${property.trim()}: ${found}`,
       })
+    }
+    for (const [word] of plain.matchAll(WORD)) {
+      if (NAMED_COLOURS.has(word.toLowerCase())) {
+        violations.push({
+          file: moduleFile,
+          kind: 'raw-colour',
+          detail: `${property.trim()}: ${word}`,
+        })
+      }
     }
   }
   return violations
@@ -140,19 +335,15 @@ function hostClasses() {
 }
 
 /**
- * Every stylesheet a scoring module ships: its legacy `src/styles.css` while it
- * still has one, plus every sheet under `src/design/` — the one folder where a
- * module composing the design system writes its game pieces' CSS. Either may be
- * absent; a module with neither simply contributes nothing.
+ * Every stylesheet a scoring module ships: every sheet under `src/design/` — the
+ * one folder where a module composing the design system writes its game pieces'
+ * CSS. A module without `src/design/` contributes nothing. A `src/styles.css` is
+ * not looked at here: `legacyStylesheets()` (module-packages.mjs) forbids it.
  */
 export function moduleStylesheets(packagesDir = PACKAGES_DIR) {
   return modulePackages(packagesDir).flatMap((dir) => {
-    const legacy = join(dir, 'src/styles.css')
     const design = join(dir, 'src/design')
-    return [
-      ...(existsSync(legacy) ? [legacy] : []),
-      ...(existsSync(design) ? cssFiles(design).sort() : []),
-    ]
+    return existsSync(design) ? cssFiles(design).sort() : []
   })
 }
 

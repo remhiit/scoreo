@@ -307,15 +307,20 @@ prefix. The scope and the prefix guard opposite directions of the same border; o
   `scripts/eslint-config.test.mjs` proves each case.
 - `scripts/check-module-styles.mjs` — every `src/design/**/*.css` must be scoped under
   `.module-<moduleId>` and share no class name with the design system, and must use no
-  `var(--ctp-…)` palette token and no raw colour (hex, `rgb()`/`rgba()`, `hsl()`/`hsla()`). Runs in
-  CI.
+  `var(--ctp-…)` palette token and no raw colour. Raw colours covered: hex, `rgb()`/`rgba()`,
+  `hsl()`/`hsla()`, `hwb()`, `lab()`, `lch()`, `oklab()`, `oklch()`, `color()`, and every CSS named
+  colour (`white`, `red`…). `transparent`, `currentColor`, `inherit`, `initial`, `unset` and
+  `revert` stay permitted. Only declaration values are read, word by word: a name that is part of
+  an identifier (`--a-red-shadow`, `var(--sc-white-ish)`), a string and a `url(#…)` reference are
+  never flagged. Runs in CI.
 - `scripts/check-design-tokens.mjs` — a raw px/duration/easing value equal to a token fails in
   `src/design/**/*.css` exactly as in the design system.
 - `apps/scoreo/e2e/module-style-isolation.spec.ts` — a table of every registered module, so a new
   module is a row there, not a new test. For every row, the module's reference surface must wear the
   host's `--surface-card`, and opening the module must leave Scoreo's own theme untouched.
 - `scripts/module-packages.test.mjs` — no module package may have a legacy `src/styles.css`, and the
-  e2e table (read statically) must hold one row per module package. `scripts/module-packages.mjs` is
+  e2e table (read statically) must hold one row per module package — a deliberate requirement, so
+  that no module ships without its style-isolation check. `scripts/module-packages.mjs` is
   also the one definition of "a module package" (`packages/module-*` but `module-api`) both CSS
   guards walk.
 - What none of these can see, `apps/scoreo/tests/visual/` does: see

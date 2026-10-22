@@ -1,13 +1,22 @@
+import { readdirSync } from 'node:fs'
+import { basename, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { ESLint } from 'eslint'
 import { describe, expect, it } from 'vitest'
 import config from '../eslint.config.js'
+import { PACKAGES_DIR, modulePackages } from './module-packages.mjs'
 
 // The module-composes-the-design-system rule, checked through the real config
 // on paths of the workspace (eslint.config.js § MODULE_CONFIGS). It covers
 // every `packages/module-*` by glob: a module that does not exist yet is held
 // to it exactly like the ones that do.
 const ROOT = fileURLToPath(new URL('..', import.meta.url))
+
+// The modules that exist, plus one that does not yet: the glob must hold it too.
+const MODULE_IDS = [
+  ...modulePackages(join(ROOT, PACKAGES_DIR)).map((dir) => basename(dir).replace(/^module-/, '')),
+  'not-written-yet',
+]
 
 const SNIPPET = 'export const Piece = () => <div className="sj-card" />\n'
 const STYLE_SNIPPET = 'export const Piece = () => <div style={{ color: "red" }} />\n'
@@ -23,7 +32,7 @@ async function errors(snippet, filePath, ruleId) {
 const classNameErrors = (filePath) => errors(SNIPPET, filePath, 'no-restricted-syntax')
 
 describe('eslint.config.js — every module composes the design system', () => {
-  it.each(['mille-sabords', 'skyjo', 'tori-valley', 'not-written-yet'])(
+  it.each(MODULE_IDS)(
     'refuses a className outside src/design/ of packages/module-%s',
     async (id) => {
       const found = await classNameErrors(`packages/module-${id}/src/ui/Board.tsx`)
@@ -32,7 +41,7 @@ describe('eslint.config.js — every module composes the design system', () => {
     },
   )
 
-  it.each(['mille-sabords', 'skyjo', 'tori-valley', 'not-written-yet'])(
+  it.each(MODULE_IDS)(
     'accepts a className inside src/design/ of packages/module-%s',
     async (id) => {
       expect(await classNameErrors(`packages/module-${id}/src/design/Piece.tsx`)).toEqual([])
@@ -89,6 +98,22 @@ describe('eslint.config.js — every module composes the design system', () => {
 
   it('accepts a className in a module’s component test', async () => {
     expect(await classNameErrors('packages/module-skyjo/src/ui/Round.test.tsx')).toEqual([])
+  })
+
+  it('does not lint as a module any packages/module-* that modulePackages() skips', async () => {
+    const packages = join(ROOT, PACKAGES_DIR)
+    const known = modulePackages(packages).map((dir) => basename(dir))
+    const excluded = readdirSync(packages).filter(
+      (name) => name.startsWith('module-') && !known.includes(name),
+    )
+    expect(excluded).toContain('module-api')
+    for (const name of excluded) {
+      const path = `packages/${name}/src/index.tsx`
+      expect(await classNameErrors(path)).toEqual([])
+      expect(await classNameErrors(`packages/${name}/src/design/Piece.tsx`)).toEqual([])
+      expect(await errors(STYLE_SNIPPET, path, 'no-restricted-syntax')).toEqual([])
+      expect(await errors(LUCIDE_SNIPPET, path, 'no-restricted-imports')).toEqual([])
+    }
   })
 
   it('leaves the contract package and the design system alone', async () => {

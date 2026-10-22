@@ -138,7 +138,8 @@ Until both are done the screen is reachable by no route at all, and every test s
 A new module is a **row in an existing table**, not a new test:
 
 - `apps/scoreo/e2e/module-style-isolation.spec.ts` — one entry: how to reach the screen and a
-  reference surface, which must wear the host's `--surface-card`.
+  reference surface, which must wear the host's `--surface-card`. This row is **required**:
+  `scripts/module-packages.test.mjs` fails for any `module-*` package without one.
 - `apps/scoreo/tests/visual/` — one spec plus baselines, recorded **in the container**
   (`pnpm --filter scoreo test:visual:container --update-snapshots`), never on your own machine.
   Read `doc/technical/visual-testing.md` first; two traps live there:
