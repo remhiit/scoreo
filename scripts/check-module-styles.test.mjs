@@ -69,7 +69,7 @@ describe('findViolations', () => {
 })
 
 describe('moduleStylesheets', () => {
-  it('finds a module’s legacy styles.css and every sheet under src/design/', () => {
+  it('finds every sheet under src/design/ and ignores any src/styles.css', () => {
     const root = packagesTree({
       'module-a/src/styles.css': '.module-a {}',
       'module-a/src/design/Card.css': '.module-a .a-card {}',
@@ -79,13 +79,12 @@ describe('moduleStylesheets', () => {
       'design-system/src/styles.css': '.sc-x {}',
     })
     expect(moduleStylesheets(root)).toEqual([
-      join(root, 'module-a/src/styles.css'),
       join(root, 'module-a/src/design/Card.css'),
       join(root, 'module-a/src/design/dice/Die.css'),
     ])
   })
 
-  it('treats a missing styles.css or src/design/ as empty', () => {
+  it('treats a missing src/design/ as empty', () => {
     const root = packagesTree({
       'module-a/src/index.ts': '',
       'module-b/src/design/Piece.css': '.module-b .b-piece {}',
@@ -216,13 +215,13 @@ describe('findColourViolations', () => {
     ).toEqual([])
   })
 
-  it('applies to src/design/ sheets, not to a legacy styles.css', () => {
+  it('applies to src/design/ sheets, the only ones a module ships', () => {
     const root = packagesTree({
       'module-a/src/styles.css': '.module-a { --a-bg: #fff; color: var(--ctp-text) }',
       'module-a/src/design/Card.css': '.module-a .a-card { color: #fff }',
     })
-    const [legacy, design] = moduleStylesheets(root)
-    expect(isDesignStylesheet(legacy)).toBe(false)
+    const [design, ...others] = moduleStylesheets(root)
+    expect(others).toEqual([])
     expect(isDesignStylesheet(design)).toBe(true)
     expect(findColourViolations(readFileSync(design, 'utf8'), design)).toEqual([
       { file: design, kind: 'raw-colour', detail: 'color: #fff' },

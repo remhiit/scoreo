@@ -26,8 +26,7 @@ const TOKENS_DIR = 'tokens'
  * each scoring module's `src/design/` — the game pieces of a module composing
  * the design system read the same semantic tokens, so a raw value equal to one
  * fails there exactly as it does here (doc/technical/module-contract.md). A
- * module without `src/design/` contributes nothing. A module's legacy
- * `src/styles.css` keeps its own palette and is not inspected.
+ * module without `src/design/` contributes nothing.
  */
 export function cssRoots(packagesDir = PACKAGES_DIR, designSystemRoot = DESIGN_SYSTEM_ROOT) {
   const modules = modulePackages(packagesDir).map((dir) => join(dir, 'src/design'))
