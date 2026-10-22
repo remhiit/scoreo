@@ -20,8 +20,6 @@
 //     color(), CSS named colours) — the semantic tokens are what follow
 //     Scoreo's flavour, the rest would pin one.
 //
-// A module that has not migrated yet still ships its legacy `src/styles.css`,
-// with its own palette: it is held to the first two checks only.
 //
 // See doc/technical/module-contract.md.
 import { existsSync, readdirSync, readFileSync } from 'node:fs'
@@ -284,8 +282,7 @@ const NAMED_COLOURS = new Set([
  * Colours a game piece may not write: a Catppuccin palette token or a raw
  * colour, anywhere in a declaration's value. Only the semantic tokens of the
  * design system (`--surface-card`, `--color-primary`…) follow Scoreo's flavour.
- * Applied to `src/design/` sheets only — a legacy `src/styles.css` keeps its own
- * palette until its module migrates.
+ * Applied to `src/design/` sheets only.
  */
 export function findColourViolations(css, moduleFile) {
   const violations = []
@@ -338,19 +335,15 @@ function hostClasses() {
 }
 
 /**
- * Every stylesheet a scoring module ships: its legacy `src/styles.css` while it
- * still has one, plus every sheet under `src/design/` — the one folder where a
- * module composing the design system writes its game pieces' CSS. Either may be
- * absent; a module with neither simply contributes nothing.
+ * Every stylesheet a scoring module ships: every sheet under `src/design/` — the
+ * one folder where a module composing the design system writes its game pieces'
+ * CSS. A module without `src/design/` contributes nothing. A `src/styles.css` is
+ * not looked at here: `legacyStylesheets()` (module-packages.mjs) forbids it.
  */
 export function moduleStylesheets(packagesDir = PACKAGES_DIR) {
   return modulePackages(packagesDir).flatMap((dir) => {
-    const legacy = join(dir, 'src/styles.css')
     const design = join(dir, 'src/design')
-    return [
-      ...(existsSync(legacy) ? [legacy] : []),
-      ...(existsSync(design) ? cssFiles(design).sort() : []),
-    ]
+    return existsSync(design) ? cssFiles(design).sort() : []
   })
 }
 
