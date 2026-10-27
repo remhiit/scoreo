@@ -2,10 +2,10 @@
 
 How a **scoring module** talks to the host application. Two packages hold it:
 
-| Package                                                  | Role                                                                                                                                                                                |
-| -------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [`packages/module-api`](../../packages/module-api)       | The contract itself: what a module declares, what it hands back, what the host lends it. No runtime dependency — React appears only as a type-only import for the screen component. |
-| [`packages/shared-domain`](../../packages/shared-domain) | The vocabulary genuinely shared by both sides: `Player`, `PlayerSchema`, `newId()`, `isUuid()`, `Result`/`ok`/`err`.                                                                |
+| Package                                                  | Role                                                                                                                                                                                                                                    |
+| -------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [`packages/module-api`](../../packages/module-api)       | The contract itself: what a module declares, what it hands back, what the host lends it. No runtime dependency — React appears only as a type-only import for the screen component.                                                     |
+| [`packages/shared-domain`](../../packages/shared-domain) | The vocabulary genuinely shared by both sides: `Player`, `GameType`, `Match`, `PlayerScore` (types, pure functions and zod schemas), the `WinCondition`/`ScoringMode`/`TieBreakRule` enums, `newId()`, `isUuid()`, `Result`/`ok`/`err`. |
 
 A module is a package under `packages/` that Scoreo lists in its registry. It owns the scoring rules
 of one game; the host owns the players, the storage and the navigation. Nothing crosses that line
@@ -127,6 +127,13 @@ while and 8 kB of scoring rules rode into `index.js`, chunk or no chunk. The mod
 reaches its domain by relative path; a build is the check (`grep` the main bundle for a string only
 the module has).
 
+## What is deliberately not shared
+
+`shared-domain` holds the serialized models and their pure rules, nothing else. `MatchDraft`, `trophy`, the
+errors (`ValidationError`/`NotFoundError`), the repository ports and the use cases stay in the app: they describe
+how the host stores and orchestrates, not what a module needs to read. `shared-domain` depends on `zod` only, never
+on React or on the app.
+
 ## Binding a module to a game
 
 Nothing is materialized when the app starts: a fresh profile has no game types at all. The game
@@ -169,7 +176,7 @@ module".
 The module is the source of truth of its game's scoring: it computes the final scores it hands back
 (`ModuleHostAdapter.saveMatch` stores them as they are), and every module counts **points** today.
 So a `GameType` with `moduleId !== null` always scores in `POINTS`, whatever its stored
-`scoringMode`: `effectiveScoringMode()` (`domain/model/gameType.ts`) returns `POINTS` for it,
+`scoringMode`: `effectiveScoringMode()` (`packages/shared-domain/src/gameType.ts`, re-exported by `apps/scoreo/src/domain/model/gameType.ts`) returns `POINTS` for it,
 `newGameType`/`UpdateGameTypeUseCase` store `POINTS`, the game type form hides the scoring mode
 choice, and none of its matches is ever recomputed into rounds won (`roundScoringChanged` sees no
 change). Scoreo's generic score screen, when used on such a game, sums the rounds too. A module

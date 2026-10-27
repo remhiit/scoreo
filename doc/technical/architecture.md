@@ -96,7 +96,7 @@ deployed — Scoreo builds it into a chunk loaded the first time someone opens i
 └── packages/
     ├── design-system/             # every visual decision: tokens, atoms → templates (see its README)
     ├── module-api/                # the host ↔ module contract, no runtime dependency
-    ├── shared-domain/             # Player, PlayerSchema, newId, isUuid, Result
+    ├── shared-domain/             # Player, GameType, Match, PlayerScore + schemas, enums, newId, isUuid, Result
     ├── module-mille-sabords/      # 1000 Sabords, ported from Kotlin and checked against it
     ├── module-skyjo/              # Skyjo, a manual score counter built directly as a module
     └── module-tori-valley/        # absorbed score-counting module
@@ -105,7 +105,7 @@ legacy/
 ```
 
 `design-system`, `module-api` and `shared-domain` are consumed as TypeScript source (their `exports` field points at
-`src/index.ts`): nothing to build before the app compiles, and one definition of `Player` for the
+`src/index.ts`): nothing to build before the app compiles, and one definition of `Player`, `GameType`, `Match` and `PlayerScore` for the
 whole workspace. The two packages are distinct on purpose — `shared-domain` is vocabulary both sides
 already had, `module-api` is the boundary between them. See
 [`module-contract.md`](module-contract.md).
@@ -117,7 +117,7 @@ envelope the Kotlin implementation produces from it. Both sides replay it: `Gold
 Kotlin side, `exportScoreo.golden.test.ts` on the TypeScript side, comparing **byte for byte**.
 
 Neither can drift without the other going red, which is the only way to be sure 416 lines of scoring
-rules were *ported* and not reinvented. Reading the diff of a rewrite proves nothing; two
+rules were _ported_ and not reinvented. Reading the diff of a rewrite proves nothing; two
 implementations agreeing on a corpus proves something.
 
 The corpus deliberately includes a game where a Skull Island drives a player below zero, who then
@@ -144,7 +144,7 @@ project covering `scripts/*.test.mjs`. To run a single app test file:
 
 ## Source structure
 
-- **`apps/scoreo/src/domain/`** — `model/` (types + zod schemas), `port/` (repository interfaces), `result.ts`. `player.ts`, `player.schema.ts` and `result.ts` re-export `@scoreboards/shared-domain`: the app keeps its domain vocabulary while the definitions are shared with the modules
+- **`apps/scoreo/src/domain/`** — `model/` (types + zod schemas), `port/` (repository interfaces), `result.ts`. `player`, `enums`, `playerScore`, `gameType`, `match` (each with its `.schema.ts`) and `result.ts` re-export `@scoreboards/shared-domain`: the app keeps its domain vocabulary while the definitions are shared with the modules
 - **`apps/scoreo/src/application/`** — use cases (business logic, framework-agnostic)
 - **`apps/scoreo/src/infrastructure/`** — `localStorage/` (adapters), `google/` (Drive sync, OAuth, config), `migration/` (Match v1→v2), `testing/` (in-memory fakes + mocks for tests)
 - **`apps/scoreo/src/services/`** — root DI context
@@ -157,7 +157,7 @@ Run `find src -type d` for the exhaustive package list.
 
 Every visual decision lives in the design system package, [`packages/design-system/`](../../packages/design-system/README.md) (`@scoreboards/design-system`), organised in atomic layers: tokens, atoms, molecules, organisms, templates. The host **composes** its components and nothing else — no `className`, no `style`, no stylesheet, no `lucide-react` glyph of its own. `apps/scoreo/src/main.tsx` imports its single stylesheet, `@scoreboards/design-system/styles.css`, which Vite bundles and links from `index.html`'s `<head>` (so the splash is styled before the JS runs).
 
-**Guard-rail: the composition rule** — `eslint.config.js` fails on a `className` or `style` attribute, or a `lucide-react` import, anywhere in `apps/scoreo/src/`. It has no exceptions: the host ships no CSS of its own (`apps/scoreo/public/css/` is gone) and every screen composes the design system. The same rule extends to every scoring module (`packages/module-*`), except that its `src/design/` folder may write `className` (still no `style`, no `lucide-react`) — see [`module-contract.md`](module-contract.md) § *A module wears Scoreo's look*.
+**Guard-rail: the composition rule** — `eslint.config.js` fails on a `className` or `style` attribute, or a `lucide-react` import, anywhere in `apps/scoreo/src/`. It has no exceptions: the host ships no CSS of its own (`apps/scoreo/public/css/` is gone) and every screen composes the design system. The same rule extends to every scoring module (`packages/module-*`), except that its `src/design/` folder may write `className` (still no `style`, no `lucide-react`) — see [`module-contract.md`](module-contract.md) § _A module wears Scoreo's look_.
 
 All design-system classes are prefixed `sc-`, so they never collide with a scoring module's classes. The only element-level rules are the design system's foundations (`foundations/base.css`): a reset and the page background — none reaches into a scoring module, which composes the system's components like the host does. The static splash in `index.html` is styled by `foundations/splash.css` (`.sc-splash`).
 
@@ -187,12 +187,12 @@ Scoreo is installable as a native app on mobile and desktop.
 
 Static assets in `apps/scoreo/public/`:
 
-| File | Role |
-|---|---|
-| `manifest.json` | App name, icons, `display: standalone`, theme `#8839ef` |
-| `sw.js` | Hand-written service worker — cache-first for hashed Vite assets, network-first (with cache fallback) for everything else same-origin |
-| `icon-192.png` | Home screen icon (Android, iOS) |
-| `icon-512.png` | Splash screen icon |
+| File            | Role                                                                                                                                  |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| `manifest.json` | App name, icons, `display: standalone`, theme `#8839ef`                                                                               |
+| `sw.js`         | Hand-written service worker — cache-first for hashed Vite assets, network-first (with cache fallback) for everything else same-origin |
+| `icon-192.png`  | Home screen icon (Android, iOS)                                                                                                       |
+| `icon-512.png`  | Splash screen icon                                                                                                                    |
 
 `apps/scoreo/index.html` (project root, source for Vite's HTML transform) carries the PWA meta tags, a `Content-Security-Policy` `<meta>` tag (see [Security](#security) below), the `#splash` div (hidden right after `createRoot(...).render(...)` in `apps/scoreo/src/main.tsx`), the dev-vs-prod service-worker registration script (`apps/scoreo/public/registerSw.js`, unregisters on `localhost`/`127.0.0.1`, registers `./sw.js` via `navigator.serviceWorker.register()` otherwise — kept as an external file rather than inline so the CSP's `script-src` can omit `'unsafe-inline'`), and the deferred Google Identity Services `<script>` tag.
 
@@ -224,6 +224,7 @@ Data stored in `localStorage` must remain readable after an app update.
 **Soft-delete**: `Player.active = false` (default `true`) hides the player from active screens (Home, ScoreDetail) but keeps them in match history. `getAll()` excludes inactive players by default. `getAll(includeInactive = true)` includes them for history rendering. The name can optionally be blanked (`anonymize = true` in `delete()`).
 
 In practice:
+
 - **Adding a field**: always provide a `.default()` in the field's zod schema so old data deserializes cleanly. zod strips unknown keys natively at validation, matching the old `ignoreUnknownKeys` behavior.
 - **Renaming / removing a field**: requires a migration step — read old key, transform, write to new key. Document the migration in `doc/technical/migrations.md`.
 - **Never change the type of an existing field** without a migration.
@@ -232,14 +233,14 @@ This applies to: `Player`, `GameType`, `Match`, `PlayerScore`, `WinCondition`, `
 
 **Current entity formats:**
 
-| Entity | Fields |
-|---|---|
-| `Player` | `id: string` (UUID v4), `name: string`, `active: boolean` (default `true`) |
-| `GameType` | `id: string` (UUID v4), `name: string`, `winCondition: WinCondition`, `scoringMode: ScoringMode` (default `'POINTS'`), `tieBreakRule: TieBreakRule` (default `'NONE'`), `tieBreakCondition: WinCondition` (default `'HIGHEST_SCORE'`), `tieBreakLabel: string \| null` (default `null`), `active: boolean` (default `true`) |
-| `Match` | `id: string` (UUID v4), `date: number` (epoch ms), `gameTypeId: string`, `playerScores: PlayerScore[]`, `manualWinners: string[]` (default `[]`), `secondaryPlayerScores: PlayerScore[]` (default `[]`), `rounds: PlayerScore[][]` (default `[]`) |
-| `PlayerScore` | `playerId: string`, `score: number` |
-| `WinCondition` | union: `'HIGHEST_SCORE'`, `'LOWEST_SCORE'`, `'MANUAL'` |
-| `ScoringMode` | union: `'POINTS'`, `'ROUNDS_WON'` |
+| Entity         | Fields                                                                                                                                                                                                                                                                                                                      |
+| -------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Player`       | `id: string` (UUID v4), `name: string`, `active: boolean` (default `true`)                                                                                                                                                                                                                                                  |
+| `GameType`     | `id: string` (UUID v4), `name: string`, `winCondition: WinCondition`, `scoringMode: ScoringMode` (default `'POINTS'`), `tieBreakRule: TieBreakRule` (default `'NONE'`), `tieBreakCondition: WinCondition` (default `'HIGHEST_SCORE'`), `tieBreakLabel: string \| null` (default `null`), `active: boolean` (default `true`) |
+| `Match`        | `id: string` (UUID v4), `date: number` (epoch ms), `gameTypeId: string`, `playerScores: PlayerScore[]`, `manualWinners: string[]` (default `[]`), `secondaryPlayerScores: PlayerScore[]` (default `[]`), `rounds: PlayerScore[][]` (default `[]`)                                                                           |
+| `PlayerScore`  | `playerId: string`, `score: number`                                                                                                                                                                                                                                                                                         |
+| `WinCondition` | union: `'HIGHEST_SCORE'`, `'LOWEST_SCORE'`, `'MANUAL'`                                                                                                                                                                                                                                                                      |
+| `ScoringMode`  | union: `'POINTS'`, `'ROUNDS_WON'`                                                                                                                                                                                                                                                                                           |
 
 **Migration mechanism:** `LocalStorageMatchRepository.getAll()` runs `migrateMatches()` once per instance before the first read. It detects old-format data (string dates, non-UUID ids) and converts them, writing the migrated array back. Idempotent — a second call is a no-op. See `doc/technical/migrations.md` for details, and `apps/scoreo/src/infrastructure/crossMigration.test.ts` for the end-to-end backward-compat test replaying a realistic old-format export.
 
