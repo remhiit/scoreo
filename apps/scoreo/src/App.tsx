@@ -294,7 +294,7 @@ function AppShell() {
   )
   /**
    * Binding happens here, on the way in: no game type is created until someone
-   * actually chooses to play a module's game — on the module or in Scoreo.
+   * actually chooses to play a module's game, always on the module's grid.
    */
   const bindModule = useCallback(
     (moduleId: string) => {
@@ -307,13 +307,6 @@ function AppShell() {
     (moduleId: string, playerIds: string[]) => {
       const gameType = bindModule(moduleId)
       if (gameType) navigate(moduleScoreScreen(moduleId, gameType.id, playerIds))
-    },
-    [navigate, bindModule],
-  )
-  const handleStartModuleInScoreo = useCallback(
-    (moduleId: string, playerIds: string[]) => {
-      const gameType = bindModule(moduleId)
-      if (gameType) navigate(scoreDetailScreen(gameType.id, playerIds))
     },
     [navigate, bindModule],
   )
@@ -434,7 +427,6 @@ function AppShell() {
           onAddGameType={homeOnAddGameType}
           onStartGame={handleStartGame}
           onStartModule={handleStartModule}
-          onStartModuleInScoreo={handleStartModuleInScoreo}
           matchDraftRepository={services.matchDraftRepository}
           onResumeDraft={handleStartGame}
           getMatchCount={homeGetMatchCount}

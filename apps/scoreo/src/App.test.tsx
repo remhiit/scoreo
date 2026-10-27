@@ -129,7 +129,7 @@ describe('App', () => {
     expect(document.querySelector('.sc-hcell')).toHaveTextContent('Alice')
   })
 
-  it('Home: "Play in Scoreo" on a module never played binds it, then opens the generic score screen', () => {
+  it('Home: launching a module never played binds it, then opens the module screen', () => {
     localStorage.setItem(
       'scoreo_players',
       JSON.stringify([
@@ -146,7 +146,7 @@ describe('App', () => {
     const combobox = within(dialog).getByRole('combobox')
     const option = within(combobox).getByRole('option', { name: 'Skyjo' }) as HTMLOptionElement
     fireEvent.change(combobox, { target: { value: option.value } })
-    fireEvent.click(within(dialog).getByRole('button', { name: 'Play in Scoreo' }))
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Start match' }))
 
     const gameTypes = JSON.parse(localStorage.getItem('scoreo_gametypes') ?? '[]') as {
       id: string
@@ -155,8 +155,7 @@ describe('App', () => {
     }[]
     expect(gameTypes).toHaveLength(1)
     expect(gameTypes[0]).toMatchObject({ name: 'Skyjo', moduleId: 'skyjo' })
-    expect(window.location.hash).toBe(`#/score/${gameTypes[0].id}/p1,p2`)
-    expect(screen.getByText('Finish match')).toBeInTheDocument()
+    expect(window.location.hash).toBe(`#/module/skyjo/${gameTypes[0].id}/p1,p2`)
   })
 
   it('clicking the title navigates Home from any screen', () => {

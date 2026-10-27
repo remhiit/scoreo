@@ -135,17 +135,16 @@ sorted by `gameNames[0]` — unless `resolveBindingTarget` resolves to a `GameTy
 bound to it (rule 1, active or archived) or an **active** one matched by name (rule 2,
 case-insensitive, ignoring surrounding blanks): that game then stands for the module. When rule 2
 lands on an archived homonym, the module entry stays listed so the module remains reachable, and
-launching it binds and reactivates that archived game. Both buttons are offered on such an entry; **Play on the module** is disabled, with the
+launching it binds and reactivates that archived game. The single **Start match** button opens the module's screen; it is disabled, with the
 manifest's player range shown, when the selected players fall outside `[minPlayers, maxPlayers]`.
 An unbound `GameType` carrying one of the module's names — typically created by a v1.1 import —
-stands for the module instead: selecting it offers **Play on the module** too (unless the module is
+stands for the module instead: selecting it launches the module too (unless the module is
 already bound to another `GameType`), which binds it through rule 2 below. Rule 2 stamps the first
 name match of `getAll(true)`, archived games included, so with several homonyms the button is only
 offered on that first one — on any other, it would bind and open a different game. The **Games** screen lists only
 real `GameType`s, so a module never played does not appear there.
 
-A module's game becomes real the first time someone plays it — on the module or in Scoreo's generic
-score screen — through `BindModuleUseCase`:
+A module's game becomes real the first time someone plays it — always on the module's grid — through `BindModuleUseCase`:
 
 1. a `GameType` already carries this `moduleId` → reuse it, whatever its name has become;
 2. otherwise a `GameType`'s name matches one the manifest claims → stamp the `moduleId` onto it —
@@ -157,12 +156,14 @@ asking for it back.
 
 Rules 1 and 2 live in one pure function, `resolveBindingTarget(manifest, allGameTypes)` (exported
 from `bindModuleUseCase.ts`, with the name match `manifestClaimsGameName`): `invoke()` decides with
-it, and the game selection modal calls it too, so the game it offers **Play on the module** on is,
+it, and the game selection modal calls it too, so the game it launches the module on is,
 by construction, the one the binding will pick.
 
-`moduleId` is a **capability flag, not a redirection** — Scoreo's own score screen stays available
-for a game that has a module, which is what lets the host offer "play in Scoreo" _or_ "play on the
-module".
+A game that has a module has **one grid, the module's**: the game selection modal offers a single
+launch button that goes through `BindModuleUseCase` and opens the module screen, never the generic
+grid (out of the player range it is disabled, not redirected). The generic grid remains only for
+reopening a match without `moduleData` for that module, and for the routes `#/score/…` (generic
+drafts, hand-typed URLs).
 
 ### Scoring mode of a module-bound game
 

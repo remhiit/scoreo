@@ -34,7 +34,6 @@ function renderModal(
     onAddGameType: vi.fn(),
     onStartGame: vi.fn(),
     onStartModule: vi.fn(),
-    onStartModuleInScoreo: vi.fn(),
     selectedPlayerIds,
     ...overrides,
   }
@@ -111,7 +110,7 @@ describe('GameSelectModalContainer', () => {
     const { dialog, select, props } = renderModal(repo)
 
     select('skyJO')
-    fireEvent.click(within(dialog).getByRole('button', { name: 'Play on the module' }))
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Start match' }))
 
     expect(props.onStartModule).toHaveBeenCalledWith('skyjo', ['p1', 'p2'])
     expect(props.onStartGame).not.toHaveBeenCalled()
@@ -121,14 +120,14 @@ describe('GameSelectModalContainer', () => {
     const repo = new InMemoryGameTypeRepository()
     repo.save(gameType({ id: 'gt1', name: 'Skyjo' }))
     repo.save(gameType({ id: 'gt2', name: 'Old Skyjo', moduleId: 'skyjo', active: false }))
-    const { dialog, select } = renderModal(repo)
+    const { dialog, select, props } = renderModal(repo)
 
     select('Skyjo')
 
-    expect(
-      within(dialog).queryByRole('button', { name: 'Play on the module' }),
-    ).not.toBeInTheDocument()
-    expect(within(dialog).getByRole('button', { name: 'Start match' })).toBeEnabled()
+    // Not a module game: the one button starts it on the generic grid.
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Start match' }))
+    expect(props.onStartModule).not.toHaveBeenCalled()
+    expect(props.onStartGame).toHaveBeenCalled()
   })
 
   it('does not offer the module on an unbound homonym the binding would not pick', () => {
@@ -137,14 +136,14 @@ describe('GameSelectModalContainer', () => {
     const repo = new InMemoryGameTypeRepository()
     repo.save(gameType({ id: 'gt-old', name: 'Skyjo', active: false }))
     repo.save(gameType({ id: 'gt-new', name: 'skyjo' }))
-    const { dialog, select } = renderModal(repo)
+    const { dialog, select, props } = renderModal(repo)
 
     select('skyjo')
 
-    expect(
-      within(dialog).queryByRole('button', { name: 'Play on the module' }),
-    ).not.toBeInTheDocument()
-    expect(within(dialog).getByRole('button', { name: 'Start match' })).toBeEnabled()
+    // Not a module game: the one button starts it on the generic grid.
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Start match' }))
+    expect(props.onStartModule).not.toHaveBeenCalled()
+    expect(props.onStartGame).toHaveBeenCalled()
   })
 
   it('keeps the module reachable through its own entry when the binding would pick an archived homonym', () => {
@@ -162,7 +161,7 @@ describe('GameSelectModalContainer', () => {
     expect(options()).toEqual(['skyjo', ...sortedModuleLabels])
 
     select('Skyjo')
-    fireEvent.click(within(dialog).getByRole('button', { name: 'Play on the module' }))
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Start match' }))
 
     expect(bound.map((gt) => gt.id)).toEqual(['gt-old'])
     expect(repo.findById('gt-old')).toMatchObject({ moduleId: 'skyjo', active: true })
@@ -181,62 +180,52 @@ describe('GameSelectModalContainer', () => {
     })
 
     select('skyjo')
-    fireEvent.click(within(dialog).getByRole('button', { name: 'Play on the module' }))
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Start match' }))
 
     expect(bound.map((gt) => gt.id)).toEqual(['gt-new'])
     expect(repo.findById('gt-old')).toMatchObject({ moduleId: null, active: false })
   })
 
-  it('offers both ways in for an unbound module entry', () => {
+  it('offers a single launch button for an unbound module entry, and no "Play in Scoreo"', () => {
     const repo = new InMemoryGameTypeRepository()
     const { dialog, select } = renderModal(repo)
 
     select('Skyjo')
 
-    expect(within(dialog).getByRole('button', { name: 'Play in Scoreo' })).toBeEnabled()
-    expect(within(dialog).getByRole('button', { name: 'Play on the module' })).toBeEnabled()
+    expect(within(dialog).getByRole('button', { name: 'Start match' })).toBeEnabled()
+    expect(within(dialog).queryByRole('button', { name: 'Play in Scoreo' })).not.toBeInTheDocument()
+    expect(within(dialog).getAllByRole('button', { name: 'Start match' })).toHaveLength(1)
   })
 
-  it('"Play on the module" on an unbound entry hands its module id over', () => {
+  it('launches an unbound module entry on the module', () => {
     const repo = new InMemoryGameTypeRepository()
     const { dialog, select, props } = renderModal(repo)
 
     select('Skyjo')
-    fireEvent.click(within(dialog).getByRole('button', { name: 'Play on the module' }))
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Start match' }))
 
     expect(props.onStartModule).toHaveBeenCalledWith('skyjo', ['p1', 'p2'])
     expect(props.onStartGame).not.toHaveBeenCalled()
   })
 
-  it('"Play in Scoreo" on an unbound entry asks to bind the module and open the generic screen', () => {
-    const repo = new InMemoryGameTypeRepository()
-    const { dialog, select, props } = renderModal(repo)
-
-    select('Skyjo')
-    fireEvent.click(within(dialog).getByRole('button', { name: 'Play in Scoreo' }))
-
-    expect(props.onStartModuleInScoreo).toHaveBeenCalledWith('skyjo', ['p1', 'p2'])
-    expect(props.onStartGame).not.toHaveBeenCalled()
-    expect(repo.getAll(true)).toEqual([])
-  })
-
-  it('"Play in Scoreo" on a bound game starts it like any other game', () => {
+  it('launches a game bound to a module on the module, not on the generic grid', () => {
     const repo = new InMemoryGameTypeRepository()
     repo.save(gameType({ id: 'gt1', name: 'Skyjo', moduleId: 'skyjo' }))
     const { dialog, select, props } = renderModal(repo)
 
     select('Skyjo')
-    fireEvent.click(within(dialog).getByRole('button', { name: 'Play in Scoreo' }))
+    expect(within(dialog).getAllByRole('button', { name: 'Start match' })).toHaveLength(1)
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Start match' }))
 
-    expect(props.onStartGame).toHaveBeenCalledWith('gt1', ['p1', 'p2'])
-    expect(props.onStartModuleInScoreo).not.toHaveBeenCalled()
+    expect(props.onStartModule).toHaveBeenCalledWith('skyjo', ['p1', 'p2'])
+    expect(props.onStartGame).not.toHaveBeenCalled()
   })
 
   it.each([
     ['an unbound entry', false],
     ['a bound game', true],
   ])(
-    'keeps %s listed out of the module player range, with only the module button disabled',
+    'keeps %s listed out of the module player range, with the launch button disabled and no generic fallback',
     (_, bound) => {
       const repo = new InMemoryGameTypeRepository()
       if (bound) {
@@ -247,8 +236,10 @@ describe('GameSelectModalContainer', () => {
       expect(options()).toContain('La Vallée des Torī')
       select('La Vallée des Torī')
 
-      expect(within(dialog).getByRole('button', { name: 'Play on the module' })).toBeDisabled()
-      expect(within(dialog).getByRole('button', { name: 'Play in Scoreo' })).toBeEnabled()
+      expect(within(dialog).getByRole('button', { name: 'Start match' })).toBeDisabled()
+      expect(
+        within(dialog).queryByRole('button', { name: 'Play in Scoreo' }),
+      ).not.toBeInTheDocument()
       expect(within(dialog).getByText('2–4 players')).toBeInTheDocument()
     },
   )
