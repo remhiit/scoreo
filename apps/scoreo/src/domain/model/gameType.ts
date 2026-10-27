@@ -1,4 +1,5 @@
 import type { ScoringMode, TieBreakRule, WinCondition } from './enums'
+import { ValidationError } from './errors'
 import type { PlayerScore } from './playerScore'
 
 export interface GameType {
@@ -23,6 +24,14 @@ export interface GameType {
    * screen stays available for a game that has a module.
    */
   moduleId: string | null
+  /**
+   * Fewest players this game can be started with, or `null` for no lower limit.
+   * Only checked when launching a game (the game choice dialog); matches already
+   * recorded outside the range stay valid.
+   */
+  minPlayers: number | null
+  /** Most players this game can be started with, or `null` for no upper limit. */
+  maxPlayers: number | null
 }
 
 /** Everything but the identity and the win condition, each defaulted by {@link newGameType}. */
@@ -54,7 +63,41 @@ export function newGameType(
     tieBreakLabel: defaults.tieBreakLabel ?? null,
     active: defaults.active ?? true,
     moduleId,
+    minPlayers: defaults.minPlayers ?? null,
+    maxPlayers: defaults.maxPlayers ?? null,
   }
+}
+
+/**
+ * Throws a `ValidationError` unless each set bound is an integer of at least 1
+ * and the minimum does not exceed the maximum (equal bounds are fine: a game
+ * with a fixed number of players).
+ */
+export function assertValidPlayerRange(range: Pick<GameType, 'minPlayers' | 'maxPlayers'>): void {
+  for (const field of ['minPlayers', 'maxPlayers'] as const) {
+    const value = range[field]
+    if (value !== null && (!Number.isInteger(value) || value < 1)) {
+      throw new ValidationError(field, 'Player limits must be whole numbers of at least 1')
+    }
+  }
+  if (
+    range.minPlayers !== null &&
+    range.maxPlayers !== null &&
+    range.minPlayers > range.maxPlayers
+  ) {
+    throw new ValidationError('minPlayers', 'Minimum players must not exceed maximum players')
+  }
+}
+
+/** True when `count` players fit the game's range; a `null` bound is not checked. */
+export function playerCountFitsRange(
+  range: Pick<GameType, 'minPlayers' | 'maxPlayers'>,
+  count: number,
+): boolean {
+  return (
+    (range.minPlayers === null || count >= range.minPlayers) &&
+    (range.maxPlayers === null || count <= range.maxPlayers)
+  )
 }
 
 /** The fields that decide a game type's effective scoring mode. */

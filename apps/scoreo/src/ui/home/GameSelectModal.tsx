@@ -43,6 +43,13 @@ export interface GameSelectModalProps {
    */
   moduleFitsPlayers: boolean
   onStartOnModule: (moduleId: string) => void
+  /**
+   * The player range of the selected game, when it is an ordinary game (no
+   * module) that sets at least one bound; `null` bounds are not checked.
+   */
+  gameRange: { minPlayers: number | null; maxPlayers: number | null } | undefined
+  /** Whether the selected players fit `gameRange`; outside it the game cannot be started. */
+  playersFitGameRange: boolean
 }
 
 /** One entry of the game list: a game type, or a module not bound to one yet. */
@@ -69,6 +76,8 @@ export function GameSelectModal({
   moduleForSelectedGame,
   moduleFitsPlayers,
   onStartOnModule,
+  gameRange,
+  playersFitGameRange,
 }: GameSelectModalProps) {
   const { t } = useTranslation()
 
@@ -89,6 +98,7 @@ export function GameSelectModal({
           </Button>
           <Button
             variant={moduleForSelectedGame && moduleFitsPlayers ? 'secondary' : 'primary'}
+            disabled={gameRange !== undefined && !playersFitGameRange}
             onClick={onStartMatch}
           >
             {moduleForSelectedGame ? t('modules.playInScoreo') : t('home.startMatch')}
@@ -123,10 +133,20 @@ export function GameSelectModal({
 
       {moduleForSelectedGame && !moduleFitsPlayers && (
         <Text variant="hint">
-          {t('modules.playerRange', {
+          {t('home.playerRange', {
             min: moduleForSelectedGame.minPlayers,
             max: moduleForSelectedGame.maxPlayers,
           })}
+        </Text>
+      )}
+
+      {gameRange && !playersFitGameRange && (
+        <Text variant="hint">
+          {gameRange.minPlayers !== null && gameRange.maxPlayers !== null
+            ? t('home.playerRange', { min: gameRange.minPlayers, max: gameRange.maxPlayers })
+            : gameRange.minPlayers !== null
+              ? t('home.playerRangeMin', { min: gameRange.minPlayers })
+              : t('home.playerRangeMax', { max: gameRange.maxPlayers })}
         </Text>
       )}
 

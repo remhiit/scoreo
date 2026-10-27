@@ -22,6 +22,9 @@
     "french": "French"
   },
   "gametype": {
+    "minPlayers": "Min. players",
+    "maxPlayers": "Max. players",
+    "playerLimitPlaceholder": "No limit",
     "title": "Game Types",
     "winCondition": "Win condition",
     "scoringMode": "Scoring",
@@ -75,6 +78,9 @@
     "totals": "Total:"
   },
   "home": {
+    "playerRange": "{{min}}–{{max}} players",
+    "playerRangeMin": "At least {{min}} players",
+    "playerRangeMax": "At most {{max}} players",
     "resumeMatch": "Resume match in progress",
     "playerNamePlaceholder": "Player name",
     "add": "Add",
@@ -254,7 +260,6 @@
     "unknownModule": "This module is not installed.",
     "playInScoreo": "Play in Scoreo",
     "playOnModule": "Play on the module",
-    "playerRange": "{{min}}–{{max}} players",
     "exit": "Exit"
   }
 }

@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { ValidationError } from '../domain/model/errors'
 import type { Match } from '../domain/model/match'
 import type { PlayerScore } from '../domain/model/playerScore'
 import { InMemoryGameTypeRepository } from '../infrastructure/testing/inMemoryGameTypeRepository'
@@ -47,6 +48,33 @@ describe('UpdateGameTypeUseCase', () => {
     updateUseCase.invoke({ ...created, name: 'Belote Updated' })
 
     expect(repo.findById(originalId)?.id).toBe(originalId)
+  })
+
+  it('saves the player range', () => {
+    const repo = new InMemoryGameTypeRepository()
+    const created = new AddGameTypeUseCase(repo).invoke('Tarot', 'HIGHEST_SCORE')
+    const update = new UpdateGameTypeUseCase(repo, new InMemoryMatchRepository())
+
+    update.invoke({ ...created, minPlayers: 3, maxPlayers: 5 })
+    expect(repo.findById(created.id)).toMatchObject({ minPlayers: 3, maxPlayers: 5 })
+
+    update.invoke({ ...created, minPlayers: 4, maxPlayers: 4 })
+    expect(repo.findById(created.id)).toMatchObject({ minPlayers: 4, maxPlayers: 4 })
+
+    update.invoke({ ...created, minPlayers: null, maxPlayers: null })
+    expect(repo.findById(created.id)).toMatchObject({ minPlayers: null, maxPlayers: null })
+  })
+
+  it('refuses a minimum above the maximum and keeps the saved game', () => {
+    const repo = new InMemoryGameTypeRepository()
+    const created = new AddGameTypeUseCase(repo).invoke('Tarot', 'HIGHEST_SCORE')
+    const update = new UpdateGameTypeUseCase(repo, new InMemoryMatchRepository())
+
+    expect(() => update.invoke({ ...created, name: 'X', minPlayers: 5, maxPlayers: 3 })).toThrow(
+      ValidationError,
+    )
+    expect(() => update.invoke({ ...created, minPlayers: 0 })).toThrow(ValidationError)
+    expect(repo.findById(created.id)).toMatchObject({ name: 'Tarot', minPlayers: null })
   })
 
   it('updates the scoring mode', () => {

@@ -46,6 +46,8 @@ function buildGameType(id: string, name: string) {
     tieBreakCondition: 'HIGHEST_SCORE' as const,
     tieBreakLabel: null,
     moduleId: null,
+    minPlayers: null,
+    maxPlayers: null,
     active: true,
   }
 }
@@ -143,6 +145,37 @@ describe('GameTypeScreen', () => {
 
     fireEvent.click(screen.getByLabelText('View details'))
     expect(within(screen.getByRole('dialog')).getByText('Manual selection')).toBeInTheDocument()
+  })
+
+  it('adds a game with a player range and edits it from the form', () => {
+    renderScreen()
+    fireEvent.change(nameInput(), { target: { value: 'Chess' } })
+    fireEvent.change(screen.getByLabelText('Min. players'), { target: { value: '2' } })
+    fireEvent.change(screen.getByLabelText('Max. players'), { target: { value: '2' } })
+    fireEvent.click(screen.getByText('Add game type'))
+    expect(screen.getByText('Chess', { selector: '.sc-row__title' })).toBeInTheDocument()
+
+    fireEvent.click(screen.getByLabelText('Edit'))
+    const dialog = screen.getByRole('dialog')
+    expect(within(dialog).getByLabelText('Min. players')).toHaveValue('2')
+    expect(within(dialog).getByLabelText('Max. players')).toHaveValue('2')
+    fireEvent.change(within(dialog).getByLabelText('Max. players'), { target: { value: '4' } })
+    fireEvent.click(within(dialog).getByText('Save changes'))
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+
+    fireEvent.click(screen.getByLabelText('Edit'))
+    expect(within(screen.getByRole('dialog')).getByLabelText('Max. players')).toHaveValue('4')
+  })
+
+  it('shows an error when the minimum exceeds the maximum', () => {
+    renderScreen()
+    fireEvent.change(nameInput(), { target: { value: 'Chess' } })
+    fireEvent.change(screen.getByLabelText('Min. players'), { target: { value: '5' } })
+    fireEvent.change(screen.getByLabelText('Max. players'), { target: { value: '2' } })
+    fireEvent.click(screen.getByText('Add game type'))
+
+    expect(screen.getByText('minPlayers: Minimum players must not exceed maximum players')).toBeInTheDocument()
+    expect(screen.queryByText('Chess', { selector: '.sc-row__title' })).not.toBeInTheDocument()
   })
 
   it('editing a game type bound to a scoring module leaves it bound', () => {

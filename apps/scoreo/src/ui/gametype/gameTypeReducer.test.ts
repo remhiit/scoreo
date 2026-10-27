@@ -14,6 +14,7 @@ import {
   loadGameTypes,
   gameTypeHasMatches,
   resolveGameTypeForEdit,
+  parsePlayerLimit,
   scoringModeChangeWarning,
   showsScoringModeChoice,
   submitAddGameType,
@@ -100,10 +101,15 @@ describe('gameTypeReducer', () => {
     expect(state.selectedScoringMode).toBe('ROUNDS_WON')
 
     state = gameTypeReducer(state, { type: 'selectScoringMode', scoringMode: 'POINTS' })
-    const result = submitUpdateGameType(useCases.updateGameType, useCases.getGameTypes, {
-      ...state.gameTypes[0],
-      scoringMode: state.selectedScoringMode,
-    })
+    const result = submitUpdateGameType(
+      useCases.updateGameType,
+      useCases.getGameTypes,
+      {
+        ...state.gameTypes[0],
+        scoringMode: state.selectedScoringMode,
+      },
+      state,
+    )
     expect('error' in result).toBe(false)
     expect(useCases.repo.getAll()[0].scoringMode).toBe('POINTS')
   })
@@ -265,7 +271,12 @@ describe('gameTypeReducer', () => {
       tieBreakRule: 'MANUAL_SELECTION' as const,
     }
     state = gameTypeReducer(state, { type: 'editGameType', gameType: original, hasMatches: false })
-    const result = submitUpdateGameType(useCases.updateGameType, useCases.getGameTypes, updated)
+    const result = submitUpdateGameType(
+      useCases.updateGameType,
+      useCases.getGameTypes,
+      updated,
+      state,
+    )
     state =
       'error' in result
         ? gameTypeReducer(state, { type: 'updateFailed', error: result.error })
@@ -282,7 +293,12 @@ describe('gameTypeReducer', () => {
 
     const gameType = state.gameTypes[0]
     state = gameTypeReducer(state, { type: 'editGameType', gameType, hasMatches: false })
-    const result = submitUpdateGameType(useCases.updateGameType, useCases.getGameTypes, gameType)
+    const result = submitUpdateGameType(
+      useCases.updateGameType,
+      useCases.getGameTypes,
+      gameType,
+      state,
+    )
     state = gameTypeReducer(state, { type: 'updateSucceeded', ...(result as LoadedGameTypes) })
 
     expect(state.editingGameId).toBeUndefined()
@@ -509,6 +525,79 @@ describe('gameTypeReducer', () => {
   })
 })
 
+describe('player range fields', () => {
+  it('start empty, hold the typed text and clear the error', () => {
+    expect(initialGameTypeState).toMatchObject({ selectedMinPlayers: '', selectedMaxPlayers: '' })
+    let state = gameTypeReducer(initialGameTypeState, { type: 'addFailed', error: 'boom' })
+    state = gameTypeReducer(state, { type: 'updateMinPlayers', value: '2' })
+    state = gameTypeReducer(state, { type: 'updateMaxPlayers', value: '4' })
+    expect(state).toMatchObject({ selectedMinPlayers: '2', selectedMaxPlayers: '4' })
+    expect(state.error).toBeUndefined()
+  })
+
+  it('are filled by editGameType and reset after a successful add', () => {
+    const useCases = buildUseCases()
+    const created = useCases.addGameType.invoke('Go', 'HIGHEST_SCORE', { minPlayers: 2 })
+    let state = gameTypeReducer(initialGameTypeState, {
+      type: 'editGameType',
+      gameType: created,
+      hasMatches: false,
+    })
+    expect(state).toMatchObject({ selectedMinPlayers: '2', selectedMaxPlayers: '' })
+    state = gameTypeReducer(state, { type: 'cancelEdit' })
+    expect(state).toMatchObject({ selectedMinPlayers: '', selectedMaxPlayers: '' })
+  })
+
+  it('parsePlayerLimit reads empty as no limit and refuses anything but a whole number >= 1', () => {
+    expect(parsePlayerLimit('', 'minPlayers')).toBeNull()
+    expect(parsePlayerLimit('  ', 'minPlayers')).toBeNull()
+    expect(parsePlayerLimit(' 3 ', 'minPlayers')).toBe(3)
+    for (const bad of ['0', '-1', '2.5', 'abc', '1e2']) {
+      expect(() => parsePlayerLimit(bad, 'maxPlayers')).toThrow()
+    }
+  })
+
+  it('submitAddGameType saves the range and reports an invalid one', () => {
+    const useCases = buildUseCases()
+    let state = gameTypeReducer(initialGameTypeState, { type: 'updateName', name: 'Go' })
+    state = gameTypeReducer(state, { type: 'updateMinPlayers', value: '2' })
+    state = gameTypeReducer(state, { type: 'updateMaxPlayers', value: '2' })
+    expect('error' in submitAddGameType(useCases.addGameType, useCases.getGameTypes, state)).toBe(
+      false,
+    )
+    expect(useCases.repo.getAll()[0]).toMatchObject({ minPlayers: 2, maxPlayers: 2 })
+
+    state = gameTypeReducer(state, { type: 'updateMinPlayers', value: '5' })
+    expect(submitAddGameType(useCases.addGameType, useCases.getGameTypes, state)).toHaveProperty(
+      'error',
+    )
+    state = gameTypeReducer(state, { type: 'updateMinPlayers', value: 'x' })
+    expect(submitAddGameType(useCases.addGameType, useCases.getGameTypes, state)).toHaveProperty(
+      'error',
+    )
+    expect(useCases.repo.getAll()).toHaveLength(1)
+  })
+
+  it('submitUpdateGameType saves the range from the form fields', () => {
+    const useCases = buildUseCases()
+    const created = useCases.addGameType.invoke('Go', 'HIGHEST_SCORE')
+    let state = gameTypeReducer(initialGameTypeState, {
+      type: 'editGameType',
+      gameType: created,
+      hasMatches: false,
+    })
+    state = gameTypeReducer(state, { type: 'updateMaxPlayers', value: '6' })
+    const result = submitUpdateGameType(
+      useCases.updateGameType,
+      useCases.getGameTypes,
+      created,
+      state,
+    )
+    expect('error' in result).toBe(false)
+    expect(useCases.repo.findById(created.id)).toMatchObject({ minPlayers: null, maxPlayers: 6 })
+  })
+})
+
 describe('scoring mode change warning', () => {
   const tarot: GameType = {
     id: 'gt1',
@@ -519,6 +608,8 @@ describe('scoring mode change warning', () => {
     tieBreakCondition: 'HIGHEST_SCORE',
     tieBreakLabel: null,
     moduleId: null,
+    minPlayers: null,
+    maxPlayers: null,
     active: true,
   }
 

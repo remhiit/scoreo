@@ -97,7 +97,7 @@ export function GameTypeScreen({
       tieBreakCondition: state.selectedTieBreakCondition,
       tieBreakLabel: state.selectedTieBreakLabel ?? null,
     }
-    const result = submitUpdateGameType(updateGameType, getGameTypes, updated)
+    const result = submitUpdateGameType(updateGameType, getGameTypes, updated, state)
     dispatch(
       'error' in result
         ? { type: 'updateFailed', error: result.error }

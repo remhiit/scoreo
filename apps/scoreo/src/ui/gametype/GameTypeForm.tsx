@@ -101,6 +101,19 @@ export function GameTypeFields({ state, dispatch }: GameTypeFieldsProps) {
           />
         </>
       )}
+
+      <TextInput
+        label={t('gametype.minPlayers')}
+        value={state.selectedMinPlayers}
+        onChange={(value) => dispatch({ type: 'updateMinPlayers', value })}
+        placeholder={t('gametype.playerLimitPlaceholder')}
+      />
+      <TextInput
+        label={t('gametype.maxPlayers')}
+        value={state.selectedMaxPlayers}
+        onChange={(value) => dispatch({ type: 'updateMaxPlayers', value })}
+        placeholder={t('gametype.playerLimitPlaceholder')}
+      />
     </Stack>
   )
 }

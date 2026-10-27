@@ -19,6 +19,8 @@ function gameType(overrides: Partial<GameType> & Pick<GameType, 'id' | 'name'>):
     tieBreakCondition: 'HIGHEST_SCORE',
     tieBreakLabel: null,
     moduleId: null,
+    minPlayers: null,
+    maxPlayers: null,
     active: true,
     ...overrides,
   }
@@ -260,5 +262,74 @@ describe('GameSelectModalContainer', () => {
     select('La Vallée des Torī')
 
     expect(within(dialog).queryByText('2–4 players')).not.toBeInTheDocument()
+  })
+
+  describe('player range of an ordinary game', () => {
+    const START = { name: 'Start match' }
+
+    it('blocks the launch and shows the range when the players are outside it', () => {
+      const repo = new InMemoryGameTypeRepository()
+      repo.save(gameType({ id: 'gt1', name: 'Chess', minPlayers: 2, maxPlayers: 4 }))
+      const { dialog, select } = renderModal(repo, ['p1', 'p2', 'p3', 'p4', 'p5'])
+
+      select('Chess')
+
+      expect(within(dialog).getByRole('button', START)).toBeDisabled()
+      expect(within(dialog).getByText('2–4 players')).toBeInTheDocument()
+    })
+
+    it('allows the launch when the players fit, bounds included', () => {
+      const repo = new InMemoryGameTypeRepository()
+      repo.save(gameType({ id: 'gt1', name: 'Chess', minPlayers: 2, maxPlayers: 2 }))
+      const { dialog, select } = renderModal(repo, ['p1', 'p2'])
+
+      select('Chess')
+
+      expect(within(dialog).getByRole('button', START)).toBeEnabled()
+      expect(within(dialog).queryByText('2–2 players')).not.toBeInTheDocument()
+    })
+
+    it('only checks the bound that is set', () => {
+      const repo = new InMemoryGameTypeRepository()
+      repo.save(gameType({ id: 'gt1', name: 'Chess', minPlayers: 3 }))
+      repo.save(gameType({ id: 'gt2', name: 'Go', maxPlayers: 2 }))
+      const { dialog, select } = renderModal(repo, ['p1', 'p2'])
+
+      select('Chess')
+      expect(within(dialog).getByRole('button', START)).toBeDisabled()
+      expect(within(dialog).getByText('At least 3 players')).toBeInTheDocument()
+
+      select('Go')
+      expect(within(dialog).getByRole('button', START)).toBeEnabled()
+    })
+
+    it('does not block a game without range', () => {
+      const repo = new InMemoryGameTypeRepository()
+      repo.save(gameType({ id: 'gt1', name: 'Chess' }))
+      const { dialog, select } = renderModal(repo, [])
+
+      select('Chess')
+
+      expect(within(dialog).getByRole('button', START)).toBeEnabled()
+    })
+
+    it('checks a game bound to a module against its manifest, not its own range', () => {
+      const repo = new InMemoryGameTypeRepository()
+      repo.save(
+        gameType({
+          id: 'gt1',
+          name: 'My Tori',
+          moduleId: 'tori-valley',
+          minPlayers: 6,
+          maxPlayers: 6,
+        }),
+      )
+      const { dialog, select } = renderModal(repo, ['p1', 'p2'])
+
+      select('My Tori')
+
+      expect(within(dialog).getByRole('button', { name: 'Play in Scoreo' })).toBeEnabled()
+      expect(within(dialog).getByRole('button', { name: 'Play on the module' })).toBeEnabled()
+    })
   })
 })
