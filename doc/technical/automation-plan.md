@@ -127,7 +127,7 @@ Issue créée
    │  skill issue-to-spec → critères d'acceptation, fichiers, catégorie de risque
    │  pose le label `automation:queued`
    ▼
-      Cron horaire + GitHub trigger `issues.unlabeled`/`closed`
+      Cron horaire + GitHub trigger `issues.unlabeled`/`closed`/`labeled automation:queued`
                                                  ▼
                               [DISPATCHER — zéro LLM, scripts/dispatch-ready.mjs]
                                                  │ si 0 issue ready/in-progress (MAX_IN_FLIGHT=1)
@@ -260,7 +260,13 @@ cours.
 `scripts/dispatch-ready.mjs`, appelé par le même workflow que le balayeur
 horaire (`.github/workflows/requeue-lost-events.yml` — cron + les
 triggers `issues` `unlabeled`/`closed`, pour réagir vite à la fin d'un
-run) : si le nombre d'issues ouvertes portant `automation:ready` ou
+run, et `labeled` limité à `automation:queued`, pour dispatcher dès qu'une
+issue entre en file : GitHub n'exécute le cron horaire que toutes les 3 à
+6 h), ainsi que par `unblock-issues.yml` juste après un déblocage (un label
+posé avec `github.token` ne déclenche aucun workflow). Tous ces passages
+partagent le groupe de concurrence `dispatch-ready`, pour que deux
+passages simultanés ne promeuvent pas chacun une issue. Il procède ainsi :
+si le nombre d'issues ouvertes portant `automation:ready` ou
 `automation:in-progress` est inférieur à `MAX_IN_FLIGHT` (1), passe en
 revue les issues `automation:queued`, triées par priorité (`P0` > `P1` >
 `P2` > `P3`) puis date de création croissante, retire `automation:queued`

@@ -25,3 +25,28 @@ jobs:
 
       - name: Promote unblocked issues to automation:queued
         run: node scripts/unblock-issues.mjs
+
+  # Un `automation:queued` posé avec `github.token` ne déclenche aucun
+  # workflow : le dispatcher ne le verrait qu'au prochain cron, des heures
+  # plus tard. On le lance donc ici, après le déblocage, dans le même groupe
+  # de concurrence que requeue-lost-events.yml.
+  dispatch:
+    needs: unblock
+    runs-on: ubuntu-latest
+    concurrency:
+      group: dispatch-ready
+      cancel-in-progress: false
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPO_OWNER: remhiit
+      REPO_NAME: scoreo
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Dispatch next automation:queued issue to automation:ready
+        run: node scripts/dispatch-ready.mjs

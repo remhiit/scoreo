@@ -5,7 +5,7 @@ on:
     - cron: '0 * * * *'
   workflow_dispatch:
   issues:
-    types: [unlabeled, closed]
+    types: [labeled, unlabeled, closed]
 
 permissions:
   issues: write
@@ -13,6 +13,19 @@ permissions:
 
 jobs:
   requeue:
+    # `labeled` ne sert qu'à dispatcher dès qu'une issue entre en file : la
+    # cadence réelle du cron horaire est de 3 à 6 h, pas 1 h.
+    if: github.event.action != 'labeled' || github.event.label.name == 'automation:queued'
+    # Un seul passage à la fois : deux runs simultanés (trois issues mises en
+    # file d'un coup, un `closed` et un `unlabeled` au même instant) liraient
+    # chacun 0 issue en vol et promouvraient chacun une issue, au-delà de
+    # MAX_IN_FLIGHT. Un passage en attente remplacé par un plus récent ne perd
+    # rien : chaque passage relit tout l'état. Au niveau du job, pas du
+    # workflow, pour qu'un `labeled` filtré par le `if` n'y prenne pas la
+    # place d'un vrai passage en attente.
+    concurrency:
+      group: dispatch-ready
+      cancel-in-progress: false
     runs-on: ubuntu-latest
     env:
       GH_TOKEN: ${{ github.token }}
