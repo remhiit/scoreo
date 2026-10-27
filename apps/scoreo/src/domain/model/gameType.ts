@@ -19,8 +19,8 @@ export interface GameType {
   active: boolean
   /**
    * The scoring module able to count this game, or `null` for a game Scoreo
-   * counts on its own. A capability flag, not a redirection: the generic score
-   * screen stays available for a game that has a module.
+   * counts on its own. The game is scored on the module's grid; the generic
+   * grid remains only for reopening a match that has no `moduleData`.
    */
   moduleId: string | null
 }

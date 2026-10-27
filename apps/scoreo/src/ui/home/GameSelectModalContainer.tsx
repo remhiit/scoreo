@@ -19,8 +19,6 @@ export interface GameSelectModalContainerProps {
   onAddGameType: (name: string, winCondition: WinCondition) => GameType
   onStartGame: (gameTypeId: string, playerIds: string[]) => void
   onStartModule: (moduleId: string, playerIds: string[]) => void
-  /** "Play in Scoreo" on a module no game type is bound to yet. */
-  onStartModuleInScoreo: (moduleId: string, playerIds: string[]) => void
   selectedPlayerIds: string[]
 }
 
@@ -70,7 +68,7 @@ function buildChoices(allGameTypes: readonly GameType[]): GameChoice[] {
  * The module an unbound game type stands for by name — a game created by a v1.1
  * import, or by hand, before its module was played. Its module entry is hidden
  * from the list (see `buildChoices`), so this is the only way to reach the
- * module from that game: "Play on the module" then lets `BindModuleUseCase`
+ * module from that game: the single launch button then lets `BindModuleUseCase`
  * stamp the `moduleId` onto it (its rule 2). A module already bound to another
  * game type is not offered: binding would open that other game instead.
  *
@@ -100,14 +98,7 @@ export const GameSelectModalContainer = forwardRef<
   GameSelectModalHandle,
   GameSelectModalContainerProps
 >(function GameSelectModalContainer(
-  {
-    getGameTypes,
-    onAddGameType,
-    onStartGame,
-    onStartModule,
-    onStartModuleInScoreo,
-    selectedPlayerIds,
-  },
+  { getGameTypes, onAddGameType, onStartGame, onStartModule, selectedPlayerIds },
   ref,
 ) {
   const { t } = useTranslation()
@@ -178,10 +169,12 @@ export const GameSelectModalContainer = forwardRef<
           setError(t('home.pleaseSelectGame'))
           return
         }
-        setOpen(false)
-        if (selectedChoice.kind === 'module') {
-          onStartModuleInScoreo(selectedChoice.manifest.moduleId, selectedPlayerIds)
-        } else {
+        if (moduleForSelectedGame) {
+          if (!moduleFitsPlayers) return
+          setOpen(false)
+          onStartModule(moduleForSelectedGame.moduleId, selectedPlayerIds)
+        } else if (selectedChoice.kind === 'gameType') {
+          setOpen(false)
           onStartGame(selectedChoice.gameType.id, selectedPlayerIds)
         }
       }}
@@ -199,10 +192,6 @@ export const GameSelectModalContainer = forwardRef<
       onAddInlineGameType={addInlineGameType}
       moduleForSelectedGame={moduleForSelectedGame}
       moduleFitsPlayers={moduleFitsPlayers}
-      onStartOnModule={(moduleId) => {
-        setOpen(false)
-        onStartModule(moduleId, selectedPlayerIds)
-      }}
     />
   )
 })

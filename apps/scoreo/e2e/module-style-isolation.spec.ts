@@ -78,7 +78,7 @@ const openModule = async (page: Page, game: string, reach: (page: Page) => Promi
   await addPlayer(page, bob)
   await startMatch(page, [alice, bob])
   await chooseGame(page, game)
-  await page.getByRole('button', { name: 'Play on the module' }).click()
+  await page.getByRole('dialog').getByRole('button', { name: 'Start match' }).click()
   await reach(page)
 }
 
@@ -99,7 +99,7 @@ for (const [module, { game, reach, surface }] of Object.entries(MODULES)) {
 
     await startMatch(page, [alice, bob])
     await chooseGame(page, game)
-    await page.getByRole('button', { name: 'Play on the module' }).click()
+    await page.getByRole('dialog').getByRole('button', { name: 'Start match' }).click()
     await reach(page)
 
     // The module's stylesheet is loaded now — and must have changed nothing here.

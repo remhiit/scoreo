@@ -58,7 +58,7 @@ for (const [module, { game, reach }] of Object.entries(MODULES)) {
     await addPlayer(page, bob)
     await startMatch(page, [alice, bob])
     await chooseGame(page, game)
-    await page.getByRole('button', { name: 'Play on the module' }).click()
+    await page.getByRole('dialog').getByRole('button', { name: 'Start match' }).click()
     await reach(page)
 
     const exit = page.getByRole('button', { name: 'Exit' })
