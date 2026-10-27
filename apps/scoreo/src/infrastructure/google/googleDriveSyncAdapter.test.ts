@@ -321,6 +321,8 @@ describe('GoogleDriveSyncAdapter', () => {
             tieBreakCondition: 'HIGHEST_SCORE',
             tieBreakLabel: null,
             moduleId: null,
+            minPlayers: null,
+            maxPlayers: null,
             active: true,
           },
         ],

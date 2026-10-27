@@ -235,7 +235,7 @@ This applies to: `Player`, `GameType`, `Match`, `PlayerScore`, `WinCondition`, `
 | Entity | Fields |
 |---|---|
 | `Player` | `id: string` (UUID v4), `name: string`, `active: boolean` (default `true`) |
-| `GameType` | `id: string` (UUID v4), `name: string`, `winCondition: WinCondition`, `scoringMode: ScoringMode` (default `'POINTS'`), `tieBreakRule: TieBreakRule` (default `'NONE'`), `tieBreakCondition: WinCondition` (default `'HIGHEST_SCORE'`), `tieBreakLabel: string \| null` (default `null`), `active: boolean` (default `true`) |
+| `GameType` | `id: string` (UUID v4), `name: string`, `winCondition: WinCondition`, `scoringMode: ScoringMode` (default `'POINTS'`), `tieBreakRule: TieBreakRule` (default `'NONE'`), `tieBreakCondition: WinCondition` (default `'HIGHEST_SCORE'`), `tieBreakLabel: string \| null` (default `null`), `active: boolean` (default `true`), `moduleId: string \| null` (default `null`), `minPlayers: number \| null` (default `null`, int ≥ 1), `maxPlayers: number \| null` (default `null`, int ≥ 1) |
 | `Match` | `id: string` (UUID v4), `date: number` (epoch ms), `gameTypeId: string`, `playerScores: PlayerScore[]`, `manualWinners: string[]` (default `[]`), `secondaryPlayerScores: PlayerScore[]` (default `[]`), `rounds: PlayerScore[][]` (default `[]`) |
 | `PlayerScore` | `playerId: string`, `score: number` |
 | `WinCondition` | union: `'HIGHEST_SCORE'`, `'LOWEST_SCORE'`, `'MANUAL'` |

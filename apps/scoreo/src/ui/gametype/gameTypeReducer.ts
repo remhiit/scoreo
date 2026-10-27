@@ -5,6 +5,7 @@ import type { GetGameTypesUseCase } from '../../application/getGameTypesUseCase'
 import type { GetMatchesUseCase } from '../../application/getMatchesUseCase'
 import type { MergeGameTypesUseCase } from '../../application/mergeGameTypesUseCase'
 import type { UpdateGameTypeUseCase } from '../../application/updateGameTypeUseCase'
+import { ValidationError } from '../../domain/model/errors'
 import type { ScoringMode, TieBreakRule, WinCondition } from '../../domain/model/enums'
 import {
   roundScoringChanged,
@@ -30,6 +31,8 @@ export type GameTypeAction =
   | { type: 'updateTieBreakRule'; rule: TieBreakRule }
   | { type: 'updateTieBreakCondition'; condition: WinCondition }
   | { type: 'updateTieBreakLabel'; label: string }
+  | { type: 'updateMinPlayers'; value: string }
+  | { type: 'updateMaxPlayers'; value: string }
   | { type: 'selectGame'; id: string }
   | { type: 'deselectGame' }
   | ({ type: 'addSucceeded' } & LoadedGameTypes)
@@ -66,6 +69,8 @@ function resetForm(state: GameTypeState, loaded: LoadedGameTypes): GameTypeState
     selectedTieBreakRule: 'NONE',
     selectedTieBreakCondition: 'HIGHEST_SCORE',
     selectedTieBreakLabel: undefined,
+    selectedMinPlayers: '',
+    selectedMaxPlayers: '',
     editingGameId: undefined,
     editingGameHasMatches: false,
     error: undefined,
@@ -91,6 +96,10 @@ export function gameTypeReducer(state: GameTypeState, action: GameTypeAction): G
         ...state,
         selectedTieBreakLabel: action.label.trim() === '' ? undefined : action.label,
       }
+    case 'updateMinPlayers':
+      return { ...state, selectedMinPlayers: action.value, error: undefined }
+    case 'updateMaxPlayers':
+      return { ...state, selectedMaxPlayers: action.value, error: undefined }
     case 'selectGame':
       return { ...state, selectedGameId: action.id }
     case 'deselectGame':
@@ -108,6 +117,8 @@ export function gameTypeReducer(state: GameTypeState, action: GameTypeAction): G
         selectedTieBreakRule: action.gameType.tieBreakRule,
         selectedTieBreakCondition: action.gameType.tieBreakCondition,
         selectedTieBreakLabel: action.gameType.tieBreakLabel ?? undefined,
+        selectedMinPlayers: action.gameType.minPlayers?.toString() ?? '',
+        selectedMaxPlayers: action.gameType.maxPlayers?.toString() ?? '',
         editingGameId: action.gameType.id,
         editingGameHasMatches: action.hasMatches,
         error: undefined,
@@ -176,6 +187,31 @@ export function loadGameTypes(getGameTypes: GetGameTypesUseCase): LoadedGameType
   return { gameTypes: getGameTypes.invoke(), allGameTypes: getGameTypes.invoke(true) }
 }
 
+/**
+ * Reads a player limit field: empty (or blank) means no limit (`null`). Anything
+ * but a whole number of at least 1 is rejected with a `ValidationError`, which
+ * the submit helpers turn into the screen's error message.
+ */
+export function parsePlayerLimit(text: string, field: 'minPlayers' | 'maxPlayers'): number | null {
+  const trimmed = text.trim()
+  if (trimmed === '') return null
+  const value = /^\d+$/.test(trimmed) ? Number(trimmed) : Number.NaN
+  if (!Number.isInteger(value) || value < 1) {
+    throw new ValidationError(field, 'Player limits must be whole numbers of at least 1')
+  }
+  return value
+}
+
+/** The form's two player limit fields, parsed. */
+export function parsePlayerRange(
+  state: Pick<GameTypeState, 'selectedMinPlayers' | 'selectedMaxPlayers'>,
+): { minPlayers: number | null; maxPlayers: number | null } {
+  return {
+    minPlayers: parsePlayerLimit(state.selectedMinPlayers, 'minPlayers'),
+    maxPlayers: parsePlayerLimit(state.selectedMaxPlayers, 'maxPlayers'),
+  }
+}
+
 /** Mirrors GameTypeHandler's AddGameType try/catch, using the current form fields. */
 export function submitAddGameType(
   addGameTypeUseCase: AddGameTypeUseCase,
@@ -188,6 +224,7 @@ export function submitAddGameType(
       tieBreakRule: state.selectedTieBreakRule,
       tieBreakCondition: state.selectedTieBreakCondition,
       tieBreakLabel: state.selectedTieBreakLabel ?? null,
+      ...parsePlayerRange(state),
     })
     return loadGameTypes(getGameTypes)
   } catch (e) {
@@ -245,9 +282,10 @@ export function submitUpdateGameType(
   updateGameTypeUseCase: UpdateGameTypeUseCase,
   getGameTypes: GetGameTypesUseCase,
   gameType: GameType,
+  state: Pick<GameTypeState, 'selectedMinPlayers' | 'selectedMaxPlayers'>,
 ): LoadedGameTypes | { error: string } {
   try {
-    updateGameTypeUseCase.invoke(gameType)
+    updateGameTypeUseCase.invoke({ ...gameType, ...parsePlayerRange(state) })
     return loadGameTypes(getGameTypes)
   } catch (e) {
     return { error: errorMessage(e) }

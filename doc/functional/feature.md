@@ -41,6 +41,9 @@
      **Play on the module** itself, which binds it, and the module is not listed separately. Otherwise
      the module keeps its own entry, so it is always reachable — launching it binds (and restores)
      that oldest game, and two same-name games may then show side by side until they are merged.
+   - An ordinary game (no module) with a player range (`minPlayers`/`maxPlayers`, set on the
+     **Games** screen) cannot be started when the number of selected players is outside it:
+     **Start match** is disabled and the range is shown. A missing bound is not checked.
    - When the number of players selected falls outside the module's range, the game stays listed and
      **Play in Scoreo** stays available, but **Play on the module** is disabled and the range is shown.
 3. **Score Detail** → enter rounds (auto-saved after each score) → **Finish match**

@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { resolveBindingTarget } from '../../application/bindModuleUseCase'
 import { NotFoundError, ValidationError } from '../../domain/model/errors'
 import type { WinCondition } from '../../domain/model/enums'
-import type { GameType } from '../../domain/model/gameType'
+import { playerCountFitsRange, type GameType } from '../../domain/model/gameType'
 import i18n from '../../i18n/i18n'
 import { findManifest, MODULE_MANIFESTS } from '../../modules/registry'
 import { GameSelectModal, type GameChoice } from './GameSelectModal'
@@ -148,6 +148,17 @@ export const GameSelectModalContainer = forwardRef<
     selectedPlayerIds.length >= moduleForSelectedGame.minPlayers &&
     selectedPlayerIds.length <= moduleForSelectedGame.maxPlayers
 
+  // A game bound to (or claimed by) a module is checked against the module's
+  // manifest until the game type carries its own range (cadrage step 3).
+  const gameRange =
+    selectedChoice?.kind === 'gameType' &&
+    moduleForSelectedGame === undefined &&
+    (selectedChoice.gameType.minPlayers !== null || selectedChoice.gameType.maxPlayers !== null)
+      ? selectedChoice.gameType
+      : undefined
+  const playersFitGameRange =
+    gameRange === undefined || playerCountFitsRange(gameRange, selectedPlayerIds.length)
+
   function addInlineGameType() {
     const name = inlineGameName.trim()
     try {
@@ -199,6 +210,8 @@ export const GameSelectModalContainer = forwardRef<
       onAddInlineGameType={addInlineGameType}
       moduleForSelectedGame={moduleForSelectedGame}
       moduleFitsPlayers={moduleFitsPlayers}
+      gameRange={gameRange}
+      playersFitGameRange={playersFitGameRange}
       onStartOnModule={(moduleId) => {
         setOpen(false)
         onStartModule(moduleId, selectedPlayerIds)

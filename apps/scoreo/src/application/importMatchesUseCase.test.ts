@@ -92,6 +92,8 @@ describe('ImportMatchesUseCase', () => {
         tieBreakCondition: 'HIGHEST_SCORE',
         tieBreakLabel: null,
         moduleId: null,
+        minPlayers: null,
+        maxPlayers: null,
         active: true,
       })
       useCase(undefined, gameTypeRepo).execute(TestImportData.validJson)
@@ -130,6 +132,8 @@ describe('ImportMatchesUseCase', () => {
           tieBreakCondition: 'HIGHEST_SCORE',
           tieBreakLabel: null,
           moduleId: 'tori-valley',
+          minPlayers: null,
+          maxPlayers: null,
           active: true,
         })
 
@@ -150,6 +154,8 @@ describe('ImportMatchesUseCase', () => {
           tieBreakCondition: 'HIGHEST_SCORE',
           tieBreakLabel: null,
           moduleId: null,
+          minPlayers: null,
+          maxPlayers: null,
           active: true,
         })
 
@@ -181,6 +187,8 @@ describe('ImportMatchesUseCase', () => {
           tieBreakCondition: 'HIGHEST_SCORE',
           tieBreakLabel: null,
           moduleId: 'some-other-module',
+          minPlayers: null,
+          maxPlayers: null,
           active: true,
         })
 

@@ -12,6 +12,8 @@ function gt(id: string, name: string, winCondition: 'HIGHEST_SCORE' | 'LOWEST_SC
     tieBreakCondition: 'HIGHEST_SCORE' as const,
     tieBreakLabel: null,
     moduleId: null,
+    minPlayers: null,
+    maxPlayers: null,
     active,
   }
 }

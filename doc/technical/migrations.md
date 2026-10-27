@@ -423,6 +423,26 @@ Nouveau champ optionnel sérialisé sur `GameType` : `scoringMode: 'POINTS' | 'R
 
 ---
 
+## `GameType.minPlayers` / `maxPlayers` — plage de joueurs d'un jeu (issue #606)
+
+Deux champs optionnels sérialisés sur `GameType` : `minPlayers: number | null` et `maxPlayers: number | null` (`null` = pas de limite). Ils ne servent qu'au lancement d'une partie depuis la fenêtre de choix du jeu (bouton **Start match** désactivé hors plage, jeu sans module) ; aucune partie déjà enregistrée n'est contrôlée ni modifiée.
+
+**Ancien format :** pas de `minPlayers`/`maxPlayers`.
+
+**Nouveau format :**
+
+```json
+{ "id": "gt1", "name": "Échecs", "winCondition": "HIGHEST_SCORE", "minPlayers": 2, "maxPlayers": 2 }
+```
+
+**Compatibilité ascendante :** les deux champs sont déclarés `z.number().int().min(1).nullable().default(null)` — un `GameType` sans eux (données antérieures, Drive, import) se relit sans limite, sans perte. Une valeur < 1 ou non entière est refusée par le schéma. Couvert par `serialization.contract.test.ts`.
+
+**Cohabitation avec une version antérieure de l'app (sync Drive) :** une version qui ne connaît pas les champs les ignore (zod les strip) et relit le jeu sans plage. Si cette version réenregistre les types de jeu, la plage disparaît partout (la sync propage la perte), sans autre effet que de lever le blocage au lancement — comme pour `scoringMode`, rien n'est recalculé.
+
+**Import / export :** le format v1.1 ne porte pas la plage ; les jeux créés par l'import n'ont pas de limite. Fusion (`MergeGameTypesUseCase`) : le jeu conservé garde sa propre plage.
+
+---
+
 ## Clés du 1kSaBord → préfixe `sabords_`
 
 **Contexte :** GitHub Pages sert Scoreo et l'app Kotlin autonome 1kSaBord depuis la **même origine**

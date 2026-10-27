@@ -22,6 +22,9 @@
     "french": "Français"
   },
   "gametype": {
+    "minPlayers": "Joueurs min.",
+    "maxPlayers": "Joueurs max.",
+    "playerLimitPlaceholder": "Aucune limite",
     "title": "Types de jeu",
     "winCondition": "Condition de victoire",
     "scoringMode": "Décompte",
@@ -75,6 +78,9 @@
     "totals": "Total :"
   },
   "home": {
+    "playerRange": "{{min}} à {{max}} joueurs",
+    "playerRangeMin": "{{min}} joueurs minimum",
+    "playerRangeMax": "{{max}} joueurs maximum",
     "resumeMatch": "Reprendre la partie en cours",
     "playerNamePlaceholder": "Nom du joueur",
     "add": "Ajouter",
@@ -254,7 +260,6 @@
     "unknownModule": "Ce module n'est pas installé.",
     "playInScoreo": "Jouer dans Scoreo",
     "playOnModule": "Jouer sur le module",
-    "playerRange": "{{min}} à {{max}} joueurs",
     "exit": "Quitter"
   }
 }

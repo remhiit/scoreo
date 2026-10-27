@@ -4,7 +4,7 @@
 
 | Use Case | Input | Output | Business Rule |
 |----------|-------|--------|---------------|
-| `AddGameTypeUseCase` | `name, winCondition, scoringMode = POINTS, tieBreakRule = NONE, tieBreakCondition = HIGHEST_SCORE, tieBreakLabel = null` | `GameType` | Generates UUID v4; `scoringMode` is forced to `POINTS` when `winCondition` is `MANUAL` (or the game is bound to a module, via `newGameType`) |
+| `AddGameTypeUseCase` | `name, winCondition, scoringMode = POINTS, tieBreakRule = NONE, tieBreakCondition = HIGHEST_SCORE, tieBreakLabel = null, minPlayers = null, maxPlayers = null` | `GameType` | Generates UUID v4; `scoringMode` is forced to `POINTS` when `winCondition` is `MANUAL` (or the game is bound to a module, via `newGameType`) |
 | `UpdateGameTypeUseCase` | `gameType: GameType` | `Unit` | Overwrites existing game type, storing its effective scoring mode (`effectiveScoringMode`: `POINTS` for a `MANUAL` or module-bound game). When the change alters how rounds become a score (`roundScoringChanged`: effective scoring mode, or `winCondition` of a rounds-won game), rescores every match of that game (`rescoreMatch`) and writes them before the game type: recomputed from `Match.rounds` when the round detail agrees with the stored scores; a match without detail switching from points to rounds won becomes a single round holding its stored scores, then is scored from it. A module-bound game always scores in points, so its matches are never recomputed into rounds won; `manualWinners`/`secondaryPlayerScores` untouched |
 | `GetGameTypesUseCase` | — | `List<GameType>` | Returns all game types |
 | `CreateMatchUseCase` | `gameTypeId, playerScores, date, manualWinners, secondaryPlayerScores` | `Match` | Validates players match scores list |
@@ -33,8 +33,8 @@
 | Component | Details |
 |-----------|---------|
 | **Reducer** | `gameTypeReducer` — `apps/scoreo/src/ui/gametype/gameTypeReducer.ts` |
-| **Action** | `GameTypeAction`: `updateName`, `selectWinCondition`, `updateTieBreakRule`, `updateTieBreakCondition`, `updateTieBreakLabel`, `selectGame`, `deselectGame`, `addSucceeded`/`addFailed`, `editGameType`, `cancelEdit`, `updateSucceeded`/`updateFailed`, `showArchiveConfirm`, `archiveSucceeded`/`archiveFailed`, `dismissArchiveConfirm`, `showMergeDialog`, `dismissMergeDialog`, `selectMergeKept`, `toggleMergeDuplicate`, `mergeSucceeded`/`mergeFailed` |
-| **State** | `GameTypeState`: `gameTypes`, `allGameTypes`, `inputName`, `selectedWinCondition`, `selectedTieBreakRule`, `selectedTieBreakCondition`, `selectedTieBreakLabel`, `selectedGameId`, `editingGameId`, `error`, `archiveConfirmGameTypeId`, `showMergeDialog`, `mergeKeptId`, `mergeDuplicateIds`, `mergeError` |
+| **Action** | `GameTypeAction`: `updateName`, `selectWinCondition`, `updateTieBreakRule`, `updateTieBreakCondition`, `updateTieBreakLabel`, `updateMinPlayers`, `updateMaxPlayers`, `selectGame`, `deselectGame`, `addSucceeded`/`addFailed`, `editGameType`, `cancelEdit`, `updateSucceeded`/`updateFailed`, `showArchiveConfirm`, `archiveSucceeded`/`archiveFailed`, `dismissArchiveConfirm`, `showMergeDialog`, `dismissMergeDialog`, `selectMergeKept`, `toggleMergeDuplicate`, `mergeSucceeded`/`mergeFailed` |
+| **State** | `GameTypeState`: `gameTypes`, `allGameTypes`, `inputName`, `selectedWinCondition`, `selectedTieBreakRule`, `selectedTieBreakCondition`, `selectedTieBreakLabel`, `selectedMinPlayers`, `selectedMaxPlayers`, `selectedGameId`, `editingGameId`, `error`, `archiveConfirmGameTypeId`, `showMergeDialog`, `mergeKeptId`, `mergeDuplicateIds`, `mergeError` |
 
 Screen: `apps/scoreo/src/ui/gametype/GameTypeScreen.tsx`. See `doc/reference.md` for the full reducer table.
 
@@ -80,7 +80,12 @@ Screen: `apps/scoreo/src/ui/gametype/GameTypeScreen.tsx`. See `doc/reference.md`
 - Dropdown: scoring (POINTS "Total points", ROUNDS_WON "Rounds won"), hidden when the win condition is MANUAL (saved as POINTS) and for a game bound to a scoring module (always POINTS). In edit mode, when the game already has matches and saving will recompute them — scoring mode changed, a rounds-won game switched to MANUAL, or the win condition of a rounds-won game changed (same rule as `UpdateGameTypeUseCase`) —, a warning says that the matches with round detail will have their scores recomputed with the new scoring (see [Scoring mode](#scoring-mode))
 - Dropdown: tie-break rule (NONE, MANUAL_SELECTION, SECONDARY_SCORE)
 - If SECONDARY_SCORE: additional dropdown for tie-break condition + text input for label
+- Two optional text inputs, **Min. players** and **Max. players** (empty = no limit). Whole numbers >= 1 only; a minimum above the maximum is refused (`UpdateGameTypeUseCase` / `AddGameTypeUseCase` throw a `ValidationError`, shown above the form). Equal bounds are accepted (fixed number of players)
 - Button: "Add game type" (create mode) or "Save changes" + "Cancel" (edit mode)
+
+### Player range
+
+`GameType.minPlayers` / `maxPlayers` only gate the **launch** from the Home game choice dialog: when the selected game is an ordinary game (no scoring module) with a range and the number of selected players falls outside it, **Start match** is disabled and the range is shown ("2–4 players", "At least N players" or "At most N players"). A `null` bound is not checked. Matches already recorded outside the range stay valid and visible; merging keeps the kept game's own range; archiving keeps it. A game bound to (or claimed by) a module is still checked against the module's manifest range until the game type carries its own (not yet fed for module games). The range is not part of the v1.1 export/import.
 
 ## Functional Tests
 

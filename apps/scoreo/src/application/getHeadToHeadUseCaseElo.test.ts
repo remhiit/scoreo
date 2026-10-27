@@ -16,6 +16,8 @@ const gt1: GameType = {
   tieBreakCondition: 'HIGHEST_SCORE',
   tieBreakLabel: null,
   moduleId: null,
+  minPlayers: null,
+  maxPlayers: null,
   active: true,
 }
 const gt2: GameType = {
@@ -27,6 +29,8 @@ const gt2: GameType = {
   tieBreakCondition: 'HIGHEST_SCORE',
   tieBreakLabel: null,
   moduleId: null,
+  minPlayers: null,
+  maxPlayers: null,
   active: true,
 }
 
