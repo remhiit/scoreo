@@ -28,23 +28,26 @@
    - If banner present: click to resume previous incomplete match (returns to score entry with saved data)
    - If no banner: select ≥2 players → **New Match** (normal flow)
 2. **Game Selection** modal → pick or create a game type → **Start match**
-   - A game a **scoring module** can count offers both ways in: **Play in Scoreo** (the generic
-     score screen) or **Play on the module** (the module's own screen). A module augments a game,
-     it never replaces it.
+   - A game a **scoring module** can count has **one grid, the module's**: the modal shows a single
+     **Start match** button, which opens the module's screen (binding the game first). There is no
+     "Play in Scoreo" any more. A game without a module keeps the generic score screen.
    - Every registered module with no game type of its own yet is listed **in the same game list**,
-     after the existing games and sorted by name, offering the same two buttons. Choosing either one
+     after the existing games and sorted by name, offering the same single button. Starting it
      creates its game type on the spot (`BindModuleUseCase`) — nothing is created before that, and a
      module never played does not appear on the **Games** screen. A module already bound to a game
      type (even an archived one) is not listed a second time. A same-name game (e.g. imported before
      the module was ever played) stands for the module when it is the oldest game carrying the name
      (archived ones included, since that is the one the binding picks): if it is active, it offers
-     **Play on the module** itself, which binds it, and the module is not listed separately. Otherwise
+     the module's launch itself, which binds it, and the module is not listed separately. Otherwise
      the module keeps its own entry, so it is always reachable — launching it binds (and restores)
      that oldest game, and two same-name games may then show side by side until they are merged.
-   - When the number of players selected falls outside the module's range, the game stays listed and
-     **Play in Scoreo** stays available, but **Play on the module** is disabled and the range is shown.
+   - When the number of players selected falls outside the module's range, the game stays listed, but
+     **Start match** is disabled and the range is shown; it never falls back to the generic grid.
 3. **Score Detail** → enter rounds (auto-saved after each score) → **Finish match**
-   - A match scored on a module reopens **on that module**, with its own grid restored.
+   - A match scored on a module reopens **on that module**, with its own grid restored. A match of a
+     module game with no `moduleData` (v1.1 import, or entered earlier through "Play in Scoreo")
+     reopens on the generic grid, where it stays readable and editable. A generic draft already in
+     progress on a module game is still resumed on the generic grid.
    - Exiting a module after it saved a match lands on **History**, that match called out, instead of
      Home — no burger + History detour needed to find it. Exiting without having saved anything keeps
      the previous behavior: History when reopening an existing match, Home for a new one.

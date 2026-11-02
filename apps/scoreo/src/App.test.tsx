@@ -39,7 +39,7 @@ vi.mock('./modules/registry', async (importOriginal) => {
   }
 })
 
-function seedStatsData() {
+function seedStatsData(options: { moduleId?: string | null; moduleData?: unknown } = {}) {
   localStorage.setItem(
     'scoreo_players',
     JSON.stringify([
@@ -57,7 +57,7 @@ function seedStatsData() {
         tieBreakRule: 'NONE',
         tieBreakCondition: 'HIGHEST_SCORE',
         tieBreakLabel: null,
-        moduleId: null,
+        moduleId: options.moduleId ?? null,
         active: true,
       },
     ]),
@@ -76,7 +76,7 @@ function seedStatsData() {
         manualWinners: [],
         secondaryPlayerScores: [],
         rounds: [],
-        moduleData: null,
+        moduleData: options.moduleData ?? null,
       },
     ]),
   )
@@ -129,7 +129,31 @@ describe('App', () => {
     expect(document.querySelector('.sc-hcell')).toHaveTextContent('Alice')
   })
 
-  it('Home: "Play in Scoreo" on a module never played binds it, then opens the generic score screen', () => {
+  it('History: a module game match without moduleData reopens on the generic grid', () => {
+    seedStatsData({ moduleId: 'skyjo' })
+    render(<App />)
+    fireEvent.click(screen.getByLabelText('Menu'))
+    fireEvent.click(screen.getByText('History'))
+    fireEvent.click(screen.getByLabelText('Edit'))
+
+    expect(window.location.hash).toMatch(/^#\/score\/gt1\/p1,p2\/[0-9a-f-]{36}$/)
+    expect(screen.getByText('Finish match')).toBeInTheDocument()
+  })
+
+  it('History: a match carrying moduleData reopens on its module screen', () => {
+    seedStatsData({
+      moduleId: 'skyjo',
+      moduleData: { moduleId: 'skyjo', version: 1, data: {} },
+    })
+    render(<App />)
+    fireEvent.click(screen.getByLabelText('Menu'))
+    fireEvent.click(screen.getByText('History'))
+    fireEvent.click(screen.getByLabelText('Edit'))
+
+    expect(window.location.hash).toMatch(/^#\/module\/skyjo\/gt1\/p1,p2\/[0-9a-f-]{36}$/)
+  })
+
+  it('Home: launching a module never played binds it, then opens the module screen', () => {
     localStorage.setItem(
       'scoreo_players',
       JSON.stringify([
@@ -146,7 +170,7 @@ describe('App', () => {
     const combobox = within(dialog).getByRole('combobox')
     const option = within(combobox).getByRole('option', { name: 'Skyjo' }) as HTMLOptionElement
     fireEvent.change(combobox, { target: { value: option.value } })
-    fireEvent.click(within(dialog).getByRole('button', { name: 'Play in Scoreo' }))
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Start match' }))
 
     const gameTypes = JSON.parse(localStorage.getItem('scoreo_gametypes') ?? '[]') as {
       id: string
@@ -155,8 +179,7 @@ describe('App', () => {
     }[]
     expect(gameTypes).toHaveLength(1)
     expect(gameTypes[0]).toMatchObject({ name: 'Skyjo', moduleId: 'skyjo' })
-    expect(window.location.hash).toBe(`#/score/${gameTypes[0].id}/p1,p2`)
-    expect(screen.getByText('Finish match')).toBeInTheDocument()
+    expect(window.location.hash).toBe(`#/module/skyjo/${gameTypes[0].id}/p1,p2`)
   })
 
   it('clicking the title navigates Home from any screen', () => {

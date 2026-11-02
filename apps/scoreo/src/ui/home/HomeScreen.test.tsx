@@ -40,7 +40,6 @@ function buildProps(overrides: Partial<HomeScreenProps> = {}) {
     onAddGameType: (name, winCondition) => addGameTypeUseCase.invoke(name, winCondition),
     onStartGame,
     onStartModule,
-    onStartModuleInScoreo: vi.fn(),
     ...overrides,
   }
   return { props, playerRepo, matchRepo, gameTypeRepo, draftRepo, onStartGame }

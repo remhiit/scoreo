@@ -38,11 +38,10 @@ export interface GameSelectModalProps {
   /** Set when the selected game is one a module can count, bound or not. */
   moduleForSelectedGame: ScoringModuleManifest | undefined
   /**
-   * Whether the selected players fit the module's range: outside it the game
-   * stays playable in Scoreo, only the module's own screen is off.
+   * Whether the selected players fit the module's range: outside it the launch
+   * button is disabled and the range is shown.
    */
   moduleFitsPlayers: boolean
-  onStartOnModule: (moduleId: string) => void
 }
 
 /** One entry of the game list: a game type, or a module not bound to one yet. */
@@ -68,7 +67,6 @@ export function GameSelectModal({
   onAddInlineGameType,
   moduleForSelectedGame,
   moduleFitsPlayers,
-  onStartOnModule,
 }: GameSelectModalProps) {
   const { t } = useTranslation()
 
@@ -87,22 +85,14 @@ export function GameSelectModal({
           <Button variant="secondary" onClick={onClose}>
             {t('common.cancel')}
           </Button>
+          {/* A game a module counts has one grid, the module's: out of its player
+              range the launch is off, it never falls back to the generic grid. */}
           <Button
-            variant={moduleForSelectedGame && moduleFitsPlayers ? 'secondary' : 'primary'}
+            disabled={moduleForSelectedGame !== undefined && !moduleFitsPlayers}
             onClick={onStartMatch}
           >
-            {moduleForSelectedGame ? t('modules.playInScoreo') : t('home.startMatch')}
+            {t('home.startMatch')}
           </Button>
-          {/* A module augments a game, it never replaces it: both ways in stay
-              offered for a game that has one. */}
-          {moduleForSelectedGame && (
-            <Button
-              disabled={!moduleFitsPlayers}
-              onClick={() => onStartOnModule(moduleForSelectedGame.moduleId)}
-            >
-              {t('modules.playOnModule')}
-            </Button>
-          )}
         </ButtonRow>
       }
     >
