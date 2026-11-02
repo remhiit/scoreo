@@ -216,3 +216,7 @@ test-results/
 
 # Sortie du test golden Kotlin, écrite à chaque exécution pour permettre le diff.
 packages/module-mille-sabords/tests/golden/actual-export.json
+
+# Python bytecode (scripts run locally)
+__pycache__/
+*.pyc
