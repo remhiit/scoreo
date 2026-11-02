@@ -4,7 +4,7 @@ import { addPlayer } from './helpers/players'
 
 /**
  * The target scenario of the whole module effort:
- * Home → pick players → New Match → the module's game, in the game list → "Play on the module" →
+ * Home → pick players → New Match → the module's game, in the game list → the single launch button →
  * score → save → the match is in Scoreo's history, with the module's own winner,
  * landed on directly (no burger + History detour needed, see #390).
  */
@@ -26,7 +26,7 @@ test('scoring a match on the Torī Valley module lands it in Scoreo history', as
   // Nothing was materialized before this click: the module has no game type of
   // its own yet, yet it is offered in the game list like any other game.
   await chooseGame(page, 'La Vallée des Torī')
-  await page.getByRole('button', { name: 'Play on the module' }).click()
+  await page.getByRole('dialog').getByRole('button', { name: 'Start match' }).click()
 
   // The module's own two steps: deal the Objectif cards, then enter the scores.
   await page.getByRole('button', { name: 'Start match' }).click()
@@ -68,7 +68,7 @@ test('scoring a match on the Torī Valley module lands it in Scoreo history', as
   await expect(page.locator('.sc-row').locator('.sc-text--strong')).toContainText(`${alice} 4`)
 })
 
-test('a game a module counts still offers Scoreo’s own score screen', async ({ page }) => {
+test('a game a module counts only offers the module’s own grid', async ({ page }) => {
   const alice = `Alice ${Date.now()}`
   const bob = `Bob ${Date.now()}`
 
@@ -78,15 +78,18 @@ test('a game a module counts still offers Scoreo’s own score screen', async ({
   // First visit binds the game type to the module.
   await startMatch(page, [alice, bob])
   await chooseGame(page, 'La Vallée des Torī')
-  await page.getByRole('button', { name: 'Play on the module' }).click()
+  await page.getByRole('dialog').getByRole('button', { name: 'Start match' }).click()
   await page.getByRole('button', { name: 'Start match' }).click()
   await page.goto('/')
 
-  // Second visit: the game is in the list, and both ways in are offered —
-  // `moduleId` is a capability flag, not a redirection.
+  // Second visit: the game is in the list, and a single launch button is
+  // offered — a game a module counts has one grid, the module's.
   await startMatch(page, [alice, bob])
   await chooseGame(page, 'La Vallée des Torī')
 
-  await expect(page.getByRole('button', { name: 'Play in Scoreo' })).toBeVisible()
-  await expect(page.getByRole('button', { name: 'Play on the module' })).toBeVisible()
+  const dialog = page.getByRole('dialog')
+  await expect(dialog.getByRole('button', { name: 'Start match' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Play in Scoreo' })).toHaveCount(0)
+  await dialog.getByRole('button', { name: 'Start match' }).click()
+  await expect(page).toHaveURL(/#\/module\/tori-valley\//)
 })

@@ -38,11 +38,10 @@ export interface GameSelectModalProps {
   /** Set when the selected game is one a module can count, bound or not. */
   moduleForSelectedGame: ScoringModuleManifest | undefined
   /**
-   * Whether the selected players fit the module's range: outside it the game
-   * stays playable in Scoreo, only the module's own screen is off.
+   * Whether the selected players fit the module's range: outside it the launch
+   * button is disabled and the range is shown.
    */
   moduleFitsPlayers: boolean
-  onStartOnModule: (moduleId: string) => void
   /**
    * The player range of the selected game, when it is an ordinary game (no
    * module) that sets at least one bound; `null` bounds are not checked.
@@ -75,7 +74,6 @@ export function GameSelectModal({
   onAddInlineGameType,
   moduleForSelectedGame,
   moduleFitsPlayers,
-  onStartOnModule,
   gameRange,
   playersFitGameRange,
 }: GameSelectModalProps) {
@@ -96,23 +94,18 @@ export function GameSelectModal({
           <Button variant="secondary" onClick={onClose}>
             {t('common.cancel')}
           </Button>
+          {/* A game a module counts has one grid, the module's: out of its player
+              range the launch is off, it never falls back to the generic grid. */}
           <Button
-            variant={moduleForSelectedGame && moduleFitsPlayers ? 'secondary' : 'primary'}
-            disabled={gameRange !== undefined && !playersFitGameRange}
+            disabled={
+              moduleForSelectedGame !== undefined
+                ? !moduleFitsPlayers
+                : gameRange !== undefined && !playersFitGameRange
+            }
             onClick={onStartMatch}
           >
-            {moduleForSelectedGame ? t('modules.playInScoreo') : t('home.startMatch')}
+            {t('home.startMatch')}
           </Button>
-          {/* A module augments a game, it never replaces it: both ways in stay
-              offered for a game that has one. */}
-          {moduleForSelectedGame && (
-            <Button
-              disabled={!moduleFitsPlayers}
-              onClick={() => onStartOnModule(moduleForSelectedGame.moduleId)}
-            >
-              {t('modules.playOnModule')}
-            </Button>
-          )}
         </ButtonRow>
       }
     >
