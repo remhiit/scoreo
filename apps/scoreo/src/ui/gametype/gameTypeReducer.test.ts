@@ -596,6 +596,26 @@ describe('player range fields', () => {
     expect('error' in result).toBe(false)
     expect(useCases.repo.findById(created.id)).toMatchObject({ minPlayers: null, maxPlayers: 6 })
   })
+
+  it('submitUpdateGameType keeps the stored range of a module-bound game', () => {
+    const useCases = buildUseCases()
+    const created = { ...useCases.addGameType.invoke('Skyjo', 'LOWEST_SCORE'), moduleId: 'skyjo' }
+    useCases.repo.save(created)
+    let state = gameTypeReducer(initialGameTypeState, {
+      type: 'editGameType',
+      gameType: created,
+      hasMatches: false,
+    })
+    state = gameTypeReducer(state, { type: 'updateMaxPlayers', value: '6' })
+    const result = submitUpdateGameType(
+      useCases.updateGameType,
+      useCases.getGameTypes,
+      created,
+      state,
+    )
+    expect('error' in result).toBe(false)
+    expect(useCases.repo.findById(created.id)).toMatchObject({ minPlayers: null, maxPlayers: null })
+  })
 })
 
 describe('scoring mode change warning', () => {

@@ -205,6 +205,32 @@ describe('GameTypeScreen', () => {
     expect(within(screen.getByRole('dialog')).queryByLabelText('Scoring')).not.toBeInTheDocument()
   })
 
+  it('hides the player range fields when editing a game bound to a scoring module', () => {
+    const repo = new InMemoryGameTypeRepository()
+    repo.save({ ...buildGameType('gt1', 'Skyjo'), moduleId: 'skyjo' })
+    renderScreen(repo)
+
+    fireEvent.click(screen.getByLabelText('Edit'))
+    const editDialog = screen.getByRole('dialog')
+    // The range only gates the launch of an ordinary game: a module game ignores it.
+    expect(within(editDialog).queryByLabelText('Min. players')).not.toBeInTheDocument()
+    expect(within(editDialog).queryByLabelText('Max. players')).not.toBeInTheDocument()
+
+    fireEvent.click(within(editDialog).getByText('Save changes'))
+    expect(repo.findById('gt1')).toMatchObject({ minPlayers: null, maxPlayers: null })
+  })
+
+  it('shows the player range fields when editing an ordinary game', () => {
+    const repo = new InMemoryGameTypeRepository()
+    repo.save(buildGameType('gt1', 'Chess'))
+    renderScreen(repo)
+
+    fireEvent.click(screen.getByLabelText('Edit'))
+    const editDialog = screen.getByRole('dialog')
+    expect(within(editDialog).getByLabelText('Min. players')).toBeInTheDocument()
+    expect(within(editDialog).getByLabelText('Max. players')).toBeInTheDocument()
+  })
+
   it('cancelling edit restores the add form without changes', () => {
     renderScreen()
     fireEvent.change(nameInput(), { target: { value: 'Belote' } })

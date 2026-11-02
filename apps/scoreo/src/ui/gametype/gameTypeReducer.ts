@@ -254,6 +254,15 @@ export function showsScoringModeChoice(state: GameTypeState): boolean {
 }
 
 /**
+ * The form offers the player range fields only for an ordinary game: the range
+ * gates the launch of a game without a scoring module, and is ignored for a
+ * game bound to one (its module's manifest range applies instead).
+ */
+export function showsPlayerRange(state: GameTypeState): boolean {
+  return (editedGameType(state)?.moduleId ?? null) === null
+}
+
+/**
  * Saving the edit form will recompute the scores of the game's matches that have
  * round detail (`UpdateGameTypeUseCase`, same rule: `roundScoringChanged`), and
  * their winners, stats, Elo and trophies follow, since a game's rules apply to
@@ -285,7 +294,9 @@ export function submitUpdateGameType(
   state: Pick<GameTypeState, 'selectedMinPlayers' | 'selectedMaxPlayers'>,
 ): LoadedGameTypes | { error: string } {
   try {
-    updateGameTypeUseCase.invoke({ ...gameType, ...parsePlayerRange(state) })
+    // A module-bound game has no range fields in the form: keep its stored range.
+    const range = gameType.moduleId === null ? parsePlayerRange(state) : {}
+    updateGameTypeUseCase.invoke({ ...gameType, ...range })
     return loadGameTypes(getGameTypes)
   } catch (e) {
     return { error: errorMessage(e) }
