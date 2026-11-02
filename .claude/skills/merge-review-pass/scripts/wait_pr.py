@@ -47,12 +47,32 @@ def get(url):
         return None
 
 
+def get_check_runs():
+    """Every check-run of the commit, across pages.
+
+    The endpoint returns 30 runs per page by default. A commit here easily
+    carries 40+ (one per workflow job, plus re-runs), so reading only the first
+    page once let a red `visual` slip through as "CI OK". Returns None when any
+    page fails, so a partial list is never mistaken for the full one.
+    """
+    runs, page = [], 1
+    while True:
+        data = get(f"{API}/commits/{SHA}/check-runs?per_page=100&page={page}")
+        if data is None:
+            return None
+        runs.extend(data["check_runs"])
+        if len(runs) >= data["total_count"] or not data["check_runs"]:
+            return runs
+        page += 1
+
+
 while time.time() < DEADLINE:
-    runs = get(f"{API}/commits/{SHA}/check-runs")
-    st = get(f"{API}/commits/{SHA}/status")
-    if runs and st:
+    runs = get_check_runs()
+    # The combined status also pages its `statuses` (30 by default).
+    st = get(f"{API}/commits/{SHA}/status?per_page=100")
+    if runs is not None and st:
         # "sync" mirrors GitHub Project state, not code health — irrelevant here.
-        cr = [c for c in runs["check_runs"] if c["name"] != "sync"]
+        cr = [c for c in runs if c["name"] != "sync"]
         pending = [c["name"] for c in cr if c["status"] != "completed"]
         bad = [
             f'{c["name"]}={c["conclusion"]}'
