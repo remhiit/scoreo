@@ -21,6 +21,8 @@ describe('GetPlayerStatsUseCase', () => {
       tieBreakCondition: 'HIGHEST_SCORE',
       tieBreakLabel: null,
       moduleId: null,
+      minPlayers: null,
+      maxPlayers: null,
       active: true,
     })
     matchRepo.save({
@@ -57,6 +59,8 @@ describe('GetPlayerStatsUseCase', () => {
       tieBreakCondition: 'HIGHEST_SCORE',
       tieBreakLabel: null,
       moduleId: null,
+      minPlayers: null,
+      maxPlayers: null,
       active: true,
     })
     matchRepo.save({
@@ -93,6 +97,8 @@ describe('GetPlayerStatsUseCase', () => {
       tieBreakCondition: 'HIGHEST_SCORE',
       tieBreakLabel: null,
       moduleId: null,
+      minPlayers: null,
+      maxPlayers: null,
       active: true,
     })
     matchRepo.save({
@@ -161,6 +167,8 @@ describe('GetPlayerStatsUseCase', () => {
       tieBreakCondition: 'HIGHEST_SCORE',
       tieBreakLabel: null,
       moduleId: null,
+      minPlayers: null,
+      maxPlayers: null,
       active: true,
     })
     matchRepo.save({
@@ -195,6 +203,8 @@ describe('GetPlayerStatsUseCase', () => {
       tieBreakCondition: 'HIGHEST_SCORE',
       tieBreakLabel: null,
       moduleId: null,
+      minPlayers: null,
+      maxPlayers: null,
       active: true,
     })
     matchRepo.save({
@@ -231,6 +241,8 @@ describe('GetPlayerStatsUseCase', () => {
       tieBreakCondition: 'HIGHEST_SCORE',
       tieBreakLabel: null,
       moduleId: null,
+      minPlayers: null,
+      maxPlayers: null,
       active: true,
     })
     matchRepo.save({

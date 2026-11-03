@@ -58,6 +58,8 @@ describe('SyncUseCase', () => {
       tieBreakCondition: 'HIGHEST_SCORE',
       tieBreakLabel: null,
       moduleId: null,
+      minPlayers: null,
+      maxPlayers: null,
       active: true,
     })
     const matchRepo = new InMemoryMatchRepository()
@@ -105,6 +107,8 @@ describe('SyncUseCase', () => {
           tieBreakCondition: 'HIGHEST_SCORE',
           tieBreakLabel: null,
           moduleId: null,
+          minPlayers: null,
+          maxPlayers: null,
           active: true,
         },
       ],
@@ -156,6 +160,8 @@ describe('SyncUseCase', () => {
           tieBreakCondition: 'HIGHEST_SCORE',
           tieBreakLabel: null,
           moduleId: null,
+          minPlayers: null,
+          maxPlayers: null,
           active: true,
         },
       ],
@@ -185,6 +191,8 @@ describe('SyncUseCase', () => {
       tieBreakCondition: 'HIGHEST_SCORE',
       tieBreakLabel: null,
       moduleId: null,
+      minPlayers: null,
+      maxPlayers: null,
       active: true,
     })
     const matchRepo = new InMemoryMatchRepository()
@@ -225,6 +233,8 @@ describe('SyncUseCase', () => {
           tieBreakCondition: 'HIGHEST_SCORE',
           tieBreakLabel: null,
           moduleId: null,
+          minPlayers: null,
+          maxPlayers: null,
           active: true,
         },
       ],
@@ -254,6 +264,8 @@ describe('SyncUseCase', () => {
       tieBreakCondition: 'HIGHEST_SCORE',
       tieBreakLabel: null,
       moduleId: null,
+      minPlayers: null,
+      maxPlayers: null,
       active: true,
     })
     const matchRepo = new InMemoryMatchRepository()
@@ -298,6 +310,8 @@ describe('SyncUseCase', () => {
       tieBreakCondition: 'HIGHEST_SCORE',
       tieBreakLabel: null,
       moduleId: null,
+      minPlayers: null,
+      maxPlayers: null,
       active: true,
     })
     const matchRepo = new InMemoryMatchRepository()
@@ -343,6 +357,8 @@ describe('SyncUseCase', () => {
           tieBreakCondition: 'HIGHEST_SCORE',
           tieBreakLabel: null,
           moduleId: null,
+          minPlayers: null,
+          maxPlayers: null,
           active: true,
         },
       ],
@@ -391,6 +407,8 @@ describe('SyncUseCase', () => {
           tieBreakCondition: 'HIGHEST_SCORE',
           tieBreakLabel: null,
           moduleId: null,
+          minPlayers: null,
+          maxPlayers: null,
           active: true,
         },
       ],
@@ -421,6 +439,8 @@ describe('SyncUseCase', () => {
       tieBreakCondition: 'HIGHEST_SCORE',
       tieBreakLabel: null,
       moduleId: null,
+      minPlayers: null,
+      maxPlayers: null,
       active: true,
     })
     gameTypeRepo.save({
@@ -432,6 +452,8 @@ describe('SyncUseCase', () => {
       tieBreakCondition: 'HIGHEST_SCORE',
       tieBreakLabel: null,
       moduleId: null,
+      minPlayers: null,
+      maxPlayers: null,
       active: true,
     })
     const matchRepo = new InMemoryMatchRepository()
@@ -502,6 +524,8 @@ describe('SyncUseCase', () => {
           tieBreakCondition: 'HIGHEST_SCORE',
           tieBreakLabel: null,
           moduleId: null,
+          minPlayers: null,
+          maxPlayers: null,
           active: true,
         },
       ],
@@ -531,6 +555,8 @@ describe('SyncUseCase', () => {
       tieBreakCondition: 'HIGHEST_SCORE',
       tieBreakLabel: null,
       moduleId: null,
+      minPlayers: null,
+      maxPlayers: null,
       active: true,
     })
     const matchRepo = new ThrowingSaveAllMatchRepository()

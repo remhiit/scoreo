@@ -14,4 +14,7 @@ export const GameTypeSchema = z.object({
   // Game types saved before modules existed carry no moduleId; they read back
   // unbound rather than failing to parse.
   moduleId: z.string().nullable().default(null),
+  // Player range of the game; null = no limit. Absent from older data.
+  minPlayers: z.number().int().min(1).nullable().default(null),
+  maxPlayers: z.number().int().min(1).nullable().default(null),
 })

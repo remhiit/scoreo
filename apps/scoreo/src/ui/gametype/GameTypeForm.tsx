@@ -2,6 +2,7 @@ import { Button, Select, Stack, Text, TextInput } from '@scoreboards/design-syst
 import { useTranslation } from 'react-i18next'
 import {
   scoringModeChangeWarning,
+  showsPlayerRange,
   showsScoringModeChoice,
   type GameTypeAction,
 } from './gameTypeReducer'
@@ -20,7 +21,7 @@ export interface GameTypeFieldsProps {
   dispatch: (action: GameTypeAction) => void
 }
 
-/** Win condition / tie-break fields, shared by the add form and the edit modal. */
+/** Win condition / tie-break / player range fields, shared by the add form and the edit modal. */
 export function GameTypeFields({ state, dispatch }: GameTypeFieldsProps) {
   const { t } = useTranslation()
 
@@ -98,6 +99,23 @@ export function GameTypeFields({ state, dispatch }: GameTypeFieldsProps) {
             value={state.selectedTieBreakLabel ?? ''}
             onChange={(label) => dispatch({ type: 'updateTieBreakLabel', label })}
             placeholder={t('gametype.tieBreakLabelPlaceholder')}
+          />
+        </>
+      )}
+
+      {showsPlayerRange(state) && (
+        <>
+          <TextInput
+            label={t('gametype.minPlayers')}
+            value={state.selectedMinPlayers}
+            onChange={(value) => dispatch({ type: 'updateMinPlayers', value })}
+            placeholder={t('gametype.playerLimitPlaceholder')}
+          />
+          <TextInput
+            label={t('gametype.maxPlayers')}
+            value={state.selectedMaxPlayers}
+            onChange={(value) => dispatch({ type: 'updateMaxPlayers', value })}
+            placeholder={t('gametype.playerLimitPlaceholder')}
           />
         </>
       )}

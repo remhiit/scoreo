@@ -26,6 +26,8 @@ function gameType(overrides: Partial<GameType> & Pick<GameType, 'id' | 'name'>):
     tieBreakCondition: 'HIGHEST_SCORE',
     tieBreakLabel: null,
     moduleId: null,
+    minPlayers: null,
+    maxPlayers: null,
     active: true,
     ...overrides,
   }

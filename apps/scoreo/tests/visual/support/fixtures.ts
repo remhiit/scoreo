@@ -27,6 +27,8 @@ export const TORI_GAME_TYPE: GameType = {
   tieBreakCondition: 'HIGHEST_SCORE',
   tieBreakLabel: null,
   moduleId: 'tori-valley',
+  minPlayers: null,
+  maxPlayers: null,
   active: true,
 }
 
@@ -157,6 +159,8 @@ export const SABORDS_GAME_TYPE: GameType = {
   tieBreakCondition: 'HIGHEST_SCORE',
   tieBreakLabel: null,
   moduleId: 'mille-sabords',
+  minPlayers: null,
+  maxPlayers: null,
   active: true,
 }
 
@@ -239,6 +243,8 @@ export const SKYJO_GAME_TYPE: GameType = {
   tieBreakCondition: 'HIGHEST_SCORE',
   tieBreakLabel: null,
   moduleId: 'skyjo',
+  minPlayers: null,
+  maxPlayers: null,
   active: true,
 }
 

@@ -46,6 +46,8 @@ function gameType(
     tieBreakCondition: 'HIGHEST_SCORE',
     tieBreakLabel,
     moduleId: null,
+    minPlayers: null,
+    maxPlayers: null,
     active: true,
   }
 }

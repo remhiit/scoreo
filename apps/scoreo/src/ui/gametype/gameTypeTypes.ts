@@ -15,6 +15,9 @@ export interface GameTypeState {
   selectedTieBreakRule: TieBreakRule
   selectedTieBreakCondition: WinCondition
   selectedTieBreakLabel: string | undefined
+  /** Raw text of the player limit fields; empty = no limit. Parsed on submit (`parsePlayerLimit`). */
+  selectedMinPlayers: string
+  selectedMaxPlayers: string
   selectedGameId: string | undefined
   editingGameId: string | undefined
   /** The game type being edited already has matches: changing its scoring mode rescores them (`rescoreMatch`). */
@@ -39,6 +42,8 @@ export const initialGameTypeState: GameTypeState = {
   selectedTieBreakRule: 'NONE',
   selectedTieBreakCondition: 'HIGHEST_SCORE',
   selectedTieBreakLabel: undefined,
+  selectedMinPlayers: '',
+  selectedMaxPlayers: '',
   selectedGameId: undefined,
   editingGameId: undefined,
   editingGameHasMatches: false,
