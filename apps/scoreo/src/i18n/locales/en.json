@@ -22,6 +22,9 @@
     "french": "French"
   },
   "gametype": {
+    "minPlayers": "Min. players",
+    "maxPlayers": "Max. players",
+    "playerLimitPlaceholder": "No limit",
     "title": "Game Types",
     "winCondition": "Win condition",
     "scoringMode": "Scoring",
@@ -75,6 +78,9 @@
     "totals": "Total:"
   },
   "home": {
+    "playerRange": "{{min}}–{{max}} players",
+    "playerRangeMin": "At least {{min}} players",
+    "playerRangeMax": "At most {{max}} players",
     "resumeMatch": "Resume match in progress",
     "playerNamePlaceholder": "Player name",
     "add": "Add",
@@ -252,7 +258,6 @@
     "loading": "Loading the module…",
     "failedToLoad": "This module could not be loaded.",
     "unknownModule": "This module is not installed.",
-    "playerRange": "{{min}}–{{max}} players",
     "exit": "Exit"
   }
 }

@@ -29,7 +29,7 @@ describe('serialization contract (backward compatibility)', () => {
       moduleId: null,
       active: true,
     }
-    expect(roundTrip(GameTypeSchema, original)).toEqual(original)
+    expect(roundTrip(GameTypeSchema, original)).toEqual({ minPlayers: null, maxPlayers: null, ...original })
   })
 
   it('GameType with MANUAL winCondition serialization round-trip', () => {
@@ -44,7 +44,7 @@ describe('serialization contract (backward compatibility)', () => {
       moduleId: null,
       active: true,
     }
-    expect(roundTrip(GameTypeSchema, original)).toEqual(original)
+    expect(roundTrip(GameTypeSchema, original)).toEqual({ minPlayers: null, maxPlayers: null, ...original })
   })
 
   it('GameType bound to a scoring module serialization round-trip', () => {
@@ -59,7 +59,7 @@ describe('serialization contract (backward compatibility)', () => {
       active: true,
       moduleId: 'tori-valley',
     }
-    expect(roundTrip(GameTypeSchema, original)).toEqual(original)
+    expect(roundTrip(GameTypeSchema, original)).toEqual({ minPlayers: null, maxPlayers: null, ...original })
   })
 
   it('GameType saved before modules existed reads back unbound', () => {
@@ -76,7 +76,52 @@ describe('serialization contract (backward compatibility)', () => {
       ...legacy,
       scoringMode: 'POINTS',
       moduleId: null,
+      minPlayers: null,
+      maxPlayers: null,
     })
+  })
+
+  it('GameType saved before player ranges existed reads back with no limit', () => {
+    const legacy = {
+      id: 'gt-range',
+      name: 'Belote',
+      winCondition: 'HIGHEST_SCORE',
+      scoringMode: 'POINTS',
+      tieBreakRule: 'NONE',
+      tieBreakCondition: 'HIGHEST_SCORE',
+      tieBreakLabel: null,
+      active: true,
+      moduleId: null,
+    }
+    expect(roundTrip(GameTypeSchema, legacy)).toMatchObject({ minPlayers: null, maxPlayers: null })
+  })
+
+  it('GameType with a player range serialization round-trip', () => {
+    const original = {
+      id: 'gt-range2',
+      name: 'Belote',
+      winCondition: 'HIGHEST_SCORE',
+      scoringMode: 'POINTS',
+      tieBreakRule: 'NONE',
+      tieBreakCondition: 'HIGHEST_SCORE',
+      tieBreakLabel: null,
+      active: true,
+      moduleId: null,
+      minPlayers: 2,
+      maxPlayers: null,
+    }
+    expect(roundTrip(GameTypeSchema, original)).toEqual(original)
+  })
+
+  it('GameType player range below 1 or not an integer is refused', () => {
+    const base = {
+      id: 'gt-range3',
+      name: 'Belote',
+      winCondition: 'HIGHEST_SCORE',
+    }
+    expect(GameTypeSchema.safeParse({ ...base, minPlayers: 0 }).success).toBe(false)
+    expect(GameTypeSchema.safeParse({ ...base, maxPlayers: -2 }).success).toBe(false)
+    expect(GameTypeSchema.safeParse({ ...base, maxPlayers: 2.5 }).success).toBe(false)
   })
 
   it('GameType saved before scoring modes existed reads back as POINTS', () => {
@@ -105,7 +150,7 @@ describe('serialization contract (backward compatibility)', () => {
       active: true,
       moduleId: null,
     }
-    expect(roundTrip(GameTypeSchema, original)).toEqual(original)
+    expect(roundTrip(GameTypeSchema, original)).toEqual({ minPlayers: null, maxPlayers: null, ...original })
   })
 
   it('PlayerScore serialization round-trip', () => {
@@ -287,6 +332,8 @@ describe('serialization contract (backward compatibility)', () => {
       tieBreakCondition: 'HIGHEST_SCORE',
       tieBreakLabel: null,
       moduleId: null,
+      minPlayers: null,
+      maxPlayers: null,
       active: true,
     })
   })
@@ -303,11 +350,15 @@ describe('serialization contract (backward compatibility)', () => {
       moduleId: null,
       active: true,
     }
-    expect(roundTrip(GameTypeSchema, original)).toEqual(original)
+    expect(roundTrip(GameTypeSchema, original)).toEqual({ minPlayers: null, maxPlayers: null, ...original })
   })
 
   it('GameType without tie-break fields defaults correctly (backward compat)', () => {
-    const decoded = GameTypeSchema.parse({ id: 'gt1', name: 'Classic', winCondition: 'HIGHEST_SCORE' })
+    const decoded = GameTypeSchema.parse({
+      id: 'gt1',
+      name: 'Classic',
+      winCondition: 'HIGHEST_SCORE',
+    })
     expect(decoded).toEqual({
       id: 'gt1',
       name: 'Classic',
@@ -317,6 +368,8 @@ describe('serialization contract (backward compatibility)', () => {
       tieBreakCondition: 'HIGHEST_SCORE',
       tieBreakLabel: null,
       moduleId: null,
+      minPlayers: null,
+      maxPlayers: null,
       active: true,
     })
   })
@@ -337,6 +390,8 @@ describe('serialization contract (backward compatibility)', () => {
       tieBreakCondition: 'HIGHEST_SCORE',
       tieBreakLabel: null,
       moduleId: null,
+      minPlayers: null,
+      maxPlayers: null,
       active: true,
     })
   })
@@ -419,7 +474,12 @@ describe('serialization contract (backward compatibility)', () => {
   })
 
   it('MatchDraft with single empty round round-trip', () => {
-    const original = { gameTypeId: 'gt1', playerIds: ['alice', 'bob'], rounds: [{}], updatedAt: 2000 }
+    const original = {
+      gameTypeId: 'gt1',
+      playerIds: ['alice', 'bob'],
+      rounds: [{}],
+      updatedAt: 2000,
+    }
     expect(roundTrip(MatchDraftSchema, original)).toEqual(original)
   })
 

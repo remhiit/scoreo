@@ -233,14 +233,14 @@ This applies to: `Player`, `GameType`, `Match`, `PlayerScore`, `WinCondition`, `
 
 **Current entity formats:**
 
-| Entity         | Fields                                                                                                                                                                                                                                                                                                                      |
-| -------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `Player`       | `id: string` (UUID v4), `name: string`, `active: boolean` (default `true`)                                                                                                                                                                                                                                                  |
-| `GameType`     | `id: string` (UUID v4), `name: string`, `winCondition: WinCondition`, `scoringMode: ScoringMode` (default `'POINTS'`), `tieBreakRule: TieBreakRule` (default `'NONE'`), `tieBreakCondition: WinCondition` (default `'HIGHEST_SCORE'`), `tieBreakLabel: string \| null` (default `null`), `active: boolean` (default `true`) |
-| `Match`        | `id: string` (UUID v4), `date: number` (epoch ms), `gameTypeId: string`, `playerScores: PlayerScore[]`, `manualWinners: string[]` (default `[]`), `secondaryPlayerScores: PlayerScore[]` (default `[]`), `rounds: PlayerScore[][]` (default `[]`)                                                                           |
-| `PlayerScore`  | `playerId: string`, `score: number`                                                                                                                                                                                                                                                                                         |
-| `WinCondition` | union: `'HIGHEST_SCORE'`, `'LOWEST_SCORE'`, `'MANUAL'`                                                                                                                                                                                                                                                                      |
-| `ScoringMode`  | union: `'POINTS'`, `'ROUNDS_WON'`                                                                                                                                                                                                                                                                                           |
+| Entity | Fields |
+|---|---|
+| `Player` | `id: string` (UUID v4), `name: string`, `active: boolean` (default `true`) |
+| `GameType` | `id: string` (UUID v4), `name: string`, `winCondition: WinCondition`, `scoringMode: ScoringMode` (default `'POINTS'`), `tieBreakRule: TieBreakRule` (default `'NONE'`), `tieBreakCondition: WinCondition` (default `'HIGHEST_SCORE'`), `tieBreakLabel: string \| null` (default `null`), `active: boolean` (default `true`), `moduleId: string \| null` (default `null`), `minPlayers: number \| null` (default `null`, int ≥ 1), `maxPlayers: number \| null` (default `null`, int ≥ 1) |
+| `Match` | `id: string` (UUID v4), `date: number` (epoch ms), `gameTypeId: string`, `playerScores: PlayerScore[]`, `manualWinners: string[]` (default `[]`), `secondaryPlayerScores: PlayerScore[]` (default `[]`), `rounds: PlayerScore[][]` (default `[]`) |
+| `PlayerScore` | `playerId: string`, `score: number` |
+| `WinCondition` | union: `'HIGHEST_SCORE'`, `'LOWEST_SCORE'`, `'MANUAL'` |
+| `ScoringMode` | union: `'POINTS'`, `'ROUNDS_WON'` |
 
 **Migration mechanism:** `LocalStorageMatchRepository.getAll()` runs `migrateMatches()` once per instance before the first read. It detects old-format data (string dates, non-UUID ids) and converts them, writing the migrated array back. Idempotent — a second call is a no-op. See `doc/technical/migrations.md` for details, and `apps/scoreo/src/infrastructure/crossMigration.test.ts` for the end-to-end backward-compat test replaying a realistic old-format export.
 

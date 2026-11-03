@@ -119,7 +119,9 @@ describe('AddGameTypeUseCase', () => {
 
   it('defaults scoringMode to POINTS', () => {
     const repo = new InMemoryGameTypeRepository()
-    expect(new AddGameTypeUseCase(repo).invoke('Belote', 'HIGHEST_SCORE').scoringMode).toBe('POINTS')
+    expect(new AddGameTypeUseCase(repo).invoke('Belote', 'HIGHEST_SCORE').scoringMode).toBe(
+      'POINTS',
+    )
   })
 
   it('stores the ROUNDS_WON scoring mode', () => {
@@ -132,5 +134,40 @@ describe('AddGameTypeUseCase', () => {
     const repo = new InMemoryGameTypeRepository()
     new AddGameTypeUseCase(repo).invoke('Custom', 'MANUAL', { scoringMode: 'ROUNDS_WON' })
     expect(repo.getAll()[0].scoringMode).toBe('POINTS')
+  })
+
+  it('defaults the player range to no limit', () => {
+    const repo = new InMemoryGameTypeRepository()
+    const created = new AddGameTypeUseCase(repo).invoke('Custom', 'HIGHEST_SCORE')
+    expect(created).toMatchObject({ minPlayers: null, maxPlayers: null })
+    expect(repo.getAll()[0]).toMatchObject({ minPlayers: null, maxPlayers: null })
+  })
+
+  it('stores the player range, a fixed number of players included', () => {
+    const repo = new InMemoryGameTypeRepository()
+    const useCase = new AddGameTypeUseCase(repo)
+    expect(useCase.invoke('A', 'HIGHEST_SCORE', { minPlayers: 2, maxPlayers: 5 })).toMatchObject({
+      minPlayers: 2,
+      maxPlayers: 5,
+    })
+    expect(useCase.invoke('B', 'HIGHEST_SCORE', { minPlayers: 3, maxPlayers: 3 })).toMatchObject({
+      minPlayers: 3,
+      maxPlayers: 3,
+    })
+    expect(useCase.invoke('C', 'HIGHEST_SCORE', { maxPlayers: 4 })).toMatchObject({
+      minPlayers: null,
+      maxPlayers: 4,
+    })
+  })
+
+  it('rejects an invalid player range without saving', () => {
+    const repo = new InMemoryGameTypeRepository()
+    const useCase = new AddGameTypeUseCase(repo)
+    expect(() => useCase.invoke('A', 'HIGHEST_SCORE', { minPlayers: 5, maxPlayers: 2 })).toThrow(
+      ValidationError,
+    )
+    expect(() => useCase.invoke('A', 'HIGHEST_SCORE', { minPlayers: 0 })).toThrow(ValidationError)
+    expect(() => useCase.invoke('A', 'HIGHEST_SCORE', { maxPlayers: 2.5 })).toThrow(ValidationError)
+    expect(repo.getAll()).toHaveLength(0)
   })
 })

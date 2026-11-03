@@ -132,7 +132,9 @@ the module has).
 `shared-domain` holds the serialized models and their pure rules, nothing else. `MatchDraft`, `trophy`, the
 errors (`ValidationError`/`NotFoundError`), the repository ports and the use cases stay in the app: they describe
 how the host stores and orchestrates, not what a module needs to read. `shared-domain` depends on `zod` only, never
-on React or on the app.
+on React or on the app. A rule that throws one of the app's errors stays in the app
+for the same reason: `assertValidPlayerRange` lives in `apps/scoreo/src/domain/model/gameType.ts`, next to the
+re-export, while the pure `playerCountFitsRange` is shared.
 
 ## Binding a module to a game
 

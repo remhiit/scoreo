@@ -42,6 +42,13 @@ export interface GameSelectModalProps {
    * button is disabled and the range is shown.
    */
   moduleFitsPlayers: boolean
+  /**
+   * The player range of the selected game, when it is an ordinary game (no
+   * module) that sets at least one bound; `null` bounds are not checked.
+   */
+  gameRange: { minPlayers: number | null; maxPlayers: number | null } | undefined
+  /** Whether the selected players fit `gameRange`; outside it the game cannot be started. */
+  playersFitGameRange: boolean
 }
 
 /** One entry of the game list: a game type, or a module not bound to one yet. */
@@ -67,6 +74,8 @@ export function GameSelectModal({
   onAddInlineGameType,
   moduleForSelectedGame,
   moduleFitsPlayers,
+  gameRange,
+  playersFitGameRange,
 }: GameSelectModalProps) {
   const { t } = useTranslation()
 
@@ -88,7 +97,11 @@ export function GameSelectModal({
           {/* A game a module counts has one grid, the module's: out of its player
               range the launch is off, it never falls back to the generic grid. */}
           <Button
-            disabled={moduleForSelectedGame !== undefined && !moduleFitsPlayers}
+            disabled={
+              moduleForSelectedGame !== undefined
+                ? !moduleFitsPlayers
+                : gameRange !== undefined && !playersFitGameRange
+            }
             onClick={onStartMatch}
           >
             {t('home.startMatch')}
@@ -113,10 +126,20 @@ export function GameSelectModal({
 
       {moduleForSelectedGame && !moduleFitsPlayers && (
         <Text variant="hint">
-          {t('modules.playerRange', {
+          {t('home.playerRange', {
             min: moduleForSelectedGame.minPlayers,
             max: moduleForSelectedGame.maxPlayers,
           })}
+        </Text>
+      )}
+
+      {gameRange && !playersFitGameRange && (
+        <Text variant="hint">
+          {gameRange.minPlayers !== null && gameRange.maxPlayers !== null
+            ? t('home.playerRange', { min: gameRange.minPlayers, max: gameRange.maxPlayers })
+            : gameRange.minPlayers !== null
+              ? t('home.playerRangeMin', { min: gameRange.minPlayers })
+              : t('home.playerRangeMax', { max: gameRange.maxPlayers })}
         </Text>
       )}
 

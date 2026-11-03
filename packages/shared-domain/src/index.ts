@@ -20,6 +20,7 @@ export {
   computeWinners,
   effectiveScoringMode,
   newGameType,
+  playerCountFitsRange,
   roundScoringChanged,
   scoringModeIsSelectable,
   usesRoundsWon,

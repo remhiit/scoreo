@@ -46,6 +46,8 @@ function buildGameType(id: string, name: string) {
     tieBreakCondition: 'HIGHEST_SCORE' as const,
     tieBreakLabel: null,
     moduleId: null,
+    minPlayers: null,
+    maxPlayers: null,
     active: true,
   }
 }
@@ -145,6 +147,37 @@ describe('GameTypeScreen', () => {
     expect(within(screen.getByRole('dialog')).getByText('Manual selection')).toBeInTheDocument()
   })
 
+  it('adds a game with a player range and edits it from the form', () => {
+    renderScreen()
+    fireEvent.change(nameInput(), { target: { value: 'Chess' } })
+    fireEvent.change(screen.getByLabelText('Min. players'), { target: { value: '2' } })
+    fireEvent.change(screen.getByLabelText('Max. players'), { target: { value: '2' } })
+    fireEvent.click(screen.getByText('Add game type'))
+    expect(screen.getByText('Chess', { selector: '.sc-row__title' })).toBeInTheDocument()
+
+    fireEvent.click(screen.getByLabelText('Edit'))
+    const dialog = screen.getByRole('dialog')
+    expect(within(dialog).getByLabelText('Min. players')).toHaveValue('2')
+    expect(within(dialog).getByLabelText('Max. players')).toHaveValue('2')
+    fireEvent.change(within(dialog).getByLabelText('Max. players'), { target: { value: '4' } })
+    fireEvent.click(within(dialog).getByText('Save changes'))
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+
+    fireEvent.click(screen.getByLabelText('Edit'))
+    expect(within(screen.getByRole('dialog')).getByLabelText('Max. players')).toHaveValue('4')
+  })
+
+  it('shows an error when the minimum exceeds the maximum', () => {
+    renderScreen()
+    fireEvent.change(nameInput(), { target: { value: 'Chess' } })
+    fireEvent.change(screen.getByLabelText('Min. players'), { target: { value: '5' } })
+    fireEvent.change(screen.getByLabelText('Max. players'), { target: { value: '2' } })
+    fireEvent.click(screen.getByText('Add game type'))
+
+    expect(screen.getByText('minPlayers: Minimum players must not exceed maximum players')).toBeInTheDocument()
+    expect(screen.queryByText('Chess', { selector: '.sc-row__title' })).not.toBeInTheDocument()
+  })
+
   it('editing a game type bound to a scoring module leaves it bound', () => {
     const repo = new InMemoryGameTypeRepository()
     repo.save({ ...buildGameType('gt1', 'La Vallée des Torī'), moduleId: 'tori-valley' })
@@ -170,6 +203,32 @@ describe('GameTypeScreen', () => {
 
     fireEvent.click(screen.getByLabelText('Edit'))
     expect(within(screen.getByRole('dialog')).queryByLabelText('Scoring')).not.toBeInTheDocument()
+  })
+
+  it('hides the player range fields when editing a game bound to a scoring module', () => {
+    const repo = new InMemoryGameTypeRepository()
+    repo.save({ ...buildGameType('gt1', 'Skyjo'), moduleId: 'skyjo' })
+    renderScreen(repo)
+
+    fireEvent.click(screen.getByLabelText('Edit'))
+    const editDialog = screen.getByRole('dialog')
+    // The range only gates the launch of an ordinary game: a module game ignores it.
+    expect(within(editDialog).queryByLabelText('Min. players')).not.toBeInTheDocument()
+    expect(within(editDialog).queryByLabelText('Max. players')).not.toBeInTheDocument()
+
+    fireEvent.click(within(editDialog).getByText('Save changes'))
+    expect(repo.findById('gt1')).toMatchObject({ minPlayers: null, maxPlayers: null })
+  })
+
+  it('shows the player range fields when editing an ordinary game', () => {
+    const repo = new InMemoryGameTypeRepository()
+    repo.save(buildGameType('gt1', 'Chess'))
+    renderScreen(repo)
+
+    fireEvent.click(screen.getByLabelText('Edit'))
+    const editDialog = screen.getByRole('dialog')
+    expect(within(editDialog).getByLabelText('Min. players')).toBeInTheDocument()
+    expect(within(editDialog).getByLabelText('Max. players')).toBeInTheDocument()
   })
 
   it('cancelling edit restores the add form without changes', () => {

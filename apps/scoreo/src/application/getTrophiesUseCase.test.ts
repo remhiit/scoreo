@@ -32,6 +32,8 @@ function gameType(id: string, name: string, winCondition: GameType['winCondition
     tieBreakCondition: 'HIGHEST_SCORE',
     tieBreakLabel: null,
     moduleId: null,
+    minPlayers: null,
+    maxPlayers: null,
     active: true,
   }
 }

@@ -18,6 +18,8 @@ describe('LocalStorageGameTypeRepository', () => {
       tieBreakCondition: 'HIGHEST_SCORE',
       tieBreakLabel: null,
       moduleId: null,
+      minPlayers: null,
+      maxPlayers: null,
       active: true,
     })
 
@@ -36,6 +38,8 @@ describe('LocalStorageGameTypeRepository', () => {
       tieBreakCondition: 'HIGHEST_SCORE' as const,
       tieBreakLabel: null,
       moduleId: null,
+      minPlayers: null,
+      maxPlayers: null,
       active: true,
     }
     repo.save(gt)
@@ -56,6 +60,8 @@ describe('LocalStorageGameTypeRepository', () => {
       tieBreakCondition: 'HIGHEST_SCORE',
       tieBreakLabel: null,
       moduleId: null,
+      minPlayers: null,
+      maxPlayers: null,
       active: true,
     })
     repo.save({
@@ -67,6 +73,8 @@ describe('LocalStorageGameTypeRepository', () => {
       tieBreakCondition: 'HIGHEST_SCORE',
       tieBreakLabel: null,
       moduleId: null,
+      minPlayers: null,
+      maxPlayers: null,
       active: false,
     })
 
@@ -85,6 +93,8 @@ describe('LocalStorageGameTypeRepository', () => {
       tieBreakCondition: 'HIGHEST_SCORE',
       tieBreakLabel: null,
       moduleId: null,
+      minPlayers: null,
+      maxPlayers: null,
       active: false,
     })
 
@@ -115,6 +125,8 @@ describe('LocalStorageGameTypeRepository', () => {
         tieBreakCondition: 'HIGHEST_SCORE',
         tieBreakLabel: null,
         moduleId: null,
+        minPlayers: null,
+        maxPlayers: null,
         active: true,
       },
     ])
@@ -131,6 +143,8 @@ describe('LocalStorageGameTypeRepository', () => {
       tieBreakCondition: 'HIGHEST_SCORE',
       tieBreakLabel: null,
       moduleId: null,
+      minPlayers: null,
+      maxPlayers: null,
       active: true,
     })
 
@@ -153,6 +167,8 @@ describe('LocalStorageGameTypeRepository', () => {
       tieBreakCondition: 'HIGHEST_SCORE' as const,
       tieBreakLabel: null,
       moduleId: null,
+      minPlayers: null,
+      maxPlayers: null,
       active: true,
     }
 
@@ -184,6 +200,8 @@ describe('LocalStorageGameTypeRepository', () => {
       tieBreakCondition: 'HIGHEST_SCORE' as const,
       tieBreakLabel: null,
       moduleId: null,
+      minPlayers: null,
+      maxPlayers: null,
       active: false,
     }
     repo.save(gt)

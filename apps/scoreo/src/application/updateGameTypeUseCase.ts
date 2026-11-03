@@ -1,4 +1,9 @@
-import { effectiveScoringMode, roundScoringChanged, type GameType } from '../domain/model/gameType'
+import {
+  assertValidPlayerRange,
+  effectiveScoringMode,
+  roundScoringChanged,
+  type GameType,
+} from '../domain/model/gameType'
 import { rescoreMatch, type Match } from '../domain/model/match'
 import type { GameTypeRepository } from '../domain/port/gameTypeRepository'
 import type { MatchRepository } from '../domain/port/matchRepository'
@@ -10,6 +15,9 @@ export class UpdateGameTypeUseCase {
   ) {}
 
   /**
+   * Throws a `ValidationError` before saving anything when the player range is
+   * invalid (a bound under 1, or a minimum above the maximum).
+   *
    * Saves the game type, with its effective scoring mode (`POINTS` for a
    * `MANUAL` or module-bound game). When the change alters how rounds turn into
    * a final score (`roundScoringChanged`: effective scoring mode, or who wins a
@@ -29,6 +37,7 @@ export class UpdateGameTypeUseCase {
    * former ones — silently, as the detail can still look consistent.
    */
   invoke(gameType: GameType): void {
+    assertValidPlayerRange(gameType)
     const scoringMode = effectiveScoringMode(gameType)
     const updated = scoringMode === gameType.scoringMode ? gameType : { ...gameType, scoringMode }
     const previous = this.repository.findById(updated.id)

@@ -23,6 +23,14 @@ export interface GameType {
    * grid remains only for reopening a match that has no `moduleData`.
    */
   moduleId: string | null
+  /**
+   * Fewest players this game can be started with, or `null` for no lower limit.
+   * Only checked when launching a game (the game choice dialog); matches already
+   * recorded outside the range stay valid.
+   */
+  minPlayers: number | null
+  /** Most players this game can be started with, or `null` for no upper limit. */
+  maxPlayers: number | null
 }
 
 /** Everything but the identity and the win condition, each defaulted by {@link newGameType}. */
@@ -54,7 +62,20 @@ export function newGameType(
     tieBreakLabel: defaults.tieBreakLabel ?? null,
     active: defaults.active ?? true,
     moduleId,
+    minPlayers: defaults.minPlayers ?? null,
+    maxPlayers: defaults.maxPlayers ?? null,
   }
+}
+
+/** True when `count` players fit the game's range; a `null` bound is not checked. */
+export function playerCountFitsRange(
+  range: Pick<GameType, 'minPlayers' | 'maxPlayers'>,
+  count: number,
+): boolean {
+  return (
+    (range.minPlayers === null || count >= range.minPlayers) &&
+    (range.maxPlayers === null || count <= range.maxPlayers)
+  )
 }
 
 /** The fields that decide a game type's effective scoring mode. */

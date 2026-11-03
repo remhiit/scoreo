@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   computeRoundsWon,
+  playerCountFitsRange,
   computeWinners,
   effectiveScoringMode,
   scoringModeIsSelectable,
@@ -25,6 +26,8 @@ function gameType(overrides: Partial<GameType> = {}): GameType {
     tieBreakCondition: 'HIGHEST_SCORE',
     tieBreakLabel: null,
     moduleId: null,
+    minPlayers: null,
+    maxPlayers: null,
     active: true,
     ...overrides,
   }
@@ -170,6 +173,8 @@ describe('newGameType', () => {
       tieBreakCondition: 'LOWEST_SCORE',
       tieBreakLabel: 'Bonus',
       moduleId: null,
+      minPlayers: null,
+      maxPlayers: null,
       active: false,
     })
   })
@@ -186,6 +191,18 @@ describe('newGameType', () => {
     expect(newGameType('1', 'Game', 'MANUAL', { scoringMode: 'ROUNDS_WON' }).scoringMode).toBe(
       'POINTS',
     )
+  })
+})
+
+describe('player range', () => {
+  it('playerCountFitsRange ignores null bounds and includes the bounds', () => {
+    expect(playerCountFitsRange({ minPlayers: null, maxPlayers: null }, 0)).toBe(true)
+    expect(playerCountFitsRange({ minPlayers: 2, maxPlayers: 4 }, 1)).toBe(false)
+    expect(playerCountFitsRange({ minPlayers: 2, maxPlayers: 4 }, 2)).toBe(true)
+    expect(playerCountFitsRange({ minPlayers: 2, maxPlayers: 4 }, 4)).toBe(true)
+    expect(playerCountFitsRange({ minPlayers: 2, maxPlayers: 4 }, 5)).toBe(false)
+    expect(playerCountFitsRange({ minPlayers: 3, maxPlayers: null }, 9)).toBe(true)
+    expect(playerCountFitsRange({ minPlayers: null, maxPlayers: 3 }, 4)).toBe(false)
   })
 })
 
