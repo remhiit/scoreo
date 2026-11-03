@@ -110,8 +110,9 @@ describe('toModuleMatch', () => {
   })
 
   // What the host stored before the module wrote `Match` fields itself: the
-  // ranking order kept, `rank === 1` as the winners, the rounds copied.
-  describe('is equivalent to the ranking the host used to translate', () => {
+  // ranking order kept, `rank === 1` as the winners, the rounds copied. The
+  // expectations are frozen literals of that old output, round contents included.
+  describe('is equivalent to the match the host used to build from the ranking', () => {
     const tie: SkyjoRound[] = [
       {
         enderPlayerId: 'p1',
@@ -122,26 +123,51 @@ describe('toModuleMatch', () => {
         ],
       },
     ]
-    const corpus: Record<string, SkyjoRound[]> = {
-      'a decided game': ROUNDS,
-      'a tie for first place': tie,
-      'no round played': [],
+    const s = (playerId: string, score: number) => ({ playerId, score })
+    const corpus: Record<
+      string,
+      {
+        rounds: SkyjoRound[]
+        scores: ReturnType<typeof s>[]
+        winners: string[]
+        playedRounds: ReturnType<typeof s>[][]
+      }
+    > = {
+      'a decided game': {
+        rounds: ROUNDS,
+        scores: [s('p1', 9), s('p3', 18), s('p2', 30)],
+        winners: ['p1'],
+        playedRounds: [
+          [s('p1', 1), s('p2', 20), s('p3', 15)],
+          [s('p1', 8), s('p2', 10), s('p3', 3)],
+        ],
+      },
+      'a tie for first place': {
+        rounds: tie,
+        scores: [s('p1', 5), s('p2', 5), s('p3', 12)],
+        winners: ['p1', 'p2'],
+        playedRounds: [[s('p1', 5), s('p2', 5), s('p3', 12)]],
+      },
+      'no round played': {
+        rounds: [],
+        scores: [s('p1', 0), s('p2', 0), s('p3', 0)],
+        winners: ['p1', 'p2', 'p3'],
+        playedRounds: [],
+      },
     }
 
-    for (const [name, rounds] of Object.entries(corpus)) {
+    for (const [name, { rounds, scores, winners, playedRounds }] of Object.entries(corpus)) {
       it(name, () => {
-        const ranking = buildRanking(PLAYER_IDS, rounds)
-        const match = toModuleMatch({ playerIds: PLAYER_IDS, rounds, matchId: 'm1', playedAt: 99 })
-
-        expect(match.playerScores).toEqual(
-          ranking.map((e) => ({ playerId: e.playerId, score: e.score })),
-        )
-        expect(match.manualWinners).toEqual(
-          ranking.filter((e) => e.rank === 1).map((e) => e.playerId),
-        )
-        expect(match.rounds).toHaveLength(rounds.length)
-        expect(match.id).toBe('m1')
-        expect(match.date).toBe(99)
+        expect(
+          toModuleMatch({ playerIds: PLAYER_IDS, rounds, matchId: 'm1', playedAt: 99 }),
+        ).toEqual({
+          id: 'm1',
+          date: 99,
+          playerScores: scores,
+          manualWinners: winners,
+          rounds: playedRounds,
+          moduleData: { version: 1, data: { players: PLAYER_IDS, rounds } },
+        })
       })
     }
   })

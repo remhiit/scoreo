@@ -84,7 +84,7 @@ Note: Save and Cancel buttons in `ScoreDetail` follow the same rule as `←` (Hi
 
 `ModuleScore` plays full-screen, with none of the header above — the host's back arrow, title and
 burger would only duplicate the exit a module already draws itself. In its place, a fine bar carries
-just the module's name and a ✕, always present even if the module fails to load or crashes. The ✕
+just the module's name and a ✕, always present even if the module fails to load or crashes. The same bar stays when the game type of the route no longer exists: the message "Ce type de jeu n'existe plus." (`modules.unknownGameType`) replaces the module, and the ✕ exits as usual. The ✕
 goes to the same destination as the `ModuleScore` rows above (History/Home), and to History with that
 match called out if it just saved one this session — see *Landing after exit* in
 [`../technical/module-contract.md`](../technical/module-contract.md).

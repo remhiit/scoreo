@@ -2,7 +2,6 @@ import { assertMatchConsistent, newGameType } from '@scoreboards/shared-domain'
 import { describe, expect, it } from 'vitest'
 import { lancerDes } from '../domain/lancerDes'
 import type { EvenementCoup } from '../domain/modeles'
-import { construireEnveloppeExport } from './exportScoreo'
 import {
   buildModuleMatch,
   classementFinal,
@@ -176,47 +175,63 @@ describe('buildModuleMatch', () => {
 
   // What the host stored before the module wrote `Match` fields itself: the
   // export's ranking order kept, `rank === 1` as the winners, the rounds copied.
-  describe('is equivalent to the ranking the host used to translate', () => {
-    const corpus: Record<string, { joueurs: string[]; historique: EvenementCoup[] }> = {
+  // The expectations are frozen literals of that old output, not rebuilt from
+  // the export the module itself calls.
+  describe('is equivalent to the match the host used to build from the ranking', () => {
+    const s = (playerId: string, score: number) => ({ playerId, score })
+    const corpus: Record<
+      string,
+      {
+        joueurs: string[]
+        historique: EvenementCoup[]
+        scores: ReturnType<typeof s>[]
+        winners: string[]
+        rounds: ReturnType<typeof s>[][]
+      }
+    > = {
       'a decided game': {
         joueurs: ['p1', 'p2', 'p3'],
         historique: [manuel('p1', 100), manuel('p2', 900), manuel('p3', 500), manuel('p1', 50)],
+        scores: [s('p2', 900), s('p3', 500), s('p1', 150)],
+        winners: ['p2'],
+        rounds: [
+          [s('p2', 900), s('p3', 500), s('p1', 100)],
+          [s('p2', 0), s('p3', 0), s('p1', 50)],
+        ],
       },
       'a tie on points (seating order breaks it)': {
         joueurs: ['p1', 'p2'],
         historique: [manuel('p1', 700), manuel('p2', 700)],
+        scores: [s('p1', 700), s('p2', 700)],
+        winners: ['p1'],
+        rounds: [[s('p1', 700), s('p2', 700)]],
       },
       'an island wiping a player out': {
         joueurs: ['p1', 'p2'],
         historique: [manuel('p2', 200), ile('p1', 9), manuel('p2', 400), manuel('p1', 100)],
+        scores: [s('p2', 400), s('p1', 100)],
+        winners: ['p2'],
+        rounds: [
+          [s('p2', 0), s('p1', 0)],
+          [s('p2', 400), s('p1', 100)],
+        ],
       },
-      'a game where nothing was played': { joueurs: ['p1', 'p2'], historique: [] },
+      'a game where nothing was played': {
+        joueurs: ['p1', 'p2'],
+        historique: [],
+        scores: [s('p1', 0), s('p2', 0)],
+        winners: ['p1'],
+        rounds: [],
+      },
     }
 
-    for (const [name, { joueurs, historique }] of Object.entries(corpus)) {
+    for (const [name, { joueurs, historique, scores, winners, rounds }] of Object.entries(corpus)) {
       it(name, () => {
-        const enveloppe = construireEnveloppeExport(
-          [
-            {
-              uuid: '',
-              horodatage: 0,
-              classement: classementFinal(replayPartie(joueurs, historique)),
-              nombreManches: replayPartie(joueurs, historique).mancheActuelle(),
-              magiquePirate: false,
-              coups: historique,
-            },
-          ],
-          0,
-        )
-        const jeu = enveloppe.games[0]
-
         expect(buildModuleMatch({ joueurs, historique, matchId: 'm1' })).toEqual({
           id: 'm1',
-          playerScores: jeu.ranking.map((r) => ({ playerId: r.name, score: r.score })),
-          manualWinners: jeu.ranking.filter((r) => r.rank === 1).map((r) => r.name),
-          rounds: (jeu.details ?? []).map((m) =>
-            m.scores.map((s) => ({ playerId: s.name, score: s.score })),
-          ),
+          playerScores: scores,
+          manualWinners: winners,
+          rounds,
           moduleData: { version: 1, data: { joueurs, historique } },
         })
       })
