@@ -1,6 +1,16 @@
-import { Button, Select, Stack, Text, TextInput } from '@scoreboards/design-system'
+import {
+  Button,
+  DetailList,
+  DetailRow,
+  Select,
+  Stack,
+  Text,
+  TextInput,
+} from '@scoreboards/design-system'
+import type { TFunction } from 'i18next'
 import { useTranslation } from 'react-i18next'
 import {
+  hasModuleRules,
   scoringModeChangeWarning,
   showsPlayerRange,
   showsScoringModeChoice,
@@ -21,26 +31,58 @@ export interface GameTypeFieldsProps {
   dispatch: (action: GameTypeAction) => void
 }
 
+function moduleRange(
+  range: { minPlayers: number | null; maxPlayers: number | null },
+  t: TFunction,
+): string {
+  if (range.minPlayers !== null && range.maxPlayers !== null) {
+    return t('home.playerRange', { min: range.minPlayers, max: range.maxPlayers })
+  }
+  if (range.minPlayers !== null) return t('home.playerRangeMin', { min: range.minPlayers })
+  if (range.maxPlayers !== null) return t('home.playerRangeMax', { max: range.maxPlayers })
+  return t('gametype.playerLimitPlaceholder')
+}
+
 /** Win condition / tie-break / player range fields, shared by the add form and the edit modal. */
 export function GameTypeFields({ state, dispatch }: GameTypeFieldsProps) {
   const { t } = useTranslation()
+  const moduleGame = hasModuleRules(state)
+    ? state.gameTypes.find((gt) => gt.id === state.editingGameId)
+    : undefined
 
   return (
     <Stack gap={3}>
-      <Select
-        label={t('gametype.winCondition')}
-        value={state.selectedWinCondition}
-        options={WinConditionSchema.options.map((wc) => ({
-          value: wc,
-          label: winConditionLabel(wc),
-        }))}
-        onChange={(wc) =>
-          dispatch({
-            type: 'selectWinCondition',
-            winCondition: wc as GameTypeState['selectedWinCondition'],
-          })
-        }
-      />
+      {moduleGame ? (
+        <>
+          <DetailList boxed>
+            <DetailRow
+              label={t('gametype.winCondition')}
+              value={t(`gametype.winConditions.${state.selectedWinCondition}`)}
+            />
+            <DetailRow
+              label={t('gametype.scoringMode')}
+              value={t(`gametype.scoringModes.${state.selectedScoringMode}`)}
+            />
+            <DetailRow label={t('gametype.playerRange')} value={moduleRange(moduleGame, t)} />
+          </DetailList>
+          <Text variant="hint">{t('gametype.moduleRulesNote')}</Text>
+        </>
+      ) : (
+        <Select
+          label={t('gametype.winCondition')}
+          value={state.selectedWinCondition}
+          options={WinConditionSchema.options.map((wc) => ({
+            value: wc,
+            label: winConditionLabel(wc),
+          }))}
+          onChange={(wc) =>
+            dispatch({
+              type: 'selectWinCondition',
+              winCondition: wc as GameTypeState['selectedWinCondition'],
+            })
+          }
+        />
+      )}
 
       {showsScoringModeChoice(state) && (
         <Select

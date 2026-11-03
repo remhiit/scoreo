@@ -2,6 +2,7 @@ import type { ScoringModuleScreenProps } from '@scoreboards/module-api'
 import { fireEvent, render, screen, within } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import type { Match } from '../domain/model/match'
+import type { RulesChange } from '../application/bindModuleUseCase'
 import { createServices } from '../services/createServices'
 import { InMemoryGameTypeRepository } from '../infrastructure/testing/inMemoryGameTypeRepository'
 import { InMemoryMatchRepository } from '../infrastructure/testing/inMemoryMatchRepository'
@@ -115,7 +116,7 @@ describe('ModuleScoreScreen', () => {
     expect(onExit).toHaveBeenCalledWith(undefined)
   })
 
-  function renderFakeModule(onExit = vi.fn()) {
+  function renderFakeModule(onExit = vi.fn(), rulesChange?: RulesChange) {
     const services = createServices({
       playerRepository: new InMemoryPlayerRepository(),
       gameTypeRepository: new InMemoryGameTypeRepository(),
@@ -127,6 +128,7 @@ describe('ModuleScoreScreen', () => {
         screen={{ type: 'ModuleScore', moduleId: 'fake', gameTypeId: 'gt1', playerIds: ['p1'] }}
         services={services}
         onExit={onExit}
+        rulesChange={rulesChange}
       />,
     )
 
@@ -163,5 +165,45 @@ describe('ModuleScoreScreen', () => {
 
     fireEvent.click(within(bar).getByRole('button', { name: 'Exit' }))
     expect(onExit).toHaveBeenCalledWith(undefined)
+  })
+
+  describe('rules banner', () => {
+    const rules = {
+      winCondition: 'LOWEST_SCORE',
+      scoringMode: 'POINTS',
+      minPlayers: 2,
+      maxPlayers: 4,
+    } as const
+    const change: RulesChange = {
+      before: { ...rules, winCondition: 'HIGHEST_SCORE' },
+      after: rules,
+      rescoredMatches: 3,
+      affectsHistory: true,
+    }
+
+    it('names the new rules and the number of recalculated matches', async () => {
+      renderFakeModule(vi.fn(), change)
+      await screen.findByText('Save')
+
+      expect(screen.getByText('Game rules updated')).toBeInTheDocument()
+      expect(
+        screen.getByText(/Win condition: Lowest score\. Scoring: Total points/),
+      ).toBeInTheDocument()
+      expect(screen.getByText(/3 matches were recalculated/)).toBeInTheDocument()
+    })
+
+    it('says no score was recalculated when none was', async () => {
+      renderFakeModule(vi.fn(), { ...change, rescoredMatches: 0 })
+      await screen.findByText('Save')
+
+      expect(screen.getByText(/No match had its score recalculated/)).toBeInTheDocument()
+    })
+
+    it('shows nothing without a change', async () => {
+      renderFakeModule()
+      await screen.findByText('Save')
+
+      expect(screen.queryByText('Game rules updated')).not.toBeInTheDocument()
+    })
   })
 })

@@ -89,6 +89,10 @@ function moduleClaimingGameType(
   })
 }
 
+function rangeOrUndefined(range: Pick<GameType, 'minPlayers' | 'maxPlayers'>) {
+  return range.minPlayers !== null || range.maxPlayers !== null ? range : undefined
+}
+
 function domainErrorMessage(e: unknown): string {
   if (e instanceof ValidationError || e instanceof NotFoundError) return e.message
   return i18n.t('home.failedToCreateGameType', { message: e instanceof Error ? e.message : '' })
@@ -134,19 +138,18 @@ export const GameSelectModalContainer = forwardRef<
     return moduleClaimingGameType(selectedChoice.gameType, allGameTypes)
   }, [selectedChoice, allGameTypes])
 
-  const moduleFitsPlayers =
-    moduleForSelectedGame !== undefined &&
-    selectedPlayerIds.length >= moduleForSelectedGame.minPlayers &&
-    selectedPlayerIds.length <= moduleForSelectedGame.maxPlayers
-
-  // A game bound to (or claimed by) a module is checked against the module's
-  // manifest until the game type carries its own range (cadrage step 3).
-  const gameRange =
-    selectedChoice?.kind === 'gameType' &&
-    moduleForSelectedGame === undefined &&
-    (selectedChoice.gameType.minPlayers !== null || selectedChoice.gameType.maxPlayers !== null)
-      ? selectedChoice.gameType
-      : undefined
+  // The range comes from the game type for every game, module-bound ones
+  // included: binding keeps it aligned on the manifest, which stays the source
+  // only where no game type is bound yet (a module's own entry, or an unbound
+  // game its launch will bind and align).
+  let gameRange: Pick<GameType, 'minPlayers' | 'maxPlayers'> | undefined
+  if (selectedChoice?.kind === 'gameType' && selectedChoice.gameType.moduleId !== null) {
+    gameRange = rangeOrUndefined(selectedChoice.gameType)
+  } else if (moduleForSelectedGame !== undefined) {
+    gameRange = moduleForSelectedGame
+  } else if (selectedChoice?.kind === 'gameType') {
+    gameRange = rangeOrUndefined(selectedChoice.gameType)
+  }
   const playersFitGameRange =
     gameRange === undefined || playerCountFitsRange(gameRange, selectedPlayerIds.length)
 
@@ -181,7 +184,7 @@ export const GameSelectModalContainer = forwardRef<
           return
         }
         if (moduleForSelectedGame) {
-          if (!moduleFitsPlayers) return
+          if (!playersFitGameRange) return
           setOpen(false)
           onStartModule(moduleForSelectedGame.moduleId, selectedPlayerIds)
         } else if (selectedChoice.kind === 'gameType') {
@@ -201,8 +204,6 @@ export const GameSelectModalContainer = forwardRef<
       onChangeInlineGameWinCondition={setInlineGameWinCondition}
       inlineGameError={inlineGameError}
       onAddInlineGameType={addInlineGameType}
-      moduleForSelectedGame={moduleForSelectedGame}
-      moduleFitsPlayers={moduleFitsPlayers}
       gameRange={gameRange}
       playersFitGameRange={playersFitGameRange}
     />

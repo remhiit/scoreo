@@ -174,7 +174,9 @@ describe('GameTypeScreen', () => {
     fireEvent.change(screen.getByLabelText('Max. players'), { target: { value: '2' } })
     fireEvent.click(screen.getByText('Add game type'))
 
-    expect(screen.getByText('minPlayers: Minimum players must not exceed maximum players')).toBeInTheDocument()
+    expect(
+      screen.getByText('minPlayers: Minimum players must not exceed maximum players'),
+    ).toBeInTheDocument()
     expect(screen.queryByText('Chess', { selector: '.sc-row__title' })).not.toBeInTheDocument()
   })
 
@@ -194,6 +196,27 @@ describe('GameTypeScreen', () => {
     // module, or the game would silently stop offering its module screen.
     expect(repo.findById('gt1')?.tieBreakRule).toBe('MANUAL_SELECTION')
     expect(repo.findById('gt1')?.moduleId).toBe('tori-valley')
+  })
+
+  it('shows the rules imposed by the module read-only when editing a bound game', () => {
+    const repo = new InMemoryGameTypeRepository()
+    repo.save({
+      ...buildGameType('gt1', 'Skyjo'),
+      moduleId: 'skyjo',
+      winCondition: 'LOWEST_SCORE',
+      minPlayers: 2,
+      maxPlayers: 8,
+    })
+    renderScreen(repo)
+
+    fireEvent.click(screen.getByLabelText('Edit'))
+    const editDialog = screen.getByRole('dialog')
+
+    expect(within(editDialog).getByText('Lowest score')).toBeInTheDocument()
+    expect(within(editDialog).getByText('Total points')).toBeInTheDocument()
+    expect(within(editDialog).getByText('2–8 players')).toBeInTheDocument()
+    expect(within(editDialog).queryByLabelText('Win condition')).not.toBeInTheDocument()
+    expect(within(editDialog).queryByLabelText('Min. players')).not.toBeInTheDocument()
   })
 
   it('hides the scoring choice when editing a game bound to a scoring module', () => {

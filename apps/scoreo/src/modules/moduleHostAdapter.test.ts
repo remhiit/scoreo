@@ -19,6 +19,7 @@ class InMemoryModuleDraftRepository implements ModuleDraftRepository {
 }
 
 const NOW = 1767225600000
+const RULES = { winCondition: 'HIGHEST_SCORE' } as const
 
 function build() {
   const playerRepository = new InMemoryPlayerRepository()
@@ -27,6 +28,7 @@ function build() {
   const host = new ModuleHostAdapter(
     'tori-valley',
     'gt1',
+    RULES,
     playerRepository,
     matchRepository,
     draftRepository,
@@ -149,6 +151,65 @@ describe('ModuleHostAdapter', () => {
       expect(draftRepository.drafts.has('tori-valley')).toBe(false)
     })
 
+    it('refuses a ROUNDS_WON result with a negative or fractional score, naming the player', () => {
+      const { playerRepository, matchRepository, draftRepository } = build()
+      const roundsWon = new ModuleHostAdapter(
+        'tori-valley',
+        'gt1',
+        { winCondition: 'HIGHEST_SCORE', scoringMode: 'ROUNDS_WON' },
+        playerRepository,
+        matchRepository,
+        draftRepository,
+        () => NOW,
+      )
+
+      expect(() =>
+        roundsWon.saveMatch({ ranking: [{ playerId: 'p7', score: -1, rank: 1 }] }),
+      ).toThrow(/p7/)
+      expect(matchRepository.getAll()).toHaveLength(0)
+    })
+
+    it('refuses a ROUNDS_WON result whose scores are not the rounds won', () => {
+      const { playerRepository, matchRepository, draftRepository } = build()
+      const roundsWon = new ModuleHostAdapter(
+        'tori-valley',
+        'gt1',
+        { winCondition: 'HIGHEST_SCORE', scoringMode: 'ROUNDS_WON' },
+        playerRepository,
+        matchRepository,
+        draftRepository,
+        () => NOW,
+      )
+      const rounds = [
+        {
+          label: 'R1',
+          scores: [
+            { playerId: 'p1', score: 5 },
+            { playerId: 'p2', score: 1 },
+          ],
+        },
+      ]
+
+      expect(() =>
+        roundsWon.saveMatch({
+          ranking: [
+            { playerId: 'p1', score: 0, rank: 2 },
+            { playerId: 'p2', score: 1, rank: 1 },
+          ],
+          rounds,
+        }),
+      ).toThrow(/won/)
+      expect(() =>
+        roundsWon.saveMatch({
+          ranking: [
+            { playerId: 'p1', score: 1, rank: 1 },
+            { playerId: 'p2', score: 0, rank: 2 },
+          ],
+          rounds,
+        }),
+      ).not.toThrow()
+    })
+
     // Host code to host code, never surfaced to the module — lets whoever
     // built the adapter (ModuleScoreScreen) know a match was written.
     it('notifies onMatchSaved with the saved match id', () => {
@@ -159,6 +220,7 @@ describe('ModuleHostAdapter', () => {
       const host = new ModuleHostAdapter(
         'tori-valley',
         'gt1',
+        RULES,
         playerRepository,
         matchRepository,
         draftRepository,
@@ -223,6 +285,7 @@ describe('ModuleHostAdapter', () => {
       const other = new ModuleHostAdapter(
         'mille-sabords',
         'gt2',
+        RULES,
         playerRepository,
         matchRepository,
         draftRepository,

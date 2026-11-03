@@ -57,7 +57,7 @@ import { SyncScreen } from './ui/sync/SyncScreen'
 import { useAutoSync } from './ui/sync/useAutoSync'
 import { ThemeProvider } from './ui/theme/ThemeContext'
 import { ThemePickerDialog } from './ui/theme/ThemePickerDialog'
-import { BindModuleUseCase } from './application/bindModuleUseCase'
+import { BindModuleUseCase, type RulesChange } from './application/bindModuleUseCase'
 import { ModuleScoreScreen } from './modules/ModuleScoreScreen'
 import { findManifest, MODULE_MANIFESTS } from './modules/registry'
 
@@ -168,6 +168,11 @@ function AppShell() {
   const [themePickerOpen, setThemePickerOpen] = useState(false)
   const [languagePickerOpen, setLanguagePickerOpen] = useState(false)
   const [statsBackOverride, setStatsBackOverride] = useState<(() => void) | null>(null)
+  // Rules a module binding just changed, tied to the exact screen it opened:
+  // any later navigation yields a new screen object, so the banner is gone.
+  const [rulesNotice, setRulesNotice] = useState<{ screen: Screen; change: RulesChange } | null>(
+    null,
+  )
   const [highlightMatchId, setHighlightMatchId] = useState<string | undefined>(undefined)
   const [prevScreenForStatsBack, setPrevScreenForStatsBack] = useState(current)
   if (prevScreenForStatsBack !== current) {
@@ -299,14 +304,24 @@ function AppShell() {
   const bindModule = useCallback(
     (moduleId: string) => {
       const manifest = findManifest(moduleId)
-      return manifest && new BindModuleUseCase(services.gameTypeRepository).invoke(manifest)
+      return (
+        manifest &&
+        new BindModuleUseCase(services.gameTypeRepository, services.matchRepository).invoke(
+          manifest,
+        )
+      )
     },
     [services],
   )
   const handleStartModule = useCallback(
     (moduleId: string, playerIds: string[]) => {
-      const gameType = bindModule(moduleId)
-      if (gameType) navigate(moduleScoreScreen(moduleId, gameType.id, playerIds))
+      const bound = bindModule(moduleId)
+      if (!bound) return
+      const next = moduleScoreScreen(moduleId, bound.gameType.id, playerIds)
+      setRulesNotice(
+        bound.rulesChange?.affectsHistory ? { screen: next, change: bound.rulesChange } : null,
+      )
+      navigate(next)
     },
     [navigate, bindModule],
   )
@@ -338,6 +353,7 @@ function AppShell() {
       <ModuleScoreScreen
         screen={current}
         services={services}
+        rulesChange={rulesNotice?.screen === current ? rulesNotice.change : undefined}
         onExit={(savedMatchId) => {
           if (savedMatchId !== undefined) {
             setHighlightMatchId(savedMatchId)

@@ -60,7 +60,14 @@
     "mergeRulesDiffer": "The selected games don't all score the same way: \"{{name}}\" rules will apply to the moved matches, which may change their winners.",
     "mergeConfirm": "Merge",
     "mergeDuplicatesLabel": "Duplicates to remove",
-    "archivedNote": "(archived)"
+    "archivedNote": "(archived)",
+    "winConditions": {
+      "HIGHEST_SCORE": "Highest score",
+      "LOWEST_SCORE": "Lowest score",
+      "MANUAL": "Manual"
+    },
+    "playerRange": "Players",
+    "moduleRulesNote": "These rules come from this game's module: they apply to all its matches and cannot be edited here."
   },
   "history": {
     "filterByGame": "Filter by game:",
@@ -258,6 +265,11 @@
     "loading": "Loading the module…",
     "failedToLoad": "This module could not be loaded.",
     "unknownModule": "This module is not installed.",
-    "exit": "Exit"
+    "exit": "Exit",
+    "rulesChangedTitle": "Game rules updated",
+    "rulesChangedBody": "This game now follows its module's rules. Win condition: {{winCondition}}. Scoring: {{scoringMode}}.",
+    "rulesChangedNoRescore": "No match had its score recalculated; winners in the history follow the new rule.",
+    "rulesChangedRescored_one": "{{count}} match was recalculated; winners in the history follow the new rule.",
+    "rulesChangedRescored_other": "{{count}} matches were recalculated; winners in the history follow the new rule."
   }
 }

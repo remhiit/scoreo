@@ -443,6 +443,16 @@ Deux champs optionnels sérialisés sur `GameType` : `minPlayers: number | null`
 
 ---
 
+## Règles d'un jeu lié à un module — alignées sur le module (issue #607)
+
+**Aucun nouveau champ sérialisé.** Le manifeste d'un module gagne un `scoringMode` optionnel (`POINTS` par défaut), qui n'est pas persisté. En revanche, les règles **stockées** d'un `GameType` lié à un module (`winCondition`, `scoringMode`, `minPlayers`, `maxPlayers`) suivent désormais son module : `BindModuleUseCase` les réaligne à chaque lancement du jeu par son module (pas au démarrage), et recalcule les parties du jeu (`rescoreMatch`, le détail des manches n'est jamais touché) quand la condition de victoire ou le décompte change.
+
+**Ancien format :** un jeu lié pouvait porter des règles divergentes (jeu importé en `HIGHEST_SCORE` ou `ROUNDS_WON` puis lié par nom, plage `null`). Aucune migration à l'écriture : le réalignement a lieu à la première ouverture du module après la mise à jour, et ne touche que les jeux dont les règles diffèrent du manifeste.
+
+**Compatibilité :** `effectiveScoringMode` ne force plus `POINTS` pour un jeu lié (seul un jeu `MANUAL` l'est) : un jeu lié stocké en `ROUNDS_WON` est lu comme tel jusqu'à son prochain lancement par le module, qui le repasse en `POINTS` et recalcule ses parties. Une version antérieure de l'app (sync Drive) relit ces jeux comme avant (ses points restent des points) et peut réécrire des règles divergentes, que le prochain lancement réaligne.
+
+---
+
 ## Clés du 1kSaBord → préfixe `sabords_`
 
 **Contexte :** GitHub Pages sert Scoreo et l'app Kotlin autonome 1kSaBord depuis la **même origine**

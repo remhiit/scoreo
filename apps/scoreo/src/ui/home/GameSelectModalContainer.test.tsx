@@ -4,6 +4,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { BindModuleUseCase } from '../../application/bindModuleUseCase'
 import type { GameType } from '../../domain/model/gameType'
 import { InMemoryGameTypeRepository } from '../../infrastructure/testing/inMemoryGameTypeRepository'
+import { InMemoryMatchRepository } from '../../infrastructure/testing/inMemoryMatchRepository'
 import { MODULE_MANIFESTS } from '../../modules/registry'
 import {
   GameSelectModalContainer,
@@ -156,7 +157,10 @@ describe('GameSelectModalContainer', () => {
     const { dialog, options, select } = renderModal(repo, ['p1', 'p2'], {
       onStartModule: (moduleId) => {
         const manifest = MODULE_MANIFESTS.find((m) => m.moduleId === moduleId)
-        if (manifest) bound.push(new BindModuleUseCase(repo).invoke(manifest))
+        if (manifest)
+          bound.push(
+            new BindModuleUseCase(repo, new InMemoryMatchRepository()).invoke(manifest).gameType,
+          )
       },
     })
 
@@ -177,7 +181,10 @@ describe('GameSelectModalContainer', () => {
     const { dialog, select } = renderModal(repo, ['p1', 'p2'], {
       onStartModule: (moduleId) => {
         const manifest = MODULE_MANIFESTS.find((m) => m.moduleId === moduleId)
-        if (manifest) bound.push(new BindModuleUseCase(repo).invoke(manifest))
+        if (manifest)
+          bound.push(
+            new BindModuleUseCase(repo, new InMemoryMatchRepository()).invoke(manifest).gameType,
+          )
       },
     })
 
@@ -231,7 +238,15 @@ describe('GameSelectModalContainer', () => {
     (_, bound) => {
       const repo = new InMemoryGameTypeRepository()
       if (bound) {
-        repo.save(gameType({ id: 'gt1', name: 'La Vallée des Torī', moduleId: 'tori-valley' }))
+        repo.save(
+          gameType({
+            id: 'gt1',
+            name: 'La Vallée des Torī',
+            moduleId: 'tori-valley',
+            minPlayers: 2,
+            maxPlayers: 4,
+          }),
+        )
       }
       const { dialog, select, options } = renderModal(repo, ['p1', 'p2', 'p3', 'p4', 'p5'])
 
@@ -304,7 +319,7 @@ describe('GameSelectModalContainer', () => {
       expect(within(dialog).getByRole('button', START)).toBeEnabled()
     })
 
-    it('checks a game bound to a module against its manifest, not its own range', () => {
+    it('checks a game bound to a module against its own range, not the manifest', () => {
       const repo = new InMemoryGameTypeRepository()
       repo.save(
         gameType({
@@ -319,8 +334,38 @@ describe('GameSelectModalContainer', () => {
 
       select('My Tori')
 
-      expect(within(dialog).getByRole('button', START)).toBeEnabled()
-      expect(within(dialog).queryByText('6–6 players')).not.toBeInTheDocument()
+      expect(within(dialog).getByRole('button', START)).toBeDisabled()
+      expect(within(dialog).getByText('6–6 players')).toBeInTheDocument()
+    })
+
+    it('does not block a bound game without range, whatever the manifest range', () => {
+      const repo = new InMemoryGameTypeRepository()
+      repo.save(gameType({ id: 'gt1', name: 'My Tori', moduleId: 'tori-valley' }))
+      const { dialog, select, props } = renderModal(repo, ['p1', 'p2'])
+
+      select('My Tori')
+      fireEvent.click(within(dialog).getByRole('button', START))
+
+      expect(props.onStartModule).toHaveBeenCalledWith('tori-valley', expect.any(Array))
+    })
+
+    it('launches a bound game whose own range fits, even outside the manifest range', () => {
+      const repo = new InMemoryGameTypeRepository()
+      repo.save(
+        gameType({
+          id: 'gt1',
+          name: 'My Tori',
+          moduleId: 'tori-valley',
+          minPlayers: 2,
+          maxPlayers: 6,
+        }),
+      )
+      const { dialog, select, props } = renderModal(repo, ['p1', 'p2', 'p3', 'p4', 'p5', 'p6'])
+
+      select('My Tori')
+      fireEvent.click(within(dialog).getByRole('button', START))
+
+      expect(props.onStartModule).toHaveBeenCalledWith('tori-valley', expect.any(Array))
     })
   })
 })

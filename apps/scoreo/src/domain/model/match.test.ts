@@ -282,12 +282,10 @@ describe('rescoreMatch', () => {
     expect(rescoreMatch(none, roundsWon, points)).toBe(none)
   })
 
-  it('never turns a module-bound game into rounds won', () => {
+  it('rescores a module-bound game like any other', () => {
     const m = match({ playerScores: scores(['a', 20], ['b', 13]), rounds })
     const bound = gameType({ moduleId: 'skyjo' })
-    expect(rescoreMatch(m, bound, { ...bound, scoringMode: 'ROUNDS_WON' })).toBe(m)
-    const none = match({ playerScores: scores(['a', 20], ['b', 13]) })
-    expect(rescoreMatch(none, bound, { ...bound, scoringMode: 'ROUNDS_WON' })).toBe(none)
+    expect(rescoreMatch(m, bound, { ...bound, scoringMode: 'ROUNDS_WON' })).not.toBe(m)
   })
 })
 

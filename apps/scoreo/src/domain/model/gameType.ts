@@ -9,9 +9,9 @@ export interface GameType {
   /**
    * How the generic score screen turns the entered rounds into the final score:
    * `POINTS` sums them, `ROUNDS_WON` counts the rounds each player won (decided
-   * by `winCondition`). Meaningless with a `MANUAL` win condition, and for a
-   * game bound to a scoring module (the module computes its own scores, in
-   * points): see {@link effectiveScoringMode}.
+   * by `winCondition`). Meaningless with a `MANUAL` win condition: see
+   * {@link effectiveScoringMode}. For a game bound to a scoring module, the
+   * module's manifest decides it.
    */
   scoringMode: ScoringMode
   tieBreakRule: TieBreakRule
@@ -104,11 +104,11 @@ export function playerCountFitsRange(
 export type ScoringModeInputs = Pick<GameType, 'winCondition' | 'scoringMode' | 'moduleId'>
 
 /**
- * True when the scoring mode is a real choice for a game type: not under a
- * `MANUAL` win condition (rounds won need the app to decide who wins each
- * round), nor for a game bound to a scoring module (it computes its own scores
- * in points). The single source of truth for {@link effectiveScoringMode} and
- * the game type form.
+ * True when the user can pick the scoring mode of a game type in the form: not
+ * under a `MANUAL` win condition (rounds won need the app to decide who wins
+ * each round), nor for a game bound to a scoring module, whose rules are the
+ * module's and shown read-only. This is a form concern only: what a game scores
+ * with is {@link effectiveScoringMode}.
  */
 export function scoringModeIsSelectable(
   gameType: Pick<GameType, 'winCondition' | 'moduleId'>,
@@ -117,18 +117,16 @@ export function scoringModeIsSelectable(
 }
 
 /**
- * The scoring mode a game type actually scores with, and stores:
- * - a game bound to a scoring module (`moduleId !== null`) scores in points,
- *   since the module computes its own scores and every module counts points
- *   today (the module declaring its mode is #590);
- * - rounds won only makes sense when the app decides who wins each round, so a
- *   `MANUAL` game scores in points too.
+ * The scoring mode a game type actually scores with, and stores: the stored one,
+ * except that rounds won only makes sense when the app decides who wins each
+ * round, so a `MANUAL` game scores in points. A module-bound game keeps the mode
+ * its module declares (the binding aligns it, `BindModuleUseCase`).
  */
 export function effectiveScoringMode(gameType: ScoringModeInputs): ScoringMode {
-  return scoringModeIsSelectable(gameType) ? gameType.scoringMode : 'POINTS'
+  return gameType.winCondition === 'MANUAL' ? 'POINTS' : gameType.scoringMode
 }
 
-/** True when the final score is a count of rounds won (never for a `MANUAL` or module-bound game). */
+/** True when the final score is a count of rounds won (never for a `MANUAL` game). */
 export function usesRoundsWon(gameType: ScoringModeInputs): boolean {
   return effectiveScoringMode(gameType) === 'ROUNDS_WON'
 }
