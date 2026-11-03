@@ -98,7 +98,7 @@ The file always carries points. A match imported into an **existing** game in "R
 - **with `details`**: its score is the count of rounds each player won, computed from `details` with the game's win condition (a round goes to the highest or lowest score, every tied player wins it); `details` is still stored as the match's `rounds`, in raw points. A player ranked 1st in the file stays a recorded winner only if they also have the most rounds won;
 - **without `details`**: the match becomes a single round holding the file's scores, stored as its `rounds`, then scored in rounds won like any detail (the best player(s) under the win condition win that round).
 
-A game bound to a scoring module always scores in points, so a match imported into it keeps the file's scores.
+A game bound to a scoring module follows its module's scoring mode: in points, a match imported into it keeps the file's scores; in rounds won, it is converted like for any rounds-won game.
 
 ## Functional Tests
 

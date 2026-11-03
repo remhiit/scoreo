@@ -338,6 +338,17 @@ describe('GameSelectModalContainer', () => {
       expect(within(dialog).getByText('6–6 players')).toBeInTheDocument()
     })
 
+    it('does not block a bound game without range, whatever the manifest range', () => {
+      const repo = new InMemoryGameTypeRepository()
+      repo.save(gameType({ id: 'gt1', name: 'My Tori', moduleId: 'tori-valley' }))
+      const { dialog, select, props } = renderModal(repo, ['p1', 'p2'])
+
+      select('My Tori')
+      fireEvent.click(within(dialog).getByRole('button', START))
+
+      expect(props.onStartModule).toHaveBeenCalledWith('tori-valley', expect.any(Array))
+    })
+
     it('launches a bound game whose own range fits, even outside the manifest range', () => {
       const repo = new InMemoryGameTypeRepository()
       repo.save(

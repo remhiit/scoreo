@@ -142,16 +142,14 @@ export const GameSelectModalContainer = forwardRef<
   // included: binding keeps it aligned on the manifest, which stays the source
   // only where no game type is bound yet (a module's own entry, or an unbound
   // game its launch will bind and align).
-  const gameRange =
-    selectedChoice === undefined
-      ? undefined
-      : selectedChoice.kind === 'gameType' && selectedChoice.gameType.moduleId !== null
-        ? rangeOrUndefined(selectedChoice.gameType)
-        : moduleForSelectedGame !== undefined
-          ? moduleForSelectedGame
-          : selectedChoice.kind === 'gameType'
-            ? rangeOrUndefined(selectedChoice.gameType)
-            : undefined
+  let gameRange: Pick<GameType, 'minPlayers' | 'maxPlayers'> | undefined
+  if (selectedChoice?.kind === 'gameType' && selectedChoice.gameType.moduleId !== null) {
+    gameRange = rangeOrUndefined(selectedChoice.gameType)
+  } else if (moduleForSelectedGame !== undefined) {
+    gameRange = moduleForSelectedGame
+  } else if (selectedChoice?.kind === 'gameType') {
+    gameRange = rangeOrUndefined(selectedChoice.gameType)
+  }
   const playersFitGameRange =
     gameRange === undefined || playerCountFitsRange(gameRange, selectedPlayerIds.length)
 

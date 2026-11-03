@@ -247,7 +247,7 @@ manifest beyond `displayName`, and no member was added to `ScoringModuleScreenPr
 
 The host side never trusts blindly:
 
-- `saveMatch` runs `assertRoundsSumToRanking` **before** writing. A self-contradicting match kept in
+- `saveMatch` runs `assertResultMatchesRules(result, this.rules)` **before** writing (rounds sum to the ranking in `POINTS` mode; rounds-won counts match the ranking in `ROUNDS_WON` mode). A self-contradicting match kept in
   the history would never be noticed again.
 - `rank === 1` becomes a `manualWinner` through `rankingToMatch`, the same function the v1.1 import
   uses. The module owns tie-breaks Scoreo knows nothing about, so the winners come from the announced
