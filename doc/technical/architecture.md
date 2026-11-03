@@ -37,7 +37,7 @@
 └─────────────────────────────────────┘
 ```
 
-- **Domain layer** (`apps/scoreo/src/domain/`): pure TypeScript, no framework dependency — models (`Player`, `GameType`, `Match`) and their zod schemas, plus repository interfaces (`domain/port/`)
+- **Domain layer** (`apps/scoreo/src/domain/`): pure TypeScript, no framework dependency — models (`Player`, `GameType`, `Match`) and their zod schemas, re-exported by `domain/model/` from `packages/shared-domain/src/` where they are defined, plus the app-only models (`MatchDraft`, `trophy`, errors) and repository interfaces (`domain/port/`)
 - **Application layer** (`apps/scoreo/src/application/`): use cases, zero framework dependency
 - **UI adapter** (`apps/scoreo/src/ui/`): React screens, dispatching actions to reducers and calling use cases from `submit*`/`load*` helpers
 - **Storage adapter** (`apps/scoreo/src/infrastructure/localStorage/`): `LocalStorage*Repository` classes (`scoreo_players`, `scoreo_gametypes`, `scoreo_matches` keys)
