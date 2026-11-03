@@ -60,7 +60,14 @@
     "mergeRulesDiffer": "Les jeux sélectionnés n'ont pas tous les mêmes règles de score : celles de « {{name}} » s'appliqueront aux parties transférées, ce qui peut en changer les gagnants.",
     "mergeConfirm": "Fusionner",
     "mergeDuplicatesLabel": "Doublons à supprimer",
-    "archivedNote": "(archivé)"
+    "archivedNote": "(archivé)",
+    "winConditions": {
+      "HIGHEST_SCORE": "Score le plus élevé",
+      "LOWEST_SCORE": "Score le plus bas",
+      "MANUAL": "Manuelle"
+    },
+    "playerRange": "Joueurs",
+    "moduleRulesNote": "Ces règles sont celles du module de ce jeu : elles s'appliquent à toutes ses parties et ne se modifient pas ici."
   },
   "history": {
     "filterByGame": "Filtrer par jeu :",
@@ -258,6 +265,11 @@
     "loading": "Chargement du module…",
     "failedToLoad": "Ce module n'a pas pu être chargé.",
     "unknownModule": "Ce module n'est pas installé.",
-    "exit": "Quitter"
+    "exit": "Quitter",
+    "rulesChangedTitle": "Règles du jeu mises à jour",
+    "rulesChangedBody": "Ce jeu suit désormais les règles de son module. Condition de victoire : {{winCondition}}. Décompte : {{scoringMode}}.",
+    "rulesChangedNoRescore": "Aucune partie n'a eu son score recalculé ; leurs gagnants suivent la nouvelle règle.",
+    "rulesChangedRescored_one": "{{count}} partie a été recalculée ; les gagnants de l'historique suivent la nouvelle règle.",
+    "rulesChangedRescored_other": "{{count}} parties ont été recalculées ; les gagnants de l'historique suivent la nouvelle règle."
   }
 }

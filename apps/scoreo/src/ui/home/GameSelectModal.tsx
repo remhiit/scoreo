@@ -35,16 +35,10 @@ export interface GameSelectModalProps {
   onChangeInlineGameWinCondition: (winCondition: WinCondition) => void
   inlineGameError: string | undefined
   onAddInlineGameType: () => void
-  /** Set when the selected game is one a module can count, bound or not. */
-  moduleForSelectedGame: ScoringModuleManifest | undefined
   /**
-   * Whether the selected players fit the module's range: outside it the launch
-   * button is disabled and the range is shown.
-   */
-  moduleFitsPlayers: boolean
-  /**
-   * The player range of the selected game, when it is an ordinary game (no
-   * module) that sets at least one bound; `null` bounds are not checked.
+   * The player range of the selected game that sets at least one bound — an
+   * ordinary game's own, a module-bound game's (aligned on its manifest), or the
+   * manifest's for a module not bound yet; `null` bounds are not checked.
    */
   gameRange: { minPlayers: number | null; maxPlayers: number | null } | undefined
   /** Whether the selected players fit `gameRange`; outside it the game cannot be started. */
@@ -72,8 +66,6 @@ export function GameSelectModal({
   onChangeInlineGameWinCondition,
   inlineGameError,
   onAddInlineGameType,
-  moduleForSelectedGame,
-  moduleFitsPlayers,
   gameRange,
   playersFitGameRange,
 }: GameSelectModalProps) {
@@ -96,14 +88,7 @@ export function GameSelectModal({
           </Button>
           {/* A game a module counts has one grid, the module's: out of its player
               range the launch is off, it never falls back to the generic grid. */}
-          <Button
-            disabled={
-              moduleForSelectedGame !== undefined
-                ? !moduleFitsPlayers
-                : gameRange !== undefined && !playersFitGameRange
-            }
-            onClick={onStartMatch}
-          >
+          <Button disabled={gameRange !== undefined && !playersFitGameRange} onClick={onStartMatch}>
             {t('home.startMatch')}
           </Button>
         </ButtonRow>
@@ -122,15 +107,6 @@ export function GameSelectModal({
             if (choice) onSelectChoice(choice)
           }}
         />
-      )}
-
-      {moduleForSelectedGame && !moduleFitsPlayers && (
-        <Text variant="hint">
-          {t('home.playerRange', {
-            min: moduleForSelectedGame.minPlayers,
-            max: moduleForSelectedGame.maxPlayers,
-          })}
-        </Text>
       )}
 
       {gameRange && !playersFitGameRange && (

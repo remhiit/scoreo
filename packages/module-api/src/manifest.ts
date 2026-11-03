@@ -21,6 +21,15 @@ export interface ScoringModuleManifest {
 
   readonly winCondition: 'HIGHEST_SCORE' | 'LOWEST_SCORE' | 'MANUAL'
 
+  /**
+   * How the scores in a result relate to the rounds: `POINTS` (default) sums
+   * them, `ROUNDS_WON` counts the rounds each player won under `winCondition`.
+   * The module is the source of truth of its game's rules: the host aligns the
+   * bound `GameType` on this, and refuses a result that contradicts it.
+   * `ROUNDS_WON` is meaningless with a `MANUAL` win condition.
+   */
+  readonly scoringMode?: 'POINTS' | 'ROUNDS_WON'
+
   readonly minPlayers: number
   readonly maxPlayers: number
 

@@ -242,9 +242,18 @@ function editedGameType(state: GameTypeState): GameType | undefined {
 }
 
 /**
+ * The game being edited is bound to a scoring module: the module is the source
+ * of truth of its win condition, scoring mode and player range, so the form
+ * shows them read-only (`BindModuleUseCase` realigns them on every launch).
+ */
+export function hasModuleRules(state: GameTypeState): boolean {
+  return (editedGameType(state)?.moduleId ?? null) !== null
+}
+
+/**
  * The form offers the scoring mode choice: not under a `MANUAL` win condition
  * (rounds won need the app to decide who wins each round), nor for a game bound
- * to a scoring module, which computes its own scores in points.
+ * to a scoring module, whose rules are the module's.
  */
 export function showsScoringModeChoice(state: GameTypeState): boolean {
   return scoringModeIsSelectable({
@@ -254,12 +263,11 @@ export function showsScoringModeChoice(state: GameTypeState): boolean {
 }
 
 /**
- * The form offers the player range fields only for an ordinary game: the range
- * gates the launch of a game without a scoring module, and is ignored for a
- * game bound to one (its module's manifest range applies instead).
+ * The form offers the player range fields only for an ordinary game: a game
+ * bound to a module shows the module's range read-only.
  */
 export function showsPlayerRange(state: GameTypeState): boolean {
-  return (editedGameType(state)?.moduleId ?? null) === null
+  return !hasModuleRules(state)
 }
 
 /**
@@ -270,7 +278,8 @@ export function showsPlayerRange(state: GameTypeState): boolean {
  * `MANUAL`, and a win condition change on a rounds-won game.
  */
 export function scoringModeChangeWarning(state: GameTypeState): boolean {
-  if (!state.editingGameHasMatches) return false
+  // A module-bound game's rules are read-only here: nothing to warn about.
+  if (!state.editingGameHasMatches || hasModuleRules(state)) return false
   const editing = editedGameType(state)
   if (!editing) return false
   return roundScoringChanged(editing, {
@@ -294,7 +303,8 @@ export function submitUpdateGameType(
   state: Pick<GameTypeState, 'selectedMinPlayers' | 'selectedMaxPlayers'>,
 ): LoadedGameTypes | { error: string } {
   try {
-    // A module-bound game has no range fields in the form: keep its stored range.
+    // A module-bound game has no range fields in the form (its module's range is
+    // shown read-only): keep its stored range.
     const range = gameType.moduleId === null ? parsePlayerRange(state) : {}
     updateGameTypeUseCase.invoke({ ...gameType, ...range })
     return loadGameTypes(getGameTypes)

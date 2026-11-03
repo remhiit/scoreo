@@ -32,6 +32,20 @@ describe('module registry', () => {
     }
   })
 
+  it('never combines a MANUAL win condition with rounds won, which needs a winner per round', () => {
+    for (const manifest of MODULE_MANIFESTS) {
+      expect(manifest.winCondition === 'MANUAL' && manifest.scoringMode === 'ROUNDS_WON').toBe(
+        false,
+      )
+    }
+  })
+
+  it('declares a player range whose minimum does not exceed its maximum', () => {
+    for (const manifest of MODULE_MANIFESTS) {
+      expect(manifest.minPlayers).toBeLessThanOrEqual(manifest.maxPlayers)
+    }
+  })
+
   it('never lets two modules claim the same game name', () => {
     const names = MODULE_MANIFESTS.flatMap((m) => m.gameNames.map((n) => n.toLowerCase()))
     expect(new Set(names).size).toBe(names.length)

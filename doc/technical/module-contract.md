@@ -29,7 +29,7 @@ the host does not recompute them.
 `moduleData` is what makes a match re-openable. The host stores it next to the match without ever
 looking inside; `version` belongs to the module, which is the only side able to migrate the payload.
 
-### The invariant — `assertRoundsSumToRanking`
+### The invariant — `assertRoundsSumToRanking` and `assertResultMatchesRules`
 
 Round detail that does not add up to the announced score is a scoring bug, and storing it would
 leave a match whose history contradicts its own total. `assertRoundsSumToRanking(result)` throws on:
@@ -41,6 +41,14 @@ leave a match whose history contradicts its own total. `assertRoundsSumToRanking
 
 A result carrying no `rounds` at all is accepted: round detail is optional and a ranking on its own
 contradicts nothing.
+
+`assertResultMatchesRules(result, rules)` is the version that knows the module's declared mode
+(`rules = { winCondition, scoringMode? }`, i.e. the manifest). In `POINTS` (the default) it is exactly
+`assertRoundsSumToRanking`. In `ROUNDS_WON` every ranking score must be a whole number of at least 0
+(the error names the player), and when the result carries round detail each player's score must equal
+the number of rounds they won under the module's `winCondition` (all tied players win a round; a
+player missing from a non-empty round counts 0 in it). `ModuleHostAdapter.saveMatch` calls it with the
+module's manifest on every result.
 
 This is the executable form of the rule `ImportMatchesUseCase` already applies to a v1.1 file before
 accepting a game. Modules call it on the result they build; the host calls it on every result it
@@ -54,6 +62,7 @@ interface ScoringModuleManifest {
   displayName: string
   gameNames: readonly string[] // aliases, matched once at first binding
   winCondition: 'HIGHEST_SCORE' | 'LOWEST_SCORE' | 'MANUAL'
+  scoringMode?: 'POINTS' | 'ROUNDS_WON' // default POINTS; never ROUNDS_WON with MANUAL
   minPlayers: number
   maxPlayers: number
   dataVersion: number // version of the moduleData payload
@@ -62,6 +71,11 @@ interface ScoringModuleManifest {
 
 The manifest is loaded eagerly — a few hundred bytes, enough for the host to list the module — while
 the screen behind `ScoringModule.load()` is a thunk, so a module nobody opens costs zero bytes.
+
+`winCondition`, `scoringMode`, `minPlayers` and `maxPlayers` are the **rules of the module's game**:
+the module is their source of truth and the bound `GameType` follows it (see _Aligning the rules_
+below). `registry.test.ts` guards that no manifest combines `MANUAL` with `ROUNDS_WON` and that
+`minPlayers <= maxPlayers`.
 
 `moduleId` is what a `GameType` gets stamped with once bound. `gameNames` only serves the _first_
 match, typically against a game a v1.1 import already created; renaming the game afterwards changes
@@ -136,7 +150,7 @@ bound to it (rule 1, active or archived) or an **active** one matched by name (r
 case-insensitive, ignoring surrounding blanks): that game then stands for the module. When rule 2
 lands on an archived homonym, the module entry stays listed so the module remains reachable, and
 launching it binds and reactivates that archived game. The single **Start match** button opens the module's screen; it is disabled, with the
-manifest's player range shown, when the selected players fall outside `[minPlayers, maxPlayers]`.
+player range shown, when the selected players fall outside the range of the game type — read from the `GameType` for every game, module-bound ones included (binding keeps it aligned on the manifest); the manifest's range only stands in where no game type is bound yet (a module's own entry, or an unbound game claimed by name, which the launch will bind and align).
 An unbound `GameType` carrying one of the module's names — typically created by a v1.1 import —
 stands for the module instead: selecting it launches the module too (unless the module is
 already bound to another `GameType`), which binds it through rule 2 below. Rule 2 stamps the first
@@ -154,6 +168,27 @@ A module's game becomes real the first time someone plays it — always on the m
 Rule 1 makes the whole thing idempotent, and both reuse paths un-archive the game: playing a game is
 asking for it back.
 
+### Aligning the rules
+
+The module is the source of truth of its game's rules. On every launch, for rules 1 and 2 (rule 3
+creates the game with the manifest's rules, no history, no banner), `BindModuleUseCase.invoke(manifest)`
+sets the `GameType`'s `winCondition`, `scoringMode` (the manifest's, `POINTS` by default, `POINTS`
+under `MANUAL`), `minPlayers` and `maxPlayers` to the manifest's. There is no scan at startup. Already
+aligned (the usual case) nothing is written. When `winCondition` or `scoringMode` changes, the game's
+matches go through `rescoreGameMatches` (the recompute shared with `UpdateGameTypeUseCase`, built on
+`rescoreMatch`) and are written **before** the game type — same order and non-atomicity (#593). A
+match keeps its `manualWinners` (a module's match gets them from the rank it announced); one without
+detail keeps its scores when leaving rounds won, becomes a single round when entering it; one whose
+detail disagrees with its scores is left alone. A game's rules apply to its whole history, so winners,
+Elo and trophies of old matches follow the aligned rules.
+
+`invoke` returns `{ gameType, rulesChange? }`. `rulesChange` is set when any rule changed: `before`,
+`after`, `rescoredMatches` (matches actually rewritten) and `affectsHistory` (win condition or mode
+changed on a game that has matches). `App.tsx` relays `affectsHistory` changes to the module screen it
+opens, which shows a non-blocking `Banner` (new rules, number of matches recalculated; not persisted,
+gone at the next navigation). A range-only alignment shows no banner. The game type form shows these
+rules read-only for a bound game, and `ModuleHostAdapter` refuses a result inconsistent with them.
+
 Rules 1 and 2 live in one pure function, `resolveBindingTarget(manifest, allGameTypes)` (exported
 from `bindModuleUseCase.ts`, with the name match `manifestClaimsGameName`): `invoke()` decides with
 it, and the game selection modal calls it too, so the game it launches the module on is,
@@ -167,24 +202,17 @@ drafts, hand-typed URLs).
 
 ### Scoring mode of a module-bound game
 
-The module is the source of truth of its game's scoring: it computes the final scores it hands back
-(`ModuleHostAdapter.saveMatch` stores them as they are), and every module counts **points** today.
-So a `GameType` with `moduleId !== null` always scores in `POINTS`, whatever its stored
-`scoringMode`: `effectiveScoringMode()` (`domain/model/gameType.ts`) returns `POINTS` for it,
-`newGameType`/`UpdateGameTypeUseCase` store `POINTS`, the game type form hides the scoring mode
-choice, and none of its matches is ever recomputed into rounds won (`roundScoringChanged` sees no
-change). Scoreo's generic score screen, when used on such a game, sums the rounds too. A module
-declaring its own scoring mode, and Scoreo aligning on it, is tracked in #590.
-
-Known gap: binding by name (rule 2 above) stamps a `moduleId` onto an existing game type, and
-stores its effective `scoringMode` (`POINTS`), without recomputing its matches; were that game in
-rounds won, its stored counts would then be read as points. Left to #590.
+The module declares its mode (`scoringMode`, `POINTS` when absent) and the game type follows it:
+`effectiveScoringMode()` (`domain/model/gameType.ts`) returns the **stored** mode for a bound game
+(only a `MANUAL` game is forced to `POINTS`), and `BindModuleUseCase` keeps the stored mode equal to
+the manifest's. `scoringModeIsSelectable` stays false for a bound game: the form shows the mode
+read-only instead of offering a choice. Every module counts points today.
 
 Known gap: merging game types (`MergeGameTypesUseCase`) never rescores a module's match — one
 from a module-bound duplicate, or carrying `moduleData` — so, moved into a kept game scored in
 rounds won, its points are read as rounds won (inverted winners under `LOWEST_SCORE`). The merge
 is not refused: its preview sets `rulesDiffer`, so the dialog warns that winners can change.
-Left to #590.
+Still open: the merge dialog's warning is the only guard.
 
 The id never leaves the installation: it is absent from the v1.1 export, which travels to other
 installations where module ids mean nothing. `ImportMatchesUseCase` compensates by consulting the

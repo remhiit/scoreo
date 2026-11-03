@@ -1,8 +1,9 @@
 import {
-  assertRoundsSumToRanking,
+  assertResultMatchesRules,
   type ModuleHost,
   type ModuleMatchResult,
   type ModulePlayer,
+  type ModuleScoringRules,
 } from '@scoreboards/module-api'
 import { newId } from '../application/idGenerator'
 import { rankingToMatch } from '../application/rankingToMatch'
@@ -21,6 +22,9 @@ export class ModuleHostAdapter implements ModuleHost {
   constructor(
     private readonly moduleId: string,
     private readonly gameTypeId: string,
+    // The module's own declared rules (its manifest): the source of truth a
+    // result is checked against, `scoringMode` absent meaning points.
+    private readonly rules: ModuleScoringRules,
     private readonly playerRepository: PlayerRepository,
     private readonly matchRepository: MatchRepository,
     private readonly moduleDraftRepository: ModuleDraftRepository,
@@ -41,10 +45,12 @@ export class ModuleHostAdapter implements ModuleHost {
   }
 
   saveMatch(result: ModuleMatchResult): string {
-    // Round detail that contradicts the announced scores is a scoring bug in the
-    // module. Refusing it here keeps a self-contradicting match out of the
-    // history, where nothing would ever notice it again.
-    assertRoundsSumToRanking(result)
+    // A result that contradicts the module's declared scoring mode (round detail
+    // that does not add up in points; scores that are not the rounds won in
+    // rounds won) is a scoring bug in the module. Refusing it here keeps a
+    // self-contradicting match out of the history, where nothing would ever
+    // notice it again.
+    assertResultMatchesRules(result, this.rules)
 
     const existing =
       result.matchId === undefined ? undefined : this.matchRepository.findById(result.matchId)

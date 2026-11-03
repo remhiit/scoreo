@@ -1,4 +1,8 @@
-export { assertRoundsSumToRanking } from './assertRoundsSumToRanking'
+export {
+  assertResultMatchesRules,
+  assertRoundsSumToRanking,
+  type ModuleScoringRules,
+} from './assertRoundsSumToRanking'
 export type { ModuleHost } from './host'
 export type { ScoringModuleManifest } from './manifest'
 export type {

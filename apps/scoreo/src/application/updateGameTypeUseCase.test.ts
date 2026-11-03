@@ -164,14 +164,6 @@ describe('UpdateGameTypeUseCase', () => {
       expect(scoresOf(matches, 'm1')).toEqual([20, 13])
     })
 
-    it('never recomputes the matches of a module-bound game into rounds won', () => {
-      const { gameTypes, matches, created, update } = setup('POINTS', 'tori-valley')
-      matches.save(match('m1', created.id, 20, 13))
-      update.invoke({ ...created, scoringMode: 'ROUNDS_WON' })
-      expect(scoresOf(matches, 'm1')).toEqual([20, 13])
-      expect(gameTypes.findById(created.id)?.scoringMode).toBe('POINTS')
-    })
-
     it('recounts the rounds won when the win condition flips in ROUNDS_WON', () => {
       const { matches, created, update } = setup('ROUNDS_WON')
       matches.save(match('m1', created.id, 2, 1))
@@ -207,14 +199,6 @@ describe('UpdateGameTypeUseCase', () => {
       matches.save(match('m1', created.id, 2, 1, []))
       update.invoke({ ...created, scoringMode: 'POINTS' })
       expect(scoresOf(matches, 'm1')).toEqual([2, 1])
-      expect(matches.findById('m1')?.rounds).toEqual([])
-    })
-
-    it('never converts the matches without detail of a module-bound game', () => {
-      const { matches, created, update } = setup('POINTS', 'tori-valley')
-      matches.save(match('m1', created.id, 40, 90, []))
-      update.invoke({ ...created, scoringMode: 'ROUNDS_WON' })
-      expect(scoresOf(matches, 'm1')).toEqual([40, 90])
       expect(matches.findById('m1')?.rounds).toEqual([])
     })
 

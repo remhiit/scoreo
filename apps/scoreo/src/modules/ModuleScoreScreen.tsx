@@ -1,5 +1,5 @@
 import type { ScoringModuleScreenProps } from '@scoreboards/module-api'
-import { EmptyState, ImmersiveTemplate, Text } from '@scoreboards/design-system'
+import { Banner, EmptyState, ImmersiveTemplate, Text } from '@scoreboards/design-system'
 import {
   Component,
   lazy,
@@ -11,6 +11,7 @@ import {
   type ReactNode,
 } from 'react'
 import { useTranslation } from 'react-i18next'
+import type { RulesChange } from '../application/bindModuleUseCase'
 import type { Screen } from '../ui/navigation/screen'
 import type { Services } from '../services/createServices'
 import { ModuleHostAdapter } from './moduleHostAdapter'
@@ -46,9 +47,20 @@ export interface ModuleScoreRouteProps {
    * the host can land on it instead of guessing from the route.
    */
   onExit: (savedMatchId?: string) => void
+  /**
+   * Set when binding the module just changed how its game's history is read
+   * (`RulesChange.affectsHistory`). Shown as a non-blocking banner, never
+   * persisted: it only lives as long as this opening of the screen.
+   */
+  rulesChange?: RulesChange
 }
 
-export function ModuleScoreScreen({ screen, services, onExit }: ModuleScoreRouteProps) {
+export function ModuleScoreScreen({
+  screen,
+  services,
+  onExit,
+  rulesChange,
+}: ModuleScoreRouteProps) {
   const { t } = useTranslation()
   const module = useMemo(() => findModule(screen.moduleId), [screen.moduleId])
 
@@ -71,6 +83,7 @@ export function ModuleScoreScreen({ screen, services, onExit }: ModuleScoreRoute
       new ModuleHostAdapter(
         screen.moduleId,
         screen.gameTypeId,
+        module?.manifest ?? { winCondition: 'MANUAL' },
         services.playerRepository,
         services.matchRepository,
         services.moduleDraftRepository,
@@ -84,7 +97,7 @@ export function ModuleScoreScreen({ screen, services, onExit }: ModuleScoreRoute
           savedMatchIdRef.current = matchId
         },
       ),
-    [screen.moduleId, screen.gameTypeId, services],
+    [screen.moduleId, screen.gameTypeId, module, services],
   )
 
   // The module only ever gets `() => void`, per the contract: the id travels
@@ -109,6 +122,21 @@ export function ModuleScoreScreen({ screen, services, onExit }: ModuleScoreRoute
       title={module?.manifest.displayName ?? ''}
       exit={{ label: t('modules.exit'), onClick: handleExit }}
     >
+      {rulesChange && (
+        <Banner title={t('modules.rulesChangedTitle')}>
+          <Text>
+            {t('modules.rulesChangedBody', {
+              winCondition: t(`gametype.winConditions.${rulesChange.after.winCondition}`),
+              scoringMode: t(`gametype.scoringModes.${rulesChange.after.scoringMode}`),
+            })}
+          </Text>
+          <Text>
+            {rulesChange.rescoredMatches === 0
+              ? t('modules.rulesChangedNoRescore')
+              : t('modules.rulesChangedRescored', { count: rulesChange.rescoredMatches })}
+          </Text>
+        </Banner>
+      )}
       {module === undefined || Screen === undefined ? (
         <EmptyState>{t('modules.unknownModule')}</EmptyState>
       ) : (

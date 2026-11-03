@@ -1,7 +1,9 @@
 import type { ScoringModuleManifest } from '@scoreboards/module-api'
 import { effectiveScoringMode, newGameType, type GameType } from '../domain/model/gameType'
 import type { GameTypeRepository } from '../domain/port/gameTypeRepository'
+import type { MatchRepository } from '../domain/port/matchRepository'
 import { newId } from './idGenerator'
+import { rescoreGameMatches } from './rescoreGameMatches'
 
 /**
  * How game names are compared when matching a game type to a module:
@@ -47,8 +49,63 @@ export function resolveBindingTarget(
   return undefined
 }
 
+/** The rules a module imposes on its game, as stored on the `GameType`. */
+export type ModuleRules = Pick<
+  GameType,
+  'winCondition' | 'scoringMode' | 'minPlayers' | 'maxPlayers'
+>
+
+/** What aligning a bound game on its module changed. */
+export interface RulesChange {
+  before: ModuleRules
+  after: ModuleRules
+  /** Matches of the game rewritten by `rescoreMatch` (scores that changed). */
+  rescoredMatches: number
+  /**
+   * True when the win condition or scoring mode changed on a game that has
+   * matches: its history is now read under other rules. A change of the player
+   * range alone, or on a game without history, is not.
+   */
+  affectsHistory: boolean
+}
+
+export interface BindResult {
+  gameType: GameType
+  /** Only set when the stored rules changed (never for rule 3, a game just created). */
+  rulesChange?: RulesChange
+}
+
+/** The rules `manifest` imposes: its win condition, mode (default points) and range. */
+export function manifestRules(manifest: ScoringModuleManifest): ModuleRules {
+  return {
+    winCondition: manifest.winCondition,
+    scoringMode: effectiveScoringMode({
+      winCondition: manifest.winCondition,
+      scoringMode: manifest.scoringMode ?? 'POINTS',
+      moduleId: manifest.moduleId,
+    }),
+    minPlayers: manifest.minPlayers,
+    maxPlayers: manifest.maxPlayers,
+  }
+}
+
+function sameRules(a: ModuleRules, b: ModuleRules): boolean {
+  return (
+    a.winCondition === b.winCondition &&
+    a.scoringMode === b.scoringMode &&
+    a.minPlayers === b.minPlayers &&
+    a.maxPlayers === b.maxPlayers
+  )
+}
+
+function rulesOf(gameType: GameType): ModuleRules {
+  const { winCondition, scoringMode, minPlayers, maxPlayers } = gameType
+  return { winCondition, scoringMode, minPlayers, maxPlayers }
+}
+
 /**
- * Returns the `GameType` a module counts, binding the two on first use.
+ * Returns the `GameType` a module counts, binding the two on first use and
+ * aligning its rules on the module's on every use.
  *
  * Nothing is materialized when the app starts: a fresh profile shows no game
  * types at all. A module's game only becomes real the first time someone
@@ -59,41 +116,72 @@ export function resolveBindingTarget(
  *    `moduleId` onto it, the common case for a history created by a v1.1 import;
  * 3. otherwise create the game now, from the manifest.
  *
+ * The module is the source of truth of its game's rules: for rules 1 and 2, the
+ * game's `winCondition`, `scoringMode` and player range are set to the
+ * manifest's. When the win condition or scoring mode changes, the game's matches
+ * are rescored (`rescoreGameMatches`, written before the game type — same order
+ * and non-atomicity as `UpdateGameTypeUseCase`) and the outcome is reported in
+ * `rulesChange`. Already aligned (the usual case): nothing is written.
+ *
  * Idempotent: rule 1 catches every call after the first. Rules 1 and 2 are
  * `resolveBindingTarget`, so a caller can preview the outcome without binding.
  */
 export class BindModuleUseCase {
-  constructor(private readonly repository: GameTypeRepository) {}
+  constructor(
+    private readonly repository: GameTypeRepository,
+    private readonly matchRepository: MatchRepository,
+  ) {}
 
-  invoke(manifest: ScoringModuleManifest): GameType {
+  invoke(manifest: ScoringModuleManifest): BindResult {
     // Archived games count: rebinding around one would create a duplicate of a
     // game the user only meant to hide.
     const all = this.repository.getAll(true)
 
     const target = resolveBindingTarget(manifest, all)
-    if (target?.kind === 'bound') return this.reactivate(target.gameType)
-    if (target?.kind === 'byName') {
-      const bound: GameType = { ...target.gameType, moduleId: manifest.moduleId, active: true }
-      // A module-bound game always scores in points: store that effective mode,
-      // so the serialized game says what it does. Its matches are not recomputed
-      // here (#590).
-      const stamped: GameType = { ...bound, scoringMode: effectiveScoringMode(bound) }
-      this.repository.save(stamped)
-      return stamped
-    }
+    if (target !== undefined) return this.align(target.gameType, manifest)
 
     const created = newGameType(newId(), manifest.gameNames[0], manifest.winCondition, {
       moduleId: manifest.moduleId,
+      ...manifestRules(manifest),
     })
     this.repository.save(created)
-    return created
+    return { gameType: created }
   }
 
-  /** Playing a game un-archives it: the user is asking for it by name. */
-  private reactivate(gameType: GameType): GameType {
-    if (gameType.active) return gameType
-    const revived: GameType = { ...gameType, active: true }
-    this.repository.save(revived)
-    return revived
+  /**
+   * Binds (rule 2), un-archives (playing a game asks for it by name) and aligns
+   * the rules, saving only when something differs.
+   */
+  private align(current: GameType, manifest: ScoringModuleManifest): BindResult {
+    const before = rulesOf(current)
+    const after = manifestRules(manifest)
+    const updated: GameType = {
+      ...current,
+      ...after,
+      moduleId: manifest.moduleId,
+      active: true,
+    }
+    const unchanged =
+      current.moduleId === updated.moduleId && current.active && sameRules(before, after)
+    if (unchanged) return { gameType: current }
+
+    const rescoredMatches = rescoreGameMatches(this.matchRepository, current, updated)
+    this.repository.save(updated)
+
+    if (sameRules(before, after)) return { gameType: updated }
+
+    const computationChanged =
+      before.winCondition !== after.winCondition || before.scoringMode !== after.scoringMode
+    const hasMatches =
+      computationChanged && this.matchRepository.getAll().some((m) => m.gameTypeId === current.id)
+    return {
+      gameType: updated,
+      rulesChange: {
+        before,
+        after,
+        rescoredMatches,
+        affectsHistory: computationChanged && hasMatches,
+      },
+    }
   }
 }

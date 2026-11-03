@@ -1,7 +1,9 @@
 import type { ScoringModuleManifest } from '@scoreboards/module-api'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import type { GameType } from '../domain/model/gameType'
+import type { Match } from '../domain/model/match'
 import { InMemoryGameTypeRepository } from '../infrastructure/testing/inMemoryGameTypeRepository'
+import { InMemoryMatchRepository } from '../infrastructure/testing/inMemoryMatchRepository'
 import {
   BindModuleUseCase,
   manifestClaimsGameName,
@@ -16,6 +18,44 @@ const manifest: ScoringModuleManifest = {
   minPlayers: 2,
   maxPlayers: 4,
   dataVersion: 1,
+}
+
+function setup() {
+  const repo = new InMemoryGameTypeRepository()
+  const matches = new InMemoryMatchRepository()
+  return { repo, matches, useCase: new BindModuleUseCase(repo, matches) }
+}
+
+// Raw rounds 10/2, 1/8, 9/3: 20/13 in points, 2/1 rounds won (highest wins a round).
+function match(id: string, gameTypeId: string, a: number, b: number, detail = true): Match {
+  return {
+    id,
+    date: 0,
+    gameTypeId,
+    playerScores: [
+      { playerId: 'a', score: a },
+      { playerId: 'b', score: b },
+    ],
+    manualWinners: [],
+    secondaryPlayerScores: [],
+    rounds: detail
+      ? [
+          [
+            { playerId: 'a', score: 10 },
+            { playerId: 'b', score: 2 },
+          ],
+          [
+            { playerId: 'a', score: 1 },
+            { playerId: 'b', score: 8 },
+          ],
+          [
+            { playerId: 'a', score: 9 },
+            { playerId: 'b', score: 3 },
+          ],
+        ]
+      : [],
+    moduleData: null,
+  }
 }
 
 function gameType(overrides: Partial<GameType> & Pick<GameType, 'id' | 'name'>): GameType {
@@ -35,94 +75,211 @@ function gameType(overrides: Partial<GameType> & Pick<GameType, 'id' | 'name'>):
 
 describe('BindModuleUseCase', () => {
   describe('rule 3 — nothing to bind to', () => {
-    it('creates the game type from the manifest', () => {
-      const repo = new InMemoryGameTypeRepository()
+    it('creates the game type from the manifest, rules included', () => {
+      const { repo, useCase } = setup()
 
-      const bound = new BindModuleUseCase(repo).invoke(manifest)
+      const { gameType, rulesChange } = useCase.invoke({ ...manifest, scoringMode: 'ROUNDS_WON' })
 
-      expect(bound.name).toBe('Test Game')
-      expect(bound.moduleId).toBe('test-module')
-      expect(bound.winCondition).toBe('LOWEST_SCORE')
-      expect(bound.active).toBe(true)
-      expect(repo.getAll()).toEqual([bound])
+      expect(gameType).toMatchObject({
+        name: 'Test Game',
+        moduleId: 'test-module',
+        winCondition: 'LOWEST_SCORE',
+        scoringMode: 'ROUNDS_WON',
+        minPlayers: 2,
+        maxPlayers: 4,
+        active: true,
+      })
+      expect(repo.getAll()).toEqual([gameType])
+      expect(rulesChange).toBeUndefined()
+    })
+
+    it('defaults to POINTS when the manifest declares no mode', () => {
+      expect(setup().useCase.invoke(manifest).gameType.scoringMode).toBe('POINTS')
     })
 
     it('creates nothing else — an empty profile stays empty until a module is played', () => {
-      const repo = new InMemoryGameTypeRepository()
-
-      expect(repo.getAll(true)).toEqual([])
+      expect(setup().repo.getAll(true)).toEqual([])
     })
   })
 
   describe('rule 2 — a game already carries the name', () => {
     it('stamps the module onto it instead of creating a second one', () => {
-      const repo = new InMemoryGameTypeRepository()
+      const { repo, useCase } = setup()
       repo.save(gameType({ id: 'g1', name: 'Test Game' }))
 
-      const bound = new BindModuleUseCase(repo).invoke(manifest)
+      const { gameType: bound } = useCase.invoke(manifest)
 
       expect(bound.id).toBe('g1')
       expect(bound.moduleId).toBe('test-module')
       expect(repo.getAll()).toHaveLength(1)
     })
 
-    it('matches the name case-insensitively and ignoring surrounding blanks', () => {
-      const repo = new InMemoryGameTypeRepository()
-      repo.save(gameType({ id: 'g1', name: '  test game  ' }))
+    it('matches the name case-insensitively, ignoring blanks, and on any alias', () => {
+      const a = setup()
+      a.repo.save(gameType({ id: 'g1', name: '  test game  ' }))
+      expect(a.useCase.invoke(manifest).gameType.id).toBe('g1')
 
-      expect(new BindModuleUseCase(repo).invoke(manifest).id).toBe('g1')
+      const b = setup()
+      b.repo.save(gameType({ id: 'g1', name: 'Le Jeu de Test' }))
+      expect(b.useCase.invoke(manifest).gameType.id).toBe('g1')
     })
 
-    it('matches any alias, not only the display name', () => {
-      const repo = new InMemoryGameTypeRepository()
-      repo.save(gameType({ id: 'g1', name: 'Le Jeu de Test' }))
-
-      expect(new BindModuleUseCase(repo).invoke(manifest).id).toBe('g1')
-    })
-
-    it('keeps the existing name and rules — the module augments the game, it does not redefine it', () => {
-      const repo = new InMemoryGameTypeRepository()
+    it('keeps the name and tie-break, aligns the rules on the module', () => {
+      const { repo, useCase } = setup()
       repo.save(
         gameType({
           id: 'g1',
           name: 'test game',
           winCondition: 'HIGHEST_SCORE',
           tieBreakRule: 'MANUAL_SELECTION',
+          minPlayers: 3,
+          maxPlayers: null,
         }),
       )
 
-      const bound = new BindModuleUseCase(repo).invoke(manifest)
+      const { gameType: bound, rulesChange } = useCase.invoke(manifest)
 
-      expect(bound.name).toBe('test game')
-      expect(bound.winCondition).toBe('HIGHEST_SCORE')
-      expect(bound.tieBreakRule).toBe('MANUAL_SELECTION')
+      expect(bound).toMatchObject({
+        name: 'test game',
+        tieBreakRule: 'MANUAL_SELECTION',
+        winCondition: 'LOWEST_SCORE',
+        minPlayers: 2,
+        maxPlayers: 4,
+      })
+      expect(repo.findById('g1')).toEqual(bound)
+      expect(rulesChange?.before).toMatchObject({ winCondition: 'HIGHEST_SCORE', minPlayers: 3 })
+      expect(rulesChange?.after).toMatchObject({ winCondition: 'LOWEST_SCORE', minPlayers: 2 })
     })
 
-    it('stores the effective scoring mode, POINTS, on a rounds-won game it binds to', () => {
-      const repo = new InMemoryGameTypeRepository()
-      repo.save(gameType({ id: 'g1', name: 'Test Game', scoringMode: 'ROUNDS_WON' }))
+    it('turns an imported rounds-won game into points and rescores its matches from the detail', () => {
+      const { repo, matches, useCase } = setup()
+      repo.save(
+        gameType({
+          id: 'g1',
+          name: 'Test Game',
+          winCondition: 'LOWEST_SCORE',
+          scoringMode: 'ROUNDS_WON',
+        }),
+      )
+      // Lowest wins a round: a wins round 2 only (1 < 8), b wins rounds 1 and 3.
+      matches.save(match('m1', 'g1', 1, 2))
+      matches.save(match('other', 'g2', 1, 2))
 
-      const bound = new BindModuleUseCase(repo).invoke(manifest)
+      const { gameType: bound, rulesChange } = useCase.invoke(manifest)
 
       expect(bound.scoringMode).toBe('POINTS')
-      expect(repo.findById('g1')?.scoringMode).toBe('POINTS')
+      expect(matches.findById('m1')?.playerScores.map((p) => p.score)).toEqual([20, 13])
+      expect(matches.findById('other')?.playerScores.map((p) => p.score)).toEqual([1, 2])
+      expect(rulesChange).toMatchObject({ rescoredMatches: 1, affectsHistory: true })
+    })
+
+    it('keeps the scores of a match without detail when going to points', () => {
+      const { repo, matches, useCase } = setup()
+      repo.save(gameType({ id: 'g1', name: 'Test Game', scoringMode: 'ROUNDS_WON' }))
+      matches.save(match('m1', 'g1', 2, 1, false))
+
+      const { rulesChange } = useCase.invoke(manifest)
+
+      expect(matches.findById('m1')?.playerScores.map((p) => p.score)).toEqual([2, 1])
+      expect(rulesChange).toMatchObject({ rescoredMatches: 0, affectsHistory: true })
+    })
+
+    it('keeps the scores and detail of a match whose detail disagrees with its scores', () => {
+      const { repo, matches, useCase } = setup()
+      repo.save(gameType({ id: 'g1', name: 'Test Game', scoringMode: 'ROUNDS_WON' }))
+      matches.save(match('m1', 'g1', 7, 7))
+
+      useCase.invoke(manifest)
+
+      expect(matches.findById('m1')).toEqual(match('m1', 'g1', 7, 7))
+    })
+
+    it('turns points into rounds won for a rounds-won module', () => {
+      const { repo, matches, useCase } = setup()
+      repo.save(gameType({ id: 'g1', name: 'Test Game', winCondition: 'HIGHEST_SCORE' }))
+      matches.save(match('m1', 'g1', 20, 13))
+      matches.save(match('m2', 'g1', 5, 5, false))
+
+      const { rulesChange } = useCase.invoke({
+        ...manifest,
+        winCondition: 'HIGHEST_SCORE',
+        scoringMode: 'ROUNDS_WON',
+      })
+
+      expect(matches.findById('m1')?.playerScores.map((p) => p.score)).toEqual([2, 1])
+      // No detail: a single round holding the scores, then counted in rounds won.
+      expect(matches.findById('m2')?.playerScores.map((p) => p.score)).toEqual([1, 1])
+      expect(rulesChange?.rescoredMatches).toBe(2)
+    })
+
+    it('reports a win condition change without rewriting scores in points', () => {
+      const { repo, matches, useCase } = setup()
+      repo.save(gameType({ id: 'g1', name: 'Test Game', winCondition: 'HIGHEST_SCORE' }))
+      matches.save(match('m1', 'g1', 20, 13))
+
+      const { rulesChange } = useCase.invoke(manifest)
+
+      expect(matches.findById('m1')?.playerScores.map((p) => p.score)).toEqual([20, 13])
+      expect(rulesChange).toMatchObject({ rescoredMatches: 0, affectsHistory: true })
+    })
+
+    it('does not flag a history change when only the player range differs', () => {
+      const { repo, matches, useCase } = setup()
+      repo.save(gameType({ id: 'g1', name: 'Test Game', winCondition: 'LOWEST_SCORE' }))
+      matches.save(match('m1', 'g1', 20, 13))
+
+      const { gameType: bound, rulesChange } = useCase.invoke(manifest)
+
+      expect(bound).toMatchObject({ minPlayers: 2, maxPlayers: 4 })
+      expect(rulesChange).toBeDefined()
+      expect(rulesChange?.affectsHistory).toBe(false)
+    })
+
+    it('does not flag a history change for a game without matches', () => {
+      const { repo, useCase } = setup()
+      repo.save(gameType({ id: 'g1', name: 'Test Game', winCondition: 'HIGHEST_SCORE' }))
+
+      expect(useCase.invoke(manifest).rulesChange?.affectsHistory).toBe(false)
+    })
+
+    it('writes the rescored matches before the game type', () => {
+      const { repo, matches, useCase } = setup()
+      repo.save(gameType({ id: 'g1', name: 'Test Game', scoringMode: 'ROUNDS_WON' }))
+      matches.save(match('m1', 'g1', 2, 1))
+      matches.saveAll = () => {
+        throw new Error('quota')
+      }
+
+      expect(() => useCase.invoke(manifest)).toThrow('quota')
+      expect(repo.findById('g1')).toMatchObject({ moduleId: null, scoringMode: 'ROUNDS_WON' })
     })
 
     it('un-archives the game it binds to', () => {
-      const repo = new InMemoryGameTypeRepository()
+      const { repo, useCase } = setup()
       repo.save(gameType({ id: 'g1', name: 'Test Game', active: false }))
 
-      expect(new BindModuleUseCase(repo).invoke(manifest).active).toBe(true)
+      expect(useCase.invoke(manifest).gameType.active).toBe(true)
       expect(repo.getAll()).toHaveLength(1)
     })
   })
 
   describe('rule 1 — the module is already bound', () => {
-    it('reuses the bound game whatever its name has become', () => {
-      const repo = new InMemoryGameTypeRepository()
-      repo.save(gameType({ id: 'g1', name: 'Renamed by the user', moduleId: 'test-module' }))
+    const aligned = (overrides: Partial<GameType> = {}) =>
+      gameType({
+        id: 'g1',
+        name: 'Test Game',
+        moduleId: 'test-module',
+        winCondition: 'LOWEST_SCORE',
+        minPlayers: 2,
+        maxPlayers: 4,
+        ...overrides,
+      })
 
-      const bound = new BindModuleUseCase(repo).invoke(manifest)
+    it('reuses the bound game whatever its name has become', () => {
+      const { repo, useCase } = setup()
+      repo.save(aligned({ name: 'Renamed by the user' }))
+
+      const { gameType: bound } = useCase.invoke(manifest)
 
       expect(bound.id).toBe('g1')
       expect(bound.name).toBe('Renamed by the user')
@@ -130,37 +287,66 @@ describe('BindModuleUseCase', () => {
     })
 
     it('prefers the bound game over one merely carrying the name', () => {
-      const repo = new InMemoryGameTypeRepository()
+      const { repo, useCase } = setup()
       repo.save(gameType({ id: 'g1', name: 'Test Game' }))
-      repo.save(gameType({ id: 'g2', name: 'Renamed', moduleId: 'test-module' }))
+      repo.save(aligned({ id: 'g2', name: 'Renamed' }))
 
-      expect(new BindModuleUseCase(repo).invoke(manifest).id).toBe('g2')
+      expect(useCase.invoke(manifest).gameType.id).toBe('g2')
     })
 
     it('un-archives the bound game', () => {
-      const repo = new InMemoryGameTypeRepository()
-      repo.save(gameType({ id: 'g1', name: 'Test Game', moduleId: 'test-module', active: false }))
+      const { repo, useCase } = setup()
+      repo.save(aligned({ active: false }))
 
-      expect(new BindModuleUseCase(repo).invoke(manifest).active).toBe(true)
+      expect(useCase.invoke(manifest).gameType.active).toBe(true)
     })
 
-    it('leaves an already-active bound game untouched', () => {
-      const repo = new InMemoryGameTypeRepository()
-      const existing = gameType({ id: 'g1', name: 'Test Game', moduleId: 'test-module' })
+    it('writes nothing, rescores nothing and reports nothing when already aligned', () => {
+      const { repo, matches, useCase } = setup()
+      const existing = aligned()
       repo.save(existing)
+      matches.save(match('m1', 'g1', 20, 13))
+      const saveGame = vi.spyOn(repo, 'save')
+      const saveMatches = vi.spyOn(matches, 'saveAll')
 
-      expect(new BindModuleUseCase(repo).invoke(manifest)).toEqual(existing)
+      const result = useCase.invoke(manifest)
+
+      expect(result).toEqual({ gameType: existing })
+      expect(saveGame).not.toHaveBeenCalled()
+      expect(saveMatches).not.toHaveBeenCalled()
+    })
+
+    it('realigns a drifted game, then goes quiet', () => {
+      const { repo, matches, useCase } = setup()
+      repo.save(aligned({ winCondition: 'HIGHEST_SCORE', scoringMode: 'ROUNDS_WON' }))
+      matches.save(match('m1', 'g1', 2, 1))
+
+      const first = useCase.invoke(manifest)
+      const second = useCase.invoke(manifest)
+
+      expect(first.gameType).toMatchObject({ winCondition: 'LOWEST_SCORE', scoringMode: 'POINTS' })
+      expect(first.rulesChange).toMatchObject({ rescoredMatches: 1, affectsHistory: true })
+      expect(second.rulesChange).toBeUndefined()
+    })
+
+    it('reports a range-only alignment without a history change', () => {
+      const { repo, useCase } = setup()
+      repo.save(aligned({ minPlayers: null, maxPlayers: null }))
+
+      const { gameType: bound, rulesChange } = useCase.invoke(manifest)
+
+      expect(bound).toMatchObject({ minPlayers: 2, maxPlayers: 4 })
+      expect(rulesChange?.affectsHistory).toBe(false)
     })
   })
 
   describe('idempotence', () => {
     it('binds once, however many times it runs', () => {
-      const repo = new InMemoryGameTypeRepository()
-      const useCase = new BindModuleUseCase(repo)
+      const { repo, useCase } = setup()
 
-      const first = useCase.invoke(manifest)
-      const second = useCase.invoke(manifest)
-      const third = useCase.invoke(manifest)
+      const first = useCase.invoke(manifest).gameType
+      const second = useCase.invoke(manifest).gameType
+      const third = useCase.invoke(manifest).gameType
 
       expect(second.id).toBe(first.id)
       expect(third.id).toBe(first.id)
@@ -168,10 +354,10 @@ describe('BindModuleUseCase', () => {
     })
 
     it('does not steal a game already bound to another module', () => {
-      const repo = new InMemoryGameTypeRepository()
+      const { repo, useCase } = setup()
       repo.save(gameType({ id: 'g1', name: 'Another Game', moduleId: 'other-module' }))
 
-      const bound = new BindModuleUseCase(repo).invoke(manifest)
+      const { gameType: bound } = useCase.invoke(manifest)
 
       expect(bound.id).not.toBe('g1')
       expect(repo.findById('g1')?.moduleId).toBe('other-module')
@@ -220,7 +406,9 @@ describe('resolveBindingTarget', () => {
     repo.save(gameType({ id: 'g2', name: 'Test Game' }))
 
     const preview = resolveBindingTarget(manifest, repo.getAll(true))
-    const bound = new BindModuleUseCase(repo).invoke(manifest)
+    const { gameType: bound } = new BindModuleUseCase(repo, new InMemoryMatchRepository()).invoke(
+      manifest,
+    )
 
     expect(preview?.gameType.id).toBe(bound.id)
   })

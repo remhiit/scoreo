@@ -180,12 +180,12 @@ describe('newGameType', () => {
     })
   })
 
-  it('forces points for a module-bound game', () => {
+  it('keeps the given mode for a module-bound game', () => {
     const gt = newGameType('1', 'Game', 'HIGHEST_SCORE', {
       scoringMode: 'ROUNDS_WON',
       moduleId: 'mod',
     })
-    expect(gt).toMatchObject({ scoringMode: 'POINTS', moduleId: 'mod' })
+    expect(gt).toMatchObject({ scoringMode: 'ROUNDS_WON', moduleId: 'mod' })
   })
 
   it('forces points under a MANUAL win condition', () => {
@@ -248,9 +248,13 @@ describe('effectiveScoringMode', () => {
     expect(effectiveScoringMode(inputs('MANUAL', 'ROUNDS_WON'))).toBe('POINTS')
   })
 
-  it('forces POINTS for a module-bound game, the module computing its own scores', () => {
-    expect(effectiveScoringMode(inputs('HIGHEST_SCORE', 'ROUNDS_WON', 'skyjo'))).toBe('POINTS')
-    expect(effectiveScoringMode(inputs('LOWEST_SCORE', 'ROUNDS_WON', 'skyjo'))).toBe('POINTS')
+  it('keeps the stored mode for a module-bound game, the module deciding it', () => {
+    expect(effectiveScoringMode(inputs('HIGHEST_SCORE', 'ROUNDS_WON', 'skyjo'))).toBe('ROUNDS_WON')
+    expect(effectiveScoringMode(inputs('LOWEST_SCORE', 'POINTS', 'skyjo'))).toBe('POINTS')
+  })
+
+  it('keeps POINTS for a MANUAL module-bound game', () => {
+    expect(effectiveScoringMode(inputs('MANUAL', 'ROUNDS_WON', 'skyjo'))).toBe('POINTS')
   })
 })
 
@@ -273,10 +277,7 @@ describe('roundScoringChanged', () => {
   it('is false when the final score of the rounds stays the same', () => {
     expect(roundScoringChanged(gameType(), gameType({ winCondition: 'LOWEST_SCORE' }))).toBe(false)
     expect(
-      roundScoringChanged(
-        gameType({ moduleId: 'skyjo' }),
-        gameType({ moduleId: 'skyjo', scoringMode: 'ROUNDS_WON' }),
-      ),
+      roundScoringChanged(gameType({ moduleId: 'skyjo' }), gameType({ moduleId: 'skyjo' })),
     ).toBe(false)
   })
 })
