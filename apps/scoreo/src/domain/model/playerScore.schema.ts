@@ -1,6 +1,4 @@
-import { z } from 'zod'
-
-export const PlayerScoreSchema = z.object({
-  playerId: z.string(),
-  score: z.number(),
-})
+// See `./player`: this model is shared with every scoring module, so it lives in
+// `@scoreboards/shared-domain`, unchanged — the bytes it parses are already on
+// users' devices.
+export { PlayerScoreSchema } from '@scoreboards/shared-domain'
