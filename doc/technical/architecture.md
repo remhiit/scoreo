@@ -117,7 +117,7 @@ envelope the Kotlin implementation produces from it. Both sides replay it: `Gold
 Kotlin side, `exportScoreo.golden.test.ts` on the TypeScript side, comparing **byte for byte**.
 
 Neither can drift without the other going red, which is the only way to be sure 416 lines of scoring
-rules were _ported_ and not reinvented. Reading the diff of a rewrite proves nothing; two
+rules were *ported* and not reinvented. Reading the diff of a rewrite proves nothing; two
 implementations agreeing on a corpus proves something.
 
 The corpus deliberately includes a game where a Skull Island drives a player below zero, who then
@@ -157,7 +157,7 @@ Run `find src -type d` for the exhaustive package list.
 
 Every visual decision lives in the design system package, [`packages/design-system/`](../../packages/design-system/README.md) (`@scoreboards/design-system`), organised in atomic layers: tokens, atoms, molecules, organisms, templates. The host **composes** its components and nothing else — no `className`, no `style`, no stylesheet, no `lucide-react` glyph of its own. `apps/scoreo/src/main.tsx` imports its single stylesheet, `@scoreboards/design-system/styles.css`, which Vite bundles and links from `index.html`'s `<head>` (so the splash is styled before the JS runs).
 
-**Guard-rail: the composition rule** — `eslint.config.js` fails on a `className` or `style` attribute, or a `lucide-react` import, anywhere in `apps/scoreo/src/`. It has no exceptions: the host ships no CSS of its own (`apps/scoreo/public/css/` is gone) and every screen composes the design system. The same rule extends to every scoring module (`packages/module-*`), except that its `src/design/` folder may write `className` (still no `style`, no `lucide-react`) — see [`module-contract.md`](module-contract.md) § _A module wears Scoreo's look_.
+**Guard-rail: the composition rule** — `eslint.config.js` fails on a `className` or `style` attribute, or a `lucide-react` import, anywhere in `apps/scoreo/src/`. It has no exceptions: the host ships no CSS of its own (`apps/scoreo/public/css/` is gone) and every screen composes the design system. The same rule extends to every scoring module (`packages/module-*`), except that its `src/design/` folder may write `className` (still no `style`, no `lucide-react`) — see [`module-contract.md`](module-contract.md) § *A module wears Scoreo's look*.
 
 All design-system classes are prefixed `sc-`, so they never collide with a scoring module's classes. The only element-level rules are the design system's foundations (`foundations/base.css`): a reset and the page background — none reaches into a scoring module, which composes the system's components like the host does. The static splash in `index.html` is styled by `foundations/splash.css` (`.sc-splash`).
 
@@ -187,12 +187,12 @@ Scoreo is installable as a native app on mobile and desktop.
 
 Static assets in `apps/scoreo/public/`:
 
-| File            | Role                                                                                                                                  |
-| --------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
-| `manifest.json` | App name, icons, `display: standalone`, theme `#8839ef`                                                                               |
-| `sw.js`         | Hand-written service worker — cache-first for hashed Vite assets, network-first (with cache fallback) for everything else same-origin |
-| `icon-192.png`  | Home screen icon (Android, iOS)                                                                                                       |
-| `icon-512.png`  | Splash screen icon                                                                                                                    |
+| File | Role |
+|---|---|
+| `manifest.json` | App name, icons, `display: standalone`, theme `#8839ef` |
+| `sw.js` | Hand-written service worker — cache-first for hashed Vite assets, network-first (with cache fallback) for everything else same-origin |
+| `icon-192.png` | Home screen icon (Android, iOS) |
+| `icon-512.png` | Splash screen icon |
 
 `apps/scoreo/index.html` (project root, source for Vite's HTML transform) carries the PWA meta tags, a `Content-Security-Policy` `<meta>` tag (see [Security](#security) below), the `#splash` div (hidden right after `createRoot(...).render(...)` in `apps/scoreo/src/main.tsx`), the dev-vs-prod service-worker registration script (`apps/scoreo/public/registerSw.js`, unregisters on `localhost`/`127.0.0.1`, registers `./sw.js` via `navigator.serviceWorker.register()` otherwise — kept as an external file rather than inline so the CSP's `script-src` can omit `'unsafe-inline'`), and the deferred Google Identity Services `<script>` tag.
 
@@ -224,7 +224,6 @@ Data stored in `localStorage` must remain readable after an app update.
 **Soft-delete**: `Player.active = false` (default `true`) hides the player from active screens (Home, ScoreDetail) but keeps them in match history. `getAll()` excludes inactive players by default. `getAll(includeInactive = true)` includes them for history rendering. The name can optionally be blanked (`anonymize = true` in `delete()`).
 
 In practice:
-
 - **Adding a field**: always provide a `.default()` in the field's zod schema so old data deserializes cleanly. zod strips unknown keys natively at validation, matching the old `ignoreUnknownKeys` behavior.
 - **Renaming / removing a field**: requires a migration step — read old key, transform, write to new key. Document the migration in `doc/technical/migrations.md`.
 - **Never change the type of an existing field** without a migration.
