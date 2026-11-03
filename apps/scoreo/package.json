@@ -22,7 +22,7 @@
     "@scoreboards/module-skyjo": "workspace:*",
     "@scoreboards/module-tori-valley": "workspace:*",
     "@scoreboards/shared-domain": "workspace:*",
-    "i18next": "^26.5.12",
+    "i18next": "^26.6.0",
     "lucide-react": "^1.66.0",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
