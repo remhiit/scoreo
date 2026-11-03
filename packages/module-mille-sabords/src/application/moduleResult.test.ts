@@ -1,14 +1,19 @@
-import { assertRoundsSumToRanking } from '@scoreboards/module-api'
+import { assertMatchConsistent, newGameType } from '@scoreboards/shared-domain'
 import { describe, expect, it } from 'vitest'
 import { lancerDes } from '../domain/lancerDes'
 import type { EvenementCoup } from '../domain/modeles'
+import { construireEnveloppeExport } from './exportScoreo'
 import {
-  buildModuleMatchResult,
+  buildModuleMatch,
   classementFinal,
   MilleSabordsModuleDataSchema,
   replayPartie,
   type MilleSabordsModuleData,
 } from './moduleResult'
+
+const TYPE_DE_JEU = newGameType('gt-sabords', '1000 Sabords', 'HIGHEST_SCORE', {
+  moduleId: 'mille-sabords',
+})
 
 function manuel(joueur: string, score: number): EvenementCoup {
   return { type: 'manuel', joueur, scoreEntre: score, multiplicateur: 1, score }
@@ -78,47 +83,42 @@ describe('classementFinal', () => {
   })
 })
 
-describe('buildModuleMatchResult', () => {
+describe('buildModuleMatch', () => {
   it('ranks the players by their clamped totals, winner first', () => {
-    const result = buildModuleMatchResult({
+    const result = buildModuleMatch({
       joueurs: ['p1', 'p2'],
       historique: [manuel('p1', 1000), manuel('p2', 2500)],
     })
 
-    expect(result.ranking).toEqual([
-      { playerId: 'p2', score: 2500, rank: 1 },
-      { playerId: 'p1', score: 1000, rank: 2 },
+    expect(result.playerScores).toEqual([
+      { playerId: 'p2', score: 2500 },
+      { playerId: 'p1', score: 1000 },
     ])
+    expect(result.manualWinners).toEqual(['p2'])
   })
 
   it('splits the log into one round per lap of the table', () => {
-    const result = buildModuleMatchResult({
+    const result = buildModuleMatch({
       joueurs: ['p1', 'p2'],
       historique: [manuel('p1', 100), manuel('p2', 200), manuel('p1', 300), manuel('p2', 400)],
     })
 
     expect(result.rounds).toEqual([
-      {
-        label: 'Tour 1',
-        scores: [
-          { playerId: 'p2', score: 200 },
-          { playerId: 'p1', score: 100 },
-        ],
-      },
-      {
-        label: 'Tour 2',
-        scores: [
-          { playerId: 'p2', score: 400 },
-          { playerId: 'p1', score: 300 },
-        ],
-      },
+      [
+        { playerId: 'p2', score: 200 },
+        { playerId: 'p1', score: 100 },
+      ],
+      [
+        { playerId: 'p2', score: 400 },
+        { playerId: 'p1', score: 300 },
+      ],
     ])
   })
 
   it('satisfies the host invariant even when an island wipes a player out', () => {
     // The one case a naive delta gets wrong: p2 falls below zero mid-game, and
     // only per-coup clamping keeps the rounds summing back to the final total.
-    const result = buildModuleMatchResult({
+    const result = buildModuleMatch({
       joueurs: ['p1', 'p2'],
       historique: [
         manuel('p1', 300),
@@ -130,57 +130,102 @@ describe('buildModuleMatchResult', () => {
       ],
     })
 
-    expect(() => assertRoundsSumToRanking(result)).not.toThrow()
+    expect(() => assertMatchConsistent(result, TYPE_DE_JEU)).not.toThrow()
 
-    for (const entree of result.ranking) {
-      const somme = (result.rounds ?? []).reduce(
-        (total, manche) =>
-          total +
-          manche.scores
-            .filter((score) => score.playerId === entree.playerId)
-            .reduce((acc, score) => acc + score.score, 0),
-        0,
-      )
+    for (const entree of result.playerScores) {
+      const somme = result.rounds
+        .flat()
+        .filter((score) => score.playerId === entree.playerId)
+        .reduce((total, score) => total + score.score, 0)
       expect(somme).toBe(entree.score)
     }
   })
 
   it('leaves out the round detail of a game where nothing was played', () => {
-    const result = buildModuleMatchResult({ joueurs: ['p1', 'p2'], historique: [] })
+    const result = buildModuleMatch({ joueurs: ['p1', 'p2'], historique: [] })
 
-    expect(result.rounds).toBeUndefined()
-    expect(result.ranking).toEqual([
-      { playerId: 'p1', score: 0, rank: 1 },
-      { playerId: 'p2', score: 0, rank: 2 },
+    expect(result.rounds).toEqual([])
+    expect(result.playerScores).toEqual([
+      { playerId: 'p1', score: 0 },
+      { playerId: 'p2', score: 0 },
     ])
-    expect(() => assertRoundsSumToRanking(result)).not.toThrow()
+    expect(() => assertMatchConsistent(result, TYPE_DE_JEU)).not.toThrow()
   })
 
   it('carries the match id back so a reopened game is updated, not duplicated', () => {
-    const result = buildModuleMatchResult({
+    const result = buildModuleMatch({
       joueurs: ['p1', 'p2'],
       historique: [manuel('p1', 100), manuel('p2', 100)],
       matchId: 'match-42',
     })
 
-    expect(result.matchId).toBe('match-42')
+    expect(result.id).toBe('match-42')
   })
 
   it('creates rather than updates when no match is being reopened', () => {
-    const result = buildModuleMatchResult({ joueurs: ['p1'], historique: [] })
+    const result = buildModuleMatch({ joueurs: ['p1'], historique: [] })
 
-    expect('matchId' in result).toBe(false)
+    expect('id' in result).toBe(false)
   })
 
   it('leaves the evening to the host', () => {
-    const result = buildModuleMatchResult({ joueurs: ['p1'], historique: [manuel('p1', 10)] })
+    const result = buildModuleMatch({ joueurs: ['p1'], historique: [manuel('p1', 10)] })
 
-    expect(result.playedAt).toBeUndefined()
+    expect(result.date).toBeUndefined()
+  })
+
+  // What the host stored before the module wrote `Match` fields itself: the
+  // export's ranking order kept, `rank === 1` as the winners, the rounds copied.
+  describe('is equivalent to the ranking the host used to translate', () => {
+    const corpus: Record<string, { joueurs: string[]; historique: EvenementCoup[] }> = {
+      'a decided game': {
+        joueurs: ['p1', 'p2', 'p3'],
+        historique: [manuel('p1', 100), manuel('p2', 900), manuel('p3', 500), manuel('p1', 50)],
+      },
+      'a tie on points (seating order breaks it)': {
+        joueurs: ['p1', 'p2'],
+        historique: [manuel('p1', 700), manuel('p2', 700)],
+      },
+      'an island wiping a player out': {
+        joueurs: ['p1', 'p2'],
+        historique: [manuel('p2', 200), ile('p1', 9), manuel('p2', 400), manuel('p1', 100)],
+      },
+      'a game where nothing was played': { joueurs: ['p1', 'p2'], historique: [] },
+    }
+
+    for (const [name, { joueurs, historique }] of Object.entries(corpus)) {
+      it(name, () => {
+        const enveloppe = construireEnveloppeExport(
+          [
+            {
+              uuid: '',
+              horodatage: 0,
+              classement: classementFinal(replayPartie(joueurs, historique)),
+              nombreManches: replayPartie(joueurs, historique).mancheActuelle(),
+              magiquePirate: false,
+              coups: historique,
+            },
+          ],
+          0,
+        )
+        const jeu = enveloppe.games[0]
+
+        expect(buildModuleMatch({ joueurs, historique, matchId: 'm1' })).toEqual({
+          id: 'm1',
+          playerScores: jeu.ranking.map((r) => ({ playerId: r.name, score: r.score })),
+          manualWinners: jeu.ranking.filter((r) => r.rank === 1).map((r) => r.name),
+          rounds: (jeu.details ?? []).map((m) =>
+            m.scores.map((s) => ({ playerId: s.name, score: s.score })),
+          ),
+          moduleData: { version: 1, data: { joueurs, historique } },
+        })
+      })
+    }
   })
 
   it('hands back a payload that reopens the very same game', () => {
     const historique = [manuel('p1', 100), ile('p2', 4), manuel('p1', 250)]
-    const result = buildModuleMatchResult({ joueurs: ['p1', 'p2'], historique })
+    const result = buildModuleMatch({ joueurs: ['p1', 'p2'], historique })
 
     const relu = MilleSabordsModuleDataSchema.parse(result.moduleData?.data)
 
@@ -189,7 +234,7 @@ describe('buildModuleMatchResult', () => {
   })
 
   it('records the players by id, never by name', () => {
-    const data = buildModuleMatchResult({ joueurs: ['id-a', 'id-b'], historique: [] }).moduleData
+    const data = buildModuleMatch({ joueurs: ['id-a', 'id-b'], historique: [] }).moduleData
       ?.data as MilleSabordsModuleData
 
     expect(data.joueurs).toEqual(['id-a', 'id-b'])

@@ -27,7 +27,7 @@ The package is a scoring module Scoreo loads — nothing else. What the host use
 | `toriValleyManifest` | `src/module.ts` | Read eagerly by Scoreo's registry, so this file imports nothing but its type |
 | `toriValleyModule` | `src/module.ts` | `{ manifest, load }` — `load` holds a dynamic import, which is what puts the screen in its own chunk |
 | `ToriValleyModuleScreen` | `src/ui/module/ToriValleyModuleScreen.tsx` | Default export, implements `ScoringModuleScreenProps`. Reads players from `host.getPlayers()`, saves through `host.saveMatch()`, and **never touches `tori_valley_*`** — the host owns the storage |
-| `toModuleMatchResult` | `src/domain/model/moduleResult.ts` | The single description of a finished match, keyed by `playerId`. The v1.1 file export maps ids to names on top of it, so file and module can never disagree about a rank or a category |
+| `toModuleMatch` | `src/domain/model/moduleResult.ts` | The single description of a finished match, keyed by `playerId`. The v1.1 file export maps ids to names on top of it, so file and module can never disagree about a rank or a category |
 | `ToriValleyModuleDataSchema` | `src/domain/model/moduleResult.ts` | Validates the opaque payload the host hands back when a match is reopened; an unreadable one starts a fresh grid |
 | `ToriValleyDraftSchema` / `toDraft` / `readDraft` | `src/domain/model/moduleResult.ts` | The in-progress scoring session written to `host.saveDraft` after every grid change and read back via `host.loadDraft`. Same shape as `moduleData` plus `playerIds`: `readDraft` rejects an unreadable/older-shape payload or one written for a different player set, in which case `ToriValleyModuleScreen` starts a blank grid |
 

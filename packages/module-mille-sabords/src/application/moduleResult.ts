@@ -1,4 +1,4 @@
-import { assertRoundsSumToRanking, type ModuleMatchResult } from '@scoreboards/module-api'
+import type { ModuleMatch } from '@scoreboards/module-api'
 import { z } from 'zod'
 import { EvenementCoupSchema, type EvenementCoup, type ResultatJoueur } from '../domain/modeles'
 import { Partie } from '../domain/partie'
@@ -66,23 +66,19 @@ export interface EntreeResultat {
 /**
  * The finished game, in the shape the host stores.
  *
- * Ranking and per-round detail both come from `construireEnveloppeExport` — the
+ * Scores and per-round detail both come from `construireEnveloppeExport` — the
  * very function the golden test pins against the Kotlin oracle — rather than
  * from a second implementation written for the screen. That matters because the
  * rounds are deltas clamped at zero *at every coup*: any other clamping and the
- * rounds would stop summing to the totals, which `assertRoundsSumToRanking`
- * refuses. One implementation, one behaviour, checked once.
+ * rounds would stop summing to the totals, which the host's
+ * domain invariant (`assertMatchConsistent`) refuses. One implementation, one behaviour, checked once.
  */
-export function buildModuleMatchResult({
-  joueurs,
-  historique,
-  matchId,
-}: EntreeResultat): ModuleMatchResult {
+export function buildModuleMatch({ joueurs, historique, matchId }: EntreeResultat): ModuleMatch {
   const partie = replayPartie(joueurs, historique)
   const enveloppe = construireEnveloppeExport(
     [
       {
-        // Neither identity nor timestamps reach the ranking or the rounds: the
+        // Neither identity nor timestamps reach the scores or the rounds: the
         // host mints the match id and stamps the evening itself.
         uuid: '',
         horodatage: 0,
@@ -96,29 +92,18 @@ export function buildModuleMatchResult({
   )
   const jeu = enveloppe.games[0]
 
-  const result: ModuleMatchResult = {
-    ...(matchId === undefined ? {} : { matchId }),
-    ranking: jeu.ranking.map((entree) => ({
-      playerId: entree.name,
-      score: entree.score,
-      rank: entree.rank,
-    })),
-    ...(jeu.details === undefined
-      ? {}
-      : {
-          rounds: jeu.details.map((manche, index) => ({
-            label: `Tour ${index + 1}`,
-            scores: manche.scores.map((score) => ({ playerId: score.name, score: score.score })),
-          })),
-        }),
+  return {
+    ...(matchId === undefined ? {} : { id: matchId }),
+    playerScores: jeu.ranking.map((entree) => ({ playerId: entree.name, score: entree.score })),
+    rounds: (jeu.details ?? []).map((manche) =>
+      manche.scores.map((score) => ({ playerId: score.name, score: score.score })),
+    ),
+    // The export ranks the players one after the other, a tie included (the
+    // seating order breaks it, as in the Kotlin app): only the first wins.
+    manualWinners: jeu.ranking.filter((entree) => entree.rank === 1).map((entree) => entree.name),
     moduleData: {
       version: milleSabordsManifest.dataVersion,
       data: { joueurs, historique } satisfies MilleSabordsModuleData,
     },
   }
-
-  // The host checks this too, but a module that hands over a contradictory
-  // result should fail in its own tests, not in the host's.
-  assertRoundsSumToRanking(result)
-  return result
 }
