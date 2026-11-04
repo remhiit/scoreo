@@ -15,10 +15,10 @@
     "@scoreboards/design-system": "workspace:*",
     "@scoreboards/module-api": "workspace:*",
     "@scoreboards/shared-domain": "workspace:*",
-    "i18next": "^26.6.0",
+    "i18next": "^26.7.1",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
-    "react-i18next": "^17.1.9",
+    "react-i18next": "^17.1.11",
     "zod": "^4.6.7"
   },
   "devDependencies": {
