@@ -4,47 +4,59 @@ How a **scoring module** talks to the host application. Two packages hold it:
 
 | Package                                                  | Role                                                                                                                                                                                                                                    |
 | -------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [`packages/module-api`](../../packages/module-api)       | The contract itself: what a module declares, what it hands back, what the host lends it. No runtime dependency — React appears only as a type-only import for the screen component.                                                     |
+| [`packages/module-api`](../../packages/module-api)       | The contract itself: what a module declares, what it hands back, what the host lends it. No runtime code — React and `shared-domain` appear only as type-only imports.                                                                  |
 | [`packages/shared-domain`](../../packages/shared-domain) | The vocabulary genuinely shared by both sides: `Player`, `GameType`, `Match`, `PlayerScore` (types, pure functions and zod schemas), the `WinCondition`/`ScoringMode`/`TieBreakRule` enums, `newId()`, `isUuid()`, `Result`/`ok`/`err`. |
 
 A module is a package under `packages/` that Scoreo lists in its registry. It owns the scoring rules
 of one game; the host owns the players, the storage and the navigation. Nothing crosses that line
 except the types below.
 
-## What a module hands back — `ModuleMatchResult`
+## What a module hands back — `ModuleMatch`
+
+A module knows Scoreo's own models: it receives the host's `Player`s and the `GameType` of the
+game, and hands back the fields of a `Match` (types of `@scoreboards/shared-domain`). The host only
+completes the identity and checks the invariants.
 
 ```ts
-interface ModuleMatchResult {
-  matchId?: string // set to update, absent to create
-  ranking: readonly ModuleRankingEntry[] // { playerId, score, rank }, rank 1 = winner
-  rounds?: readonly ModuleRound[] // { label, scores: [{ playerId, score }] }
-  playedAt?: number // epoch ms; the host stamps now() when absent
-  moduleData?: { version: number; data: unknown } // opaque, stored and handed back verbatim
+interface ModuleMatch {
+  id?: string // set to update, absent to create
+  date?: number // epoch ms; absent: the existing match's date, else the host's now()
+  playerScores: PlayerScore[] // { playerId, score } — the final scores, in the order stored
+  rounds: PlayerScore[][] // one entry per round; [] for a game without round detail
+  manualWinners: string[] // the module's own winners; several on a tie at the first place
+  moduleData: { version: number; data: unknown } | null // opaque, stored and handed back verbatim
 }
 ```
 
-`rank` is the module's own: it knows its game's tie-breaks, so several entries may share a rank and
-the host does not recompute them.
+The winners are the module's own: it knows its game's tie-breaks (Torī Valley settles a tie on the
+Torī count, then the Pinceau), so the host does not recompute them from the scores.
 
 `moduleData` is what makes a match re-openable. The host stores it next to the match without ever
 looking inside; `version` belongs to the module, which is the only side able to migrate the payload.
+The host adds `moduleId` to it.
 
-### The invariant — `assertRoundsSumToRanking`
+What the host sets itself: `id` (new when absent), `date`, `gameTypeId`, `secondaryPlayerScores: []`
+and `moduleData.moduleId`. The stored shape of `Match` is unchanged.
 
-Round detail that does not add up to the announced score is a scoring bug, and storing it would
-leave a match whose history contradicts its own total. `assertRoundsSumToRanking(result)` throws on:
+### The invariant — `assertMatchConsistent`
 
-- a player whose rounds sum to something other than their ranking score (a player absent from every
-  round sums to 0, which is fine only if that is also their score);
-- a round scoring a player who is not in the ranking — otherwise that score would vanish silently;
-- the same player twice in one ranking or twice in one round, which makes the sum meaningless.
+A match that contradicts itself or its game's rules is a scoring bug, and storing it would leave a
+history that disagrees with its own total. `assertMatchConsistent(match, gameType)`
+(`packages/shared-domain/src/matchConsistency.ts`) throws on:
 
-A result carrying no `rounds` at all is accepted: round detail is optional and a ranking on its own
-contradicts nothing.
+- a player listed twice in `playerScores`, or twice in one round;
+- a round scoring a player who is not in `playerScores` — otherwise that score would vanish silently;
+- a `manualWinners` entry who is not in `playerScores`;
+- round detail whose `roundDetailStatus` is `inconsistent` under the game's rules, then — stricter —
+  `playerScores` that are not what the game's scoring mode derives from the rounds
+  (`scoresFromRounds`: the points sum, or the count of rounds won in `ROUNDS_WON`).
+
+A match with `rounds: []` is accepted: round detail is optional and totals on their own contradict
+nothing.
 
 This is the executable form of the rule `ImportMatchesUseCase` already applies to a v1.1 file before
-accepting a game. Modules call it on the result they build; the host calls it on every result it
-receives.
+accepting a game. The host calls it on every match it receives, before writing; a module's tests
+run it on what the module builds.
 
 ## What a module declares — `ScoringModuleManifest`
 
@@ -71,15 +83,16 @@ nothing.
 
 ```ts
 interface ModuleHost {
-  getPlayers(): readonly ModulePlayer[] // retired players included
-  saveMatch(result: ModuleMatchResult): string // returns the match id
+  getPlayers(): readonly Player[] // the host's Player, retired players included
+  readonly gameType: GameType // the game this match is scored for
+  saveMatch(match: ModuleMatch): string // returns the match id; throws if the invariant refuses it
   loadDraft(): unknown | undefined // namespaced by moduleId
   saveDraft(state: unknown): void
   clearDraft(): void
 }
 ```
 
-A module has no repository, no storage key and no knowledge of the host's models.
+A module has no repository and no storage key: it reads the host's models and hands back a `ModuleMatch`.
 
 The draft trio is not convenience. _1000 Sabords_ is a game engine, not a score sheet: it carries
 live turn state — dice, events, the current turn — that must survive a page reload. Scoreo's own
@@ -97,7 +110,7 @@ interface ScoringModuleScreenProps {
 }
 ```
 
-`editing` carries back the `moduleData` of a match being reopened; passing its `matchId` into
+`editing` carries back the `moduleData` of a match being reopened; passing its `matchId` back as `ModuleMatch.id` into
 `saveMatch` updates that match instead of duplicating it. `onExit` returns to the host, whether or
 not anything was saved.
 
@@ -177,7 +190,7 @@ drafts, hand-typed URLs).
 ### Scoring mode of a module-bound game
 
 The module is the source of truth of its game's scoring: it computes the final scores it hands back
-(`ModuleHostAdapter.saveMatch` stores them as they are), and every module counts **points** today.
+(`ModuleHostAdapter.saveMatch` stores them as they are, after `assertMatchConsistent`), and every module counts **points** today.
 So a `GameType` with `moduleId !== null` always scores in `POINTS`, whatever its stored
 `scoringMode`: `effectiveScoringMode()` (`packages/shared-domain/src/gameType.ts`, re-exported by `apps/scoreo/src/domain/model/gameType.ts`) returns `POINTS` for it,
 `newGameType`/`UpdateGameTypeUseCase` store `POINTS`, the game type form hides the scoring mode
@@ -228,11 +241,14 @@ manifest beyond `displayName`, and no member was added to `ScoringModuleScreenPr
 
 The host side never trusts blindly:
 
-- `saveMatch` runs `assertRoundsSumToRanking` **before** writing. A self-contradicting match kept in
-  the history would never be noticed again.
-- `rank === 1` becomes a `manualWinner` through `rankingToMatch`, the same function the v1.1 import
-  uses. The module owns tie-breaks Scoreo knows nothing about, so the winners come from the announced
-  rank rather than from recomputing the top score.
+- `saveMatch` runs `assertMatchConsistent` **before** writing. A self-contradicting match kept in
+  the history would never be noticed again; on a refusal it throws, nothing is written and the
+  draft is kept.
+- The winners are the module's `manualWinners`, stored as they are. The module owns tie-breaks
+  Scoreo knows nothing about. (`rankingToMatch` now serves the v1.1 import only.)
+- `ModuleScoreScreen` reads the `GameType` from the repository and hands it to the adapter (and so
+  to `host.gameType`); a game type that no longer exists shows `modules.unknownGameType` instead of
+  the module, the bar's ✕ still standing.
 - The host stamps `moduleData.moduleId` itself, so a payload is never handed back to the wrong
   module. Reopening a match scored elsewhere starts a fresh grid instead.
 - Re-saving a match keeps the evening it was played, not the evening it was corrected.

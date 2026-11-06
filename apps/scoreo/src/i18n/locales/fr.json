@@ -258,6 +258,7 @@
     "loading": "Chargement du module…",
     "failedToLoad": "Ce module n'a pas pu être chargé.",
     "unknownModule": "Ce module n'est pas installé.",
+    "unknownGameType": "Ce type de jeu n'existe plus.",
     "exit": "Quitter"
   }
 }

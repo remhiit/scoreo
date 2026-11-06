@@ -41,7 +41,7 @@ n'a pas été portée, parce que l'hôte la fournit déjà :
 | Gestion des joueurs, joueurs connus | Scoreo, via `host.getPlayers()` |
 | Historique des parties | L'historique de Scoreo |
 | Statistiques (`Stats.kt`) | L'écran Stats et le Hall of Fame de Scoreo |
-| Export v1.1, import, compression LZW | L'import/export de Scoreo — le module lui rend un `ModuleMatchResult` en processus |
+| Export v1.1, import, compression LZW | L'import/export de Scoreo — le module lui rend un `ModuleMatch` en processus |
 | Thème (`basculerTheme`) | Le thème de Scoreo, que le module porte : il compose le design system (voir `ui/vue-d-ensemble.md`) |
 | Persistance de la partie (`Persistence.kt`) | `host.saveDraft` / `host.saveMatch` |
 

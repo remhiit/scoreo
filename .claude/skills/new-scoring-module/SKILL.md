@@ -76,13 +76,13 @@ import of the screen.
 Conforms to `ScoringModuleScreenProps`, MVI like every Scoreo screen: a pure reducer in
 `src/ui/module/`, a component that dispatches.
 
-- Players come from `host.getPlayers()` — store ids, never names.
+- Players come from `host.getPlayers()` (the host's `Player`s) — store ids, never names. The game is `host.gameType`.
 - **The turn in progress goes through `host.saveDraft`/`loadDraft`.** This is what the trio exists
   for: 1000 Sabords' Kotlin ancestor kept its dice in module-level `var`s and a reload threw away
   the hand a player had just counted out.
 - Keep no mutable aggregate in the state. Store the event log and derive the aggregate — an aggregate
   in the state makes the reducer's output depend on who else holds a reference.
-- The result goes back through `host.saveMatch`, and must satisfy `assertRoundsSumToRanking`.
+- The match goes back through `host.saveMatch` as a `ModuleMatch` (`playerScores`, `rounds`, `manualWinners`, `moduleData`; `id` when reopening) and must satisfy `assertMatchConsistent(match, gameType)` from `shared-domain`: rounds sum to the scores, nobody twice, every winner a participant. Winners are the rank-1 players by the module's own tie-breaks. Run the same check in the module's own tests.
 
 ### 5. The look — compose the design system, game pieces in `src/design/`
 
@@ -185,7 +185,7 @@ never the implementation's own reasoning, never the other sub-agent's findings. 
 - the edge cases named in the rules doc are covered;
 - the turn in progress goes through `host.saveDraft`/`loadDraft`;
 - no mutable aggregate is kept in state;
-- `assertRoundsSumToRanking` is respected.
+- `assertMatchConsistent` is respected (rounds sum to the scores, winners are participants).
 
 If the rules doc is missing or incomplete when this sub-agent runs — it should not happen given the
 order above, but can in "existing module" mode against a module that was never properly documented —

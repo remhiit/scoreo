@@ -24,6 +24,6 @@ export interface ScoringModuleManifest {
   readonly minPlayers: number
   readonly maxPlayers: number
 
-  /** Version of the payload the module puts in `ModuleMatchResult.moduleData`. */
+  /** Version of the payload the module puts in `ModuleMatch.moduleData`. */
   readonly dataVersion: number
 }

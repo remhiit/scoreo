@@ -258,6 +258,7 @@
     "loading": "Loading the module…",
     "failedToLoad": "This module could not be loaded.",
     "unknownModule": "This module is not installed.",
+    "unknownGameType": "This game type no longer exists.",
     "exit": "Exit"
   }
 }

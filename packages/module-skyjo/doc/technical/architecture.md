@@ -19,7 +19,7 @@ already works (a typed total, not a simulated shake of the dice), just without t
 | Folder                | Content                                                                 |
 | ---------------------- | ------------------------------------------------------------------------ |
 | `src/domain/round.ts`  | `SkyjoRound`/`SkyjoRoundEntry`, the doubling rule (`appliedRoundScores`), running totals (`cumulativeTotals`), the end-of-game check (`isGameOver`), the `END_THRESHOLD` constant |
-| `src/domain/moduleResult.ts` | `SkyjoModuleData` (the persisted shape), ranking (`buildRanking`), and `toModuleMatchResult` — the single place that builds what goes back to the host |
+| `src/domain/moduleResult.ts` | `SkyjoModuleData` (the persisted shape), ranking (`buildRanking`), and `toModuleMatch` — the single place that builds what goes back to the host |
 | `src/ui/module/`       | `skyjoModuleTypes.ts` (state/actions/draft schema), `skyjoModuleReducer.ts` (pure reducer + draft/restore helpers), `SkyjoModuleScreen.tsx` (the one screen) |
 | `src/module.ts`        | The manifest and the lazily-loaded module — the only things Scoreo imports |
 | `src/design/`          | The game pieces with no design-system equivalent (`ModuleRoot`, `SkyjoTable`, `SkyjoWinner`) and their CSS. Scoped under `.module-skyjo`, classes prefixed `sj-`, semantic design-system tokens only. The screen itself composes `@scoreboards/design-system` (no `className`/`style`) |
