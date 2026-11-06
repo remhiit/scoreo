@@ -6,6 +6,7 @@ import {
   type Player,
 } from '@scoreboards/shared-domain'
 import { newId } from '../application/idGenerator'
+import type { MatchDraftRepository } from '../domain/port/matchDraftRepository'
 import type { MatchRepository } from '../domain/port/matchRepository'
 import type { ModuleDraftRepository } from '../domain/port/moduleDraftRepository'
 import type { PlayerRepository } from '../domain/port/playerRepository'
@@ -21,8 +22,12 @@ export class ModuleHostAdapter implements ModuleHost {
   constructor(
     private readonly moduleId: string,
     readonly gameType: GameType,
+    private readonly playerIds: readonly string[],
     private readonly playerRepository: PlayerRepository,
     private readonly matchRepository: MatchRepository,
+    private readonly matchDraftRepository: MatchDraftRepository,
+    // Read-only fallback (and cleanup) for drafts written before the single
+    // draft slot existed; removed with the contract phase (#611).
     private readonly moduleDraftRepository: ModuleDraftRepository,
     private readonly currentDate: () => number,
     // Host code to host code, never surfaced to the module: lets the screen
@@ -69,20 +74,38 @@ export class ModuleHostAdapter implements ModuleHost {
     }
 
     this.matchRepository.save(match)
-    this.moduleDraftRepository.clear(this.moduleId)
+    this.clearDraft()
     this.onMatchSaved?.(match.id)
     return match.id
   }
 
   loadDraft(): unknown | undefined {
+    const draft = this.matchDraftRepository.load()
+    if (
+      draft?.moduleState != null &&
+      draft.moduleState.moduleId === this.moduleId &&
+      draft.gameTypeId === this.gameType.id
+    ) {
+      return draft.moduleState.state
+    }
     return this.moduleDraftRepository.load(this.moduleId)
   }
 
   saveDraft(state: unknown): void {
-    this.moduleDraftRepository.save(this.moduleId, state)
+    // One slot for every game: this replaces whatever draft was there.
+    this.matchDraftRepository.save({
+      gameTypeId: this.gameType.id,
+      playerIds: [...this.playerIds],
+      rounds: [],
+      updatedAt: this.currentDate(),
+      moduleState: { moduleId: this.moduleId, state },
+    })
   }
 
   clearDraft(): void {
+    if (this.matchDraftRepository.load()?.moduleState?.moduleId === this.moduleId) {
+      this.matchDraftRepository.clear()
+    }
     this.moduleDraftRepository.clear(this.moduleId)
   }
 }

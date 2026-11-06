@@ -86,7 +86,7 @@ interface ModuleHost {
   getPlayers(): readonly Player[] // the host's Player, retired players included
   readonly gameType: GameType // the game this match is scored for
   saveMatch(match: ModuleMatch): string // returns the match id; throws if the invariant refuses it
-  loadDraft(): unknown | undefined // namespaced by moduleId
+  loadDraft(): unknown | undefined // the single draft slot, if it is this module's
   saveDraft(state: unknown): void
   clearDraft(): void
 }
@@ -96,7 +96,7 @@ A module has no repository and no storage key: it reads the host's models and ha
 
 The draft trio is not convenience. _1000 Sabords_ is a game engine, not a score sheet: it carries
 live turn state — dice, events, the current turn — that must survive a page reload. Scoreo's own
-`MatchDraftRepository` has a single anonymous slot (`scoreo_match_draft`) and cannot hold it.
+`MatchDraft`'s `rounds` grid of typed strings cannot hold it, hence `MatchDraft.moduleState`, an opaque `{ moduleId, state }` the host stores without reading.
 Designing this contract against Torī alone would have made it unfit the day Sabords is plugged in.
 
 ## The screen
@@ -253,7 +253,12 @@ The host side never trusts blindly:
   module. Reopening a match scored elsewhere starts a fresh grid instead.
 - Re-saving a match keeps the evening it was played, not the evening it was corrected.
 
-Drafts live in `scoreo_module_draft_<moduleId>`, one per module.
+Drafts live in the single `scoreo_match_draft` slot (`MatchDraft.moduleState`, issue #610), shared with
+the generic grid: starting any game replaces the draft of another. `loadDraft()` returns the state only
+when the slot belongs to this module and this game type, and otherwise falls back on the legacy
+`scoreo_module_draft_<moduleId>` key (read fallback, removed by the contract phase, #611).
+`clearDraft()` and `saveMatch` clear the slot if it is this module's, and the legacy key. The Home
+"Resume match" banner reopens the module screen for such a draft while the module is registered.
 
 ### Landing after exit
 

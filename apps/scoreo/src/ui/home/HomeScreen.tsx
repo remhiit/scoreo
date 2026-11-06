@@ -33,7 +33,10 @@ export interface HomeScreenProps {
   onStartGame: (gameTypeId: string, playerIds: string[]) => void
   onStartModule: (moduleId: string, playerIds: string[]) => void
   matchDraftRepository?: MatchDraftRepository
-  onResumeDraft?: (gameTypeId: string, playerIds: string[]) => void
+  /** `moduleId` is set when the draft is a game in progress on a scoring module. */
+  onResumeDraft?: (gameTypeId: string, playerIds: string[], moduleId?: string) => void
+  /** Whether a module is still installed; a draft of a removed module gets no banner. */
+  isModuleAvailable?: (moduleId: string) => boolean
   getMatchCount?: () => number
 }
 
@@ -52,6 +55,7 @@ export function HomeScreen({
   onStartModule,
   matchDraftRepository,
   onResumeDraft = () => {},
+  isModuleAvailable = () => false,
   getMatchCount = () => 0,
 }: HomeScreenProps) {
   const { t } = useTranslation()
@@ -84,12 +88,13 @@ export function HomeScreen({
 
   return (
     <Stack gap={4}>
-      {draft && (
+      {draft && (draft.moduleState === null || isModuleAvailable(draft.moduleState.moduleId)) && (
         <Banner
           action={{
             icon: 'play',
             label: t('home.resumeMatch'),
-            onClick: () => onResumeDraft(draft.gameTypeId, draft.playerIds),
+            onClick: () =>
+              onResumeDraft(draft.gameTypeId, draft.playerIds, draft.moduleState?.moduleId),
           }}
         />
       )}

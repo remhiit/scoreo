@@ -443,6 +443,36 @@ Deux champs optionnels sérialisés sur `GameType` : `minPlayers: number | null`
 
 ---
 
+## `MatchDraft.moduleState` — brouillon unique (expand) (issue #610)
+
+Phase **expand** d'une migration expand/contract : `MatchDraft` (clé `scoreo_match_draft`) devient l'unique emplacement du brouillon de partie, générique ou de module. Le champ `moduleState: { moduleId: string; state: unknown } | null` porte l'état opaque d'un module ; `null` pour la grille générique. `ModuleHostAdapter.saveDraft` écrit désormais ici (`rounds: []`) et n'écrit plus `scoreo_module_draft_<moduleId>`.
+
+**Ancien format :** pas de `moduleState` ; l'état d'un module vivait dans `scoreo_module_draft_<moduleId>`.
+
+**Nouveau format :**
+
+```json
+{
+  "gameTypeId": "gt1",
+  "playerIds": ["p1", "p2"],
+  "rounds": [],
+  "updatedAt": 1767225600000,
+  "moduleState": { "moduleId": "skyjo", "state": { "...": "propre au module" } }
+}
+```
+
+**Compatibilité ascendante :** `moduleState` est déclaré `.nullable().default(null)` — un brouillon existant se relit avec `null`. Couvert par `serialization.contract.test.ts` et `localStorageMatchDraftRepository.test.ts`.
+
+**Repli de lecture :** `ModuleHostAdapter.loadDraft()` lit `moduleState.state` si le brouillon unique appartient à ce module et à ce `gameTypeId`, sinon retombe sur l'ancienne clé `scoreo_module_draft_<moduleId>`. Un ancien brouillon de module reste donc reprenable depuis l'écran du module, mais pas depuis le bandeau « Reprendre la partie » de l'accueil (qui ne lit que le brouillon unique) ; dès que le module réenregistre son brouillon, il passe dans le brouillon unique. `clearDraft()` et l'enregistrement d'une partie effacent le brouillon unique s'il appartient au module, et l'ancienne clé.
+
+**Un seul emplacement :** commencer une partie (générique ou de module) remplace le brouillon en cours d'une autre partie.
+
+**Cohabitation avec une version antérieure de l'app (autre onglet, cache du service worker) :** elle relit le brouillon unique en ignorant `moduleState` (zod le retire) et le prend pour un brouillon générique sans manche : effet limité à une grille vide proposée à la reprise.
+
+**Phase contract (#611) :** supprimera le repli de lecture, les anciennes clés `scoreo_module_draft_<moduleId>` et `ModuleDraftRepository`.
+
+---
+
 ## Clés du 1kSaBord → préfixe `sabords_`
 
 **Contexte :** GitHub Pages sert Scoreo et l'app Kotlin autonome 1kSaBord depuis la **même origine**

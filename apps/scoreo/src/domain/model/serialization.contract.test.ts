@@ -29,7 +29,11 @@ describe('serialization contract (backward compatibility)', () => {
       moduleId: null,
       active: true,
     }
-    expect(roundTrip(GameTypeSchema, original)).toEqual({ minPlayers: null, maxPlayers: null, ...original })
+    expect(roundTrip(GameTypeSchema, original)).toEqual({
+      minPlayers: null,
+      maxPlayers: null,
+      ...original,
+    })
   })
 
   it('GameType with MANUAL winCondition serialization round-trip', () => {
@@ -44,7 +48,11 @@ describe('serialization contract (backward compatibility)', () => {
       moduleId: null,
       active: true,
     }
-    expect(roundTrip(GameTypeSchema, original)).toEqual({ minPlayers: null, maxPlayers: null, ...original })
+    expect(roundTrip(GameTypeSchema, original)).toEqual({
+      minPlayers: null,
+      maxPlayers: null,
+      ...original,
+    })
   })
 
   it('GameType bound to a scoring module serialization round-trip', () => {
@@ -59,7 +67,11 @@ describe('serialization contract (backward compatibility)', () => {
       active: true,
       moduleId: 'tori-valley',
     }
-    expect(roundTrip(GameTypeSchema, original)).toEqual({ minPlayers: null, maxPlayers: null, ...original })
+    expect(roundTrip(GameTypeSchema, original)).toEqual({
+      minPlayers: null,
+      maxPlayers: null,
+      ...original,
+    })
   })
 
   it('GameType saved before modules existed reads back unbound', () => {
@@ -150,7 +162,11 @@ describe('serialization contract (backward compatibility)', () => {
       active: true,
       moduleId: null,
     }
-    expect(roundTrip(GameTypeSchema, original)).toEqual({ minPlayers: null, maxPlayers: null, ...original })
+    expect(roundTrip(GameTypeSchema, original)).toEqual({
+      minPlayers: null,
+      maxPlayers: null,
+      ...original,
+    })
   })
 
   it('PlayerScore serialization round-trip', () => {
@@ -350,7 +366,11 @@ describe('serialization contract (backward compatibility)', () => {
       moduleId: null,
       active: true,
     }
-    expect(roundTrip(GameTypeSchema, original)).toEqual({ minPlayers: null, maxPlayers: null, ...original })
+    expect(roundTrip(GameTypeSchema, original)).toEqual({
+      minPlayers: null,
+      maxPlayers: null,
+      ...original,
+    })
   })
 
   it('GameType without tie-break fields defaults correctly (backward compat)', () => {
@@ -451,6 +471,7 @@ describe('serialization contract (backward compatibility)', () => {
         { alice: '3', bob: '7' },
       ],
       updatedAt: 1767225600000,
+      moduleState: null,
     }
     expect(roundTrip(MatchDraftSchema, original)).toEqual(original)
   })
@@ -466,10 +487,28 @@ describe('serialization contract (backward compatibility)', () => {
     expect(decoded.rounds).toHaveLength(1)
     expect(decoded.rounds[0].alice).toBe('10')
     expect(decoded.updatedAt).toBeGreaterThan(0)
+    expect(decoded.moduleState).toBeNull()
+  })
+
+  it('MatchDraft with moduleState round-trip', () => {
+    const original = {
+      gameTypeId: 'gt1',
+      playerIds: ['alice', 'bob'],
+      rounds: [],
+      updatedAt: 4000,
+      moduleState: { moduleId: 'skyjo', state: { version: 1, scores: [1, 2] } },
+    }
+    expect(roundTrip(MatchDraftSchema, original)).toEqual(original)
   })
 
   it('MatchDraft with empty rounds round-trip', () => {
-    const original = { gameTypeId: 'gt1', playerIds: ['alice', 'bob'], rounds: [], updatedAt: 1000 }
+    const original = {
+      gameTypeId: 'gt1',
+      playerIds: ['alice', 'bob'],
+      rounds: [],
+      updatedAt: 1000,
+      moduleState: null,
+    }
     expect(roundTrip(MatchDraftSchema, original)).toEqual(original)
   })
 
@@ -479,6 +518,7 @@ describe('serialization contract (backward compatibility)', () => {
       playerIds: ['alice', 'bob'],
       rounds: [{}],
       updatedAt: 2000,
+      moduleState: null,
     }
     expect(roundTrip(MatchDraftSchema, original)).toEqual(original)
   })
@@ -489,6 +529,7 @@ describe('serialization contract (backward compatibility)', () => {
       playerIds: ['alice', 'bob', 'charlie'],
       rounds: [{ alice: '10' }],
       updatedAt: 3000,
+      moduleState: null,
     }
     const decoded = roundTrip(MatchDraftSchema, original)
     expect(decoded).toEqual(original)

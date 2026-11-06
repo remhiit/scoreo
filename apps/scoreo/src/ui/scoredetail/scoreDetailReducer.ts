@@ -547,6 +547,7 @@ export function saveDraft(
     playerIds: players.map((p) => p.id),
     rounds,
     updatedAt: Date.now(),
+    moduleState: null,
   })
 }
 
@@ -664,6 +665,8 @@ export function buildInitialState(
   const draft = matchDraftRepository?.load()
   if (!draft) return base
   if (draft.gameTypeId !== gameType.id) return base
+  // A module's game in progress: its rounds are empty by construction, not a blank grid.
+  if (draft.moduleState) return base
   const draftIds = new Set(draft.playerIds)
   const playerIds = new Set(players.map((p) => p.id))
   if (draftIds.size !== playerIds.size || [...draftIds].some((id) => !playerIds.has(id)))

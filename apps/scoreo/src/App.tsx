@@ -292,6 +292,20 @@ function AppShell() {
     },
     [navigate],
   )
+  const isModuleAvailable = useCallback(
+    (moduleId: string) => findManifest(moduleId) !== undefined,
+    [],
+  )
+  const handleResumeDraft = useCallback(
+    (gameTypeId: string, playerIds: string[], moduleId?: string) => {
+      if (moduleId !== undefined && findManifest(moduleId) !== undefined) {
+        navigate(moduleScoreScreen(moduleId, gameTypeId, playerIds))
+        return
+      }
+      navigate(scoreDetailScreen(gameTypeId, playerIds))
+    },
+    [navigate],
+  )
   /**
    * Binding happens here, on the way in: no game type is created until someone
    * actually chooses to play a module's game, always on the module's grid.
@@ -428,7 +442,8 @@ function AppShell() {
           onStartGame={handleStartGame}
           onStartModule={handleStartModule}
           matchDraftRepository={services.matchDraftRepository}
-          onResumeDraft={handleStartGame}
+          onResumeDraft={handleResumeDraft}
+          isModuleAvailable={isModuleAvailable}
           getMatchCount={homeGetMatchCount}
         />
       )}
