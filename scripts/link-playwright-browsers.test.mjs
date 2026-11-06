@@ -8,20 +8,30 @@ import {
   readdirSync,
   readlinkSync,
   realpathSync,
+  rmSync,
   symlinkSync,
   writeFileSync,
 } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it } from 'vitest'
 
 const SCRIPT = fileURLToPath(new URL('./link-playwright-browsers.sh', import.meta.url))
 const WANTED = '1248'
 const INSTALLED = '1243'
 
+const roots = []
+afterEach(() => {
+  for (const root of roots.splice(0)) {
+    chmodSync(root, 0o755)
+    rmSync(root, { recursive: true, force: true })
+  }
+})
+
 function browsersDir(executables) {
   const root = mkdtempSync(join(tmpdir(), 'pw-browsers-'))
+  roots.push(root)
   for (const file of executables) {
     const path = join(root, file)
     mkdirSync(dirname(path), { recursive: true })
@@ -137,6 +147,53 @@ describe('link-playwright-browsers.sh', () => {
     expectLinkedTo(root, OLDER)
     expect(readdirSync(installedShell).sort()).toEqual(['headless_shell', 'resources.pak'])
     expect(lstatSync(join(installedShell, 'headless_shell')).isSymbolicLink()).toBe(false)
+  })
+
+  it('leaves the installed build intact when it becomes the wanted one after an earlier run', () => {
+    const root = currentLayout()
+    expect(link(root).status).toBe(0)
+
+    // Playwright now wants the build the image really has: the links left for
+    // 1248 must not be mistaken for an install to link 1243 to.
+    const result = link(root, INSTALLED)
+
+    expect(result.status).toBe(0)
+    expect(result.stdout).toBe('')
+    expect(lstatSync(join(root, `chromium-${INSTALLED}/chrome-linux64`)).isSymbolicLink()).toBe(false)
+    expect(lstatSync(join(root, `chromium-${INSTALLED}/chrome-linux64/chrome`)).isFile()).toBe(true)
+    const installedShell = join(root, `chromium_headless_shell-${INSTALLED}/chrome-headless-shell-linux64`)
+    expect(lstatSync(installedShell).isSymbolicLink()).toBe(false)
+    expect(lstatSync(join(installedShell, 'chrome-headless-shell')).isFile()).toBe(true)
+  })
+
+  it('never replaces a real install of the wanted build sitting beside another build', () => {
+    const root = browsersDir([
+      `chromium-${INSTALLED}/chrome-linux64/chrome`,
+      `chromium_headless_shell-${INSTALLED}/chrome-headless-shell-linux64/chrome-headless-shell`,
+      `chromium-${WANTED}/chrome-linux64/chrome`,
+      `chromium_headless_shell-${WANTED}/chrome-headless-shell-linux64/chrome-headless-shell`,
+    ])
+
+    const result = link(root)
+
+    expect(result.status).toBe(0)
+    expect(result.stdout).toBe('')
+    expect(lstatSync(chrome(root)).isFile()).toBe(true)
+    expect(lstatSync(join(root, `chromium-${WANTED}/chrome-linux64`)).isSymbolicLink()).toBe(false)
+    expect(lstatSync(shell(root)).isFile()).toBe(true)
+  })
+
+  // Root writes through any permission bits, so the directory cannot be made
+  // read-only for it: the case is only meaningful for an unprivileged user.
+  it.skipIf(process.getuid?.() === 0)('exits silently when the browsers directory is read-only', () => {
+    const root = currentLayout()
+    chmodSync(root, 0o555)
+
+    const result = link(root)
+
+    expect(result.status).toBe(0)
+    expect(result.stdout).toBe('')
+    expect(existsSync(join(root, `chromium-${WANTED}`))).toBe(false)
   })
 
   it('does nothing when the wanted build is the installed one', () => {
