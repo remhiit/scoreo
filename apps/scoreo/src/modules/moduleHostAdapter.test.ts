@@ -347,6 +347,23 @@ describe('ModuleHostAdapter', () => {
       expect(host.loadDraft()).toEqual({ fresh: true })
     })
 
+    it('saveDraft removes the legacy key so an older state never resurfaces', () => {
+      const { host, draftRepository, matchDraftRepository } = build()
+      draftRepository.save('tori-valley', { legacy: true })
+
+      host.saveDraft({ fresh: true })
+      expect(draftRepository.drafts.has('tori-valley')).toBe(false)
+
+      matchDraftRepository.save({
+        gameTypeId: 'gt1',
+        playerIds: ['p1'],
+        rounds: [{ p1: '3' }],
+        updatedAt: NOW,
+        moduleState: null,
+      })
+      expect(host.loadDraft()).toBeUndefined()
+    })
+
     it('clearDraft leaves a generic draft alone but removes the legacy key', () => {
       const { host, draftRepository, matchDraftRepository } = build()
       draftRepository.save('tori-valley', { legacy: true })

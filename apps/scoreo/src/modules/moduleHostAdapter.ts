@@ -100,6 +100,9 @@ export class ModuleHostAdapter implements ModuleHost {
       updatedAt: this.currentDate(),
       moduleState: { moduleId: this.moduleId, state },
     })
+    // The legacy key only bridges until the module rewrites its draft: left in
+    // place, it would resurface an older state once another game takes the slot.
+    this.moduleDraftRepository.clear(this.moduleId)
   }
 
   clearDraft(): void {
