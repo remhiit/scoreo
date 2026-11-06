@@ -26,7 +26,15 @@ describe('buildInitialState', () => {
     const draft = {
       version: DRAFT_VERSION,
       players: PLAYER_IDS,
-      rounds: [{ enderPlayerId: 'p1', entries: [{ playerId: 'p1', rawScore: 2 }, { playerId: 'p2', rawScore: 5 }] }],
+      rounds: [
+        {
+          enderPlayerId: 'p1',
+          entries: [
+            { playerId: 'p1', rawScore: 2 },
+            { playerId: 'p2', rawScore: 5 },
+          ],
+        },
+      ],
       enderPlayerId: 'p2',
       scoreInputs: { p1: '3' },
     }
@@ -50,7 +58,15 @@ describe('buildInitialState', () => {
   it('restores a reopened, already-finished match with no round pending', () => {
     const saved = {
       players: PLAYER_IDS,
-      rounds: [{ enderPlayerId: 'p1', entries: [{ playerId: 'p1', rawScore: 2 }, { playerId: 'p2', rawScore: 5 }] }],
+      rounds: [
+        {
+          enderPlayerId: 'p1',
+          entries: [
+            { playerId: 'p1', rawScore: 2 },
+            { playerId: 'p2', rawScore: 5 },
+          ],
+        },
+      ],
     }
     const state = buildInitialState(PLAYER_IDS, saved)
     expect(state.rounds).toHaveLength(1)
@@ -61,6 +77,75 @@ describe('buildInitialState', () => {
   it('ignores garbage without crashing', () => {
     const state = buildInitialState(PLAYER_IDS, { garbage: true })
     expect(state.rounds).toEqual([])
+  })
+
+  it('ignores a draft written for the same players in another order', () => {
+    const draft = {
+      version: DRAFT_VERSION,
+      players: ['p2', 'p1'],
+      rounds: [
+        {
+          enderPlayerId: 'p1',
+          entries: [
+            { playerId: 'p1', rawScore: 2 },
+            { playerId: 'p2', rawScore: 5 },
+          ],
+        },
+      ],
+      scoreInputs: {},
+    }
+    expect(buildInitialState(PLAYER_IDS, draft).rounds).toEqual([])
+  })
+})
+
+describe('buildInitialState, reopening a saved match', () => {
+  // `moduleData.players` keeps the seating; the host hands the ids back in
+  // ranking order, which differs as soon as the winner was not seated first.
+  const saved = {
+    players: ['p1', 'p2', 'p3'],
+    rounds: [
+      {
+        enderPlayerId: 'p3',
+        entries: [
+          { playerId: 'p1', rawScore: 40 },
+          { playerId: 'p2', rawScore: 70 },
+          { playerId: 'p3', rawScore: 1 },
+        ],
+      },
+    ],
+  }
+
+  it('restores every round when the host hands the players in another order', () => {
+    const state = buildInitialState(['p3', 'p2', 'p1'], saved, 'match')
+    expect(state.rounds).toHaveLength(1)
+    expect(state.enderPlayerId).toBeUndefined()
+    expect(state.scoreInputs).toEqual({})
+  })
+
+  it("keeps the match's own seating, not the host's order", () => {
+    const state = buildInitialState(['p3', 'p1', 'p2'], saved, 'match')
+    expect(state.playerIds).toEqual(['p1', 'p2', 'p3'])
+  })
+
+  it.each([
+    ['a player missing', ['p1', 'p2']],
+    ['an extra player', ['p1', 'p2', 'p3', 'p4']],
+    ['a player swapped for another', ['p1', 'p2', 'p4']],
+    ['a duplicated id', ['p1', 'p1', 'p3']],
+  ])('starts a clean game with %s', (_label, playerIds) => {
+    const state = buildInitialState(playerIds, saved, 'match')
+    expect(state.rounds).toEqual([])
+    expect(state.playerIds).toEqual(playerIds)
+  })
+
+  it('starts a clean game on an unreadable payload', () => {
+    const state = buildInitialState(
+      ['p1', 'p2'],
+      { players: ['p1', 'p2'], rounds: 'nope' },
+      'match',
+    )
+    expect(state.rounds).toEqual([])
+    expect(state.playerIds).toEqual(['p1', 'p2'])
   })
 })
 

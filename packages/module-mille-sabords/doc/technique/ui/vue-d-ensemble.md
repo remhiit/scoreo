@@ -19,10 +19,13 @@ export default function MilleSabordsModuleScreen({ host, playerIds, editing, onE
 
 - `playerIds` — les joueurs choisis dans Scoreo. Leurs **noms** viennent de `host.getPlayers()` :
   le module ne stocke jamais un nom, seulement un id.
-- `editing` — présent quand on rouvre une partie enregistrée ; sa charge est le brouillon que le
+- `editing` — présent quand on rouvre une partie enregistrée ; sa charge est le `moduleData` que le
   module avait écrit. Rouvrir gagne toujours sur le brouillon courant : l'hôte a demandé *cette*
-  partie-là.
-- `host.saveDraft` à chaque transition, `host.saveMatch` à la fin, `onExit` pour rendre la main.
+  partie-là. À la réouverture, `playerIds` arrive dans l'ordre du **classement** : seule la
+  composition de la table est comparée, et l'ordre de `joueurs` de la charge est conservé (voir
+  `etat-de-tour.md`).
+- `host.saveDraft` à chaque transition d'une partie neuve, `host.saveMatch` à la fin, `onExit` pour
+  rendre la main. Une partie rouverte n'écrit ni n'efface jamais le brouillon.
 
 ## Les deux onglets
 

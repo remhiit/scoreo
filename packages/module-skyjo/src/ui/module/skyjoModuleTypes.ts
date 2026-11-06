@@ -9,7 +9,10 @@ import { SkyjoRoundSchema, type SkyjoRound } from '../../domain/round'
  * its own event log — the same reasoning 1000 Sabords' `historique` follows.
  */
 export interface SkyjoState {
-  /** Host player ids, in the order the host handed them over. */
+  /**
+   * Host player ids, in seating order: the order the host handed them over for
+   * a new game, the order saved in `moduleData.players` for a reopened match.
+   */
   readonly playerIds: readonly string[]
   readonly rounds: readonly SkyjoRound[]
   /** Who is about to end the round being entered — unset until chosen. */

@@ -46,14 +46,20 @@ export default function SkyjoModuleScreen({
 }: ScoringModuleScreenProps) {
   const [state, dispatch] = useReducer(skyjoModuleReducer, undefined, () =>
     // Reopening a match wins over the draft: the host asked for *that* game.
-    buildInitialState(playerIds, editing === undefined ? host.loadDraft() : editing.data),
+    editing === undefined
+      ? buildInitialState(playerIds, host.loadDraft(), 'draft')
+      : buildInitialState(playerIds, editing.data, 'match'),
   )
 
   // The turn in progress must survive a reload — the whole reason the draft
-  // trio exists (see `doc/technical/module-contract.md`).
+  // trio exists (see `doc/technical/module-contract.md`). Not when reopening:
+  // that match is already saved on the host's side, and writing it here would
+  // clobber the draft of a new game in progress, or leave its rounds behind
+  // for the next new game with the same players to pick up.
+  const reopening = editing !== undefined
   useEffect(() => {
-    host.saveDraft(toDraft(state))
-  }, [host, state])
+    if (!reopening) host.saveDraft(toDraft(state))
+  }, [host, state, reopening])
 
   const names = useMemo(() => {
     const known = new Map(host.getPlayers().map((player) => [player.id, player.name]))
@@ -79,7 +85,8 @@ export default function SkyjoModuleScreen({
   }
 
   const abandon = () => {
-    host.clearDraft()
+    // A reopened match never wrote a draft: the one there belongs to another game.
+    if (!reopening) host.clearDraft()
     onExit()
   }
 

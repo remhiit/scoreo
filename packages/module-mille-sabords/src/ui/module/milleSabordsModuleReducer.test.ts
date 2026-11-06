@@ -128,6 +128,45 @@ describe('etatInitial', () => {
   })
 })
 
+describe('etatInitial, reopening a saved match', () => {
+  // `moduleData.joueurs` keeps the seating; the host hands the ids back in
+  // ranking order, which differs as soon as the winner was not seated first.
+  const sauvegarde = {
+    joueurs: [...TABLE],
+    historique: [coupManuel('p1', 200), coupManuel('p2', 300), coupManuel('p3', 900)],
+  }
+
+  it('restores the whole history when the host hands the players in another order', () => {
+    const state = etatInitial(['p3', 'p2', 'p1'], sauvegarde, 'partie')
+
+    expect(state.historique).toHaveLength(3)
+    expect(partieDeLEtat(state).totalJoueur(2)).toBe(900)
+  })
+
+  it("keeps the match's own seating, so turns and totals stay with the right player", () => {
+    const state = etatInitial(['p3', 'p1', 'p2'], sauvegarde, 'partie')
+
+    expect(state.joueurs).toEqual(['p1', 'p2', 'p3'])
+    expect(partieDeLEtat(state).totalJoueur(0)).toBe(200)
+    expect(joueurActuel(state)).toBe('p1')
+  })
+
+  it.each([
+    ['a player missing', ['p1', 'p3']],
+    ['an extra player', ['p1', 'p2', 'p3', 'p4']],
+    ['a player swapped for another', ['p1', 'p2', 'p4']],
+    ['a duplicated id', ['p1', 'p1', 'p3']],
+  ])('starts a clean game with %s', (_label, playerIds) => {
+    expect(etatInitial(playerIds, sauvegarde, 'partie')).toEqual(etatVierge(playerIds))
+  })
+
+  it('starts a clean game on an unreadable payload', () => {
+    expect(etatInitial(['p2', 'p1'], { joueurs: ['p1', 'p2'] }, 'partie')).toEqual(
+      etatVierge(['p2', 'p1']),
+    )
+  })
+})
+
 describe('versBrouillon', () => {
   it('round-trips a game in progress unchanged', () => {
     const state = jouer(
