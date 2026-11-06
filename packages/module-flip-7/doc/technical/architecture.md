@@ -8,7 +8,7 @@
 | `src/module.ts`              | The manifest, and `load` — a dynamic import of the screen                                        |
 | `src/domain/hand.ts`         | `Flip7Hand`, its zod schema, `handScore`, `isFlip7`, the rule constants                          |
 | `src/domain/round.ts`        | `Flip7Round`, running totals, `isGameOver` / `isTieBreak` (200, tie-break)                       |
-| `src/domain/moduleResult.ts` | Ranking (higher wins, shared ranks) and the `ModuleMatchResult` handed back                      |
+| `src/domain/moduleResult.ts` | Ranking (higher wins, shared ranks) and `toModuleMatch`, the `ModuleMatch` handed back           |
 | `src/ui/module/`             | MVI: `flip7ModuleTypes.ts` (state, actions, draft schema), the pure reducer, the screen          |
 | `src/design/`                | `ModuleRoot` only — the `.module-flip-7` scope; every other element is a design-system component |
 
@@ -29,8 +29,10 @@ aggregate and a reopened match shows exactly which cards made each score.
   on screen the module never writes or clears the draft slot, which may hold another, unfinished
   game — but the host's `saveMatch` clears that slot on every save, an update included
   (`ModuleHostAdapter`, shared by every module), so re-saving a reopened match still drops it.
-- The result's `rounds` carry each round's derived score per player, so they sum to the ranking
-  (`assertRoundsSumToRanking`, called by the module and again by the host).
+- The match's `rounds` carry each round's derived score per player, so they sum to
+  `playerScores`; the winners (`manualWinners`) are every player at rank 1. The host refuses a
+  match that breaks this (`assertMatchConsistent` from `shared-domain`), and the module's tests
+  run the same check.
 
 ## Look
 

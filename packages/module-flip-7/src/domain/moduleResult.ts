@@ -1,8 +1,5 @@
-import {
-  assertRoundsSumToRanking,
-  type ModuleMatchResult,
-  type ModuleRound,
-} from '@scoreboards/module-api'
+import type { ModuleMatch } from '@scoreboards/module-api'
+import type { PlayerScore } from '@scoreboards/shared-domain'
 import { z } from 'zod'
 import { flip7Manifest } from '../module'
 import {
@@ -33,13 +30,10 @@ export function buildRanking(playerIds: readonly string[], rounds: readonly Flip
     .sort((a, b) => a.rank - b.rank)
 }
 
-function buildRounds(playerIds: readonly string[], rounds: readonly Flip7Round[]): ModuleRound[] {
-  return rounds.map((round, index) => {
+function buildRounds(playerIds: readonly string[], rounds: readonly Flip7Round[]): PlayerScore[][] {
+  return rounds.map((round) => {
     const scores = roundScores(round)
-    return {
-      label: `Manche ${index + 1}`,
-      scores: playerIds.map((playerId) => ({ playerId, score: scores.get(playerId) ?? 0 })),
-    }
+    return playerIds.map((playerId) => ({ playerId, score: scores.get(playerId) ?? 0 }))
   })
 }
 
@@ -51,15 +45,19 @@ export interface ModuleMatchInput {
 }
 
 /**
- * The finished game, in the shape the host stores. `assertRoundsSumToRanking`
- * runs here too: a module handing over a contradictory result should fail its
- * own tests first.
+ * The finished game, in the shape the host stores. The host refuses a match
+ * whose rounds do not sum to its scores (`assertMatchConsistent`); this
+ * module's tests run the same check on what it builds, so a contradiction
+ * fails here first.
  */
-export function toModuleMatchResult(input: ModuleMatchInput): ModuleMatchResult {
-  const result: ModuleMatchResult = {
-    ...(input.matchId === undefined ? {} : { matchId: input.matchId }),
-    ranking: buildRanking(input.playerIds, input.rounds),
+export function toModuleMatch(input: ModuleMatchInput): ModuleMatch {
+  const ranking = buildRanking(input.playerIds, input.rounds)
+  return {
+    ...(input.matchId === undefined ? {} : { id: input.matchId }),
+    playerScores: ranking.map(({ playerId, score }) => ({ playerId, score })),
     rounds: buildRounds(input.playerIds, input.rounds),
+    // Highest total wins; a tie at the first place names every tied player.
+    manualWinners: ranking.filter((entry) => entry.rank === 1).map((entry) => entry.playerId),
     moduleData: {
       version: flip7Manifest.dataVersion,
       data: {
@@ -68,6 +66,4 @@ export function toModuleMatchResult(input: ModuleMatchInput): ModuleMatchResult 
       } satisfies Flip7ModuleData,
     },
   }
-  assertRoundsSumToRanking(result)
-  return result
 }

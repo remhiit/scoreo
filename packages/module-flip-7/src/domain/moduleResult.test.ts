@@ -1,8 +1,10 @@
-import { assertRoundsSumToRanking } from '@scoreboards/module-api'
+import { assertMatchConsistent, newGameType } from '@scoreboards/shared-domain'
 import { describe, expect, it } from 'vitest'
 import { EMPTY_HAND } from './hand'
-import { buildRanking, Flip7ModuleDataSchema, toModuleMatchResult } from './moduleResult'
+import { buildRanking, Flip7ModuleDataSchema, toModuleMatch } from './moduleResult'
 import type { Flip7Round } from './round'
+
+const GAME_TYPE = newGameType('gt-flip-7', 'Flip 7', 'HIGHEST_SCORE', { moduleId: 'flip-7' })
 
 const ROUNDS: Flip7Round[] = [
   {
@@ -44,34 +46,48 @@ describe('buildRanking', () => {
   })
 })
 
-describe('toModuleMatchResult', () => {
-  it('produces a result whose rounds sum to the ranking', () => {
-    const result = toModuleMatchResult({ playerIds: ['a', 'b'], rounds: ROUNDS })
-    expect(() => assertRoundsSumToRanking(result)).not.toThrow()
-    expect(result.rounds).toEqual([
-      {
-        label: 'Manche 1',
-        scores: [
-          { playerId: 'a', score: 28 },
-          { playerId: 'b', score: 0 },
-        ],
-      },
-      {
-        label: 'Manche 2',
-        scores: [
-          { playerId: 'a', score: 1 },
-          { playerId: 'b', score: 36 },
-        ],
-      },
+describe('toModuleMatch', () => {
+  it('builds rounds that sum back to the scores (the domain invariant passes)', () => {
+    const match = toModuleMatch({ playerIds: ['a', 'b'], rounds: ROUNDS })
+    expect(() => assertMatchConsistent(match, GAME_TYPE)).not.toThrow()
+    expect(match.playerScores).toEqual([
+      { playerId: 'b', score: 36 },
+      { playerId: 'a', score: 29 },
     ])
-    expect(result.matchId).toBeUndefined()
+    expect(match.manualWinners).toEqual(['b'])
+    expect(match.rounds).toEqual([
+      [
+        { playerId: 'a', score: 28 },
+        { playerId: 'b', score: 0 },
+      ],
+      [
+        { playerId: 'a', score: 1 },
+        { playerId: 'b', score: 36 },
+      ],
+    ])
+    expect(match.id).toBeUndefined()
+  })
+
+  it('names every player tied at the first place as a winner', () => {
+    const tied: Flip7Round[] = [
+      {
+        entries: [
+          { playerId: 'a', hand: { ...EMPTY_HAND, numbers: [3] } },
+          { playerId: 'b', hand: { ...EMPTY_HAND, numbers: [3] } },
+          { playerId: 'c', hand: { ...EMPTY_HAND, numbers: [1] } },
+        ],
+      },
+    ]
+    const match = toModuleMatch({ playerIds: ['a', 'b', 'c'], rounds: tied })
+    expect(match.manualWinners).toEqual(['a', 'b'])
+    expect(() => assertMatchConsistent(match, GAME_TYPE)).not.toThrow()
   })
 
   it('carries a moduleData payload its own schema reads back', () => {
-    const result = toModuleMatchResult({ playerIds: ['a', 'b'], rounds: ROUNDS, matchId: 'm1' })
-    expect(result.matchId).toBe('m1')
-    expect(result.moduleData?.version).toBe(1)
-    const parsed = Flip7ModuleDataSchema.parse(JSON.parse(JSON.stringify(result.moduleData?.data)))
+    const match = toModuleMatch({ playerIds: ['a', 'b'], rounds: ROUNDS, matchId: 'm1' })
+    expect(match.id).toBe('m1')
+    expect(match.moduleData?.version).toBe(1)
+    const parsed = Flip7ModuleDataSchema.parse(JSON.parse(JSON.stringify(match.moduleData?.data)))
     expect(parsed.players).toEqual(['a', 'b'])
     expect(parsed.rounds).toHaveLength(2)
   })

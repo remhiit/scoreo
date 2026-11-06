@@ -25,7 +25,7 @@ import {
   isFlip7,
   NUMBER_VALUES,
 } from '../../domain/hand'
-import { buildRanking, toModuleMatchResult } from '../../domain/moduleResult'
+import { buildRanking, toModuleMatch } from '../../domain/moduleResult'
 import { roundScores } from '../../domain/round'
 import {
   buildEditingState,
@@ -81,7 +81,7 @@ export default function Flip7ModuleScreen({
 
   const save = () => {
     host.saveMatch(
-      toModuleMatchResult({
+      toModuleMatch({
         playerIds: state.playerIds,
         rounds: state.rounds,
         // Present only when reopening: turns the save into an update.

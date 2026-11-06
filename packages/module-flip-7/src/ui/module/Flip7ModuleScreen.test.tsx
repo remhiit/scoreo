@@ -1,21 +1,25 @@
 // @vitest-environment jsdom
-import type { ModuleHost, ModuleMatchResult, ModulePlayer } from '@scoreboards/module-api'
+import type { ModuleHost, ModuleMatch } from '@scoreboards/module-api'
+import { newGameType, type Player } from '@scoreboards/shared-domain'
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import Flip7ModuleScreen from './Flip7ModuleScreen'
 
-const PLAYERS: ModulePlayer[] = [
-  { id: 'p1', name: 'Alice' },
-  { id: 'p2', name: 'Bob' },
+const PLAYERS: Player[] = [
+  { id: 'p1', name: 'Alice', active: true },
+  { id: 'p2', name: 'Bob', active: true },
 ]
 
+const GAME_TYPE = newGameType('gt-flip-7', 'Flip 7', 'HIGHEST_SCORE', { moduleId: 'flip-7' })
+
 function fakeHost(draft?: unknown) {
-  const saved: ModuleMatchResult[] = []
+  const saved: ModuleMatch[] = []
   let stored = draft
   const host: ModuleHost = {
     getPlayers: () => PLAYERS,
-    saveMatch: (result) => {
-      saved.push(result)
+    gameType: GAME_TYPE,
+    saveMatch: (match) => {
+      saved.push(match)
       return 'match-1'
     },
     loadDraft: () => stored,
@@ -117,8 +121,9 @@ describe('Flip7ModuleScreen', () => {
     expect(screen.getByText('Alice remporte la partie !', { exact: false })).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: '💾 Enregistrer la partie' }))
     expect(saved).toHaveLength(1)
-    expect(saved[0].ranking[0]).toEqual({ playerId: 'p1', score: 207, rank: 1 })
-    expect(saved[0].matchId).toBeUndefined()
+    expect(saved[0].playerScores[0]).toEqual({ playerId: 'p1', score: 207 })
+    expect(saved[0].manualWinners).toEqual(['p1'])
+    expect(saved[0].id).toBeUndefined()
     expect(onExit).toHaveBeenCalled()
   })
 
@@ -147,8 +152,9 @@ describe('Flip7ModuleScreen', () => {
     expect(screen.getByRole('region', { name: 'Manche 9' })).toBeInTheDocument()
 
     fireEvent.click(screen.getByRole('button', { name: '💾 Enregistrer la partie' }))
-    expect(saved[0].matchId).toBe('m-7')
-    expect(saved[0].ranking[0]).toEqual({ playerId: 'p2', score: 207, rank: 1 })
+    expect(saved[0].id).toBe('m-7')
+    expect(saved[0].playerScores[0]).toEqual({ playerId: 'p2', score: 207 })
+    expect(saved[0].manualWinners).toEqual(['p2'])
     // The fake host does not clear on save, so this proves the module wrote nothing there.
     expect(stored()).toEqual(pending)
   })
