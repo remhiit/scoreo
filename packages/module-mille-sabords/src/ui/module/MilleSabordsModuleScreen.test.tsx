@@ -206,7 +206,7 @@ describe('MilleSabordsModuleScreen', () => {
     fireEvent.click(screen.getByRole('button', { name: /Terminer la partie/ }))
     fireEvent.click(screen.getByRole('button', { name: /Enregistrer la partie/ }))
 
-    expect(saved[0].matchId).toBe('match-9')
+    expect(saved[0].id).toBe('match-9')
     expect(saved[0].moduleData?.data).toEqual(expect.objectContaining({ joueurs: ['p1', 'p2'] }))
   })
 

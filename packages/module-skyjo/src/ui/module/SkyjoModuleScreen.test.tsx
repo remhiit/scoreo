@@ -194,7 +194,7 @@ describe('SkyjoModuleScreen', () => {
       expect(screen.getByText('Alice remporte la partie !')).toBeInTheDocument()
       fireEvent.click(screen.getByRole('button', { name: '💾 Enregistrer la partie' }))
 
-      expect(saved[0].matchId).toBe('existing-match')
+      expect(saved[0].id).toBe('existing-match')
       expect(saved[0].moduleData).toEqual(
         expect.objectContaining({ data: expect.objectContaining({ players: ['p1', 'p2'] }) }),
       )
