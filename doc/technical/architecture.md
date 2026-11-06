@@ -95,7 +95,7 @@ deployed — Scoreo builds it into a chunk loaded the first time someone opens i
 │       └── package.json           # React/zod/vite/vitest deps live here
 └── packages/
     ├── design-system/             # every visual decision: tokens, atoms → templates (see its README)
-    ├── module-api/                # the host ↔ module contract, no runtime dependency
+    ├── module-api/                # the host ↔ module contract, no runtime dependency (imports `shared-domain` types only)
     ├── shared-domain/             # Player, GameType, Match, PlayerScore + schemas, enums, newId, isUuid, Result
     ├── module-mille-sabords/      # 1000 Sabords, ported from Kotlin and checked against it
     ├── module-skyjo/              # Skyjo, a manual score counter built directly as a module

@@ -1,29 +1,30 @@
 // @vitest-environment jsdom
-import {
-  assertRoundsSumToRanking,
-  type ModuleHost,
-  type ModuleMatchResult,
-  type ModulePlayer,
-} from '@scoreboards/module-api'
+import type { ModuleHost, ModuleMatch } from '@scoreboards/module-api'
+import { assertMatchConsistent, newGameType, type Player } from '@scoreboards/shared-domain'
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import MilleSabordsModuleScreen from './MilleSabordsModuleScreen'
 
 afterEach(cleanup)
 
-const JOUEURS: ModulePlayer[] = [
-  { id: 'p1', name: 'Anne Bonny' },
-  { id: 'p2', name: 'Mary Read' },
+const JOUEURS: Player[] = [
+  { id: 'p1', name: 'Anne Bonny', active: true },
+  { id: 'p2', name: 'Mary Read', active: true },
 ]
+
+const TYPE_DE_JEU = newGameType('gt-sabords', '1000 Sabords', 'HIGHEST_SCORE', {
+  moduleId: 'mille-sabords',
+})
 
 /** A host that remembers its draft, which is the whole point of the trio. */
 function hoteFactice(draft?: unknown) {
-  const saved: ModuleMatchResult[] = []
+  const saved: ModuleMatch[] = []
   let brouillon = draft
   const host: ModuleHost = {
     getPlayers: () => JOUEURS,
-    saveMatch: (result) => {
-      saved.push(result)
+    gameType: TYPE_DE_JEU,
+    saveMatch: (match) => {
+      saved.push(match)
       brouillon = undefined
       return 'match-1'
     },
@@ -133,7 +134,7 @@ describe('MilleSabordsModuleScreen', () => {
     expect(screen.getByRole('row', { name: /Tour 1/ }).textContent).toContain('700')
   })
 
-  it('hands the host a result whose rounds add up, then leaves', () => {
+  it('hands the host a match whose rounds add up, then leaves', () => {
     const { host, saved } = hoteFactice()
     const onExit = vi.fn()
     render(<MilleSabordsModuleScreen host={host} playerIds={['p1', 'p2']} onExit={onExit} />)
@@ -144,11 +145,12 @@ describe('MilleSabordsModuleScreen', () => {
     fireEvent.click(screen.getByRole('button', { name: /Enregistrer la partie/ }))
 
     expect(saved).toHaveLength(1)
-    expect(() => assertRoundsSumToRanking(saved[0])).not.toThrow()
-    expect(saved[0].ranking).toEqual([
-      { playerId: 'p1', score: 900, rank: 1 },
-      { playerId: 'p2', score: 400, rank: 2 },
+    expect(() => assertMatchConsistent(saved[0], TYPE_DE_JEU)).not.toThrow()
+    expect(saved[0].playerScores).toEqual([
+      { playerId: 'p1', score: 900 },
+      { playerId: 'p2', score: 400 },
     ])
+    expect(saved[0].manualWinners).toEqual(['p1'])
     expect(onExit).toHaveBeenCalledOnce()
   })
 
@@ -172,7 +174,7 @@ describe('MilleSabordsModuleScreen', () => {
     fireEvent.click(screen.getByRole('button', { name: /Terminer la partie/ }))
     fireEvent.click(screen.getByRole('button', { name: /Enregistrer la partie/ }))
 
-    expect(saved[0].matchId).toBe('match-7')
+    expect(saved[0].id).toBe('match-7')
   })
 
   // Stepping out is no longer a button the module draws itself — that is the
@@ -180,7 +182,9 @@ describe('MilleSabordsModuleScreen', () => {
   // `clearDraft`, unlike abandoning.
   it('drops the draft when the players abandon', () => {
     const { host, brouillon } = hoteFactice()
-    render(<MilleSabordsModuleScreen host={host} playerIds={['p1', 'p2']} onExit={() => undefined} />)
+    render(
+      <MilleSabordsModuleScreen host={host} playerIds={['p1', 'p2']} onExit={() => undefined} />,
+    )
 
     saisirScore('500')
     expect(brouillon()).not.toBeUndefined()

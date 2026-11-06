@@ -1,4 +1,5 @@
-import type { ModuleMatchResult } from '@scoreboards/module-api'
+import type { ModuleMatch } from '@scoreboards/module-api'
+import { newGameType } from '@scoreboards/shared-domain'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ModuleDraftRepository } from '../domain/port/moduleDraftRepository'
 import { InMemoryMatchRepository } from '../infrastructure/testing/inMemoryMatchRepository'
@@ -20,13 +21,15 @@ class InMemoryModuleDraftRepository implements ModuleDraftRepository {
 
 const NOW = 1767225600000
 
+const GAME_TYPE = newGameType('gt1', 'Torī Valley', 'HIGHEST_SCORE', { moduleId: 'tori-valley' })
+
 function build() {
   const playerRepository = new InMemoryPlayerRepository()
   const matchRepository = new InMemoryMatchRepository()
   const draftRepository = new InMemoryModuleDraftRepository()
   const host = new ModuleHostAdapter(
     'tori-valley',
-    'gt1',
+    GAME_TYPE,
     playerRepository,
     matchRepository,
     draftRepository,
@@ -35,29 +38,28 @@ function build() {
   return { host, playerRepository, matchRepository, draftRepository }
 }
 
-const result: ModuleMatchResult = {
-  ranking: [
-    { playerId: 'p1', score: 9, rank: 1 },
-    { playerId: 'p2', score: 5, rank: 2 },
+const result: ModuleMatch = {
+  playerScores: [
+    { playerId: 'p1', score: 9 },
+    { playerId: 'p2', score: 5 },
   ],
   rounds: [
-    {
-      label: 'bamboo',
-      scores: [
-        { playerId: 'p1', score: 9 },
-        { playerId: 'p2', score: 5 },
-      ],
-    },
+    [
+      { playerId: 'p1', score: 9 },
+      { playerId: 'p2', score: 5 },
+    ],
   ],
+  manualWinners: ['p1'],
+  moduleData: null,
 }
 
 describe('ModuleHostAdapter', () => {
   describe('getPlayers', () => {
-    it('hands over id and name only', () => {
+    it("hands over the host's players", () => {
       const { host, playerRepository } = build()
       playerRepository.save({ id: 'p1', name: 'Alice', active: true })
 
-      expect(host.getPlayers()).toEqual([{ id: 'p1', name: 'Alice' }])
+      expect(host.getPlayers()).toEqual([{ id: 'p1', name: 'Alice', active: true }])
     })
 
     // Reopening an old match still needs the names of everyone who played it.
@@ -65,8 +67,12 @@ describe('ModuleHostAdapter', () => {
       const { host, playerRepository } = build()
       playerRepository.save({ id: 'p1', name: 'Alice', active: false })
 
-      expect(host.getPlayers()).toEqual([{ id: 'p1', name: 'Alice' }])
+      expect(host.getPlayers()).toEqual([{ id: 'p1', name: 'Alice', active: false }])
     })
+  })
+
+  it('exposes the game type the screen was opened for', () => {
+    expect(build().host.gameType).toBe(GAME_TYPE)
   })
 
   describe('saveMatch', () => {
@@ -78,12 +84,35 @@ describe('ModuleHostAdapter', () => {
       expect(matchRepository.findById(id)?.gameTypeId).toBe('gt1')
     })
 
-    it('takes the winners from the announced rank', () => {
+    it('keeps the winners the module declared', () => {
       const { host, matchRepository } = build()
 
       const saved = matchRepository.findById(host.saveMatch(result))
 
       expect(saved?.manualWinners).toEqual(['p1'])
+    })
+
+    it('stores the whole match, with the fields the host owns filled in', () => {
+      const { host, matchRepository } = build()
+
+      const id = host.saveMatch({ ...result, date: 4242 })
+
+      expect(matchRepository.findById(id)).toEqual({
+        id,
+        date: 4242,
+        gameTypeId: 'gt1',
+        playerScores: result.playerScores,
+        manualWinners: ['p1'],
+        secondaryPlayerScores: [],
+        rounds: result.rounds,
+        moduleData: null,
+      })
+    })
+
+    it('mints a new id when the module gives none', () => {
+      const { host } = build()
+
+      expect(host.saveMatch(result)).not.toBe(host.saveMatch(result))
     })
 
     it('keeps the round detail', () => {
@@ -125,19 +154,47 @@ describe('ModuleHostAdapter', () => {
       expect(matchRepository.findById(host.saveMatch(result))?.moduleData).toBeNull()
     })
 
-    // Round detail contradicting the announced scores is a scoring bug: storing
-    // it would leave a match whose history disagrees with its own total, and
+    // A match contradicting itself or its game's rules is a scoring bug:
+    // storing it would leave a history disagreeing with its own total, and
     // nothing would ever notice again.
-    it('refuses a result whose rounds do not sum to its ranking', () => {
-      const { host, matchRepository } = build()
+    describe('refuses, writing nothing', () => {
+      const refused: Record<string, ModuleMatch> = {
+        'rounds that do not sum to the scores': {
+          ...result,
+          playerScores: [{ playerId: 'p1', score: 10 }],
+          rounds: [[{ playerId: 'p1', score: 4 }]],
+          manualWinners: ['p1'],
+        },
+        'a player listed twice': {
+          ...result,
+          playerScores: [
+            { playerId: 'p1', score: 9 },
+            { playerId: 'p1', score: 9 },
+          ],
+          rounds: [],
+        },
+        'a round scoring a non-participant': {
+          ...result,
+          rounds: [
+            [
+              { playerId: 'p1', score: 9 },
+              { playerId: 'ghost', score: 5 },
+            ],
+          ],
+        },
+        'a winner who did not play': { ...result, manualWinners: ['ghost'] },
+      }
 
-      expect(() =>
-        host.saveMatch({
-          ranking: [{ playerId: 'p1', score: 10, rank: 1 }],
-          rounds: [{ label: 'bamboo', scores: [{ playerId: 'p1', score: 4 }] }],
-        }),
-      ).toThrow()
-      expect(matchRepository.getAll()).toEqual([])
+      for (const [name, match] of Object.entries(refused)) {
+        it(name, () => {
+          const { host, matchRepository, draftRepository } = build()
+          host.saveDraft({ keep: 'me' })
+
+          expect(() => host.saveMatch(match)).toThrow()
+          expect(matchRepository.getAll()).toEqual([])
+          expect(draftRepository.drafts.has('tori-valley')).toBe(true)
+        })
+      }
     })
 
     it('clears the draft once the match is stored', () => {
@@ -158,7 +215,7 @@ describe('ModuleHostAdapter', () => {
       const onMatchSaved = vi.fn()
       const host = new ModuleHostAdapter(
         'tori-valley',
-        'gt1',
+        GAME_TYPE,
         playerRepository,
         matchRepository,
         draftRepository,
@@ -176,7 +233,7 @@ describe('ModuleHostAdapter', () => {
         const { host, matchRepository } = build()
         const first = host.saveMatch(result)
 
-        const second = host.saveMatch({ ...result, matchId: first })
+        const second = host.saveMatch({ ...result, id: first })
 
         expect(second).toBe(first)
         expect(matchRepository.getAll()).toHaveLength(1)
@@ -185,9 +242,9 @@ describe('ModuleHostAdapter', () => {
       // Correcting a match keeps the evening it was played.
       it('keeps the original date', () => {
         const { host, matchRepository } = build()
-        const id = host.saveMatch({ ...result, playedAt: 1000 })
+        const id = host.saveMatch({ ...result, date: 1000 })
 
-        host.saveMatch({ ...result, matchId: id })
+        host.saveMatch({ ...result, id })
 
         expect(matchRepository.findById(id)?.date).toBe(1000)
       })
@@ -222,7 +279,7 @@ describe('ModuleHostAdapter', () => {
       const { host, playerRepository, matchRepository, draftRepository } = build()
       const other = new ModuleHostAdapter(
         'mille-sabords',
-        'gt2',
+        newGameType('gt2', 'Sabords', 'HIGHEST_SCORE', { moduleId: 'mille-sabords' }),
         playerRepository,
         matchRepository,
         draftRepository,

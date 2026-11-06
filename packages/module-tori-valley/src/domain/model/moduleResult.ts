@@ -1,4 +1,5 @@
-import type { ModuleMatchResult, ModuleRankingEntry, ModuleRound } from '@scoreboards/module-api'
+import type { ModuleMatch } from '@scoreboards/module-api'
+import type { PlayerScore } from '@scoreboards/shared-domain'
 import { z } from 'zod'
 import { LANDSCAPE_TYPES, type ObjectifCardSelection } from './landscape'
 import {
@@ -85,8 +86,8 @@ export function readDraft(
  *
  * The categories **partition** `scorePlayerResult()`, which is what makes each
  * player's rounds sum back to their ranking score. That is the invariant
- * `assertRoundsSumToRanking` checks, and the one Scoreo's file import has
- * always required.
+ * the host checks before storing a match (`assertMatchConsistent`), and the one
+ * Scoreo's file import has always required.
  */
 export const SCORE_CATEGORIES: readonly {
   readonly label: string
@@ -104,13 +105,20 @@ export const SCORE_CATEGORIES: readonly {
   },
 ]
 
+/** A player's total and standing; rank 1 is a winner, and a tie may share it. */
+export interface RankedPlayer {
+  readonly playerId: string
+  readonly score: number
+  readonly rank: number
+}
+
 /**
  * Ranks by descending total (standard competition ranking), then hands rank 1
  * to the match's actual winner(s) only: Torī Valley breaks a top-score tie by
- * Torī count then Pinceau, a rule the host does not know, so the rank is what
- * carries it over.
+ * Torī count then Pinceau, a rule the host does not know, so the winners the
+ * module hands over (`manualWinners`) are the rank-1 players.
  */
-export function buildModuleRanking(match: Match): ModuleRankingEntry[] {
+export function buildModuleRanking(match: Match): RankedPlayer[] {
   const winners = new Set(matchWinners(match))
   const scored = match.results.map((result) => ({
     playerId: result.playerId,
@@ -130,14 +138,14 @@ export function buildModuleRanking(match: Match): ModuleRankingEntry[] {
     .sort((a, b) => a.rank - b.rank)
 }
 
-export function buildModuleRounds(match: Match): ModuleRound[] {
-  return SCORE_CATEGORIES.map((category) => ({
-    label: category.label,
-    scores: match.results.map((result) => ({
+/** One round per scoring category, each scoring every player. */
+export function buildModuleRounds(match: Match): PlayerScore[][] {
+  return SCORE_CATEGORIES.map((category) =>
+    match.results.map((result) => ({
       playerId: result.playerId,
       score: category.score(result),
     })),
-  }))
+  )
 }
 
 export interface ModuleMatchInput {
@@ -161,7 +169,7 @@ export interface ModuleMatchInput {
  * hands it straight to Scoreo, and the v1.1 file export maps the ids to display
  * names on top of it. They cannot disagree about a rank or a category.
  */
-export function toModuleMatchResult(input: ModuleMatchInput): ModuleMatchResult {
+export function toModuleMatch(input: ModuleMatchInput): ModuleMatch {
   const match: Match = {
     id: input.matchId ?? '',
     playedAt: input.playedAt ?? 0,
@@ -169,11 +177,13 @@ export function toModuleMatchResult(input: ModuleMatchInput): ModuleMatchResult 
     objectifCards: input.objectifCards,
     results: input.results,
   }
+  const ranking = buildModuleRanking(match)
   return {
-    ...(input.matchId === undefined ? {} : { matchId: input.matchId }),
-    ...(input.playedAt === undefined ? {} : { playedAt: input.playedAt }),
-    ranking: buildModuleRanking(match),
+    ...(input.matchId === undefined ? {} : { id: input.matchId }),
+    ...(input.playedAt === undefined ? {} : { date: input.playedAt }),
+    playerScores: ranking.map(({ playerId, score }) => ({ playerId, score })),
     rounds: buildModuleRounds(match),
+    manualWinners: ranking.filter((entry) => entry.rank === 1).map((entry) => entry.playerId),
     moduleData: {
       version: MODULE_DATA_VERSION,
       data: { objectifCards: input.objectifCards, results: input.results },
