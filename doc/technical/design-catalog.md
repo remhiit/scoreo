@@ -30,6 +30,7 @@ that is how a version of the catalog is published for review without deploying a
 | `src/shell/parseTokens.ts` | Reads the token declarations straight out of `packages/design-system/src/tokens/*.css` (exposed as `@scoreboards/design-system/tokens/*`), so the Tokens page shows what the CSS says |
 | `src/stories/<layer>.tsx` | The stories of one layer: data only (`Story[]`) |
 | `src/stories/<layer>.demos.tsx` | The small stateful demos those stories render (a controlled field, an open sheet): components only |
+| `src/mockups/<feature>/` | The mockup of a feature not coded yet: `index.tsx` (the `Mockup`), `screens.tsx`, `sketches/` for the components the design system lacks. Shown on the catalog's **Maquettes** page. See [`design-workflow.md`](design-workflow.md) |
 | `src/catalog.test.tsx` | The guards below |
 
 A **story** names the exports it shows (`covers`), states its usage rule in one or two sentences,
@@ -45,12 +46,16 @@ render inside their frame instead of over the catalog.
 - **Every component exported by the design system is covered by a story.** A new component cannot
   land without its specimen; the failure lists the missing names.
 - Every name a story `covers` is a real export, every story id is unique, every layer known.
-- Every variant renders without throwing.
+- Every variant renders without throwing, and so does every mockup screen.
 - **Stories compose the design system only**: no `className=`, no `style={…}`, no `lucide-react`
-  import in `src/stories/**` — the same rule `eslint.config.js` holds the app to. Only `src/shell/`
-  styles itself.
+  import in `src/stories/**` nor in a mockup's screens — the same rule `eslint.config.js` holds the
+  app to. Only `src/shell/` and a mockup's `sketches/` write classes; sketches write no inline style,
+  import no icon and read semantic tokens only.
 
 ## Adding to it
+
+- **A feature that changes what a player sees**: its mockup comes first, under `src/mockups/`
+  — see [`design-workflow.md`](design-workflow.md).
 
 - **A new design-system component**: add a story to the layer's file (and a demo if it needs
   state). The coverage test fails until you do.

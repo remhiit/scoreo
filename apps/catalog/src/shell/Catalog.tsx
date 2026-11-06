@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import { Chip, HUES, Swatch, type Hue } from '@scoreboards/design-system'
 import { STORIES } from '../stories'
+import { MockupSheet } from './MockupSheet'
+import { MOCKUPS } from './mockups'
 import { Specimen } from './Specimen'
 import { LAYERS, type LayerId } from './types'
 
@@ -41,8 +43,11 @@ function preferredFlavor(): Flavor {
   return window.matchMedia?.('(prefers-color-scheme: light)').matches ? 'latte' : 'mocha'
 }
 
-function layerFromHash(): LayerId | 'overview' {
+type Page = LayerId | 'overview' | 'maquettes'
+
+function layerFromHash(): Page {
   const hash = window.location.hash.replace('#', '')
+  if (hash === 'maquettes') return 'maquettes'
   return LAYERS.some((layer) => layer.id === hash) ? (hash as LayerId) : 'overview'
 }
 
@@ -83,7 +88,10 @@ export function Catalog() {
     return () => window.removeEventListener('hashchange', onHashChange)
   }, [])
 
-  const stories = page === 'overview' ? [] : STORIES.filter((story) => story.layer === page)
+  const stories =
+    page === 'overview' || page === 'maquettes'
+      ? []
+      : STORIES.filter((story) => story.layer === page)
   const current = LAYERS.find((layer) => layer.id === page)
 
   return (
@@ -141,11 +149,21 @@ export function Catalog() {
               </span>
             </a>
           ))}
+          <a
+            className="cat-nav__layer cat-nav__layer--mockups"
+            href="#maquettes"
+            aria-current={page === 'maquettes' ? 'page' : undefined}
+          >
+            <span className="cat-nav__number">✎</span> Maquettes
+            <span className="cat-nav__count">{MOCKUPS.length}</span>
+          </a>
         </nav>
 
         <main className="cat-main">
           {page === 'overview' ? (
             <Overview />
+          ) : page === 'maquettes' ? (
+            <Mockups />
           ) : (
             <>
               <header className="cat-page-head">
@@ -210,5 +228,27 @@ function Overview() {
         devient un composant ou une prop ici.
       </p>
     </div>
+  )
+}
+
+function Mockups() {
+  return (
+    <>
+      <header className="cat-page-head">
+        <span className="cat-page-head__number">✎</span>
+        <h1 className="cat-page-head__title">Maquettes</h1>
+        <p className="cat-overview__rule">
+          Les écrans d’une feature pas encore codée, composés avec les vrais composants et des
+          données d’exemple. Une feature qui change ce que voit un joueur passe par ici avant d’être
+          codée : la maquette est validée par la fusion de sa PR, puis retirée quand l’écran réel
+          est livré.
+        </p>
+      </header>
+      {MOCKUPS.length === 0 ? (
+        <p className="cat-note">Aucune maquette en cours.</p>
+      ) : (
+        MOCKUPS.map((mockup) => <MockupSheet key={mockup.id} mockup={mockup} />)
+      )}
+    </>
   )
 }

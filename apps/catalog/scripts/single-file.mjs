@@ -6,8 +6,9 @@
 // Run after `vite build` (`pnpm --filter @scoreboards/catalog build:preview`).
 import { readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 
-const DIST = new URL('../dist/', import.meta.url).pathname
+const DIST = fileURLToPath(new URL('../dist/', import.meta.url))
 const html = readFileSync(join(DIST, 'index.html'), 'utf8')
 
 const asset = (pattern) => {

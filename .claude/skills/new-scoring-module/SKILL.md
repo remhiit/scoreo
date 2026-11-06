@@ -73,6 +73,15 @@ import of the screen.
 
 ### 4. The screen
 
+**Mockup first.** Before writing the screen, mock it up in the catalog
+(`apps/catalog/src/mockups/module-<game>/`) and have it validated by the merge
+of its PR — `doc/technical/design-workflow.md` is the rule. The mockup
+composes the design system inside an `ImmersiveTemplate`, as the module will;
+its game pieces (a die, a card, a score cell nothing else has) are drafted
+under the mockup's `sketches/`, then move to the module's `src/design/` in
+step 5 — never into the design system unless a second module needs them. The
+module's PR removes the mockup folder.
+
 Conforms to `ScoringModuleScreenProps`, MVI like every Scoreo screen: a pure reducer in
 `src/ui/module/`, a component that dispatches.
 
@@ -215,6 +224,8 @@ allowed fix round — this step is satisfied and § Sorties obligatoires can be 
 - `packages/module-<game>/` created per steps 1–2 (`package.json` without a
   `build` script or `vite` dependency, `vitest.config.ts`, a tsconfig,
   `src/styles.d.ts`, `src/index.ts` exporting only the manifest and module).
+- The screen's mockup validated (its `Maquette : …` PR merged) before the
+  screen is written, and its folder removed by the module's PR (step 4).
 - `src/module.ts` manifest and a `src/ui/module/` reducer + screen conforming
   to `ScoringModuleScreenProps` (step 3–4).
 - `@scoreboards/design-system` in the module's dependencies (step 1), its

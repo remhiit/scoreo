@@ -468,3 +468,24 @@
     flex-basis: auto;
   }
 }
+
+/* ---------- mockups ---------- */
+.cat-mockup__issue {
+  align-self: flex-start;
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  color: var(--color-primary);
+}
+.cat-mockup__changes {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  background: var(--color-primary-tint);
+  border: var(--border-width) solid var(--color-primary-border);
+}
+.cat-mockup__changes ul {
+  padding-left: var(--space-5);
+  line-height: var(--leading-normal);
+}

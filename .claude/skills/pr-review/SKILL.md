@@ -237,7 +237,7 @@ narrate it here.
 
 ### 1. Run the checklist
 
-As R3 or interactively, run all five items. As one of the coordinator's two
+As R3 or interactively, run all six items. As one of the coordinator's two
 review sub-agents (#470), each item names the corpus it belongs to — run
 only the items tagged with your own corpus (§ "Context isolation" above);
 an item tagged for the other corpus isn't yours to judge on this run (a
@@ -275,11 +275,21 @@ finding formed on it anyway is out-of-corpus, see that same section).
    shortcut that only works for the happy path from the issue's examples.
    Flag it even if it's not blocking — that's the point of a subjective
    review.
+6. **Mockup conformance** _(functional)_. When the spec's `## Maquette`
+   section names a mockup (`doc/technical/design-workflow.md`), compare the
+   delivered screens with the mockup's `screens.tsx` as it stands on the
+   default branch: a gap the PR does not explain is a finding. So is a
+   sketch shipped from `apps/catalog/src/mockups/*/sketches/` instead of
+   being promoted into `packages/design-system/` with its test and catalog
+   story, or a mockup folder the PR leaves behind. A spec with no
+   `## Maquette` section predates the rule: nothing to check. A PR that
+   changes what a player sees on an issue whose `## Maquette` says « Sans
+   objet » is worth a finding if the exemption no longer holds.
 
 ### 2. Classify every finding
 
 Don't collapse the checklist into a binary conforms/doesn't-conform per
-item. For each issue actually found — whether it's one of the five
+item. For each issue actually found — whether it's one of the six
 checklist points above or something else noticed while reading the diff —
 record a **finding** with five parts:
 

@@ -94,6 +94,7 @@ Ajouter un compteur de points pour un nouveau jeu : `.claude/skills/new-scoring-
 ## Règles
 
 - **UI = composition du design system.** L'app n'écrit ni `className`, ni `style`, ni CSS, ni import `lucide-react` : elle assemble les composants de `@scoreboards/design-system`. Un besoin visuel manquant = un composant ou une prop ajouté(e) au design system (avec son CSS, son test et sa fiche dans `apps/catalog/`), jamais un contournement local. ESLint l'impose sur tout `apps/scoreo/src/`, sans exception.
+- **Maquette avant le code.** Une feature qui change ce que voit un joueur (écran, composant, mise en page, état visible) est d'abord maquettée dans `apps/catalog/src/mockups/<feature>/` et validée par la fusion de sa PR de maquette ; sans elle, la spec reste `NEEDS_CLARIFICATION`. Règle complète : `doc/technical/design-workflow.md`.
 - Reducer dans `ui/*/`. Reçoit une `Action` → produit un `State`.
 - Use Case dans `application/`. Opération métier, zéro dépendance framework.
 - Interface Repository dans `domain/port/`. Implémentation dans `infrastructure/`.
@@ -109,6 +110,7 @@ Avant de committer une évolution Reducer/Action/State/UseCase/Model/Port :
 - [ ] Fichier `.md` correspondant a été mis à jour (`doc/reference.md`, `doc/functional/feature.md`, `doc/functional/features/*.md`, ou `doc/technical/*.md`)
 - [ ] Si nouveau champ optionnel sérialisé : entrée ajoutée à `doc/technical/migrations.md` (changelog de schéma)
 - [ ] Tests modifiés/ajoutés si changement de comportement public
+- [ ] Changement visible : l'écran livré correspond à la maquette validée, les esquisses sont promues dans le design system (avec leur fiche du catalogue) et le dossier de maquette est retiré
 - [ ] Message de commit décrit clairement l'évolution (pas "Fix", "Update" vague)
 
 **Exemple bon commit:**

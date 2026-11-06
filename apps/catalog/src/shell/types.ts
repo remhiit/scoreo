@@ -39,3 +39,26 @@ export interface Story {
   usage: string
   variants: Variant[]
 }
+
+/**
+ * A mockup: the screens of a feature not coded yet, composed from the real
+ * components with example data, reviewed before any code is written
+ * (doc/technical/design-workflow.md). One folder per feature under
+ * `src/mockups/<id>/`, whose `index.tsx` default-exports this.
+ */
+export interface Mockup {
+  /** The folder name, kebab-case. */
+  id: string
+  title: string
+  /** The GitHub issue the mockup is for, when it exists. */
+  issue?: number
+  /** What changes for the player, in one or two sentences. */
+  summary: string
+  /**
+   * The design-system changes the feature needs: a component or prop to add,
+   * each drafted under `sketches/` when it is new. Empty when the feature only
+   * composes what exists.
+   */
+  designSystemChanges: string[]
+  screens: Variant[]
+}

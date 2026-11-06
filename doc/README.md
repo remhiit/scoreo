@@ -11,6 +11,7 @@
 | [`technical/migrations.md`](technical/migrations.md) | Data migration history |
 | [`glossary.md`](glossary.md) | Project term definitions |
 | [`technical/visual-testing.md`](technical/visual-testing.md) | The visual regression suite and its baselines |
+| [`technical/design-workflow.md`](technical/design-workflow.md) | The mockup-before-code rule: when a feature needs a mockup, how it is built, validated and retired |
 | [`technical/design-catalog.md`](technical/design-catalog.md) | The living catalog of the design system (`apps/catalog/`), its guards and how to publish a preview |
 | [`../packages/module-mille-sabords/doc/`](../packages/module-mille-sabords/doc/) | 1000 Sabords: rules, user guide, technical docs, and the rulebook PDF |
 | [`../packages/module-tori-valley/doc/`](../packages/module-tori-valley/doc/) | Torī Valley: rules, technical docs, the rulebook PDF and photos of the 16 Objectif cards |
