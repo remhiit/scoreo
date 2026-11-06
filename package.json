@@ -8,6 +8,7 @@
     "dev": "pnpm --filter scoreo dev",
     "build": "pnpm -r build",
     "preview": "pnpm --filter scoreo preview",
+    "catalog": "pnpm --filter @scoreboards/catalog dev",
     "test": "pnpm -r test && vitest run",
     "test:watch": "pnpm --filter scoreo test:watch",
     "test:e2e": "pnpm --filter scoreo test:e2e",

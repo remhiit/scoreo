@@ -24,6 +24,9 @@ pnpm build
 # Preview d'un build de production
 pnpm preview
 
+# Catalogue vivant du design system (apps/catalog, jamais déployé)
+pnpm catalog
+
 # Tous les tests (Vitest, jsdom — pas de navigateur réel nécessaire)
 pnpm test
 
@@ -73,7 +76,8 @@ Lire ces fichiers dans l'ordre. Tout le contexte nécessaire y est :
 | `legacy/1ksabord-kotlin/` | **Temporaire.** L'app Kotlin/JS de 1000 Sabords absorbée avec son historique, gardée comme **oracle** du portage TypeScript : ses 107 tests tournent en CI (`kotlin-legacy.yml`) et doivent rester verts. Supprimée avec son workflow une fois le portage livré. Ne rien y développer |
 | `packages/module-*/doc/` | La doc d'un jeu vit dans le paquet de son module, à côté du code qui l'implémente : règles, guide, doc technique et ressources (le PDF des règles de 1000 Sabords, celui de Torī et ses scans de cartes). `doc/` à la racine ne garde que ce qui concerne le dépôt entier |
 | `packages/design-system/` | **Toute** décision visuelle de l'app : tokens Catppuccin, atomes → gabarits en composants React + CSS préfixé `sc-`. Voir son `README.md` |
-| `ds_temp/scoreo-design/` | Référence temporaire : l'export Claude Design (atomic design, 25 écrans, carte écrans × composants) vers lequel les écrans migrent. À supprimer une fois la migration terminée |
+| `apps/catalog/` | Le catalogue vivant du design system : chaque composant rendu par son vrai code, couche par couche, dans les 4 thèmes. Outil, jamais déployé ; un composant sans fiche y fait échouer `pnpm test`. Voir `doc/technical/design-catalog.md` |
+| `ds_temp/scoreo-design/` | Copie figée (30/09/2026) de l'export Claude Design vers lequel les écrans ont migré. La référence visuelle est désormais `apps/catalog/` ; dossier à supprimer |
 
 ## Workflow
 
@@ -89,7 +93,7 @@ Ajouter un compteur de points pour un nouveau jeu : `.claude/skills/new-scoring-
 
 ## Règles
 
-- **UI = composition du design system.** L'app n'écrit ni `className`, ni `style`, ni CSS, ni import `lucide-react` : elle assemble les composants de `@scoreboards/design-system`. Un besoin visuel manquant = un composant ou une prop ajouté(e) au design system (avec son CSS et son test), jamais un contournement local. ESLint l'impose sur tout `apps/scoreo/src/`, sans exception.
+- **UI = composition du design system.** L'app n'écrit ni `className`, ni `style`, ni CSS, ni import `lucide-react` : elle assemble les composants de `@scoreboards/design-system`. Un besoin visuel manquant = un composant ou une prop ajouté(e) au design system (avec son CSS, son test et sa fiche dans `apps/catalog/`), jamais un contournement local. ESLint l'impose sur tout `apps/scoreo/src/`, sans exception.
 - Reducer dans `ui/*/`. Reçoit une `Action` → produit un `State`.
 - Use Case dans `application/`. Opération métier, zéro dépendance framework.
 - Interface Repository dans `domain/port/`. Implémentation dans `infrastructure/`.

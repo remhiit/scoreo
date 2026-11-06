@@ -188,6 +188,8 @@ Notable coverage that goes beyond a 1:1 port of business logic:
 
 ## CSS
 
+Design catalog: [`apps/catalog/`](technical/design-catalog.md) renders every design-system export by its real code, layer by layer; `apps/catalog/src/catalog.test.tsx` fails when an export has no story.
+
 Design system: [`packages/design-system/`](../packages/design-system/README.md) — tokens (`src/tokens/*.css`, Catppuccin, see Styling in `doc/technical/architecture.md`) and every atom → template the host composes; the host ships no CSS of its own (`eslint.config.js` forbids `className`, `style` and `lucide-react` imports anywhere in `apps/scoreo/src/`).
 
 Hall of Fame: one design-system `Panel` per trophy (title, description), holders as `StatRow variant="line"`, F3's holders grouped under a `Text variant="label"` month heading; game filter via the shared `GameTypeTabs` (`apps/scoreo/src/ui/shared/GameTypeTabs.tsx`, design-system `Tabs`).
