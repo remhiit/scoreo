@@ -14,6 +14,7 @@
   "dependencies": {
     "@scoreboards/design-system": "workspace:*",
     "@scoreboards/module-api": "workspace:*",
+    "@scoreboards/shared-domain": "workspace:*",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
     "zod": "^4.6.7"

@@ -40,4 +40,5 @@ export {
   type MatchModuleData,
   type RoundDetailStatus,
 } from './match'
+export { assertMatchConsistent, type MatchFields } from './matchConsistency'
 export { MatchModuleDataSchema, MatchSchema } from './match.schema'
