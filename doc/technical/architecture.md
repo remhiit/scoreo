@@ -68,11 +68,11 @@ Two separate suites, run by different `pnpm` scripts and CI jobs:
 
 The repository is a **pnpm workspace** (`pnpm-workspace.yaml`: `apps/*`, `packages/*`). Scoreo is the
 host application and the only one deployed; the score-counting modules live under `packages/` and
-are loaded by Scoreo. All three are registered in `apps/scoreo/src/modules/registry.ts` and reached
+are loaded by Scoreo. All four are registered in `apps/scoreo/src/modules/registry.ts` and reached
 on demand: `packages/module-tori-valley/` (absorbed from `remhiit/toriValleyScoreBoard`, with its
 commit history preserved), `packages/module-mille-sabords/` (ported from the Kotlin app kept in
-`legacy/`), and `packages/module-skyjo/` (built directly as a module, not absorbed from a sibling
-repository). None runs on its own: a module package has no `index.html`, no Vite config and nothing
+`legacy/`), and `packages/module-skyjo/` and `packages/module-flip-7/` (both built directly as modules, not absorbed
+from a sibling repository). None runs on its own: a module package has no `index.html`, no Vite config and nothing
 deployed — Scoreo builds it into a chunk loaded the first time someone opens it.
 
 ```
@@ -97,6 +97,7 @@ deployed — Scoreo builds it into a chunk loaded the first time someone opens i
     ├── design-system/             # every visual decision: tokens, atoms → templates (see its README)
     ├── module-api/                # the host ↔ module contract, no runtime dependency (imports `shared-domain` types only)
     ├── shared-domain/             # Player, GameType, Match, PlayerScore + schemas, enums, newId, isUuid, Result
+    ├── module-flip-7/             # Flip 7, a card-by-card score calculator built directly as a module
     ├── module-mille-sabords/      # 1000 Sabords, ported from Kotlin and checked against it
     ├── module-skyjo/              # Skyjo, a manual score counter built directly as a module
     └── module-tori-valley/        # absorbed score-counting module

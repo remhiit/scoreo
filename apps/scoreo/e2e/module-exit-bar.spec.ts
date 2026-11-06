@@ -41,6 +41,13 @@ const MODULES: Record<string, ModuleUnderTest> = {
       await expect(page.locator('.module-skyjo .sj-table-wrap')).toBeVisible()
     },
   },
+  'Flip 7': {
+    game: 'Flip 7',
+    // No setup step of its own: the module opens straight onto the round entry.
+    reach: async (page) => {
+      await expect(page.getByRole('button', { name: 'Valider la manche' })).toBeVisible()
+    },
+  },
 }
 
 test.beforeEach(async ({ page }) => {
