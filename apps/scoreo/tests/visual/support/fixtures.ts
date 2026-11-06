@@ -313,3 +313,113 @@ export const SKYJO_MATCHES: Match[] = [
   skyjoMatch(SKYJO_IN_PROGRESS_ID, SKYJO_DATES[0], SKYJO_IN_PROGRESS, [12, 27, 11]),
   skyjoMatch(SKYJO_FINISHED_ID, SKYJO_DATES[1], SKYJO_FINISHED, [38, 152, 55]),
 ]
+
+// ─────────────────────────── Flip 7 ───────────────────────────
+
+/** Shaped exactly as `BindModuleUseCase` creates it from the module's manifest. */
+export const FLIP7_GAME_TYPE: GameType = {
+  id: 'gametype-flip-7',
+  name: 'Flip 7',
+  winCondition: 'HIGHEST_SCORE',
+  scoringMode: 'POINTS' as const,
+  tieBreakRule: 'NONE',
+  tieBreakCondition: 'HIGHEST_SCORE',
+  tieBreakLabel: null,
+  moduleId: 'flip-7',
+  minPlayers: null,
+  maxPlayers: null,
+  active: true,
+}
+
+interface Flip7FixtureHand {
+  busted?: boolean
+  numbers?: number[]
+  modifiers?: number[]
+  doubled?: boolean
+}
+
+function flip7Round(...hands: Flip7FixtureHand[]) {
+  return {
+    entries: PLAYER_IDS.map((playerId, index) => ({
+      playerId,
+      hand: { busted: false, numbers: [], modifiers: [], doubled: false, ...hands[index] },
+    })),
+  }
+}
+
+/**
+ * Two rounds. Round 1: Akira 3+8+12 +4 = 27, Mei a Flip 7 (0…6 = 21, +15 = 36),
+ * Hiroshi busts. Round 2: Akira (10+11)×2 = 42, Mei 7, Hiroshi 1+9 +10 = 20.
+ * Running totals: Akira 69, Mei 43, Hiroshi 20.
+ */
+const FLIP7_IN_PROGRESS = [
+  flip7Round(
+    { numbers: [3, 8, 12], modifiers: [4] },
+    { numbers: [0, 1, 2, 3, 4, 5, 6] },
+    { busted: true, numbers: [5] },
+  ),
+  flip7Round(
+    { numbers: [10, 11], doubled: true },
+    { numbers: [7] },
+    { numbers: [1, 9], modifiers: [10] },
+  ),
+]
+
+/**
+ * Three more rounds take Akira alone past 200: (9+10+11+12)×2 = 84, then
+ * 6+11+12 +6 = 35, then 5+7 +2 = 14. Final totals Akira 202, Mei 109,
+ * Hiroshi 53 — the module renders its end screen, Akira the winner.
+ */
+const FLIP7_FINISHED = [
+  ...FLIP7_IN_PROGRESS,
+  flip7Round(
+    { numbers: [9, 10, 11, 12], doubled: true },
+    { numbers: [4, 12] },
+    { numbers: [2, 6, 8] },
+  ),
+  flip7Round(
+    { numbers: [6, 11, 12], modifiers: [6] },
+    { numbers: [9, 10] },
+    { busted: true, numbers: [7] },
+  ),
+  flip7Round(
+    { numbers: [5, 7], modifiers: [2] },
+    { numbers: [8, 11, 12] },
+    { numbers: [3, 4, 10] },
+  ),
+]
+
+/** Real UUIDs — see MATCH_ONE_ID for why a readable slug would not survive. */
+export const FLIP7_IN_PROGRESS_ID = '6b2f9c41-7d3e-4a58-b1c6-0e8d5f2a9c73'
+export const FLIP7_FINISHED_ID = 'c8e1a5d2-4f7b-4e90-8a3c-9d6b2e1f0a54'
+
+/** 2024-06-15T12:00:00Z and 2024-06-22T12:00:00Z. */
+const FLIP7_DATES = [1718452800000, 1719057600000]
+
+function flip7Match(
+  id: string,
+  date: number,
+  rounds: ReturnType<typeof flip7Round>[],
+  scores: number[],
+): Match {
+  return {
+    id,
+    date,
+    gameTypeId: FLIP7_GAME_TYPE.id,
+    playerScores: PLAYER_IDS.map((playerId, index) => ({ playerId, score: scores[index] })),
+    manualWinners: [],
+    secondaryPlayerScores: [],
+    // Left empty on purpose, as for Skyjo: the module rebuilds its rounds from moduleData.
+    rounds: [],
+    moduleData: {
+      moduleId: 'flip-7',
+      version: 1,
+      data: { players: PLAYER_IDS, rounds },
+    },
+  }
+}
+
+export const FLIP7_MATCHES: Match[] = [
+  flip7Match(FLIP7_IN_PROGRESS_ID, FLIP7_DATES[0], FLIP7_IN_PROGRESS, [69, 43, 20]),
+  flip7Match(FLIP7_FINISHED_ID, FLIP7_DATES[1], FLIP7_FINISHED, [202, 109, 53]),
+]
