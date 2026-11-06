@@ -47,9 +47,25 @@ already typed. A finished match's `moduleData` carries the same round log (`{ pl
 totals.
 
 Reading either payload back never trusts it: `SkyjoDraftSchema`/`SkyjoModuleDataSchema` (zod) reject
-anything malformed, and a payload restored for a different set of players (`sameTable`, an
-order-sensitive check — the same one 1000 Sabords' `memeTable` applies) is discarded in favor of a
-clean game, rather than crediting today's players with someone else's rounds.
+anything malformed, and a payload restored for a different table is discarded in favor of a clean
+game, rather than crediting today's players with someone else's rounds. What "the same table" means
+depends on where the payload comes from — `buildInitialState(playerIds, charge, source)`:
+
+- **`'draft'`** (a new game, `host.loadDraft()`): `sameSeating`, order-sensitive. The host passes the
+  ids in the order the players were picked, which is the order the draft was written with.
+- **`'match'`** (a match reopened through `editing`): `samePlayers`, which compares the **set** of
+  players — same size, no duplicate, every id at the table. The host reopens with
+  `Match.playerScores` ids, which are in ranking order, so an order-sensitive check would throw the
+  match away whenever its winner was not seated first. The restored state then keeps the payload's
+  own `players` order: the columns read as they did when the match was played. Ties in the ranking
+  change nothing; only who sits at the table counts. 1000 Sabords applies the same rule.
+
+A reopened match never touches the draft: the screen calls neither `host.saveDraft` nor (on
+"Abandonner") `host.clearDraft` while `editing` is set. That match is already saved on the host's
+side; writing it into the draft would overwrite a new game in progress, and leaving the screen by the
+host's ✕ would then leave its rounds there, without a `matchId`, for the next new game with the same
+players to pick up and save as a duplicate. Saving still passes `editing.matchId`, so the host
+updates the match instead of adding a second one.
 
 ## Backward compatibility
 

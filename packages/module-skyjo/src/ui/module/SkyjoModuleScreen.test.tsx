@@ -177,6 +177,60 @@ describe('SkyjoModuleScreen', () => {
       )
       expect(onExit).toHaveBeenCalled()
     })
+
+    it('restores the rounds when the host hands the players in ranking order', () => {
+      const { host, saved } = fakeHost()
+      // The host reopens with `Match.playerScores` ids, in ranking order; here
+      // that order differs from `moduleData.players` on purpose.
+      render(
+        <SkyjoModuleScreen
+          host={host}
+          playerIds={['p2', 'p1']}
+          editing={editing}
+          onExit={vi.fn()}
+        />,
+      )
+
+      expect(screen.getByText('Alice remporte la partie !')).toBeInTheDocument()
+      fireEvent.click(screen.getByRole('button', { name: '💾 Enregistrer la partie' }))
+
+      expect(saved[0].matchId).toBe('existing-match')
+      expect(saved[0].moduleData).toEqual(
+        expect.objectContaining({ data: expect.objectContaining({ players: ['p1', 'p2'] }) }),
+      )
+    })
+
+    it('never touches the draft of a new game in progress', () => {
+      const draft = {
+        version: 1,
+        players: ['p1', 'p2'],
+        rounds: [],
+        enderPlayerId: 'p2',
+        scoreInputs: { p1: '7' },
+      }
+      const { host, stored } = fakeHost(draft)
+      const saveDraft = vi.spyOn(host, 'saveDraft')
+      const clearDraft = vi.spyOn(host, 'clearDraft')
+      const { unmount } = render(
+        <SkyjoModuleScreen
+          host={host}
+          playerIds={['p1', 'p2']}
+          editing={editing}
+          onExit={vi.fn()}
+        />,
+      )
+
+      // Back from the end screen into play, enter a round, then abandon.
+      fireEvent.click(screen.getByRole('button', { name: '↩ Annuler la dernière manche' }))
+      playRound('Alice', { Alice: '3', Bob: '8' })
+      fireEvent.click(screen.getByRole('button', { name: '🗑 Abandonner' }))
+      fireEvent.click(screen.getByRole('button', { name: 'Abandonner' }))
+      unmount()
+
+      expect(saveDraft).not.toHaveBeenCalled()
+      expect(clearDraft).not.toHaveBeenCalled()
+      expect(stored()).toEqual(draft)
+    })
   })
 
   it('abandoning clears the draft and exits without saving', () => {
