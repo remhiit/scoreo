@@ -116,7 +116,8 @@ not anything was saved.
 
 On a new game, `playerIds` arrives in the order the players were picked — the order a draft was
 written with. On a reopened match it does **not** carry the seating: the host passes
-`Match.playerScores` ids, which `rankingToMatch` copies from `result.ranking`, sorted by rank. A
+`Match.playerScores` ids, in the order the module's own `ModuleMatch.playerScores` stored them —
+sorted by rank in every module today. A
 module that keeps the seating in its `moduleData` must compare the **set** of players when reading
 `editing.data` and restore its own order from the payload; an order-sensitive check would discard the
 match whenever its winner was not seated first. Skyjo and 1000 Sabords do this; Torī Valley reads
