@@ -1,5 +1,5 @@
-import type { ModuleHost, ModuleMatchResult, ModulePlayer } from '@scoreboards/module-api'
-import { assertRoundsSumToRanking } from '@scoreboards/module-api'
+import type { ModuleHost, ModuleMatch } from '@scoreboards/module-api'
+import { assertMatchConsistent, newGameType, type Player } from '@scoreboards/shared-domain'
 import { fireEvent, render, screen } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
@@ -10,19 +10,24 @@ import {
 } from '../../domain/model/moduleResult'
 import ToriValleyModuleScreen from './ToriValleyModuleScreen'
 
-const PLAYERS: ModulePlayer[] = [
-  { id: 'p1', name: 'Alice' },
-  { id: 'p2', name: 'Bob' },
+const PLAYERS: Player[] = [
+  { id: 'p1', name: 'Alice', active: true },
+  { id: 'p2', name: 'Bob', active: true },
 ]
 
+const GAME_TYPE = newGameType('gt-tori', 'Torī Valley', 'HIGHEST_SCORE', {
+  moduleId: 'tori-valley',
+})
+
 function fakeHost(players = PLAYERS, initialDraft: unknown = undefined) {
-  const saved: ModuleMatchResult[] = []
+  const saved: ModuleMatch[] = []
   const drafts: unknown[] = []
   const state = { draft: initialDraft, clearedCount: 0 }
   const host: ModuleHost = {
     getPlayers: () => players,
-    saveMatch: (result) => {
-      saved.push(result)
+    gameType: GAME_TYPE,
+    saveMatch: (match) => {
+      saved.push(match)
       return 'host-match-id'
     },
     loadDraft: () => state.draft,
@@ -117,16 +122,16 @@ describe('ToriValleyModuleScreen', () => {
     fireEvent.click(screen.getByText('Save match'))
 
     expect(saved).toHaveLength(1)
-    expect(saved[0].ranking.map((e) => e.playerId).sort()).toEqual(['p1', 'p2'])
+    expect(saved[0].playerScores.map((e) => e.playerId).sort()).toEqual(['p1', 'p2'])
     expect(onExit).toHaveBeenCalled()
   })
 
-  it('hands back a result whose rounds sum to its ranking', () => {
+  it('hands back a match the domain invariant accepts', () => {
     const { saved } = renderScreen()
     confirmCards()
     fireEvent.click(screen.getByText('Save match'))
 
-    expect(() => assertRoundsSumToRanking(saved[0])).not.toThrow()
+    expect(() => assertMatchConsistent(saved[0], GAME_TYPE)).not.toThrow()
   })
 
   // The host owns the storage: a hosted match must not leave a trace in the
@@ -145,7 +150,7 @@ describe('ToriValleyModuleScreen', () => {
     confirmCards()
     fireEvent.click(screen.getByText('Save match'))
 
-    expect(saved[0]).not.toHaveProperty('matchId')
+    expect(saved[0]).not.toHaveProperty('id')
   })
 
   it('lets the host stamp the date', () => {
@@ -153,7 +158,7 @@ describe('ToriValleyModuleScreen', () => {
     confirmCards()
     fireEvent.click(screen.getByText('Save match'))
 
-    expect(saved[0]).not.toHaveProperty('playedAt')
+    expect(saved[0]).not.toHaveProperty('date')
   })
 
   it('hands back its own state so the match can be reopened', () => {
@@ -208,7 +213,7 @@ describe('ToriValleyModuleScreen', () => {
       confirmCards()
       fireEvent.click(screen.getByText('Save match'))
 
-      expect(saved[0].matchId).toBe('existing-match')
+      expect(saved[0].id).toBe('existing-match')
     })
 
     it('restores the scores that were entered', () => {
@@ -216,7 +221,7 @@ describe('ToriValleyModuleScreen', () => {
       confirmCards()
       fireEvent.click(screen.getByText('Save match'))
 
-      const alice = saved[0].ranking.find((e) => e.playerId === 'p1')
+      const alice = saved[0].playerScores.find((e) => e.playerId === 'p1')
       expect(alice?.score).toBe(5)
     })
 
@@ -229,7 +234,7 @@ describe('ToriValleyModuleScreen', () => {
       confirmCards()
       fireEvent.click(screen.getByText('Save match'))
 
-      expect(saved[0].ranking.every((e) => e.score === 0)).toBe(true)
+      expect(saved[0].playerScores.every((e) => e.score === 0)).toBe(true)
     })
   })
 
@@ -250,11 +255,10 @@ describe('ToriValleyModuleScreen', () => {
     })
 
     it('restores the dealt cards and entered scores from a draft, skipping match setup', () => {
-      const draft = toDraft(
-        ['p1', 'p2'],
-        DEFAULT_CARDS,
-        [{ ...emptyResult('p1'), parcheminValue: 5 }, emptyResult('p2')],
-      )
+      const draft = toDraft(['p1', 'p2'], DEFAULT_CARDS, [
+        { ...emptyResult('p1'), parcheminValue: 5 },
+        emptyResult('p2'),
+      ])
       renderScreenWithDraft(draft)
 
       // No "Start match" button: the grid is shown directly.
@@ -263,11 +267,10 @@ describe('ToriValleyModuleScreen', () => {
     })
 
     it('lets a reopened match win over a draft for the same players', () => {
-      const draft = toDraft(
-        ['p1', 'p2'],
-        DEFAULT_CARDS,
-        [{ ...emptyResult('p1'), parcheminValue: 5 }, emptyResult('p2')],
-      )
+      const draft = toDraft(['p1', 'p2'], DEFAULT_CARDS, [
+        { ...emptyResult('p1'), parcheminValue: 5 },
+        emptyResult('p2'),
+      ])
       const editing = {
         matchId: 'existing-match',
         version: MODULE_DATA_VERSION,
@@ -280,11 +283,10 @@ describe('ToriValleyModuleScreen', () => {
     })
 
     it('ignores a draft written for a different set of players', () => {
-      const draft = toDraft(
-        ['p1', 'p3'],
-        DEFAULT_CARDS,
-        [{ ...emptyResult('p1'), parcheminValue: 5 }, emptyResult('p3')],
-      )
+      const draft = toDraft(['p1', 'p3'], DEFAULT_CARDS, [
+        { ...emptyResult('p1'), parcheminValue: 5 },
+        emptyResult('p3'),
+      ])
       renderScreenWithDraft(draft)
 
       expect(screen.getByText('Start match')).toBeInTheDocument()
@@ -328,11 +330,10 @@ describe('ToriValleyModuleScreen', () => {
       })
 
       it('does not clobber an unrelated new-match draft already sitting in that slot', () => {
-        const existingDraft = toDraft(
-          ['p1', 'p2'],
-          DEFAULT_CARDS,
-          [{ ...emptyResult('p1'), parcheminValue: 3 }, emptyResult('p2')],
-        )
+        const existingDraft = toDraft(['p1', 'p2'], DEFAULT_CARDS, [
+          { ...emptyResult('p1'), parcheminValue: 3 },
+          emptyResult('p2'),
+        ])
         const { state } = renderScreenWithDraft(existingDraft, { editing })
         confirmCards()
 

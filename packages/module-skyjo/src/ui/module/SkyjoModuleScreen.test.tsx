@@ -1,23 +1,27 @@
 // @vitest-environment jsdom
-import type { ModuleHost, ModuleMatchResult, ModulePlayer } from '@scoreboards/module-api'
+import type { ModuleHost, ModuleMatch } from '@scoreboards/module-api'
+import { newGameType, type Player } from '@scoreboards/shared-domain'
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import SkyjoModuleScreen from './SkyjoModuleScreen'
 
 afterEach(cleanup)
 
-const PLAYERS: ModulePlayer[] = [
-  { id: 'p1', name: 'Alice' },
-  { id: 'p2', name: 'Bob' },
+const PLAYERS: Player[] = [
+  { id: 'p1', name: 'Alice', active: true },
+  { id: 'p2', name: 'Bob', active: true },
 ]
 
+const GAME_TYPE = newGameType('gt-skyjo', 'Skyjo', 'LOWEST_SCORE', { moduleId: 'skyjo' })
+
 function fakeHost(draft?: unknown) {
-  const saved: ModuleMatchResult[] = []
+  const saved: ModuleMatch[] = []
   let stored = draft
   const host: ModuleHost = {
     getPlayers: () => PLAYERS,
-    saveMatch: (result) => {
-      saved.push(result)
+    gameType: GAME_TYPE,
+    saveMatch: (match) => {
+      saved.push(match)
       stored = undefined
       return 'match-1'
     },
@@ -105,16 +109,15 @@ describe('SkyjoModuleScreen', () => {
 
     fireEvent.click(screen.getByRole('button', { name: '💾 Enregistrer la partie' }))
     expect(saved).toHaveLength(1)
-    expect(saved[0].ranking).toEqual(
-      expect.arrayContaining([
-        { playerId: 'p1', score: 10, rank: 1 },
-        { playerId: 'p2', score: 105, rank: 2 },
-      ]),
-    )
+    expect(saved[0].playerScores).toEqual([
+      { playerId: 'p1', score: 10 },
+      { playerId: 'p2', score: 105 },
+    ])
+    expect(saved[0].manualWinners).toEqual(['p1'])
     expect(onExit).toHaveBeenCalled()
   })
 
-  it('shows a tie on the end screen and saves both players at rank 1', () => {
+  it('shows a tie on the end screen and saves both players as winners', () => {
     const onExit = vi.fn()
     const { host, saved } = fakeHost()
     render(<SkyjoModuleScreen host={host} playerIds={['p1', 'p2']} onExit={onExit} />)
@@ -125,12 +128,11 @@ describe('SkyjoModuleScreen', () => {
     expect(screen.getByText('Égalité entre Alice et Bob !')).toBeInTheDocument()
 
     fireEvent.click(screen.getByRole('button', { name: '💾 Enregistrer la partie' }))
-    expect(saved[0].ranking).toEqual(
-      expect.arrayContaining([
-        { playerId: 'p1', score: 100, rank: 1 },
-        { playerId: 'p2', score: 100, rank: 1 },
-      ]),
-    )
+    expect(saved[0].playerScores).toEqual([
+      { playerId: 'p1', score: 100 },
+      { playerId: 'p2', score: 100 },
+    ])
+    expect(saved[0].manualWinners).toEqual(['p1', 'p2'])
   })
 
   describe('reopening a match', () => {
@@ -168,13 +170,11 @@ describe('SkyjoModuleScreen', () => {
 
       fireEvent.click(screen.getByRole('button', { name: '💾 Enregistrer la partie' }))
 
-      expect(saved[0].matchId).toBe('existing-match')
-      expect(saved[0].ranking).toEqual(
-        expect.arrayContaining([
-          { playerId: 'p1', score: 10, rank: 1 },
-          { playerId: 'p2', score: 105, rank: 2 },
-        ]),
-      )
+      expect(saved[0].id).toBe('existing-match')
+      expect(saved[0].playerScores).toEqual([
+        { playerId: 'p1', score: 10 },
+        { playerId: 'p2', score: 105 },
+      ])
       expect(onExit).toHaveBeenCalled()
     })
   })

@@ -9,7 +9,16 @@ import { App } from './App'
 function FakeModuleScreen({ host, onExit }: ScoringModuleScreenProps) {
   return (
     <div>
-      <button onClick={() => host.saveMatch({ ranking: [{ playerId: 'p1', score: 1, rank: 1 }] })}>
+      <button
+        onClick={() =>
+          host.saveMatch({
+            playerScores: [{ playerId: 'p1', score: 1 }],
+            rounds: [],
+            manualWinners: ['p1'],
+            moduleData: null,
+          })
+        }
+      >
         Save
       </button>
       <button onClick={onExit}>Exit</button>
@@ -38,6 +47,25 @@ vi.mock('./modules/registry', async (importOriginal) => {
         : actual.findModule(moduleId),
   }
 })
+
+/** The game the fake module scores: a module screen only opens on a game type that exists. */
+function seedFakeModuleGameType() {
+  localStorage.setItem(
+    'scoreo_gametypes',
+    JSON.stringify([
+      {
+        id: 'gt1',
+        name: 'Fake',
+        winCondition: 'HIGHEST_SCORE',
+        tieBreakRule: 'NONE',
+        tieBreakCondition: 'HIGHEST_SCORE',
+        tieBreakLabel: null,
+        moduleId: 'fake',
+        active: true,
+      },
+    ]),
+  )
+}
 
 function seedStatsData(options: { moduleId?: string | null; moduleData?: unknown } = {}) {
   localStorage.setItem(
@@ -280,6 +308,7 @@ describe('App', () => {
   // The target scenario of #390: no more burger + History detour needed to
   // find the match just scored on a module.
   it('ModuleScore: exiting after saving lands on History with that match highlighted', async () => {
+    seedFakeModuleGameType()
     render(<App />)
     act(() => {
       window.history.replaceState(null, '', '#/module/fake/gt1/p1')
@@ -296,6 +325,7 @@ describe('App', () => {
   })
 
   it('ModuleScore: the highlight does not linger once History is left and revisited', async () => {
+    seedFakeModuleGameType()
     render(<App />)
     act(() => {
       window.history.replaceState(null, '', '#/module/fake/gt1/p1')
@@ -313,6 +343,7 @@ describe('App', () => {
   })
 
   it('ModuleScore: exiting without saving keeps the current behaviour (Home for a new match)', async () => {
+    seedFakeModuleGameType()
     render(<App />)
     act(() => {
       window.history.replaceState(null, '', '#/module/fake/gt1/p1')

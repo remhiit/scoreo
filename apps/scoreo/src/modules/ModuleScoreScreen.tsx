@@ -66,25 +66,32 @@ export function ModuleScoreScreen({ screen, services, onExit }: ModuleScoreRoute
   // of the module screen mid-session, only be read once, on exit.
   const savedMatchIdRef = useRef<string | undefined>(undefined)
 
+  const gameType = useMemo(
+    () => services.gameTypeRepository.findById(screen.gameTypeId),
+    [screen.gameTypeId, services],
+  )
+
   const host = useMemo(
     () =>
-      new ModuleHostAdapter(
-        screen.moduleId,
-        screen.gameTypeId,
-        services.playerRepository,
-        services.matchRepository,
-        services.moduleDraftRepository,
-        services.currentDate,
-        // `saveMatch` only ever runs from a module's own event handler (both
-        // installed modules call it from a click, never during their own
-        // render), so this write always happens well outside render — React's
-        // compiler-oriented lint can't see that far, hence the disable.
-        // eslint-disable-next-line react-hooks/refs
-        (matchId) => {
-          savedMatchIdRef.current = matchId
-        },
-      ),
-    [screen.moduleId, screen.gameTypeId, services],
+      gameType === undefined
+        ? undefined
+        : new ModuleHostAdapter(
+            screen.moduleId,
+            gameType,
+            services.playerRepository,
+            services.matchRepository,
+            services.moduleDraftRepository,
+            services.currentDate,
+            // `saveMatch` only ever runs from a module's own event handler (both
+            // installed modules call it from a click, never during their own
+            // render), so this write always happens well outside render — React's
+            // compiler-oriented lint can't see that far, hence the disable.
+            // eslint-disable-next-line react-hooks/refs
+            (matchId) => {
+              savedMatchIdRef.current = matchId
+            },
+          ),
+    [screen.moduleId, gameType, services],
   )
 
   // The module only ever gets `() => void`, per the contract: the id travels
@@ -111,6 +118,8 @@ export function ModuleScoreScreen({ screen, services, onExit }: ModuleScoreRoute
     >
       {module === undefined || Screen === undefined ? (
         <EmptyState>{t('modules.unknownModule')}</EmptyState>
+      ) : host === undefined ? (
+        <EmptyState>{t('modules.unknownGameType')}</EmptyState>
       ) : (
         <ModuleErrorBoundary fallback={<Text variant="error">{t('modules.failedToLoad')}</Text>}>
           <Suspense fallback={<EmptyState>{t('modules.loading')}</EmptyState>}>

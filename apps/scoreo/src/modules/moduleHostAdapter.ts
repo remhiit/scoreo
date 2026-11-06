@@ -1,11 +1,11 @@
+import type { ModuleHost, ModuleMatch } from '@scoreboards/module-api'
 import {
-  assertRoundsSumToRanking,
-  type ModuleHost,
-  type ModuleMatchResult,
-  type ModulePlayer,
-} from '@scoreboards/module-api'
+  assertMatchConsistent,
+  type GameType,
+  type Match,
+  type Player,
+} from '@scoreboards/shared-domain'
 import { newId } from '../application/idGenerator'
-import { rankingToMatch } from '../application/rankingToMatch'
 import type { MatchRepository } from '../domain/port/matchRepository'
 import type { ModuleDraftRepository } from '../domain/port/moduleDraftRepository'
 import type { PlayerRepository } from '../domain/port/playerRepository'
@@ -20,7 +20,7 @@ import type { PlayerRepository } from '../domain/port/playerRepository'
 export class ModuleHostAdapter implements ModuleHost {
   constructor(
     private readonly moduleId: string,
-    private readonly gameTypeId: string,
+    readonly gameType: GameType,
     private readonly playerRepository: PlayerRepository,
     private readonly matchRepository: MatchRepository,
     private readonly moduleDraftRepository: ModuleDraftRepository,
@@ -32,44 +32,41 @@ export class ModuleHostAdapter implements ModuleHost {
     private readonly onMatchSaved?: (matchId: string) => void,
   ) {}
 
-  getPlayers(): readonly ModulePlayer[] {
+  getPlayers(): readonly Player[] {
     // Retired players included: reopening an old match still needs their names.
-    return this.playerRepository.getAll(true).map((player) => ({
-      id: player.id,
-      name: player.name,
-    }))
+    return this.playerRepository.getAll(true)
   }
 
-  saveMatch(result: ModuleMatchResult): string {
-    // Round detail that contradicts the announced scores is a scoring bug in the
-    // module. Refusing it here keeps a self-contradicting match out of the
-    // history, where nothing would ever notice it again.
-    assertRoundsSumToRanking(result)
+  saveMatch(moduleMatch: ModuleMatch): string {
+    // A match that contradicts itself or its game's rules is a scoring bug in
+    // the module. Refusing it here keeps it out of the history, where nothing
+    // would ever notice it again.
+    assertMatchConsistent(moduleMatch, this.gameType)
 
     const existing =
-      result.matchId === undefined ? undefined : this.matchRepository.findById(result.matchId)
+      moduleMatch.id === undefined ? undefined : this.matchRepository.findById(moduleMatch.id)
 
-    const match = rankingToMatch({
-      id: result.matchId ?? newId(),
+    const match: Match = {
+      id: moduleMatch.id ?? newId(),
       // Re-saving a match keeps the evening it was played, not the evening it
       // was corrected.
-      date: result.playedAt ?? existing?.date ?? this.currentDate(),
-      gameTypeId: this.gameTypeId,
-      ranking: result.ranking,
-      rounds: result.rounds?.map((round) =>
-        round.scores.map((score) => ({ playerId: score.playerId, score: score.score })),
-      ),
+      date: moduleMatch.date ?? existing?.date ?? this.currentDate(),
+      gameTypeId: this.gameType.id,
+      playerScores: moduleMatch.playerScores.map((ps) => ({ ...ps })),
+      manualWinners: [...moduleMatch.manualWinners],
+      secondaryPlayerScores: [],
+      rounds: moduleMatch.rounds.map((round) => round.map((ps) => ({ ...ps }))),
       // The module owns `version` and `data`; the host only stamps whose payload
       // it is, so a match can never be handed to the wrong module.
       moduleData:
-        result.moduleData === undefined
+        moduleMatch.moduleData === null
           ? null
           : {
               moduleId: this.moduleId,
-              version: result.moduleData.version,
-              data: result.moduleData.data,
+              version: moduleMatch.moduleData.version,
+              data: moduleMatch.moduleData.data,
             },
-    })
+    }
 
     this.matchRepository.save(match)
     this.moduleDraftRepository.clear(this.moduleId)
