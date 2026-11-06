@@ -51,6 +51,15 @@ const MODULES: Record<string, ModuleUnderTest> = {
     },
     surface: '.module-skyjo .sj-table-wrap',
   },
+  'Flip 7': {
+    game: 'Flip 7',
+    // No setup step of its own: the module opens straight onto one hand panel
+    // per player — a design-system Panel, so it must wear `--surface-card`.
+    reach: async (page) => {
+      await expect(page.getByRole('button', { name: 'Valider la manche' })).toBeVisible()
+    },
+    surface: '.module-flip-7 .sc-panel',
+  },
 }
 
 const readToken = (name: string) => `(() => {

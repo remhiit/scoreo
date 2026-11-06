@@ -281,7 +281,7 @@ import. Its CSS follows three rules:
 
 - every rule scoped under `.module-<moduleId>`, carried by the module's root;
 - every class prefixed with the module's own prefix (`ms-` for 1000 Sabords, `tv-` for Torī Valley,
-  `sj-` for Skyjo), never `sc-`;
+  `sj-` for Skyjo, `f7-` for Flip 7), never `sc-`;
 - only the design system's semantic tokens — never a `var(--ctp-*)` palette token, never a raw
   colour (hex, `rgb()`/`rgba()`, `hsl()`/`hsla()`), never a raw value equal to a token.
 

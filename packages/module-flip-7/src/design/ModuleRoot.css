@@ -1,0 +1,26 @@
+/*
+ * Flip 7 wears Scoreo's look: everything it draws is a design-system component,
+ * and this root only sets the page around them from the semantic tokens. Every
+ * rule is scoped under `.module-flip-7` and every class is prefixed `f7-`;
+ * `scripts/check-module-styles.mjs` and
+ * `apps/scoreo/e2e/module-style-isolation.spec.ts` guard that boundary.
+ */
+
+.module-flip-7 {
+  background: var(--surface-app);
+  color: var(--text-body);
+  font-family: var(--font-ui);
+  min-height: 100%;
+}
+
+.module-flip-7 *,
+.module-flip-7 *::before,
+.module-flip-7 *::after {
+  box-sizing: border-box;
+}
+
+.module-flip-7 .f7-shell {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: var(--space-4);
+}
