@@ -20,7 +20,7 @@ export interface ScoringModuleScreenProps {
 }
 
 export interface ModuleMatchEdit {
-  /** Pass this back as `ModuleMatchResult.matchId` to update rather than duplicate. */
+  /** Pass this back as `ModuleMatch.id` to update rather than duplicate. */
   readonly matchId: string
   /** The `moduleData` handed to the host when this match was saved, verbatim. */
   readonly version: number

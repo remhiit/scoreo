@@ -22,7 +22,7 @@ import {
 } from '@scoreboards/design-system'
 import type { ScoringModuleScreenProps } from '@scoreboards/module-api'
 import { useEffect, useMemo, useReducer, type ReactNode } from 'react'
-import { buildModuleMatchResult, classementFinal } from '../../application/moduleResult'
+import { buildModuleMatch, classementFinal } from '../../application/moduleResult'
 import { calculerScore } from '../../domain/calculateurScore'
 import { CARTES, EMOJIS_RANG, TYPES_DES } from '../../domain/constantes'
 import { totalDes, valeurDe } from '../../domain/lancerDes'
@@ -101,7 +101,7 @@ export default function MilleSabordsModuleScreen({
 
   const enregistrer = () => {
     host.saveMatch(
-      buildModuleMatchResult({
+      buildModuleMatch({
         joueurs: state.joueurs,
         historique: state.historique,
         // Present only when reopening: that is what turns the save into an

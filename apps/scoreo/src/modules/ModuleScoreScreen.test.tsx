@@ -1,4 +1,5 @@
 import type { ScoringModuleScreenProps } from '@scoreboards/module-api'
+import { newGameType } from '@scoreboards/shared-domain'
 import { fireEvent, render, screen, within } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import type { Match } from '../domain/model/match'
@@ -14,7 +15,16 @@ import { resolveEditing } from './resolveEditing'
 function FakeModuleScreen({ host, onExit }: ScoringModuleScreenProps) {
   return (
     <div>
-      <button onClick={() => host.saveMatch({ ranking: [{ playerId: 'p1', score: 1, rank: 1 }] })}>
+      <button
+        onClick={() =>
+          host.saveMatch({
+            playerScores: [{ playerId: 'p1', score: 1 }],
+            rounds: [],
+            manualWinners: ['p1'],
+            moduleData: null,
+          })
+        }
+      >
         Save
       </button>
       <button onClick={onExit}>Exit</button>
@@ -86,6 +96,27 @@ describe('resolveEditing', () => {
 })
 
 describe('ModuleScoreScreen', () => {
+  it('says so rather than crashing when the game type is gone, and still offers a way out', () => {
+    const services = createServices({
+      playerRepository: new InMemoryPlayerRepository(),
+      gameTypeRepository: new InMemoryGameTypeRepository(),
+      matchRepository: new InMemoryMatchRepository(),
+    })
+    const onExit = vi.fn()
+
+    render(
+      <ModuleScoreScreen
+        screen={{ type: 'ModuleScore', moduleId: 'fake', gameTypeId: 'gone', playerIds: ['p1'] }}
+        services={services}
+        onExit={onExit}
+      />,
+    )
+
+    expect(screen.getByText('This game type no longer exists.')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Exit' }))
+    expect(onExit).toHaveBeenCalledWith(undefined)
+  })
+
   it('says so rather than crashing when the module is not installed, and still offers a way out', () => {
     const services = createServices({
       playerRepository: new InMemoryPlayerRepository(),
@@ -116,9 +147,11 @@ describe('ModuleScoreScreen', () => {
   })
 
   function renderFakeModule(onExit = vi.fn()) {
+    const gameTypeRepository = new InMemoryGameTypeRepository()
+    gameTypeRepository.save(newGameType('gt1', 'Fake', 'HIGHEST_SCORE', { moduleId: 'fake' }))
     const services = createServices({
       playerRepository: new InMemoryPlayerRepository(),
-      gameTypeRepository: new InMemoryGameTypeRepository(),
+      gameTypeRepository,
       matchRepository: new InMemoryMatchRepository(),
     })
 

@@ -20,7 +20,7 @@ import {
   END_THRESHOLD,
   type SkyjoRound,
 } from '../../domain/round'
-import { buildRanking, toModuleMatchResult } from '../../domain/moduleResult'
+import { buildRanking, toModuleMatch } from '../../domain/moduleResult'
 import {
   buildInitialState,
   canSubmitRound,
@@ -73,7 +73,7 @@ export default function SkyjoModuleScreen({
 
   const save = () => {
     host.saveMatch(
-      toModuleMatchResult({
+      toModuleMatch({
         playerIds: state.playerIds,
         rounds: state.rounds,
         // Present only when reopening: turns the save into an update instead

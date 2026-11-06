@@ -1,4 +1,4 @@
-import { assertRoundsSumToRanking } from '@scoreboards/module-api'
+import { assertMatchConsistent, newGameType } from '@scoreboards/shared-domain'
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
@@ -33,21 +33,25 @@ describe('construireEnveloppeExport', () => {
   // What the byte comparison does not say out loud: the rounds have to add up.
   // Scoreo's import refuses a game whose detail contradicts its own score, and
   // the Skull Island penalties are exactly what makes that non-trivial.
-  it('produces games whose rounds sum back to their ranking', () => {
+  it('produces games whose rounds sum back to their scores', () => {
     const envelope = construireEnveloppeExport(corpus, EXPORTED_AT)
 
+    const gameType = newGameType('gt', '1000 Sabords', 'HIGHEST_SCORE', {
+      moduleId: 'mille-sabords',
+    })
+
     for (const game of envelope.games) {
-      const ranking = game.ranking.map((entry) => ({
+      const playerScores = game.ranking.map((entry) => ({
         playerId: entry.name,
         score: entry.score,
-        rank: entry.rank,
       }))
-      const rounds = game.details?.map((round, index) => ({
-        label: `round ${index + 1}`,
-        scores: round.scores.map((s) => ({ playerId: s.name, score: s.score })),
-      }))
+      const rounds = (game.details ?? []).map((round) =>
+        round.scores.map((s) => ({ playerId: s.name, score: s.score })),
+      )
 
-      expect(() => assertRoundsSumToRanking({ ranking, rounds })).not.toThrow()
+      expect(() =>
+        assertMatchConsistent({ playerScores, rounds, manualWinners: [] }, gameType),
+      ).not.toThrow()
     }
   })
 

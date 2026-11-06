@@ -66,8 +66,8 @@ regarder dedans : seul le module sait la relire.
 
 ## À la fin
 
-`buildModuleMatchResult` construit le `ModuleMatchResult` : le classement, les manches par joueur, et
-la charge que l'hôte rendra à la réouverture. Le résultat doit satisfaire
-`assertRoundsSumToRanking` — les manches d'un joueur somment à son score de classement — sans quoi
-l'import de Scoreo rejetterait la partie. C'est l'invariant que le repli à zéro du domaine
+`buildModuleMatch` construit le `ModuleMatch` : les scores finaux, les manches par joueur, le gagnant
+(`manualWinners`) et la charge que l'hôte rendra à la réouverture. Le résultat doit satisfaire
+`assertMatchConsistent` (`shared-domain`) — les manches d'un joueur somment à son score — sans quoi
+l'hôte refuserait la partie. C'est l'invariant que le repli à zéro du domaine
 (`maxOf(0, acc + contribution)` côté Kotlin) rend vrai à chaque événement.

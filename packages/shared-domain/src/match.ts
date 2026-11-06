@@ -98,7 +98,10 @@ export function getWinners(match: Match, gameType: GameType): string[] {
  */
 export type RoundDetailStatus = 'none' | 'consistent' | 'inconsistent'
 
-export function roundDetailStatus(match: Match, winCondition: WinCondition): RoundDetailStatus {
+export function roundDetailStatus(
+  match: Pick<Match, 'rounds' | 'playerScores'>,
+  winCondition: WinCondition,
+): RoundDetailStatus {
   if (match.rounds.length === 0) return 'none'
   const participants = new Set(match.playerScores.map((ps) => ps.playerId))
   const sums = new Map<string, number>()

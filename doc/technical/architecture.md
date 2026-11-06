@@ -62,7 +62,7 @@ Vite dev server / production build, output to `apps/scoreo/dist/`. Entry point: 
 Two separate suites, run by different `pnpm` scripts and CI jobs:
 
 - **Unit/component (`pnpm test`)** — Vitest + `jsdom`. No real browser; covers reducers, use cases, and screen components. See "Tests" in `doc/reference.md`.
-- **E2E (`pnpm test:e2e`)** — Playwright driving real Chromium against a production build (`pnpm build` + `pnpm preview`). Catches real-DOM/CSS rendering issues `jsdom` can't. Lives in `apps/scoreo/e2e/`, config at `apps/scoreo/playwright.config.ts`. CI installs Chromium (`playwright install --with-deps chromium`) in a dedicated `e2e` job. Claude Code on the web cannot: its image forbids that download and ships its own Chromium, so `.claude/hooks/session-start.sh` links the image's build under the number Playwright expects.
+- **E2E (`pnpm test:e2e`)** — Playwright driving real Chromium against a production build (`pnpm build` + `pnpm preview`). Catches real-DOM/CSS rendering issues `jsdom` can't. Lives in `apps/scoreo/e2e/`, config at `apps/scoreo/playwright.config.ts`. CI installs Chromium (`playwright install --with-deps chromium`) in a dedicated `e2e` job. Claude Code on the web cannot: its image forbids that download and ships its own Chromium, so `.claude/hooks/session-start.sh` links the image's build under the number Playwright expects (`scripts/link-playwright-browsers.sh`, which handles both the `chrome-linux64/` and the older `chrome-linux/` layouts and links nothing when it finds neither).
 
 ## Repository layout
 
@@ -95,7 +95,7 @@ deployed — Scoreo builds it into a chunk loaded the first time someone opens i
 │       └── package.json           # React/zod/vite/vitest deps live here
 └── packages/
     ├── design-system/             # every visual decision: tokens, atoms → templates (see its README)
-    ├── module-api/                # the host ↔ module contract, no runtime dependency
+    ├── module-api/                # the host ↔ module contract, no runtime dependency (imports `shared-domain` types only)
     ├── shared-domain/             # Player, GameType, Match, PlayerScore + schemas, enums, newId, isUuid, Result
     ├── module-mille-sabords/      # 1000 Sabords, ported from Kotlin and checked against it
     ├── module-skyjo/              # Skyjo, a manual score counter built directly as a module

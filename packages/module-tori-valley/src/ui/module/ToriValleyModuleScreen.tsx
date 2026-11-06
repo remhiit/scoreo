@@ -10,7 +10,7 @@ import {
   readDraft,
   toDraft,
   ToriValleyModuleDataSchema,
-  toModuleMatchResult,
+  toModuleMatch,
   type ToriValleyModuleData,
 } from '../../domain/model/moduleResult'
 import type { Player } from '../../domain/model/player'
@@ -99,7 +99,7 @@ export default function ToriValleyModuleScreen({
         }
         save={(results, cards) => {
           host.saveMatch(
-            toModuleMatchResult({
+            toModuleMatch({
               playerIds: players.map((p) => p.id),
               objectifCards: cards,
               results,
