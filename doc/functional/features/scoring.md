@@ -107,7 +107,7 @@ State (`showRoundSheet`, `roundSheetInputs`) lives in `ScoreDetailState`; `submi
 ### Cancel confirmation
 When clicking **Cancel** with scores already entered:
 - A confirmation modal appears: "Discard unsaved scores?"
-- **Discard** button (red) → closes screen without saving, clears MatchDraft
+- **Discard** button (red) → closes screen without saving, clears the generic MatchDraft (a scoring module's draft sharing the slot, `moduleState` set, is left untouched)
 - **Resume** button (primary) → closes modal, stays in scoring
 
 When clicking **Cancel** with no scores entered:

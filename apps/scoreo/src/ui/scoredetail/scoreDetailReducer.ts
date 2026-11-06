@@ -408,7 +408,7 @@ function performSave(
         rounds,
       }
       deps.mode.updateMatchUseCase.invoke(updated)
-      deps.matchDraftRepository?.clear()
+      clearGenericDraft(deps)
       return { type: 'saved' }
     }
     const date = combineDateWithTimeOfDay(state.matchDate, deps.currentDate())
@@ -418,7 +418,7 @@ function performSave(
       rounds,
     })
     if (result.ok) {
-      deps.matchDraftRepository?.clear()
+      clearGenericDraft(deps)
       return { type: 'saved' }
     }
     return { type: 'saveFailed', error: result.error.message }
@@ -525,13 +525,25 @@ export function submitCancelMatch(
   if (hasUnsavedScores(state.rounds)) {
     return { type: 'showCancelConfirm' }
   }
-  deps.matchDraftRepository?.clear()
+  clearGenericDraft(deps)
   return { type: 'cancelImmediate' }
 }
 
 export function submitConfirmCancel(deps: ScoreDetailDeps): ScoreDetailAction {
-  deps.matchDraftRepository?.clear()
+  clearGenericDraft(deps)
   return { type: 'confirmCancel' }
+}
+
+/**
+ * Clears the draft slot unless it holds a scoring module's game in progress
+ * (`moduleState` set): the slot is shared, and a generic match saved or cancelled
+ * here must not wipe another game's module draft.
+ */
+function clearGenericDraft(deps: ScoreDetailDeps): void {
+  const repo = deps.matchDraftRepository
+  if (!repo) return
+  if (repo.load()?.moduleState) return
+  repo.clear()
 }
 
 /** Mirrors ScoreDetailHandler's saveDraft(), called after every rounds-changing action. */
@@ -629,7 +641,7 @@ export function resetState(
   players: Player[],
   deps: ScoreDetailDeps,
 ): ScoreDetailState {
-  deps.matchDraftRepository?.clear()
+  clearGenericDraft(deps)
   return freshState(gameType, players, deps.currentDate())
 }
 

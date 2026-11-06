@@ -1430,6 +1430,38 @@ describe('scoreDetailReducer', () => {
     expect(draft?.rounds[0].alice).toBe('10')
   })
 
+  it('cancelling or resetting keeps a module draft but clears a generic one', () => {
+    const gt = gameType('gt1', 'TestGame')
+    const gameTypeRepo = new InMemoryGameTypeRepository()
+    gameTypeRepo.save(gt)
+    const draftRepo = new InMemoryMatchDraftRepository()
+    const moduleDraft = {
+      gameTypeId: 'other',
+      playerIds: ['alice'],
+      rounds: [],
+      updatedAt: 1,
+      moduleState: { moduleId: 'm', state: {} },
+    }
+    draftRepo.save(moduleDraft)
+    const harness = new Harness(
+      gt,
+      [alice, bob],
+      new InMemoryMatchRepository(),
+      gameTypeRepo,
+      { type: 'Create' },
+      draftRepo,
+    )
+
+    harness.cancelMatch()
+    harness.confirmCancel()
+    harness.reset()
+    expect(draftRepo.load()).toEqual(moduleDraft)
+
+    draftRepo.save({ ...moduleDraft, moduleState: null })
+    harness.confirmCancel()
+    expect(draftRepo.load()).toBeUndefined()
+  })
+
   it('addRound saves a draft to the repository', () => {
     const gt = gameType('gt1', 'TestGame')
     const gameTypeRepo = new InMemoryGameTypeRepository()
