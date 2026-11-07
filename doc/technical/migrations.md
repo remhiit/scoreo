@@ -469,7 +469,7 @@ Phase **expand** d'une migration expand/contract : `MatchDraft` (clé `scoreo_ma
 
 **Cohabitation avec une version antérieure de l'app (autre onglet, cache du service worker) :** elle relit le brouillon unique en ignorant `moduleState` (zod le retire) et le prend pour un brouillon générique sans manche : effet limité à une grille vide proposée à la reprise.
 
-**Phase contract (#611) :** supprimera le repli de lecture, les anciennes clés `scoreo_module_draft_<moduleId>` et `ModuleDraftRepository`.
+**Phase contract (#611, 07/11/2026) :** le repli de lecture, `ModuleDraftRepository`, `LocalStorageModuleDraftRepository` et leur câblage dans `createServices` sont supprimés ; `ModuleHostAdapter.loadDraft()` ne lit plus que le brouillon unique, et `saveDraft`/`clearDraft`/`saveMatch` n'écrivent plus que lui. Au démarrage (`main.tsx`), `removeLegacyModuleDrafts(localStorage)` (idempotente, gardée contre un `localStorage` qui lève, renvoie le nombre de clés supprimées) efface toute clé commençant par `scoreo_module_draft_` (`scoreo_module_draft_<moduleId>`, une par module). Un ancien brouillon de module jamais réenregistré dans le brouillon unique est perdu. Le 27/10/2026, Rémi a levé le délai d'une version entre expand et contract : il n'a pas de brouillon de module en attente et accepte de perdre ceux qui resteraient.
 
 ---
 

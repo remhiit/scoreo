@@ -1,24 +1,10 @@
 import type { ModuleMatch } from '@scoreboards/module-api'
 import { newGameType } from '@scoreboards/shared-domain'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import type { ModuleDraftRepository } from '../domain/port/moduleDraftRepository'
 import { InMemoryMatchDraftRepository } from '../infrastructure/testing/inMemoryMatchDraftRepository'
 import { InMemoryMatchRepository } from '../infrastructure/testing/inMemoryMatchRepository'
 import { InMemoryPlayerRepository } from '../infrastructure/testing/inMemoryPlayerRepository'
 import { ModuleHostAdapter } from './moduleHostAdapter'
-
-class InMemoryModuleDraftRepository implements ModuleDraftRepository {
-  readonly drafts = new Map<string, unknown>()
-  load(moduleId: string) {
-    return this.drafts.get(moduleId)
-  }
-  save(moduleId: string, state: unknown) {
-    this.drafts.set(moduleId, state)
-  }
-  clear(moduleId: string) {
-    this.drafts.delete(moduleId)
-  }
-}
 
 const NOW = 1767225600000
 
@@ -27,7 +13,6 @@ const GAME_TYPE = newGameType('gt1', 'Torī Valley', 'HIGHEST_SCORE', { moduleId
 function build() {
   const playerRepository = new InMemoryPlayerRepository()
   const matchRepository = new InMemoryMatchRepository()
-  const draftRepository = new InMemoryModuleDraftRepository()
   const matchDraftRepository = new InMemoryMatchDraftRepository()
   const host = new ModuleHostAdapter(
     'tori-valley',
@@ -36,10 +21,9 @@ function build() {
     playerRepository,
     matchRepository,
     matchDraftRepository,
-    draftRepository,
     () => NOW,
   )
-  return { host, playerRepository, matchRepository, draftRepository, matchDraftRepository }
+  return { host, playerRepository, matchRepository, matchDraftRepository }
 }
 
 const result: ModuleMatch = {
@@ -202,12 +186,12 @@ describe('ModuleHostAdapter', () => {
     })
 
     it('clears the draft once the match is stored', () => {
-      const { host, draftRepository } = build()
+      const { host } = build()
       host.saveDraft({ dice: [1, 2] })
 
       host.saveMatch(result)
 
-      expect(draftRepository.drafts.has('tori-valley')).toBe(false)
+      expect(host.loadDraft()).toBeUndefined()
     })
 
     // Host code to host code, never surfaced to the module — lets whoever
@@ -215,7 +199,6 @@ describe('ModuleHostAdapter', () => {
     it('notifies onMatchSaved with the saved match id', () => {
       const playerRepository = new InMemoryPlayerRepository()
       const matchRepository = new InMemoryMatchRepository()
-      const draftRepository = new InMemoryModuleDraftRepository()
       const onMatchSaved = vi.fn()
       const host = new ModuleHostAdapter(
         'tori-valley',
@@ -224,7 +207,6 @@ describe('ModuleHostAdapter', () => {
         playerRepository,
         matchRepository,
         new InMemoryMatchDraftRepository(),
-        draftRepository,
         () => NOW,
         onMatchSaved,
       )
@@ -283,8 +265,7 @@ describe('ModuleHostAdapter', () => {
     // One slot for every game: starting another replaces the draft in progress,
     // but a module never reads (nor clears) another module's.
     it('never hands one module the draft of another', () => {
-      const { host, playerRepository, matchRepository, draftRepository, matchDraftRepository } =
-        build()
+      const { host, playerRepository, matchRepository, matchDraftRepository } = build()
       const other = new ModuleHostAdapter(
         'mille-sabords',
         newGameType('gt2', 'Sabords', 'HIGHEST_SCORE', { moduleId: 'mille-sabords' }),
@@ -292,7 +273,6 @@ describe('ModuleHostAdapter', () => {
         playerRepository,
         matchRepository,
         matchDraftRepository,
-        draftRepository,
         () => NOW,
       )
 
@@ -308,8 +288,8 @@ describe('ModuleHostAdapter', () => {
       expect(host.loadDraft()).toBeUndefined()
     })
 
-    it('writes the single draft slot, not the legacy per-module key', () => {
-      const { host, draftRepository, matchDraftRepository } = build()
+    it('writes the single draft slot', () => {
+      const { host, matchDraftRepository } = build()
 
       host.saveDraft({ dice: [1] })
 
@@ -320,39 +300,11 @@ describe('ModuleHostAdapter', () => {
         updatedAt: NOW,
         moduleState: { moduleId: 'tori-valley', state: { dice: [1] } },
       })
-      expect(draftRepository.drafts.has('tori-valley')).toBe(false)
     })
 
-    it('falls back on the legacy per-module key when the single slot is not its own', () => {
-      const { host, draftRepository, matchDraftRepository } = build()
-      draftRepository.save('tori-valley', { legacy: true })
-      expect(host.loadDraft()).toEqual({ legacy: true })
-
-      matchDraftRepository.save({
-        gameTypeId: 'gt1',
-        playerIds: ['p1'],
-        rounds: [{ p1: '3' }],
-        updatedAt: NOW,
-        moduleState: null,
-      })
-      expect(host.loadDraft()).toEqual({ legacy: true })
-    })
-
-    it('prefers the single slot over the legacy key', () => {
-      const { host, draftRepository } = build()
-      draftRepository.save('tori-valley', { legacy: true })
-
-      host.saveDraft({ fresh: true })
-
-      expect(host.loadDraft()).toEqual({ fresh: true })
-    })
-
-    it('saveDraft removes the legacy key so an older state never resurfaces', () => {
-      const { host, draftRepository, matchDraftRepository } = build()
-      draftRepository.save('tori-valley', { legacy: true })
-
-      host.saveDraft({ fresh: true })
-      expect(draftRepository.drafts.has('tori-valley')).toBe(false)
+    it('does not fall back on anything when the single slot is not its own', () => {
+      const { host, matchDraftRepository } = build()
+      expect(host.loadDraft()).toBeUndefined()
 
       matchDraftRepository.save({
         gameTypeId: 'gt1',
@@ -364,9 +316,8 @@ describe('ModuleHostAdapter', () => {
       expect(host.loadDraft()).toBeUndefined()
     })
 
-    it('clearDraft leaves a generic draft alone but removes the legacy key', () => {
-      const { host, draftRepository, matchDraftRepository } = build()
-      draftRepository.save('tori-valley', { legacy: true })
+    it('clearDraft leaves a generic draft alone', () => {
+      const { host, matchDraftRepository } = build()
       matchDraftRepository.save({
         gameTypeId: 'gt1',
         playerIds: ['p1'],
@@ -378,18 +329,15 @@ describe('ModuleHostAdapter', () => {
       host.clearDraft()
 
       expect(matchDraftRepository.load()).toBeDefined()
-      expect(draftRepository.drafts.has('tori-valley')).toBe(false)
     })
 
-    it('saving a match clears the single slot and the legacy key', () => {
-      const { host, draftRepository, matchDraftRepository } = build()
-      draftRepository.save('tori-valley', { legacy: true })
+    it('saving a match clears the single slot', () => {
+      const { host, matchDraftRepository } = build()
       host.saveDraft({ dice: [1] })
 
       host.saveMatch(result)
 
       expect(matchDraftRepository.load()).toBeUndefined()
-      expect(draftRepository.drafts.has('tori-valley')).toBe(false)
     })
   })
 })
