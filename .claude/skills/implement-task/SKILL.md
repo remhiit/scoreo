@@ -151,6 +151,17 @@ same field/trailer.
    (`doc/automation/state-machine.md` §6 "Escalation frees its slot"), which
    is exactly why "Escalade" fixes the order. See `doc/automation/
    state-machine.md` § Incomplete issue.
+
+   **The mockup** (`doc/technical/design-workflow.md`). When the spec's
+   `## Maquette` section names a mockup, read its folder
+   (`apps/catalog/src/mockups/<feature>/`) on the default branch before
+   planning: its screens are the target, its `designSystemChanges` and
+   `sketches/` the design-system work this issue includes. A spec whose
+   `## Maquette` names a mockup PR that is not merged is not validated —
+   same stop condition as above. A spec with no `## Maquette` section at all
+   predates the rule (issues groomed before 2026-11-06): proceed, and if the
+   change is visible to a player, say in the PR that it was built without a
+   validated mockup.
 2. **Branch from the latest default branch**: `feat/<issue-number>-<slug>`
    (slug = a few kebab-case words from the title). If that branch already
    exists remotely (an interrupted earlier run on this same issue, caught by
@@ -204,7 +215,13 @@ same field/trailer.
 7. **Visual check for UI changes.** If the issue touches a screen
    (`apps/scoreo/src/ui/*/`), start the dev server and exercise the actual flow in a
    browser — golden path and the edge cases named in the acceptance
-   criteria. Don't claim a UI change works from tests alone.
+   criteria. Don't claim a UI change works from tests alone. When the spec
+   names a mockup, compare the delivered screen with its screens and state
+   any deliberate difference in the PR. Every sketch it drafted is promoted
+   into `packages/design-system/` (component, CSS, test, and its story in
+   `apps/catalog/src/stories/`) — never shipped from `sketches/` — and the
+   PR removes the mockup folder: the feature exists now, the mockup stays in
+   git history.
 8. **Update `doc/`** per `CLAUDE.md`'s Pre-commit Checklist: the matching
    `doc/reference.md` table row, `doc/functional/feature.md` or
    `doc/functional/features/*.md` for user-facing behavior,

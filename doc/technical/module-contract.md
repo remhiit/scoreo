@@ -104,7 +104,7 @@ Designing this contract against Torī alone would have made it unfit the day Sab
 ```ts
 interface ScoringModuleScreenProps {
   host: ModuleHost
-  playerIds: readonly string[] // in the order the host picked them
+  playerIds: readonly string[] // new game: picking order; reopening: ranking order
   editing?: { matchId: string; version: number; data: unknown }
   onExit: () => void
 }
@@ -113,6 +113,19 @@ interface ScoringModuleScreenProps {
 `editing` carries back the `moduleData` of a match being reopened; passing its `matchId` back as `ModuleMatch.id` into
 `saveMatch` updates that match instead of duplicating it. `onExit` returns to the host, whether or
 not anything was saved.
+
+On a new game, `playerIds` arrives in the order the players were picked — the order a draft was
+written with. On a reopened match it does **not** carry the seating: the host passes
+`Match.playerScores` ids, in the order the module's own `ModuleMatch.playerScores` stored them —
+sorted by rank in every module today. A
+module that keeps the seating in its `moduleData` must compare the **set** of players when reading
+`editing.data` and restore its own order from the payload; an order-sensitive check would discard the
+match whenever its winner was not seated first. Skyjo and 1000 Sabords do this; Torī Valley reads
+`editing.data` without comparing players at all.
+
+While `editing` is set, a module neither writes nor clears the draft (`saveDraft`/`clearDraft`): the
+match is already saved on the host's side, and the draft slot belongs to the new game that may be in
+progress for the same module.
 
 ## Adding a module
 
@@ -302,7 +315,7 @@ import. Its CSS follows three rules:
 
 - every rule scoped under `.module-<moduleId>`, carried by the module's root;
 - every class prefixed with the module's own prefix (`ms-` for 1000 Sabords, `tv-` for Torī Valley,
-  `sj-` for Skyjo), never `sc-`;
+  `sj-` for Skyjo, `f7-` for Flip 7), never `sc-`;
 - only the design system's semantic tokens — never a `var(--ctp-*)` palette token, never a raw
   colour (hex, `rgb()`/`rgba()`, `hsl()`/`hsla()`), never a raw value equal to a token.
 

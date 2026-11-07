@@ -32,10 +32,37 @@ export function canSubmitRound(state: SkyjoState): boolean {
   return state.enderPlayerId !== undefined && pendingEntries(state) !== undefined
 }
 
-function sameTable(restored: readonly string[], playerIds: readonly string[]): boolean {
+/**
+ * Where a persisted payload comes from, which decides how strictly its table
+ * is checked against the players the host handed over:
+ *
+ * - `'draft'` — a new game resumed from `host.loadDraft()`. The host passes the
+ *   ids in the order the players were picked, the same order the draft was
+ *   written with, so anything else is someone else's game.
+ * - `'match'` — a saved match reopened through `editing`. The host passes
+ *   `Match.playerScores` ids, which are in *ranking* order, not seating order,
+ *   so only the set of players is compared and the payload's own order wins.
+ */
+export type ChargeSource = 'draft' | 'match'
+
+function sameSeating(restored: readonly string[], playerIds: readonly string[]): boolean {
   return (
     restored.length === playerIds.length && restored.every((id, index) => id === playerIds[index])
   )
+}
+
+function samePlayers(restored: readonly string[], playerIds: readonly string[]): boolean {
+  const atTable = new Set(playerIds)
+  return (
+    restored.length === playerIds.length &&
+    new Set(restored).size === restored.length &&
+    restored.every((id) => atTable.has(id))
+  )
+}
+
+interface Restored extends Pick<SkyjoDraft, 'rounds' | 'enderPlayerId' | 'scoreInputs'> {
+  /** The seating the payload was recorded with — the column order to show. */
+  readonly players: readonly string[]
 }
 
 /**
@@ -49,10 +76,14 @@ function sameTable(restored: readonly string[], playerIds: readonly string[]): b
 function readCharge(
   data: unknown,
   playerIds: readonly string[],
-): Pick<SkyjoDraft, 'rounds' | 'enderPlayerId' | 'scoreInputs'> | undefined {
+  source: ChargeSource,
+): Restored | undefined {
+  const sameTable = source === 'match' ? samePlayers : sameSeating
+
   const draft = SkyjoDraftSchema.safeParse(data)
   if (draft.success && sameTable(draft.data.players, playerIds)) {
     return {
+      players: draft.data.players,
       rounds: draft.data.rounds,
       enderPlayerId: draft.data.enderPlayerId,
       scoreInputs: draft.data.scoreInputs,
@@ -63,16 +94,25 @@ function readCharge(
   // was in progress when it was saved.
   const saved = SkyjoModuleDataSchema.safeParse(data)
   if (saved.success && sameTable(saved.data.players, playerIds)) {
-    return { rounds: saved.data.rounds, enderPlayerId: undefined, scoreInputs: {} }
+    return {
+      players: saved.data.players,
+      rounds: saved.data.rounds,
+      enderPlayerId: undefined,
+      scoreInputs: {},
+    }
   }
 
   return undefined
 }
 
-export function buildInitialState(playerIds: readonly string[], charge: unknown): SkyjoState {
-  const restored = readCharge(charge, playerIds)
+export function buildInitialState(
+  playerIds: readonly string[],
+  charge: unknown,
+  source: ChargeSource = 'draft',
+): SkyjoState {
+  const restored = readCharge(charge, playerIds, source)
   return {
-    playerIds: [...playerIds],
+    playerIds: [...(restored?.players ?? playerIds)],
     rounds: restored?.rounds ?? [],
     enderPlayerId: restored?.enderPlayerId,
     scoreInputs: restored?.scoreInputs ?? {},

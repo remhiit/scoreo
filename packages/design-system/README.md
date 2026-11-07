@@ -6,9 +6,11 @@ carry them. The app only composes these components — no `className`, no `style
 no stylesheet, no icon glyph of its own. `eslint.config.js` enforces it on
 `apps/scoreo/src/` (see _The rule_ below).
 
-The visual reference it implements is the Claude Design export in
-[`ds_temp/scoreo-design/`](../../ds_temp/scoreo-design/README.md) (`Scoreo Atomic Design`,
-`Scoreo Screens`, `Scoreo Écrans × Atomic`).
+Every component is shown, by its own code, in the catalog (`apps/catalog/`, `pnpm catalog`):
+one page per layer below, in the four flavors and fourteen accents. A component without a story
+there fails `pnpm test`. See [`doc/technical/design-catalog.md`](../../doc/technical/design-catalog.md).
+The Claude Design export in [`ds_temp/scoreo-design/`](../../ds_temp/scoreo-design/README.md) was
+the target the screens were migrated onto; it is a frozen copy, the catalog is the reference.
 
 ## Using it
 
@@ -32,8 +34,8 @@ The host composes; it never styles.
   closed set declared in [`src/atoms/icons.ts`](src/atoms/icons.ts).
 - **Layout is a component too**: arrange things with `<Stack>` (direction, gap on
   the `--space-*` scale, alignment), never with margins.
-- **Missing something?** Add a prop or a component here, with its CSS and a test —
-  not a local workaround in the app.
+- **Missing something?** Add a prop or a component here, with its CSS, a test and its
+  story in the catalog — not a local workaround in the app.
 
 The rule has no exceptions: every host screen composes the system.
 

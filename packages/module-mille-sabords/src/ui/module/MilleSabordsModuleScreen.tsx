@@ -73,16 +73,22 @@ export default function MilleSabordsModuleScreen({
 }: ScoringModuleScreenProps) {
   const [state, dispatch] = useReducer(milleSabordsModuleReducer, undefined, () =>
     // Reopening a match wins over the draft: the host asked for *that* game.
-    etatInitial(playerIds, editing === undefined ? host.loadDraft() : editing.data),
+    editing === undefined
+      ? etatInitial(playerIds, host.loadDraft(), 'brouillon')
+      : etatInitial(playerIds, editing.data, 'partie'),
   )
 
   // The whole reason `saveDraft` exists. The Kotlin app kept the dice, the card
   // and the multiplier in module-level `var`s and persisted only the game, so a
   // reload in the middle of a turn threw away the hand a player had just
-  // counted out. Every state transition is written back here instead.
+  // counted out. Every state transition is written back here instead — except
+  // when reopening: that match is already saved on the host's side, and
+  // writing it here would clobber the draft of a new game in progress, or
+  // leave its coups behind for the next new game with the same players.
+  const reouverture = editing !== undefined
   useEffect(() => {
-    host.saveDraft(versBrouillon(state))
-  }, [host, state])
+    if (!reouverture) host.saveDraft(versBrouillon(state))
+  }, [host, state, reouverture])
 
   const noms = useMemo(() => {
     const connus = new Map(host.getPlayers().map((joueur) => [joueur.id, joueur.name]))
@@ -107,7 +113,8 @@ export default function MilleSabordsModuleScreen({
   }
 
   const abandonner = () => {
-    host.clearDraft()
+    // A reopened match never wrote a draft: the one there belongs to another game.
+    if (!reouverture) host.clearDraft()
     onExit()
   }
 

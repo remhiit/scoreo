@@ -93,6 +93,38 @@ several unrelated files.
 
 ## Procédure
 
+### Mockup first (features a player sees)
+
+A feature that changes what a player sees — a screen or a region of one, a
+design-system component or prop, a layout, a visible state (empty, error,
+loading, finished, a dialog) — is mocked up and validated **before** its
+spec can be `READY_FOR_IMPLEMENTATION`. The rule, its exemptions and the
+mockup's layout are defined once in `doc/technical/design-workflow.md`;
+follow it rather than restating it:
+
+1. Build the mockup in `apps/catalog/src/mockups/<feature>/` (`index.tsx`,
+   `screens.tsx`, `sketches/` for what the design system lacks), composing the
+   real components with realistic example data; show *today* next to
+   *proposed* when an existing screen changes. `pnpm --filter
+   @scoreboards/catalog test` must pass.
+2. Open a PR titled `Maquette : <feature>` with only that folder, publish
+   its preview (`pnpm --filter @scoreboards/catalog build:preview`, then
+   `apps/catalog/dist/catalog.html` as an Artifact) and give the user both
+   links.
+3. The mockup is validated when the user merges that PR. Until then the
+   verdict stays `NEEDS_CLARIFICATION`, its checklist naming the mockup PR
+   to review. Revise the mockup on the same PR when the user comments.
+
+Exempt (say why in `## Maquette`): a wording change, a bug fix that brings a
+screen back to its validated look, pure logic with no visible change,
+documentation, tooling.
+
+**As the coordinator's sub-agent** (#506): there is no human to validate a
+mockup — never build one in that mode. An issue that needs one and whose
+`## Maquette` section names no merged mockup PR returns
+`NEEDS_CLARIFICATION`, its checklist item being « maquette à produire et à
+faire valider (doc/technical/design-workflow.md) ».
+
 ### Spec format
 
 Write the issue body as:
@@ -108,6 +140,16 @@ Write the issue body as:
 scope » ci-dessous. Une phrase suffit si les critères d'acceptation rendent
 déjà le périmètre évident, mais la section doit exister : ne jamais laisser
 le lecteur déduire le périmètre par soustraction.>
+
+## Maquette
+
+<Obligatoire. Pour une feature qui change ce que voit un joueur : le dossier
+`apps/catalog/src/mockups/<feature>/`, la PR de maquette fusionnée (#N),
+le lien d'aperçu, et les changements du design system qu'elle nomme
+(composant ou prop à créer, icône à ajouter) — les critères d'acceptation
+renvoient à ses écrans. Sinon : « Sans objet — <raison> » (libellé,
+correctif qui rétablit l'écran validé, logique sans effet visible, doc,
+outillage). Voir « Mockup first » ci-dessus.>
 
 ## Critères d'acceptation
 
@@ -261,13 +303,16 @@ duplicate that state.
 
 - **`READY_FOR_IMPLEMENTATION`** — every section above is filled in with
   something concrete (not a placeholder), and every acceptance criterion is
-  testable, every identified edge case and open question has an answer. This
+  testable, every identified edge case and open question has an answer, and
+  `## Maquette` either names a merged mockup PR or says why none is needed
+  (§ "Mockup first" above). This
   holds regardless of `## Dépendances`: a spec that is otherwise complete
   keeps this verdict even while blocked — an open blocker cited there only
   changes which queue label **Labels** below poses (`blocked` instead of
   `automation:queued`), never this verdict. Proceed to **Labels** below.
 - **`NEEDS_CLARIFICATION`** — the spec is missing something only the user
-  can supply: an untestable acceptance criterion, an unanswered question in
+  can supply: a mockup not yet validated (its PR still open, or not built
+  yet) for a feature a player sees, an untestable acceptance criterion, an unanswered question in
   `## Risques et questions ouvertes`, an error/edge-case behavior you can't
   infer from the codebase, an unclear risk category. **Don't create the
   issue yet.** List, as a checklist, exactly what's missing and the precise

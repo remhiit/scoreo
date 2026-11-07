@@ -61,22 +61,51 @@ function lireCharge(charge: unknown): Omit<MilleSabordsDraft, 'version'> | undef
   }
 }
 
-function memeTable(restaures: readonly string[], playerIds: readonly string[]): boolean {
+/**
+ * Where a persisted payload comes from, which decides how strictly its table
+ * is checked against the players the host handed over:
+ *
+ * - `'brouillon'` — a new game resumed from `host.loadDraft()`. The host passes
+ *   the ids in the order the players were picked, the same order the draft was
+ *   written with, so anything else is someone else's game.
+ * - `'partie'` — a saved match reopened through `editing`. The host passes
+ *   `Match.playerScores` ids, which are in *ranking* order, not seating order,
+ *   so only the set of players is compared and the payload's own seating wins.
+ */
+export type OrigineCharge = 'brouillon' | 'partie'
+
+function memePlacement(restaures: readonly string[], playerIds: readonly string[]): boolean {
   return (
     restaures.length === playerIds.length && restaures.every((id, index) => id === playerIds[index])
+  )
+}
+
+function memesJoueurs(restaures: readonly string[], playerIds: readonly string[]): boolean {
+  const attables = new Set(playerIds)
+  return (
+    restaures.length === playerIds.length &&
+    new Set(restaures).size === restaures.length &&
+    restaures.every((id) => attables.has(id))
   )
 }
 
 /**
  * Restores a game in progress, or starts a fresh one.
  *
- * A payload is only reused when it was recorded for exactly these players, in
- * this order: scores are attributed by player id inside the coups, so replaying
- * a history against a different table would credit points to nobody and quietly
+ * A draft is only reused when it was recorded for exactly these players, in
+ * this order; a reopened match, for exactly these players in any order, and it
+ * then keeps its own seating. Seating decides who plays when and who an island
+ * penalises, and scores are attributed by player id inside the coups, so
+ * replaying a history against another table — or reseated — would quietly
  * change everyone's total.
  */
-export function etatInitial(playerIds: readonly string[], charge: unknown): MilleSabordsState {
+export function etatInitial(
+  playerIds: readonly string[],
+  charge: unknown,
+  origine: OrigineCharge = 'brouillon',
+): MilleSabordsState {
   const restaure = lireCharge(charge)
+  const memeTable = origine === 'partie' ? memesJoueurs : memePlacement
   if (restaure === undefined || !memeTable(restaure.joueurs, playerIds)) {
     return etatVierge(playerIds)
   }
@@ -85,7 +114,7 @@ export function etatInitial(playerIds: readonly string[], charge: unknown): Mill
     return etatVierge(playerIds)
   }
   return {
-    joueurs: [...playerIds],
+    joueurs: [...restaure.joueurs],
     historique: restaure.historique,
     tab: restaure.tab,
     des: restaure.des,

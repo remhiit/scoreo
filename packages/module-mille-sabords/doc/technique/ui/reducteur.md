@@ -7,7 +7,7 @@ tout écran de Scoreo (MVI).
 
 ```ts
 interface MilleSabordsState {
-  readonly joueurs: readonly string[]      // ids, dans l'ordre donné par l'hôte
+  readonly joueurs: readonly string[]      // ids, dans l'ordre du tour (celui de la charge si rouverte)
   readonly historique: readonly EvenementCoup[]
   readonly tab: 'calc' | 'manual'
   readonly des: LancerDes
@@ -51,4 +51,4 @@ Aucune n'est stockée : toutes se recalculent depuis l'état.
 | `joueurActuel(state)` | À qui le tour, dérivé du nombre de coups |
 | `estFinie(state, partie)` | Fin demandée, ou seuil franchi et dernier tour joué |
 | `versBrouillon(state)` | Ce que `host.saveDraft` reçoit |
-| `etatInitial(playerIds, charge)` | L'état de départ, brouillon restauré si la table correspond |
+| `etatInitial(playerIds, charge, origine)` | L'état de départ : brouillon (`'brouillon'`, même ordre) ou partie rouverte (`'partie'`, mêmes joueurs, ordre de la charge) restauré si la table correspond |

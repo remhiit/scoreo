@@ -62,17 +62,17 @@ Vite dev server / production build, output to `apps/scoreo/dist/`. Entry point: 
 Two separate suites, run by different `pnpm` scripts and CI jobs:
 
 - **Unit/component (`pnpm test`)** — Vitest + `jsdom`. No real browser; covers reducers, use cases, and screen components. See "Tests" in `doc/reference.md`.
-- **E2E (`pnpm test:e2e`)** — Playwright driving real Chromium against a production build (`pnpm build` + `pnpm preview`). Catches real-DOM/CSS rendering issues `jsdom` can't. Lives in `apps/scoreo/e2e/`, config at `apps/scoreo/playwright.config.ts`. CI installs Chromium (`playwright install --with-deps chromium`) in a dedicated `e2e` job. Claude Code on the web cannot: its image forbids that download and ships its own Chromium, so `.claude/hooks/session-start.sh` links the image's build under the number Playwright expects.
+- **E2E (`pnpm test:e2e`)** — Playwright driving real Chromium against a production build (`pnpm build` + `pnpm preview`). Catches real-DOM/CSS rendering issues `jsdom` can't. Lives in `apps/scoreo/e2e/`, config at `apps/scoreo/playwright.config.ts`. CI installs Chromium (`playwright install --with-deps chromium`) in a dedicated `e2e` job. Claude Code on the web cannot: its image forbids that download and ships its own Chromium, so `.claude/hooks/session-start.sh` links the image's build under the number Playwright expects (`scripts/link-playwright-browsers.sh`, which handles both the `chrome-linux64/` and the older `chrome-linux/` layouts and links nothing when it finds neither).
 
 ## Repository layout
 
 The repository is a **pnpm workspace** (`pnpm-workspace.yaml`: `apps/*`, `packages/*`). Scoreo is the
 host application and the only one deployed; the score-counting modules live under `packages/` and
-are loaded by Scoreo. All three are registered in `apps/scoreo/src/modules/registry.ts` and reached
+are loaded by Scoreo. All four are registered in `apps/scoreo/src/modules/registry.ts` and reached
 on demand: `packages/module-tori-valley/` (absorbed from `remhiit/toriValleyScoreBoard`, with its
 commit history preserved), `packages/module-mille-sabords/` (ported from the Kotlin app kept in
-`legacy/`), and `packages/module-skyjo/` (built directly as a module, not absorbed from a sibling
-repository). None runs on its own: a module package has no `index.html`, no Vite config and nothing
+`legacy/`), and `packages/module-skyjo/` and `packages/module-flip-7/` (both built directly as modules, not absorbed
+from a sibling repository). None runs on its own: a module package has no `index.html`, no Vite config and nothing
 deployed — Scoreo builds it into a chunk loaded the first time someone opens it.
 
 ```
@@ -97,6 +97,7 @@ deployed — Scoreo builds it into a chunk loaded the first time someone opens i
     ├── design-system/             # every visual decision: tokens, atoms → templates (see its README)
     ├── module-api/                # the host ↔ module contract, no runtime dependency (imports `shared-domain` types only)
     ├── shared-domain/             # Player, GameType, Match, PlayerScore + schemas, enums, newId, isUuid, Result
+    ├── module-flip-7/             # Flip 7, a card-by-card score calculator built directly as a module
     ├── module-mille-sabords/      # 1000 Sabords, ported from Kotlin and checked against it
     ├── module-skyjo/              # Skyjo, a manual score counter built directly as a module
     └── module-tori-valley/        # absorbed score-counting module

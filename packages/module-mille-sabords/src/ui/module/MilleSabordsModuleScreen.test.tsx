@@ -177,6 +177,67 @@ describe('MilleSabordsModuleScreen', () => {
     expect(saved[0].id).toBe('match-7')
   })
 
+  it('reopens a match whose winner was not seated first, keeping its seating', () => {
+    const { host, saved } = hoteFactice()
+    render(
+      <MilleSabordsModuleScreen
+        host={host}
+        // The host reopens with `Match.playerScores` ids, in ranking order:
+        // Mary Read won, so she comes first, unlike in `moduleData.joueurs`.
+        playerIds={['p2', 'p1']}
+        editing={{
+          matchId: 'match-9',
+          version: 1,
+          data: {
+            joueurs: ['p1', 'p2'],
+            historique: [
+              { type: 'manuel', joueur: 'p1', scoreEntre: 300, multiplicateur: 1, score: 300 },
+              { type: 'manuel', joueur: 'p2', scoreEntre: 800, multiplicateur: 1, score: 800 },
+            ],
+          },
+        }}
+        onExit={() => undefined}
+      />,
+    )
+
+    const tour = screen.getByRole('row', { name: /Tour 1/ }).textContent ?? ''
+    expect(tour.indexOf('300')).toBeLessThan(tour.indexOf('800'))
+
+    fireEvent.click(screen.getByRole('button', { name: /Terminer la partie/ }))
+    fireEvent.click(screen.getByRole('button', { name: /Enregistrer la partie/ }))
+
+    expect(saved[0].id).toBe('match-9')
+    expect(saved[0].moduleData?.data).toEqual(expect.objectContaining({ joueurs: ['p1', 'p2'] }))
+  })
+
+  it('never touches the draft of a new game in progress while reopening a match', () => {
+    const brouillonInitial = { version: 1, joueurs: ['p1', 'p2'], historique: [] }
+    const { host, brouillon } = hoteFactice(brouillonInitial)
+    const saveDraft = vi.spyOn(host, 'saveDraft')
+    const clearDraft = vi.spyOn(host, 'clearDraft')
+    const { unmount } = render(
+      <MilleSabordsModuleScreen
+        host={host}
+        playerIds={['p1', 'p2']}
+        editing={{
+          matchId: 'match-3',
+          version: 1,
+          data: { joueurs: ['p1', 'p2'], historique: [] },
+        }}
+        onExit={() => undefined}
+      />,
+    )
+
+    saisirScore('500')
+    fireEvent.click(screen.getByRole('button', { name: /Abandonner$/ }))
+    fireEvent.click(screen.getByRole('button', { name: 'Abandonner' }))
+    unmount()
+
+    expect(saveDraft).not.toHaveBeenCalled()
+    expect(clearDraft).not.toHaveBeenCalled()
+    expect(brouillon()).toEqual(brouillonInitial)
+  })
+
   // Stepping out is no longer a button the module draws itself — that is the
   // host's ✕ now (#389) — so from the module's side it is simply never calling
   // `clearDraft`, unlike abandoning.
