@@ -42,8 +42,8 @@ const MilleSabordsDraftSchema = z.object({
 })
 ```
 
-L'hôte range cette charge sous sa propre clé (`scoreo_module_draft_mille-sabords`) sans jamais
-regarder dedans : seul le module sait la relire.
+L'hôte range cette charge dans son brouillon unique (`scoreo_match_draft`, champ
+`MatchDraft.moduleState`) sans jamais regarder dedans : seul le module sait la relire.
 
 ## Les trois garde-fous
 

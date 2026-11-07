@@ -51,6 +51,11 @@
      module game with no `moduleData` (v1.1 import, or entered earlier through "Play in Scoreo")
      reopens on the generic grid, where it stays readable and editable. A generic draft already in
      progress on a module game is still resumed on the generic grid.
+   - A game in progress on a module is saved in the same single draft slot as the generic grid, so
+     Home's "Resume match" banner offers it too and reopens the module screen (no banner if the
+     module has since been removed). There is one slot: starting any game, generic or module,
+     replaces the draft in progress of another game. A draft written by an earlier version in the
+     module's own slot stays resumable from the module screen, not from the banner.
    - Exiting a module after it saved a match lands on **History**, that match called out, instead of
      Home — no burger + History detour needed to find it. Exiting without having saved anything keeps
      the previous behavior: History when reopening an existing match, Home for a new one.

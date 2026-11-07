@@ -181,6 +181,41 @@ describe('App', () => {
     expect(window.location.hash).toMatch(/^#\/module\/skyjo\/gt1\/p1,p2\/[0-9a-f-]{36}$/)
   })
 
+  it('Home: the resume banner reopens a module game in progress on its module screen', () => {
+    seedStatsData({ moduleId: 'skyjo' })
+    localStorage.setItem(
+      'scoreo_match_draft',
+      JSON.stringify({
+        gameTypeId: 'gt1',
+        playerIds: ['p1', 'p2'],
+        rounds: [],
+        updatedAt: 1,
+        moduleState: { moduleId: 'skyjo', state: {} },
+      }),
+    )
+    render(<App />)
+    fireEvent.click(screen.getByText('Resume match in progress'))
+
+    expect(window.location.hash).toBe('#/module/skyjo/gt1/p1,p2')
+  })
+
+  it('Home: no resume banner for a draft of a module that is no longer registered', () => {
+    seedStatsData({ moduleId: 'gone' })
+    localStorage.setItem(
+      'scoreo_match_draft',
+      JSON.stringify({
+        gameTypeId: 'gt1',
+        playerIds: ['p1', 'p2'],
+        rounds: [],
+        updatedAt: 1,
+        moduleState: { moduleId: 'gone', state: {} },
+      }),
+    )
+    render(<App />)
+
+    expect(screen.queryByText('Resume match in progress')).not.toBeInTheDocument()
+  })
+
   it('Home: launching a module never played binds it, then opens the module screen', () => {
     localStorage.setItem(
       'scoreo_players',

@@ -78,8 +78,10 @@ export function ModuleScoreScreen({ screen, services, onExit }: ModuleScoreRoute
         : new ModuleHostAdapter(
             screen.moduleId,
             gameType,
+            screen.playerIds,
             services.playerRepository,
             services.matchRepository,
+            services.matchDraftRepository,
             services.moduleDraftRepository,
             services.currentDate,
             // `saveMatch` only ever runs from a module's own event handler (both
@@ -91,7 +93,7 @@ export function ModuleScoreScreen({ screen, services, onExit }: ModuleScoreRoute
               savedMatchIdRef.current = matchId
             },
           ),
-    [screen.moduleId, gameType, services],
+    [screen.moduleId, screen.playerIds, gameType, services],
   )
 
   // The module only ever gets `() => void`, per the contract: the id travels

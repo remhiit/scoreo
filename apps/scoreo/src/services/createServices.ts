@@ -29,7 +29,7 @@ export interface Services {
   gameTypeRepository: GameTypeRepository
   matchRepository: MatchRepository
   matchDraftRepository: MatchDraftRepository
-  /** One slot per scoring module, unlike matchDraftRepository's single anonymous one. */
+  /** Legacy read fallback until #611: module drafts now live in matchDraftRepository (MatchDraft.moduleState). */
   moduleDraftRepository: ModuleDraftRepository
   /** undefined when no Google OAuth client id is configured (equivalent of Kotlin's null CloudSyncRepository). */
   cloudSyncRepository: CloudSyncRepository | undefined
