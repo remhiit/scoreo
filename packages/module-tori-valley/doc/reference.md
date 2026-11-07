@@ -53,7 +53,7 @@ Everything else — buttons, fields, panels, layout — is `@scoreboards/design-
 
 The module writes **none**. It reaches storage only through `ModuleHost`, which keeps its draft
 in Scoreo's single match draft (`scoreo_match_draft`, field `MatchDraft.moduleState`; the legacy
-`scoreo_module_draft_tori-valley` key is only a read fallback until #611) — written by `ToriValleyModuleScreen` on every
+`scoreo_module_draft_tori-valley` key is erased at startup since #611) — written by `ToriValleyModuleScreen` on every
 change to the grid once the Objectif cards are confirmed (not during card dealing: the grid doesn't
 exist yet), and cleared either by `ModuleHostAdapter.saveMatch` on a finished match or by the screen's
 own **Cancel** button, the explicit way to start over. The module bar's own exit (leaving mid-entry,
