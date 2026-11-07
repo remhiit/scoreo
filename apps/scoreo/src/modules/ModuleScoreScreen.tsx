@@ -82,7 +82,6 @@ export function ModuleScoreScreen({ screen, services, onExit }: ModuleScoreRoute
             services.playerRepository,
             services.matchRepository,
             services.matchDraftRepository,
-            services.moduleDraftRepository,
             services.currentDate,
             // `saveMatch` only ever runs from a module's own event handler (both
             // installed modules call it from a click, never during their own

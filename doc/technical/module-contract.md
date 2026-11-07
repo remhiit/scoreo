@@ -268,9 +268,9 @@ The host side never trusts blindly:
 
 Drafts live in the single `scoreo_match_draft` slot (`MatchDraft.moduleState`, issue #610), shared with
 the generic grid: starting any game replaces the draft of another. `loadDraft()` returns the state only
-when the slot belongs to this module and this game type, and otherwise falls back on the legacy
-`scoreo_module_draft_<moduleId>` key (read fallback, removed by the contract phase, #611).
-`clearDraft()` and `saveMatch` clear the slot if it is this module's, and the legacy key. The Home
+when the slot belongs to this module and this game type, and `undefined` otherwise (the legacy
+`scoreo_module_draft_<moduleId>` keys are erased at startup, #611).
+`clearDraft()` and `saveMatch` clear the slot if it is this module's. The Home
 "Resume match" banner reopens the module screen for such a draft while the module is registered.
 
 ### Landing after exit
