@@ -7,6 +7,7 @@ import {
   Columns,
   Dialog,
   Icon,
+  ModuleGameActions,
   NumberField,
   Panel,
   Score,
@@ -50,6 +51,13 @@ import {
   type ScoreCell,
   type TotalTone,
 } from '../../design'
+
+const GAME_ACTION_LABELS = {
+  undo: 'Annuler le coup',
+  abandon: 'Abandonner',
+  save: 'Enregistrer la partie',
+  end: 'Terminer la partie',
+}
 
 type Dispatch = (action: MilleSabordsAction) => void
 
@@ -196,31 +204,15 @@ function EcranJeu(props: VueProps) {
     <Columns>
       <Column label="Tableau de bord">
         <Tableau state={state} partie={partie} noms={noms} />
-        <Stack direction="row" gap={2} wrap>
-          <Button
-            variant="secondary"
-            size="sm"
-            disabled={state.historique.length === 0}
-            onClick={() => dispatch({ type: 'undoLast' })}
-          >
-            ↩ Annuler le coup
-          </Button>
-          <Button
-            variant="secondary"
-            size="sm"
-            disabled={state.historique.length === 0}
-            onClick={() => dispatch({ type: 'requestEnd' })}
-          >
-            🏁 Terminer la partie
-          </Button>
-          <Button
-            variant="danger"
-            size="sm"
-            onClick={() => dispatch({ type: 'showAbandonConfirm' })}
-          >
-            🗑 Abandonner
-          </Button>
-        </Stack>
+        <ModuleGameActions
+          phase="playing"
+          labels={GAME_ACTION_LABELS}
+          undoDisabled={state.historique.length === 0}
+          onUndo={() => dispatch({ type: 'undoLast' })}
+          onEnd={() => dispatch({ type: 'requestEnd' })}
+          endDisabled={state.historique.length === 0}
+          onAbandon={() => dispatch({ type: 'showAbandonConfirm' })}
+        />
       </Column>
 
       <Column label="Tour en cours">
@@ -502,21 +494,19 @@ function EcranFin({
         ))}
       </StandingsGrid>
 
-      <Stack direction="row" gap={2} wrap>
-        <Button onClick={onEnregistrer}>💾 Enregistrer la partie</Button>
-        <Button
-          variant="secondary"
-          disabled={state.historique.length === 0}
-          onClick={() => dispatch({ type: 'undoLast' })}
-        >
-          ↩ Annuler le dernier coup
-        </Button>
+      <ModuleGameActions
+        phase="finished"
+        labels={{ ...GAME_ACTION_LABELS, undo: 'Annuler le dernier coup' }}
+        undoDisabled={state.historique.length === 0}
+        onUndo={() => dispatch({ type: 'undoLast' })}
+        onSave={onEnregistrer}
+      >
         {state.finDemandee && (
           <Button variant="ghost" onClick={() => dispatch({ type: 'resumeGame' })}>
             ⚓ Reprendre la partie
           </Button>
         )}
-      </Stack>
+      </ModuleGameActions>
     </Panel>
   )
 }

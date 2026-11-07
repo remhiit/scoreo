@@ -119,7 +119,7 @@ describe('Flip7ModuleScreen', () => {
     }
 
     expect(screen.getByText('Alice remporte la partie !', { exact: false })).toBeInTheDocument()
-    fireEvent.click(screen.getByRole('button', { name: '💾 Enregistrer la partie' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Enregistrer la partie' }))
     expect(saved).toHaveLength(1)
     expect(saved[0].playerScores[0]).toEqual({ playerId: 'p1', score: 207 })
     expect(saved[0].manualWinners).toEqual(['p1'])
@@ -151,7 +151,7 @@ describe('Flip7ModuleScreen', () => {
     expect(screen.getByText('Bob remporte la partie !', { exact: false })).toBeInTheDocument()
     expect(screen.getByRole('region', { name: 'Manche 9' })).toBeInTheDocument()
 
-    fireEvent.click(screen.getByRole('button', { name: '💾 Enregistrer la partie' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Enregistrer la partie' }))
     expect(saved[0].id).toBe('m-7')
     expect(saved[0].playerScores[0]).toEqual({ playerId: 'p2', score: 207 })
     expect(saved[0].manualWinners).toEqual(['p2'])
@@ -163,8 +163,8 @@ describe('Flip7ModuleScreen', () => {
     const { host, stored } = fakeHost()
     const onExit = vi.fn()
     render(<Flip7ModuleScreen host={host} playerIds={['p1', 'p2']} onExit={onExit} />)
-    fireEvent.click(screen.getByRole('button', { name: '🗑 Abandonner' }))
     fireEvent.click(screen.getByRole('button', { name: 'Abandonner' }))
+    fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Abandonner' }))
     expect(stored()).toBeUndefined()
     expect(onExit).toHaveBeenCalled()
   })
