@@ -137,7 +137,13 @@ describe('MergeGameTypesUseCase', () => {
 
   it('clears a match draft that references the duplicate', () => {
     const { draftRepo, useCase } = buildUseCase()
-    draftRepo.save({ gameTypeId: 'dup', playerIds: ['p1', 'p2'], rounds: [], updatedAt: 1 })
+    draftRepo.save({
+      gameTypeId: 'dup',
+      playerIds: ['p1', 'p2'],
+      rounds: [],
+      updatedAt: 1,
+      moduleState: null,
+    })
 
     useCase.invoke('keep', ['dup'])
 
@@ -146,7 +152,13 @@ describe('MergeGameTypesUseCase', () => {
 
   it('keeps a match draft that does not reference the duplicate', () => {
     const { draftRepo, useCase } = buildUseCase()
-    const draft = { gameTypeId: 'keep', playerIds: ['p1', 'p2'], rounds: [], updatedAt: 1 }
+    const draft = {
+      gameTypeId: 'keep',
+      playerIds: ['p1', 'p2'],
+      rounds: [],
+      updatedAt: 1,
+      moduleState: null,
+    }
     draftRepo.save(draft)
 
     useCase.invoke('keep', ['dup'])

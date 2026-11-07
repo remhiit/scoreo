@@ -392,6 +392,25 @@ describe('scoreDetailReducer', () => {
     expect(draftRepo.load()?.rounds).toEqual([{ alice: '10', bob: '0' }])
   })
 
+  it('does not read a module draft as its own rounds', () => {
+    const draftRepo = new InMemoryMatchDraftRepository()
+    const draft = {
+      gameTypeId: 'gt1',
+      playerIds: ['alice', 'bob'],
+      rounds: [{ alice: '10', bob: '5' }],
+      updatedAt: 1,
+    }
+    const gt = gameType('gt1', 'TestGame', 'HIGHEST_SCORE')
+    const build = () =>
+      buildInitialState(gt, [alice, bob], { type: 'Create' }, () => 1, draftRepo).rounds
+
+    draftRepo.save({ ...draft, moduleState: null })
+    expect(build()).toEqual([{ alice: '10', bob: '5' }])
+
+    draftRepo.save({ ...draft, moduleState: { moduleId: 'skyjo', state: {} } })
+    expect(build()).not.toEqual([{ alice: '10', bob: '5' }])
+  })
+
   it('nextRoundNumber counts the not-yet-played round as the round to enter', () => {
     expect(nextRoundNumber([{}])).toBe(1)
     expect(nextRoundNumber([{ alice: '10' }])).toBe(2)
@@ -1409,6 +1428,38 @@ describe('scoreDetailReducer', () => {
     expect(draft?.playerIds).toEqual(['alice', 'bob'])
     expect(draft?.rounds).toHaveLength(1)
     expect(draft?.rounds[0].alice).toBe('10')
+  })
+
+  it('cancelling or resetting keeps a module draft but clears a generic one', () => {
+    const gt = gameType('gt1', 'TestGame')
+    const gameTypeRepo = new InMemoryGameTypeRepository()
+    gameTypeRepo.save(gt)
+    const draftRepo = new InMemoryMatchDraftRepository()
+    const moduleDraft = {
+      gameTypeId: 'other',
+      playerIds: ['alice'],
+      rounds: [],
+      updatedAt: 1,
+      moduleState: { moduleId: 'm', state: {} },
+    }
+    draftRepo.save(moduleDraft)
+    const harness = new Harness(
+      gt,
+      [alice, bob],
+      new InMemoryMatchRepository(),
+      gameTypeRepo,
+      { type: 'Create' },
+      draftRepo,
+    )
+
+    harness.cancelMatch()
+    harness.confirmCancel()
+    harness.reset()
+    expect(draftRepo.load()).toEqual(moduleDraft)
+
+    draftRepo.save({ ...moduleDraft, moduleState: null })
+    harness.confirmCancel()
+    expect(draftRepo.load()).toBeUndefined()
   })
 
   it('addRound saves a draft to the repository', () => {

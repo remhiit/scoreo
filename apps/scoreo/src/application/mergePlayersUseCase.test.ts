@@ -171,7 +171,9 @@ describe('MergePlayersUseCase', () => {
   it('refuses a merge with no duplicate selected', () => {
     const { useCase } = buildUseCase()
 
-    expect(() => useCase.invoke('keep', [])).toThrow('playerId: Select at least one duplicate to merge')
+    expect(() => useCase.invoke('keep', [])).toThrow(
+      'playerId: Select at least one duplicate to merge',
+    )
   })
 
   it('throws NotFoundError for an unknown kept player or duplicate', () => {
@@ -223,7 +225,13 @@ describe('MergePlayersUseCase', () => {
 
   it('clears a match draft that references a duplicate', () => {
     const { draftRepo, useCase } = buildUseCase()
-    draftRepo.save({ gameTypeId: 'gt1', playerIds: ['dup2', 'other'], rounds: [], updatedAt: 1 })
+    draftRepo.save({
+      gameTypeId: 'gt1',
+      playerIds: ['dup2', 'other'],
+      rounds: [],
+      updatedAt: 1,
+      moduleState: null,
+    })
 
     useCase.invoke('keep', ['dup', 'dup2'])
 
@@ -232,7 +240,13 @@ describe('MergePlayersUseCase', () => {
 
   it('keeps a match draft that references no duplicate', () => {
     const { draftRepo, useCase } = buildUseCase()
-    const draft = { gameTypeId: 'gt1', playerIds: ['keep', 'other'], rounds: [], updatedAt: 1 }
+    const draft = {
+      gameTypeId: 'gt1',
+      playerIds: ['keep', 'other'],
+      rounds: [],
+      updatedAt: 1,
+      moduleState: null,
+    }
     draftRepo.save(draft)
 
     useCase.invoke('keep', ['dup'])
@@ -254,7 +268,10 @@ describe('MergePlayersUseCase', () => {
     )
     matchRepo.save(buildMatch({ id: 'm3', playerScores: [{ playerId: 'other', score: 1 }] }))
 
-    expect(useCase.preview('keep', ['dup', 'dup2'])).toEqual({ affectedMatches: 2, conflictingMatches: 1 })
+    expect(useCase.preview('keep', ['dup', 'dup2'])).toEqual({
+      affectedMatches: 2,
+      conflictingMatches: 1,
+    })
   })
 
   it('preview reports nothing when no duplicate is selected', () => {

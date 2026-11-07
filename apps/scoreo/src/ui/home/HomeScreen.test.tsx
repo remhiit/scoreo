@@ -341,6 +341,7 @@ describe('HomeScreen', () => {
       playerIds: ['p1', 'p2'],
       rounds: [],
       updatedAt: 1000,
+      moduleState: null,
     })
     const onResumeDraft = vi.fn()
     const { props } = buildProps({ matchDraftRepository, onResumeDraft })
@@ -350,7 +351,45 @@ describe('HomeScreen', () => {
 
     fireEvent.click(screen.getByText('Resume match in progress'))
 
-    expect(onResumeDraft).toHaveBeenCalledWith('gt1', ['p1', 'p2'])
+    expect(onResumeDraft).toHaveBeenCalledWith('gt1', ['p1', 'p2'], undefined)
+  })
+
+  describe('resume banner for a module draft', () => {
+    function moduleDraftRepo() {
+      const matchDraftRepository = new InMemoryMatchDraftRepository()
+      matchDraftRepository.save({
+        gameTypeId: 'gt1',
+        playerIds: ['p1', 'p2'],
+        rounds: [],
+        updatedAt: 1000,
+        moduleState: { moduleId: 'skyjo', state: {} },
+      })
+      return matchDraftRepository
+    }
+
+    it('shows the banner and hands the module id over when the module is installed', () => {
+      const onResumeDraft = vi.fn()
+      const { props } = buildProps({
+        matchDraftRepository: moduleDraftRepo(),
+        onResumeDraft,
+        isModuleAvailable: (id: string) => id === 'skyjo',
+      })
+      render(<HomeScreen {...props} />)
+
+      fireEvent.click(screen.getByText('Resume match in progress'))
+
+      expect(onResumeDraft).toHaveBeenCalledWith('gt1', ['p1', 'p2'], 'skyjo')
+    })
+
+    it('shows no banner when the module is no longer in the registry', () => {
+      const { props } = buildProps({
+        matchDraftRepository: moduleDraftRepo(),
+        isModuleAvailable: () => false,
+      })
+      render(<HomeScreen {...props} />)
+
+      expect(screen.queryByText('Resume match in progress')).not.toBeInTheDocument()
+    })
   })
 
   it('updates displayed labels immediately when the language changes', async () => {
