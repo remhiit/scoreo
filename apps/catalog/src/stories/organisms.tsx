@@ -10,6 +10,7 @@ import {
   Dialog,
   DropZone,
   HistoryCell,
+  ModuleGameActions,
   Panel,
   RoundCard,
   Score,
@@ -23,6 +24,11 @@ import type { Story } from '../shell/types'
 import { ThemePickerDemo, SheetDemo } from './organisms.demos'
 
 const noop = () => {}
+const GAME_ACTION_LABELS = {
+  undo: 'Annuler la dernière manche',
+  abandon: 'Abandonner',
+  save: 'Enregistrer la partie',
+}
 
 export const ORGANISM_STORIES: Story[] = [
   {
@@ -311,6 +317,51 @@ export const ORGANISM_STORIES: Story[] = [
               </Button>
             </ButtonRow>
           </ActionBar>
+        ),
+      },
+    ],
+  },
+  {
+    id: 'module-game-actions',
+    title: 'ModuleGameActions',
+    layer: 'organisms',
+    covers: ['ModuleGameActions'],
+    usage:
+      'Actions de partie d’un module de comptage : annuler et abandonner pendant la partie, enregistrer dans la barre du bas une fois terminée.',
+    variants: [
+      {
+        name: 'playing',
+        render: () => (
+          <ModuleGameActions
+            phase="playing"
+            labels={GAME_ACTION_LABELS}
+            onUndo={noop}
+            onAbandon={noop}
+          />
+        ),
+      },
+      {
+        name: 'playing, fin à la main',
+        render: () => (
+          <ModuleGameActions
+            phase="playing"
+            labels={{ ...GAME_ACTION_LABELS, undo: 'Annuler le coup', end: 'Terminer la partie' }}
+            onUndo={noop}
+            onAbandon={noop}
+            onEnd={noop}
+          />
+        ),
+      },
+      {
+        name: 'finished',
+        frame: 'phone',
+        render: () => (
+          <ModuleGameActions
+            phase="finished"
+            labels={GAME_ACTION_LABELS}
+            onUndo={noop}
+            onSave={noop}
+          />
         ),
       },
     ],

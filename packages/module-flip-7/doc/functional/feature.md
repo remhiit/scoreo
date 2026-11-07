@@ -46,7 +46,8 @@ Source: the publisher's FAQ (theop.games/pages/flip-7-faqs) and the rulebook (ed
    was the mistake. **Abandonner** discards the game after a confirmation, saving nothing.
 5. A tie for the lead past 200 shows a notice and the next round is entered as usual.
 6. The end screen names the winner, shows the final standings and the round log, and
-   **Enregistrer la partie** hands the result to Scoreo (`host.saveMatch`) — one round per Flip 7
+   **Enregistrer la partie** (full width in the bottom bar, the design system's `ModuleGameActions`
+   every scoring module shares) hands the result to Scoreo (`host.saveMatch`) — one round per Flip 7
    round, ranked by total.
 7. Reopening a Flip 7 match from History resumes on the module with its rounds restored, hands
    included; re-saving updates that match.

@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import type { ModuleHost, ModuleMatch } from '@scoreboards/module-api'
 import { newGameType, type Player } from '@scoreboards/shared-domain'
-import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, within } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import SkyjoModuleScreen from './SkyjoModuleScreen'
 
@@ -107,7 +107,7 @@ describe('SkyjoModuleScreen', () => {
 
     expect(screen.getByText('Alice remporte la partie !')).toBeInTheDocument()
 
-    fireEvent.click(screen.getByRole('button', { name: '💾 Enregistrer la partie' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Enregistrer la partie' }))
     expect(saved).toHaveLength(1)
     expect(saved[0].playerScores).toEqual([
       { playerId: 'p1', score: 10 },
@@ -127,7 +127,7 @@ describe('SkyjoModuleScreen', () => {
 
     expect(screen.getByText('Égalité entre Alice et Bob !')).toBeInTheDocument()
 
-    fireEvent.click(screen.getByRole('button', { name: '💾 Enregistrer la partie' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Enregistrer la partie' }))
     expect(saved[0].playerScores).toEqual([
       { playerId: 'p1', score: 100 },
       { playerId: 'p2', score: 100 },
@@ -168,7 +168,7 @@ describe('SkyjoModuleScreen', () => {
       // Bob's total already crosses 100 -> restored straight onto the end screen.
       expect(screen.getByText('Alice remporte la partie !')).toBeInTheDocument()
 
-      fireEvent.click(screen.getByRole('button', { name: '💾 Enregistrer la partie' }))
+      fireEvent.click(screen.getByRole('button', { name: 'Enregistrer la partie' }))
 
       expect(saved[0].id).toBe('existing-match')
       expect(saved[0].playerScores).toEqual([
@@ -192,7 +192,7 @@ describe('SkyjoModuleScreen', () => {
       )
 
       expect(screen.getByText('Alice remporte la partie !')).toBeInTheDocument()
-      fireEvent.click(screen.getByRole('button', { name: '💾 Enregistrer la partie' }))
+      fireEvent.click(screen.getByRole('button', { name: 'Enregistrer la partie' }))
 
       expect(saved[0].id).toBe('existing-match')
       expect(saved[0].moduleData).toEqual(
@@ -221,10 +221,12 @@ describe('SkyjoModuleScreen', () => {
       )
 
       // Back from the end screen into play, enter a round, then abandon.
-      fireEvent.click(screen.getByRole('button', { name: '↩ Annuler la dernière manche' }))
+      fireEvent.click(screen.getByRole('button', { name: 'Annuler la dernière manche' }))
       playRound('Alice', { Alice: '3', Bob: '8' })
-      fireEvent.click(screen.getByRole('button', { name: '🗑 Abandonner' }))
       fireEvent.click(screen.getByRole('button', { name: 'Abandonner' }))
+      fireEvent.click(
+        within(screen.getByRole('dialog')).getByRole('button', { name: 'Abandonner' }),
+      )
       unmount()
 
       expect(saveDraft).not.toHaveBeenCalled()
@@ -238,8 +240,9 @@ describe('SkyjoModuleScreen', () => {
     const { host, saved, stored } = fakeHost()
     render(<SkyjoModuleScreen host={host} playerIds={['p1', 'p2']} onExit={onExit} />)
 
-    fireEvent.click(screen.getByRole('button', { name: '🗑 Abandonner' }))
     fireEvent.click(screen.getByRole('button', { name: 'Abandonner' }))
+
+    fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Abandonner' }))
 
     expect(saved).toHaveLength(0)
     expect(stored()).toBeUndefined()

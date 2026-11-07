@@ -248,7 +248,7 @@ calls the exact same `onExit` the module itself would call — reusing `handleEx
 match saved this session is still landed on the same way (see _Landing after exit_ below) — and
 carries a translated `aria-label` under `modules.exit`. This is the **one** visible way out of a
 module: `packages/module-mille-sabords` no longer draws its own "⏸ Quitter" now that the bar makes it
-redundant, keeping only "🗑 Abandonner" (which the bar does not replace — it clears the draft, the
+redundant, keeping only "Abandonner" (which the bar does not replace — it clears the draft, the
 ✕ never does). `packages/module-api` carries none of this: the bar is generic, asks nothing of the
 manifest beyond `displayName`, and no member was added to `ScoringModuleScreenProps` or `ModuleHost`.
 
