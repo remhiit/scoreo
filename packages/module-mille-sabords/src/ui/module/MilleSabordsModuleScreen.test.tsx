@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import type { ModuleHost, ModuleMatch } from '@scoreboards/module-api'
 import { assertMatchConsistent, newGameType, type Player } from '@scoreboards/shared-domain'
-import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, within } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import MilleSabordsModuleScreen from './MilleSabordsModuleScreen'
 
@@ -230,7 +230,7 @@ describe('MilleSabordsModuleScreen', () => {
 
     saisirScore('500')
     fireEvent.click(screen.getByRole('button', { name: /Abandonner$/ }))
-    fireEvent.click(screen.getByRole('button', { name: 'Abandonner' }))
+    fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Abandonner' }))
     unmount()
 
     expect(saveDraft).not.toHaveBeenCalled()
@@ -251,7 +251,7 @@ describe('MilleSabordsModuleScreen', () => {
     expect(brouillon()).not.toBeUndefined()
 
     fireEvent.click(screen.getByRole('button', { name: /Abandonner$/ }))
-    fireEvent.click(screen.getByRole('button', { name: 'Abandonner' }))
+    fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Abandonner' }))
 
     expect(brouillon()).toBeUndefined()
   })

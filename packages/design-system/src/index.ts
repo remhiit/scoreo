@@ -57,6 +57,11 @@ export { Banner, type BannerProps } from './organisms/Banner'
 export { Comparison, ComparisonCard, type ComparisonCardProps } from './organisms/Comparison'
 export { Dialog, type DialogProps } from './organisms/Dialog'
 export { DropZone, type DropZoneProps } from './organisms/DropZone'
+export {
+  ModuleGameActions,
+  type ModuleGameActionsLabels,
+  type ModuleGameActionsProps,
+} from './organisms/ModuleGameActions'
 export { RoundCard, type RoundCardProps } from './organisms/RoundCard'
 export { Sheet, SheetRow, type SheetProps, type SheetRowProps } from './organisms/Sheet'
 export { SideMenu, type SideMenuItem, type SideMenuProps } from './organisms/SideMenu'

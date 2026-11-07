@@ -42,7 +42,8 @@ Standard Skyjo:
    guards against an accidental tap, exactly like 1000 Sabords' own abandon flow.
 6. The instant a round leaves someone at or past 100 points, the module shows its end screen: the
    winner (lowest total, or every tied player when several share it), the full standings ranked
-   with shared places on a tie, and **Enregistrer la partie**, which hands the result to Scoreo
+   with shared places on a tie, and **Enregistrer la partie** — full width in the bottom bar, the
+   design system's `ModuleGameActions` every scoring module shares — which hands the result to Scoreo
    (`host.saveMatch`) and returns to the host, landing on History with the new match highlighted.
 7. Reopening a finished Skyjo match from History resumes on the module with the full round-by-round
    table restored; re-saving updates that match instead of creating a second one.

@@ -5,6 +5,7 @@ import {
   Chip,
   Dialog,
   HistoryCell,
+  ModuleGameActions,
   Panel,
   RoundCard,
   Score,
@@ -37,6 +38,12 @@ import {
   toDraft,
 } from './flip7ModuleReducer'
 import type { Flip7Action, Flip7State } from './flip7ModuleTypes'
+
+const GAME_ACTION_LABELS = {
+  undo: 'Annuler la dernière manche',
+  abandon: 'Abandonner',
+  save: 'Enregistrer la partie',
+}
 
 type Dispatch = (action: Flip7Action) => void
 
@@ -170,18 +177,13 @@ function PlayScreen({ state, names, dispatch }: ViewProps) {
       <Standings state={state} names={names} />
       <RoundLog state={state} names={names} />
 
-      <Stack direction="row" gap={2} wrap>
-        <Button
-          variant="secondary"
-          disabled={state.rounds.length === 0}
-          onClick={() => dispatch({ type: 'undoLastRound' })}
-        >
-          ↩ Annuler la dernière manche
-        </Button>
-        <Button variant="danger" onClick={() => dispatch({ type: 'showAbandonConfirm' })}>
-          🗑 Abandonner
-        </Button>
-      </Stack>
+      <ModuleGameActions
+        phase="playing"
+        labels={GAME_ACTION_LABELS}
+        undoDisabled={state.rounds.length === 0}
+        onUndo={() => dispatch({ type: 'undoLastRound' })}
+        onAbandon={() => dispatch({ type: 'showAbandonConfirm' })}
+      />
     </>
   )
 }
@@ -340,12 +342,12 @@ function EndScreen({ state, names, dispatch, onSave }: ViewProps & { onSave: () 
 
       <RoundLog state={state} names={names} />
 
-      <Stack direction="row" gap={2} wrap>
-        <Button onClick={onSave}>💾 Enregistrer la partie</Button>
-        <Button variant="secondary" onClick={() => dispatch({ type: 'undoLastRound' })}>
-          ↩ Annuler la dernière manche
-        </Button>
-      </Stack>
+      <ModuleGameActions
+        phase="finished"
+        labels={GAME_ACTION_LABELS}
+        onUndo={() => dispatch({ type: 'undoLastRound' })}
+        onSave={onSave}
+      />
     </>
   )
 }

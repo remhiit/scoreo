@@ -25,13 +25,14 @@ Une ligne par manche, une colonne par joueur, le score du coup dans chaque cellu
 bas. Les cellules se teintent selon ce qui s'est passé : un tour à zéro, une pénalité négative, une
 Île de la Tête de Mort. Le meneur est mis en avant, et le franchissement des 6000 points aussi.
 
-Trois actions dessous :
+Trois actions dessous, celles que partagent tous les modules de comptage (organisme `ModuleGameActions`
+du design system, icônes du jeu fermé) :
 
 | Bouton | Ce qu'il fait |
 |---|---|
-| ↩ Annuler le coup | Retire le dernier coup joué. La partie est rejouée depuis son journal pour recalculer les totaux |
-| 🏁 Terminer la partie | Arrête la partie avant les 6000 points, quand la table décide d'en rester là |
-| 🗑 Abandonner | Jette la partie en cours, après confirmation. Rien n'est enregistré dans Scoreo |
+| Annuler le coup | Retire le dernier coup joué. La partie est rejouée depuis son journal pour recalculer les totaux |
+| Terminer la partie | Arrête la partie avant les 6000 points, quand la table décide d'en rester là |
+| Abandonner | Jette la partie en cours, après confirmation. Rien n'est enregistré dans Scoreo |
 
 Rendre la main à Scoreo **sans rien perdre** — la partie reprend où elle en était — se fait avec le
 ✕ de la barre du module, en tête d'écran : c'est l'hôte qui le dessine, identique pour tous les
@@ -68,9 +69,9 @@ adversaires : choisir le nombre de crânes, la pénalité est appliquée à chac
 Il remplace l'écran de jeu dès que la partie est finie — 6000 points franchis et dernier tour joué,
 Magie Pirate, ou fin demandée par la table.
 
-Il affiche le vainqueur, son score et le classement complet. **💾 Enregistrer la partie** la range
-dans l'historique de Scoreo et rend la main ; **↩ Annuler le dernier coup** revient en arrière si la
-partie s'est terminée par erreur.
+Il affiche le vainqueur, son score et le classement complet. **Enregistrer la partie**, pleine
+largeur dans la barre du bas, la range dans l'historique de Scoreo et rend la main ; **Annuler le
+dernier coup**, juste dessous, revient en arrière si la partie s'est terminée par erreur.
 
 ## La reprise après fermeture
 
