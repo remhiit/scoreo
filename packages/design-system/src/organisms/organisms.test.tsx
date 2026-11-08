@@ -4,6 +4,7 @@ import { AppHeader } from './AppHeader'
 import { Banner } from './Banner'
 import { Dialog } from './Dialog'
 import { DropZone } from './DropZone'
+import { ModuleGameActions } from './ModuleGameActions'
 import { Sheet, SheetRow } from './Sheet'
 import { SideMenu } from './SideMenu'
 import { ThemePicker } from './ThemePicker'
@@ -162,5 +163,52 @@ describe('Panel', () => {
       </Panel>,
     )
     expect(screen.getByRole('region', { name: 'The Invincible' })).toHaveTextContent('Alice')
+  })
+})
+
+describe('ModuleGameActions', () => {
+  const labels = { undo: 'Undo', abandon: 'Abandon', save: 'Save', end: 'End' }
+  const handlers = () => ({ onUndo: vi.fn(), onAbandon: vi.fn() })
+
+  it('offers undo and abandon while playing, never save', () => {
+    const h = handlers()
+    const { container } = render(<ModuleGameActions phase="playing" labels={labels} {...h} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Undo' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Abandon' }))
+    expect(h.onUndo).toHaveBeenCalledOnce()
+    expect(h.onAbandon).toHaveBeenCalledOnce()
+    expect(screen.queryByRole('button', { name: 'Save' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'End' })).not.toBeInTheDocument()
+    expect(container.querySelector('.sc-action-bar')).toBeNull()
+    expect(screen.getByRole('button', { name: 'Abandon' })).toHaveClass('sc-btn--danger')
+  })
+
+  it('disables undo when there is nothing to undo', () => {
+    render(<ModuleGameActions phase="playing" labels={labels} undoDisabled {...handlers()} />)
+    expect(screen.getByRole('button', { name: 'Undo' })).toBeDisabled()
+  })
+
+  it('adds the end action only when the game is ended by hand', () => {
+    const onEnd = vi.fn()
+    render(<ModuleGameActions phase="playing" labels={labels} onEnd={onEnd} {...handlers()} />)
+    fireEvent.click(screen.getByRole('button', { name: 'End' }))
+    expect(onEnd).toHaveBeenCalledOnce()
+  })
+
+  it('pins save full width in the bottom bar once finished, undo and extras under it', () => {
+    const h = { onUndo: vi.fn(), onSave: vi.fn() }
+    const { container } = render(
+      <ModuleGameActions phase="finished" labels={labels} {...h}>
+        <button type="button">Resume</button>
+      </ModuleGameActions>,
+    )
+    const bar = container.querySelector('.sc-action-bar')
+    expect(bar).not.toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }))
+    expect(h.onSave).toHaveBeenCalledOnce()
+    expect(screen.getByRole('button', { name: 'Save' })).toHaveClass('sc-btn--full')
+    expect(bar).toContainElement(screen.getByRole('button', { name: 'Undo' }))
+    expect(bar).toContainElement(screen.getByRole('button', { name: 'Resume' }))
+    expect(screen.queryByRole('button', { name: 'Abandon' })).not.toBeInTheDocument()
   })
 })

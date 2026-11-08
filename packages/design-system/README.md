@@ -124,6 +124,7 @@ page background, `--header-height`, `--screen-max`, `--screen-max-wide`.
 | `Dialog`                        | Centred dialog: title, body, `actions` footer                                                                    |
 | `Sheet` + `SheetRow`            | Bottom sheet over readable context (round entry)                                                                 |
 | `ActionBar`                     | Bottom bar: `center` (one pill) or `stack` (full primary over secondaries)                                       |
+| `ModuleGameActions`             | A scoring module's game actions: undo + abandon (+ end) while `playing`, save in an `ActionBar` once `finished`  |
 | `ThemePicker`                   | Flavor chips + accent swatches                                                                                   |
 
 ### 04 · Templates — `src/templates/`

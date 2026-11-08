@@ -44,6 +44,11 @@
   flex: 1;
   overflow-y: auto;
 }
+/* A module's end-of-game actions (<ModuleGameActions phase="finished">) pin an
+   <ActionBar>: reserve the same room so the last row stays reachable. */
+.sc-immersive__content:has(.sc-action-bar) {
+  padding-bottom: 160px;
+}
 
 /* A screen can also render its own <ActionBar> inside the content (the header
    and column are laid by the app shell): the room is reserved the same way. */

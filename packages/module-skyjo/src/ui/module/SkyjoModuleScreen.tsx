@@ -4,6 +4,7 @@ import {
   ButtonRow,
   Chip,
   Dialog,
+  ModuleGameActions,
   NumberField,
   Panel,
   Stack,
@@ -29,6 +30,12 @@ import {
   toDraft,
 } from './skyjoModuleReducer'
 import type { SkyjoAction, SkyjoState } from './skyjoModuleTypes'
+
+const GAME_ACTION_LABELS = {
+  undo: 'Annuler la dernière manche',
+  abandon: 'Abandonner',
+  save: 'Enregistrer la partie',
+}
 
 type Dispatch = (action: SkyjoAction) => void
 
@@ -151,18 +158,13 @@ function PlayScreen({ state, names, totals, dispatch }: ViewProps) {
     <>
       <RoundEntryPanel state={state} names={names} dispatch={dispatch} />
       <Scoreboard state={state} names={names} totals={totals} />
-      <Stack direction="row" gap={2} wrap>
-        <Button
-          variant="secondary"
-          disabled={state.rounds.length === 0}
-          onClick={() => dispatch({ type: 'undoLastRound' })}
-        >
-          ↩ Annuler la dernière manche
-        </Button>
-        <Button variant="danger" onClick={() => dispatch({ type: 'showAbandonConfirm' })}>
-          🗑 Abandonner
-        </Button>
-      </Stack>
+      <ModuleGameActions
+        phase="playing"
+        labels={GAME_ACTION_LABELS}
+        undoDisabled={state.rounds.length === 0}
+        onUndo={() => dispatch({ type: 'undoLastRound' })}
+        onAbandon={() => dispatch({ type: 'showAbandonConfirm' })}
+      />
     </>
   )
 }
@@ -278,12 +280,12 @@ function EndScreen({ state, names, dispatch, onSave }: ViewProps & { onSave: () 
         ))}
       </StandingsGrid>
 
-      <Stack direction="row" gap={2} wrap>
-        <Button onClick={onSave}>💾 Enregistrer la partie</Button>
-        <Button variant="secondary" onClick={() => dispatch({ type: 'undoLastRound' })}>
-          ↩ Annuler la dernière manche
-        </Button>
-      </Stack>
+      <ModuleGameActions
+        phase="finished"
+        labels={GAME_ACTION_LABELS}
+        onUndo={() => dispatch({ type: 'undoLastRound' })}
+        onSave={onSave}
+      />
     </>
   )
 }
