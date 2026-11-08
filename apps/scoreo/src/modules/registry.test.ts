@@ -37,6 +37,17 @@ describe('module registry', () => {
     expect(new Set(names).size).toBe(names.length)
   })
 
+  // Changing a manifest rewrites, retroactively, how every past match of that
+  // game is read (winners, stats, Elo, trophies): it must never happen by accident.
+  it.each([
+    ['tori-valley', 'HIGHEST_SCORE', 2, 4],
+    ['mille-sabords', 'HIGHEST_SCORE', 2, 8],
+    ['skyjo', 'LOWEST_SCORE', 2, 8],
+    ['flip-7', 'HIGHEST_SCORE', 2, 18],
+  ])('freezes the rules of %s', (moduleId, winCondition, minPlayers, maxPlayers) => {
+    expect(findManifest(moduleId)).toMatchObject({ moduleId, winCondition, minPlayers, maxPlayers })
+  })
+
   describe('findManifest', () => {
     it('finds a module by its id', () => {
       expect(findManifest('tori-valley')?.displayName).toBe('La Vallée des Torī')
