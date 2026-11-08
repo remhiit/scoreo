@@ -203,7 +203,7 @@ drafts, hand-typed URLs).
 ### Rules of a module-bound game
 
 The manifest is the **only source** of the rules of a game bound to a registered module
-(`moduleId` found by `findManifest`). They are resolved on read, in the domain, without rewriting
+(`moduleId` found by `findManifest`). They are resolved at read time in `apps/scoreo/src/modules`, via a repository decorator, without rewriting
 any stored data: `withModuleRules(gameType, manifest?)` (`apps/scoreo/src/modules/withModuleRules.ts`)
 returns the game type with the manifest's `winCondition`, `minPlayers` and `maxPlayers`,
 `scoringMode: 'POINTS'` (every module counts points; `effectiveScoringMode()` already says so) and

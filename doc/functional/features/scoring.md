@@ -125,6 +125,8 @@ When a tie is detected (multiple players have the same top/lowest score), the sy
    - On submit: if the secondary score breaks the tie → match saved
    - If the tie persists → escalates to **ManualSelectionDialog**
 
+A game bound to a scoring module always reads `MANUAL_SELECTION` (from its manifest, not from storage): the module resolves a tie itself and returns its `manualWinners`, and `getWinners` returns them on a tie for the lead. Without `manualWinners`, all tied players win.
+
 The **ManualSelectionDialog** offers:
 - Selectable rows (design-system `ListRow`, accent tint when selected) to select one or more winners
 - "Keep tie" button to preserve equality (all tied win)
