@@ -13,7 +13,11 @@ export interface MergeGameTypesPreview {
    * At least one duplicate doesn't score like the game type being kept. Not a
    * blocker — the kept game type's rules simply become the ones applied to the
    * moved matches (rescored by `rescoreMatch` when the scoring differs) — but the
-   * winners of those matches can change, so the UI warns about it.
+   * winners of those matches can change, so the UI warns about it. Also set when
+   * a module's match (`moduleData`) from an ordinary duplicate would move into an
+   * ordinary game scored in rounds won: it is never rescored there, so its points
+   * would be read as rounds won (#590). Module-bound kept games are not concerned:
+   * they refuse or rescore the match.
    */
   rulesDiffer: boolean
 }
@@ -75,9 +79,15 @@ export class MergeGameTypesUseCase {
     const merged = [...duplicates].map((id) => this.gameTypeRepository.findById(id))
     const matches = this.matchesOf(duplicates)
     if (kept === undefined) return { affectedMatches: matches.length, rulesDiffer: false }
+    const moduleMatchIntoRoundsWon =
+      kept.moduleId === null &&
+      usesRoundsWon(kept) &&
+      matches.some((match) => isFromModule(match, merged.find((gt) => gt?.id === match.gameTypeId)))
     return {
       affectedMatches: matches.length,
-      rulesDiffer: merged.some((gt) => gt !== undefined && !sameScoringRules(gt, kept)),
+      rulesDiffer:
+        moduleMatchIntoRoundsWon ||
+        merged.some((gt) => gt !== undefined && !sameScoringRules(gt, kept)),
     }
   }
 

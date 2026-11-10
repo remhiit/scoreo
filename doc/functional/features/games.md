@@ -9,8 +9,8 @@
 | `GetGameTypesUseCase` | — | `List<GameType>` | Returns all game types |
 | `CreateMatchUseCase` | `gameTypeId, playerScores, date, manualWinners, secondaryPlayerScores` | `Match` | Validates players match scores list |
 | `ArchiveGameTypeUseCase` | `gameTypeId: String` | `Unit` | Soft-delete (`active = false`); matches stay attached to it |
-| `MergeGameTypesUseCase` | `preview(keptId, duplicateIds)` | `MergeGameTypesPreview` | Counts the matches played under the duplicates (`affectedMatches`) and reports whether any of them scores differently from the kept game type (`rulesDiffer`). Pure reads — no validation, no mutation |
-| `MergeGameTypesUseCase` | `invoke(keptId, duplicateIds)` | `Unit` | Moves every match's `gameTypeId` onto the kept game type — rescored when its duplicate turned rounds into a score differently from the kept game type (`rescoreMatch`, shared with `UpdateGameTypeUseCase`; never for a module's match) —, clears a `MatchDraft` naming a duplicate, then hard-deletes each duplicate. Refuses a self-merge, an empty duplicate list, or an unknown id |
+| `MergeGameTypesUseCase` | `preview(keptId, duplicateIds)` | `MergeGameTypesPreview` | Counts the matches played under the duplicates (`affectedMatches`) and reports whether any of them scores differently from the kept game type, or a `moduleData` match would move unconverted into an ordinary rounds-won game (`rulesDiffer`). Pure reads — no validation, no mutation |
+| `MergeGameTypesUseCase` | `invoke(keptId, duplicateIds)` | `Unit` | Moves every match's `gameTypeId` onto the kept game type — rescored when its duplicate turned rounds into a score differently from the kept game type (`rescoreMatch`, shared with `UpdateGameTypeUseCase`; a `moduleData` match is never rescored when the kept game is ordinary) —, clears a `MatchDraft` naming a duplicate, then hard-deletes each duplicate. Refuses a self-merge, an empty duplicate list, an unknown id, a module-bound duplicate merged into a game not bound to the same module, and a moved match that fails `assertMatchConsistent` under a module-bound kept game (`ValidationError`, nothing written) |
 
 ## TieBreakRule
 

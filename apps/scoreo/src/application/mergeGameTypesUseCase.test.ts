@@ -187,6 +187,18 @@ describe('MergeGameTypesUseCase', () => {
     expect(useCase.preview('keep', ['dup']).rulesDiffer).toBe(true)
   })
 
+  it('preview warns when a module match would move unconverted into an ordinary rounds-won game', () => {
+    // Same rules on both sides, but into an ordinary game a module's match is
+    // never rescored (#590): its points would be read as rounds won.
+    const { matchRepo, useCase } = buildUseCase(
+      { scoringMode: 'ROUNDS_WON' },
+      { scoringMode: 'ROUNDS_WON' },
+    )
+    matchRepo.save(buildMatch({ moduleData: { moduleId: 'skyjo', version: 1, data: {} } }))
+
+    expect(useCase.preview('keep', ['dup']).rulesDiffer).toBe(true)
+  })
+
   it('preview does not flag a module match moved into a game scored in points', () => {
     const { matchRepo, useCase } = buildUseCase()
     matchRepo.save(buildMatch({ moduleData: { moduleId: 'skyjo', version: 1, data: {} } }))
