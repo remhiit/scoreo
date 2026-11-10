@@ -4,6 +4,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { BindModuleUseCase } from '../../application/bindModuleUseCase'
 import type { GameType } from '../../domain/model/gameType'
 import type { GameTypeRepository } from '../../domain/port/gameTypeRepository'
+import { InMemoryMatchRepository } from '../../infrastructure/testing/inMemoryMatchRepository'
 import { InMemoryGameTypeRepository } from '../../infrastructure/testing/inMemoryGameTypeRepository'
 import { ModuleRulesGameTypeRepository } from '../../modules/moduleRulesGameTypeRepository'
 import { MODULE_MANIFESTS } from '../../modules/registry'
@@ -35,6 +36,7 @@ function renderModal(
 ) {
   const props: GameSelectModalContainerProps = {
     getGameTypes: (includeInactive) => repo.getAll(includeInactive),
+    getMatches: () => [],
     onAddGameType: vi.fn(),
     onStartGame: vi.fn(),
     onStartModule: vi.fn(),
@@ -158,7 +160,8 @@ describe('GameSelectModalContainer', () => {
     const { dialog, options, select } = renderModal(repo, ['p1', 'p2'], {
       onStartModule: (moduleId) => {
         const manifest = MODULE_MANIFESTS.find((m) => m.moduleId === moduleId)
-        if (manifest) bound.push(new BindModuleUseCase(repo).invoke(manifest))
+        if (manifest)
+          bound.push(new BindModuleUseCase(repo, new InMemoryMatchRepository()).invoke(manifest))
       },
     })
 
@@ -179,7 +182,8 @@ describe('GameSelectModalContainer', () => {
     const { dialog, select } = renderModal(repo, ['p1', 'p2'], {
       onStartModule: (moduleId) => {
         const manifest = MODULE_MANIFESTS.find((m) => m.moduleId === moduleId)
-        if (manifest) bound.push(new BindModuleUseCase(repo).invoke(manifest))
+        if (manifest)
+          bound.push(new BindModuleUseCase(repo, new InMemoryMatchRepository()).invoke(manifest))
       },
     })
 
@@ -188,6 +192,21 @@ describe('GameSelectModalContainer', () => {
 
     expect(bound.map((gt) => gt.id)).toEqual(['gt-new'])
     expect(repo.findById('gt-old')).toMatchObject({ moduleId: null, active: false })
+  })
+
+  it('offers the module on its own entry, not on a rounds-won homonym the binding refuses', () => {
+    const repo = new InMemoryGameTypeRepository()
+    repo.save(gameType({ id: 'gt-rw', name: 'Skyjo', scoringMode: 'ROUNDS_WON' }))
+    const { props, dialog, options } = renderModal(repo)
+
+    // The homonym stays a plain game, and the module keeps its own entry.
+    expect(options()).toEqual(['Skyjo', ...sortedModuleLabels])
+
+    const combobox = within(dialog).getByRole('combobox')
+    fireEvent.change(combobox, { target: { value: 'gt-rw' } })
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Start match' }))
+    expect(props.onStartGame).toHaveBeenCalledWith('gt-rw', ['p1', 'p2'])
+    expect(props.onStartModule).not.toHaveBeenCalled()
   })
 
   it('offers a single launch button for an unbound module entry, and no "Play in Scoreo"', () => {
@@ -328,10 +347,13 @@ describe('GameSelectModalContainer', () => {
     it('blocks a game bound before the range existed (stored null/null) outside the manifest range', () => {
       const raw = new InMemoryGameTypeRepository()
       raw.save(gameType({ id: 'gt1', name: 'La Vallée des Torī', moduleId: 'tori-valley' }))
-      const { dialog, select } = renderModal(
-        new ModuleRulesGameTypeRepository(raw),
-        ['p1', 'p2', 'p3', 'p4', 'p5'],
-      )
+      const { dialog, select } = renderModal(new ModuleRulesGameTypeRepository(raw), [
+        'p1',
+        'p2',
+        'p3',
+        'p4',
+        'p5',
+      ])
 
       select('La Vallée des Torī')
 

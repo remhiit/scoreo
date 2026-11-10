@@ -313,7 +313,12 @@ function AppShell() {
   const bindModule = useCallback(
     (moduleId: string) => {
       const manifest = findManifest(moduleId)
-      return manifest && new BindModuleUseCase(services.gameTypeRepository).invoke(manifest)
+      return (
+        manifest &&
+        new BindModuleUseCase(services.gameTypeRepository, services.matchRepository).invoke(
+          manifest,
+        )
+      )
     },
     [services],
   )
@@ -332,6 +337,7 @@ function AppShell() {
     (name: string, winCondition: WinCondition) => addGameType.invoke(name, winCondition),
     [addGameType],
   )
+  const homeGetMatches = useCallback(() => services.matchRepository.getAll(), [services])
   const homeGetMatchCount = useCallback(() => services.matchRepository.getAll().length, [services])
 
   const onBack: (() => void) | null = (() => {
@@ -438,6 +444,7 @@ function AppShell() {
           cleanupInactivePlayers={cleanupInactivePlayers}
           getTrophies={getTrophies}
           getGameTypes={homeGetGameTypes}
+          getMatches={homeGetMatches}
           onAddGameType={homeOnAddGameType}
           onStartGame={handleStartGame}
           onStartModule={handleStartModule}

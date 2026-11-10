@@ -4,6 +4,7 @@ import type { Match } from '../domain/model/match'
 import { InMemoryGameTypeRepository } from '../infrastructure/testing/inMemoryGameTypeRepository'
 import { InMemoryMatchDraftRepository } from '../infrastructure/testing/inMemoryMatchDraftRepository'
 import { InMemoryMatchRepository } from '../infrastructure/testing/inMemoryMatchRepository'
+import { ValidationError } from '../domain/model/errors'
 import { MergeGameTypesUseCase } from './mergeGameTypesUseCase'
 
 function buildGameType(overrides: Partial<GameType> = {}): GameType {
@@ -186,28 +187,6 @@ describe('MergeGameTypesUseCase', () => {
     expect(useCase.preview('keep', ['dup']).rulesDiffer).toBe(true)
   })
 
-  it('preview warns when a module match would move unconverted into a rounds-won game', () => {
-    // Same rules on both sides, but a module's match is never rescored (#590):
-    // its points would be read as rounds won, so the merge is flagged.
-    const { matchRepo, useCase } = buildUseCase(
-      { scoringMode: 'ROUNDS_WON' },
-      { scoringMode: 'ROUNDS_WON' },
-    )
-    matchRepo.save(buildMatch({ moduleData: { moduleId: 'skyjo', version: 1, data: {} } }))
-
-    expect(useCase.preview('keep', ['dup']).rulesDiffer).toBe(true)
-  })
-
-  it('preview warns when a module-bound duplicate is merged into a rounds-won game', () => {
-    const { matchRepo, useCase } = buildUseCase(
-      { moduleId: 'skyjo' },
-      { scoringMode: 'ROUNDS_WON' },
-    )
-    matchRepo.save(buildMatch())
-
-    expect(useCase.preview('keep', ['dup']).rulesDiffer).toBe(true)
-  })
-
   it('preview does not flag a module match moved into a game scored in points', () => {
     const { matchRepo, useCase } = buildUseCase()
     matchRepo.save(buildMatch({ moduleData: { moduleId: 'skyjo', version: 1, data: {} } }))
@@ -345,22 +324,6 @@ describe('MergeGameTypesUseCase', () => {
       ])
     })
 
-    it('never recomputes the matches of a module-bound duplicate', () => {
-      const { matchRepo, useCase } = buildUseCase(
-        { moduleId: 'skyjo' },
-        { scoringMode: 'ROUNDS_WON' },
-      )
-      matchRepo.save(scored(20, 13))
-      matchRepo.save({ ...scored(40, 90, []), id: 'm2' })
-      useCase.invoke('keep', ['dup'])
-      const stored = (id: string) => matchRepo.findById(id)
-      expect(stored('m1')?.playerScores.map((ps) => ps.score)).toEqual([20, 13])
-      expect(stored('m1')?.rounds).toEqual(rawRounds)
-      expect(stored('m2')?.playerScores.map((ps) => ps.score)).toEqual([40, 90])
-      expect(stored('m2')?.rounds).toEqual([])
-      expect(stored('m1')?.gameTypeId).toBe('keep')
-    })
-
     it('never recomputes a match carrying module data', () => {
       const { matchRepo, useCase } = buildUseCase({}, { scoringMode: 'ROUNDS_WON' })
       matchRepo.save({
@@ -396,6 +359,112 @@ describe('MergeGameTypesUseCase', () => {
       expect(scoresOf('m2')).toEqual([5, 4])
       // POINTS → POINTS: a points sum does not depend on the win condition.
       expect(scoresOf('m3')).toEqual([20, 13])
+    })
+  })
+
+  describe('module guards', () => {
+    const twoPlayers = (a: number, b: number, rounds: number[][] = []): Partial<Match> => ({
+      playerScores: [
+        { playerId: 'a', score: a },
+        { playerId: 'b', score: b },
+      ],
+      rounds: rounds.map((r) => [
+        { playerId: 'a', score: r[0] },
+        { playerId: 'b', score: r[1] },
+      ]),
+    })
+
+    it('refuses a module-bound duplicate merged into an ordinary game, writing nothing', () => {
+      const { gameTypeRepo, matchRepo, useCase } = buildUseCase({ moduleId: 'skyjo' })
+      matchRepo.save(buildMatch())
+
+      expect(() => useCase.invoke('keep', ['dup'])).toThrow(ValidationError)
+      expect(matchRepo.getAll().map((m) => m.gameTypeId)).toEqual(['dup'])
+      expect(gameTypeRepo.findById('dup')).toBeDefined()
+    })
+
+    it('refuses a duplicate bound to another module', () => {
+      const { matchRepo, useCase } = buildUseCase({ moduleId: 'skyjo' }, { moduleId: 'flip-7' })
+
+      expect(() => useCase.invoke('keep', ['dup'])).toThrow(ValidationError)
+      expect(matchRepo.getAll()).toEqual([])
+    })
+
+    it('refuses a rounds-won match without detail into a module game, writing nothing', () => {
+      const { gameTypeRepo, matchRepo, useCase } = buildUseCase(
+        { scoringMode: 'ROUNDS_WON' },
+        { moduleId: 'skyjo' },
+      )
+      matchRepo.save(buildMatch({ id: 'ok', gameTypeId: 'dup2', ...twoPlayers(5, 4) }))
+      matchRepo.save(buildMatch({ id: 'm1', ...twoPlayers(2, 1) }))
+
+      expect(() => useCase.invoke('keep', ['dup', 'dup2'])).toThrow(ValidationError)
+      expect(matchRepo.getAll().map((m) => m.gameTypeId)).toEqual(['dup2', 'dup'])
+      expect(gameTypeRepo.getAll(true)).toHaveLength(3)
+    })
+
+    it('refuses a match whose rounds do not add up into a module game', () => {
+      const { matchRepo, useCase } = buildUseCase({}, { moduleId: 'skyjo' })
+      matchRepo.save(
+        buildMatch(
+          twoPlayers(9, 3, [
+            [2, 1],
+            [3, 2],
+          ]),
+        ),
+      )
+
+      expect(() => useCase.invoke('keep', ['dup'])).toThrow(ValidationError)
+      expect(matchRepo.getAll()[0].gameTypeId).toBe('dup')
+    })
+
+    it('merges a consistent points duplicate into a module game', () => {
+      const { gameTypeRepo, matchRepo, useCase } = buildUseCase({}, { moduleId: 'skyjo' })
+      matchRepo.save(
+        buildMatch({
+          id: 'm1',
+          ...twoPlayers(5, 3, [
+            [2, 1],
+            [3, 2],
+          ]),
+        }),
+      )
+      matchRepo.save(buildMatch({ id: 'm2', ...twoPlayers(4, 4) }))
+
+      useCase.invoke('keep', ['dup'])
+
+      expect(matchRepo.getAll().map((m) => m.gameTypeId)).toEqual(['keep', 'keep'])
+      expect(gameTypeRepo.findById('dup')).toBeUndefined()
+    })
+
+    it('merges a rounds-won duplicate with consistent detail into a module game, rescored in points', () => {
+      const { matchRepo, useCase } = buildUseCase(
+        { scoringMode: 'ROUNDS_WON' },
+        { moduleId: 'skyjo' },
+      )
+      matchRepo.save(
+        buildMatch(
+          twoPlayers(1, 1, [
+            [3, 1],
+            [1, 3],
+          ]),
+        ),
+      )
+
+      useCase.invoke('keep', ['dup'])
+
+      expect(matchRepo.getAll()[0].playerScores.map((ps) => ps.score)).toEqual([4, 4])
+    })
+
+    it('merges a match-less ordinary duplicate into a module game, and two same-module games', () => {
+      const first = buildUseCase({}, { moduleId: 'skyjo' })
+      first.useCase.invoke('keep', ['dup'])
+      expect(first.gameTypeRepo.findById('dup')).toBeUndefined()
+
+      const second = buildUseCase({ moduleId: 'skyjo' }, { moduleId: 'skyjo' })
+      second.matchRepo.save(buildMatch(twoPlayers(5, 3)))
+      second.useCase.invoke('keep', ['dup'])
+      expect(second.matchRepo.getAll()[0].gameTypeId).toBe('keep')
     })
   })
 })
