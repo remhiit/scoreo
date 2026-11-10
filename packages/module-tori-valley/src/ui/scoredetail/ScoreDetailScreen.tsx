@@ -59,7 +59,7 @@ export function ScoreDetailScreen({
   }, [onChange, state.results, state.objectifCards])
 
   function errorMessage(e: unknown): string {
-    if (e instanceof ValidationError && e.code) return t(e.code, e.params)
+    if (e instanceof ValidationError && e.code) return t(e.code, e.params ?? {})
     if (e instanceof NotFoundError && e.code) return t(e.code, { id: e.id })
     return e instanceof Error ? e.message : String(e)
   }
