@@ -200,26 +200,36 @@ grid (out of the player range it is disabled, not redirected). The generic grid 
 reopening a match without `moduleData` for that module, and for the routes `#/score/…` (generic
 drafts, hand-typed URLs).
 
-### Scoring mode of a module-bound game
+### Rules of a module-bound game
 
-The module is the source of truth of its game's scoring: it computes the final scores it hands back
-(`ModuleHostAdapter.saveMatch` stores them as they are, after `assertMatchConsistent`), and every module counts **points** today.
-So a `GameType` with `moduleId !== null` always scores in `POINTS`, whatever its stored
-`scoringMode`: `effectiveScoringMode()` (`packages/shared-domain/src/gameType.ts`, re-exported by `apps/scoreo/src/domain/model/gameType.ts`) returns `POINTS` for it,
-`newGameType`/`UpdateGameTypeUseCase` store `POINTS`, the game type form hides the scoring mode
-choice, and none of its matches is ever recomputed into rounds won (`roundScoringChanged` sees no
-change). Scoreo's generic score screen, when used on such a game, sums the rounds too. A module
-declaring its own scoring mode, and Scoreo aligning on it, is tracked in #590.
+The manifest is the **only source** of the rules of a game bound to a registered module
+(`moduleId` found by `findManifest`). They are resolved at read time in `apps/scoreo/src/modules`, via a repository decorator, without rewriting
+any stored data: `withModuleRules(gameType, manifest?)` (`apps/scoreo/src/modules/withModuleRules.ts`)
+returns the game type with the manifest's `winCondition`, `minPlayers` and `maxPlayers`,
+`scoringMode: 'POINTS'` (every module counts points; `effectiveScoringMode()` already says so) and
+`tieBreakRule: 'MANUAL_SELECTION'` — the module decides its own tie-breaks and hands them back as
+`manualWinners`, which `getWinners` then returns on a tie for the lead. A game without `moduleId`,
+or whose module is no longer registered, is returned as is (same reference).
 
-Known gap: binding by name (rule 2 above) stamps a `moduleId` onto an existing game type, and
-stores its effective `scoringMode` (`POINTS`), without recomputing its matches; were that game in
-rounds won, its stored counts would then be read as points. Left to #590.
+`ModuleRulesGameTypeRepository` decorates `GameTypeRepository` with it (`getAll`, `findById`).
+Its writes keep the rules the game had stored: re-saving an already stored game bound to a
+registered module (renaming, archiving, merging into it, binding a homonym) writes its other fields
+but leaves its stored `winCondition`, `scoringMode`, `tieBreakRule`, `minPlayers` and `maxPlayers`
+untouched. The resolved view therefore never overwrites the user's original rules, which come back
+if the module is unbound or unregistered, and Drive never propagates such an overwrite. A game not
+stored yet (created by `BindModuleUseCase`) is written as is. `createServices` hands it to every use case **except `SyncUseCase`**, which keeps the
+raw repository so what Drive compares and uploads does not change. Rules therefore cannot diverge:
+`UpdateGameTypeUseCase` throws a `ValidationError` (nothing written) when `winCondition`,
+`scoringMode`, `tieBreakRule`, `minPlayers` or `maxPlayers` of such a game differ from the
+manifest's; name and archiving stay editable. `registry.test.ts` freezes the four manifests'
+`moduleId`, `winCondition` and range with hard-coded values: changing a manifest rewrites
+retroactively how the whole history of that game is read.
 
-Known gap: merging game types (`MergeGameTypesUseCase`) never rescores a module's match — one
-from a module-bound duplicate, or carrying `moduleData` — so, moved into a kept game scored in
-rounds won, its points are read as rounds won (inverted winners under `LOWEST_SCORE`). The merge
-is not refused: its preview sets `rulesDiffer`, so the dialog warns that winners can change.
-Left to #590.
+Binding by name (rule 2 above) stores the `moduleId` but, through the decorator, keeps the
+homonym's stored rules, and does not recompute its matches; were that game in rounds won in
+storage, its counts would be read as points while the module is registered. Merging game types
+(`MergeGameTypesUseCase`) never rescores a module's match either (its preview sets `rulesDiffer`).
+Guards for both are tracked in a separate issue.
 
 The id never leaves the installation: it is absent from the v1.1 export, which travels to other
 installations where module ids mean nothing. `ImportMatchesUseCase` compensates by consulting the

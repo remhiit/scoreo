@@ -1,4 +1,6 @@
 import { describe, expect, it } from 'vitest'
+import { newGameType } from '../domain/model/gameType'
+import { ModuleRulesGameTypeRepository } from '../modules/moduleRulesGameTypeRepository'
 import { ValidationError } from '../domain/model/errors'
 import type { Match } from '../domain/model/match'
 import type { PlayerScore } from '../domain/model/playerScore'
@@ -167,7 +169,7 @@ describe('UpdateGameTypeUseCase', () => {
     it('never recomputes the matches of a module-bound game into rounds won', () => {
       const { gameTypes, matches, created, update } = setup('POINTS', 'tori-valley')
       matches.save(match('m1', created.id, 20, 13))
-      update.invoke({ ...created, scoringMode: 'ROUNDS_WON' })
+      expect(() => update.invoke({ ...created, scoringMode: 'ROUNDS_WON' })).toThrow(ValidationError)
       expect(scoresOf(matches, 'm1')).toEqual([20, 13])
       expect(gameTypes.findById(created.id)?.scoringMode).toBe('POINTS')
     })
@@ -213,7 +215,7 @@ describe('UpdateGameTypeUseCase', () => {
     it('never converts the matches without detail of a module-bound game', () => {
       const { matches, created, update } = setup('POINTS', 'tori-valley')
       matches.save(match('m1', created.id, 40, 90, []))
-      update.invoke({ ...created, scoringMode: 'ROUNDS_WON' })
+      expect(() => update.invoke({ ...created, scoringMode: 'ROUNDS_WON' })).toThrow(ValidationError)
       expect(scoresOf(matches, 'm1')).toEqual([40, 90])
       expect(matches.findById('m1')?.rounds).toEqual([])
     })
@@ -255,6 +257,53 @@ describe('UpdateGameTypeUseCase', () => {
       expect(scoresOf(matches, 'm2')).toEqual([20, 13])
       update.invoke({ ...created, scoringMode: 'ROUNDS_WON' })
       expect(scoresOf(matches, 'm1')).toEqual([20, 13])
+    })
+  })
+
+  describe('game bound to a module', () => {
+    function bound() {
+      const repo = new InMemoryGameTypeRepository()
+      // Stored as an older build left it: rules that differ from the manifest's.
+      repo.save(newGameType('s', 'Skyjo', 'HIGHEST_SCORE', { moduleId: 'skyjo' }))
+      const guarded = new ModuleRulesGameTypeRepository(repo)
+      const useCase = new UpdateGameTypeUseCase(guarded, new InMemoryMatchRepository())
+      return { repo, guarded, useCase, current: guarded.findById('s')! }
+    }
+
+    it.each([
+      ['winCondition', 'HIGHEST_SCORE'],
+      ['scoringMode', 'ROUNDS_WON'],
+      ['tieBreakRule', 'NONE'],
+      ['minPlayers', 3],
+      ['maxPlayers', 4],
+    ] as const)('refuses to change %s and writes nothing', (field, value) => {
+      const { repo, useCase, current } = bound()
+      const before = repo.findById('s')
+
+      expect(() => useCase.invoke({ ...current, [field]: value })).toThrow(ValidationError)
+      expect(repo.findById('s')).toBe(before)
+    })
+
+    it('still renames and archives', () => {
+      const { repo, useCase, current } = bound()
+      useCase.invoke({ ...current, name: 'Skyjo du jeudi', active: false })
+      expect(repo.findById('s')).toMatchObject({ name: 'Skyjo du jeudi', active: false })
+    })
+
+    it('accepts rules already identical to the manifest', () => {
+      const { useCase, current } = bound()
+      expect(() => useCase.invoke(current)).not.toThrow()
+    })
+
+    it('does not guard a game whose module is no longer registered', () => {
+      const repo = new InMemoryGameTypeRepository()
+      const g = newGameType('x', 'Old', 'HIGHEST_SCORE', { moduleId: 'gone' })
+      repo.save(g)
+      new UpdateGameTypeUseCase(repo, new InMemoryMatchRepository()).invoke({
+        ...g,
+        winCondition: 'LOWEST_SCORE',
+      })
+      expect(repo.findById('x')?.winCondition).toBe('LOWEST_SCORE')
     })
   })
 })

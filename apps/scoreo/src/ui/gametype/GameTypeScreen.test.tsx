@@ -190,9 +190,11 @@ describe('GameTypeScreen', () => {
     })
     fireEvent.click(within(editDialog).getByText('Save changes'))
 
-    // The form owns the rules, not the binding: saving here must not unbind the
-    // module, or the game would silently stop offering its module screen.
-    expect(repo.findById('gt1')?.tieBreakRule).toBe('MANUAL_SELECTION')
+    // The rules of a game with a module come from its manifest: the change is
+    // refused through the form's error channel and nothing is written, so the
+    // game stays bound.
+    expect(screen.getByText(/come from the module/)).toBeInTheDocument()
+    expect(repo.findById('gt1')?.tieBreakRule).toBe('NONE')
     expect(repo.findById('gt1')?.moduleId).toBe('tori-valley')
   })
 

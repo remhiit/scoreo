@@ -1,3 +1,4 @@
+import { withModuleRules } from '../../modules/withModuleRules'
 import { describe, expect, it } from 'vitest'
 import { AddGameTypeUseCase } from '../../application/addGameTypeUseCase'
 import { ArchiveGameTypeUseCase } from '../../application/archiveGameTypeUseCase'
@@ -599,7 +600,11 @@ describe('player range fields', () => {
 
   it('submitUpdateGameType keeps the stored range of a module-bound game', () => {
     const useCases = buildUseCases()
-    const created = { ...useCases.addGameType.invoke('Skyjo', 'LOWEST_SCORE'), moduleId: 'skyjo' }
+    // As the services hand it out: the manifest's rules already resolved.
+    const created = withModuleRules({
+      ...useCases.addGameType.invoke('Skyjo', 'LOWEST_SCORE'),
+      moduleId: 'skyjo',
+    })
     useCases.repo.save(created)
     let state = gameTypeReducer(initialGameTypeState, {
       type: 'editGameType',
@@ -614,7 +619,7 @@ describe('player range fields', () => {
       state,
     )
     expect('error' in result).toBe(false)
-    expect(useCases.repo.findById(created.id)).toMatchObject({ minPlayers: null, maxPlayers: null })
+    expect(useCases.repo.findById(created.id)).toMatchObject({ minPlayers: 2, maxPlayers: 8 })
   })
 })
 

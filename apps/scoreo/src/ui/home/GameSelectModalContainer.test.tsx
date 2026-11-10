@@ -3,7 +3,9 @@ import { createRef } from 'react'
 import { describe, expect, it, vi } from 'vitest'
 import { BindModuleUseCase } from '../../application/bindModuleUseCase'
 import type { GameType } from '../../domain/model/gameType'
+import type { GameTypeRepository } from '../../domain/port/gameTypeRepository'
 import { InMemoryGameTypeRepository } from '../../infrastructure/testing/inMemoryGameTypeRepository'
+import { ModuleRulesGameTypeRepository } from '../../modules/moduleRulesGameTypeRepository'
 import { MODULE_MANIFESTS } from '../../modules/registry'
 import {
   GameSelectModalContainer,
@@ -27,7 +29,7 @@ function gameType(overrides: Partial<GameType> & Pick<GameType, 'id' | 'name'>):
 }
 
 function renderModal(
-  repo: InMemoryGameTypeRepository,
+  repo: GameTypeRepository,
   selectedPlayerIds: string[] = ['p1', 'p2'],
   overrides: Partial<GameSelectModalContainerProps> = {},
 ) {
@@ -321,6 +323,19 @@ describe('GameSelectModalContainer', () => {
 
       expect(within(dialog).getByRole('button', START)).toBeEnabled()
       expect(within(dialog).queryByText('6–6 players')).not.toBeInTheDocument()
+    })
+
+    it('blocks a game bound before the range existed (stored null/null) outside the manifest range', () => {
+      const raw = new InMemoryGameTypeRepository()
+      raw.save(gameType({ id: 'gt1', name: 'La Vallée des Torī', moduleId: 'tori-valley' }))
+      const { dialog, select } = renderModal(
+        new ModuleRulesGameTypeRepository(raw),
+        ['p1', 'p2', 'p3', 'p4', 'p5'],
+      )
+
+      select('La Vallée des Torī')
+
+      expect(within(dialog).getByRole('button', START)).toBeDisabled()
     })
   })
 })

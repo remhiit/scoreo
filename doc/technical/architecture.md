@@ -207,6 +207,8 @@ Vite copies `apps/scoreo/public/` to the production output (`apps/scoreo/dist/`)
 
 - **Current**: localStorage via `LocalStorage*Repository` (`scoreo_players`, `scoreo_gametypes`, `scoreo_matches` keys)
 - **Import**: `ImportMatchesUseCase` reads the same repositories and writes through `MatchRepository.save()`, `GameTypeRepository.save()`, and `PlayerRepository.save()`
+- **Module rules**: `ModuleRulesGameTypeRepository` (`apps/scoreo/src/modules/`) decorates `GameTypeRepository` and applies `withModuleRules` on read, so a module-bound game takes its rules from the manifest without rewriting storage. See `doc/technical/module-contract.md`.
+- **Sync and the raw repository**: `createServices` gives `SyncUseCase` the undecorated repository, so what Drive compares and uploads is unchanged.
 - **Cloud Sync**: Google Drive via `GoogleDriveSyncAdapter`. Stores a single `scoreo-data.json` in the invisible App Data Folder. Syncs players, game types, and matches. Drive API v3, `fetch()` + async/await, OAuth Token Model (GIS). See `SyncUseCase`, `apps/scoreo/src/ui/sync/syncReducer.ts`. Beyond the login-time `autoSync()`, every local mutation triggers a debounced push via `AutoSyncCoordinator`/`DataChangeNotifier` — see `doc/functional/features/sync.md`.
 
 See [`deployment.md`](deployment.md) for CI/CD and deployment details.

@@ -15,6 +15,7 @@ import { LocalStorageGameTypeRepository } from '../infrastructure/localStorage/l
 import { LocalStorageMatchDraftRepository } from '../infrastructure/localStorage/localStorageMatchDraftRepository'
 import { LocalStorageMatchRepository } from '../infrastructure/localStorage/localStorageMatchRepository'
 import { LocalStoragePlayerRepository } from '../infrastructure/localStorage/localStoragePlayerRepository'
+import { ModuleRulesGameTypeRepository } from '../modules/moduleRulesGameTypeRepository'
 
 /**
  * Repositories + use cases shared across screens, built once at app root.
@@ -54,14 +55,16 @@ function createDefaultCloudSyncRepository(): CloudSyncRepository | undefined {
 export function createServices(options: CreateServicesOptions = {}): Services {
   const dataChangeNotifier = options.dataChangeNotifier ?? new InMemoryDataChangeNotifier()
   const playerRepository = options.playerRepository ?? new LocalStoragePlayerRepository(dataChangeNotifier)
-  const gameTypeRepository = options.gameTypeRepository ?? new LocalStorageGameTypeRepository(dataChangeNotifier)
+  // The raw repository is only for the Drive sync; everything else reads the rules of a module-bound game from its manifest.
+  const rawGameTypeRepository = options.gameTypeRepository ?? new LocalStorageGameTypeRepository(dataChangeNotifier)
+  const gameTypeRepository = new ModuleRulesGameTypeRepository(rawGameTypeRepository)
   const matchRepository = options.matchRepository ?? new LocalStorageMatchRepository(dataChangeNotifier)
   const matchDraftRepository = options.matchDraftRepository ?? new LocalStorageMatchDraftRepository()
   const currentDate = options.currentDate ?? (() => Date.now())
   const cloudSyncRepository = options.cloudSyncRepository ?? createDefaultCloudSyncRepository()
 
   const syncUseCase = cloudSyncRepository
-    ? new SyncUseCase(cloudSyncRepository, playerRepository, gameTypeRepository, matchRepository, dataChangeNotifier)
+    ? new SyncUseCase(cloudSyncRepository, playerRepository, rawGameTypeRepository, matchRepository, dataChangeNotifier)
     : undefined
   const autoSyncCoordinator = syncUseCase
     ? new AutoSyncCoordinator(dataChangeNotifier, syncUseCase, new BrowserConnectivityChecker())

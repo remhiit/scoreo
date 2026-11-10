@@ -4,9 +4,13 @@ import {
   roundScoringChanged,
   type GameType,
 } from '../domain/model/gameType'
+import { ValidationError } from '../domain/model/errors'
 import { rescoreMatch, type Match } from '../domain/model/match'
 import type { GameTypeRepository } from '../domain/port/gameTypeRepository'
 import type { MatchRepository } from '../domain/port/matchRepository'
+import { withModuleRules } from '../modules/withModuleRules'
+
+const MODULE_RULE_FIELDS = ['winCondition', 'scoringMode', 'tieBreakRule', 'minPlayers', 'maxPlayers'] as const
 
 export class UpdateGameTypeUseCase {
   constructor(
@@ -15,8 +19,9 @@ export class UpdateGameTypeUseCase {
   ) {}
 
   /**
-   * Throws a `ValidationError` before saving anything when the player range is
-   * invalid (a bound under 1, or a minimum above the maximum).
+   * Throws a `ValidationError` before saving anything when a rule of a game
+   * bound to a registered module is changed (see `assertModuleRulesUntouched`),
+   * or when the player range is invalid (a bound under 1, or a minimum above the maximum).
    *
    * Saves the game type, with its effective scoring mode (`POINTS` for a
    * `MANUAL` or module-bound game). When the change alters how rounds turn into
@@ -37,6 +42,7 @@ export class UpdateGameTypeUseCase {
    * former ones — silently, as the detail can still look consistent.
    */
   invoke(gameType: GameType): void {
+    this.assertModuleRulesUntouched(gameType)
     assertValidPlayerRange(gameType)
     const scoringMode = effectiveScoringMode(gameType)
     const updated = scoringMode === gameType.scoringMode ? gameType : { ...gameType, scoringMode }
@@ -46,6 +52,21 @@ export class UpdateGameTypeUseCase {
       if (recomputed.length > 0) this.matchRepository.saveAll(recomputed)
     }
     this.repository.save(updated)
+  }
+
+  /**
+   * The rules of a game bound to a registered module belong to its manifest:
+   * any change to them throws a `ValidationError`, nothing written. Name and
+   * archiving stay editable. Rules already equal to the manifest's pass.
+   */
+  private assertModuleRulesUntouched(gameType: GameType): void {
+    const resolved = withModuleRules(gameType)
+    if (resolved === gameType) return
+    for (const field of MODULE_RULE_FIELDS) {
+      if (gameType[field] !== resolved[field]) {
+        throw new ValidationError(field, 'The rules of a game with a module come from the module')
+      }
+    }
   }
 
   private recomputeMatches(previous: GameType, updated: GameType): Match[] {
