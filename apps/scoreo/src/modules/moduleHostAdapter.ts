@@ -8,7 +8,6 @@ import {
 import { newId } from '../application/idGenerator'
 import type { MatchDraftRepository } from '../domain/port/matchDraftRepository'
 import type { MatchRepository } from '../domain/port/matchRepository'
-import type { ModuleDraftRepository } from '../domain/port/moduleDraftRepository'
 import type { PlayerRepository } from '../domain/port/playerRepository'
 
 /**
@@ -26,9 +25,6 @@ export class ModuleHostAdapter implements ModuleHost {
     private readonly playerRepository: PlayerRepository,
     private readonly matchRepository: MatchRepository,
     private readonly matchDraftRepository: MatchDraftRepository,
-    // Read-only fallback (and cleanup) for drafts written before the single
-    // draft slot existed; removed with the contract phase (#611).
-    private readonly moduleDraftRepository: ModuleDraftRepository,
     private readonly currentDate: () => number,
     // Host code to host code, never surfaced to the module: lets the screen
     // that owns this adapter know a match was written, for its own exit
@@ -88,7 +84,7 @@ export class ModuleHostAdapter implements ModuleHost {
     ) {
       return draft.moduleState.state
     }
-    return this.moduleDraftRepository.load(this.moduleId)
+    return undefined
   }
 
   saveDraft(state: unknown): void {
@@ -100,15 +96,11 @@ export class ModuleHostAdapter implements ModuleHost {
       updatedAt: this.currentDate(),
       moduleState: { moduleId: this.moduleId, state },
     })
-    // The legacy key only bridges until the module rewrites its draft: left in
-    // place, it would resurface an older state once another game takes the slot.
-    this.moduleDraftRepository.clear(this.moduleId)
   }
 
   clearDraft(): void {
     if (this.matchDraftRepository.load()?.moduleState?.moduleId === this.moduleId) {
       this.matchDraftRepository.clear()
     }
-    this.moduleDraftRepository.clear(this.moduleId)
   }
 }
