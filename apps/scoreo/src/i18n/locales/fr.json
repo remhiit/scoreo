@@ -58,6 +58,7 @@
     "mergeSummary_one": "{{count}} partie sera transférée.",
     "mergeSummary_other": "{{count}} parties seront transférées.",
     "mergeRulesDiffer": "Les jeux sélectionnés n'ont pas tous les mêmes règles de score : celles de « {{name}} » s'appliqueront aux parties transférées, ce qui peut en changer les gagnants.",
+    "mergeModuleRulesRefused": "Fusion impossible : un jeu à compteur dédié n'accepte que les jeux du même module, et que des parties compatibles avec ses règles (comptées en points, au détail de manches cohérent).",
     "mergeConfirm": "Fusionner",
     "mergeDuplicatesLabel": "Doublons à supprimer",
     "archivedNote": "(archivé)"

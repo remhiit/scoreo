@@ -11,6 +11,7 @@ import type { MergePlayersUseCase } from '../../application/mergePlayersUseCase'
 import type { RenamePlayerUseCase } from '../../application/renamePlayerUseCase'
 import type { WinCondition } from '../../domain/model/enums'
 import type { GameType } from '../../domain/model/gameType'
+import type { Match } from '../../domain/model/match'
 import type { MatchDraftRepository } from '../../domain/port/matchDraftRepository'
 import { AddPlayerField } from './AddPlayerField'
 import { GameSelectModalContainer, type GameSelectModalHandle } from './GameSelectModalContainer'
@@ -29,6 +30,8 @@ export interface HomeScreenProps {
   cleanupInactivePlayers: CleanupInactivePlayersUseCase
   getTrophies: GetTrophiesUseCase
   getGameTypes: (includeInactive?: boolean) => GameType[]
+  /** Matches of every game, for the game list to tell which homonym a module may bind. */
+  getMatches?: () => Match[]
   onAddGameType: (name: string, winCondition: WinCondition) => GameType
   onStartGame: (gameTypeId: string, playerIds: string[]) => void
   onStartModule: (moduleId: string, playerIds: string[]) => void
@@ -50,6 +53,7 @@ export function HomeScreen({
   cleanupInactivePlayers,
   getTrophies,
   getGameTypes,
+  getMatches = () => [],
   onAddGameType,
   onStartGame,
   onStartModule,
@@ -144,6 +148,7 @@ export function HomeScreen({
       <GameSelectModalContainer
         ref={gameModalRef}
         getGameTypes={getGameTypes}
+        getMatches={getMatches}
         onAddGameType={onAddGameType}
         onStartGame={onStartGame}
         onStartModule={onStartModule}

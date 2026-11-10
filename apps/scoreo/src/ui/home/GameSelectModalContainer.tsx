@@ -5,6 +5,7 @@ import { resolveBindingTarget } from '../../application/bindModuleUseCase'
 import { NotFoundError, ValidationError } from '../../domain/model/errors'
 import type { WinCondition } from '../../domain/model/enums'
 import { playerCountFitsRange, type GameType } from '../../domain/model/gameType'
+import type { Match } from '../../domain/model/match'
 import i18n from '../../i18n/i18n'
 import { findManifest, MODULE_MANIFESTS } from '../../modules/registry'
 import { GameSelectModal, type GameChoice } from './GameSelectModal'
@@ -16,6 +17,8 @@ export interface GameSelectModalHandle {
 export interface GameSelectModalContainerProps {
   /** Archived game types are needed too: a module bound to one is never offered unbound. */
   getGameTypes: (includeInactive?: boolean) => GameType[]
+  /** Every match: a homonym whose history breaks the module's rules is not bound to it. */
+  getMatches: () => Match[]
   onAddGameType: (name: string, winCondition: WinCondition) => GameType
   onStartGame: (gameTypeId: string, playerIds: string[]) => void
   onStartModule: (moduleId: string, playerIds: string[]) => void
@@ -37,7 +40,7 @@ const MODULE_CHOICE_PREFIX = 'module:'
  * reactivates. Two same-name games may then show side by side; merging them is
  * left to the Games screen.
  */
-function buildChoices(allGameTypes: readonly GameType[]): GameChoice[] {
+function buildChoices(allGameTypes: readonly GameType[], matches: readonly Match[]): GameChoice[] {
   const active = allGameTypes.filter((gt) => gt.active)
 
   const gameTypeChoices: GameChoice[] = active.map((gt) => ({
@@ -47,7 +50,7 @@ function buildChoices(allGameTypes: readonly GameType[]): GameChoice[] {
     gameType: gt,
   }))
   const moduleChoices: GameChoice[] = MODULE_MANIFESTS.filter((m) => {
-    const target = resolveBindingTarget(m, allGameTypes)
+    const target = resolveBindingTarget(m, allGameTypes, matches)
     if (target === undefined) return true
     // Bound, or offered on the active game type its binding would pick
     // (`moduleClaimingGameType`): listing the module too would show it twice.
@@ -82,9 +85,10 @@ function buildChoices(allGameTypes: readonly GameType[]): GameChoice[] {
 function moduleClaimingGameType(
   gameType: GameType,
   allGameTypes: readonly GameType[],
+  matches: readonly Match[],
 ): ScoringModuleManifest | undefined {
   return MODULE_MANIFESTS.find((m) => {
-    const target = resolveBindingTarget(m, allGameTypes)
+    const target = resolveBindingTarget(m, allGameTypes, matches)
     return target?.kind === 'byName' && target.gameType.id === gameType.id
   })
 }
@@ -98,12 +102,13 @@ export const GameSelectModalContainer = forwardRef<
   GameSelectModalHandle,
   GameSelectModalContainerProps
 >(function GameSelectModalContainer(
-  { getGameTypes, onAddGameType, onStartGame, onStartModule, selectedPlayerIds },
+  { getGameTypes, getMatches, onAddGameType, onStartGame, onStartModule, selectedPlayerIds },
   ref,
 ) {
   const { t } = useTranslation()
   const [open, setOpen] = useState(false)
   const [allGameTypes, setAllGameTypes] = useState<GameType[]>(() => getGameTypes(true))
+  const [matches, setMatches] = useState<Match[]>(() => getMatches())
   const [selectedValue, setSelectedValue] = useState<string | undefined>(undefined)
   const [error, setError] = useState<string | undefined>(undefined)
 
@@ -116,6 +121,7 @@ export const GameSelectModalContainer = forwardRef<
   useImperativeHandle(ref, () => ({
     open: () => {
       setAllGameTypes(getGameTypes(true))
+      setMatches(getMatches())
       setSelectedValue(undefined)
       setError(undefined)
       setShowAddGameForm(false)
@@ -123,7 +129,7 @@ export const GameSelectModalContainer = forwardRef<
     },
   }))
 
-  const choices = useMemo(() => buildChoices(allGameTypes), [allGameTypes])
+  const choices = useMemo(() => buildChoices(allGameTypes, matches), [allGameTypes, matches])
   const selectedChoice = choices.find((c) => c.value === selectedValue)
 
   const moduleForSelectedGame = useMemo(() => {
@@ -131,8 +137,8 @@ export const GameSelectModalContainer = forwardRef<
     if (selectedChoice.kind === 'module') return selectedChoice.manifest
     const moduleId = selectedChoice.gameType.moduleId
     if (moduleId !== null) return findManifest(moduleId)
-    return moduleClaimingGameType(selectedChoice.gameType, allGameTypes)
-  }, [selectedChoice, allGameTypes])
+    return moduleClaimingGameType(selectedChoice.gameType, allGameTypes, matches)
+  }, [selectedChoice, allGameTypes, matches])
 
   const moduleFitsPlayers =
     moduleForSelectedGame !== undefined &&

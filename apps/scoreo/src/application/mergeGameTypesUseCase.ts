@@ -1,3 +1,4 @@
+import { assertMatchConsistent } from '@scoreboards/shared-domain'
 import { NotFoundError, ValidationError } from '../domain/model/errors'
 import { usesRoundsWon, type GameType } from '../domain/model/gameType'
 import { rescoreMatch, type Match } from '../domain/model/match'
@@ -11,15 +12,28 @@ export interface MergeGameTypesPreview {
   /**
    * At least one duplicate doesn't score like the game type being kept. Not a
    * blocker — the kept game type's rules simply become the ones applied to the
-   * moved matches (rescored by `rescoreMatch` when the scoring differs) — but the winners of those matches can change, so
-   * the UI warns about it. Also set when a module's match would move into a
-   * game scored in rounds won: it is never rescored, so its points would be
-   * read as rounds won (known gap, #590).
+   * moved matches (rescored by `rescoreMatch` when the scoring differs) — but the
+   * winners of those matches can change, so the UI warns about it. Also set when
+   * a module's match (`moduleData`) from an ordinary duplicate would move into an
+   * ordinary game scored in rounds won: it is never rescored there, so its points
+   * would be read as rounds won (#590). Module-bound kept games are not concerned:
+   * they refuse or rescore the match.
    */
   rulesDiffer: boolean
 }
 
-/** A module's match keeps the scores the module returned: merging never rescores it (#590). */
+/**
+ * Field of the `ValidationError` thrown when a merge would mix a module's game
+ * with matches or a module that doesn't fit its rules; the Games screen shows a
+ * translated label for it.
+ */
+export const MERGE_MODULE_RULES_FIELD = 'moduleRules'
+
+/**
+ * Into an ordinary game, a module's match keeps the scores the module returned:
+ * merging never rescores it (#590). (Into a module's game it is rescored like
+ * any other, and must then be consistent.)
+ */
 function isFromModule(match: Match, source: GameType | undefined): boolean {
   return source?.moduleId != null || match.moduleData !== null
 }
@@ -38,6 +52,13 @@ function sameScoringRules(a: GameType, b: GameType): boolean {
  * to the kept game type (rescored by `rescoreMatch` when the duplicate scored
  * rounds differently, a module's matches excepted), then each duplicate is
  * hard-deleted.
+ *
+ * Two guards keep a module's game coherent, both refusing with a
+ * `ValidationError` before anything is written: a duplicate bound to a module
+ * can only be folded into a game bound to the same module, and when the kept
+ * game is bound to a module every moved match must pass `assertMatchConsistent`
+ * under its (resolved) rules — a rounds-won match without round detail, which
+ * can't be turned back into points, is refused.
  * Archiving isn't enough — it only hides a duplicate, leaving its matches under a
  * separate game and splitting History's filter, per-game trophies and the game
  * record apart.
@@ -58,12 +79,10 @@ export class MergeGameTypesUseCase {
     const merged = [...duplicates].map((id) => this.gameTypeRepository.findById(id))
     const matches = this.matchesOf(duplicates)
     if (kept === undefined) return { affectedMatches: matches.length, rulesDiffer: false }
-    const duplicateById = new Map(merged.flatMap((gt) => (gt ? [[gt.id, gt] as const] : [])))
-    // Known gap (#590): a module's match moved into a rounds-won game keeps its
-    // points, read there as rounds won — warn even when the rules match.
     const moduleMatchIntoRoundsWon =
+      kept.moduleId === null &&
       usesRoundsWon(kept) &&
-      matches.some((match) => isFromModule(match, duplicateById.get(match.gameTypeId)))
+      matches.some((match) => isFromModule(match, merged.find((gt) => gt?.id === match.gameTypeId)))
     return {
       affectedMatches: matches.length,
       rulesDiffer:
@@ -89,19 +108,46 @@ export class MergeGameTypesUseCase {
       return gameType
     })
 
+    // A module's game only takes its own module's duplicates: any other
+    // history would be read under rules it was not played with.
+    if (merged.some((gt) => gt.moduleId !== null && gt.moduleId !== kept.moduleId)) {
+      throw new ValidationError(
+        MERGE_MODULE_RULES_FIELD,
+        'A game bound to a module can only be merged into a game bound to the same module',
+      )
+    }
+
     // A game's rules apply to its whole history: a moved match whose duplicate
     // turned rounds into a final score differently (scoring mode, or who wins a
     // round in rounds won) is rescored as a scoring mode change would
-    // (`UpdateGameTypeUseCase`, `rescoreMatch`). A module's matches keep the
-    // scores the module returned: they are never rescored, whether the
-    // duplicate is module-bound or the match carries module data. Known gap
-    // (#590): moved into a rounds-won game, their points are read as rounds
-    // won — `preview` flags it (`rulesDiffer`) so the user is warned.
+    // (`UpdateGameTypeUseCase`, `rescoreMatch`). Into an ordinary game, a
+    // module's matches keep the scores the module returned (#590).
     const duplicateById = new Map(merged.map((gt) => [gt.id, gt]))
+    const intoModule = kept.moduleId !== null
     const moved = this.matchesOf(duplicates).map((match) => {
       const source = duplicateById.get(match.gameTypeId)
       const rescored =
-        source && !isFromModule(match, source) ? rescoreMatch(match, source, kept) : match
+        source && (intoModule || !isFromModule(match, source))
+          ? rescoreMatch(match, source, kept)
+          : match
+      if (intoModule) {
+        try {
+          // `assertMatchConsistent` accepts a match without round detail, but a
+          // rounds-won count can't be read as points: without rounds to
+          // convert it from, it can't be moved.
+          if (source && usesRoundsWon(source) && rescored.rounds.length === 0) {
+            throw new Error('Rounds won without round detail cannot be converted to points')
+          }
+          assertMatchConsistent(rescored, kept)
+        } catch (e) {
+          throw new ValidationError(
+            MERGE_MODULE_RULES_FIELD,
+            `Match ${match.id} does not fit the rules of the module game: ${
+              e instanceof Error ? e.message : String(e)
+            }`,
+          )
+        }
+      }
       return { ...rescored, gameTypeId: keptId }
     })
     // One saveAll rather than one save per match: a single change notification,

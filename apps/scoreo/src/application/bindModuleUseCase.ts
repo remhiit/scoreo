@@ -1,6 +1,9 @@
 import type { ScoringModuleManifest } from '@scoreboards/module-api'
+import { assertMatchConsistent } from '@scoreboards/shared-domain'
 import { effectiveScoringMode, newGameType, type GameType } from '../domain/model/gameType'
+import type { Match } from '../domain/model/match'
 import type { GameTypeRepository } from '../domain/port/gameTypeRepository'
+import type { MatchRepository } from '../domain/port/matchRepository'
 import { newId } from './idGenerator'
 
 /**
@@ -26,10 +29,47 @@ export type BindingTarget =
   { kind: 'bound'; gameType: GameType } | { kind: 'byName'; gameType: GameType }
 
 /**
+ * Whether the history of `gameType` can be read under the rules of `manifest`:
+ * the game scores in points (a game in rounds won stores counts of rounds, which
+ * a module would read as points) and every one of its matches passes
+ * `assertMatchConsistent` under the module's win condition.
+ */
+function historyRespectsModuleRules(
+  manifest: ScoringModuleManifest,
+  gameType: GameType,
+  matches: readonly Match[],
+): boolean {
+  if (effectiveScoringMode(gameType) !== 'POINTS') return false
+  const underModule: GameType = {
+    ...gameType,
+    moduleId: manifest.moduleId,
+    winCondition: manifest.winCondition,
+    scoringMode: 'POINTS',
+    tieBreakRule: 'MANUAL_SELECTION',
+  }
+  return matches
+    .filter((match) => match.gameTypeId === gameType.id)
+    .every((match) => {
+      try {
+        assertMatchConsistent(match, underModule)
+        return true
+      } catch {
+        return false
+      }
+    })
+}
+
+/**
  * Rules 1 and 2 of `BindModuleUseCase`, without writing anything: the game type
  * binding `manifest` would land on, or `undefined` when it would create one
  * (rule 3). `allGameTypes` must be `GameTypeRepository.getAll(true)` — archived
  * games included, in repository order, since rule 2 takes the *first* match.
+ *
+ * Rule 2 only takes a homonym whose history respects the module's rules
+ * (`historyRespectsModuleRules`, over `matches` = `MatchRepository.getAll()`):
+ * stamping the `moduleId` onto a game counted in rounds won, or holding a match
+ * that contradicts the rules, would have the module read its scores wrongly. A
+ * refused homonym stays an ordinary game and rule 3 creates the bound one.
  *
  * Shared so a caller can tell in advance which game a binding will pick (the
  * game selection modal only offers a module on the game type it resolves to).
@@ -37,11 +77,16 @@ export type BindingTarget =
 export function resolveBindingTarget(
   manifest: ScoringModuleManifest,
   allGameTypes: readonly GameType[],
+  matches: readonly Match[],
 ): BindingTarget | undefined {
   const bound = allGameTypes.find((gt) => gt.moduleId === manifest.moduleId)
   if (bound) return { kind: 'bound', gameType: bound }
 
-  const byName = allGameTypes.find((gt) => manifestClaimsGameName(manifest, gt.name))
+  const byName = allGameTypes.find(
+    (gt) =>
+      manifestClaimsGameName(manifest, gt.name) &&
+      historyRespectsModuleRules(manifest, gt, matches),
+  )
   if (byName) return { kind: 'byName', gameType: byName }
 
   return undefined
@@ -63,14 +108,17 @@ export function resolveBindingTarget(
  * `resolveBindingTarget`, so a caller can preview the outcome without binding.
  */
 export class BindModuleUseCase {
-  constructor(private readonly repository: GameTypeRepository) {}
+  constructor(
+    private readonly repository: GameTypeRepository,
+    private readonly matchRepository: MatchRepository,
+  ) {}
 
   invoke(manifest: ScoringModuleManifest): GameType {
     // Archived games count: rebinding around one would create a duplicate of a
     // game the user only meant to hide.
     const all = this.repository.getAll(true)
 
-    const target = resolveBindingTarget(manifest, all)
+    const target = resolveBindingTarget(manifest, all, this.matchRepository.getAll())
     if (target?.kind === 'bound') return this.reactivate(target.gameType)
     if (target?.kind === 'byName') {
       const bound: GameType = { ...target.gameType, moduleId: manifest.moduleId, active: true }
