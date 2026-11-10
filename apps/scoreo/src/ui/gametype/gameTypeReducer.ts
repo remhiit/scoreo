@@ -12,6 +12,7 @@ import {
   scoringModeIsSelectable,
   type GameType,
 } from '../../domain/model/gameType'
+import { isModuleGame } from '../../modules/withModuleRules'
 import type { GameTypeState } from './gameTypeTypes'
 
 /**
@@ -109,6 +110,8 @@ export function gameTypeReducer(state: GameTypeState, action: GameTypeAction): G
     case 'addFailed':
       return { ...state, error: action.error }
     case 'editGameType':
+      // A module's rules are fixed by its manifest: never open the form on them.
+      if (isModuleGame(action.gameType)) return state
       return {
         ...state,
         inputName: action.gameType.name,

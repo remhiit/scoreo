@@ -11,6 +11,7 @@ import {
   Text,
 } from '@scoreboards/design-system'
 import { useEffect, useMemo, useReducer } from 'react'
+import type { TFunction } from 'i18next'
 import { useTranslation } from 'react-i18next'
 import type { AddGameTypeUseCase } from '../../application/addGameTypeUseCase'
 import type { ArchiveGameTypeUseCase } from '../../application/archiveGameTypeUseCase'
@@ -19,7 +20,9 @@ import type { GetGameTypesUseCase } from '../../application/getGameTypesUseCase'
 import type { GetMatchesUseCase } from '../../application/getMatchesUseCase'
 import type { MergeGameTypesUseCase } from '../../application/mergeGameTypesUseCase'
 import type { UpdateGameTypeUseCase } from '../../application/updateGameTypeUseCase'
+import type { GameType } from '../../domain/model/gameType'
 import { tieBreakRuleLabel, winConditionLabel } from '../../domain/model/enums'
+import { isModuleGame } from '../../modules/withModuleRules'
 import { GameTypeFields, GameTypeForm } from './GameTypeForm'
 import {
   gameTypeHasMatches,
@@ -132,6 +135,7 @@ export function GameTypeScreen({
   }, [mergeGameTypes, state.mergeKeptId, state.mergeDuplicateIds])
 
   const selectedGameType = state.gameTypes.find((gt) => gt.id === state.selectedGameId)
+  const selectedIsModule = selectedGameType !== undefined && isModuleGame(selectedGameType)
   const editingGameType = state.gameTypes.find((gt) => gt.id === state.editingGameId)
   const archiveConfirmGameType = state.gameTypes.find(
     (gt) => gt.id === state.archiveConfirmGameTypeId,
@@ -149,27 +153,37 @@ export function GameTypeScreen({
         <EmptyState>{t('gametype.noGameTypesYet')}</EmptyState>
       ) : (
         <List>
-          {state.gameTypes.map((gameType) => (
-            <ListRow
-              key={gameType.id}
-              title={gameType.name}
-              subtitle={winConditionLabel(gameType.winCondition)}
-              actions={[
-                {
-                  icon: 'view',
-                  label: 'View details',
-                  onClick: () => dispatch({ type: 'selectGame', id: gameType.id }),
-                },
-                { icon: 'edit', label: 'Edit', onClick: () => handleEdit(gameType.id) },
-                {
-                  icon: 'delete',
-                  label: 'Delete',
-                  tone: 'danger',
-                  onClick: () => dispatch({ type: 'showArchiveConfirm', gameTypeId: gameType.id }),
-                },
-              ]}
-            />
-          ))}
+          {state.gameTypes.map((gameType) => {
+            const moduleGame = isModuleGame(gameType)
+            const view = {
+              icon: 'view' as const,
+              label: 'View details',
+              onClick: () => dispatch({ type: 'selectGame', id: gameType.id }),
+            }
+            const edit = {
+              icon: 'edit' as const,
+              label: 'Edit',
+              onClick: () => handleEdit(gameType.id),
+            }
+            const archive = {
+              icon: 'delete' as const,
+              label: 'Delete',
+              tone: 'danger' as const,
+              onClick: () => dispatch({ type: 'showArchiveConfirm', gameTypeId: gameType.id }),
+            }
+            return (
+              <ListRow
+                key={gameType.id}
+                title={gameType.name}
+                subtitle={
+                  moduleGame
+                    ? `${winConditionLabel(gameType.winCondition)} · ${playerRangeLabel(t, gameType)}`
+                    : winConditionLabel(gameType.winCondition)
+                }
+                actions={moduleGame ? [view, archive] : [view, edit, archive]}
+              />
+            )
+          })}
         </List>
       )}
 
@@ -199,9 +213,11 @@ export function GameTypeScreen({
             <Button variant="secondary" onClick={() => dispatch({ type: 'deselectGame' })}>
               {t('gametype.back')}
             </Button>
-            <Button onClick={() => selectedGameType && handleEdit(selectedGameType.id)}>
-              {t('gametype.edit')}
-            </Button>
+            {!selectedIsModule && (
+              <Button onClick={() => selectedGameType && handleEdit(selectedGameType.id)}>
+                {t('gametype.edit')}
+              </Button>
+            )}
             <Button
               variant="danger"
               onClick={() =>
@@ -214,7 +230,25 @@ export function GameTypeScreen({
           </ButtonRow>
         }
       >
-        {selectedGameType && (
+        {selectedGameType && selectedIsModule && (
+          <Stack gap={3}>
+            <DetailList>
+              <DetailRow
+                label={t('gametype.winCondition')}
+                value={winConditionLabel(selectedGameType.winCondition)}
+              />
+              <DetailRow label={t('gametype.tieBreak')} value={t('gametype.tieBreakByModule')} />
+              <DetailRow
+                label={t('gametype.players')}
+                value={playerRangeLabel(t, selectedGameType)}
+              />
+            </DetailList>
+            <Text variant="muted" block>
+              {t('gametype.moduleRulesFixed', { name: selectedGameType.name })}
+            </Text>
+          </Stack>
+        )}
+        {selectedGameType && !selectedIsModule && (
           <DetailList>
             <DetailRow
               label={t('gametype.winCondition')}
@@ -301,4 +335,13 @@ export function GameTypeScreen({
       />
     </Stack>
   )
+}
+
+/** "2 à 8 joueurs", or the one-sided labels when the module leaves a bound open. */
+function playerRangeLabel(t: TFunction, gameType: GameType): string {
+  const { minPlayers: min, maxPlayers: max } = gameType
+  if (min !== null && max !== null) return t('home.playerRange', { min, max })
+  if (min !== null) return t('home.playerRangeMin', { min })
+  if (max !== null) return t('home.playerRangeMax', { max })
+  return ''
 }

@@ -30,3 +30,18 @@ export function withModuleRules(
     tieBreakRule: 'MANUAL_SELECTION',
   }
 }
+
+/**
+ * Whether the game's rules come from a registered module's manifest rather than
+ * from what it stored — the same condition under which `withModuleRules`
+ * rewrites it. A game bound to a module that is no longer registered is an
+ * ordinary game again.
+ */
+export function isModuleGame(
+  gameType: GameType,
+  manifest: ScoringModuleManifest | undefined = gameType.moduleId === null
+    ? undefined
+    : findManifest(gameType.moduleId),
+): boolean {
+  return gameType.moduleId !== null && manifest !== undefined
+}

@@ -45,7 +45,7 @@ Screen: `apps/scoreo/src/ui/gametype/GameTypeScreen.tsx`. See `doc/reference.md`
 - Each card shows name, win condition badge
 - Each card has action icons:
   - 👁 (View) — opens detail modal
-  - ✏️ (Edit) — opens edit form in modal
+  - ✏️ (Edit) — opens edit form in modal; absent for a game bound to a registered scoring module (its subtitle then adds the player range, "Lowest score · 2 à 8 joueurs")
   - 🗑 (Archive/Delete) — opens archive confirmation modal
 
 ### Merge dialog
@@ -66,6 +66,7 @@ Screen: `apps/scoreo/src/ui/gametype/GameTypeScreen.tsx`. See `doc/reference.md`
 - Each detail is a design-system `DetailRow` (label / value justified to both edges, labels without a trailing colon, hairline-separated)
 - Back button → returns to list
 - Edit button → switches to form mode with fields pre-filled
+- **Game bound to a registered scoring module** (Skyjo, Flip 7, Torī Valley, 1000 Sabords): the detail is read-only. Only **Back** and **Archive** are offered; the rows are win condition, tie-break ("Decided by the point counter" — the module decides its own tie-breaks) and **Players** (the manifest range, using the `home.playerRange*` labels when a bound is open), followed by a muted sentence saying the rules are fixed by the module's point counter and cannot be edited. `editGameType` is ignored by the reducer for such a game, so the edit dialog never opens. A game whose module is no longer registered is an ordinary game again (`isModuleGame`, same condition as `withModuleRules`)
 - Archive button (🗑 red) → opens archive confirmation modal
 
 ### Archive confirmation modal

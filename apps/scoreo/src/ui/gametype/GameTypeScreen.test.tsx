@@ -174,52 +174,78 @@ describe('GameTypeScreen', () => {
     fireEvent.change(screen.getByLabelText('Max. players'), { target: { value: '2' } })
     fireEvent.click(screen.getByText('Add game type'))
 
-    expect(screen.getByText('minPlayers: Minimum players must not exceed maximum players')).toBeInTheDocument()
+    expect(
+      screen.getByText('minPlayers: Minimum players must not exceed maximum players'),
+    ).toBeInTheDocument()
     expect(screen.queryByText('Chess', { selector: '.sc-row__title' })).not.toBeInTheDocument()
   })
 
-  it('editing a game type bound to a scoring module leaves it bound', () => {
+  it('offers a module game only the detail and archive actions, with its player range', () => {
     const repo = new InMemoryGameTypeRepository()
-    repo.save({ ...buildGameType('gt1', 'La Vallée des Torī'), moduleId: 'tori-valley' })
-    renderScreen(repo)
-
-    fireEvent.click(screen.getByLabelText('Edit'))
-    const editDialog = screen.getByRole('dialog')
-    fireEvent.change(within(editDialog).getByDisplayValue('No tie-break'), {
-      target: { value: 'MANUAL_SELECTION' },
+    repo.save({
+      ...buildGameType('gt1', 'Skyjo'),
+      moduleId: 'skyjo',
+      winCondition: 'LOWEST_SCORE',
+      minPlayers: 2,
+      maxPlayers: 8,
     })
-    fireEvent.click(within(editDialog).getByText('Save changes'))
-
-    // The rules of a game with a module come from its manifest: the change is
-    // refused through the form's error channel and nothing is written, so the
-    // game stays bound.
-    expect(screen.getByText(/come from the module/)).toBeInTheDocument()
-    expect(repo.findById('gt1')?.tieBreakRule).toBe('NONE')
-    expect(repo.findById('gt1')?.moduleId).toBe('tori-valley')
-  })
-
-  it('hides the scoring choice when editing a game bound to a scoring module', () => {
-    const repo = new InMemoryGameTypeRepository()
-    repo.save({ ...buildGameType('gt1', 'Skyjo'), moduleId: 'skyjo' })
+    repo.save(buildGameType('gt2', 'Chess'))
     renderScreen(repo)
 
-    fireEvent.click(screen.getByLabelText('Edit'))
-    expect(within(screen.getByRole('dialog')).queryByLabelText('Scoring')).not.toBeInTheDocument()
+    expect(screen.getAllByLabelText('Edit')).toHaveLength(1)
+    expect(screen.getAllByLabelText('View details')).toHaveLength(2)
+    expect(screen.getAllByLabelText('Delete')).toHaveLength(2)
+    expect(screen.getByText(/Lowest score · 2.8 players/)).toBeInTheDocument()
   })
 
-  it('hides the player range fields when editing a game bound to a scoring module', () => {
+  it('shows a module game read-only: no Edit button, tie-break by the module, players, explanation', () => {
     const repo = new InMemoryGameTypeRepository()
-    repo.save({ ...buildGameType('gt1', 'Skyjo'), moduleId: 'skyjo' })
+    repo.save({
+      ...buildGameType('gt1', 'Skyjo'),
+      moduleId: 'skyjo',
+      winCondition: 'LOWEST_SCORE',
+      minPlayers: 2,
+      maxPlayers: 8,
+    })
     renderScreen(repo)
 
-    fireEvent.click(screen.getByLabelText('Edit'))
-    const editDialog = screen.getByRole('dialog')
-    // The range only gates the launch of an ordinary game: a module game ignores it.
-    expect(within(editDialog).queryByLabelText('Min. players')).not.toBeInTheDocument()
-    expect(within(editDialog).queryByLabelText('Max. players')).not.toBeInTheDocument()
+    fireEvent.click(screen.getByLabelText('View details'))
+    const dialog = screen.getByRole('dialog')
+    expect(within(dialog).getByText('Decided by the point counter')).toBeInTheDocument()
+    expect(within(dialog).getByText('Players')).toBeInTheDocument()
+    expect(within(dialog).getByText(/2.8 players/)).toBeInTheDocument()
+    expect(
+      within(dialog).getByText(/rules of Skyjo are set by its point counter/),
+    ).toBeInTheDocument()
+    expect(within(dialog).getByText('Back')).toBeInTheDocument()
+    expect(within(dialog).getByText('Archive')).toBeInTheDocument()
+    expect(within(dialog).queryByText('Edit')).not.toBeInTheDocument()
+  })
 
-    fireEvent.click(within(editDialog).getByText('Save changes'))
-    expect(repo.findById('gt1')).toMatchObject({ minPlayers: null, maxPlayers: null })
+  it('uses the one-sided player range labels when the module leaves a bound open', () => {
+    const repo = new InMemoryGameTypeRepository()
+    repo.save({
+      ...buildGameType('gt1', 'Skyjo'),
+      moduleId: 'skyjo',
+      minPlayers: 2,
+      maxPlayers: null,
+    })
+    renderScreen(repo)
+
+    fireEvent.click(screen.getByLabelText('View details'))
+    expect(within(screen.getByRole('dialog')).getByText('At least 2 players')).toBeInTheDocument()
+  })
+
+  it('treats a game whose module is no longer registered as an ordinary game', () => {
+    const repo = new InMemoryGameTypeRepository()
+    repo.save({ ...buildGameType('gt1', 'Old'), moduleId: 'gone-module' })
+    renderScreen(repo)
+
+    expect(screen.getAllByLabelText('Edit')).toHaveLength(1)
+    fireEvent.click(screen.getByLabelText('View details'))
+    const dialog = screen.getByRole('dialog')
+    expect(within(dialog).getByText('Edit')).toBeInTheDocument()
+    expect(within(dialog).queryByText('Players')).not.toBeInTheDocument()
   })
 
   it('shows the player range fields when editing an ordinary game', () => {

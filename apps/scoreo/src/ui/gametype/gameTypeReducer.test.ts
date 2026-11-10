@@ -671,11 +671,22 @@ describe('scoring mode change warning', () => {
     expect(scoringModeChangeWarning(state)).toBe(false)
   })
 
-  it('hides the scoring mode choice for a module-bound game, which never warns', () => {
-    const bound = editing(true, { ...tarot, moduleId: 'skyjo' })
-    expect(showsScoringModeChoice(bound)).toBe(false)
-    const state = gameTypeReducer(bound, { type: 'selectScoringMode', scoringMode: 'ROUNDS_WON' })
-    expect(scoringModeChangeWarning(state)).toBe(false)
+  it('ignores editGameType on a game bound to a registered module', () => {
+    const state = gameTypeReducer(initialGameTypeState, {
+      type: 'editGameType',
+      gameType: { ...tarot, moduleId: 'skyjo' },
+      hasMatches: true,
+    })
+    expect(state).toBe(initialGameTypeState)
+  })
+
+  it('still edits a game whose module is no longer registered', () => {
+    const state = gameTypeReducer(initialGameTypeState, {
+      type: 'editGameType',
+      gameType: { ...tarot, moduleId: 'gone-module' },
+      hasMatches: false,
+    })
+    expect(state.editingGameId).toBe(tarot.id)
   })
 
   it('shows the scoring mode choice in the add form and for an unbound game', () => {
