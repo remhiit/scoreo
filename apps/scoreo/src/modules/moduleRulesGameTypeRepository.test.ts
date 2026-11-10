@@ -38,4 +38,34 @@ describe('ModuleRulesGameTypeRepository', () => {
     expect(raw.findById('n')?.name).toBe('Nouveau')
     expect(raw.findById('b')).toBeUndefined()
   })
+
+  it('keeps the stored rules when re-saving a module-bound game', () => {
+    const { raw, repo } = setup()
+    const resolved = repo.findById('s')!
+    repo.save({ ...resolved, name: 'Skyjo du dimanche', active: false })
+    expect(raw.findById('s')).toMatchObject({
+      name: 'Skyjo du dimanche',
+      active: false,
+      winCondition: 'HIGHEST_SCORE',
+      scoringMode: 'POINTS',
+      tieBreakRule: 'NONE',
+      minPlayers: null,
+      maxPlayers: null,
+    })
+    // ...while reads still show the manifest's rules.
+    expect(repo.findById('s')).toMatchObject({ name: 'Skyjo du dimanche', winCondition: 'LOWEST_SCORE' })
+  })
+
+  it('keeps the stored rules of a homonym being bound to a module', () => {
+    const { raw, repo } = setup()
+    const belote = repo.findById('b')!
+    repo.saveAll([{ ...belote, moduleId: 'skyjo' }])
+    expect(raw.findById('b')).toMatchObject({ moduleId: 'skyjo', winCondition: 'HIGHEST_SCORE', tieBreakRule: 'NONE' })
+  })
+
+  it('writes a module-bound game not stored yet as is', () => {
+    const { raw, repo } = setup()
+    repo.save(newGameType('f', 'Flip 7', 'HIGHEST_SCORE', { moduleId: 'flip-7' }))
+    expect(raw.findById('f')).toMatchObject({ moduleId: 'flip-7', winCondition: 'HIGHEST_SCORE' })
+  })
 })

@@ -211,8 +211,13 @@ returns the game type with the manifest's `winCondition`, `minPlayers` and `maxP
 `manualWinners`, which `getWinners` then returns on a tie for the lead. A game without `moduleId`,
 or whose module is no longer registered, is returned as is (same reference).
 
-`ModuleRulesGameTypeRepository` decorates `GameTypeRepository` with it (`getAll`, `findById`; writes
-go through). `createServices` hands it to every use case **except `SyncUseCase`**, which keeps the
+`ModuleRulesGameTypeRepository` decorates `GameTypeRepository` with it (`getAll`, `findById`).
+Its writes keep the rules the game had stored: re-saving an already stored game bound to a
+registered module (renaming, archiving, merging into it, binding a homonym) writes its other fields
+but leaves its stored `winCondition`, `scoringMode`, `tieBreakRule`, `minPlayers` and `maxPlayers`
+untouched. The resolved view therefore never overwrites the user's original rules, which come back
+if the module is unbound or unregistered, and Drive never propagates such an overwrite. A game not
+stored yet (created by `BindModuleUseCase`) is written as is. `createServices` hands it to every use case **except `SyncUseCase`**, which keeps the
 raw repository so what Drive compares and uploads does not change. Rules therefore cannot diverge:
 `UpdateGameTypeUseCase` throws a `ValidationError` (nothing written) when `winCondition`,
 `scoringMode`, `tieBreakRule`, `minPlayers` or `maxPlayers` of such a game differ from the
@@ -220,8 +225,9 @@ manifest's; name and archiving stay editable. `registry.test.ts` freezes the fou
 `moduleId`, `winCondition` and range with hard-coded values: changing a manifest rewrites
 retroactively how the whole history of that game is read.
 
-Binding by name (rule 2 above) still stores `POINTS` without recomputing the game's matches; were
-that game in rounds won in storage, its counts would be read as points. Merging game types
+Binding by name (rule 2 above) stores the `moduleId` but, through the decorator, keeps the
+homonym's stored rules, and does not recompute its matches; were that game in rounds won in
+storage, its counts would be read as points while the module is registered. Merging game types
 (`MergeGameTypesUseCase`) never rescores a module's match either (its preview sets `rulesDiffer`).
 Guards for both are tracked in a separate issue.
 
