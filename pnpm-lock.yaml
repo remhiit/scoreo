@@ -61,8 +61,8 @@ importers:
         specifier: ^19.3.0
         version: 19.3.0(@types/react@19.3.0)
       '@vitejs/plugin-react':
-        specifier: ^6.2.1
-        version: 6.2.1(vite@8.3.6(@types/node@26.6.6))
+        specifier: ^6.3.0
+        version: 6.3.0(vite@8.3.6(@types/node@26.6.6))
       jsdom:
         specifier: ^31.0.0
         version: 31.0.0
@@ -112,8 +112,8 @@ importers:
         specifier: ^19.3.1
         version: 19.3.1(react@19.3.1)
       react-i18next:
-        specifier: ^18.0.0
-        version: 18.0.0(i18next@27.0.1(typescript@6.0.3))(react@19.3.1)(typescript@6.0.3)
+        specifier: ^18.0.1
+        version: 18.0.1(@types/react@19.3.0)(i18next@27.0.1(typescript@6.0.3))(react@19.3.1)(typescript@6.0.3)
       zod:
         specifier: ^4.6.7
         version: 4.6.7
@@ -137,8 +137,8 @@ importers:
         specifier: ^19.3.0
         version: 19.3.0(@types/react@19.3.0)
       '@vitejs/plugin-react':
-        specifier: ^6.2.1
-        version: 6.2.1(vite@8.3.6(@types/node@26.6.6))
+        specifier: ^6.3.0
+        version: 6.3.0(vite@8.3.6(@types/node@26.6.6))
       jsdom:
         specifier: ^31.0.0
         version: 31.0.0
@@ -364,8 +364,8 @@ importers:
         specifier: ^19.3.1
         version: 19.3.1(react@19.3.1)
       react-i18next:
-        specifier: ^18.0.0
-        version: 18.0.0(i18next@27.0.1(typescript@6.0.3))(react@19.3.1)(typescript@6.0.3)
+        specifier: ^18.0.1
+        version: 18.0.1(@types/react@19.3.0)(i18next@27.0.1(typescript@6.0.3))(react@19.3.1)(typescript@6.0.3)
       zod:
         specifier: ^4.6.7
         version: 4.6.7
@@ -386,8 +386,8 @@ importers:
         specifier: ^19.3.0
         version: 19.3.0(@types/react@19.3.0)
       '@vitejs/plugin-react':
-        specifier: ^6.2.1
-        version: 6.2.1(vite@8.3.6(@types/node@26.6.6))
+        specifier: ^6.3.0
+        version: 6.3.0(vite@8.3.6(@types/node@26.6.6))
       jsdom:
         specifier: ^31.0.0
         version: 31.0.0
@@ -810,8 +810,8 @@ packages:
     resolution: {integrity: sha512-SB8xqipSzZHUePCCLNeYxqnxq83X61/qzNhjQGbTfjxGZIeOEP7tBgWYX05Tcd6CgE02WdTJnh5b8kMZJ/+bnQ==}
     engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
 
-  '@vitejs/plugin-react@6.2.1':
-    resolution: {integrity: sha512-9KyWCij3r0+qLG3Q62vBmv0VyevmYibAtxaCIVK9o0k6CXgaajZRIe8tpfchQcdZArJ5b/7OrIz4W3b2uxVRDA==}
+  '@vitejs/plugin-react@6.3.0':
+    resolution: {integrity: sha512-H9E955aVvD2F4zNHCw4eIZbIfF6xKldlh7MNu+hSU7xwQzh65lI/N+CJWqmfhi0PEjDXIt/H7T7J/4wU63KJiw==}
     engines: {node: ^20.19.0 || >=22.12.0}
     peerDependencies:
       '@rolldown/plugin-babel': ^0.1.7 || ^0.2.0 || ^0.3.0
@@ -1385,14 +1385,17 @@ packages:
     peerDependencies:
       react: ^19.3.1
 
-  react-i18next@18.0.0:
-    resolution: {integrity: sha512-xXq/pcuMRwrW4iH0If/RjbPH3zuEqWVtaw4PjDsG54vx0FTook7aS3kop7DXy3g66wHkYUji8l7ZBrA8kfj67Q==}
+  react-i18next@18.0.1:
+    resolution: {integrity: sha512-kPWXI0E/lrPj3+/umcKNzYZVnWmEedLiamMzDIHfbs+5ANf6yzvlZsjKou8f7kaGkfMMDLIZBejV+4aSN1CyBw==}
     engines: {node: '>=22'}
     peerDependencies:
-      i18next: '>= 27.0.0'
+      '@types/react': '*'
+      i18next: '>= 27.0.1'
       react: '>= 18.0.0'
       typescript: ^5 || ^6 || ^7
     peerDependenciesMeta:
+      '@types/react':
+        optional: true
       typescript:
         optional: true
 
@@ -2053,7 +2056,7 @@ snapshots:
       '@typescript-eslint/types': 8.72.1
       eslint-visitor-keys: 5.0.1
 
-  '@vitejs/plugin-react@6.2.1(vite@8.3.6(@types/node@26.6.6))':
+  '@vitejs/plugin-react@6.3.0(vite@8.3.6(@types/node@26.6.6))':
     dependencies:
       '@rolldown/pluginutils': 1.0.1
       vite: 8.3.6(@types/node@26.6.6)
@@ -2546,12 +2549,13 @@ snapshots:
       react: 19.3.1
       scheduler: 0.28.0
 
-  react-i18next@18.0.0(i18next@27.0.1(typescript@6.0.3))(react@19.3.1)(typescript@6.0.3):
+  react-i18next@18.0.1(@types/react@19.3.0)(i18next@27.0.1(typescript@6.0.3))(react@19.3.1)(typescript@6.0.3):
     dependencies:
       html-parse-stringify: 4.0.1
       i18next: 27.0.1(typescript@6.0.3)
       react: 19.3.1
     optionalDependencies:
+      '@types/react': 19.3.0
       typescript: 6.0.3
 
   react-is@17.0.2: {}
