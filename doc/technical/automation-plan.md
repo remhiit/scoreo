@@ -762,8 +762,9 @@ n'est jamais reprise par une R3/R4 autonome. Un push ultérieur (rebase de
 le diff de la PR est identique (même `git patch-id` avant et après), et le
 passe sinon en `failure` en retirant `automation:review-pass`. Rendre la PR
 à R3 est un geste humain : retirer le label la remet en file
-(`needs-review-label.yml`, événement `unlabeled`). Pour le compteur de tours de correctif, il pose
-`automation:attempt-N` (label sûr — aucun déclencheur GitHub n'y filtre) et,
+(`needs-review-label.yml`, événement `unlabeled`). Pour le compteur de
+tours de correctif, il pose `automation:attempt-N` (label sûr — aucun
+déclencheur GitHub n'y filtre) et,
 une fois convergé, `automation:review-pass` (ce qui fait tourner
 `review-status-sync.yml` normalement : statut `claude/review`, journal
 `pr-review`). Il ne pose en revanche **jamais** `automation:needs-review` ni
