@@ -147,7 +147,8 @@ export const ORGANISM_STORIES: Story[] = [
     title: 'Banner',
     layer: 'organisms',
     covers: ['Banner'],
-    usage: 'Conteneur accentué pour les étapes de prise en main ou la reprise d’une partie.',
+    usage:
+      'Conteneur accentué pour les étapes de prise en main ou la reprise d’une partie. L’accent teinte le fond, la bordure et l’icône ; tout le texte est en couleur de corps, et le titre n’est pas un titre de section.',
     variants: [
       {
         name: 'Prise en main',
@@ -167,6 +168,12 @@ export const ORGANISM_STORIES: Story[] = [
           >
             Manche 4, commencée il y a 20 minutes.
           </Banner>
+        ),
+      },
+      {
+        name: 'Reprise seule',
+        render: () => (
+          <Banner action={{ label: 'Reprendre la partie en cours', icon: 'play', onClick: noop }} />
         ),
       },
     ],

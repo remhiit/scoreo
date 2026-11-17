@@ -1,3 +1,4 @@
+/* The accent tints the background, the border and the action icon; text reads in the body colour. */
 .sc-banner {
   padding: 14px var(--space-4);
   background: var(--color-primary-tint);
@@ -8,14 +9,19 @@
 .sc-banner__title {
   margin-bottom: var(--space-2);
   font-size: var(--text-md);
-  color: var(--color-primary);
+  font-weight: var(--weight-semibold);
+  color: var(--text-body);
 }
 .sc-banner__steps {
   padding-left: var(--space-5);
 }
 .sc-banner__steps li {
   margin: 5px 0;
-  color: var(--text-muted);
+  color: var(--text-body);
+}
+.sc-banner__steps li::marker {
+  color: var(--text-body);
+  font-weight: var(--weight-semibold);
 }
 .sc-banner__action {
   display: flex;
@@ -25,9 +31,11 @@
   padding: 0;
   border: none;
   background: transparent;
+  font-family: inherit;
+  line-height: inherit;
   font-size: 15px;
   font-weight: var(--weight-semibold);
-  color: var(--color-primary);
+  color: var(--text-body);
   text-align: left;
   cursor: pointer;
 }
