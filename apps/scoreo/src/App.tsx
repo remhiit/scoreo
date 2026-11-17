@@ -201,7 +201,12 @@ function AppShell() {
   )
   const addGameType = useMemo(() => new AddGameTypeUseCase(services.gameTypeRepository), [services])
   const updateGameType = useMemo(
-    () => new UpdateGameTypeUseCase(services.gameTypeRepository, services.matchRepository),
+    () =>
+      new UpdateGameTypeUseCase(
+        services.gameTypeRepository,
+        services.matchRepository,
+        findManifest,
+      ),
     [services],
   )
   const findGameTypeById = useMemo(

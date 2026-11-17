@@ -1,4 +1,6 @@
+import type { ScoringModuleManifest } from '@scoreboards/module-api'
 import {
+  applyModuleRules,
   assertValidPlayerRange,
   effectiveScoringMode,
   roundScoringChanged,
@@ -8,14 +10,20 @@ import { ValidationError } from '../domain/model/errors'
 import { rescoreMatch, type Match } from '../domain/model/match'
 import type { GameTypeRepository } from '../domain/port/gameTypeRepository'
 import type { MatchRepository } from '../domain/port/matchRepository'
-import { withModuleRules } from '../modules/withModuleRules'
 
 const MODULE_RULE_FIELDS = ['winCondition', 'scoringMode', 'tieBreakRule', 'minPlayers', 'maxPlayers'] as const
 
 export class UpdateGameTypeUseCase {
+  /**
+   * `findManifest` looks a module up by its id — the host's registry in the
+   * app, a test's own manifests otherwise — so this use case never depends on
+   * which modules are installed. It returns `undefined` for a module no longer
+   * registered.
+   */
   constructor(
     private readonly repository: GameTypeRepository,
     private readonly matchRepository: MatchRepository,
+    private readonly findManifest: (moduleId: string) => ScoringModuleManifest | undefined,
   ) {}
 
   /**
@@ -60,7 +68,8 @@ export class UpdateGameTypeUseCase {
    * archiving stay editable. Rules already equal to the manifest's pass.
    */
   private assertModuleRulesUntouched(gameType: GameType): void {
-    const resolved = withModuleRules(gameType)
+    if (gameType.moduleId === null) return
+    const resolved = applyModuleRules(gameType, this.findManifest(gameType.moduleId))
     if (resolved === gameType) return
     for (const field of MODULE_RULE_FIELDS) {
       if (gameType[field] !== resolved[field]) {

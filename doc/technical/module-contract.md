@@ -155,12 +155,15 @@ The per-module `scoreo_module_draft_<moduleId>` keys of earlier versions are era
 ## The rules come from the manifest
 
 The manifest is the **only source** of the rules of a game bound to a registered module (`moduleId`
-found by `findManifest`). They are resolved at read time, without rewriting any stored data:
-`withModuleRules(gameType, manifest?)` (`apps/scoreo/src/modules/withModuleRules.ts`) returns the
-game type with the manifest's `winCondition`, `minPlayers` and `maxPlayers`, `scoringMode: 'POINTS'`
-(every module counts points) and `tieBreakRule: 'MANUAL_SELECTION'` — the module's `manualWinners`,
-which `getWinners` returns on a tie for the lead. A game without `moduleId`, or whose module is no
-longer registered, is returned as is (same reference) and is an ordinary game again.
+found by `findManifest`). They are resolved at read time, without rewriting any stored data. The
+resolution itself is pure domain: `applyModuleRules(gameType, manifest)`
+(`apps/scoreo/src/domain/model/gameType.ts`) returns the game type with the manifest's
+`winCondition`, `minPlayers` and `maxPlayers`, `scoringMode: 'POINTS'` (every module counts points)
+and `tieBreakRule: 'MANUAL_SELECTION'` — the module's `manualWinners`, which `getWinners` returns on
+a tie for the lead. A game without `moduleId`, or whose module is no longer registered (`manifest`
+undefined), is returned as is (same reference) and is an ordinary game again.
+`withModuleRules(gameType, manifest?)` (`apps/scoreo/src/modules/withModuleRules.ts`) is the host's
+wrapper: it defaults `manifest` to the registry's `findManifest` and delegates to `applyModuleRules`.
 
 `ModuleRulesGameTypeRepository` decorates `GameTypeRepository` with it (`getAll`, `findById`). Its
 writes keep the rules the game had stored: re-saving a game bound to a registered module (renaming,
@@ -175,7 +178,12 @@ The rules therefore cannot diverge:
 
 - `UpdateGameTypeUseCase` throws a `ValidationError` (nothing written) when `winCondition`,
   `scoringMode`, `tieBreakRule`, `minPlayers` or `maxPlayers` of such a game differ from the
-  manifest's; name and archiving stay editable.
+  manifest's; name and archiving stay editable. That use case lives in `application/`, which never
+  imports `src/modules/` (an ESLint `no-restricted-imports` rule enforces it, tests included): it
+  receives the lookup at construction, `findManifest: (moduleId) => ScoringModuleManifest | undefined`
+  — `App.tsx` passes the registry's, tests pass a manifest of their own — and calls it only for a
+  game with a `moduleId`, then compares with `applyModuleRules`. A lookup returning `undefined`
+  (module removed from the registry) leaves the game editable.
 - The **Games** screen shows those rules read-only, with no **Edit** (`isModuleGame`, the same
   condition as `withModuleRules`; see `doc/functional/features/games.md`).
 - Merging game types (`MergeGameTypesUseCase`) refuses with a `ValidationError`, before writing
