@@ -58,6 +58,7 @@
     "mergeSummary_one": "{{count}} match will move.",
     "mergeSummary_other": "{{count}} matches will move.",
     "mergeRulesDiffer": "The selected games don't all score the same way: \"{{name}}\" rules will apply to the moved matches, which may change their winners.",
+    "mergeModuleRulesRefused": "These games can't be merged: a game with its own scoring module only takes games of the same module, and only matches that fit its rules (scored in points, with consistent round detail).",
     "mergeConfirm": "Merge",
     "mergeDuplicatesLabel": "Duplicates to remove",
     "archivedNote": "(archived)"

@@ -226,10 +226,18 @@ manifest's; name and archiving stay editable. `registry.test.ts` freezes the fou
 retroactively how the whole history of that game is read.
 
 Binding by name (rule 2 above) stores the `moduleId` but, through the decorator, keeps the
-homonym's stored rules, and does not recompute its matches; were that game in rounds won in
-storage, its counts would be read as points while the module is registered. Merging game types
-(`MergeGameTypesUseCase`) never rescores a module's match either (its preview sets `rulesDiffer`).
-Guards for both are tracked in a separate issue.
+homonym's stored rules, and does not recompute its matches. That is why rule 2 only takes a
+homonym whose effective scoring mode is `POINTS` and whose every match passes
+`assertMatchConsistent` under the module's rules (`resolveBindingTarget` gets the matches for it).
+A refused homonym stays an ordinary game and rule 3 creates the bound one; the selection modal calls
+the same function, so it offers the module on the very game the binding will pick.
+
+Merging game types (`MergeGameTypesUseCase`) is guarded the same way, refusing with a
+`ValidationError` before writing anything: a duplicate bound to a module can only be folded into a
+game bound to the same module, and when the kept game is bound to a module every moved match
+(rescored under its resolved rules) must pass `assertMatchConsistent` — a rounds-won match without
+round detail, which can't be turned back into points, is refused. The Games screen shows the refusal
+through its usual merge error (`mergeFailed`), with a translated reason.
 
 The id never leaves the installation: it is absent from the v1.1 export, which travels to other
 installations where module ids mean nothing. `ImportMatchesUseCase` compensates by consulting the
