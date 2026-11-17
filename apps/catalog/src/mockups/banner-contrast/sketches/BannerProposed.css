@@ -20,7 +20,7 @@
   color: var(--text-body);
 }
 .mk-banner__steps li::marker {
-  color: var(--color-primary);
+  color: var(--text-body);
   font-weight: var(--weight-semibold);
 }
 .mk-banner__action {
