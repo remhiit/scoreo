@@ -110,7 +110,8 @@ replace the step they name:
    `automation:needs-human` (instead of § Escalade step 1) and keep
    `automation:coordinator-owned` as § Escalade step 4 always does — no
    R3/R4 picks it up behind his back. Post the escalation comment as
-   usual (§ Escalade step 5) and tell Rémi in the conversation what is blocking and what he can decide.
+   usual (§ Escalade step 5) and tell Rémi in the conversation what is
+   blocking and what he can decide.
 8. **Labels never posted in manual mode**, on the issue or the PR:
    `automation:ready`, `automation:in-progress` (issue),
    `automation:needs-review`, `automation:needs-fix`, `automation:queued`,
