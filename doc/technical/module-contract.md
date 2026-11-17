@@ -204,12 +204,14 @@ drafts, hand-typed URLs).
 
 The manifest is the **only source** of the rules of a game bound to a registered module
 (`moduleId` found by `findManifest`). They are resolved at read time in `apps/scoreo/src/modules`, via a repository decorator, without rewriting
-any stored data: `withModuleRules(gameType, manifest?)` (`apps/scoreo/src/modules/withModuleRules.ts`)
-returns the game type with the manifest's `winCondition`, `minPlayers` and `maxPlayers`,
+any stored data. The resolution itself is pure domain: `applyModuleRules(gameType, manifest)`
+(`apps/scoreo/src/domain/model/gameType.ts`) returns the game type with the manifest's `winCondition`, `minPlayers` and `maxPlayers`,
 `scoringMode: 'POINTS'` (every module counts points; `effectiveScoringMode()` already says so) and
 `tieBreakRule: 'MANUAL_SELECTION'` — the module decides its own tie-breaks and hands them back as
 `manualWinners`, which `getWinners` then returns on a tie for the lead. A game without `moduleId`,
-or whose module is no longer registered, is returned as is (same reference).
+or whose module is no longer registered (`manifest` undefined), is returned as is (same reference).
+`withModuleRules(gameType, manifest?)` (`apps/scoreo/src/modules/withModuleRules.ts`) is the host's
+wrapper: it defaults `manifest` to the registry's `findManifest` and delegates to `applyModuleRules`.
 
 `ModuleRulesGameTypeRepository` decorates `GameTypeRepository` with it (`getAll`, `findById`).
 Its writes keep the rules the game had stored: re-saving an already stored game bound to a
@@ -221,7 +223,12 @@ stored yet (created by `BindModuleUseCase`) is written as is. `createServices` h
 raw repository so what Drive compares and uploads does not change. Rules therefore cannot diverge:
 `UpdateGameTypeUseCase` throws a `ValidationError` (nothing written) when `winCondition`,
 `scoringMode`, `tieBreakRule`, `minPlayers` or `maxPlayers` of such a game differ from the
-manifest's; name and archiving stay editable. `registry.test.ts` freezes the four manifests'
+manifest's; name and archiving stay editable. That use case lives in `application/`, which never
+imports `src/modules/` (an ESLint `no-restricted-imports` rule enforces it, tests included): it
+receives the lookup at construction, `findManifest: (moduleId) => ScoringModuleManifest | undefined`
+— `App.tsx` passes the registry's, tests pass a manifest of their own — and calls it only for a game
+with a `moduleId`, then compares with `applyModuleRules`. A lookup returning `undefined` (module
+removed from the registry) leaves the game editable. `registry.test.ts` freezes the four manifests'
 `moduleId`, `winCondition` and range with hard-coded values: changing a manifest rewrites
 retroactively how the whole history of that game is read.
 

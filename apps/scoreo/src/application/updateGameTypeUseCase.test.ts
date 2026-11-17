@@ -1,6 +1,6 @@
-import { describe, expect, it } from 'vitest'
-import { newGameType } from '../domain/model/gameType'
-import { ModuleRulesGameTypeRepository } from '../modules/moduleRulesGameTypeRepository'
+import type { ScoringModuleManifest } from '@scoreboards/module-api'
+import { describe, expect, it, vi } from 'vitest'
+import { applyModuleRules, newGameType } from '../domain/model/gameType'
 import { ValidationError } from '../domain/model/errors'
 import type { Match } from '../domain/model/match'
 import type { PlayerScore } from '../domain/model/playerScore'
@@ -9,11 +9,24 @@ import { InMemoryMatchRepository } from '../infrastructure/testing/inMemoryMatch
 import { AddGameTypeUseCase } from './addGameTypeUseCase'
 import { UpdateGameTypeUseCase } from './updateGameTypeUseCase'
 
+// A module invented for these tests: the use case never reads the host's registry.
+const testManifest: ScoringModuleManifest = {
+  moduleId: 'test-module',
+  displayName: 'Test Game',
+  gameNames: ['Test Game'],
+  winCondition: 'LOWEST_SCORE',
+  minPlayers: 2,
+  maxPlayers: 8,
+  dataVersion: 1,
+}
+const findManifest = (moduleId: string) =>
+  moduleId === testManifest.moduleId ? testManifest : undefined
+
 describe('UpdateGameTypeUseCase', () => {
   it('updates game type in repository', () => {
     const repo = new InMemoryGameTypeRepository()
     const addUseCase = new AddGameTypeUseCase(repo)
-    const updateUseCase = new UpdateGameTypeUseCase(repo, new InMemoryMatchRepository())
+    const updateUseCase = new UpdateGameTypeUseCase(repo, new InMemoryMatchRepository(), findManifest)
 
     const created = addUseCase.invoke('Belote', 'HIGHEST_SCORE')
     updateUseCase.invoke({ ...created, name: 'Belote Updated' })
@@ -24,7 +37,7 @@ describe('UpdateGameTypeUseCase', () => {
   it('updates tie break rule', () => {
     const repo = new InMemoryGameTypeRepository()
     const addUseCase = new AddGameTypeUseCase(repo)
-    const updateUseCase = new UpdateGameTypeUseCase(repo, new InMemoryMatchRepository())
+    const updateUseCase = new UpdateGameTypeUseCase(repo, new InMemoryMatchRepository(), findManifest)
 
     const created = addUseCase.invoke('Golf', 'HIGHEST_SCORE')
     updateUseCase.invoke({
@@ -43,7 +56,7 @@ describe('UpdateGameTypeUseCase', () => {
   it('preserves game type id', () => {
     const repo = new InMemoryGameTypeRepository()
     const addUseCase = new AddGameTypeUseCase(repo)
-    const updateUseCase = new UpdateGameTypeUseCase(repo, new InMemoryMatchRepository())
+    const updateUseCase = new UpdateGameTypeUseCase(repo, new InMemoryMatchRepository(), findManifest)
 
     const created = addUseCase.invoke('Belote', 'HIGHEST_SCORE')
     const originalId = created.id
@@ -55,7 +68,7 @@ describe('UpdateGameTypeUseCase', () => {
   it('saves the player range', () => {
     const repo = new InMemoryGameTypeRepository()
     const created = new AddGameTypeUseCase(repo).invoke('Tarot', 'HIGHEST_SCORE')
-    const update = new UpdateGameTypeUseCase(repo, new InMemoryMatchRepository())
+    const update = new UpdateGameTypeUseCase(repo, new InMemoryMatchRepository(), findManifest)
 
     update.invoke({ ...created, minPlayers: 3, maxPlayers: 5 })
     expect(repo.findById(created.id)).toMatchObject({ minPlayers: 3, maxPlayers: 5 })
@@ -70,7 +83,7 @@ describe('UpdateGameTypeUseCase', () => {
   it('refuses a minimum above the maximum and keeps the saved game', () => {
     const repo = new InMemoryGameTypeRepository()
     const created = new AddGameTypeUseCase(repo).invoke('Tarot', 'HIGHEST_SCORE')
-    const update = new UpdateGameTypeUseCase(repo, new InMemoryMatchRepository())
+    const update = new UpdateGameTypeUseCase(repo, new InMemoryMatchRepository(), findManifest)
 
     expect(() => update.invoke({ ...created, name: 'X', minPlayers: 5, maxPlayers: 3 })).toThrow(
       ValidationError,
@@ -82,7 +95,7 @@ describe('UpdateGameTypeUseCase', () => {
   it('updates the scoring mode', () => {
     const repo = new InMemoryGameTypeRepository()
     const created = new AddGameTypeUseCase(repo).invoke('Tarot', 'HIGHEST_SCORE')
-    new UpdateGameTypeUseCase(repo, new InMemoryMatchRepository()).invoke({
+    new UpdateGameTypeUseCase(repo, new InMemoryMatchRepository(), findManifest).invoke({
       ...created,
       scoringMode: 'ROUNDS_WON',
     })
@@ -92,7 +105,7 @@ describe('UpdateGameTypeUseCase', () => {
   it('forces POINTS when the win condition is MANUAL', () => {
     const repo = new InMemoryGameTypeRepository()
     const created = new AddGameTypeUseCase(repo).invoke('Tarot', 'HIGHEST_SCORE')
-    new UpdateGameTypeUseCase(repo, new InMemoryMatchRepository()).invoke({
+    new UpdateGameTypeUseCase(repo, new InMemoryMatchRepository(), findManifest).invoke({
       ...created,
       winCondition: 'MANUAL',
       scoringMode: 'ROUNDS_WON',
@@ -148,7 +161,7 @@ describe('UpdateGameTypeUseCase', () => {
       })
       const created = { ...added, moduleId }
       gameTypes.save(created)
-      return { gameTypes, matches, created, update: new UpdateGameTypeUseCase(gameTypes, matches) }
+      return { gameTypes, matches, created, update: new UpdateGameTypeUseCase(gameTypes, matches, findManifest) }
     }
 
     it('rewrites points as rounds won when switching to ROUNDS_WON', () => {
@@ -167,7 +180,7 @@ describe('UpdateGameTypeUseCase', () => {
     })
 
     it('never recomputes the matches of a module-bound game into rounds won', () => {
-      const { gameTypes, matches, created, update } = setup('POINTS', 'tori-valley')
+      const { gameTypes, matches, created, update } = setup('POINTS', 'test-module')
       matches.save(match('m1', created.id, 20, 13))
       expect(() => update.invoke({ ...created, scoringMode: 'ROUNDS_WON' })).toThrow(ValidationError)
       expect(scoresOf(matches, 'm1')).toEqual([20, 13])
@@ -213,7 +226,7 @@ describe('UpdateGameTypeUseCase', () => {
     })
 
     it('never converts the matches without detail of a module-bound game', () => {
-      const { matches, created, update } = setup('POINTS', 'tori-valley')
+      const { matches, created, update } = setup('POINTS', 'test-module')
       matches.save(match('m1', created.id, 40, 90, []))
       expect(() => update.invoke({ ...created, scoringMode: 'ROUNDS_WON' })).toThrow(ValidationError)
       expect(scoresOf(matches, 'm1')).toEqual([40, 90])
@@ -264,10 +277,10 @@ describe('UpdateGameTypeUseCase', () => {
     function bound() {
       const repo = new InMemoryGameTypeRepository()
       // Stored as an older build left it: rules that differ from the manifest's.
-      repo.save(newGameType('s', 'Skyjo', 'HIGHEST_SCORE', { moduleId: 'skyjo' }))
-      const guarded = new ModuleRulesGameTypeRepository(repo)
-      const useCase = new UpdateGameTypeUseCase(guarded, new InMemoryMatchRepository())
-      return { repo, guarded, useCase, current: guarded.findById('s')! }
+      repo.save(newGameType('s', 'Test Game', 'HIGHEST_SCORE', { moduleId: 'test-module' }))
+      const useCase = new UpdateGameTypeUseCase(repo, new InMemoryMatchRepository(), findManifest)
+      // What the edit form shows: the rules resolved from the manifest.
+      return { repo, useCase, current: applyModuleRules(repo.findById('s')!, testManifest) }
     }
 
     it.each([
@@ -286,8 +299,8 @@ describe('UpdateGameTypeUseCase', () => {
 
     it('still renames and archives', () => {
       const { repo, useCase, current } = bound()
-      useCase.invoke({ ...current, name: 'Skyjo du jeudi', active: false })
-      expect(repo.findById('s')).toMatchObject({ name: 'Skyjo du jeudi', active: false })
+      useCase.invoke({ ...current, name: 'Test du jeudi', active: false })
+      expect(repo.findById('s')).toMatchObject({ name: 'Test du jeudi', active: false })
     })
 
     it('accepts rules already identical to the manifest', () => {
@@ -299,11 +312,25 @@ describe('UpdateGameTypeUseCase', () => {
       const repo = new InMemoryGameTypeRepository()
       const g = newGameType('x', 'Old', 'HIGHEST_SCORE', { moduleId: 'gone' })
       repo.save(g)
-      new UpdateGameTypeUseCase(repo, new InMemoryMatchRepository()).invoke({
+      new UpdateGameTypeUseCase(repo, new InMemoryMatchRepository(), findManifest).invoke({
         ...g,
         winCondition: 'LOWEST_SCORE',
       })
       expect(repo.findById('x')?.winCondition).toBe('LOWEST_SCORE')
+    })
+
+    it('never looks a manifest up for a game without a module', () => {
+      const repo = new InMemoryGameTypeRepository()
+      const g = newGameType('y', 'Belote', 'HIGHEST_SCORE')
+      repo.save(g)
+      const lookup = vi.fn(findManifest)
+      new UpdateGameTypeUseCase(repo, new InMemoryMatchRepository(), lookup).invoke({
+        ...g,
+        winCondition: 'LOWEST_SCORE',
+        minPlayers: 3,
+      })
+      expect(lookup).not.toHaveBeenCalled()
+      expect(repo.findById('y')).toMatchObject({ winCondition: 'LOWEST_SCORE', minPlayers: 3 })
     })
   })
 })

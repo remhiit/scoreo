@@ -5,7 +5,19 @@ import { InMemoryMatchRepository } from '../infrastructure/testing/inMemoryMatch
 import { InMemoryPlayerRepository } from '../infrastructure/testing/inMemoryPlayerRepository'
 import { ImportMatchesUseCase } from './importMatchesUseCase'
 import * as TestImportData from './testImportData'
-import { MODULE_MANIFESTS } from '../modules/registry'
+import type { ScoringModuleManifest } from '@scoreboards/module-api'
+
+// A module claiming the Torī game name, invented here: `application/` never
+// reads the host's registry (eslint.config.js), its tests included.
+const toriManifest: ScoringModuleManifest = {
+  moduleId: 'tori-valley',
+  displayName: 'La Vallée des Torī',
+  gameNames: ['La Vallée des Torī'],
+  winCondition: 'HIGHEST_SCORE',
+  minPlayers: 2,
+  maxPlayers: 4,
+  dataVersion: 1,
+}
 
 function useCase(
   playerRepo = new InMemoryPlayerRepository(),
@@ -13,13 +25,7 @@ function useCase(
   matchRepo = new InMemoryMatchRepository(),
   currentDate = () => 1767225600000,
 ) {
-  return new ImportMatchesUseCase(
-    playerRepo,
-    gameTypeRepo,
-    matchRepo,
-    currentDate,
-    MODULE_MANIFESTS,
-  )
+  return new ImportMatchesUseCase(playerRepo, gameTypeRepo, matchRepo, currentDate, [toriManifest])
 }
 
 describe('ImportMatchesUseCase', () => {

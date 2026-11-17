@@ -7,6 +7,7 @@ import { GetGameTypesUseCase } from '../../application/getGameTypesUseCase'
 import { GetMatchesUseCase } from '../../application/getMatchesUseCase'
 import { MergeGameTypesUseCase } from '../../application/mergeGameTypesUseCase'
 import { UpdateGameTypeUseCase } from '../../application/updateGameTypeUseCase'
+import { findManifest } from '../../modules/registry'
 import { InMemoryGameTypeRepository } from '../../infrastructure/testing/inMemoryGameTypeRepository'
 import { InMemoryMatchDraftRepository } from '../../infrastructure/testing/inMemoryMatchDraftRepository'
 import { InMemoryMatchRepository } from '../../infrastructure/testing/inMemoryMatchRepository'
@@ -20,7 +21,7 @@ function renderScreen(
   return render(
     <GameTypeScreen
       addGameType={new AddGameTypeUseCase(repo)}
-      updateGameType={new UpdateGameTypeUseCase(repo, matchRepo)}
+      updateGameType={new UpdateGameTypeUseCase(repo, matchRepo, findManifest)}
       getGameTypes={new GetGameTypesUseCase(repo)}
       findGameTypeById={new FindGameTypeByIdUseCase(repo)}
       archiveGameType={new ArchiveGameTypeUseCase(repo)}
@@ -294,7 +295,9 @@ describe('GameTypeScreen', () => {
     render(
       <GameTypeScreen
         addGameType={new AddGameTypeUseCase(repo)}
-        updateGameType={new UpdateGameTypeUseCase(repo, new InMemoryMatchRepository())}
+        updateGameType={
+          new UpdateGameTypeUseCase(repo, new InMemoryMatchRepository(), findManifest)
+        }
         getGameTypes={new GetGameTypesUseCase(repo)}
         findGameTypeById={new FindGameTypeByIdUseCase(repo)}
         archiveGameType={new ArchiveGameTypeUseCase(repo)}
@@ -369,7 +372,7 @@ describe('GameTypeScreen', () => {
     render(
       <GameTypeScreen
         addGameType={new AddGameTypeUseCase(repo)}
-        updateGameType={new UpdateGameTypeUseCase(repo, matchRepo)}
+        updateGameType={new UpdateGameTypeUseCase(repo, matchRepo, findManifest)}
         getGameTypes={new GetGameTypesUseCase(repo)}
         findGameTypeById={new FindGameTypeByIdUseCase(repo)}
         archiveGameType={new ArchiveGameTypeUseCase(repo)}

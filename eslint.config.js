@@ -36,6 +36,29 @@ const COMPOSE_DS_RULES = {
   'no-restricted-imports': NO_LUCIDE,
 }
 
+/**
+ * `application/` holds the use cases: business operations that never know
+ * which modules the host installed. What they need from a module (a manifest,
+ * a lookup) is passed in by the composition layer (`App.tsx`, `services/`),
+ * as `BindModuleUseCase` and `UpdateGameTypeUseCase` receive it — so nothing
+ * there, tests included, imports from `src/modules/`.
+ */
+const APPLICATION_RULES = {
+  'no-restricted-imports': [
+    'error',
+    {
+      paths: NO_LUCIDE[1].paths,
+      patterns: [
+        {
+          group: ['**/modules/**', '**/modules'],
+          message:
+            "Use cases never import the host's module integration (src/modules/): take the manifest or a lookup (findManifest) as a parameter instead.",
+        },
+      ],
+    },
+  ],
+}
+
 // A module's game pieces (src/design/) write classes, and nothing else the host forbids.
 const GAME_PIECE_RULES = {
   'no-restricted-syntax': ['error', NO_STYLE],
@@ -100,6 +123,10 @@ export default tseslint.config(
   {
     files: ['apps/scoreo/src/**/*.{ts,tsx}'],
     rules: COMPOSE_DS_RULES,
+  },
+  {
+    files: ['apps/scoreo/src/application/**/*.{ts,tsx}'],
+    rules: APPLICATION_RULES,
   },
   ...MODULE_CONFIGS,
 )

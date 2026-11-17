@@ -7,6 +7,7 @@ import { GetGameTypesUseCase } from '../../application/getGameTypesUseCase'
 import { GetMatchesUseCase } from '../../application/getMatchesUseCase'
 import { MergeGameTypesUseCase } from '../../application/mergeGameTypesUseCase'
 import { UpdateGameTypeUseCase } from '../../application/updateGameTypeUseCase'
+import { findManifest } from '../../modules/registry'
 import i18n from '../../i18n/i18n'
 import { InMemoryGameTypeRepository } from '../../infrastructure/testing/inMemoryGameTypeRepository'
 import { InMemoryMatchDraftRepository } from '../../infrastructure/testing/inMemoryMatchDraftRepository'
@@ -36,7 +37,7 @@ function buildUseCases(
     repo,
     matchRepo,
     addGameType: new AddGameTypeUseCase(repo),
-    updateGameType: new UpdateGameTypeUseCase(repo, matchRepo),
+    updateGameType: new UpdateGameTypeUseCase(repo, matchRepo, findManifest),
     getGameTypes: new GetGameTypesUseCase(repo),
     findGameTypeById: new FindGameTypeByIdUseCase(repo),
     archiveGameType: new ArchiveGameTypeUseCase(repo),
