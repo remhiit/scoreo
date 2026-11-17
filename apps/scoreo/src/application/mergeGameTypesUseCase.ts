@@ -33,9 +33,13 @@ export const MERGE_MODULE_RULES_FIELD = 'moduleRules'
  * Into an ordinary game, a module's match keeps the scores the module returned:
  * merging never rescores it (#590). (Into a module's game it is rescored like
  * any other, and must then be consistent.)
+ *
+ * Only the match's own `moduleData` tells: where this is evaluated the kept game
+ * is ordinary, and a duplicate bound to a module is refused into an ordinary
+ * game before any match moves, so the duplicate's `moduleId` is always `null`.
  */
-function isFromModule(match: Match, source: GameType | undefined): boolean {
-  return source?.moduleId != null || match.moduleData !== null
+function isFromModule(match: Match): boolean {
+  return match.moduleData !== null
 }
 
 /** `tieBreakCondition` only matters under SECONDARY_SCORE; comparing it otherwise flags a difference nothing acts on. */
@@ -80,9 +84,7 @@ export class MergeGameTypesUseCase {
     const matches = this.matchesOf(duplicates)
     if (kept === undefined) return { affectedMatches: matches.length, rulesDiffer: false }
     const moduleMatchIntoRoundsWon =
-      kept.moduleId === null &&
-      usesRoundsWon(kept) &&
-      matches.some((match) => isFromModule(match, merged.find((gt) => gt?.id === match.gameTypeId)))
+      kept.moduleId === null && usesRoundsWon(kept) && matches.some(isFromModule)
     return {
       affectedMatches: matches.length,
       rulesDiffer:
@@ -127,9 +129,7 @@ export class MergeGameTypesUseCase {
     const moved = this.matchesOf(duplicates).map((match) => {
       const source = duplicateById.get(match.gameTypeId)
       const rescored =
-        source && (intoModule || !isFromModule(match, source))
-          ? rescoreMatch(match, source, kept)
-          : match
+        source && (intoModule || !isFromModule(match)) ? rescoreMatch(match, source, kept) : match
       if (intoModule) {
         try {
           // `assertMatchConsistent` accepts a match without round detail, but a
