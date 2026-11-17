@@ -11,11 +11,16 @@ export interface BannerProps {
   children?: ReactNode
 }
 
-/** One accent-tinted container for onboarding and resume — same tint as a selected row. */
+/**
+ * One accent-tinted container for onboarding and resume — same tint as a selected row.
+ * The accent stays on the tint, the border and the action icon; every line of text
+ * reads in the body colour, which keeps ≥ 5.3:1 on the tint in every flavour and
+ * accent. The title labels a hint, not a section of the page, so it is no heading.
+ */
 export function Banner({ title, steps, action, children }: BannerProps) {
   return (
     <div className="sc-banner">
-      {title !== undefined && <h3 className="sc-banner__title">{title}</h3>}
+      {title !== undefined && <p className="sc-banner__title">{title}</p>}
       {steps && (
         <ol className="sc-banner__steps">
           {steps.map((step, i) => (
@@ -26,7 +31,7 @@ export function Banner({ title, steps, action, children }: BannerProps) {
       {children}
       {action && (
         <button type="button" className="sc-banner__action" onClick={action.onClick}>
-          {action.icon && <Icon name={action.icon} size="sm" />}
+          {action.icon && <Icon name={action.icon} size="sm" tone="accent" />}
           <span>{action.label}</span>
         </button>
       )}
