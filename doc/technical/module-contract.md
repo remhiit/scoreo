@@ -191,7 +191,18 @@ The rules therefore cannot diverge:
   game is bound to a module — any moved match that, rescored under its resolved rules, fails
   `assertMatchConsistent` (a rounds-won match without round detail cannot be turned back into
   points). The Games screen shows the refusal through its usual merge error (`mergeFailed`), with a
-  translated reason.
+  translated reason. Like `UpdateGameTypeUseCase`, it receives `findManifest` at construction and
+  only treats a game as module-bound when its module is registered: a game whose module is gone is
+  an ordinary game on either side of the merge (folded into an ordinary game, its `moduleData`
+  matches keeping their scores; kept, with no `assertMatchConsistent` guard), except that it is still
+  refused into a game bound to a different registered module. Its `moduleId` is never changed.
+
+A game whose module is no longer registered (orphaned) keeps its stored `moduleId` and is otherwise
+an ordinary game everywhere the host reads `isModuleGame`/`findManifest`: its detail and its edit
+form (player range fields included) are the ordinary ones, and merging treats it as above. Only the
+domain's `scoringModeIsSelectable`/`effectiveScoringMode`, which look at `moduleId` alone, keep it in
+points. If the module comes back, the game is bound again and its rules are re-read from the
+manifest; a range edited in the meantime is ignored on read.
 
 ## Binding a game to its module
 

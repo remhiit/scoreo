@@ -223,6 +223,7 @@ function AppShell() {
         services.gameTypeRepository,
         services.matchRepository,
         services.matchDraftRepository,
+        findManifest,
       ),
     [services],
   )
