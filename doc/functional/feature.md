@@ -37,11 +37,18 @@
      creates its game type on the spot (`BindModuleUseCase`) — nothing is created before that, and a
      module never played does not appear on the **Games** screen. A module already bound to a game
      type (even an archived one) is not listed a second time. A same-name game (e.g. imported before
-     the module was ever played) stands for the module when it is the oldest game carrying the name
-     (archived ones included, since that is the one the binding picks): if it is active, it offers
-     the module's launch itself, which binds it, and the module is not listed separately. Otherwise
-     the module keeps its own entry, so it is always reachable — launching it binds (and restores)
-     that oldest game, and two same-name games may then show side by side until they are merged.
+     the module was ever played) stands for the module only when its history fits the module's
+     rules: its effective scoring mode is points (not rounds won) and every one of its matches passes
+     `assertMatchConsistent` under the module's rules. The binding takes the **first** same-name
+     game meeting both conditions, in stored order, archived ones included (`resolveBindingTarget`,
+     the same rule as `BindModuleUseCase`; see `doc/technical/module-contract.md` § *Binding a game
+     to its module*). If that game is active, it offers the module's launch itself, which binds it,
+     and the module is not listed separately. If it is archived, the module keeps its own entry, so
+     it is always reachable — launching it binds and restores that archived game. A same-name game
+     that does not meet the conditions stays an ordinary game: the module keeps its own entry, and
+     launching it creates a separate game bound to the module, so two same-name games may then show
+     side by side until they are merged (a merge into the bound game is refused when a moved match,
+     rescored under the module's rules, still contradicts them; see `features/games.md`).
    - An ordinary game (no module) with a player range (`minPlayers`/`maxPlayers`, set on the
      **Games** screen) cannot be started when the number of selected players is outside it:
      **Start match** is disabled and the range is shown. A missing bound is not checked.
