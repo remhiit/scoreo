@@ -30,7 +30,8 @@
 2. **Game Selection** modal → pick or create a game type → **Start match**
    - A game a **scoring module** can count has **one grid, the module's**: the modal shows a single
      **Start match** button, which opens the module's screen (binding the game first). There is no
-     "Play in Scoreo" any more. A game without a module keeps the generic score screen.
+     "Play in Scoreo" any more. Its rules (win condition, tie-break, player range) are the module's,
+     shown read-only on the **Games** screen. A game without a module keeps the generic score screen.
    - Every registered module with no game type of its own yet is listed **in the same game list**,
      after the existing games and sorted by name, offering the same single button. Starting it
      creates its game type on the spot (`BindModuleUseCase`) — nothing is created before that, and a
@@ -47,15 +48,15 @@
    - When the number of players selected falls outside the module's range, the game stays listed, but
      **Start match** is disabled and the range is shown; it never falls back to the generic grid.
 3. **Score Detail** → enter rounds (auto-saved after each score) → **Finish match**
-   - A match scored on a module reopens **on that module**, with its own grid restored. A match of a
-     module game with no `moduleData` (v1.1 import, or entered earlier through "Play in Scoreo")
+   - A match scored on a module's grid reopens **on that grid**, restored. A match of a module game
+     with no `moduleData` (v1.1 import, or entered before the game had a module)
      reopens on the generic grid, where it stays readable and editable. A generic draft already in
      progress on a module game is still resumed on the generic grid.
-   - A game in progress on a module is saved in the same single draft slot as the generic grid, so
-     Home's "Resume match" banner offers it too and reopens the module screen (no banner if the
-     module has since been removed). There is one slot: starting any game, generic or module,
-     replaces the draft in progress of another game. A draft written by an earlier version in the
-     module's own slot stays resumable from the module screen, not from the banner.
+   - A game in progress on a module's grid is saved in the same single draft slot as the generic
+     grid, so Home's "Resume match" banner offers it too and reopens the module's grid (no banner if
+     the module has since been removed). There is one slot: starting any game, generic or module,
+     replaces the draft in progress of another game. The per-module drafts of earlier versions are
+     erased at startup.
    - Exiting a module after it saved a match lands on **History**, that match called out, instead of
      Home — no burger + History detour needed to find it. Exiting without having saved anything keeps
      the previous behavior: History when reopening an existing match, Home for a new one.
@@ -87,8 +88,8 @@ Back button destinations:
 
 Note: Save and Cancel buttons in `ScoreDetail` follow the same rule as `←` (History if editing, Home if new match).
 
-`ModuleScore` plays full-screen, with none of the header above — the host's back arrow, title and
-burger would only duplicate the exit a module already draws itself. In its place, a fine bar carries
+`ModuleScore` plays full-screen, with none of the header above — Scoreo's back arrow, title and
+burger would only take room from the module's grid. In its place, a fine bar carries
 just the module's name and a ✕, always present even if the module fails to load or crashes. The same bar stays when the game type of the route no longer exists: the message "Ce type de jeu n'existe plus." (`modules.unknownGameType`) replaces the module, and the ✕ exits as usual. The ✕
 goes to the same destination as the `ModuleScore` rows above (History/Home), and to History with that
 match called out if it just saved one this session — see *Landing after exit* in

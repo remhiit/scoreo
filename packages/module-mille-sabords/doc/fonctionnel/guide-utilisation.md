@@ -36,8 +36,8 @@ du design system, icônes du jeu fermé) :
 
 Rendre la main à Scoreo **sans rien perdre** — la partie reprend où elle en était — se fait avec le
 ✕ de la barre du module, en tête d'écran : c'est l'hôte qui le dessine, identique pour tous les
-modules, et il ne jette jamais le brouillon (voir `doc/technical/module-contract.md` § *Playing on a
-module*).
+modules, et il ne jette jamais le brouillon (voir `doc/technical/module-contract.md` § *Scoring a match
+on the module's grid*).
 
 ### Le tour en cours
 

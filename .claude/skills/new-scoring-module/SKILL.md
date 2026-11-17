@@ -7,9 +7,12 @@ description: Add a new scoring module to Scoreo — the package, the manifest, t
 
 ## Objectif
 
-A module is a package under `packages/` that owns one game's scoring rules
-and screen. Scoreo owns everything around it: players, history, statistics,
-export, theme, storage. This skill does not restate the contract — the
+A module is the score-entry grid and the rules of one Scoreo game, in a
+package under `packages/`. The game stays an ordinary `GameType`, its matches
+ordinary `Match`es in Scoreo's history and statistics; the module reads and
+writes them in `shared-domain`'s models, the game's rules are read from its
+manifest, and the module's grid is the game's only grid. This skill does not
+restate the contract — the
 contract is `doc/technical/module-contract.md`, **read it first.** What
 follows is the order of operations, and the traps that are invisible until
 they bite. It invokes no autonomous routine — it runs in-session, whenever a
@@ -33,15 +36,17 @@ run" step (`doc/automation/skill-contract.md` §1.4).
 
 ### 1. The package
 
-`packages/module-<game>/`, modelled on the two that exist:
+`packages/module-<game>/`, modelled on the ones that exist (`module-skyjo` is the plainest):
 
 - `package.json` — **no `build` script, no `vite` dependency.** A module builds nothing: Scoreo
   bundles it. Scripts are `test`, `test:watch`, `typecheck`. Dependencies include
   `"@scoreboards/design-system": "workspace:*"`: the screen composes it (step 5).
-- `vitest.config.ts` — declares `@vitejs/plugin-react` itself; there is no `vite.config.ts` to extend.
-- A tsconfig. The two existing modules differ — `module-mille-sabords` has a single
-  `tsconfig.json`, `module-tori-valley` splits `src` and `vitest.config.ts` into project references —
-  and neither is wrong. Copy whichever neighbour you are closest to.
+- `vitest.config.ts` — there is no `vite.config.ts` to extend, so a suite that needs
+  `@vitejs/plugin-react` declares it there itself.
+- One `tsconfig.json`, shaped like every other module package's: it extends `../../tsconfig.base.json`,
+  adds `"lib": ["ES2022", "DOM"]` and `"jsx": "react-jsx"`, and includes `src`. The `typecheck`
+  script is `tsc --noEmit -p tsconfig.json`. No project references, no `tsconfig.app.json`: a module
+  builds nothing. (`module-mille-sabords` adds `"types": ["node"]`, for its golden test only.)
 - `src/styles.d.ts` — `declare module '*.css'`. Without `vite/client` types, the stylesheet import
   fails to type-check.
 
@@ -49,7 +54,7 @@ run" step (`doc/automation/skill-contract.md` §1.4).
 
 `src/index.ts` exports **the manifest and the module, nothing else.**
 
-Scoreo's registry imports this file eagerly, so everything reachable from it lands in the host's
+Scoreo's registry imports this file eagerly, so everything reachable from it lands in Scoreo's
 main bundle. 1000 Sabords re-exported its domain here, and ~8 kB of scoring rules rode into
 `index.js` — the separate chunk changed nothing, because the chunk was never the issue. It was
 caught by the grep below, in the PR that introduced it (#345), and never reached `main`.
@@ -69,7 +74,12 @@ import of the screen.
 - `gameNames` carries the **exact string** an existing v1.1 export already wrote. Miss it and an
   imported history spawns a second game type beside the module instead of binding to it.
 - `minPlayers` is at least 2: Scoreo's home screen cannot start a solo match, and the v1.1 contract
-  needs two entries in `ranking`. Advertising 1 offers a game the host can never launch.
+  needs two entries in `ranking`. Advertising 1 offers a game Scoreo can never launch.
+- **`winCondition`, `minPlayers` and `maxPlayers` are the game's rules** — the only source of them
+  once a `GameType` is bound to the module (`withModuleRules`): the Games screen shows them
+  read-only and refuses to edit them, the tie-break becomes the module's `manualWinners`. Freeze them
+  with a row in `apps/scoreo/src/modules/registry.test.ts` (`freezes the rules of %s`): a later edit
+  rewrites how the whole history of the game is read, so it must fail a test before it ships.
 
 ### 4. The screen
 
@@ -85,10 +95,16 @@ module's PR removes the mockup folder.
 Conforms to `ScoringModuleScreenProps`, MVI like every Scoreo screen: a pure reducer in
 `src/ui/module/`, a component that dispatches.
 
-- Players come from `host.getPlayers()` (the host's `Player`s) — store ids, never names. The game is `host.gameType`.
+- Players come from `host.getPlayers()` (Scoreo's `Player`s, retired ones included) — store ids, never names. The game is `host.gameType`, already carrying the manifest's rules.
 - **The turn in progress goes through `host.saveDraft`/`loadDraft`.** This is what the trio exists
   for: 1000 Sabords' Kotlin ancestor kept its dice in module-level `var`s and a reload threw away
-  the hand a player had just counted out.
+  the hand a player had just counted out. There is **one draft slot** for every game, shared with
+  the generic grid (`MatchDraft.moduleState`): `loadDraft()` returns `undefined` when the slot holds
+  another game, starting this game replaces it, and a successful `saveMatch` clears it. While
+  `editing` is set, never call `saveDraft`/`clearDraft` — the slot belongs to the new game that may
+  be in progress.
+- Reopening (`editing`): `playerIds` is the stored ranking order, not the seating. A module that keeps
+  the seating in its `moduleData` compares the **set** of players and restores its own order.
 - Keep no mutable aggregate in the state. Store the event log and derive the aggregate — an aggregate
   in the state makes the reducer's output depend on who else holds a reference.
 - The match goes back through `host.saveMatch` as a `ModuleMatch` (`playerScores`, `rounds`, `manualWinners`, `moduleData`; `id` when reopening) and must satisfy `assertMatchConsistent(match, gameType)` from `shared-domain`: rounds sum to the scores, nobody twice, every winner a participant. Winners are the rank-1 players by the module's own tie-breaks. Run the same check in the module's own tests.
@@ -96,12 +112,12 @@ Conforms to `ScoringModuleScreenProps`, MVI like every Scoreo screen: a pure red
 ### 5. The look — compose the design system, game pieces in `src/design/`
 
 A new module adopts Scoreo's identity: no palette of its own. Its screen **composes
-`@scoreboards/design-system`** exactly as the host does — no `className`, no `style`, no
+`@scoreboards/design-system`** exactly as the rest of Scoreo does — no `className`, no `style`, no
 `lucide-react` import (`<Icon name="…" />` instead) — and the design system's semantic tokens are the
 only colours, spacings and radii it uses. The contract is `doc/technical/module-contract.md` §
 "A module wears Scoreo's look".
 
-- **The host's lint rules apply on their own.** `eslint.config.js` holds every
+- **The app's lint rules apply on their own.** `eslint.config.js` holds every
   `packages/module-*/src/**` to them by glob — nothing to register, and no way to opt out: a
   `className` outside `src/design/` fails from the module's first file.
 - **No bare `h1`/`h2`.** The design system gives a module's own elements no heading defaults: a
@@ -127,7 +143,7 @@ it lives in `src/design/` (e.g. `src/design/ModuleRoot.tsx`, rendering
 `<div className="module-<moduleId>">{children}</div>`) and the screen composes it. A screen under
 `src/ui/` writing `className="module-<id>"` itself is refused by the lint rule.
 
-Scoping protects the host from the module. It does **nothing** in the other direction: Scoreo's
+Scoping protects the rest of the app from the module. It does **nothing** in the other direction: Scoreo's
 old `theme.css` styled plain `.card` and `.empty`, and a module reusing those names inherited whatever
 it did not itself declare. Torī Valley did exactly that, and every player card was laid out in a row
 on the deployed site for 35 hours (#331 → #348) before anything could see it: no static check knew,
@@ -138,7 +154,8 @@ and the visual suite was still photographing the module's own standalone shell.
 ### 6. Registration
 
 `apps/scoreo/src/modules/registry.ts` — the only file in Scoreo that names a module — plus the
-workspace dependency in `apps/scoreo/package.json`, then `pnpm install`.
+workspace dependency in `apps/scoreo/package.json`, then `pnpm install`. Add the module's row to
+`registry.test.ts`'s rule freeze (step 3).
 
 Until both are done the screen is reachable by no route at all, and every test still passes.
 
@@ -147,7 +164,7 @@ Until both are done the screen is reachable by no route at all, and every test s
 A new module is a **row in an existing table**, not a new test:
 
 - `apps/scoreo/e2e/module-style-isolation.spec.ts` — one entry: how to reach the screen and a
-  reference surface, which must wear the host's `--surface-card`. This row is **required**:
+  reference surface, which must wear Scoreo's `--surface-card`. This row is **required**:
   `scripts/module-packages.test.mjs` fails for any `module-*` package without one.
 - `apps/scoreo/tests/visual/` — one spec plus baselines, recorded **in the container**
   (`pnpm --filter scoreo test:visual:container --update-snapshots`), never on your own machine.
@@ -181,7 +198,8 @@ checks explicitly:
 
 - `src/index.ts` exports only the manifest and the module;
 - every style rule is scoped `.module-<moduleId>` and every class is prefixed;
-- `apps/scoreo/src/modules/registry.ts` remains the only file naming the module;
+- `apps/scoreo/src/modules/registry.ts` remains the only file naming the module, and
+  `registry.test.ts` freezes the manifest's `winCondition` and player range;
 - the hexagonal layering is respected (pure reducer / use case / port / adapter);
 - any new serialized field carries a zod `.default()`;
 - the doc is present (`packages/module-<game>/doc/` plus a row in `doc/reference.md`).
@@ -222,7 +240,7 @@ allowed fix round — this step is satisfied and § Sorties obligatoires can be 
 ## Sorties obligatoires
 
 - `packages/module-<game>/` created per steps 1–2 (`package.json` without a
-  `build` script or `vite` dependency, `vitest.config.ts`, a tsconfig,
+  `build` script or `vite` dependency, `vitest.config.ts`, one `tsconfig.json`,
   `src/styles.d.ts`, `src/index.ts` exporting only the manifest and module).
 - The screen's mockup validated (its `Maquette : …` PR merged) before the
   screen is written, and its folder removed by the module's PR (step 4).
@@ -232,8 +250,9 @@ allowed fix round — this step is satisfied and § Sorties obligatoires can be 
   screen composing the design system, and its game pieces only under `src/design/`, CSS scoped
   under `.module-<moduleId>` with prefixed classes and semantic tokens only
   (step 5).
-- The module registered in `apps/scoreo/src/modules/registry.ts` and the
-  workspace dependency added to `apps/scoreo/package.json` (step 6).
+- The module registered in `apps/scoreo/src/modules/registry.ts`, its rules
+  frozen by a row in `registry.test.ts`, and the workspace dependency added
+  to `apps/scoreo/package.json` (steps 3 and 6).
 - `apps/scoreo/e2e/module-style-isolation.spec.ts` carries a new row —
   `scripts/module-packages.test.mjs` fails unless every module package has
   one — and `apps/scoreo/tests/visual/` a new spec with
@@ -249,18 +268,18 @@ allowed fix round — this step is satisfied and § Sorties obligatoires can be 
 
 `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build`, the e2e suite and
 the visual suite are all green; the module's domain is absent from the
-host's main bundle, verified with the build-and-grep of step 2 (not by
+main bundle, verified with the build-and-grep of step 2 (not by
 reading); `scripts/check-module-styles.mjs` and
 `scripts/check-design-tokens.mjs` pass; and the target scenario
 works end to end: home → players → new match → the game → score → the match
-is in Scoreo's history, and reopening it comes back on the module with its
-grid restored.
+is in Scoreo's history, and reopening it comes back on the module's grid,
+restored.
 
 ## Escalade
 
 Per `doc/automation/skill-contract.md` §3 — in particular, a scope mismatch
-discovered mid-work (e.g. the target game doesn't fit the two-tsconfig
-precedents, or the contract in `doc/technical/module-contract.md` doesn't
+discovered mid-work (e.g. the target game doesn't fit the existing
+module precedents, or the contract in `doc/technical/module-contract.md` doesn't
 cover a case this game needs) is grounds to stop and ask rather than
 improvising a new pattern silently.
 
@@ -269,7 +288,7 @@ improvising a new pattern silently.
 - `src/index.ts` exports only the manifest and the module, nothing else
   (step 2's bundle trap).
 - Every style rule is scoped under `.module-<moduleId>` and every class is
-  prefixed — never reuses a host class name like `.card`/`.empty` (step 5's
+  prefixed — never reuses an app class name like `.card`/`.empty` (step 5's
   leak trap).
 - `apps/scoreo/src/modules/registry.ts` is the only file in Scoreo allowed
   to name a module.
