@@ -7,6 +7,7 @@ import { GetGameTypesUseCase } from '../../application/getGameTypesUseCase'
 import { GetMatchesUseCase } from '../../application/getMatchesUseCase'
 import { MergeGameTypesUseCase } from '../../application/mergeGameTypesUseCase'
 import { UpdateGameTypeUseCase } from '../../application/updateGameTypeUseCase'
+import i18n from '../../i18n/i18n'
 import { InMemoryGameTypeRepository } from '../../infrastructure/testing/inMemoryGameTypeRepository'
 import { InMemoryMatchDraftRepository } from '../../infrastructure/testing/inMemoryMatchDraftRepository'
 import { InMemoryMatchRepository } from '../../infrastructure/testing/inMemoryMatchRepository'
@@ -495,6 +496,27 @@ describe('gameTypeReducer', () => {
     expect(state.gameTypes).toHaveLength(1)
   })
 
+  it('a merge refused for a module game reports a translated reason through mergeFailed', () => {
+    const useCases = buildUseCases()
+    let state = add(initialGameTypeState, useCases, 'Belote')
+    state = add(state, useCases, 'Skyjo')
+    const [belote, skyjo] = state.gameTypes
+    useCases.repo.save({ ...skyjo, moduleId: 'skyjo' })
+    state = gameTypeReducer(state, { type: 'showMergeDialog' })
+    state = gameTypeReducer(state, { type: 'selectMergeKept', id: belote.id })
+    state = gameTypeReducer(state, { type: 'toggleMergeDuplicate', id: skyjo.id })
+
+    const result = submitMergeGameTypes(useCases.mergeGameTypes, useCases.getGameTypes, state)!
+    state = gameTypeReducer(state, {
+      type: 'mergeFailed',
+      error: (result as { error: string }).error,
+    })
+
+    expect(state.showMergeDialog).toBe(true)
+    expect(state.mergeError).toBe(i18n.t('gametype.mergeModuleRulesRefused'))
+    expect(useCases.repo.findById(skyjo.id)).toBeDefined()
+  })
+
   it('confirming a merge with no duplicate ticked is a no-op', () => {
     const useCases = buildUseCases()
     const state = gameTypeReducer(initialGameTypeState, { type: 'selectMergeKept', id: 'gt1' })
@@ -671,11 +693,22 @@ describe('scoring mode change warning', () => {
     expect(scoringModeChangeWarning(state)).toBe(false)
   })
 
-  it('hides the scoring mode choice for a module-bound game, which never warns', () => {
-    const bound = editing(true, { ...tarot, moduleId: 'skyjo' })
-    expect(showsScoringModeChoice(bound)).toBe(false)
-    const state = gameTypeReducer(bound, { type: 'selectScoringMode', scoringMode: 'ROUNDS_WON' })
-    expect(scoringModeChangeWarning(state)).toBe(false)
+  it('ignores editGameType on a game bound to a registered module', () => {
+    const state = gameTypeReducer(initialGameTypeState, {
+      type: 'editGameType',
+      gameType: { ...tarot, moduleId: 'skyjo' },
+      hasMatches: true,
+    })
+    expect(state).toBe(initialGameTypeState)
+  })
+
+  it('still edits a game whose module is no longer registered', () => {
+    const state = gameTypeReducer(initialGameTypeState, {
+      type: 'editGameType',
+      gameType: { ...tarot, moduleId: 'gone-module' },
+      hasMatches: false,
+    })
+    expect(state.editingGameId).toBe(tarot.id)
   })
 
   it('shows the scoring mode choice in the add form and for an unbound game', () => {
