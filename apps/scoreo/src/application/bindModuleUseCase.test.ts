@@ -273,6 +273,77 @@ describe('rule 2 — the homonym must respect the module rules', () => {
     expect(new BindModuleUseCase(repo, matches).invoke(manifest).id).not.toBe('g1')
   })
 
+  describe('several homonyms — the first refused, the second consistent', () => {
+    function setUp(first: GameType, firstMatches: Match[]) {
+      const repo = new InMemoryGameTypeRepository()
+      repo.save(first)
+      repo.save(gameType({ id: 'g2', name: 'test game' }))
+      const matches = new InMemoryMatchRepository()
+      for (const m of firstMatches) matches.save(m)
+      matches.save(
+        match(
+          'm2',
+          'g2',
+          [5, 3],
+          [
+            [2, 1],
+            [3, 2],
+          ],
+        ),
+      )
+      return { repo, matches }
+    }
+
+    const cases: [string, GameType, Match[]][] = [
+      [
+        'counted in rounds won',
+        gameType({ id: 'g1', name: 'Test Game', scoringMode: 'ROUNDS_WON' }),
+        [match('m1', 'g1', [2, 1])],
+      ],
+      [
+        'holding an inconsistent match',
+        gameType({ id: 'g1', name: 'Test Game' }),
+        [
+          match(
+            'm1',
+            'g1',
+            [9, 3],
+            [
+              [2, 1],
+              [3, 2],
+            ],
+          ),
+        ],
+      ],
+    ]
+
+    it.each(cases)(
+      'resolves to the second homonym when the first is %s',
+      (_label, first, firstMatches) => {
+        const { repo, matches } = setUp(first, firstMatches)
+
+        expect(resolveBindingTarget(manifest, repo.getAll(true), matches.getAll())).toEqual({
+          kind: 'byName',
+          gameType: repo.findById('g2'),
+        })
+      },
+    )
+
+    it.each(cases)(
+      'binds the second homonym, leaves the first untouched and creates nothing when the first is %s',
+      (_label, first, firstMatches) => {
+        const { repo, matches } = setUp(first, firstMatches)
+
+        const bound = new BindModuleUseCase(repo, matches).invoke(manifest)
+
+        expect(bound.id).toBe('g2')
+        expect(repo.findById('g2')?.moduleId).toBe('test-module')
+        expect(repo.findById('g1')).toEqual(first)
+        expect(repo.getAll(true).map((gt) => gt.id)).toEqual(['g1', 'g2'])
+      },
+    )
+  })
+
   it('still binds an archived consistent homonym', () => {
     const repo = new InMemoryGameTypeRepository()
     repo.save(gameType({ id: 'g1', name: 'Test Game', active: false }))
