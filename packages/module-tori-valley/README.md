@@ -1,69 +1,37 @@
-# Torī Valley Scoreboard
+# Torī Valley
 
-> Absorbed from the standalone `remhiit/toriValleyScoreBoard` repository into the Scoreo workspace,
-> where it is now a **scoring module Scoreo loads on demand**. It no longer runs on its own: the
-> standalone shell — `index.html`, the Vite config, the service worker — is gone, and Scoreo is the
-> only deployed app. The commands below run as written from this directory
-> (`packages/module-tori-valley`); from the workspace root, prefix them with
-> `pnpm --filter @scoreboards/module-tori-valley`. `pnpm install` is workspace-wide and belongs at
-> the root.
+The score-entry grid and scoring rules of _[La Vallée des Torī](https://www.origames.fr)_
+(Origames), one of [Scoreo](../../apps/scoreo)'s games. Scoreo loads this module the first time
+someone plays the game; the match it scores is an ordinary Scoreo `Match`, in Scoreo's history and
+statistics like any other. What a module is, and what it may do, is the workspace's
+[`doc/technical/module-contract.md`](../../doc/technical/module-contract.md).
 
-React + TypeScript scoring module for the board game _[La Vallée des Torī](https://www.origames.fr)_
-(Origames), played inside [Scoreo](../../apps/scoreo).
+## Structure
 
-## Repository structure
+- `src/domain/` — the game's models, zod schemas and pure scoring rules
+- `src/ui/` — one folder per screen (`matchsetup/`, `scoredetail/`), plus `module/`, which strings
+  them together into the grid Scoreo renders
+- `src/design/` — the game pieces the design system has no component for, scoped under
+  `.module-tori-valley`, classes prefixed `tv-`
+- `src/i18n/` — the `tori-valley` namespace, added to Scoreo's i18next instance
+- `src/module.ts` — the manifest and the lazily-loaded module, the only things Scoreo imports
+- `doc/` — the game's rules, the rulebook PDF and the Objectif card photos, and the module's
+  technical notes
 
-- `src/domain`, `src/ui`, `src/i18n` — the module's source: the game's rules, its two screens, its strings
-- `doc/functional/` — functional documentation (features, user flows)
-- `doc/technical/` — technical documentation (architecture, design decisions)
+## Commands
 
-## Running locally
-
-### Prerequisites
-
-- Node.js 22+
-- pnpm (version pinned in `package.json`'s `packageManager` field — activate via `corepack prepare --activate`)
-
-### Development
-
-The module has no dev server of its own. Run the host from the workspace root and
-open a match on it:
+From the workspace root (`pnpm install` is workspace-wide):
 
 ```bash
-pnpm install
-pnpm dev
+pnpm --filter @scoreboards/module-tori-valley test        # Vitest, jsdom
+pnpm --filter @scoreboards/module-tori-valley typecheck
+pnpm lint                                                 # workspace-wide
+pnpm dev                                                  # run Scoreo, then start a match of the game
 ```
 
-### Deployment
-
-Nothing here is deployed on its own: the module ships inside Scoreo, as a chunk
-loaded the first time someone opens it.
-
-### Run tests
-
-```bash
-pnpm test
-```
-
-### Run visual regression tests
-
-They live in the host now, and photograph this module on Scoreo's own route —
-the package has no shell of its own to screenshot any more:
-
-```bash
-pnpm --filter scoreo test:visual:container
-```
-
-Baselines are recorded in the same container image CI uses, never on your own
-machine. See the workspace's `doc/technical/visual-testing.md`.
-
-### Typecheck / lint
-
-```bash
-pnpm typecheck
-pnpm lint
-```
+Its visual regression baselines live with Scoreo's (`pnpm --filter scoreo test:visual:container`,
+see the workspace's `doc/technical/visual-testing.md`).
 
 ## Documentation
 
-See [`doc/`](doc/) for detailed documentation — features, architecture, glossary, reference.
+See [`doc/`](doc/) — the rules, the Objectif cards, the glossary and the reference tables.
