@@ -2194,6 +2194,31 @@ R6 hebdo. C'est le rapport qui pilote l'élargissement de la liste blanche `auto
   chuter un score sous le seuil sans régression réelle) — à revoir alors via
   `setup-repo.sh`, hors scope de #147.
 
+  **Régression d'accessibilité relevée par R5 (2026-11-16).** Le score
+  accessibilité mesuré sur `main` (9f2356f, build `apps/scoreo/dist/`,
+  Lighthouse 12, 3 exécutions identiques) est **0.93**, sous la baseline
+  0.95 — toujours au-dessus du seuil 0.90, donc le job `lighthouse` reste
+  vert et rien ne l'a signalé. Ce n'est pas du bruit : les audits
+  d'accessibilité sont déterministes. Deux audits échouent, tous deux sur la
+  bannière d'onboarding de l'accueil (`Banner` avec `title`/`steps`,
+  affichée au premier lancement — précisément l'état que mesure
+  Lighthouse, stockage vide) :
+  - `color-contrast` (poids 7) : le titre `.sc-banner__title`
+    (`--color-primary` #8839ef sur `--color-primary-tint` #dfd4f4) atteint
+    3.83:1, et les étapes `.sc-banner__steps li` (`--text-muted` #5c5f77 sur
+    le même fond) 4.42:1, sous le 4.5:1 exigé (WCAG AA, texte 16 px). Le
+    fond teinté de la bannière fait perdre ~1 point de contraste à des
+    couleurs qui passent sur `--surface-app` (4.79 et 5.53).
+  - `heading-order` (poids 3) : le titre de la bannière est un `<h3>` en dur
+    dans `Banner.tsx`, rendu sans `<h2>` qui le précède sur l'accueil.
+
+  Pistes (à trancher par une maquette, la correction change ce que voit un
+  joueur — `design-workflow.md`) : étapes en `--text` (5.65:1 sur le fond
+  teinté), titre dans une teinte primaire assombrie ou fond de bannière
+  moins saturé, et niveau de titre fourni par l'appelant (prop) ou titre non
+  sémantique. Les captures de `tests/visual/` de l'accueil devront être
+  régénérées avec la correction.
+
 - **Qui exécute les routines, et où s'applique le choix de modèle — tranché
   (#423, 2026-09-07).** Option C : routage par sous-agent à l'intérieur du
   coordinateur (#430). Les Routines Claude Code restent l'exécutant, le

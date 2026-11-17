@@ -3,15 +3,20 @@ import type { ArchiveGameTypeUseCase } from '../../application/archiveGameTypeUs
 import type { FindGameTypeByIdUseCase } from '../../application/findGameTypeByIdUseCase'
 import type { GetGameTypesUseCase } from '../../application/getGameTypesUseCase'
 import type { GetMatchesUseCase } from '../../application/getMatchesUseCase'
-import type { MergeGameTypesUseCase } from '../../application/mergeGameTypesUseCase'
+import {
+  MERGE_MODULE_RULES_FIELD,
+  type MergeGameTypesUseCase,
+} from '../../application/mergeGameTypesUseCase'
 import type { UpdateGameTypeUseCase } from '../../application/updateGameTypeUseCase'
 import { ValidationError } from '../../domain/model/errors'
+import i18n from '../../i18n/i18n'
 import type { ScoringMode, TieBreakRule, WinCondition } from '../../domain/model/enums'
 import {
   roundScoringChanged,
   scoringModeIsSelectable,
   type GameType,
 } from '../../domain/model/gameType'
+import { isModuleGame } from '../../modules/withModuleRules'
 import type { GameTypeState } from './gameTypeTypes'
 
 /**
@@ -109,6 +114,8 @@ export function gameTypeReducer(state: GameTypeState, action: GameTypeAction): G
     case 'addFailed':
       return { ...state, error: action.error }
     case 'editGameType':
+      // A module's rules are fixed by its manifest: never open the form on them.
+      if (isModuleGame(action.gameType)) return state
       return {
         ...state,
         inputName: action.gameType.name,
@@ -328,6 +335,10 @@ export function submitMergeGameTypes(
     mergeGameTypesUseCase.invoke(mergeKeptId, mergeDuplicateIds)
     return loadGameTypes(getGameTypes)
   } catch (e) {
+    // A merge refused for a module's rules is explained to the player, not echoed.
+    if (e instanceof ValidationError && e.field === MERGE_MODULE_RULES_FIELD) {
+      return { error: i18n.t('gametype.mergeModuleRulesRefused') }
+    }
     return { error: errorMessage(e) }
   }
 }
