@@ -67,8 +67,8 @@ Two separate suites, run by different `pnpm` scripts and CI jobs:
 ## Repository layout
 
 The repository is a **pnpm workspace** (`pnpm-workspace.yaml`: `apps/*`, `packages/*`). Scoreo is the
-host application and the only one deployed; the score-counting modules live under `packages/` and
-are loaded by Scoreo. All four are registered in `apps/scoreo/src/modules/registry.ts` and reached
+only application, and the only one deployed. A **module** is the score-entry grid and the rules of
+one Scoreo game; modules live under `packages/` and are loaded by Scoreo. All four are registered in `apps/scoreo/src/modules/registry.ts` and reached
 on demand: `packages/module-tori-valley/` (absorbed from `remhiit/toriValleyScoreBoard`, with its
 commit history preserved), `packages/module-mille-sabords/` (ported from the Kotlin app kept in
 `legacy/`), and `packages/module-skyjo/` and `packages/module-flip-7/` (both built directly as modules, not absorbed
@@ -95,20 +95,20 @@ deployed — Scoreo builds it into a chunk loaded the first time someone opens i
 │       └── package.json           # React/zod/vite/vitest deps live here
 └── packages/
     ├── design-system/             # every visual decision: tokens, atoms → templates (see its README)
-    ├── module-api/                # the host ↔ module contract, no runtime dependency (imports `shared-domain` types only)
+    ├── module-api/                # the module contract (manifest, screen props, ModuleMatch), types only (imports `shared-domain`)
     ├── shared-domain/             # Player, GameType, Match, PlayerScore + schemas, enums, newId, isUuid, Result
     ├── module-flip-7/             # Flip 7, a card-by-card score calculator built directly as a module
     ├── module-mille-sabords/      # 1000 Sabords, ported from Kotlin and checked against it
     ├── module-skyjo/              # Skyjo, a manual score counter built directly as a module
-    └── module-tori-valley/        # absorbed score-counting module
+    └── module-tori-valley/        # Torī Valley, absorbed from its own repository
 legacy/
 └── 1ksabord-kotlin/               # TEMPORARY: the Kotlin/JS app, kept as a test oracle
 ```
 
 `design-system`, `module-api` and `shared-domain` are consumed as TypeScript source (their `exports` field points at
 `src/index.ts`): nothing to build before the app compiles, and one definition of `Player`, `GameType`, `Match` and `PlayerScore` for the
-whole workspace. The two packages are distinct on purpose — `shared-domain` is vocabulary both sides
-already had, `module-api` is the boundary between them. See
+whole workspace. The two packages are distinct on purpose — `shared-domain` holds Scoreo's models, which a module reads and
+writes like the app does; `module-api` holds only what a module declares, receives and hands back. See
 [`module-contract.md`](module-contract.md).
 
 ### The differential harness
@@ -156,11 +156,11 @@ Run `find src -type d` for the exhaustive package list.
 
 ## Styling
 
-Every visual decision lives in the design system package, [`packages/design-system/`](../../packages/design-system/README.md) (`@scoreboards/design-system`), organised in atomic layers: tokens, atoms, molecules, organisms, templates. The host **composes** its components and nothing else — no `className`, no `style`, no stylesheet, no `lucide-react` glyph of its own. `apps/scoreo/src/main.tsx` imports its single stylesheet, `@scoreboards/design-system/styles.css`, which Vite bundles and links from `index.html`'s `<head>` (so the splash is styled before the JS runs).
+Every visual decision lives in the design system package, [`packages/design-system/`](../../packages/design-system/README.md) (`@scoreboards/design-system`), organised in atomic layers: tokens, atoms, molecules, organisms, templates. The app **composes** its components and nothing else — no `className`, no `style`, no stylesheet, no `lucide-react` glyph of its own. `apps/scoreo/src/main.tsx` imports its single stylesheet, `@scoreboards/design-system/styles.css`, which Vite bundles and links from `index.html`'s `<head>` (so the splash is styled before the JS runs).
 
-**Guard-rail: the composition rule** — `eslint.config.js` fails on a `className` or `style` attribute, or a `lucide-react` import, anywhere in `apps/scoreo/src/`. It has no exceptions: the host ships no CSS of its own (`apps/scoreo/public/css/` is gone) and every screen composes the design system. The same rule extends to every scoring module (`packages/module-*`), except that its `src/design/` folder may write `className` (still no `style`, no `lucide-react`) — see [`module-contract.md`](module-contract.md) § *A module wears Scoreo's look*.
+**Guard-rail: the composition rule** — `eslint.config.js` fails on a `className` or `style` attribute, or a `lucide-react` import, anywhere in `apps/scoreo/src/`. It has no exceptions: the app ships no CSS of its own (`apps/scoreo/public/css/` is gone) and every screen composes the design system. The same rule extends to every scoring module (`packages/module-*`), except that its `src/design/` folder may write `className` (still no `style`, no `lucide-react`) — see [`module-contract.md`](module-contract.md) § *A module wears Scoreo's look*.
 
-All design-system classes are prefixed `sc-`, so they never collide with a scoring module's classes. The only element-level rules are the design system's foundations (`foundations/base.css`): a reset and the page background — none reaches into a scoring module, which composes the system's components like the host does. The static splash in `index.html` is styled by `foundations/splash.css` (`.sc-splash`).
+All design-system classes are prefixed `sc-`, so they never collide with a scoring module's classes. The only element-level rules are the design system's foundations (`foundations/base.css`): a reset and the page background — none reaches into a scoring module, which composes the system's components like the rest of the app does. The static splash in `index.html` is styled by `foundations/splash.css` (`.sc-splash`).
 
 ### Design tokens — Catppuccin
 
@@ -180,7 +180,7 @@ All design-system classes are prefixed `sc-`, so they never collide with a scori
 
 Flavor and accent are switched by setting `data-theme`/`data-accent` attributes on `<html>` (see `apps/scoreo/src/ui/theme/themeManager.ts`).
 
-**Guard-rail: `scripts/check-design-tokens.mjs`** (`pnpm check:design-tokens`, run in CI as the `design-tokens` job). `eslint.config.js` only lints `**/*.{ts,tsx}`, so nothing catches a raw `px`/duration value creeping into a stylesheet — the design system's (`packages/design-system/src/**/*.css`, the only CSS the host ships) or a module's game pieces (`packages/module-*/src/design/**/*.css`) — once it's been substituted for a token; this script does, mirroring `check-doc-links.mjs`'s pattern. It scans every declaration for `padding`/`margin`/`gap`/`font-size`/`border-radius` (and their longhands) plus `transition`/`animation`, and fails if a literal value exactly equals a `--space-*`/`--tap-target`/`--text-*`/`--radius-*`/`--duration-*` token or the `--ease-standard` easing — reporting file, line, and the expected `var(...)`. Values with no exact token equivalent (e.g. `13px`, `15px`, or `0.2s`/`0.3s`/`0.8s` transitions, none of which match `--duration-fast/normal/slow` exactly) are left alone, since substituting them would change the rendered layout/timing rather than just its expression. A negative px value (e.g. a negative-margin click-target trick) is likewise left alone — it would need a `calc(-1 * var(...))` wrapper, not a direct swap. `width`, `height`, `border`, `max-width`, `background-position`, `outline` etc. are never inspected.
+**Guard-rail: `scripts/check-design-tokens.mjs`** (`pnpm check:design-tokens`, run in CI as the `design-tokens` job). `eslint.config.js` only lints `**/*.{ts,tsx}`, so nothing catches a raw `px`/duration value creeping into a stylesheet — the design system's (`packages/design-system/src/**/*.css`, the only CSS the app ships) or a module's game pieces (`packages/module-*/src/design/**/*.css`) — once it's been substituted for a token; this script does, mirroring `check-doc-links.mjs`'s pattern. It scans every declaration for `padding`/`margin`/`gap`/`font-size`/`border-radius` (and their longhands) plus `transition`/`animation`, and fails if a literal value exactly equals a `--space-*`/`--tap-target`/`--text-*`/`--radius-*`/`--duration-*` token or the `--ease-standard` easing — reporting file, line, and the expected `var(...)`. Values with no exact token equivalent (e.g. `13px`, `15px`, or `0.2s`/`0.3s`/`0.8s` transitions, none of which match `--duration-fast/normal/slow` exactly) are left alone, since substituting them would change the rendered layout/timing rather than just its expression. A negative px value (e.g. a negative-margin click-target trick) is likewise left alone — it would need a `calc(-1 * var(...))` wrapper, not a direct swap. `width`, `height`, `border`, `max-width`, `background-position`, `outline` etc. are never inspected.
 
 ## PWA (Progressive Web App)
 

@@ -20,7 +20,7 @@ against committed PNG baselines.
 The suite lives in the host, `apps/scoreo/tests/visual/`, and photographs a
 **scoring module inside Scoreo** — on the host's own `#/module/…` route, which
 renders full-screen with no host chrome (the `ScreenTemplate` header is skipped, see
-`doc/technical/module-contract.md` § *Playing on a module*). That is what a
+`doc/technical/module-contract.md` § *Scoring a match on the module's grid*). That is what a
 player actually sees.
 
 It is the only guard of its kind, and it exists because a module's screen is the
