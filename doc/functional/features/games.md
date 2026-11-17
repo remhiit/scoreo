@@ -78,15 +78,16 @@ Screen: `apps/scoreo/src/ui/gametype/GameTypeScreen.tsx`. See `doc/reference.md`
 ### Form mode (add / edit)
 - Text input: game name
 - Dropdown: win condition (HIGHEST_SCORE, LOWEST_SCORE, MANUAL)
-- Dropdown: scoring (POINTS "Total points", ROUNDS_WON "Rounds won"), hidden when the win condition is MANUAL (saved as POINTS) and for a game bound to a scoring module (always POINTS). In edit mode, when the game already has matches and saving will recompute them — scoring mode changed, a rounds-won game switched to MANUAL, or the win condition of a rounds-won game changed (same rule as `UpdateGameTypeUseCase`) —, a warning says that the matches with round detail will have their scores recomputed with the new scoring (see [Scoring mode](#scoring-mode))
+- Dropdown: scoring (POINTS "Total points", ROUNDS_WON "Rounds won"), hidden when the win condition is MANUAL (saved as POINTS) and for any game carrying a `moduleId` (always POINTS; `showsScoringModeChoice`). In edit mode, when the game already has matches and saving will recompute them — scoring mode changed, a rounds-won game switched to MANUAL, or the win condition of a rounds-won game changed (same rule as `UpdateGameTypeUseCase`) —, a warning says that the matches with round detail will have their scores recomputed with the new scoring (see [Scoring mode](#scoring-mode))
 - Dropdown: tie-break rule (NONE, MANUAL_SELECTION, SECONDARY_SCORE)
 - If SECONDARY_SCORE: additional dropdown for tie-break condition + text input for label
-- Two optional text inputs, **Min. players** and **Max. players** (empty = no limit), hidden when editing a game bound to a scoring module (its rules, range included, come from the module's manifest; saving a module game never changes them). Whole numbers >= 1 only; a minimum above the maximum is refused (`UpdateGameTypeUseCase` / `AddGameTypeUseCase` throw a `ValidationError`, shown above the form). Equal bounds are accepted (fixed number of players)
+- Two optional text inputs, **Min. players** and **Max. players** (empty = no limit), hidden when editing a game carrying a `moduleId` (`showsPlayerRange`); saving such a game keeps its stored range unchanged (`submitUpdateGameType`). Whole numbers >= 1 only; a minimum above the maximum is refused (`UpdateGameTypeUseCase` / `AddGameTypeUseCase` throw a `ValidationError`, shown above the form). Equal bounds are accepted (fixed number of players)
 - Button: "Add game type" (create mode) or "Save changes" + "Cancel" (edit mode)
+- The form never opens on a game bound to a **registered** scoring module: its detail is read-only (see [Detail view](#detail-view)). The hidden fields above therefore only apply, today, to a game whose `moduleId` names a module that is no longer registered: it is an ordinary game again for its detail and its **Edit** button (`isModuleGame` is false), but the form still treats it as module-bound — no scoring choice, no range fields, stored range kept on save
 
 ### Player range
 
-`GameType.minPlayers` / `maxPlayers` only gate the **launch** from the Home game choice dialog: when the selected game is an ordinary game (no scoring module) with a range and the number of selected players falls outside it, **Start match** is disabled and the range is shown ("2–4 players", "At least N players" or "At most N players"). A `null` bound is not checked. Matches already recorded outside the range stay valid and visible; merging keeps the kept game's own range; archiving keeps it. A game bound to (or claimed by) a module is checked against the module's manifest range, which is resolved at read time (`withModuleRules`, a `GameTypeRepository` decorator in `apps/scoreo/src/modules/`) without rewriting the stored game type; the form hides the range fields when editing such a game. The range is not part of the v1.1 export/import.
+`GameType.minPlayers` / `maxPlayers` only gate the **launch** from the Home game choice dialog: when the selected game is an ordinary game (no scoring module) with a range and the number of selected players falls outside it, **Start match** is disabled and the range is shown ("2–4 players", "At least N players" or "At most N players"). A `null` bound is not checked. Matches already recorded outside the range stay valid and visible; merging keeps the kept game's own range; archiving keeps it. A game bound to (or claimed by) a registered module is checked against the module's manifest range, which is resolved at read time (`withModuleRules`, a `GameTypeRepository` decorator in `apps/scoreo/src/modules/`) without rewriting the stored game type; such a game is never edited in the form (read-only detail), so its range is not editable either. The form hides the range fields only for a game whose `moduleId` names a module no longer registered, and saving it keeps that game's stored range (`showsPlayerRange`, `submitUpdateGameType`). The range is not part of the v1.1 export/import.
 
 ## Functional Tests
 
@@ -144,6 +145,16 @@ Given "Belote" scores HIGHEST_SCORE and one ticked duplicate scores LOWEST_SCORE
 When both are selected
 Then the dialog warns that the kept game's rules will apply and may change the winners
 And the Merge button stays enabled
+```
+
+### Read-only detail of a module game
+```
+Given "Skyjo" has been played once, so it is bound to the registered Skyjo scoring module
+When I open its detail on the Games screen
+Then the dialog offers only "Back" and "Archive" — no "Edit" button
+And it lists the win condition (lowest score), the tie-break "Decided by the point counter"
+And the players "2–8 players" (the module's range)
+And a sentence explains that the rules of Skyjo are set by its point counter and cannot be edited
 ```
 
 ### Cancel archive
