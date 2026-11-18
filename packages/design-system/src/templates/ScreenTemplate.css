@@ -5,8 +5,10 @@
   gap: var(--space-4);
   width: 100%;
   max-width: var(--screen-max);
-  margin: 0 auto;
-  padding: calc(var(--header-height) + var(--space-4)) var(--space-4) var(--space-6);
+  /* The column starts below the fixed <AppHeader>, not under it: the header
+     keeps its own band and the column's scrollbar stops at its bottom edge. */
+  margin: var(--header-height) auto 0;
+  padding: var(--space-4) var(--space-4) var(--space-6);
   overflow-y: auto;
 }
 /* Room for a stacked action bar (52 + 8 + 44 + paddings) so the last row stays reachable. */
