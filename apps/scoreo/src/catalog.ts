@@ -3,6 +3,11 @@
  * screens with example data: the shell, its routers, the services bag and the
  * in-memory repositories to seed it. Nothing here runs in the deployed app,
  * which starts from main.tsx; this entry point is the `scoreo/catalog` export.
+ *
+ * The in-memory repositories below are the unit tests' fakes
+ * (`infrastructure/testing/`): the catalog seeds its example data through them,
+ * so their API now has a second consumer. Changing it means keeping the
+ * catalog's `pnpm test` green too.
  */
 import './i18n/i18n'
 

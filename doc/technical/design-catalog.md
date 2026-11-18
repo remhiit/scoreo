@@ -49,7 +49,9 @@ a game to resume…). Nothing is composed for the page. `LiveApp` runs the app's
 
 - over **in-memory repositories** seeded by `src/screens/fixtures.ts` (a group of friends, a month
   of Friday nights, a fixed "now"), a fresh copy per frame, so what a viewer does in one frame
-  never reaches another and nothing touches `localStorage`;
+  never reaches another and nothing touches `localStorage`. These repositories are the unit tests'
+  fakes (`apps/scoreo/src/infrastructure/testing/`), so a change to their API must keep the
+  catalog's tests green too;
 - routed **in memory** (`useMemoryRouter`): each frame navigates on its own, the URL stays the
   catalog's;
 - in **French**, with the app's theme context bound to the catalog's theme bar: the app's own

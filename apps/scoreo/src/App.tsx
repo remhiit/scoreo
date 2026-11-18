@@ -47,7 +47,7 @@ import {
   SYNC_SCREEN,
 } from './ui/navigation/screen'
 import type { Screen } from './ui/navigation/screen'
-import { useHashRouter, type HashRouter } from './ui/navigation/useHashRouter'
+import { useHashRouter, type Router } from './ui/navigation/useHashRouter'
 import { buildInitialState } from './ui/scoredetail/scoreDetailReducer'
 import { ScoreDetailScreen } from './ui/scoredetail/ScoreDetailScreen'
 import type { ScoreDetailMode } from './ui/scoredetail/scoreDetailTypes'
@@ -164,7 +164,7 @@ function ScoreDetailRoute({
  * app routes through the URL hash, the design catalog through memory
  * (`useMemoryRouter`), so several shells can run side by side on one page.
  */
-export function AppShell({ router }: { router: HashRouter }) {
+export function AppShell({ router }: { router: Router }) {
   const { t } = useTranslation()
   const services = useServices()
   useAutoSync(services.autoSyncCoordinator)
