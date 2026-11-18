@@ -47,7 +47,8 @@ import {
   SYNC_SCREEN,
 } from './ui/navigation/screen'
 import type { Screen } from './ui/navigation/screen'
-import { useHashRouter, type Router } from './ui/navigation/useHashRouter'
+import type { Router } from './ui/navigation/router'
+import { useHashRouter } from './ui/navigation/useHashRouter'
 import { buildInitialState } from './ui/scoredetail/scoreDetailReducer'
 import { ScoreDetailScreen } from './ui/scoredetail/ScoreDetailScreen'
 import type { ScoreDetailMode } from './ui/scoredetail/scoreDetailTypes'

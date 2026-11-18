@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react'
 import type { Screen } from './screen'
-import type { Router } from './useHashRouter'
+import type { Router } from './router'
 
 /**
  * A router that keeps the current Screen in memory, leaving the URL alone.
