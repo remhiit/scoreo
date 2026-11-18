@@ -69,14 +69,14 @@ Lire ces fichiers dans l'ordre. Tout le contexte nécessaire y est :
 | `apps/scoreo/src/ui/*/` | Un dossier par écran : `<screen>Reducer.ts` (+ test), `<screen>Types.ts`, `<Screen>.tsx` (+ test) |
 | `apps/scoreo/src/ui/shared/` | Compositions du design system partagées entre écrans (`GameTypeTabs`, `MergeSelectModal`, `LanguagePickerDialog`) |
 | `apps/scoreo/src/ui/theme/` | `themeManager.ts`, `ThemeContext.tsx`, `ThemePickerDialog.tsx` |
-| `apps/scoreo/src/ui/navigation/` | `screen.ts` (union `Screen`), `hash.ts` (`parseHash`/`screenToHash`), `useHashRouter.ts` |
+| `apps/scoreo/src/ui/navigation/` | `screen.ts` (union `Screen`), `hash.ts` (`parseHash`/`screenToHash`), `useHashRouter.ts`, `useMemoryRouter.ts` (routeur en mémoire du catalogue) |
 | `apps/scoreo/public/` | `manifest.json`, `sw.js`, icônes PWA — aucun CSS : tout le style vient de `packages/design-system/` |
 | `schemas/import/` | Schémas JSON du format d'import (versionnés, `v1.0`/`v1.1`) |
 | `packages/module-mille-sabords/` | 1000 Sabords porté du Kotlin, avec sa doc. Son domaine est vérifié contre l'oracle `legacy/` par un test différentiel golden (`tests/golden/`), pas par relecture |
 | `legacy/1ksabord-kotlin/` | **Temporaire.** L'app Kotlin/JS de 1000 Sabords absorbée avec son historique, gardée comme **oracle** du portage TypeScript : ses 107 tests tournent en CI (`kotlin-legacy.yml`) et doivent rester verts. Supprimée avec son workflow une fois le portage livré. Ne rien y développer |
 | `packages/module-*/doc/` | La doc d'un jeu vit dans le paquet de son module, à côté du code qui l'implémente : règles, guide, doc technique et ressources (le PDF des règles de 1000 Sabords, celui de Torī et ses scans de cartes). `doc/` à la racine ne garde que ce qui concerne le dépôt entier |
 | `packages/design-system/` | **Toute** décision visuelle de l'app : tokens Catppuccin, atomes → gabarits en composants React + CSS préfixé `sc-`. Voir son `README.md` |
-| `apps/catalog/` | Le catalogue vivant du design system : chaque composant rendu par son vrai code, couche par couche, dans les 4 thèmes. Outil, jamais déployé ; un composant sans fiche y fait échouer `pnpm test`. Voir `doc/technical/design-catalog.md` |
+| `apps/catalog/` | Le catalogue vivant du design system : chaque composant rendu par son vrai code, couche par couche, dans les 4 thèmes. Sa page **Écrans** fait tourner les vrais écrans de l'app et des modules sur des données d'exemple (`src/screens/`, via l'export `scoreo/catalog`) : un écran du routeur sans trace n'y compile pas. Outil, jamais déployé ; un composant sans fiche y fait échouer `pnpm test`. Voir `doc/technical/design-catalog.md` |
 | `ds_temp/scoreo-design/` | Copie figée (30/09/2026) de l'export Claude Design vers lequel les écrans ont migré. La référence visuelle est désormais `apps/catalog/` ; dossier à supprimer |
 
 ## Workflow
