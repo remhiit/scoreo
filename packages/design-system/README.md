@@ -134,7 +134,7 @@ page background, `--header-height`, `--screen-max`, `--screen-max-wide`.
 | `ScreenTemplate`     | Header + 600px scrolling column + optional `actionBar` + `overlays`. Covers the "scrolling list" and "list + action bar" templates; "bottom sheet" and "centred dialog" are `Sheet` and `Dialog` passed as overlays |
 | `ImmersiveTemplate`  | For a scoring module: a fine bar with the way out, the module fills the rest                                                                                                                                        |
 | `WideLayout`         | The capped (1100px, `--screen-max-wide`), padded column an `ImmersiveTemplate`'s content is laid in — what a scoring module wraps its screen in                                                                     |
-| `Columns` + `Column` | Two named regions side by side once their `WideLayout` is 868px wide (a 900px window), stacked below (a module's scoreboard next to the turn being counted)                                                         |
+| `Columns` + `Column` | Two named regions side by side from 900px, stacked below (a module's scoreboard next to the turn being counted)                                                                                                     |
 
 ### 05 · Pages
 
