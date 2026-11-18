@@ -96,7 +96,7 @@ export const TEMPLATE_STORIES: Story[] = [
     layer: 'templates',
     covers: ['WideLayout', 'Columns', 'Column'],
     usage:
-      'La colonne large (1100 px) d’un module, et deux régions côte à côte à partir de 900 px de large, empilées en dessous.',
+      'La colonne large (1100 px) d’un module, et deux régions côte à côte dès que la colonne large fait 868 px (une fenêtre de 900 px), empilées en dessous.',
     variants: [
       {
         name: 'Tableau et tour en cours',

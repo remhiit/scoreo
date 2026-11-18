@@ -63,9 +63,9 @@ compile until it has its entry here. A module's states bind its game the way the
 (`BindModuleUseCase`), then open the module's screen; its chunk is inlined in the catalog build
 (`codeSplitting: false`), so the one-page preview still runs it.
 
-A frame is 390 px wide, but media queries still answer to the viewer's window: on a wide screen, a
-layout that switches at a breakpoint (1000 Sabords' two columns) shows its wide form in the frame.
-Open the preview on a phone to see the narrow one.
+A frame is 390 px wide whatever the viewer's window: `Columns` switches on a container query (the
+width of its `WideLayout`), not on the window, so a module laid in two columns on a wide screen
+shows its phone layout in the frame.
 
 A shipped feature adds its states here when it removes its mockup
 ([`design-workflow.md`](design-workflow.md), step 4).

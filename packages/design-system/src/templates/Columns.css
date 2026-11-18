@@ -1,4 +1,7 @@
 .sc-wide {
+  /* Columns answer to the layout's own width, not the window's: a WideLayout
+     shown narrow (a phone frame in the catalog, a side panel) stays one column. */
+  container-type: inline-size;
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
@@ -14,7 +17,8 @@
   gap: var(--space-4);
 }
 
-@media (min-width: 900px) {
+/* 868px of content = the former 900px window minus the layout's 16px gutters. */
+@container (min-width: 868px) {
   .sc-columns {
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     align-items: start;
