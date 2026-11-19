@@ -36,7 +36,8 @@ export const ORGANISM_STORIES: Story[] = [
     title: 'AppHeader',
     layer: 'organisms',
     covers: ['AppHeader'],
-    usage: 'En-tête fixe : retour (ou rien), titre centré, menu burger.',
+    usage:
+      'En-tête dans le flux, au-dessus de la colonne qui défile : retour (ou rien), titre centré, menu burger.',
     variants: [
       {
         name: 'Avec retour et menu',
