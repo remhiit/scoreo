@@ -45,9 +45,12 @@ export class UpdateGameTypeUseCase {
    *
    * The rescored matches are written before the game type: if that write fails
    * (storage quota), the game keeps its former rules, matching its matches.
-   * The two writes are not atomic, though: if `save(updated)` then fails, the
-   * matches are already rescored under the new rules while the game keeps its
-   * former ones — silently, as the detail can still look consistent.
+   * If `save(updated)` then fails, the rescored matches are written back as
+   * they were read (`saveAll` of the original matches, only those rescored)
+   * and the `save` error is rethrown unchanged. Known limit: when that
+   * compensating write fails too (quota still full), the `save` error is still
+   * the one rethrown, and the matches may stay rescored under the new rules
+   * while the game keeps its former ones.
    */
   invoke(gameType: GameType): void {
     this.assertModuleRulesUntouched(gameType)
@@ -55,11 +58,29 @@ export class UpdateGameTypeUseCase {
     const scoringMode = effectiveScoringMode(gameType)
     const updated = scoringMode === gameType.scoringMode ? gameType : { ...gameType, scoringMode }
     const previous = this.repository.findById(updated.id)
+    let originals: Match[] = []
     if (previous && roundScoringChanged(previous, updated)) {
       const recomputed = this.recomputeMatches(previous, updated)
-      if (recomputed.length > 0) this.matchRepository.saveAll(recomputed)
+      if (recomputed.length > 0) {
+        this.matchRepository.saveAll(recomputed.map(({ rescored }) => rescored))
+        originals = recomputed.map(({ original }) => original)
+      }
     }
-    this.repository.save(updated)
+    try {
+      this.repository.save(updated)
+    } catch (error) {
+      if (originals.length > 0) this.restoreMatches(originals)
+      throw error
+    }
+  }
+
+  /** Best effort: a failure here is swallowed, the caller rethrows the original one. */
+  private restoreMatches(originals: Match[]): void {
+    try {
+      this.matchRepository.saveAll(originals)
+    } catch {
+      // Known limit (see `invoke`): the matches may stay rescored.
+    }
   }
 
   /**
@@ -78,12 +99,15 @@ export class UpdateGameTypeUseCase {
     }
   }
 
-  private recomputeMatches(previous: GameType, updated: GameType): Match[] {
-    const recomputed: Match[] = []
+  private recomputeMatches(
+    previous: GameType,
+    updated: GameType,
+  ): { original: Match; rescored: Match }[] {
+    const recomputed: { original: Match; rescored: Match }[] = []
     for (const match of this.matchRepository.getAll()) {
       if (match.gameTypeId !== updated.id) continue
       const rescored = rescoreMatch(match, previous, updated)
-      if (rescored !== match) recomputed.push(rescored)
+      if (rescored !== match) recomputed.push({ original: match, rescored })
     }
     return recomputed
   }
