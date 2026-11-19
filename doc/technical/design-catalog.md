@@ -36,7 +36,7 @@ that is how a version of the catalog is published for review without deploying a
 A **story** names the exports it shows (`covers`), states its usage rule in one or two sentences,
 and lists its variants. A variant is framed `inline` (laid on the page) or `phone` (a 390 × 640
 screen). The phone frame carries `transform: translateZ(0)`, which makes it the containing block of
-anything `position: fixed` inside it — so `AppHeader`, `ActionBar`, `Dialog`, `Sheet` and `SideMenu`
+anything `position: fixed` inside it — so `ActionBar`, `Dialog`, `Sheet` and `SideMenu`
 render inside their frame instead of over the catalog.
 
 ## Guards

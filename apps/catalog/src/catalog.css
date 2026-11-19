@@ -311,7 +311,7 @@
   overflow-x: auto;
 }
 /* A phone screen. The transform makes it the containing block of anything
-   `position: fixed` inside (header, action bar, dialog, sheet, side menu), so
+   `position: fixed` inside (action bar, dialog, sheet, side menu), so
    an overlay stays in its frame instead of covering the catalog. */
 .cat-frame--phone {
   position: relative;
