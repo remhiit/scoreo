@@ -17,7 +17,11 @@ export interface ScreenTemplateProps {
   overlays?: ReactNode
 }
 
-/** Header, a scrolling 600px content column, an optional action bar. Every host screen is one. */
+/**
+ * Header, a scrolling 600px content column, an optional action bar. Every host
+ * screen is one. The header sits in the flow above the column: only the column
+ * scrolls, and its scrollbar stops at the header.
+ */
 export function ScreenTemplate({ header, children, actionBar, overlays }: ScreenTemplateProps) {
   return (
     <>
