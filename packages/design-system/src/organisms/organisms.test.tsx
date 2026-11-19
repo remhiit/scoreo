@@ -113,6 +113,29 @@ describe('Banner', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Resume' }))
     expect(onResume).toHaveBeenCalledOnce()
   })
+
+  it('labels a hint, not a section: its title is no heading', () => {
+    render(<Banner title="Getting started" steps={['Add players']} />)
+    expect(screen.getByText('Getting started')).toBeInTheDocument()
+    expect(screen.queryByRole('heading')).not.toBeInTheDocument()
+  })
+
+  it('renders children between the steps and the action, which keeps its label', () => {
+    render(
+      <Banner
+        title="Tarot match in progress"
+        steps={['Round 4']}
+        action={{ label: 'Resume match', icon: 'play', onClick: () => {} }}
+      >
+        <span>Started 20 minutes ago</span>
+      </Banner>,
+    )
+    const child = screen.getByText('Started 20 minutes ago')
+    const step = screen.getByRole('listitem')
+    const action = screen.getByRole('button', { name: 'Resume match' })
+    expect(step.compareDocumentPosition(child) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect(child.compareDocumentPosition(action) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  })
 })
 
 describe('DropZone', () => {
