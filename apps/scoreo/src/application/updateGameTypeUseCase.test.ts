@@ -243,6 +243,63 @@ describe('UpdateGameTypeUseCase', () => {
       expect(gameTypes.findById(created.id)?.scoringMode).toBe('POINTS')
     })
 
+    it('restores the original matches and rethrows when saving the game type fails', () => {
+      const { gameTypes, matches, created, update } = setup('POINTS')
+      const original = match('m1', created.id, 20, 13)
+      const untouched = match('m2', created.id, 50, 40)
+      matches.save(original)
+      matches.save(untouched)
+      const saveAll = vi.spyOn(matches, 'saveAll')
+      const failure = new Error('quota')
+      gameTypes.save = () => {
+        throw failure
+      }
+      let thrown: unknown
+      try {
+        update.invoke({ ...created, scoringMode: 'ROUNDS_WON' })
+      } catch (e) {
+        thrown = e
+      }
+      expect(thrown).toBe(failure)
+      expect(saveAll).toHaveBeenCalledTimes(2)
+      expect(saveAll).toHaveBeenLastCalledWith([original])
+      expect(matches.findById('m1')?.playerScores).toEqual(original.playerScores)
+      expect(matches.findById('m1')?.rounds).toEqual(original.rounds)
+      expect(matches.findById('m2')).toEqual(untouched)
+      expect(gameTypes.findById(created.id)?.scoringMode).toBe('POINTS')
+    })
+
+    it('rethrows the save failure, not the compensation one, when restoring fails too', () => {
+      const { gameTypes, matches, created, update } = setup('POINTS')
+      matches.save(match('m1', created.id, 20, 13))
+      const realSaveAll = matches.saveAll.bind(matches)
+      let calls = 0
+      matches.saveAll = (all) => {
+        calls += 1
+        if (calls > 1) throw new Error('quota again')
+        realSaveAll(all)
+      }
+      gameTypes.save = () => {
+        throw new Error('quota')
+      }
+      expect(() => update.invoke({ ...created, scoringMode: 'ROUNDS_WON' })).toThrow(/^quota$/)
+      expect(calls).toBe(2)
+    })
+
+    it('writes no match when saving the game type fails without any recomputed match', () => {
+      const { gameTypes, matches, created, update } = setup('POINTS')
+      matches.save(match('m1', created.id, 50, 40))
+      const saveAll = vi.spyOn(matches, 'saveAll')
+      const save = vi.spyOn(matches, 'save')
+      gameTypes.save = () => {
+        throw new Error('quota')
+      }
+      expect(() => update.invoke({ ...created, scoringMode: 'ROUNDS_WON' })).toThrow('quota')
+      expect(() => update.invoke({ ...created, name: 'Renamed' })).toThrow('quota')
+      expect(saveAll).not.toHaveBeenCalled()
+      expect(save).not.toHaveBeenCalled()
+    })
+
     it('leaves matches whose detail disagrees with their scores as they are', () => {
       const { matches, created, update } = setup('POINTS')
       matches.save(match('m1', created.id, 50, 40))
