@@ -1,9 +1,12 @@
 import { useEffect, useState } from 'react'
 import { Chip, HUES, Swatch, type Hue } from '@scoreboards/design-system'
+import { APP_SCREENS } from '../screens'
 import { STORIES } from '../stories'
 import { MockupSheet } from './MockupSheet'
 import { MOCKUPS } from './mockups'
+import { ScreenSheet } from './ScreenSheet'
 import { Specimen } from './Specimen'
+import { CatalogThemeContext, type CatalogTheme } from './theme'
 import { LAYERS, type LayerId } from './types'
 
 const FLAVORS = [
@@ -43,11 +46,11 @@ function preferredFlavor(): Flavor {
   return window.matchMedia?.('(prefers-color-scheme: light)').matches ? 'latte' : 'mocha'
 }
 
-type Page = LayerId | 'overview' | 'maquettes'
+type Page = LayerId | 'overview' | 'ecrans' | 'maquettes'
 
 function layerFromHash(): Page {
   const hash = window.location.hash.replace('#', '')
-  if (hash === 'maquettes') return 'maquettes'
+  if (hash === 'maquettes' || hash === 'ecrans') return hash
   return LAYERS.some((layer) => layer.id === hash) ? (hash as LayerId) : 'overview'
 }
 
@@ -88,111 +91,131 @@ export function Catalog() {
     return () => window.removeEventListener('hashchange', onHashChange)
   }, [])
 
+  const catalogTheme: CatalogTheme = {
+    ...theme,
+    setFlavor: (flavor) => setTheme((t) => ({ ...t, flavor })),
+    setAccent: (accent) => setTheme((t) => ({ ...t, accent })),
+  }
+
   const stories =
-    page === 'overview' || page === 'maquettes'
+    page === 'overview' || page === 'ecrans' || page === 'maquettes'
       ? []
       : STORIES.filter((story) => story.layer === page)
   const current = LAYERS.find((layer) => layer.id === page)
 
   return (
-    <div className="cat-app">
-      <header className="cat-top">
-        <a className="cat-brand" href="#">
-          <span className="cat-brand__name">Scoreo</span>
-          <span className="cat-brand__sub">design system</span>
-        </a>
-        <div className="cat-theme" role="group" aria-label="Thème d’affichage">
-          <div className="cat-theme__flavors">
-            {FLAVORS.map((flavor) => (
-              <Chip
-                key={flavor.value}
-                selected={theme.flavor === flavor.value}
-                onClick={() => setTheme((t) => ({ ...t, flavor: flavor.value }))}
-              >
-                {flavor.label}
-              </Chip>
-            ))}
-          </div>
-          <div className="cat-theme__accents">
-            {HUES.map((hue) => (
-              <Swatch
-                key={hue}
-                hue={hue}
-                label={`Accent ${hue}`}
-                selected={theme.accent === hue}
-                onClick={() => setTheme((t) => ({ ...t, accent: hue }))}
-              />
-            ))}
-          </div>
-        </div>
-      </header>
-
-      <div className="cat-body">
-        <nav className="cat-nav" aria-label="Couches">
-          <a
-            className="cat-nav__layer"
-            href="#"
-            aria-current={page === 'overview' ? 'page' : undefined}
-          >
-            <span className="cat-nav__number">··</span> Vue d’ensemble
+    <CatalogThemeContext.Provider value={catalogTheme}>
+      <div className="cat-app">
+        <header className="cat-top">
+          <a className="cat-brand" href="#">
+            <span className="cat-brand__name">Scoreo</span>
+            <span className="cat-brand__sub">design system</span>
           </a>
-          {LAYERS.map((layer) => (
-            <a
-              key={layer.id}
-              className="cat-nav__layer"
-              href={`#${layer.id}`}
-              aria-current={page === layer.id ? 'page' : undefined}
-            >
-              <span className="cat-nav__number">{layer.number}</span> {layer.title}
-              <span className="cat-nav__count">
-                {STORIES.filter((s) => s.layer === layer.id).length}
-              </span>
-            </a>
-          ))}
-          <a
-            className="cat-nav__layer cat-nav__layer--mockups"
-            href="#maquettes"
-            aria-current={page === 'maquettes' ? 'page' : undefined}
-          >
-            <span className="cat-nav__number">✎</span> Maquettes
-            <span className="cat-nav__count">{MOCKUPS.length}</span>
-          </a>
-        </nav>
-
-        <main className="cat-main">
-          {page === 'overview' ? (
-            <Overview />
-          ) : page === 'maquettes' ? (
-            <Mockups />
-          ) : (
-            <>
-              <header className="cat-page-head">
-                <span className="cat-page-head__number">{current?.number}</span>
-                <h1 className="cat-page-head__title">{current?.title}</h1>
-                <ul className="cat-toc">
-                  {stories.map((story) => (
-                    <li key={story.id}>
-                      <button
-                        type="button"
-                        className="cat-toc__link"
-                        onClick={() =>
-                          document.getElementById(story.id)?.scrollIntoView({ behavior: 'smooth' })
-                        }
-                      >
-                        {story.title}
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              </header>
-              {stories.map((story) => (
-                <Specimen key={story.id} story={story} />
+          <div className="cat-theme" role="group" aria-label="Thème d’affichage">
+            <div className="cat-theme__flavors">
+              {FLAVORS.map((flavor) => (
+                <Chip
+                  key={flavor.value}
+                  selected={theme.flavor === flavor.value}
+                  onClick={() => setTheme((t) => ({ ...t, flavor: flavor.value }))}
+                >
+                  {flavor.label}
+                </Chip>
               ))}
-            </>
-          )}
-        </main>
+            </div>
+            <div className="cat-theme__accents">
+              {HUES.map((hue) => (
+                <Swatch
+                  key={hue}
+                  hue={hue}
+                  label={`Accent ${hue}`}
+                  selected={theme.accent === hue}
+                  onClick={() => setTheme((t) => ({ ...t, accent: hue }))}
+                />
+              ))}
+            </div>
+          </div>
+        </header>
+
+        <div className="cat-body">
+          <nav className="cat-nav" aria-label="Couches">
+            <a
+              className="cat-nav__layer"
+              href="#"
+              aria-current={page === 'overview' ? 'page' : undefined}
+            >
+              <span className="cat-nav__number">··</span> Vue d’ensemble
+            </a>
+            {LAYERS.map((layer) => (
+              <a
+                key={layer.id}
+                className="cat-nav__layer"
+                href={`#${layer.id}`}
+                aria-current={page === layer.id ? 'page' : undefined}
+              >
+                <span className="cat-nav__number">{layer.number}</span> {layer.title}
+                <span className="cat-nav__count">
+                  {STORIES.filter((s) => s.layer === layer.id).length}
+                </span>
+              </a>
+            ))}
+            <a
+              className="cat-nav__layer"
+              href="#ecrans"
+              aria-current={page === 'ecrans' ? 'page' : undefined}
+            >
+              <span className="cat-nav__number">05</span> Écrans
+              <span className="cat-nav__count">{APP_SCREENS.length}</span>
+            </a>
+            <a
+              className="cat-nav__layer cat-nav__layer--mockups"
+              href="#maquettes"
+              aria-current={page === 'maquettes' ? 'page' : undefined}
+            >
+              <span className="cat-nav__number">✎</span> Maquettes
+              <span className="cat-nav__count">{MOCKUPS.length}</span>
+            </a>
+          </nav>
+
+          <main className="cat-main">
+            {page === 'overview' ? (
+              <Overview />
+            ) : page === 'ecrans' ? (
+              <Screens />
+            ) : page === 'maquettes' ? (
+              <Mockups />
+            ) : (
+              <>
+                <header className="cat-page-head">
+                  <span className="cat-page-head__number">{current?.number}</span>
+                  <h1 className="cat-page-head__title">{current?.title}</h1>
+                  <ul className="cat-toc">
+                    {stories.map((story) => (
+                      <li key={story.id}>
+                        <button
+                          type="button"
+                          className="cat-toc__link"
+                          onClick={() =>
+                            document
+                              .getElementById(story.id)
+                              ?.scrollIntoView({ behavior: 'smooth' })
+                          }
+                        >
+                          {story.title}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </header>
+                {stories.map((story) => (
+                  <Specimen key={story.id} story={story} />
+                ))}
+              </>
+            )}
+          </main>
+        </div>
       </div>
-    </div>
+    </CatalogThemeContext.Provider>
   )
 }
 
@@ -221,6 +244,13 @@ function Overview() {
             </li>
           )
         })}
+        <li className="cat-layer">
+          <a href="#ecrans" className="cat-layer__link">
+            <span className="cat-layer__number">05</span>
+            <span className="cat-layer__title">Écrans</span>
+            <span className="cat-layer__items">{APP_SCREENS.map((s) => s.title).join(' · ')}</span>
+          </a>
+        </li>
       </ol>
       <p className="cat-overview__rule">
         La règle : l’app et les modules assemblent ces composants et n’écrivent ni{' '}
@@ -228,6 +258,43 @@ function Overview() {
         devient un composant ou une prop ici.
       </p>
     </div>
+  )
+}
+
+function Screens() {
+  return (
+    <>
+      <header className="cat-page-head">
+        <span className="cat-page-head__number">05</span>
+        <h1 className="cat-page-head__title">Écrans</h1>
+        <p className="cat-overview__rule">
+          Les écrans de Scoreo tels qu’ils sont livrés : le vrai code de l’app, lancé sur des
+          données d’exemple. Chaque cadre est une petite app indépendante, on peut y naviguer,
+          saisir des scores, ouvrir le menu. Chaque écran est une composition du design system, et
+          chaque écran du routeur a ici sa trace.
+        </p>
+        <ul className="cat-toc">
+          {APP_SCREENS.map((screen) => (
+            <li key={screen.type}>
+              <button
+                type="button"
+                className="cat-toc__link"
+                onClick={() =>
+                  document
+                    .getElementById(`ecran-${screen.type}`)
+                    ?.scrollIntoView({ behavior: 'smooth' })
+                }
+              >
+                {screen.title}
+              </button>
+            </li>
+          ))}
+        </ul>
+      </header>
+      {APP_SCREENS.map((screen) => (
+        <ScreenSheet key={screen.type} screen={screen} />
+      ))}
+    </>
   )
 }
 

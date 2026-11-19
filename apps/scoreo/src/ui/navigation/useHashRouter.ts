@@ -1,18 +1,14 @@
 import { useCallback, useEffect, useState } from 'react'
 import { parseHash, screenToHash } from './hash'
+import type { Router } from './router'
 import type { Screen } from './screen'
 
 function restoreFromHash(): Screen {
   return parseHash(window.location.hash.replace(/^#/, ''))
 }
 
-export interface HashRouter {
-  current: Screen
-  navigate: (screen: Screen) => void
-}
-
 /** Syncs a Screen with window.location.hash. Ported from AppNavigator.kt. */
-export function useHashRouter(): HashRouter {
+export function useHashRouter(): Router {
   const [current, setCurrent] = useState<Screen>(() => restoreFromHash())
 
   useEffect(() => {

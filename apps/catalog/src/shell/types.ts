@@ -62,3 +62,17 @@ export interface Mockup {
   designSystemChanges: string[]
   screens: Variant[]
 }
+
+/**
+ * One screen of Scoreo as it ships: the real screen, run with example data
+ * (`src/screens/`), in each state worth keeping a trace of. Unlike a mockup it
+ * is never removed: it is the record of what the app looks like today.
+ */
+export interface AppScreen {
+  /** The `Screen['type']` of the app's router: one entry per screen. */
+  type: string
+  title: string
+  /** What the player does there, in one or two sentences. */
+  summary: string
+  states: Variant[]
+}

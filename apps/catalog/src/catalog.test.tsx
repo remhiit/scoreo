@@ -1,6 +1,7 @@
 import { render } from '@testing-library/react'
 import * as DesignSystem from '@scoreboards/design-system'
 import { describe, expect, it } from 'vitest'
+import { APP_SCREENS } from './screens'
 import { MOCKUPS } from './shell/mockups'
 import { STORIES } from './stories'
 import { LAYERS } from './shell/types'
@@ -22,13 +23,14 @@ const COMPONENTS = Object.entries(DesignSystem)
 const raw = (modules: Record<string, unknown>) => Object.entries(modules as Record<string, string>)
 
 /**
- * Stories and mockup screens show the design system as the app uses it, so
+ * Stories, app screens and mockup screens show the design system as the app uses it, so
  * they are held to the app's rule (eslint.config.js): no class, no inline
  * style, no icon import. Only the catalog's chrome (src/shell/) and a mockup's
  * sketches (src/mockups/<id>/sketches/) write classes.
  */
 const COMPOSING_SOURCES = raw({
   ...import.meta.glob('./stories/**/*.tsx', { query: '?raw', import: 'default', eager: true }),
+  ...import.meta.glob('./screens/**/*.tsx', { query: '?raw', import: 'default', eager: true }),
   ...import.meta.glob(['./mockups/**/*.tsx', '!./mockups/*/sketches/**'], {
     query: '?raw',
     import: 'default',
@@ -118,5 +120,22 @@ describe('catalog', () => {
   )('renders mockup %s — %s', (_id, _name, screen) => {
     const { container } = render(<>{screen.render()}</>)
     expect(container.firstChild).not.toBeNull()
+  })
+
+  it('gives every app screen a unique type and at least one state', () => {
+    const types = APP_SCREENS.map((screen) => screen.type)
+    expect(new Set(types).size).toBe(types.length)
+    for (const screen of APP_SCREENS) expect(screen.states.length, screen.type).toBeGreaterThan(0)
+  })
+
+  it.each(
+    APP_SCREENS.flatMap((screen) =>
+      screen.states.map((state) => [screen.type, state.name, state] as const),
+    ),
+  )('runs app screen %s — %s', async (_type, _name, state) => {
+    const { container, findAllByRole } = render(<>{state.render()}</>)
+    expect(container.firstChild).not.toBeNull()
+    // A module's screen arrives lazily: wait for its first button, not the fallback.
+    expect((await findAllByRole('button')).length).toBeGreaterThan(0)
   })
 })
