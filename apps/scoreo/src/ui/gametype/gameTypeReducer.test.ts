@@ -19,6 +19,7 @@ import {
   resolveGameTypeForEdit,
   parsePlayerLimit,
   scoringModeChangeWarning,
+  showsPlayerRange,
   showsScoringModeChoice,
   submitAddGameType,
   submitArchiveGameType,
@@ -41,7 +42,12 @@ function buildUseCases(
     getGameTypes: new GetGameTypesUseCase(repo),
     findGameTypeById: new FindGameTypeByIdUseCase(repo),
     archiveGameType: new ArchiveGameTypeUseCase(repo),
-    mergeGameTypes: new MergeGameTypesUseCase(repo, matchRepo, new InMemoryMatchDraftRepository()),
+    mergeGameTypes: new MergeGameTypesUseCase(
+      repo,
+      matchRepo,
+      new InMemoryMatchDraftRepository(),
+      findManifest,
+    ),
   }
 }
 
@@ -643,6 +649,54 @@ describe('player range fields', () => {
     )
     expect('error' in result).toBe(false)
     expect(useCases.repo.findById(created.id)).toMatchObject({ minPlayers: 2, maxPlayers: 8 })
+  })
+
+  it('showsPlayerRange: shown for an ordinary or orphaned game, hidden for a registered module', () => {
+    const useCases = buildUseCases()
+    const base = useCases.addGameType.invoke('Go', 'HIGHEST_SCORE')
+    // Built directly: `editGameType` itself ignores a registered module's game.
+    const editing = (gameType: GameType): GameTypeState => ({
+      ...initialGameTypeState,
+      gameTypes: [gameType],
+      editingGameId: gameType.id,
+    })
+    expect(showsPlayerRange(editing(base))).toBe(true)
+    expect(showsPlayerRange(editing({ ...base, moduleId: 'gone-module' }))).toBe(true)
+    expect(showsPlayerRange(editing(withModuleRules({ ...base, moduleId: 'skyjo' })))).toBe(false)
+  })
+
+  it('submitUpdateGameType saves and validates the range of a game whose module is gone', () => {
+    const useCases = buildUseCases()
+    const orphan = {
+      ...useCases.addGameType.invoke('Old', 'HIGHEST_SCORE'),
+      moduleId: 'gone-module',
+    }
+    useCases.repo.save(orphan)
+    let state = gameTypeReducer(initialGameTypeState, {
+      type: 'editGameType',
+      gameType: orphan,
+      hasMatches: false,
+    })
+    state = gameTypeReducer(state, { type: 'updateMinPlayers', value: '3' })
+    state = gameTypeReducer(state, { type: 'updateMaxPlayers', value: '5' })
+    const result = submitUpdateGameType(
+      useCases.updateGameType,
+      useCases.getGameTypes,
+      orphan,
+      state,
+    )
+    expect('error' in result).toBe(false)
+    expect(useCases.repo.findById(orphan.id)).toMatchObject({
+      minPlayers: 3,
+      maxPlayers: 5,
+      moduleId: 'gone-module',
+    })
+
+    state = gameTypeReducer(state, { type: 'updateMinPlayers', value: '6' })
+    expect(
+      submitUpdateGameType(useCases.updateGameType, useCases.getGameTypes, orphan, state),
+    ).toHaveProperty('error')
+    expect(useCases.repo.findById(orphan.id)).toMatchObject({ minPlayers: 3, maxPlayers: 5 })
   })
 })
 
