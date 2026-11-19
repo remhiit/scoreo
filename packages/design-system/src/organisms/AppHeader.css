@@ -1,11 +1,10 @@
-/* In the flow, above the screen's scrolling column (ScreenTemplate): the header
-   keeps its place and the column's scrollbar starts below it, never under it. */
 .sc-header {
-  position: relative;
+  position: fixed;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
   z-index: 100;
-  flex: 0 0 auto;
   width: 100%;
-  margin: 0 auto;
   max-width: var(--screen-max);
   height: var(--header-height);
   display: flex;

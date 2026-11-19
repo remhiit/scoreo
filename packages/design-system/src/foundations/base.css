@@ -1,8 +1,8 @@
 /*
   Foundations — the only element-level rules in the system. Everything else is
   a `.sc-*` class owned by one component, so the app never needs a selector of
-  its own. `--header-height` is the header's height, a layout constant, not a
-  theme token.
+  its own. `--header-height` is a layout constant shared by the header and the
+  screen template, not a theme token.
 */
 :root {
   --header-height: 56px;

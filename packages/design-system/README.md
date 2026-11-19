@@ -113,7 +113,7 @@ page background, `--header-height`, `--screen-max`, `--screen-max-wide`.
 
 | Component                       | Role                                                                                                             |
 | ------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
-| `AppHeader`                     | Back (or nothing), centred title, burger — in the flow, above the scrolling column                               |
+| `AppHeader`                     | Back (or nothing), centred title, burger — fixed                                                                 |
 | `StandingsGrid`                 | Two columns of standings cards                                                                                   |
 | `RoundCard`                     | A past round, cells wrap downward                                                                                |
 | `Panel`                         | Titled section on a card: title, `description`, `trailing`, children (Stats head-to-head, Hall of Fame trophies) |

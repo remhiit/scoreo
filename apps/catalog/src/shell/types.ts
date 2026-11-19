@@ -15,7 +15,7 @@ export type LayerId = (typeof LAYERS)[number]['id']
  * How a variant is framed:
  * - `inline`: laid on the page, for most atoms and molecules;
  * - `phone`: a 390 × 640 screen, which also contains anything `position: fixed`
- *   (action bar, dialog, sheet, side menu) — the frame is their viewport.
+ *   (header, action bar, dialog, sheet, side menu) — the frame is their viewport.
  */
 export type Frame = 'inline' | 'phone'
 
