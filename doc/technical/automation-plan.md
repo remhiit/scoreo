@@ -762,8 +762,9 @@ n'est jamais reprise par une R3/R4 autonome. Un push ultérieur (rebase de
 le diff de la PR est identique (même `git patch-id` avant et après), et le
 passe sinon en `failure` en retirant `automation:review-pass`. Rendre la PR
 à R3 est un geste humain : retirer le label la remet en file
-(`needs-review-label.yml`, événement `unlabeled`). Pour le compteur de tours de correctif, il pose
-`automation:attempt-N` (label sûr — aucun déclencheur GitHub n'y filtre) et,
+(`needs-review-label.yml`, événement `unlabeled`). Pour le compteur de
+tours de correctif, il pose `automation:attempt-N` (label sûr — aucun
+déclencheur GitHub n'y filtre) et,
 une fois convergé, `automation:review-pass` (ce qui fait tourner
 `review-status-sync.yml` normalement : statut `claude/review`, journal
 `pr-review`). Il ne pose en revanche **jamais** `automation:needs-review` ni
@@ -2218,6 +2219,15 @@ R6 hebdo. C'est le rapport qui pilote l'élargissement de la liste blanche `auto
   moins saturé, et niveau de titre fourni par l'appelant (prop) ou titre non
   sémantique. Les captures de `tests/visual/` de l'accueil devront être
   régénérées avec la correction.
+
+  **Corrigé (#668).** Maquette validée par #666 (`banner-contrast`), promue
+  dans `Banner` : titre, étapes (numéros compris, en semi-gras) et libellé
+  d'action en `--text-body` (5,3:1 au minimum sur la teinte, tous thèmes et
+  accents confondus) ; l'accent reste sur le fond, la bordure et l'icône
+  d'action. Le titre est rendu en `<p>` semi-gras au lieu de `<h3>`, ce qui
+  règle `heading-order`. Aucune capture de `tests/visual/` n'était à
+  régénérer : la suite ne photographie que les modules, pas l'accueil
+  (`visual-testing.md`).
 
 - **Qui exécute les routines, et où s'applique le choix de modèle — tranché
   (#423, 2026-09-07).** Option C : routage par sous-agent à l'intérieur du
