@@ -1,3 +1,4 @@
+import type { ScoringModuleManifest } from '@scoreboards/module-api'
 import { assertMatchConsistent } from '@scoreboards/shared-domain'
 import { NotFoundError, ValidationError } from '../domain/model/errors'
 import { usesRoundsWon, type GameType } from '../domain/model/gameType'
@@ -16,8 +17,9 @@ export interface MergeGameTypesPreview {
    * winners of those matches can change, so the UI warns about it. Also set when
    * a module's match (`moduleData`) from an ordinary duplicate would move into an
    * ordinary game scored in rounds won: it is never rescored there, so its points
-   * would be read as rounds won (#590). Module-bound kept games are not concerned:
-   * they refuse or rescore the match.
+   * would be read as rounds won (#590). Kept games bound to a registered module
+   * are not concerned: they refuse or rescore the match. A game whose module is
+   * no longer registered is compared like an ordinary game.
    */
   rulesDiffer: boolean
 }
@@ -35,8 +37,9 @@ export const MERGE_MODULE_RULES_FIELD = 'moduleRules'
  * any other, and must then be consistent.)
  *
  * Only the match's own `moduleData` tells: where this is evaluated the kept game
- * is ordinary, and a duplicate bound to a module is refused into an ordinary
- * game before any match moves, so the duplicate's `moduleId` is always `null`.
+ * is ordinary, and a duplicate bound to a registered module is refused into an
+ * ordinary game before any match moves, so the duplicate is ordinary too — its
+ * `moduleId` is `null`, or names a module no longer registered.
  */
 function isFromModule(match: Match): boolean {
   return match.moduleData !== null
@@ -63,6 +66,12 @@ function sameScoringRules(a: GameType, b: GameType): boolean {
  * game is bound to a module every moved match must pass `assertMatchConsistent`
  * under its (resolved) rules — a rounds-won match without round detail, which
  * can't be turned back into points, is refused.
+ *
+ * "Bound to a module" means bound to a *registered* one, as `isModuleGame`
+ * reads it: a game whose module is no longer registered is an ordinary game
+ * again, on either side of the merge (its stored `moduleId` is never changed).
+ * An orphaned duplicate is still refused into a game bound to a different
+ * registered module — that game only takes its own module's duplicates.
  * Archiving isn't enough — it only hides a duplicate, leaving its matches under a
  * separate game and splitting History's filter, per-game trophies and the game
  * record apart.
@@ -72,7 +81,18 @@ export class MergeGameTypesUseCase {
     private readonly gameTypeRepository: GameTypeRepository,
     private readonly matchRepository: MatchRepository,
     private readonly matchDraftRepository: MatchDraftRepository,
+    /**
+     * Looks a module up by its id — the host's registry in the app, a test's
+     * own manifests otherwise (as for `UpdateGameTypeUseCase`). `undefined`
+     * for a module no longer registered.
+     */
+    private readonly findManifest: (moduleId: string) => ScoringModuleManifest | undefined,
   ) {}
+
+  /** Bound to a module that is still registered (the host's `isModuleGame`). */
+  private isModuleGame(gameType: GameType): boolean {
+    return gameType.moduleId !== null && this.findManifest(gameType.moduleId) !== undefined
+  }
 
   preview(keptId: string, duplicateIds: readonly string[]): MergeGameTypesPreview {
     const duplicates = new Set(duplicateIds)
@@ -84,7 +104,7 @@ export class MergeGameTypesUseCase {
     const matches = this.matchesOf(duplicates)
     if (kept === undefined) return { affectedMatches: matches.length, rulesDiffer: false }
     const moduleMatchIntoRoundsWon =
-      kept.moduleId === null && usesRoundsWon(kept) && matches.some(isFromModule)
+      !this.isModuleGame(kept) && usesRoundsWon(kept) && matches.some(isFromModule)
     return {
       affectedMatches: matches.length,
       rulesDiffer:
@@ -111,8 +131,17 @@ export class MergeGameTypesUseCase {
     })
 
     // A module's game only takes its own module's duplicates: any other
-    // history would be read under rules it was not played with.
-    if (merged.some((gt) => gt.moduleId !== null && gt.moduleId !== kept.moduleId)) {
+    // history would be read under rules it was not played with. Between games
+    // whose modules are no longer registered, nothing reads those rules.
+    const intoModule = this.isModuleGame(kept)
+    if (
+      merged.some(
+        (gt) =>
+          gt.moduleId !== null &&
+          gt.moduleId !== kept.moduleId &&
+          (intoModule || this.isModuleGame(gt)),
+      )
+    ) {
       throw new ValidationError(
         MERGE_MODULE_RULES_FIELD,
         'A game bound to a module can only be merged into a game bound to the same module',
@@ -125,7 +154,6 @@ export class MergeGameTypesUseCase {
     // (`UpdateGameTypeUseCase`, `rescoreMatch`). Into an ordinary game, a
     // module's matches keep the scores the module returned (#590).
     const duplicateById = new Map(merged.map((gt) => [gt.id, gt]))
-    const intoModule = kept.moduleId !== null
     const moved = this.matchesOf(duplicates).map((match) => {
       const source = duplicateById.get(match.gameTypeId)
       const rescored =

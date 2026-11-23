@@ -47,6 +47,7 @@ import {
   SYNC_SCREEN,
 } from './ui/navigation/screen'
 import type { Screen } from './ui/navigation/screen'
+import type { Router } from './ui/navigation/router'
 import { useHashRouter } from './ui/navigation/useHashRouter'
 import { buildInitialState } from './ui/scoredetail/scoreDetailReducer'
 import { ScoreDetailScreen } from './ui/scoredetail/ScoreDetailScreen'
@@ -159,11 +160,16 @@ function ScoreDetailRoute({
   )
 }
 
-function AppShell() {
+/**
+ * Everything the player sees, minus where the current screen comes from: the
+ * app routes through the URL hash, the design catalog through memory
+ * (`useMemoryRouter`), so several shells can run side by side on one page.
+ */
+export function AppShell({ router }: { router: Router }) {
   const { t } = useTranslation()
   const services = useServices()
   useAutoSync(services.autoSyncCoordinator)
-  const { current, navigate } = useHashRouter()
+  const { current, navigate } = router
   const [burgerOpen, setBurgerOpen] = useState(false)
   const [themePickerOpen, setThemePickerOpen] = useState(false)
   const [languagePickerOpen, setLanguagePickerOpen] = useState(false)
@@ -223,6 +229,7 @@ function AppShell() {
         services.gameTypeRepository,
         services.matchRepository,
         services.matchDraftRepository,
+        findManifest,
       ),
     [services],
   )
@@ -513,11 +520,15 @@ function AppShell() {
   )
 }
 
+function HashRoutedShell() {
+  return <AppShell router={useHashRouter()} />
+}
+
 export function App() {
   return (
     <ServicesProvider>
       <ThemeProvider>
-        <AppShell />
+        <HashRoutedShell />
       </ThemeProvider>
     </ServicesProvider>
   )
