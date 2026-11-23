@@ -229,6 +229,7 @@ export function AppShell({ router }: { router: Router }) {
         services.gameTypeRepository,
         services.matchRepository,
         services.matchDraftRepository,
+        findManifest,
       ),
     [services],
   )

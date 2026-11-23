@@ -263,10 +263,13 @@ export function showsScoringModeChoice(state: GameTypeState): boolean {
 /**
  * The form offers the player range fields only for an ordinary game: the range
  * gates the launch of a game without a scoring module, and is ignored for a
- * game bound to one (its module's manifest range applies instead).
+ * game bound to a registered one (its module's manifest range applies
+ * instead). A game whose module is no longer registered is an ordinary game
+ * again (`isModuleGame`), range fields included.
  */
 export function showsPlayerRange(state: GameTypeState): boolean {
-  return (editedGameType(state)?.moduleId ?? null) === null
+  const edited = editedGameType(state)
+  return edited === undefined || !isModuleGame(edited)
 }
 
 /**
@@ -301,8 +304,9 @@ export function submitUpdateGameType(
   state: Pick<GameTypeState, 'selectedMinPlayers' | 'selectedMaxPlayers'>,
 ): LoadedGameTypes | { error: string } {
   try {
-    // A module-bound game has no range fields in the form: keep its stored range.
-    const range = gameType.moduleId === null ? parsePlayerRange(state) : {}
+    // A game bound to a registered module has no range fields in the form: keep
+    // its stored range. One whose module is gone is edited as an ordinary game.
+    const range = isModuleGame(gameType) ? {} : parsePlayerRange(state)
     updateGameTypeUseCase.invoke({ ...gameType, ...range })
     return loadGameTypes(getGameTypes)
   } catch (e) {
