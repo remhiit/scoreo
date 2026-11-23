@@ -21,7 +21,10 @@ disagree, `CLAUDE.md` wins — update this file to match.
 Scoreo-only skills stay in this repo: `new-scoring-module`, and the
 automation pipeline (`coordinator`, `arbitrate`, `weekly-report`,
 `merge-review-pass`, the agents in `.claude/agents/`). They refer to the
-shared skills by their plugin name, `dev-workflow:<skill>`.
+shared skills by their plugin name, `dev-workflow:<skill>`. During the
+transition, `.claude/skills/<skill>/SKILL.md` still exists as a short alias
+that redirects to the plugin (or, if the plugin is not loaded, to the skill's
+file in `remhiit/skills`), so routine prompts naming the old path keep working.
 
 ## Read, in this order
 

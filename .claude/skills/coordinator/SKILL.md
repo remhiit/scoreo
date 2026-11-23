@@ -215,7 +215,7 @@ unchanged, without attempting this step (#506).
    launch. `status: 'exceeded'` is the same stop as everywhere else that
    check applies — go to § Escalade below instead of launching this
    sub-agent.
-2. Launch one `Agent` sub-agent with a prompt that is, verbatim, "follow the `dev-workflow:issue-to-spec` skill's procedure (invoke it with the Skill tool; it reads its Scoreo overlay `.claude/skills/project-conventions/issue-to-spec.md`) for issue #N, as the
+2. Launch one `Agent` sub-agent with a prompt that is, verbatim, "follow the `dev-workflow:issue-to-spec` skill's procedure (invoke it with the Skill tool — if it is not available, follow the transition alias `.claude/skills/issue-to-spec/SKILL.md` instead; it reads its Scoreo overlay `.claude/skills/project-conventions/issue-to-spec.md`) for issue #N, as the
    coordinator's sub-agent" plus the issue number — nothing else from this
    session's own context, same "built fresh from GitHub" rule § "Entrées
    requises" above already states for every sub-agent this skill launches.
@@ -489,7 +489,7 @@ never guessed" convention as everywhere else this field appears.
 ### 1. Implementation
 
 Launch one `Agent` sub-agent (full tool access — file edit, git, `pnpm`,
-GitHub MCP tools) with a prompt that is, verbatim, "follow the `dev-workflow:implement-task` skill's procedure (invoke it with the Skill tool; it reads its Scoreo overlay `.claude/skills/project-conventions/implement-task.md`) for issue #N, as its
+GitHub MCP tools) with a prompt that is, verbatim, "follow the `dev-workflow:implement-task` skill's procedure (invoke it with the Skill tool — if it is not available, follow the transition alias `.claude/skills/implement-task/SKILL.md` instead; it reads its Scoreo overlay `.claude/skills/project-conventions/implement-task.md`) for issue #N, as its
 implementation sub-agent" plus the issue number and this run's context
 (nothing this session doesn't already have from claiming the run above —
 there is no separate implementer output yet to withhold at this step).
@@ -524,7 +524,7 @@ The **functional** reviewer's prompt contains only:
 - the issue number (it reads the spec itself, fresh, via GitHub tools);
 - the PR number and the exact HEAD SHA to review (it reads the diff itself
   via `pull_request_read`);
-- an instruction to follow the `dev-workflow:pr-review` skill's procedure (invoke it with the Skill tool; it reads its Scoreo overlay `.claude/skills/project-conventions/pr-review.md`) §1–§4 "as the
+- an instruction to follow the `dev-workflow:pr-review` skill's procedure (invoke it with the Skill tool — if it is not available, follow the transition alias `.claude/skills/pr-review/SKILL.md` instead; it reads its Scoreo overlay `.claude/skills/project-conventions/pr-review.md`) §1–§4 "as the
   coordinator's **functional-corpus** review sub-agent".
 
 The **technical** reviewer's prompt contains only:
@@ -532,7 +532,7 @@ The **technical** reviewer's prompt contains only:
 - the PR number and the exact HEAD SHA to review — **never the issue
   number or the issue's spec**, in any form, including a paraphrase of what
   the issue is about;
-- an instruction to follow the `dev-workflow:pr-review` skill's procedure (invoke it with the Skill tool; it reads its Scoreo overlay `.claude/skills/project-conventions/pr-review.md`) §1–§4 "as the
+- an instruction to follow the `dev-workflow:pr-review` skill's procedure (invoke it with the Skill tool — if it is not available, follow the transition alias `.claude/skills/pr-review/SKILL.md` instead; it reads its Scoreo overlay `.claude/skills/project-conventions/pr-review.md`) §1–§4 "as the
   coordinator's **technical-corpus** review sub-agent".
 
 `project-conventions/pr-review.md`'s own text (§ "Context isolation (coordinator

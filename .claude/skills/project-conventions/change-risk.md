@@ -19,7 +19,7 @@ same numbering.
 
 These paths replace the shared skill's generic examples.
 
-## Surfaces à risque
+### Surfaces à risque
 
 Eight fixed categories, each with the repo paths/patterns that trigger it.
 A file can trigger more than one category; § Niveau below is how that's
