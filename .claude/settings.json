@@ -12,14 +12,15 @@
     ]
   },
   "extraKnownMarketplaces": {
-    "remhiit-skills": {
+    "remhiit-workflows": {
       "source": {
         "source": "github",
-        "repo": "remhiit/skills"
+        "repo": "remhiit/workflows"
       }
     }
   },
   "enabledPlugins": {
-    "dev-workflow@remhiit-skills": true
+    "dev-workflow@remhiit-workflows": true,
+    "workflows@remhiit-workflows": true
   }
 }

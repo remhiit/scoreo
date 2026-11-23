@@ -1,7 +1,7 @@
 # Scoreo overlay — `change-risk`
 
 This file is Scoreo's overlay for the shared skill `dev-workflow:change-risk`
-(plugin `dev-workflow` from the `remhiit/skills` marketplace). The shared
+(plugin `dev-workflow` from the `remhiit/workflows` marketplace). The shared
 skill reads it after `CLAUDE.md` and `project-conventions/SKILL.md`; where the
 two disagree, **this file wins**. It holds only what is specific to Scoreo:
 its paths and commands, and its automation pipeline (labels, routines R2–R5,

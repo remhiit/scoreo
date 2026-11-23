@@ -6,13 +6,13 @@ description: Transition alias — this skill now lives in the shared plugin as `
 # address-feedback — transition alias
 
 This skill moved to the shared `dev-workflow` plugin (repository
-`remhiit/skills`). This file only redirects, so that routine prompts and
+`remhiit/workflows`). This file only redirects, so that routine prompts and
 older references to `.claude/skills/address-feedback/SKILL.md` keep working.
 
 1. Invoke the skill `dev-workflow:address-feedback` with the Skill tool and follow it.
 2. If that skill is not available in this session (plugin not loaded, e.g. in
    a sub-agent or a routine), read
-   `plugins/dev-workflow/skills/address-feedback/SKILL.md` from the `remhiit/skills`
+   `plugins/dev-workflow/skills/address-feedback/SKILL.md` from the `remhiit/workflows`
    repository (default branch) with the GitHub file-reading tool, and follow
    it. Say in your output which of the two you used.
 3. Either way, the shared skill reads Scoreo's overlay:

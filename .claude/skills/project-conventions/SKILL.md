@@ -1,6 +1,6 @@
 ---
 name: project-conventions
-description: Scoreo's conventions for any code change — stack, pnpm commands, directory layout, hexagonal layering, backward-compat rules, commit style — and Scoreo's overlay for the shared `dev-workflow` skills (issue-to-spec, implement-task, pr-review, address-feedback, change-risk, test-strategy, site-quality). Those skills read this file, then `project-conventions/<skill>.md`, before doing anything. Use when starting any code change here, or when unsure which layer (reducer/use case/port/adapter) a change belongs in.
+description: Scoreo's conventions for any code change — stack, pnpm commands, directory layout, hexagonal layering, backward-compat rules, commit style — and Scoreo's overlay for the shared `workflows` plugin (feature, refacto, spike, livrer, bug, maintenance) and the transitional `dev-workflow` skills (issue-to-spec, implement-task, pr-review, address-feedback, change-risk, test-strategy, site-quality). They read this file, then `project-conventions/<workflow-or-skill>.md`, before doing anything. Use when starting any code change here, or when unsure which layer (reducer/use case/port/adapter) a change belongs in.
 ---
 
 # Project Conventions (Scoreo overlay)
@@ -8,7 +8,7 @@ description: Scoreo's conventions for any code change — stack, pnpm commands, 
 ## Objectif
 
 Scoreo's overlay for the shared skills of the `dev-workflow` plugin
-(`remhiit/skills` marketplace). The shared skills are project-agnostic; they
+(`remhiit/workflows` marketplace). The shared skills are project-agnostic; they
 read, in order: `CLAUDE.md`, this file, then `project-conventions/<skill>.md`
 for the skill running (`implement-task.md`, `pr-review.md`, …). This file and
 the per-skill files win over the shared skill. The overlay contract is
@@ -18,13 +18,22 @@ This file restates nothing from `CLAUDE.md`: it points to it, so the
 conventions live in exactly one place. If this file and `CLAUDE.md` ever
 disagree, `CLAUDE.md` wins — update this file to match.
 
+The `workflows` plugin (same marketplace) reads this file too, then
+`project-conventions/<workflow>.md` (`feature.md`, `refacto.md`, `spike.md`,
+`livrer.md`, `bug.md`, `maintenance.md`). Those files are thin: they point to
+the per-skill overlays below, which stay the single owner of each Scoreo rule
+while the automation pipeline still runs on `dev-workflow`. The workflows with
+a human (`feature`, `refacto`, `spike`) frame work and hand ready tickets
+either to the pipeline or to `workflows:livrer` (`feature.md` § pipeline);
+the pipeline itself is unchanged.
+
 Scoreo-only skills stay in this repo: `new-scoring-module`, and the
 automation pipeline (`coordinator`, `arbitrate`, `weekly-report`,
 `merge-review-pass`, the agents in `.claude/agents/`). They refer to the
 shared skills by their plugin name, `dev-workflow:<skill>`. During the
 transition, `.claude/skills/<skill>/SKILL.md` still exists as a short alias
 that redirects to the plugin (or, if the plugin is not loaded, to the skill's
-file in `remhiit/skills`), so routine prompts naming the old path keep working.
+file in `remhiit/workflows`), so routine prompts naming the old path keep working.
 
 ## Read, in this order
 

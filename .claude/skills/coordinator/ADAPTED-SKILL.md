@@ -53,7 +53,7 @@ skills spécialistes, exécute leurs procédures et rend un résultat vérifiabl
    Les skills propres à Scoreo sont dans `.claude/skills/<skill>/SKILL.md`.
    Les skills partagés (`issue-to-spec`, `implement-task`, `pr-review`,
    `address-feedback`, `change-risk`, `test-strategy`, `site-quality`) sont
-   dans le dépôt `remhiit/skills`, fichier
+   dans le dépôt `remhiit/workflows`, fichier
    `plugins/dev-workflow/skills/<skill>/SKILL.md`, et leur surcouche Scoreo
    dans `.claude/skills/project-conventions/<skill>.md` de ce dépôt : lire les
    deux, la surcouche gagne en cas de conflit.

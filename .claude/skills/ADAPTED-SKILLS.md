@@ -19,7 +19,7 @@ mécanisme de chargement n'est pas documenté ici avec sa source. Les `SKILL.md`
 restent la source ; chaque cible recevra une adaptation dédiée à son emplacement vérifié.
 
 Depuis 2026-11-23, sept skills sont partagés entre projets et vivent dans le
-dépôt `remhiit/skills` (plugin `dev-workflow`) : `issue-to-spec`,
+dépôt `remhiit/workflows` (plugin `dev-workflow`) : `issue-to-spec`,
 `implement-task`, `pr-review`, `address-feedback`, `change-risk`,
 `test-strategy`, `site-quality`. Leur surcouche Scoreo est dans
 `.claude/skills/project-conventions/<skill>.md`.
