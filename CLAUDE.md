@@ -89,6 +89,8 @@ Lire ces fichiers dans l'ordre. Tout le contexte nécessaire y est :
 
 Voir `doc/technical/automation-plan.md` pour l'architecture d'automatisation cible (labels comme bus d'événements, skills, phases de mise en autonomie).
 
+Skills partagés : `issue-to-spec`, `implement-task`, `pr-review`, `address-feedback`, `change-risk`, `test-strategy` et `site-quality` viennent du plugin `dev-workflow` du dépôt [`remhiit/skills`](https://github.com/remhiit/skills) (nom complet `dev-workflow:<skill>`). Sur le web, le plugin se charge depuis le compte claude.ai (les plugins déclarés dans `.claude/settings.json` ne se chargent pas dans une session cloud) ; `.claude/settings.json` le déclare pour le CLI local. Ce qui est propre à Scoreo pour ces skills vit dans leur surcouche, `.claude/skills/project-conventions/` (`SKILL.md` + un fichier par skill), qui gagne sur le skill partagé. Un manque générique se corrige dans `remhiit/skills`, pas ici.
+
 Ajouter un compteur de points pour un nouveau jeu : `.claude/skills/new-scoring-module/` — la checklist complète, du paquet aux gardes à étendre, avec les pièges qui ont coûté de vrais bugs ici. Le contrat lui-même est dans `doc/technical/module-contract.md`.
 
 ## Règles

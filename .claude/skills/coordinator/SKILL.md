@@ -93,7 +93,7 @@ replace the step they name:
 5. **Implementation sub-agent.** Its prompt says it runs "as the
    coordinator's implementation sub-agent, in manual mode": the claim is
    already done, the PR is opened draft → `automation:coordinator-owned` →
-   ready (as in every coordinator run, `implement-task/SKILL.md` step 10),
+   ready (as in every coordinator run, `project-conventions/implement-task.md` step 10),
    and step 11 is skipped — never `automation:enabled`.
 6. **Converged (§ 4).** Post `automation:review-pass` as usual — it feeds
    `review-status-sync.yml`, a deterministic Action (not a routine) that
@@ -123,7 +123,7 @@ runs, one after the other or in separate sessions.
 
 ## Entrées requises
 
-The triggering issue (same shape `implement-task/SKILL.md` § "Which issue"
+The triggering issue (same shape `project-conventions/implement-task.md` § "Which issue"
 already assumes: acceptance criteria, `## Fichiers impactés`, a risk
 category, and a `READY_FOR_IMPLEMENTATION` readiness verdict). Nothing else
 is assumed in context — every sub-agent this skill launches gets its own
@@ -134,7 +134,7 @@ this session's own conversation history.
 
 ### Which issue
 
-Identical rule to `implement-task/SKILL.md` § "Which issue": act only on the
+Identical rule to `project-conventions/implement-task.md` § "Which issue": act only on the
 issue named by this run's trigger. If it's no longer actionable (not
 `automation:ready` any more, already closed, or `closed_by_pull_requests`
 already lists an open PR), **stop and do nothing else** — same guard,
@@ -142,7 +142,7 @@ checked the same way, before claiming anything.
 
 ### Claim the run (first action)
 
-Exactly `implement-task/SKILL.md`'s claim step: remove `automation:ready`,
+Exactly `project-conventions/implement-task.md`'s claim step: remove `automation:ready`,
 add `automation:in-progress`, in its own call. This label is held on the
 **issue** for this run's entire lifetime — implementation, every review
 round, every fix round — cleared only at the very end (merge-eligible
@@ -184,7 +184,7 @@ procedure (caught in review on #510).
 
 ### Verify readiness
 
-Same as `implement-task/SKILL.md` step 1: if the issue still carries
+Same as `project-conventions/implement-task.md` step 1: if the issue still carries
 `blocked`, escalate per § Escalade below instead of guessing — never attempt
 § "Spec (sous-agent issue-to-spec, optional)" below for this reason, a
 dependency block has nothing to do with spec completeness. If instead the
@@ -198,7 +198,7 @@ not a valid shortcut.
 
 Reached only from § "Verify readiness" above, and only for the reason that
 section now names: the triggering issue's readiness verdict is missing or
-`NEEDS_CLARIFICATION`, or a section `implement-task/SKILL.md` step 1 treats
+`NEEDS_CLARIFICATION`, or a section `project-conventions/implement-task.md` step 1 treats
 as required is missing/ambiguous. Never reached for that section's other
 escalation reason (`blocked`) or for an issue that turned out not
 actionable per § "Which issue" — both skip straight to § Escalade below,
@@ -215,12 +215,11 @@ unchanged, without attempting this step (#506).
    launch. `status: 'exceeded'` is the same stop as everywhere else that
    check applies — go to § Escalade below instead of launching this
    sub-agent.
-2. Launch one `Agent` sub-agent with a prompt that is, verbatim, "follow
-   `.claude/skills/issue-to-spec/SKILL.md`'s procedure for issue #N, as the
+2. Launch one `Agent` sub-agent with a prompt that is, verbatim, "follow the `dev-workflow:issue-to-spec` skill's procedure (invoke it with the Skill tool; it reads its Scoreo overlay `.claude/skills/project-conventions/issue-to-spec.md`) for issue #N, as the
    coordinator's sub-agent" plus the issue number — nothing else from this
    session's own context, same "built fresh from GitHub" rule § "Entrées
    requises" above already states for every sub-agent this skill launches.
-3. The sub-agent follows `issue-to-spec/SKILL.md` unchanged except for the
+3. The sub-agent follows `project-conventions/issue-to-spec.md` unchanged except for the
    delta that skill's own text now states under "As the coordinator's
    sub-agent" (in that file): it completes only what it can deduce from the
    issue and the codebase without asking a human, edits the existing issue's
@@ -231,7 +230,7 @@ unchanged, without attempting this step (#506).
    instead of asking a human.
 4. **`READY_FOR_IMPLEMENTATION`** — the sub-agent has already written the
    completed spec back to the issue itself (`issue_write`, per
-   `issue-to-spec/SKILL.md` § Spec format). Proceed to § 1 "Implementation"
+   `project-conventions/issue-to-spec.md` § Spec format). Proceed to § 1 "Implementation"
    below on this same issue, without re-reading the spec here beyond noting
    the new verdict — the sub-agent's own edit is the source of truth from
    this point on, the same way this skill never re-derives a fact a sub-agent
@@ -477,7 +476,7 @@ self-reported values as they come back and uses them for:
   alongside each finding's own `reviewers` tag.
 
 The implementation sub-agent's own commit trailers and PR "Traçabilité"
-field are `implement-task/SKILL.md`'s own responsibility (step 9/10 there,
+field are `project-conventions/implement-task.md`'s own responsibility (step 9/10 there,
 unchanged when run as this skill's sub-agent) — this skill doesn't rewrite
 or duplicate them, only reads the model back for the synthesis comment
 above. If a sub-agent fails or returns nothing before it can self-report its
@@ -490,13 +489,12 @@ never guessed" convention as everywhere else this field appears.
 ### 1. Implementation
 
 Launch one `Agent` sub-agent (full tool access — file edit, git, `pnpm`,
-GitHub MCP tools) with a prompt that is, verbatim, "follow
-`.claude/skills/implement-task/SKILL.md`'s procedure for issue #N, as its
+GitHub MCP tools) with a prompt that is, verbatim, "follow the `dev-workflow:implement-task` skill's procedure (invoke it with the Skill tool; it reads its Scoreo overlay `.claude/skills/project-conventions/implement-task.md`) for issue #N, as its
 implementation sub-agent" plus the issue number and this run's context
 (nothing this session doesn't already have from claiming the run above —
 there is no separate implementer output yet to withhold at this step).
 
-The sub-agent follows `implement-task/SKILL.md` unchanged except for the two
+The sub-agent follows `project-conventions/implement-task.md` unchanged except for the two
 deltas that skill's own text now states under "As the coordinator's
 implementation sub-agent" (§ below, and in that file): it skips the
 `automation:ready` → `automation:in-progress` swap (already done by this
@@ -526,7 +524,7 @@ The **functional** reviewer's prompt contains only:
 - the issue number (it reads the spec itself, fresh, via GitHub tools);
 - the PR number and the exact HEAD SHA to review (it reads the diff itself
   via `pull_request_read`);
-- an instruction to follow `pr-review/SKILL.md`'s procedure §1–§4 "as the
+- an instruction to follow the `dev-workflow:pr-review` skill's procedure (invoke it with the Skill tool; it reads its Scoreo overlay `.claude/skills/project-conventions/pr-review.md`) §1–§4 "as the
   coordinator's **functional-corpus** review sub-agent".
 
 The **technical** reviewer's prompt contains only:
@@ -534,10 +532,10 @@ The **technical** reviewer's prompt contains only:
 - the PR number and the exact HEAD SHA to review — **never the issue
   number or the issue's spec**, in any form, including a paraphrase of what
   the issue is about;
-- an instruction to follow `pr-review/SKILL.md`'s procedure §1–§4 "as the
+- an instruction to follow the `dev-workflow:pr-review` skill's procedure (invoke it with the Skill tool; it reads its Scoreo overlay `.claude/skills/project-conventions/pr-review.md`) §1–§4 "as the
   coordinator's **technical-corpus** review sub-agent".
 
-`pr-review/SKILL.md`'s own text (§ "Context isolation (coordinator
+`project-conventions/pr-review.md`'s own text (§ "Context isolation (coordinator
 sub-agent only)") states the same restrictions from each reviewer's own
 side, per corpus — deliberately written in both places, not only enforced
 by this skill deciding what to send, so the isolation doesn't leak through
@@ -553,7 +551,7 @@ is exactly as disallowed as the raw transcript, and the same now holds
 between the two reviewers themselves: reading the other's verdict before
 forming your own defeats the reason the corpora were split apart.
 
-Each reviewer runs its own half of the checklist (`pr-review/SKILL.md` § 1,
+Each reviewer runs its own half of the checklist (`project-conventions/pr-review.md` § 1,
 the corpus tags there), classifies every finding it forms
 (`blocking`/`important`/`suggestion`/`uncertain`, each with evidence,
 impact, confidence, recommendation, and `corpus: in`/`out` — that file's
@@ -568,7 +566,7 @@ directly into `scripts/review-verdict.mjs` (§ below) — never a prose
 summary this skill would have to reinterpret.
 
 If either sub-agent instead reports that the PR's HEAD moved mid-review
-(`pr-review/SKILL.md` § 3 — another push landed on this branch, e.g. a
+(`project-conventions/pr-review.md` § 3 — another push landed on this branch, e.g. a
 human's, while a round was reading the diff), that is not an escalation:
 discard **both** rounds' findings entirely, even the one that didn't report
 a moved HEAD — a verdict computed from one reviewer's read of the old HEAD
@@ -617,7 +615,7 @@ Only reached when § 2 found at least one `blocking`/`important` finding.
 Before launching the fix sub-agent, post `automation:attempt-N` on the PR
 (N = 1 on the first round, incrementing each round — read whichever
 `automation:attempt-*` is already present the same way
-`address-feedback/SKILL.md` § "Attempt counter" does, so this number
+`project-conventions/address-feedback.md` § "Attempt counter" does, so this number
 survives a crash and resume exactly like R4's own counter does). **Never**
 post `automation:needs-fix` on this PR — that label is R4's own live
 routine trigger (`pull_request.labeled`, filter `automation:needs-fix`,
@@ -637,7 +635,7 @@ here instead of there).
 Otherwise, launch an `Agent` sub-agent with full tool access and a prompt
 built from: the issue, the PR, and `review-verdict.mjs`'s own `findings`
 array from § 2 (`blocking`/`important` only — the same filter
-`address-feedback/SKILL.md` step 2 already applies; already deduplicated
+`project-conventions/address-feedback.md` step 2 already applies; already deduplicated
 across the two reviewers and already excludes anything tagged
 `corpus: out`, so this skill passes it through as-is, never re-filtering it
 by hand). The `reviewers` attribution on each finding
@@ -646,7 +644,7 @@ by hand). The `reviewers` attribution on each finding
 that skill's procedure "as the coordinator's fix sub-agent" (unchanged
 otherwise: gather/prioritize/fix, never push on red, resolve fixed threads,
 publish the synthesis comment).
-The delta from a standalone R4 run, stated in `address-feedback/SKILL.md`
+The delta from a standalone R4 run, stated in `project-conventions/address-feedback.md`
 itself: no label claim (this skill already posted the attempt label above),
 and it reports its outcome (fixed / partially fixed / needs to escalate)
 back to this skill instead of posting `automation:attempt-N` or running the
@@ -665,7 +663,7 @@ Reached when a review round (§ 2, first pass or after a fix round) finds no
 `blocking`/`important` finding.
 
 1. Post `automation:review-pass` on the PR, clearing any
-   `automation:attempt-*` present (mirrors `pr-review/SKILL.md` § "Label the
+   `automation:attempt-*` present (mirrors `project-conventions/pr-review.md` § "Label the
    verdict" exactly — this is the one point in the loop where reusing R3's
    own label is correct and intended: it drives `review-status-sync.yml`,
    the only mechanism available to set the `claude/review` commit status,
@@ -674,7 +672,7 @@ Reached when a review round (§ 2, first pass or after a fix round) finds no
    round that converged — the two reviewers' combined, deduplicated,
    in-corpus findings, not either reviewer's alone.
 2. Re-check the risk category against the **final** diff (implementation
-   plus every fix round), the same whitelist `implement-task/SKILL.md` step
+   plus every fix round), the same whitelist `project-conventions/implement-task.md` step
    11 and `automation-plan.md` §5 use: post `automation:enabled` only if it
    still reads Faible end to end — a diff that grew to touch a serialized
    model, a port/adapter, `apps/scoreo/public/`, Vite/TS config, or
@@ -908,7 +906,7 @@ prose.
 
 ## Contrôles
 
-Every check `implement-task/SKILL.md` and `address-feedback/SKILL.md`
+Every check `project-conventions/implement-task.md` and `project-conventions/address-feedback.md`
 already require of their own step stays required here, unchanged, run by
 the sub-agent that does that step — this skill adds none of its own beyond
 the mechanical verdict rule (§ 2) and the label-boundary sequencing (§ 4).
@@ -925,14 +923,14 @@ instead of by a standalone R2/R4:
 
 1. **§ 1's implementation sub-agent stops** (ambiguous spec, unjustified
    out-of-scope edit, suite that stays red) — same condition as
-   `implement-task/SKILL.md` row #6.
+   `project-conventions/implement-task.md` row #6.
 2. **§ 2's `review-verdict.mjs` call returns `needs-human`** — one or both
    review sub-agents failed outright or returned no usable structured reply
    (#470, "un relecteur échoue ou ne rend rien"). Never computed from the
    reviewer that did answer; the escalation comment names exactly which
    reviewer(s) are missing (`missingReviewers`).
 3. **§ 3's fix loop stops without converging** — same conditions as
-   `address-feedback/SKILL.md` rows #19/#20 and § "Escalating to a human",
+   `project-conventions/address-feedback.md` rows #19/#20 and § "Escalating to a human",
    named in the escalation comment (step 5 below) as exactly one of three
    distinct motifs (issue #479 — never a generic "fix loop failed"):
    - **Tentatives épuisées** — `automation:attempt-3` was already present
@@ -942,10 +940,10 @@ instead of by a standalone R2/R4:
    - **Dérive de périmètre constatée par un relecteur** — either the fix
      sub-agent reports the review's finding(s) need a materially larger or
      differently-shaped change than the review anticipated (the scope
-     mismatch of `address-feedback/SKILL.md` step 4), or it reports two
+     mismatch of `project-conventions/address-feedback.md` step 4), or it reports two
      findings that directly conflict, or a single one too vague to act on
      without guessing the reviewer's intent (the contradiction/ambiguity
-     case of `address-feedback/SKILL.md` step 3) — in both cases the drift
+     case of `project-conventions/address-feedback.md` step 3) — in both cases the drift
      was flagged by a review sub-agent's finding, not discovered by the
      coordinator itself, and both are the same motif per
      `doc/automation/state-machine.md` § "Contradictory feedback" (a
@@ -954,7 +952,7 @@ instead of by a standalone R2/R4:
    - **Échec de validation après le budget d'itérations** — the full check
      suite (`pnpm lint && pnpm typecheck && pnpm test && pnpm build && pnpm
      test:e2e`) is still red after a fix round that used up the attempt
-     budget (`address-feedback/SKILL.md` step 5), distinct from the other
+     budget (`project-conventions/address-feedback.md` step 5), distinct from the other
      two: the code changed, but validation itself never turned green.
 4. **A review or fix sub-agent itself reports it cannot proceed** for a
    reason not covered above (e.g. it lost access to a tool mid-run) —

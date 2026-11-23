@@ -48,8 +48,15 @@ skills spécialistes, exécute leurs procédures et rend un résultat vérifiabl
    - évaluer un impact → `change-risk` ; audit site → `site-quality`
    - désaccord → `arbitrate` ; bilan → `weekly-report`
    - aucune correspondance → demander une précision à l'utilisateur.
-3. **Transmettre le contexte** : lire `.claude/skills/<skill>/SKILL.md` puis
+3. **Transmettre le contexte** : lire le `SKILL.md` du spécialiste puis
    `project-conventions` si écriture ; rassembler les objets lus à l'étape 1.
+   Les skills propres à Scoreo sont dans `.claude/skills/<skill>/SKILL.md`.
+   Les skills partagés (`issue-to-spec`, `implement-task`, `pr-review`,
+   `address-feedback`, `change-risk`, `test-strategy`, `site-quality`) sont
+   dans le dépôt `remhiit/skills`, fichier
+   `plugins/dev-workflow/skills/<skill>/SKILL.md`, et leur surcouche Scoreo
+   dans `.claude/skills/project-conventions/<skill>.md` de ce dépôt : lire les
+   deux, la surcouche gagne en cas de conflit.
 4. **Exécuter** la procédure du spécialiste (voir section suivante).
 5. **Récupérer et vérifier le résultat** contre les critères de réussite du skill.
 6. **Escalader** à l'utilisateur si : action destructive (merge, fermeture, suppression),

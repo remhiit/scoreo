@@ -291,7 +291,7 @@ zéro appel réseau — même précédent que le reste de ce contrat.
 ### `extractRiskLevel(issueBody)`
 
 Lit la section `## Catégorie de risque` du corps d'une issue — même format
-que `issue-to-spec/SKILL.md` produit, `**Faible**` ou `**Élevé**` en tête de
+que `project-conventions/issue-to-spec.md` produit, `**Faible**` ou `**Élevé**` en tête de
 section — et renvoie `{ level: 'low' | 'high', source }`. Section absente,
 vide, ou portant un libellé qui n'est ni l'un ni l'autre → `null`, jamais un
 niveau deviné : un appelant ne doit jamais traiter `null` comme `'low'` par

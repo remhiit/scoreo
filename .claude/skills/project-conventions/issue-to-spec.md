@@ -1,18 +1,19 @@
----
-name: issue-to-spec
-description: Turn a feature/fix description into a well-formed GitHub issue for the Scoreo repo — testable acceptance criteria, impacted files, out-of-scope, a risk category that later determines eligibility for the "automation:enabled" label, and a mandatory readiness verdict (READY_FOR_IMPLEMENTATION/NEEDS_CLARIFICATION) that states only whether the spec is complete, independent of dependency state. Use when the user describes a feature or correctif and says to plan/turn it into a ticket ("Plan", "crée une issue", "crée un ticket"). This is the R1 grooming step in doc/technical/automation-plan.md — always run interactively, never as an autonomous routine, on its own. Also invoked, procedure unchanged except for its own coordinator-sub-agent delta, as the coordinator's spec-completion sub-agent (`.claude/skills/coordinator/SKILL.md`, #506) — see the "As the coordinator's sub-agent" notes below for what that mode changes.
----
+# Scoreo overlay — `issue-to-spec`
 
-# Issue → Spec
+This file is Scoreo's overlay for the shared skill `dev-workflow:issue-to-spec`
+(plugin `dev-workflow` from the `remhiit/skills` marketplace). The shared
+skill reads it after `CLAUDE.md` and `project-conventions/SKILL.md`; where the
+two disagree, **this file wins**. It holds only what is specific to Scoreo:
+its paths and commands, and its automation pipeline (labels, routines R2–R5,
+the coordinator and its sub-agents, traceability). Everything generic lives in
+the shared skill, so an improvement made there reaches Scoreo unless this
+file overrides that point.
 
-## Objectif
-
-Converts a feature/fix description into one GitHub issue with a spec tight
-enough that `implement-task` can execute it without coming back to ask
-clarifying questions. This skill only produces the spec — it never
-implements it: `implement-task` (R2) takes over once the issue reaches
-`READY_FOR_IMPLEMENTATION`. See `project-conventions` for repo
-layering/backward-compat rules referenced below.
+Section titles keep the names they had when this skill lived in
+`.claude/skills/issue-to-spec/SKILL.md`, so a reference such as
+`issue-to-spec/SKILL.md` § "X" elsewhere in the repo now means § "X" of this file.
+Step numbers ("step 6") refer to the shared skill's procedure, which keeps the
+same numbering.
 
 ### As the coordinator's sub-agent
 
@@ -70,6 +71,7 @@ Everything else — the spec format itself, the risk-category rule, and the
 "one issue = one PR-sized change" principle applied to what's already on
 the issue — is unchanged from the interactive procedure below.
 
+
 ## Entrées requises
 
 The user's direct description of a feature or fix, given interactively.
@@ -91,7 +93,8 @@ ticket" principle). If the description covers more than one independent
 change, split it into multiple issues rather than writing one spec that spans
 several unrelated files.
 
-## Procédure
+
+## Procédure — Scoreo specifics
 
 ### Mockup first (features a player sees)
 
@@ -125,22 +128,13 @@ mockup — never build one in that mode. An issue that needs one and whose
 `NEEDS_CLARIFICATION`, its checklist item being « maquette à produire et à
 faire valider (doc/technical/design-workflow.md) ».
 
-### Spec format
 
-Write the issue body as:
+### Spec format — Scoreo additions
+
+Use the shared skill's format, in French, with one extra mandatory section
+right after `## Périmètre`:
 
 ```markdown
-## Contexte
-
-<Objectif utilisateur : pour qui, pourquoi ce changement, en 1-3 phrases.>
-
-## Périmètre
-
-<Ce que cette issue couvre explicitement — le pendant positif de « Hors
-scope » ci-dessous. Une phrase suffit si les critères d'acceptation rendent
-déjà le périmètre évident, mais la section doit exister : ne jamais laisser
-le lecteur déduire le périmètre par soustraction.>
-
 ## Maquette
 
 <Obligatoire. Pour une feature qui change ce que voit un joueur : le dossier
@@ -151,58 +145,11 @@ renvoient à ses écrans. Sinon : « Sans objet — <raison> » (libellé,
 correctif qui rétablit l'écran validé, logique sans effet visible, doc,
 outillage). Voir « Mockup first » ci-dessus.>
 
-## Critères d'acceptation
+```
 
-- [ ] <Testable, concrete statement — phrase it so a reviewer can check it
-      against a test, not against a feeling. "Le bouton archive affiche une
-      modale de confirmation" not "améliorer l'UX d'archivage".>
-- [ ] ...
-
-## Comportements d'erreur et cas limites
-
-- <Ce qui se passe sur une entrée invalide, un état vide, une limite
-  atteinte, etc. — un par cas limite identifié. S'il n'y en a réellement
-  aucun (ex. changement purement visuel), écris-le explicitement : « Aucun
-  cas limite identifié » plutôt que d'omettre la section.>
-
-## Stratégie de tests
-
-<La surface de test minimale que implement-task doit écrire en premier (cf.
-son étape 3 « Tests first ») : quelle couche (reducer/use case/composant),
-quel comportement chaque test doit vérifier. Pas les tests eux-mêmes — juste
-de quoi les écrire sans deviner.>
-
-## Fichiers impactés
-
-- `apps/scoreo/src/ui/<screen>/<screen>Reducer.ts` (+ test)
-- ... (be specific: reducer/use case/model/port/adapter/screen files, per
-  doc/reference.md's tables)
-
-## Hors scope
-
-- <What this issue deliberately does not cover, so implement-task doesn't
-  scope-creep.>
-
-## Risques et questions ouvertes
-
-- <Risques au-delà de la catégorie ci-dessous : migration de données,
-  dépendance externe fragile, ambiguïté de design non tranchée. Une question
-  ouverte encore présente ici bloque le verdict à `NEEDS_CLARIFICATION` —
-  résous-la avec l'utilisateur avant de créer l'issue plutôt que de la
-  documenter sans réponse. S'il n'y en a aucun : « Aucun risque ni question
-  ouverte identifié ».>
-
-## Catégorie de risque
-
-**Faible** | **Élevé** — <justification>
-
-## Verdict de readiness
-
-`READY_FOR_IMPLEMENTATION` | `NEEDS_CLARIFICATION` — voir « Determining the
-readiness verdict » ci-dessous pour la définition de chacun. Ce verdict
-n'affirme qu'une chose, la complétude de la spec : il ne dit rien de l'état
-de blocage par dépendance, porté ailleurs (label `blocked` + lien natif
-`blocked_by`, voir la section « Dépendances » ci-dessous).
+The `## Stratégie de tests` seed refers to `implement-task`'s step 4 "Tests
+first". `## Fichiers impactés` names files per `doc/reference.md`'s tables
+(e.g. `apps/scoreo/src/ui/<screen>/<screen>Reducer.ts` (+ test)).
 
 ## Traçabilité
 
@@ -261,6 +208,7 @@ elle-même — une telle mention ne détourne plus le parseur, mais reste
 trompeuse à la lecture. S'il existe plusieurs titres `## Dépendances` dans
 un même corps, seul le premier (de haut en bas) est pris en compte ; ne
 jamais en écrire plusieurs.
+
 
 ### Determining the risk category
 

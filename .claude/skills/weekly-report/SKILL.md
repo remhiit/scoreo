@@ -76,7 +76,7 @@ Count `automation:review-pass` vs `automation:needs-fix` for the window, via
 and the same for `label:automation:needs-fix`) or by reading PRs merged in the window
 and checking their final review label. **This is an approximation, not an
 exact count**: `automation:needs-fix` is cleared once a fix lands (per
-`address-feedback/SKILL.md`), so a PR that cycled through `automation:needs-fix` once
+`project-conventions/address-feedback.md`), so a PR that cycled through `automation:needs-fix` once
 before eventually passing shows up as `automation:review-pass` only — the search
 undercounts total review attempts, it does not undercount final outcomes.
 State the counts and the resulting `automation:needs-fix` rate (the plan's main

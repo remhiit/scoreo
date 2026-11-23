@@ -104,11 +104,11 @@ judges anything subjective (`automation-plan.md` §2 principle 2).
 
 | Component | Kind | Trigger | Implementation |
 |---|---|---|---|
-| R1 — grooming | Interactive only, never a routine | A human says "Plan"/"crée une issue" | `.claude/skills/issue-to-spec/SKILL.md` |
-| R2 — implementation | Versioned routine | `issues` `labeled`, filter `automation:ready` | `.claude/skills/implement-task/SKILL.md`. `.automation/routines.yml` currently declares this trigger against the coordinator instead (below) — `implement-task` still runs, as the coordinator's implementation sub-agent, not as its own directly-triggered routine, pending live activation of the coordinator (#469, `automation-plan.md` § "Le coordinateur") |
-| R3 — review | Versioned routine | `pull_request`, any action, filter `automation:needs-review` | `.claude/skills/pr-review/SKILL.md` — also invoked, unchanged, as **two** of the coordinator's isolated review sub-agents (#469/#470, § "The coordinator" below), one per disjoint corpus (functional/technical), same checklist split by corpus tag, no GitHub trigger of its own in that mode |
-| R4 — fix | Versioned routine | `pull_request` `labeled`, filter `automation:needs-fix` | `.claude/skills/address-feedback/SKILL.md` — also invoked as the coordinator's fix sub-agent (§ "The coordinator" below), same procedure, no GitHub trigger of its own in that mode |
-| R5 — hygiene | Versioned routine, scheduled | Cron, weekly (Monday 06:00 UTC) | `.claude/skills/site-quality/SKILL.md` |
+| R1 — grooming | Interactive only, never a routine | A human says "Plan"/"crée une issue" | `.claude/skills/project-conventions/issue-to-spec.md` |
+| R2 — implementation | Versioned routine | `issues` `labeled`, filter `automation:ready` | `.claude/skills/project-conventions/implement-task.md`. `.automation/routines.yml` currently declares this trigger against the coordinator instead (below) — `implement-task` still runs, as the coordinator's implementation sub-agent, not as its own directly-triggered routine, pending live activation of the coordinator (#469, `automation-plan.md` § "Le coordinateur") |
+| R3 — review | Versioned routine | `pull_request`, any action, filter `automation:needs-review` | `.claude/skills/project-conventions/pr-review.md` — also invoked, unchanged, as **two** of the coordinator's isolated review sub-agents (#469/#470, § "The coordinator" below), one per disjoint corpus (functional/technical), same checklist split by corpus tag, no GitHub trigger of its own in that mode |
+| R4 — fix | Versioned routine | `pull_request` `labeled`, filter `automation:needs-fix` | `.claude/skills/project-conventions/address-feedback.md` — also invoked as the coordinator's fix sub-agent (§ "The coordinator" below), same procedure, no GitHub trigger of its own in that mode |
+| R5 — hygiene | Versioned routine, scheduled | Cron, weekly (Monday 06:00 UTC) | `.claude/skills/project-conventions/site-quality.md` |
 | R6 — report | Versioned routine, scheduled (not yet created — Phase 6 rodage pending, see `automation-plan.md` §7) | Cron, weekly (planned) | `.claude/skills/weekly-report/SKILL.md` |
 | Coordinator | Versioned routine (declared; live activation pending — #469/#470) | `issues` `labeled`, filter `automation:ready` | `.claude/skills/coordinator/SKILL.md` — fuses R2/R3/R4 into one run, review split into two disjoint-corpus sub-agents of `pr-review` (functional/technical, #470), implementation and fix each a sub-agent of `implement-task`/`address-feedback`. See § "The coordinator" below |
 | `automation-dispatch.yml` (`scripts/automation-dispatch.mjs`) | Action | `issues`/`pull_request` `labeled` | Resolves and logs which routine/skill/entity/target_label matches the event, per the declarative mapping in `.automation/routines.yml` (documented by `schemas/automation/routines.schema.json`) — read-only, doesn't replace the routines' own triggers or any workflow below |
@@ -138,8 +138,8 @@ whether the transition fires without a human (**Auto**) or requires one
 
 | # | Entity | Current state | Event | Actor | Target state | Owner |
 |---|---|---|---|---|---|---|
-| 1 | Issue | No control label | R1 grooming session confirms the spec, readiness verdict `READY_FOR_IMPLEMENTATION` (`issue-to-spec/SKILL.md` § Determining the readiness verdict — a `NEEDS_CLARIFICATION` verdict never reaches this row, no issue is created until it clears), and `## Dépendances` cites no still-open blocker | R1 (human) | `P0`…`P3` + `automation:queued` (own calls, `automation:queued` last) | Human |
-| 1b | Issue | No control label | Same spec-complete `READY_FOR_IMPLEMENTATION` verdict, but `## Dépendances` cites at least one blocker still open — the verdict itself is unaffected by this (verdict and dependency state are independent, `issue-to-spec/SKILL.md` § Determining the readiness verdict); only the queue label changes | R1 (human) | `P0`…`P3` + `blocked` (own calls, `blocked` last) instead of `automation:queued` — row #10 promotes it to `automation:queued` once every native blocker closes | Human |
+| 1 | Issue | No control label | R1 grooming session confirms the spec, readiness verdict `READY_FOR_IMPLEMENTATION` (`project-conventions/issue-to-spec.md` § Determining the readiness verdict — a `NEEDS_CLARIFICATION` verdict never reaches this row, no issue is created until it clears), and `## Dépendances` cites no still-open blocker | R1 (human) | `P0`…`P3` + `automation:queued` (own calls, `automation:queued` last) | Human |
+| 1b | Issue | No control label | Same spec-complete `READY_FOR_IMPLEMENTATION` verdict, but `## Dépendances` cites at least one blocker still open — the verdict itself is unaffected by this (verdict and dependency state are independent, `project-conventions/issue-to-spec.md` § Determining the readiness verdict); only the queue label changes | R1 (human) | `P0`…`P3` + `blocked` (own calls, `blocked` last) instead of `automation:queued` — row #10 promotes it to `automation:queued` once every native blocker closes | Human |
 | 2 | Issue | `automation:queued` | Sweeper cron/trigger fires, nothing `automation:ready`/`automation:in-progress`, ≤2 PRs `automation:needs-review`, and the candidate carries no open native `blocked_by` dependency (`GET .../dependencies/blocked_by` — the `blocked` label itself is never read, #432) | `dispatch-ready.mjs` | `automation:ready` (highest priority, oldest first among candidates whose native dependencies are all closed) | Auto |
 | 3 | Issue | `automation:queued` | Sweeper fires but a slot is occupied, or the `automation:needs-review` backlog > 2 | `dispatch-ready.mjs` | `automation:queued` (no-op) | Auto |
 | 4 | Issue | `automation:ready` | `issues.labeled(automation:ready)` | R2 (`implement-task`) | `automation:in-progress`; readiness verdict re-checked (`READY_FOR_IMPLEMENTATION` or stop); deterministic branch (created or reused if a prior interrupted run left one); a short plan written before any change (files, tests planned, foreseeable risks); existing code searched before any new abstraction; code kept inside the issue's scope (a change-budget rule — an out-of-scope edit needs an explicit justification); tests; doc; PR opened with `Closes #N`, structured per `doc/automation/skill-contract.md` §2 (Statut/Résumé/Artefacts/Validations/Questions non résolues/Traçabilité, carrying the plan and validation results); commit trailers `Skill`/`Model`; `automation:enabled` posed only if risk stays Faible | Auto |
@@ -186,7 +186,7 @@ survives a full review (merge path), or the attempt cap is hit
   duplicate webhook delivery, or a sweeper requeue racing a run that's
   actually still in flight, can get two sessions past "claim the run" for
   the same commit (the class behind #94/#99). R3 closes that gap with its
-  own dedup check right after claiming (`pr-review/SKILL.md` §
+  own dedup check right after claiming (`project-conventions/pr-review.md` §
   "Skip a duplicate review", #379): it reads the PR's `pr-review` automation
   log (`automation-plan.md` § "Journal d'exécution idempotent") and, if that
   log's SHA already matches the current HEAD with a terminal status,
@@ -317,7 +317,7 @@ survives a full review (merge path), or the attempt cap is hit
 ### CI red
 
 `ci.yml`'s `lint`/`test`/`build`/`doc-links`/`e2e` jobs are explicitly out of
-`pr-review`'s checklist (`pr-review/SKILL.md` § Out of scope) — R3 judges
+`pr-review`'s checklist (`project-conventions/pr-review.md` § Out of scope) — R3 judges
 only what CI structurally cannot (spec conformance, architecture, backward
 compat, doc freshness, debt). This means **a red required check and a
 `automation:review-pass` verdict can coexist on the same commit**: R3
@@ -356,13 +356,13 @@ three tries, or that reveals a scope mismatch on the very first try
 indefinitely. There is no separate "conflict detection" step — three
 genuine attempts (or one attempt showing the ask is bigger than the review
 stated) is the operational definition of "this needs a human decision, not
-another guess." `address-feedback/SKILL.md` step 4 makes this explicit: a
+another guess." `project-conventions/address-feedback.md` step 4 makes this explicit: a
 fix requiring a materially larger change than the review anticipated is
 escalated immediately, on the same terms as exhausting the counter, instead
 of spending a further attempt guessing at unrequested scope.
 
 Since #380, this extends one level down, to individual feedback items
-rather than only to the PR as a whole: `address-feedback/SKILL.md` step 1
+rather than only to the PR as a whole: `project-conventions/address-feedback.md` step 1
 builds R4's worklist from `pr-review`'s submitted review (`pull_request_read`
 method `get_reviews` for the summary body, `get_review_comments` for its
 inline comments), filtered to the `blocking`/`important` findings (#379 —
@@ -388,7 +388,7 @@ escalates like any other item R4 can't safely finish.
 
 ### Incomplete issue
 
-`implement-task/SKILL.md` step 1 requires R2 to stop rather than guess scope
+`project-conventions/implement-task.md` step 1 requires R2 to stop rather than guess scope
 when the spec is ambiguous or missing acceptance criteria. As R2 (no human
 watching the session live), "stop" means: post a comment on the issue naming
 exactly what's missing, then release the claim taken in "Which issue" — in
@@ -536,7 +536,7 @@ of the other two causes in play), **dérive de périmètre constatée par un
 relecteur** (a fix sub-agent reports the review's finding needs a
 materially larger/differently-shaped change than anticipated, or reports
 two findings that directly conflict or one too vague to act on without
-guessing — per § "Contradictory feedback" above, `address-feedback/SKILL.md`
+guessing — per § "Contradictory feedback" above, `project-conventions/address-feedback.md`
 step 3's case is escalated on the same terms as step 4's scope mismatch,
 not as a fourth distinct motif), and **échec de validation après le budget
 d'itérations** (the full check suite is still red after a round that used

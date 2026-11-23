@@ -24,7 +24,7 @@ const RISK_SECTION_PATTERN = /(?:^|\n)##\s*Cat[ée]gorie de risque\b([\s\S]*?)(?
 const RISK_LABELS = { Faible: 'low', Élevé: 'high' }
 
 // Lit la section `## Catégorie de risque` du corps d'une issue (même format
-// que celui produit par `issue-to-spec/SKILL.md` : `**Faible**` ou
+// que celui produit par `project-conventions/issue-to-spec.md` : `**Faible**` ou
 // `**Élevé**` en tête de section, suivi d'une justification en prose) et la
 // distille en `{ level, source }`. Section absente, vide, ou portant un
 // libellé qui n'est ni « Faible » ni « Élevé » → `null`, jamais un niveau

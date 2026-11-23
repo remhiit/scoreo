@@ -1,17 +1,19 @@
----
-name: implement-task
-description: 'Implement one GitHub issue end-to-end for the Scoreo repo — branch, tests first, pnpm lint/typecheck/test/build green, visual check for UI changes, doc updates, PR referencing "Closes #N". Use when told to "développe" / implement a ticket. This is the R2 step in doc/technical/automation-plan.md — one run, one issue, never a batch. Also invoked, procedure unchanged, as the coordinator''s implementation sub-agent (`.claude/skills/coordinator/SKILL.md`, #469) — see the "As the coordinator''s sub-agent" notes below for the two deltas that mode requires.'
----
+# Scoreo overlay — `implement-task`
 
-# Implement Task
+This file is Scoreo's overlay for the shared skill `dev-workflow:implement-task`
+(plugin `dev-workflow` from the `remhiit/skills` marketplace). The shared
+skill reads it after `CLAUDE.md` and `project-conventions/SKILL.md`; where the
+two disagree, **this file wins**. It holds only what is specific to Scoreo:
+its paths and commands, and its automation pipeline (labels, routines R2–R5,
+the coordinator and its sub-agents, traceability). Everything generic lives in
+the shared skill, so an improvement made there reaches Scoreo unless this
+file overrides that point.
 
-## Objectif
-
-Executes a single GitHub issue's spec (written by `issue-to-spec`) as one
-branch, one commit, one PR. See `project-conventions` for the layering and
-backward-compat rules referenced throughout. This skill implements — it
-never reviews its own diff (that's `pr-review`/R3) and never merges its own
-PR (see Limites).
+Section titles keep the names they had when this skill lived in
+`.claude/skills/implement-task/SKILL.md`, so a reference such as
+`implement-task/SKILL.md` § "X" elsewhere in the repo now means § "X" of this file.
+Step numbers ("step 6") refer to the shared skill's procedure, which keeps the
+same numbering.
 
 ### As the coordinator's sub-agent
 
@@ -31,6 +33,7 @@ coordinator's responsibility to maintain (`coordinator/SKILL.md` § "Review
 output, since it has no direct channel to another sub-agent to withhold it
 from in the first place.
 
+
 ## Entrées requises
 
 This skill assumes the issue already carries, per `issue-to-spec/SKILL.md`'s
@@ -42,6 +45,7 @@ only prepares (`issue-to-spec/SKILL.md` § Determining the readiness verdict).
 A `## Dépendances` section, if present, is expected to cite only blockers
 already closed (a `blocked` label would mean otherwise — step 1's
 defense-in-depth check).
+
 
 ## Préconditions
 
@@ -120,7 +124,13 @@ If neither source is available, `<id>` is `inconnu` — never guessed — and
 the reason (e.g. "get_session indisponible") is stated alongside it in the
 same field/trailer.
 
-## Procédure
+
+## Procédure — Scoreo specifics
+
+The shared skill's steps apply; these are Scoreo's values and additions for
+the steps named.
+
+### Step 1 — readiness, blocking and the mockup
 
 1. **Read the spec fully** — context, acceptance criteria, impacted files,
    out-of-scope, and any `## Dépendances` section. Also read the
@@ -162,27 +172,18 @@ same field/trailer.
    predates the rule (issues groomed before 2026-11-06): proceed, and if the
    change is visible to a player, say in the PR that it was built without a
    validated mockup.
+
+### Step 2 — branch
+
 2. **Branch from the latest default branch**: `feat/<issue-number>-<slug>`
    (slug = a few kebab-case words from the title). If that branch already
    exists remotely (an interrupted earlier run on this same issue, caught by
    the duplicate-PR guard above finding no open PR yet), check it out and
    continue on it instead of creating a second, differently-slugged branch
    for the same issue.
-3. **Plan before touching code.** Once the branch is settled, write a short
-   plan covering: the files you expect to touch and the approach per file,
-   the tests you intend to write (which layer, which behavior each one
-   checks), and any risk or likely deviation from the spec you can already
-   foresee — in a handful of bullets, before making any change. Keep it;
-   it becomes the PR body's plan section in step 10. This isn't a separate
-   GitHub write, just the thinking made explicit before implementation
-   starts. If, once work is underway, the actual diff diverges materially
-   from this plan (different files, a different approach, a much larger
-   change), treat it like the scope-mismatch case in "Escalade" below rather
-   than silently continuing under a plan that no longer describes the work.
-4. **Tests first.** Write the test(s) that encode the acceptance criteria
-   before the implementation — colocated `*.test.ts(x)` next to the file
-   under test, per repo convention. They should fail before step 5 and pass
-   after.
+
+### Step 5 — layering
+
 5. **Implement**, respecting layering: Reducer in `ui/*/` (pure), Use Case in
    `application/` (zero framework dependency), Repository interface in
    `domain/port/`, implementation in `infrastructure/`. Before introducing a
@@ -199,6 +200,9 @@ same field/trailer.
    under "Questions non résolues" in step 10. Any new field on a
    serialized model gets a zod `.default()`; any removal/rename gets a
    migration entry in `doc/technical/migrations.md`.
+
+### Step 6 — verify green
+
 6. **Verify green**: `pnpm lint && pnpm typecheck && pnpm test && pnpm build
    && pnpm test:e2e` — all five, not a subset. This mirrors what `ci.yml`
    will run on the PR; catch failures here rather than in CI. Build before
@@ -212,6 +216,9 @@ same field/trailer.
    can't be made green after a reasonable effort, don't push a PR you know
    will be red: escalate per "Escalade" below instead of leaving the branch
    dangling or opening a PR that misrepresents its own state.
+
+### Step 7 — visual check
+
 7. **Visual check for UI changes.** If the issue touches a screen
    (`apps/scoreo/src/ui/*/`), start the dev server and exercise the actual flow in a
    browser — golden path and the edge cases named in the acceptance
@@ -222,12 +229,18 @@ same field/trailer.
    `apps/catalog/src/stories/`) — never shipped from `sketches/` — and the
    PR removes the mockup folder: the feature exists now, the mockup stays in
    git history.
+
+### Step 8 — docs
+
 8. **Update `doc/`** per `CLAUDE.md`'s Pre-commit Checklist: the matching
    `doc/reference.md` table row, `doc/functional/feature.md` or
    `doc/functional/features/*.md` for user-facing behavior,
    `doc/technical/migrations.md` for schema changes. A diff that adds a
    reducer/use case/model/port/adapter/screen without a matching doc update
    is not done yet.
+
+### Step 9 — commit
+
 9. **One commit.** Message = the issue's title (see `CLAUDE.md`'s good/bad
    commit examples — describe the *why*, not "Fix" or "Update"), plus two
    git trailers naming the skill and the model that actually executed this
@@ -236,6 +249,9 @@ same field/trailer.
    sub-agent, `Skill: implement-task` stays unchanged (this file's own
    procedure is what ran, unmodified in substance) even though the
    coordinator is what launched this sub-agent.
+
+### Step 10 — PR
+
 10. **Push and open a PR** with `Closes #N` in the body, structured per
     `doc/automation/skill-contract.md` §2's six fields:
     - **Statut** — `PR opened` (this step only runs once step 6 is
@@ -272,6 +288,9 @@ same field/trailer.
     reaches the Action non-draft already carries the guard. The coordinator, not
     this sub-agent, decides afterwards whether/when `automation:needs-review`
     ever applies to this PR.
+
+### Step 11 — `automation:enabled`
+
 11. **Label `automation:enabled`** only if the issue's spec marked risk as
     **Faible** *and* the actual diff still matches that (re-check: did this
     PR end up touching a serialized model, a port/adapter,
@@ -292,6 +311,7 @@ same field/trailer.
     pose `automation:enabled`, whatever the risk level.
 12. Move to the next `automation:ready` issue rather than batching multiple
     issues into one PR.
+
 
 ## Sorties obligatoires
 

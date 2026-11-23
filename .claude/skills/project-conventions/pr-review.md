@@ -1,18 +1,24 @@
----
-name: pr-review
-description: Review a Scoreo PR against its issue's spec — subjective checklist only (spec conformance, hexagonal architecture, zod backward-compat, doc freshness, debt introduced). Everything mechanical is already covered by ci.yml (lint/test/build/doc-links) — do not re-check those. Use when asked to review a PR in this repo, or as the R3 step in doc/technical/automation-plan.md. Also invoked, checklist unchanged, as one of the coordinator's two isolated review sub-agents (`.claude/skills/coordinator/SKILL.md`, #469/#470) — see "Context isolation (coordinator sub-agent only)" below, which now has a functional-corpus and a technical-corpus variant, for the hard rules that mode adds.
----
+# Scoreo overlay — `pr-review`
 
-# PR Review
+This file is Scoreo's overlay for the shared skill `dev-workflow:pr-review`
+(plugin `dev-workflow` from the `remhiit/skills` marketplace). The shared
+skill reads it after `CLAUDE.md` and `project-conventions/SKILL.md`; where the
+two disagree, **this file wins**. It holds only what is specific to Scoreo:
+its paths and commands, and its automation pipeline (labels, routines R2–R5,
+the coordinator and its sub-agents, traceability). Everything generic lives in
+the shared skill, so an improvement made there reaches Scoreo unless this
+file overrides that point.
 
-## Objectif
+Section titles keep the names they had when this skill lived in
+`.claude/skills/pr-review/SKILL.md`, so a reference such as
+`pr-review/SKILL.md` § "X" elsewhere in the repo now means § "X" of this file.
+Step numbers ("step 6") refer to the shared skill's procedure, which keeps the
+same numbering.
 
-Reviews what CI structurally cannot: whether the diff actually satisfies the
-issue it claims to close, and whether it's honest about the repo's
-architecture and backward-compat rules. See `project-conventions` for the
-rules this checklist is built on. This skill never re-checks what `ci.yml`
-already verifies mechanically (see "Out of scope" below), and it never fixes
-what it finds — that's `address-feedback`/R4's job.
+Step mapping for this skill: the original § 1 "Run the checklist" is the shared
+§ 1 "La grille"; § 2 "Classify every finding" is shared §§ 2–3; § 3 "Guard
+against a moved HEAD" is shared § 4; §§ 4–5 "Post the review" / "Label the
+verdict" are shared § 5.
 
 ## Entrées requises
 
@@ -65,6 +71,12 @@ the other reviewer's reply. There are two variants below; run exactly one,
 per the corpus named in the launch prompt.
 
 #### Functional corpus
+
+> Since the move to the shared `dev-workflow:pr-review` skill, every run
+> reads `project-conventions/SKILL.md` and this file to learn its procedure;
+> that is allowed for both corpora. What the functional corpus must not do is
+> use `project-conventions` § architecture/compatibilite or
+> `doc/technical/architecture.md` as evidence for a finding.
 
 This run's context is exactly: the issue's spec, the diff, and
 `doc/functional/`. Nothing else.
@@ -226,6 +238,7 @@ review" below) carries the model that actually ran it, `<id>` (e.g.
 If neither source is available, `<id>` is `inconnu` — never guessed — with
 the reason stated alongside it.
 
+
 ## Out of scope — don't re-check these
 
 `ci.yml` already runs `lint`, `test`, `build`, `doc-links` on every push. Redoing
@@ -233,9 +246,10 @@ that by eye wastes the review on things a machine already verified with
 certainty. If CI is red, that's a blocker on its own — no need to also
 narrate it here.
 
-## Procédure
 
-### 1. Run the checklist
+## Procédure — Scoreo specifics
+
+### 1. Run the checklist (Scoreo checklist with corpus tags)
 
 As R3 or interactively, run all six items. As one of the coordinator's two
 review sub-agents (#470), each item names the corpus it belongs to — run
@@ -286,32 +300,8 @@ finding formed on it anyway is out-of-corpus, see that same section).
    changes what a player sees on an issue whose `## Maquette` says « Sans
    objet » is worth a finding if the exemption no longer holds.
 
-### 2. Classify every finding
 
-Don't collapse the checklist into a binary conforms/doesn't-conform per
-item. For each issue actually found — whether it's one of the six
-checklist points above or something else noticed while reading the diff —
-record a **finding** with five parts:
-
-- a one-line **summary**;
-- a **severity** (below);
-- **evidence** — what in the diff or the spec actually establishes the
-  problem. Cite the file/line for a code-level finding. When the finding
-  isn't about a specific line — a missing behavior, a doc page nothing in
-  the diff touches, an acceptance criterion the diff never addresses — cite
-  the spec section or state the absence directly ("no file in this diff
-  touches X"); don't force a line reference onto a finding that isn't about
-  one.
-- **impact** — what actually goes wrong if this ships unfixed. A concrete
-  consequence (data loss on load, a broken flow, a `CLAUDE.md`/
-  `project-conventions` rule violated), not "this could be a problem".
-- **confidence** — `high`/`medium`/`low`, how sure the evidence above
-  actually establishes the problem. Independent of how serious the problem
-  would be if it does exist — see "Confidence and `uncertain` severity"
-  below for how the two interact.
-- a concrete **recommendation** (what to change, specific enough that
-  `address-feedback` or a human can act on it without re-deriving the spec
-  — never "consider improving X", say what X becomes).
+### 2. Classify every finding — Scoreo additions
 
 As one of the coordinator's two review sub-agents (#470), a sixth part is
 mandatory: **corpus**, `in` for a finding formed on this run's own
@@ -326,71 +316,6 @@ already catch isn't in scope — see "Out of scope" above; don't turn a
 stylistic nit CI already enforces into a finding. If the checklist turns up
 nothing, publish the review anyway with an explicit pass verdict (see
 "Post the review" below) — this template only applies to findings that
-exist, it's not a mandatory minimum count.
-
-Severity is one of:
-
-- **`blocking`** — must be fixed before merge: doesn't satisfy an
-  acceptance criterion, a reducer calling a repository directly, a missing
-  zod `.default()`, an undocumented field removal.
-- **`important`** — should be fixed, meaningfully weakens the change, but
-  isn't on its own a reason to hold the merge open indefinitely — a stale
-  doc page, real debt that isn't the happy-path shortcut kind.
-- **`suggestion`** — worth doing, no material downside to merging without
-  it (naming, a nearby refactor opportunity, a nice-to-have test).
-- **`uncertain`** — can't be resolved from the diff alone; needs a human's
-  judgment call rather than a guess in either direction.
-
-Don't soften a real `blocking`/`important` finding into a `suggestion` to
-avoid friction — a review that never says no isn't protecting anything (see
-`automation-plan.md`'s risk table: "Review sans mordant"). Symmetrically,
-don't inflate a `suggestion` to `blocking` to make a point — the whole
-reason for four levels instead of two is so R4 (and a human reading the
-review) can tell "must fix" from "worth knowing" at a glance.
-
-#### Confidence and `uncertain` severity — which one wins
-
-Confidence isn't a second severity axis and doesn't create a fifth
-outcome. It constrains which severity you're allowed to assign, before the
-finding is posted: **`blocking`/`important` requires at least `medium`
-confidence.** If the evidence doesn't get you that far — it's
-circumstantial, or the spec is genuinely ambiguous about whether this is
-even the intended behavior — the finding is `uncertain`, not "blocking with
-low confidence". `uncertain` is already the bucket for "can't be resolved
-from the diff alone, needs a human's judgment call" (above); a
-low-confidence blocking claim is exactly that case by definition, so it
-belongs there instead of staying `blocking`.
-
-A finding classified `blocking`/`important` must therefore never carry
-`confidence: low` — if you're about to post that combination, that's the
-signal to reclassify the finding as `uncertain`, not to post it as-is.
-
-This is why `address-feedback` doesn't need to read the confidence field at
-all: **severity alone stays the sole authority for what R4 acts on**
-(`blocking`/`important` → in scope; `suggestion`/`uncertain` → left alone —
-`address-feedback/SKILL.md` § Workflow, unchanged by this). Confidence is
-there for a human reading the review to judge how much weight to give a
-`suggestion` or `uncertain` finding; it never overrides severity, and R4
-never has to cross-check the two.
-
-#### Example finding
-
-```
-**blocking** — `PlayerScore.handicap` a un nouveau champ sans `.default()`
-zod.
-
-- Preuve : `apps/scoreo/src/domain/model/playerScore.schema.ts:34` déclare
-  `handicap: z.number()` sans `.default()`, et `git log` confirme que ce
-  champ est nouveau dans ce diff (absent de la version précédente du
-  schéma).
-- Impact : un `PlayerScore` sérialisé avant ce changement (localStorage
-  existant, import JSON v1.0) échoue au parse zod au chargement — perte
-  d'accès aux scores existants au premier lancement post-update.
-- Confiance : haute — la déclaration du schéma est sans ambiguïté possible
-  dans le diff.
-- Recommandation : ajouter `.default(0)` à la ligne 34, et documenter le
-  champ dans `doc/technical/migrations.md`.
-```
 
 The overall verdict follows directly from the findings, not a separate
 judgment call:
@@ -401,6 +326,7 @@ judgment call:
   them in the review so a human can act on them later if they choose to.
 - **`automation:needs-fix`** — at least one `blocking` or `important`
   finding.
+
 
 ### 3. Guard against a moved HEAD (R3 only, just before posting the review)
 

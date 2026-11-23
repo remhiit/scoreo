@@ -10,5 +10,16 @@
         ]
       }
     ]
+  },
+  "extraKnownMarketplaces": {
+    "remhiit-skills": {
+      "source": {
+        "source": "github",
+        "repo": "remhiit/skills"
+      }
+    }
+  },
+  "enabledPlugins": {
+    "dev-workflow@remhiit-skills": true
   }
 }
