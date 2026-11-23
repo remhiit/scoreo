@@ -26,7 +26,7 @@ function renderScreen(
       findGameTypeById={new FindGameTypeByIdUseCase(repo)}
       archiveGameType={new ArchiveGameTypeUseCase(repo)}
       mergeGameTypes={
-        new MergeGameTypesUseCase(repo, matchRepo, new InMemoryMatchDraftRepository())
+        new MergeGameTypesUseCase(repo, matchRepo, new InMemoryMatchDraftRepository(), findManifest)
       }
       getMatches={new GetMatchesUseCase(matchRepo)}
     />,
@@ -249,6 +249,17 @@ describe('GameTypeScreen', () => {
     expect(within(dialog).queryByText('Players')).not.toBeInTheDocument()
   })
 
+  it('shows the player range fields, filled, when editing a game whose module is gone', () => {
+    const repo = new InMemoryGameTypeRepository()
+    repo.save({ ...buildGameType('gt1', 'Old'), moduleId: 'gone-module', minPlayers: 3 })
+    renderScreen(repo)
+
+    fireEvent.click(screen.getByLabelText('Edit'))
+    const editDialog = screen.getByRole('dialog')
+    expect(within(editDialog).getByLabelText('Min. players')).toHaveValue('3')
+    expect(within(editDialog).getByLabelText('Max. players')).toHaveValue('')
+  })
+
   it('shows the player range fields when editing an ordinary game', () => {
     const repo = new InMemoryGameTypeRepository()
     repo.save(buildGameType('gt1', 'Chess'))
@@ -306,6 +317,7 @@ describe('GameTypeScreen', () => {
             repo,
             new InMemoryMatchRepository(),
             new InMemoryMatchDraftRepository(),
+            findManifest,
           )
         }
         getMatches={new GetMatchesUseCase(new InMemoryMatchRepository())}
@@ -377,7 +389,12 @@ describe('GameTypeScreen', () => {
         findGameTypeById={new FindGameTypeByIdUseCase(repo)}
         archiveGameType={new ArchiveGameTypeUseCase(repo)}
         mergeGameTypes={
-          new MergeGameTypesUseCase(repo, matchRepo, new InMemoryMatchDraftRepository())
+          new MergeGameTypesUseCase(
+            repo,
+            matchRepo,
+            new InMemoryMatchDraftRepository(),
+            findManifest,
+          )
         }
         getMatches={new GetMatchesUseCase(matchRepo)}
       />,

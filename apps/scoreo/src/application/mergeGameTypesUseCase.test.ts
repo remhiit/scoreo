@@ -1,3 +1,4 @@
+import type { ScoringModuleManifest } from '@scoreboards/module-api'
 import { describe, expect, it } from 'vitest'
 import type { GameType } from '../domain/model/gameType'
 import type { Match } from '../domain/model/match'
@@ -6,6 +7,21 @@ import { InMemoryMatchDraftRepository } from '../infrastructure/testing/inMemory
 import { InMemoryMatchRepository } from '../infrastructure/testing/inMemoryMatchRepository'
 import { ValidationError } from '../domain/model/errors'
 import { MergeGameTypesUseCase } from './mergeGameTypesUseCase'
+
+// Modules invented for these tests: the use case never reads the host's
+// registry. 'skyjo' and 'flip-7' are registered; any other id ('gone-module')
+// is a module no longer registered.
+const testManifest = (moduleId: string): ScoringModuleManifest => ({
+  moduleId,
+  displayName: moduleId,
+  gameNames: [moduleId],
+  winCondition: 'LOWEST_SCORE',
+  minPlayers: 2,
+  maxPlayers: 8,
+  dataVersion: 1,
+})
+const REGISTERED = new Map(['skyjo', 'flip-7'].map((id) => [id, testManifest(id)]))
+const findManifest = (moduleId: string) => REGISTERED.get(moduleId)
 
 function buildGameType(overrides: Partial<GameType> = {}): GameType {
   return {
@@ -53,7 +69,7 @@ function buildUseCase(
     gameTypeRepo,
     matchRepo,
     draftRepo,
-    useCase: new MergeGameTypesUseCase(gameTypeRepo, matchRepo, draftRepo),
+    useCase: new MergeGameTypesUseCase(gameTypeRepo, matchRepo, draftRepo, findManifest),
   }
 }
 
@@ -477,6 +493,137 @@ describe('MergeGameTypesUseCase', () => {
       second.matchRepo.save(buildMatch(twoPlayers(5, 3)))
       second.useCase.invoke('keep', ['dup'])
       expect(second.matchRepo.getAll()[0].gameTypeId).toBe('keep')
+    })
+
+    it('refuses a duplicate bound to a registered module into a game whose module is gone', () => {
+      const { matchRepo, useCase } = buildUseCase(
+        { moduleId: 'skyjo' },
+        { moduleId: 'gone-module' },
+      )
+      matchRepo.save(buildMatch())
+
+      expect(() => useCase.invoke('keep', ['dup'])).toThrow(ValidationError)
+      expect(matchRepo.getAll()[0].gameTypeId).toBe('dup')
+    })
+
+    it('refuses a duplicate whose module is gone into a game bound to another registered module', () => {
+      const { matchRepo, useCase } = buildUseCase(
+        { moduleId: 'gone-module' },
+        { moduleId: 'skyjo' },
+      )
+      matchRepo.save(buildMatch())
+
+      expect(() => useCase.invoke('keep', ['dup'])).toThrow(ValidationError)
+      expect(matchRepo.getAll()[0].gameTypeId).toBe('dup')
+    })
+  })
+
+  describe('a game whose module is no longer registered is an ordinary game', () => {
+    const moduleData = { moduleId: 'gone-module', version: 1, data: {} }
+    // Raw rounds 10/2, 1/8: 11/10 in points, 1/1 rounds won.
+    const twoRounds = {
+      playerScores: [
+        { playerId: 'a', score: 1 },
+        { playerId: 'b', score: 1 },
+      ],
+      rounds: [
+        [
+          { playerId: 'a', score: 10 },
+          { playerId: 'b', score: 2 },
+        ],
+        [
+          { playerId: 'a', score: 1 },
+          { playerId: 'b', score: 8 },
+        ],
+      ],
+    }
+    const scoresOf = (matchRepo: InMemoryMatchRepository, id: string) =>
+      matchRepo.findById(id)?.playerScores.map((ps) => ps.score)
+
+    it('folds an orphaned duplicate into an ordinary game, module matches keeping their scores', () => {
+      const { gameTypeRepo, matchRepo, useCase } = buildUseCase({ moduleId: 'gone-module' })
+      matchRepo.save(buildMatch({ id: 'm1', moduleData }))
+      matchRepo.save(buildMatch({ id: 'm2' }))
+
+      useCase.invoke('keep', ['dup'])
+
+      expect(matchRepo.getAll().map((m) => m.gameTypeId)).toEqual(['keep', 'keep'])
+      expect(matchRepo.findById('m1')).toMatchObject({ moduleData, playerScores: [{ score: 10 }] })
+      expect(gameTypeRepo.findById('dup')).toBeUndefined()
+      expect(gameTypeRepo.findById('keep')?.moduleId).toBeNull()
+    })
+
+    it('rescores the ordinary matches of an orphaned duplicate like any duplicate', () => {
+      // The orphan scores in points (domain rule), the kept game in rounds won.
+      const { matchRepo, useCase } = buildUseCase(
+        { moduleId: 'gone-module' },
+        { scoringMode: 'ROUNDS_WON' },
+      )
+      matchRepo.save(
+        buildMatch({
+          id: 'm1',
+          ...twoRounds,
+          playerScores: [
+            { playerId: 'a', score: 11 },
+            { playerId: 'b', score: 10 },
+          ],
+        }),
+      )
+      matchRepo.save(buildMatch({ id: 'm2', ...twoRounds, moduleData }))
+
+      useCase.invoke('keep', ['dup'])
+
+      expect(scoresOf(matchRepo, 'm1')).toEqual([1, 1])
+      expect(scoresOf(matchRepo, 'm2')).toEqual([1, 1])
+    })
+
+    it('keeps an orphaned game without the module guards, rescoring as into an ordinary game', () => {
+      // Rounds won without detail would be refused by a module game; and a
+      // match whose rounds don't add up would fail assertMatchConsistent.
+      const { gameTypeRepo, matchRepo, useCase } = buildUseCase(
+        { scoringMode: 'ROUNDS_WON' },
+        { moduleId: 'gone-module' },
+      )
+      matchRepo.save(buildMatch({ id: 'm1' }))
+      matchRepo.save(buildMatch({ id: 'm2', ...twoRounds }))
+
+      useCase.invoke('keep', ['dup'])
+
+      expect(matchRepo.getAll().map((m) => m.gameTypeId)).toEqual(['keep', 'keep'])
+      expect(scoresOf(matchRepo, 'm1')).toEqual([10])
+      expect(scoresOf(matchRepo, 'm2')).toEqual([11, 10])
+      expect(gameTypeRepo.findById('keep')?.moduleId).toBe('gone-module')
+    })
+
+    it('merges two orphaned games of the same module like two ordinary games', () => {
+      const { gameTypeRepo, matchRepo, useCase } = buildUseCase(
+        { moduleId: 'gone-module' },
+        { moduleId: 'gone-module' },
+      )
+      matchRepo.save(buildMatch({ moduleData }))
+
+      useCase.invoke('keep', ['dup'])
+
+      expect(matchRepo.getAll()[0].gameTypeId).toBe('keep')
+      expect(gameTypeRepo.findById('keep')?.moduleId).toBe('gone-module')
+    })
+
+    it('preview compares an orphaned game with the ordinary rules', () => {
+      const same = buildUseCase({ moduleId: 'gone-module' })
+      expect(same.useCase.preview('keep', ['dup']).rulesDiffer).toBe(false)
+
+      const differ = buildUseCase({ moduleId: 'gone-module' }, { winCondition: 'LOWEST_SCORE' })
+      expect(differ.useCase.preview('keep', ['dup']).rulesDiffer).toBe(true)
+    })
+
+    it('preview warns when a module match moves unconverted into a rounds-won game', () => {
+      const { matchRepo, useCase } = buildUseCase(
+        { moduleId: 'gone-module' },
+        { scoringMode: 'ROUNDS_WON' },
+      )
+      matchRepo.save(buildMatch({ moduleData }))
+
+      expect(useCase.preview('keep', ['dup']).rulesDiffer).toBe(true)
     })
   })
 })
