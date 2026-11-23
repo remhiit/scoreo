@@ -144,7 +144,7 @@ Routine at [claude.ai/code/routines](https://claude.ai/code/routines):
    dev-workflow:implement-task skill exactly (Scoreo overlay:
    .claude/skills/project-conventions/implement-task.md).
    ```
-3. **Repository**: `remhiit/scoreo`.
+3. **Repositories**: `remhiit/scoreo`, plus `remhiit/workflows` (read only: the shared skills, read from there when the account plugin is not loaded in the routine).
 4. **Trigger**:
    - GitHub event → Issue → **labeled**
    - Filter → **Labels is one of `automation:ready`**.
@@ -173,7 +173,7 @@ Routine at [claude.ai/code/routines](https://claude.ai/code/routines):
    dev-workflow:pr-review skill exactly (Scoreo overlay:
    .claude/skills/project-conventions/pr-review.md).
    ```
-3. **Repository**: `remhiit/scoreo`.
+3. **Repositories**: `remhiit/scoreo`, plus `remhiit/workflows` (read only: the shared skills, read from there when the account plugin is not loaded in the routine).
 4. **Trigger**:
    - GitHub event → Pull request → **all actions**
    - Filter → **Labels is one of `automation:needs-review`**.
@@ -201,7 +201,7 @@ The routine shell (name, prompt, `create_new_session_on_fire: true`) was created
    .claude/skills/project-conventions/address-feedback.md), starting
    with its attempt-counter step.
    ```
-3. **Repository**: `remhiit/scoreo`.
+3. **Repositories**: `remhiit/scoreo`, plus `remhiit/workflows` (read only: the shared skills, read from there when the account plugin is not loaded in the routine).
 4. **Trigger**:
    - GitHub event → Pull request → **labeled**
    - Filter → **Labels is one of `automation:needs-fix`**.
@@ -241,7 +241,7 @@ Runs `dev-workflow:site-quality` on a schedule: dependency updates, dead doc lin
 
 1. **Name**: `R5 — Hygiène hebdo (Scoreo)`.
 2. **Prompt**: a one-line pointer to the `dev-workflow:site-quality` skill (Scoreo overlay: `.claude/skills/project-conventions/site-quality.md`).
-3. **Repository**: `remhiit/scoreo`.
+3. **Repositories**: `remhiit/scoreo`, plus `remhiit/workflows` (read only: the shared skills, read from there when the account plugin is not loaded in the routine).
 4. **Trigger**: schedule, cron `0 6 * * 1` (every Monday 06:00 UTC).
 5. **Connectors**: leave at their default (GitHub MCP tools included); no extra network access needed.
 
