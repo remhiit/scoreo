@@ -84,7 +84,6 @@ deployed — Scoreo builds it into a chunk loaded the first time someone opens i
 ├── vitest.config.ts               # root project: only the scripts/ automation tests
 ├── lighthouserc.json              # asserts against apps/scoreo/dist/
 ├── doc/  schemas/  scripts/  .github/  .claude/    # doc/ is the repo's; a game's lives in its package
-├── ds_temp/scoreo-design/         # TEMPORARY: the Claude Design export the screens are being moved onto
 ├── .automation/                   # routines.yml: declarative label → routine → skill dispatch mapping
 ├── apps/
 │   └── scoreo/                    # the deployed PWA — composes packages/design-system, styles nothing itself
