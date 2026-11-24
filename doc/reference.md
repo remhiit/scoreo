@@ -189,7 +189,7 @@ Notable coverage that goes beyond a 1:1 port of business logic:
 
 ## CSS
 
-Design catalog: [`apps/catalog/`](technical/design-catalog.md) renders every design-system export by its real code, layer by layer; `apps/catalog/src/catalog.test.tsx` fails when an export has no story. Its Écrans page runs every screen of the router (`Screen['type']`), module screens included, with example data; the type checker refuses a new screen without its entry.
+Design catalog: [`apps/catalog/`](technical/design-catalog.md) renders every design-system export by its real code, layer by layer; `apps/catalog/src/catalog.test.tsx` fails when an export has no story. Its Écrans page runs every screen of the router (`Screen['type']`), module screens included, with example data; the type checker refuses a new screen without its entry. Its Pièces de jeu page shows every game piece a module exports from `src/design/index.ts`, under that module's `ModuleRoot` (the test fails on a piece without its sheet), and its Écran × composants page lists the design-system components each screen imports, and the reverse, computed at build time from the real imports (`apps/catalog/usagePlugin.ts`).
 
 Design system: [`packages/design-system/`](../packages/design-system/README.md) — tokens (`src/tokens/*.css`, Catppuccin, see Styling in `doc/technical/architecture.md`) and every atom → template the app composes; the app ships no CSS of its own (`eslint.config.js` forbids `className`, `style` and `lucide-react` imports anywhere in `apps/scoreo/src/`).
 

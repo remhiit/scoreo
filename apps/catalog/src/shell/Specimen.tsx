@@ -1,5 +1,5 @@
-import type { ReactNode } from 'react'
-import type { Story } from './types'
+import type { ComponentType, ReactNode } from 'react'
+import type { Piece } from './types'
 
 /** Renders `backticked` spans of a usage rule as code. */
 function withCode(text: string): ReactNode[] {
@@ -8,8 +8,17 @@ function withCode(text: string): ReactNode[] {
     .map((part, index) => (index % 2 === 1 ? <code key={index}>{part}</code> : part))
 }
 
-/** One story: its usage rule, then each variant in its frame. */
-export function Specimen({ story }: { story: Story }) {
+/**
+ * One story: its usage rule, then each variant in its frame — inside `Root`
+ * when given (a game piece under its module's root).
+ */
+export function Specimen({
+  story,
+  Root,
+}: {
+  story: Piece
+  Root?: ComponentType<{ children: ReactNode }>
+}) {
   return (
     <section className="cat-specimen" id={story.id} aria-labelledby={`${story.id}-title`}>
       <header className="cat-specimen__head">
@@ -31,7 +40,7 @@ export function Specimen({ story }: { story: Story }) {
           >
             <figcaption className="cat-variant__name">{variant.name}</figcaption>
             <div className={`cat-frame cat-frame--${variant.frame ?? 'inline'}`}>
-              {variant.render()}
+              {Root ? <Root>{variant.render()}</Root> : variant.render()}
             </div>
           </figure>
         ))}

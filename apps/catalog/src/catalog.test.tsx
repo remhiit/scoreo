@@ -1,24 +1,33 @@
 import { render } from '@testing-library/react'
-import * as DesignSystem from '@scoreboards/design-system'
 import { describe, expect, it } from 'vitest'
+import screenUsage from 'virtual:screen-usage'
+import { MODULE_PIECES } from './pieces'
 import { APP_SCREENS } from './screens'
+import { DESIGN_SYSTEM_COMPONENTS } from './shell/designSystemComponents'
 import { MOCKUPS } from './shell/mockups'
 import { STORIES } from './stories'
 import { LAYERS } from './shell/types'
 
+const COMPONENTS = DESIGN_SYSTEM_COMPONENTS
+
 /**
- * Every component the design system exports: a capitalised function, or a
- * capitalised React object (`memo`, `forwardRef`) — both render as `<Name />`.
+ * Every module's game pieces: what each module's `src/design/index.ts`
+ * exports, `ModuleRoot` aside (the scope, not a piece). A glob, not a list: a
+ * new module's pieces fall under the coverage guard from its first export.
  */
-const COMPONENTS = Object.entries(DesignSystem)
-  .filter(
-    ([name, value]) =>
-      /^[A-Z]/.test(name) &&
-      (typeof value === 'function' ||
-        (typeof value === 'object' && value !== null && '$$typeof' in value)),
-  )
-  .map(([name]) => name)
-  .sort()
+const MODULE_DESIGNS = Object.entries(
+  import.meta.glob<Record<string, unknown>>('../../../packages/module-*/src/design/index.ts', {
+    eager: true,
+  }),
+).map(([path, exports]) => ({
+  module: /packages\/(module-[^/]+)\//.exec(path)![1],
+  exports,
+  pieces: Object.entries(exports)
+    .filter(([name, value]) => /^[A-Z]/.test(name) && typeof value === 'function')
+    .map(([name]) => name)
+    .filter((name) => name !== 'ModuleRoot')
+    .sort(),
+}))
 
 const raw = (modules: Record<string, unknown>) => Object.entries(modules as Record<string, string>)
 
@@ -31,6 +40,7 @@ const raw = (modules: Record<string, unknown>) => Object.entries(modules as Reco
 const COMPOSING_SOURCES = raw({
   ...import.meta.glob('./stories/**/*.tsx', { query: '?raw', import: 'default', eager: true }),
   ...import.meta.glob('./screens/**/*.tsx', { query: '?raw', import: 'default', eager: true }),
+  ...import.meta.glob('./pieces/**/*.tsx', { query: '?raw', import: 'default', eager: true }),
   ...import.meta.glob(['./mockups/**/*.tsx', '!./mockups/*/sketches/**'], {
     query: '?raw',
     import: 'default',
@@ -137,5 +147,66 @@ describe('catalog', () => {
     expect(container.firstChild).not.toBeNull()
     // A module's screen arrives lazily: wait for its first button, not the fallback.
     expect((await findAllByRole('button')).length).toBeGreaterThan(0)
+  })
+
+  it('shows every game piece a module exports from src/design/', () => {
+    const missing = MODULE_DESIGNS.flatMap(({ module, pieces }) => {
+      const entry = MODULE_PIECES.find((candidate) => candidate.id === module)
+      const covered = new Set(entry?.pieces.flatMap((piece) => piece.covers) ?? [])
+      return pieces.filter((name) => !covered.has(name)).map((name) => `${module}: ${name}`)
+    })
+    expect(missing, 'add a piece under apps/catalog/src/pieces/ for each').toEqual([])
+  })
+
+  it('covers only pieces a module really exports, under its own ModuleRoot', () => {
+    for (const entry of MODULE_PIECES) {
+      const design = MODULE_DESIGNS.find(({ module }) => module === entry.id)
+      expect(design, entry.id).toBeDefined()
+      expect(entry.Root, entry.id).toBe(design!.exports.ModuleRoot)
+      const unknown = entry.pieces
+        .flatMap((piece) => piece.covers)
+        .filter((name) => !design!.pieces.includes(name))
+      expect(unknown, entry.id).toEqual([])
+    }
+  })
+
+  it('gives every piece a unique id, apart from the stories, and at least one variant', () => {
+    const ids = [...STORIES, ...MODULE_PIECES.flatMap((entry) => entry.pieces)].map((p) => p.id)
+    expect(new Set(ids).size).toBe(ids.length)
+    for (const piece of MODULE_PIECES.flatMap((entry) => entry.pieces))
+      expect(piece.variants.length, piece.id).toBeGreaterThan(0)
+  })
+
+  it.each(
+    MODULE_PIECES.flatMap((entry) =>
+      entry.pieces.flatMap((piece) =>
+        piece.variants.map(
+          (variant) => [entry.id, piece.id, variant.name, entry, variant] as const,
+        ),
+      ),
+    ),
+  )('renders %s piece %s — %s under its ModuleRoot', (module, _id, _name, entry, variant) => {
+    const { container } = render(<entry.Root>{variant.render()}</entry.Root>)
+    const root = container.querySelector(`.${module}`)
+    expect(root, `.${module}`).not.toBeNull()
+    expect(root!.textContent).not.toBe('')
+  })
+
+  it('indexes the shell, every screen folder of the app and every module screen', () => {
+    const ids = screenUsage.map((screen) => screen.id)
+    expect(ids).toContain('shell')
+    for (const id of [
+      'home',
+      'scoredetail',
+      'history',
+      'stats',
+      'halloffame',
+      'gametype',
+      'import',
+      'sync',
+    ])
+      expect(ids).toContain(id)
+    for (const { module } of MODULE_DESIGNS) expect(ids).toContain(module)
+    expect(screenUsage.find((screen) => screen.id === 'home')!.components).toContain('ActionBar')
   })
 })
