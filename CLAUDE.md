@@ -77,7 +77,6 @@ Lire ces fichiers dans l'ordre. Tout le contexte nécessaire y est :
 | `packages/module-*/doc/` | La doc d'un jeu vit dans le paquet de son module, à côté du code qui l'implémente : règles, guide, doc technique et ressources (le PDF des règles de 1000 Sabords, celui de Torī et ses scans de cartes). `doc/` à la racine ne garde que ce qui concerne le dépôt entier |
 | `packages/design-system/` | **Toute** décision visuelle de l'app : tokens Catppuccin, atomes → gabarits en composants React + CSS préfixé `sc-`. Voir son `README.md` |
 | `apps/catalog/` | Le catalogue vivant du design system : chaque composant rendu par son vrai code, couche par couche, dans les 4 thèmes. Sa page **Écrans** fait tourner les vrais écrans de l'app et des modules sur des données d'exemple (`src/screens/`, via l'export `scoreo/catalog`) : un écran du routeur sans trace n'y compile pas. Outil, jamais déployé ; un composant sans fiche y fait échouer `pnpm test`. Voir `doc/technical/design-catalog.md` |
-| `ds_temp/scoreo-design/` | Copie figée (30/09/2026) de l'export Claude Design vers lequel les écrans ont migré. La référence visuelle est désormais `apps/catalog/` ; dossier à supprimer |
 
 ## Workflow
 

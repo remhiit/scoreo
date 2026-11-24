@@ -4,9 +4,7 @@ The catalog (`apps/catalog/`) is the **living reference of the design system**: 
 atomic layer, every component of [`@scoreboards/design-system`](../../packages/design-system/README.md)
 rendered by its real code with example data, in any of the four Catppuccin flavors and fourteen
 accents; then the app's screens, the modules' game pieces and the screen × components index. Nothing
-in it is redrawn, so it cannot drift from what Scoreo ships — unlike the Claude Design export in
-`ds_temp/scoreo-design/`, a hand-made copy frozen on 2026-09-30, which it replaces as the visual
-reference.
+in it is redrawn, so it cannot drift from what Scoreo ships: it is the only visual reference.
 
 It is tooling, never deployed with Scoreo (`deploy.yml` builds `apps/scoreo` only).
 
