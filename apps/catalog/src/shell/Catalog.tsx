@@ -1,13 +1,16 @@
 import { useEffect, useState } from 'react'
 import { Chip, HUES, Swatch, type Hue } from '@scoreboards/design-system'
+import { MODULE_PIECES } from '../pieces'
 import { APP_SCREENS } from '../screens'
 import { STORIES } from '../stories'
 import { MockupSheet } from './MockupSheet'
 import { MOCKUPS } from './mockups'
+import { Pieces } from './Pieces'
 import { ScreenSheet } from './ScreenSheet'
 import { Specimen } from './Specimen'
 import { CatalogThemeContext, type CatalogTheme } from './theme'
 import { LAYERS, type LayerId } from './types'
+import { Usage } from './Usage'
 
 const FLAVORS = [
   { value: 'latte', label: 'Latte' },
@@ -46,11 +49,13 @@ function preferredFlavor(): Flavor {
   return window.matchMedia?.('(prefers-color-scheme: light)').matches ? 'latte' : 'mocha'
 }
 
-type Page = LayerId | 'overview' | 'ecrans' | 'maquettes'
+/** The pages past the atomic layers, in navigation order. */
+const EXTRA_PAGES = ['ecrans', 'pieces', 'index', 'maquettes'] as const
+type Page = LayerId | 'overview' | (typeof EXTRA_PAGES)[number]
 
 function layerFromHash(): Page {
   const hash = window.location.hash.replace('#', '')
-  if (hash === 'maquettes' || hash === 'ecrans') return hash
+  if ((EXTRA_PAGES as readonly string[]).includes(hash)) return hash as Page
   return LAYERS.some((layer) => layer.id === hash) ? (hash as LayerId) : 'overview'
 }
 
@@ -98,7 +103,7 @@ export function Catalog() {
   }
 
   const stories =
-    page === 'overview' || page === 'ecrans' || page === 'maquettes'
+    page === 'overview' || (EXTRA_PAGES as readonly string[]).includes(page)
       ? []
       : STORIES.filter((story) => story.layer === page)
   const current = LAYERS.find((layer) => layer.id === page)
@@ -168,6 +173,23 @@ export function Catalog() {
               <span className="cat-nav__count">{APP_SCREENS.length}</span>
             </a>
             <a
+              className="cat-nav__layer"
+              href="#pieces"
+              aria-current={page === 'pieces' ? 'page' : undefined}
+            >
+              <span className="cat-nav__number">06</span> Pièces de jeu
+              <span className="cat-nav__count">
+                {MODULE_PIECES.flatMap((entry) => entry.pieces).length}
+              </span>
+            </a>
+            <a
+              className="cat-nav__layer"
+              href="#index"
+              aria-current={page === 'index' ? 'page' : undefined}
+            >
+              <span className="cat-nav__number">07</span> Écran × composants
+            </a>
+            <a
               className="cat-nav__layer cat-nav__layer--mockups"
               href="#maquettes"
               aria-current={page === 'maquettes' ? 'page' : undefined}
@@ -182,6 +204,10 @@ export function Catalog() {
               <Overview />
             ) : page === 'ecrans' ? (
               <Screens />
+            ) : page === 'pieces' ? (
+              <Pieces />
+            ) : page === 'index' ? (
+              <Usage />
             ) : page === 'maquettes' ? (
               <Mockups />
             ) : (
@@ -249,6 +275,24 @@ function Overview() {
             <span className="cat-layer__number">05</span>
             <span className="cat-layer__title">Écrans</span>
             <span className="cat-layer__items">{APP_SCREENS.map((s) => s.title).join(' · ')}</span>
+          </a>
+        </li>
+        <li className="cat-layer">
+          <a href="#pieces" className="cat-layer__link">
+            <span className="cat-layer__number">06</span>
+            <span className="cat-layer__title">Pièces de jeu</span>
+            <span className="cat-layer__items">
+              {MODULE_PIECES.flatMap((entry) => entry.pieces.map((p) => p.title)).join(' · ')}
+            </span>
+          </a>
+        </li>
+        <li className="cat-layer">
+          <a href="#index" className="cat-layer__link">
+            <span className="cat-layer__number">07</span>
+            <span className="cat-layer__title">Écran × composants</span>
+            <span className="cat-layer__items">
+              Quels composants chaque écran importe, et l’inverse, calculé depuis le code
+            </span>
           </a>
         </li>
       </ol>

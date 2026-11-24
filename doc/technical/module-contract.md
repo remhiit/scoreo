@@ -359,6 +359,11 @@ the signal: it is promoted (renamed `sc-`, with its CSS and test, in the right a
 modules compose it from there. `src/design/` holds what is specific to one game, never a component
 waiting to be shared.
 
+**Every piece has its sheet in the catalog.** Each component a module's `src/design/index.ts` exports
+(its `ModuleRoot` aside) is shown on the design catalog's **Pièces de jeu** page, under that module's
+root; `apps/catalog/src/catalog.test.tsx` fails until a new piece has its entry in
+`apps/catalog/src/pieces/` ([`design-catalog.md`](design-catalog.md) § "Pièces de jeu").
+
 **The root wrapper is a game piece too.** The element carrying `.module-<moduleId>` sets a
 `className`, so it lives in `src/design/` (e.g.
 `src/design/ModuleRoot.tsx`, rendering `<div className="module-<moduleId>">{children}</div>`), and the

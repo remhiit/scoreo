@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import type { ComponentType, ReactNode } from 'react'
 
 /** The atomic layers, in the order the design system builds them. */
 export const LAYERS = [
@@ -75,4 +75,25 @@ export interface AppScreen {
   /** What the player does there, in one or two sentences. */
   summary: string
   states: Variant[]
+}
+
+/**
+ * A game piece: a component a module keeps in its own `src/design/` because
+ * the design system has none for it (a dice counter, a round grid). Shown like
+ * a story, under its module's root.
+ */
+export type Piece = Omit<Story, 'layer'>
+
+/**
+ * The game pieces of one module (`src/pieces/`). `catalog.test.tsx` fails when
+ * a piece its `src/design/index.ts` exports is covered by no entry.
+ */
+export interface PieceModule {
+  /** The package folder (`module-skyjo`), also the class its `ModuleRoot` scopes the pieces' CSS with. */
+  id: string
+  /** The game, as a player names it. */
+  title: string
+  /** The module's `ModuleRoot`: every variant renders inside it, so its scoped CSS applies. */
+  Root: ComponentType<{ children: ReactNode }>
+  pieces: Piece[]
 }
