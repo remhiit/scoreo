@@ -1,6 +1,6 @@
 ---
 name: site-quality
-description: Weekly hygiene pass on the Scoreo repo — dependency updates, dead doc links, Lighthouse score regressions, PWA manifest/service-worker validity. One PR per category, never a combined PR. Use for scheduled/weekly maintenance, or when asked to check for outdated deps, broken doc links, or Lighthouse regressions. This is the R5 step in doc/technical/automation-plan.md.
+description: Weekly hygiene pass on the Scoreo repo — dependency updates, dead doc links, Lighthouse score regressions, PWA manifest/service-worker validity. One PR per category, never a combined PR. Use for scheduled/weekly maintenance, or when asked to check for outdated deps, broken doc links, or Lighthouse regressions. This is the R5 step in doc/workflows/automation-plan.md.
 ---
 
 # Site Quality
@@ -25,9 +25,9 @@ builds its own worklist each run from live tooling output (`pnpm outdated`,
 ## Préconditions
 
 None GitHub-specific: this skill's trigger is a weekly cron
-(`doc/automation/state-machine.md` §3, R5), not a `labeled` event on a
+(`doc/workflows/state-machine.md` §3, R5), not a `labeled` event on a
 specific issue/PR, so it has neither a "which issue/PR" rule nor a "claim
-the run" step (`doc/automation/skill-contract.md` §1.4) — both apply only to
+the run" step (`doc/workflows/skill-contract.md` §1.4) — both apply only to
 label-triggered routines. Each of the four categories below is independent;
 running the same category twice in the same week should find nothing new to
 fix if the previous run's PR already merged.
@@ -85,7 +85,7 @@ corresponding reference.
 
 ## Traçabilité
 
-Per `doc/automation/skill-contract.md` § "Traçabilité" (#494): every PR this
+Per `doc/workflows/skill-contract.md` § "Traçabilité" (#494): every PR this
 skill opens (§ Procédure) carries a **Traçabilité** field in its body —
 `skill \`site-quality\`` + `modèle \`<id>\`` — alongside whatever else the
 PR description already says about the category fixed. This skill always
@@ -130,7 +130,7 @@ review/fix loop with a retry cap, and it has no triggering issue/PR to judge
 as ambiguous. When a category surfaces something outside its own scope (see
 "What this skill does not do" below), the response is to open a normal
 issue via `issue-to-spec`, not to escalate to `automation:needs-human` —
-there is no run to protect a backlog slot for (`doc/automation/
+there is no run to protect a backlog slot for (`doc/workflows/
 skill-contract.md` §3 is about a routine that owns an in-flight claim; this
 skill never claims one).
 
@@ -138,6 +138,6 @@ skill never claims one).
 
 It does not touch `apps/scoreo/public/`, `apps/scoreo/src/domain/model/`, ports/adapters, or
 navigation as part of a "quick fix" — those are the same categories excluded
-from the `automation:enabled` whitelist in `automation-plan.md` §5 for a reason. If a
+from the `automation:enabled` whitelist in `doc/workflows/automation-plan.md` §5 for a reason. If a
 hygiene pass surfaces something in those areas, open a normal issue via
 `issue-to-spec` instead of folding it into a hygiene PR.

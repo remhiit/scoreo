@@ -3,9 +3,9 @@
 // an unprefixed automation label (`queued`, `ready`, `in-progress`,
 // `needs-review`, `review-pass`, `needs-fix`, `needs-human`, `attempt-1/2/3`,
 // `auto`) to its `automation:`-prefixed equivalent — see
-// `doc/automation/state-machine.md` §2 for the full taxonomy. Run manually
+// `doc/workflows/state-machine.md` §2 for the full taxonomy. Run manually
 // by a repo admin, only after the code consuming the new names (workflows,
-// scripts, skills) is deployed (`automation-plan.md`'s "Stratégie de
+// scripts, skills) is deployed (`doc/workflows/automation-plan.md`'s "Stratégie de
 // bascule"). Not a workflow: no schedule, no GitHub trigger — `GH_TOKEN`/
 // `REPO_OWNER`/`REPO_NAME` supplied on the command line like the other
 // scripts here.
@@ -43,7 +43,7 @@ export const RENAME_TABLE = {
 const ATTEMPT_COUNTER_REGEX = /^automation:attempt-[123]$/
 // `automation:queued` is deliberately absent here: `automation:queued` +
 // `automation:needs-human` is a *valid* combination (issue #429, the
-// escalated-and-requeued state — see `doc/automation/state-machine.md`
+// escalated-and-requeued state — see `doc/workflows/state-machine.md`
 // §2/§6), so it must never be flagged as a conflict below.
 const QUEUE_OR_TRIGGER_LABELS = ['automation:ready', 'automation:needs-review', 'automation:needs-fix']
 
@@ -52,7 +52,7 @@ function effectiveLabel(label) {
 }
 
 // Détecte les combinaisons de labels que la migration ne doit jamais
-// résoudre elle-même (doc/automation/state-machine.md §2 « combinaisons
+// résoudre elle-même (doc/workflows/state-machine.md §2 « combinaisons
 // interdites »). Chaque état incompatible retourné bloque *tout* le
 // traitement de l'objet — voir migrateItem.
 export function detectConflicts(labelNames) {

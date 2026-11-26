@@ -199,7 +199,7 @@ Static assets in `apps/scoreo/public/`:
 
 `apps/scoreo/public/sw.js`'s `ASSETS` precache list only contains stable, non-hashed paths (`./`, `./index.html`) since Vite's JS/CSS bundle filenames — the design system's stylesheet included — are content-hashed. Its `fetch` handler only intercepts same-origin `GET` requests, split in two: hashed Vite assets (URL path containing `/assets/`) are served cache-first and populated in `CACHE_NAME` on first fetch (immutable — the hash guarantees freshness); everything else same-origin (navigations, `manifest.json`, icons) is served network-first with a cache fallback for offline, refreshing the cache on every successful network response so deployed changes reach existing users without a manual `CACHE_NAME` bump. `CACHE_NAME` is still bumped (`scoreo-v4`, when `./css/styles.css` left the shell) on breaking changes to the precached shell, purging the previous cache via the existing `activate` handler. That purge is scoped to `CACHE_PREFIX` — `CACHE_NAME` minus its trailing `-v<N>`, i.e. `scoreo-` — because the Cache Storage API is per origin, not per service-worker scope: the sibling PWAs deployed on the same `remhiit.github.io` origin (Torī Valley Scoreboard, 1000 Sabords) keep their own caches, which an unfiltered `keys()` sweep would delete. `apps/scoreo/vite.config.ts` sets `base: './'` so all root-relative hrefs are rewritten relative at build time, keeping the app deployable under any static-hosting subpath. `VITE_GOOGLE_CLIENT_ID` (consumed by `apps/scoreo/src/infrastructure/google/oauthConfig.ts`) is injected by Vite's native `import.meta.env` handling at build time.
 
-Vite copies `apps/scoreo/public/` to the production output (`apps/scoreo/dist/`) natively — see [`deployment.md`](deployment.md).
+Vite copies `apps/scoreo/public/` to the production output (`apps/scoreo/dist/`) natively — see [`doc/workflows/deployment.md`](../workflows/deployment.md).
 
 **Shared UI** (`apps/scoreo/src/ui/shared/`): app-level compositions of the design system reused by several screens — `GameTypeTabs` (Stats, Hall of Fame), `MergeSelectModal` (Home, Games), `LanguagePickerDialog`. Generic building blocks (buttons, fields, dialogs, list rows…) live in the design system, not here.
 
@@ -211,7 +211,7 @@ Vite copies `apps/scoreo/public/` to the production output (`apps/scoreo/dist/`)
 - **Sync and the raw repository**: `createServices` gives `SyncUseCase` the undecorated repository, so what Drive compares and uploads is unchanged.
 - **Cloud Sync**: Google Drive via `GoogleDriveSyncAdapter`. Stores a single `scoreo-data.json` in the invisible App Data Folder. Syncs players, game types, and matches. Drive API v3, `fetch()` + async/await, OAuth Token Model (GIS). See `SyncUseCase`, `apps/scoreo/src/ui/sync/syncReducer.ts`. Beyond the login-time `autoSync()`, every local mutation triggers a debounced push via `AutoSyncCoordinator`/`DataChangeNotifier` — see `doc/functional/features/sync.md`.
 
-See [`deployment.md`](deployment.md) for CI/CD and deployment details.
+See [`doc/workflows/deployment.md`](../workflows/deployment.md) for CI/CD and deployment details.
 
 ## Security
 

@@ -24,7 +24,7 @@ the reading order below.
 
 None. This skill is not GitHub-triggered and claims no label, so it has
 neither a "which issue/PR" rule nor a "claim the run" step
-(`doc/automation/skill-contract.md` §1.4) — both apply only to
+(`doc/workflows/skill-contract.md` §1.4) — both apply only to
 label-triggered routines.
 
 ## Procédure
@@ -77,7 +77,7 @@ Commandes section (`pnpm lint && pnpm typecheck && pnpm test && pnpm build
 
 Not applicable — this skill never runs as a standalone step with its own
 success/failure outcome, so it has no escalation path of its own. See
-`doc/automation/skill-contract.md` §3 for the shared conditions the calling
+`doc/workflows/skill-contract.md` §3 for the shared conditions the calling
 skill escalates under.
 
 ## Limites

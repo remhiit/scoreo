@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Garde-fous du risque élevé (issue #479, tranche 4/6 de l'épic #407 —
-// doc/technical/automation-plan.md §5). Garantit que le reste de
+// doc/workflows/automation-plan.md §5). Garantit que le reste de
 // l'activation progressive du routage par sous-agent (#476…#481) suppose
 // acquis : quel que soit le mode d'activation résolu pour une routine, un
 // changement à risque élevé ne peut jamais être fusionné automatiquement
@@ -18,7 +18,7 @@ import { extractRiskLevel } from './routing-dry-run.mjs'
 // scripts/routing-activation.mjs : deux valeurs fixes ne justifient pas
 // une dépendance croisée entre ces modules. Binaire à dessein : c'est la
 // catégorie Faible/Élevé d'issue-to-spec, distincte de l'échelle
-// low/medium/high de la skill change-risk (doc/technical/automation-plan.md
+// low/medium/high de la skill change-risk (doc/workflows/automation-plan.md
 // §5/§6, « les deux se recoupent... sans fusionner ») — extractRiskLevel
 // (scripts/routing-dry-run.mjs) ne produit jamais que 'low'/'high'/null.
 const RISK_LEVELS = ['low', 'high']

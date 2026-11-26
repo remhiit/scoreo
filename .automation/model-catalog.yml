@@ -1,10 +1,10 @@
 # Catalogue versionné des modèles disponibles pour le routage par sous-agent
-# (issue #400, option C tranchée en #423 — doc/technical/automation-plan.md
+# (issue #400, option C tranchée en #423 — doc/workflows/automation-plan.md
 # § « Routage par sous-agent »). Décrit d'abord les modèles de sous-agent
 # Claude Code utilisables par le futur skill coordinateur (#430) : `provider`
 # et `model` restent génériques pour qu'un fournisseur compatible OpenAI ou
 # local s'ajoute plus tard sans changer le schéma (voir
-# doc/automation/model-routing.md pour un exemple), mais aucun champ
+# doc/workflows/model-routing.md pour un exemple), mais aucun champ
 # d'endpoint/secret n'est nécessaire aujourd'hui — hors scope tant que le
 # routage reste interne aux sous-agents Claude Code.
 #

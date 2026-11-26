@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Fallback LLM de complexité, en second recours contrôlé derrière l'heuristique
 // déterministe (#402, scripts/complexity-assessment.mjs) — issue #403, spec
-// révisée après l'arbitrage de #423 (option C, doc/technical/automation-plan.md
+// révisée après l'arbitrage de #423 (option C, doc/workflows/automation-plan.md
 // § « Routage par sous-agent ») : ce n'est pas une Action appelant une API de
 // fournisseur, mais un sous-agent classifieur (.claude/agents/complexity-classifier.md)
 // lancé par le futur skill coordinateur (#430) — câblage hors scope ici (ce
@@ -62,7 +62,7 @@ const REQUIRED_LLM_RESPONSE_FIELDS = ['level', 'confidence', 'reasons', 'uncerta
 // et scripts/task-context.mjs#validateTaskContext. Une réponse non conforme
 // n'est jamais consommée par consolidateComplexity : c'est à l'appelant de
 // vérifier `valid` avant d'y toucher (même cas que la réponse absente ou le
-// classifieur indisponible — l'heuristique fait foi, voir doc/technical/automation-plan.md).
+// classifieur indisponible — l'heuristique fait foi, voir doc/workflows/automation-plan.md).
 export function validateLlmComplexityResponse(response) {
   const errors = []
   if (!response || typeof response !== 'object') {

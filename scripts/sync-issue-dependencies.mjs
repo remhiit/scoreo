@@ -44,7 +44,7 @@ async function api(method, path, body) {
 // unanchored match).
 // If several "## Dépendances" headings exist in the body, the FIRST one
 // (top to bottom) is authoritative; any later duplicate is ignored — this is
-// a deliberate, documented choice (doc/technical/automation-plan.md), not an
+// a deliberate, documented choice (doc/workflows/automation-plan.md), not an
 // accident of the regex.
 //
 // Returns `null` when no section is found (caller must not touch any link),

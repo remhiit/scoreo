@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft-07/schema#",
   "title": "Scoreo Automation Routing Policy",
-  "description": "Contrat de .automation/routing-policy.yml — politique de routage par sous-agent : routine × bande de complexité (.automation/complexity-thresholds.yml) → modèle candidat du catalogue (.automation/model-catalog.yml). Issue #400, option C tranchée en #423, doc/technical/automation-plan.md § « Routage par sous-agent ». Résoluble sans connaître un nom de fournisseur : seul le composant qui route (le futur skill coordinateur, #430) interprète cette politique. Documenté ici comme référence du contrat ; validé en pratique par le validateur écrit à la main scripts/automation-dispatch.mjs#validateRoutingPolicy (même précédent que schemas/automation/model-catalog.schema.json).",
+  "description": "Contrat de .automation/routing-policy.yml — politique de routage par sous-agent : routine × bande de complexité (.automation/complexity-thresholds.yml) → modèle candidat du catalogue (.automation/model-catalog.yml). Issue #400, option C tranchée en #423, doc/workflows/automation-plan.md § « Routage par sous-agent ». Résoluble sans connaître un nom de fournisseur : seul le composant qui route (le futur skill coordinateur, #430) interprète cette politique. Documenté ici comme référence du contrat ; validé en pratique par le validateur écrit à la main scripts/automation-dispatch.mjs#validateRoutingPolicy (même précédent que schemas/automation/model-catalog.schema.json).",
   "type": "object",
   "properties": {
     "version": {

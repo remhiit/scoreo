@@ -1,7 +1,7 @@
 # Design workflow — a mockup before the code
 
 A feature that changes what a player sees is **mocked up and validated before it is coded**. The
-mockup is built in the design catalog (`apps/catalog/`, see [`design-catalog.md`](design-catalog.md))
+mockup is built in the design catalog (`apps/catalog/`, see [`doc/workflows/design-catalog.md`](design-catalog.md))
 from the real design-system components, so what is validated is what can be built — and every
 design-system change the feature needs is named, and drafted, before the first line of the feature.
 

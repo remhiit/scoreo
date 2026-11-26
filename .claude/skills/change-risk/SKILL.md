@@ -1,6 +1,6 @@
 ---
 name: change-risk
-description: Assess a change's risk level (low/medium/high) from its spec and diff — detects which sensitive surfaces it touches (persistence/migrations, scoring rules, API/contracts, auth, secrets, configuration, deployment, concurrency, backward-compat), assigns a level with evidence, and states the mitigations that level requires (reinforced tests, human review, security review, architecture review, merge block). Not yet invoked by any routine (wiring it into implement-task/pr-review/site-quality is future work, out of scope of this file — see doc/technical/automation-plan.md §6); use it interactively, or as a step inside another skill's own procedure, whenever a spec or diff needs a risk read before or during implementation/review.
+description: Assess a change's risk level (low/medium/high) from its spec and diff — detects which sensitive surfaces it touches (persistence/migrations, scoring rules, API/contracts, auth, secrets, configuration, deployment, concurrency, backward-compat), assigns a level with evidence, and states the mitigations that level requires (reinforced tests, human review, security review, architecture review, merge block). Not yet invoked by any routine (wiring it into implement-task/pr-review/site-quality is future work, out of scope of this file — see doc/workflows/automation-plan.md §6); use it interactively, or as a step inside another skill's own procedure, whenever a spec or diff needs a risk read before or during implementation/review.
 ---
 
 # Change Risk
@@ -14,7 +14,7 @@ surfaces it touches and how), and the mitigations that level demands. It
 never blocks a merge or poses a GitHub label itself — that enforcement
 belongs to whichever skill calls this one (`implement-task`, `pr-review`,
 `site-quality`), once that wiring is done (out of scope of this file, see
-`doc/technical/automation-plan.md` §6); this skill only produces the
+`doc/workflows/automation-plan.md` §6); this skill only produces the
 judgment those callers would act on. It also never decides
 `issue-to-spec`'s own **Faible**/**Élevé** risk category — see
 § Articulation avec `issue-to-spec` below for how the two scales relate
@@ -38,7 +38,7 @@ without merging into one.
 Not GitHub-triggered on its own — invoked interactively or from inside
 another skill's procedure, never by a label event. It therefore has neither
 a "which issue/PR" rule nor a "claim the run" step
-(`doc/automation/skill-contract.md` §1.4): both apply only to label-triggered
+(`doc/workflows/skill-contract.md` §1.4): both apply only to label-triggered
 routines, and this skill is neither.
 
 Before scoring anything, check what's actually available:
@@ -150,7 +150,7 @@ différentes) mais se recoupent :
 - `issue-to-spec`'s **Faible**/**Élevé** est une décision binaire prise une
   fois, à la création de l'issue, sur la seule base des fichiers impactés
   *prévus* — elle gouverne l'éligibilité à `automation:enabled`
-  (`doc/technical/automation-plan.md` §5).
+  (`doc/workflows/automation-plan.md` §5).
 - Ce skill produit une évaluation à trois niveaux, faite sur le diff *réel*
   (ou la spec à défaut), enrichie de preuves et de mitigations — elle sert
   de guide de profondeur de validation à `implement-task`, `test-strategy`,
@@ -221,7 +221,7 @@ prête à être renvoyée à l'appelant.
 
 ## Escalade
 
-Per `doc/automation/skill-contract.md` §3, spécialisé à l'unique condition
+Per `doc/workflows/skill-contract.md` §3, spécialisé à l'unique condition
 d'arrêt possible pour ce skill (entrée ambiguë ou incomplète) : ni diff ni
 spec avec fichiers impactés disponibles (§ Préconditions). N'ayant pas de
 déclencheur GitHub propre, ce skill ne pose jamais lui-même

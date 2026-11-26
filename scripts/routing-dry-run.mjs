@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Chaîne, en observation ou en application selon la matrice d'activation,
 // les briques de routage déjà livrées (issue #406, spec révisée après
-// l'arbitrage de #423 — doc/technical/automation-plan.md § « Routage par
+// l'arbitrage de #423 — doc/workflows/automation-plan.md § « Routage par
 // sous-agent ») : TaskContext (#401) → ComplexityAssessment (#402) →
 // fallback LLM (#403) → RoutingDecision (#404) → matrice d'activation
 // (#476, scripts/routing-activation.mjs#resolveActivation). Fonctions

@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft-07/schema#",
   "title": "Scoreo Automation Model Catalog",
-  "description": "Contrat de .automation/model-catalog.yml — catalogue versionné des modèles disponibles pour le routage par sous-agent (issue #400, option C tranchée en #423, doc/technical/automation-plan.md § « Routage par sous-agent »). `provider`/`model` restent génériques (pas de format fixé à Anthropic) afin qu'un fournisseur compatible OpenAI ou local s'ajoute plus tard sans changer ce schéma ; aucun champ d'endpoint/secret n'est requis aujourd'hui, le routage restant interne aux sous-agents Claude Code. Documenté ici comme référence du contrat ; validé en pratique par le validateur écrit à la main scripts/automation-dispatch.mjs#validateModelCatalog (même précédent que schemas/automation/routines.schema.json).",
+  "description": "Contrat de .automation/model-catalog.yml — catalogue versionné des modèles disponibles pour le routage par sous-agent (issue #400, option C tranchée en #423, doc/workflows/automation-plan.md § « Routage par sous-agent »). `provider`/`model` restent génériques (pas de format fixé à Anthropic) afin qu'un fournisseur compatible OpenAI ou local s'ajoute plus tard sans changer ce schéma ; aucun champ d'endpoint/secret n'est requis aujourd'hui, le routage restant interne aux sous-agents Claude Code. Documenté ici comme référence du contrat ; validé en pratique par le validateur écrit à la main scripts/automation-dispatch.mjs#validateModelCatalog (même précédent que schemas/automation/routines.schema.json).",
   "type": "object",
   "properties": {
     "version": {

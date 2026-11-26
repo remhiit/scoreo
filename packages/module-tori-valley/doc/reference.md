@@ -47,7 +47,7 @@ Everything else — buttons, fields, panels, layout — is `@scoreboards/design-
 
 **Behaviour** (`pnpm test`) — colocated `*.test.ts(x)` next to the file they cover, running under Vitest + `jsdom`. Both screens have a component test on top of their reducer's pure-function tests, and `src/ui/module/ToriValleyModuleScreen.test.tsx` covers the module against a fake `ModuleHost`. `src/test/i18n.ts` builds the i18next instance they render against — in the app it is Scoreo's instance that receives `registerTranslations`.
 
-**Visual regression** — moved to the host with the standalone shell it needed: `apps/scoreo/tests/visual/toriModule.visual.spec.ts` photographs this module through Scoreo's `#/module/tori-valley/…` route, at a phone and a desktop width, in light and dark. Baselines and the procedure for re-recording them live with it — see the workspace's `doc/technical/visual-testing.md`.
+**Visual regression** — moved to the host with the standalone shell it needed: `apps/scoreo/tests/visual/toriModule.visual.spec.ts` photographs this module through Scoreo's `#/module/tori-valley/…` route, at a phone and a desktop width, in light and dark. Baselines and the procedure for re-recording them live with it — see the workspace's `doc/workflows/visual-testing.md`.
 
 ## localStorage Keys
 

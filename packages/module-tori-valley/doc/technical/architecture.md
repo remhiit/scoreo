@@ -28,7 +28,7 @@ Each screen owns a pure `(state, action) => state` reducer (`useReducer`), coloc
 Two suites, split by what they can actually observe:
 
 - **Behaviour** — Vitest + Testing Library under jsdom, colocated `*.test.ts(x)`. Fast, and the place for every reducer, use case, adapter and screen interaction. jsdom computes no layout, so it can assert what the DOM says but never what the user sees.
-- **Visual regression** — Playwright + Chromium, screenshotting the production build at a phone and a desktop viewport and diffing against committed PNG baselines. This is what catches a broken flex direction, a row that stops truncating, or an unreadable dark-mode token. It lives **in the host** now (`apps/scoreo/tests/visual/`) and photographs this module on Scoreo's own route: that is where players meet it, and the module's shell is gone. See the workspace's `doc/technical/visual-testing.md`.
+- **Visual regression** — Playwright + Chromium, screenshotting the production build at a phone and a desktop viewport and diffing against committed PNG baselines. This is what catches a broken flex direction, a row that stops truncating, or an unreadable dark-mode token. It lives **in the host** now (`apps/scoreo/tests/visual/`) and photographs this module on Scoreo's own route: that is where players meet it, and the module's shell is gone. See the workspace's `doc/workflows/visual-testing.md`.
 
 The two never overlap: the Playwright specs assert pixels only and contain no behavioural assertions.
 

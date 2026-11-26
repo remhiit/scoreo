@@ -2,7 +2,7 @@
 // Journal d'exécution idempotent pour les routines (R2/R3/R4/R5) : un unique
 // commentaire par routine sur une même issue/PR, retrouvé via un marqueur
 // HTML caché en première ligne, mis à jour à chaque relance plutôt que
-// dupliqué (doc/technical/automation-plan.md §4, "claim the run" — même
+// dupliqué (doc/workflows/automation-plan.md §4, "claim the run" — même
 // logique de non-spam appliquée ici aux commentaires plutôt qu'aux labels).
 // Écrit en script déterministe (zéro LLM, principe directeur §2.2) pour que
 // les Actions qui traduisent déjà un verdict de routine en signal GitHub
@@ -28,7 +28,7 @@ const ROUTINE_LABELS = {
   'address-feedback': 'Correctif',
   'site-quality': 'Hygiène',
   'weekly-report': 'Rapport',
-  // Rôles du coordinateur (#469, doc/technical/automation-plan.md §4 « Le
+  // Rôles du coordinateur (#469, doc/workflows/automation-plan.md §4 « Le
   // coordinateur ») — un marqueur distinct par rôle via le même mécanisme
   // `markerFor(routine)` que les autres routines ci-dessus. Le rôle review
   // réutilise directement le marqueur `pr-review` existant (même
@@ -36,7 +36,7 @@ const ROUTINE_LABELS = {
   'coordinator-implement': 'Coordinateur — implémentation',
   'coordinator-fix': 'Coordinateur — correctif',
   // Les deux relecteurs aux corpus disjoints (#470,
-  // doc/automation/state-machine.md §8) : un marqueur distinct par relecteur,
+  // doc/workflows/state-machine.md §8) : un marqueur distinct par relecteur,
   // pour que le journal d'une PR permette d'attribuer chaque finding à son
   // relecteur sans les mélanger dans une seule entrée.
   'coordinator-review-functional': 'Coordinateur — review fonctionnelle',
@@ -86,7 +86,7 @@ export function renderAutomationLog({
     // distinct de `routing` (décision théorique) ci-dessous — jamais gaté
     // par un `if`, contrairement aux blocs optionnels qui suivent : un
     // appelant qui ne fournit pas `executedBy` obtient `inconnu`/`inconnu`
-    // plutôt qu'une ligne manquante (doc/automation/skill-contract.md §2
+    // plutôt qu'une ligne manquante (doc/workflows/skill-contract.md §2
     // "Traçabilité" — donnée indisponible, jamais devinée).
     `- Exécuté par : skill \`${executedBy?.skill ?? 'inconnu'}\`, modèle \`${executedBy?.model ?? 'inconnu'}\``,
   ]
@@ -99,7 +99,7 @@ export function renderAutomationLog({
     lines.push(`  - Limites : ${executedBy.limits.join(' ; ')}`)
   }
   // Optional: links this decision back to the TaskContext artifact it was
-  // made from (issue #401, doc/technical/automation-plan.md §4) — absent for
+  // made from (issue #401, doc/workflows/automation-plan.md §4) — absent for
   // callers that don't build one yet, so existing journals stay unchanged.
   if (contextUrl) {
     lines.push(`- Contexte : [voir l'artefact](${contextUrl})`)
@@ -141,7 +141,7 @@ export function renderAutomationLog({
       )
     }
   }
-  // Optional: publie la RoutingDecision (issue #404, doc/automation/model-routing.md
+  // Optional: publie la RoutingDecision (issue #404, doc/workflows/model-routing.md
   // § Algorithme du routeur) — le modèle retenu, son origine et la chaîne de
   // fallback restante, jamais un choix silencieux. Absent pour les appelants
   // qui n'en produisent pas encore, comme complexity/contextUrl ci-dessus.
@@ -205,7 +205,7 @@ export function renderAutomationLog({
     }
   }
   // Optional: métriques d'un run du coordinateur (issue #469,
-  // doc/technical/automation-plan.md § « Le coordinateur »,
+  // doc/workflows/automation-plan.md § « Le coordinateur »,
   // acceptance criterion « collectées dès cette première version ») —
   // auto-déclarées par la session, pas mesurées par ce script. Absent pour
   // tout appelant qui n'en produit pas, comme les champs optionnels ci-dessus.
@@ -225,7 +225,7 @@ export function renderAutomationLog({
     }
   }
   // Optional: publie le RunMetrics d'un run (issue #477,
-  // doc/technical/automation-plan.md § « Métriques ») — le pendant structuré
+  // doc/workflows/automation-plan.md § « Métriques ») — le pendant structuré
   // et versionné de `metrics` ci-dessus, produit par
   // scripts/run-metrics.mjs#buildRunMetrics et déjà validé contre
   // schemas/automation/run-metrics.schema.json avant d'arriver ici (un
