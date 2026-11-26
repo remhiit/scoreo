@@ -103,7 +103,7 @@ jobs:
     runs-on: ubuntu-latest
     # Screenshot baselines are font-rendering-sensitive, so this job must run in
     # the very image the baselines were recorded in — see
-    # doc/technical/visual-testing.md.
+    # doc/workflows/visual-testing.md.
     # apps/scoreo/scripts/visual-in-container.sh runs the same image locally.
     container:
       image: mcr.microsoft.com/playwright:v1.65.1-noble

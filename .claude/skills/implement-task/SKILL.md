@@ -1,6 +1,6 @@
 ---
 name: implement-task
-description: 'Implement one GitHub issue end-to-end for the Scoreo repo — branch, tests first, pnpm lint/typecheck/test/build green, visual check for UI changes, doc updates, PR referencing "Closes #N". Use when told to "développe" / implement a ticket. This is the R2 step in doc/technical/automation-plan.md — one run, one issue, never a batch. Also invoked, procedure unchanged, as the coordinator''s implementation sub-agent (`.claude/skills/coordinator/SKILL.md`, #469) — see the "As the coordinator''s sub-agent" notes below for the two deltas that mode requires.'
+description: 'Implement one GitHub issue end-to-end for the Scoreo repo — branch, tests first, pnpm lint/typecheck/test/build green, visual check for UI changes, doc updates, PR referencing "Closes #N". Use when told to "développe" / implement a ticket. This is the R2 step in doc/workflows/automation-plan.md — one run, one issue, never a batch. Also invoked, procedure unchanged, as the coordinator''s implementation sub-agent (`.claude/skills/coordinator/SKILL.md`, #469) — see the "As the coordinator''s sub-agent" notes below for the two deltas that mode requires.'
 ---
 
 # Implement Task
@@ -91,13 +91,13 @@ actionable (see "Which issue" above): never open a second PR for the same
 issue. Only a PR that's closed without merging (abandoned) doesn't count —
 proceed normally in that case.
 
-This is the guard behind `doc/automation/state-machine.md` row #5: "not
+This is the guard behind `doc/workflows/state-machine.md` row #5: "not
 actionable" now explicitly includes "already has an open linked PR", not
 just "already claimed, closed".
 
 ## Traçabilité
 
-Per `doc/automation/skill-contract.md` § "Traçabilité" (#494): step 9's
+Per `doc/workflows/skill-contract.md` § "Traçabilité" (#494): step 9's
 commit trailers and step 10's PR field both need the model that actually
 executed this run, `<id>` (e.g. `claude-sonnet-5`, never the marketing
 name).
@@ -148,11 +148,11 @@ same field/trailer.
    `automation:in-progress` with no PR and no comment. Releasing the claim
    before posing the other two labels would race the hourly requeue sweep
    into re-dispatching the issue before `automation:needs-human` protects it
-   (`doc/automation/state-machine.md` §6 "Escalation frees its slot"), which
-   is exactly why "Escalade" fixes the order. See `doc/automation/
+   (`doc/workflows/state-machine.md` §6 "Escalation frees its slot"), which
+   is exactly why "Escalade" fixes the order. See `doc/workflows/
    state-machine.md` § Incomplete issue.
 
-   **The mockup** (`doc/technical/design-workflow.md`). When the spec's
+   **The mockup** (`doc/workflows/design-workflow.md`). When the spec's
    `## Maquette` section names a mockup, read its folder
    (`apps/catalog/src/mockups/<feature>/`) on the default branch before
    planning: its screens are the target, its `designSystemChanges` and
@@ -237,7 +237,7 @@ same field/trailer.
    procedure is what ran, unmodified in substance) even though the
    coordinator is what launched this sub-agent.
 10. **Push and open a PR** with `Closes #N` in the body, structured per
-    `doc/automation/skill-contract.md` §2's six fields:
+    `doc/workflows/skill-contract.md` §2's six fields:
     - **Statut** — `PR opened` (this step only runs once step 6 is
       actually green; the ambiguous/red-suite escalation path never reaches
       here — see "Escalade" below).
@@ -303,7 +303,7 @@ below):
   (step 9).
 - `doc/` updated per `CLAUDE.md`'s Pre-commit Checklist (step 8).
 - One PR, `Closes #N` in the body, structured per the six fields of
-  `doc/automation/skill-contract.md` §2 (step 10) — this is this skill's
+  `doc/workflows/skill-contract.md` §2 (step 10) — this is this skill's
   instance of that structured output format.
 - `automation:enabled` posed only when risk stays Faible end to end
   (step 11).
@@ -317,7 +317,7 @@ these green does not open a PR (see Escalade).
 
 ## Escalade
 
-Per `doc/automation/skill-contract.md` §3. This skill's own instances of
+Per `doc/workflows/skill-contract.md` §3. This skill's own instances of
 those conditions:
 
 1. **Ambiguous or incomplete input** — step 1: missing/non-
@@ -337,7 +337,7 @@ issue with no review/fix loop to contradict or cap (that loop is R3/R4's,
 on the PR this step opens).
 
 Every one of these follows the same sequence as R2's escalation
-(`doc/automation/state-machine.md` row #6, § Incomplete issue): post a
+(`doc/workflows/state-machine.md` row #6, § Incomplete issue): post a
 comment on the issue naming exactly what's blocking, then release the claim
 in this exact order — add `automation:needs-human`, add `automation:queued`,
 only then remove `automation:in-progress`. Never leave the issue silently

@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft-07/schema#",
   "title": "Scoreo Automation ComplexityAssessment",
-  "description": "Contrat du ComplexityAssessment produit pour une issue ou une PR (issue #402, doc/technical/automation-plan.md §4) : un niveau de complexité explicable (effort de raisonnement/mise en œuvre), distinct du niveau de risque de change-risk (#387, gravité potentielle d'une erreur) qu'il ne remplace ni ne masque. Documenté ici comme référence du contrat ; validé en pratique par le validateur écrit à la main scripts/complexity-assessment.mjs#validateComplexityAssessment (même précédent que schemas/automation/task-context.schema.json et schemas/automation/routines.schema.json).",
+  "description": "Contrat du ComplexityAssessment produit pour une issue ou une PR (issue #402, doc/workflows/automation-plan.md §4) : un niveau de complexité explicable (effort de raisonnement/mise en œuvre), distinct du niveau de risque de change-risk (#387, gravité potentielle d'une erreur) qu'il ne remplace ni ne masque. Documenté ici comme référence du contrat ; validé en pratique par le validateur écrit à la main scripts/complexity-assessment.mjs#validateComplexityAssessment (même précédent que schemas/automation/task-context.schema.json et schemas/automation/routines.schema.json).",
   "type": "object",
   "properties": {
     "version": {

@@ -1,6 +1,6 @@
 ---
 name: address-feedback
-description: Fix exactly what's actually actionable in a Scoreo PR's outstanding feedback — nothing broader, nothing already handled. Use when addressing review comments or CI failures on an open PR here. This is the R4 step in doc/technical/automation-plan.md. Also invoked, procedure unchanged, as the coordinator's fix sub-agent (`.claude/skills/coordinator/SKILL.md`, #469) — see the "As the coordinator's sub-agent" notes below for the deltas that mode requires.
+description: Fix exactly what's actually actionable in a Scoreo PR's outstanding feedback — nothing broader, nothing already handled. Use when addressing review comments or CI failures on an open PR here. This is the R4 step in doc/workflows/automation-plan.md. Also invoked, procedure unchanged, as the coordinator's fix sub-agent (`.claude/skills/coordinator/SKILL.md`, #469) — see the "As the coordinator's sub-agent" notes below for the deltas that mode requires.
 ---
 
 # Address Feedback
@@ -89,7 +89,7 @@ launching this sub-agent — nothing for this step to claim or remove.
 
 ### Attempt counter
 
-`automation-plan.md` caps autonomous fix attempts at 3 per recurring
+`doc/workflows/automation-plan.md` caps autonomous fix attempts at 3 per recurring
 `automation:needs-fix` cycle. Using the labels read in "Claim the run"
 above (before they were removed):
 
@@ -124,7 +124,7 @@ just because a human happened to invoke the skill this time.
 
 ## Traçabilité
 
-Per `doc/automation/skill-contract.md` § "Traçabilité" (#494): step 8's
+Per `doc/workflows/skill-contract.md` § "Traçabilité" (#494): step 8's
 synthesis carries the model that actually ran this fix, `<id>` (e.g.
 `claude-sonnet-5`, never the marketing name).
 
@@ -147,7 +147,7 @@ the reason stated alongside it.
 
 ## Escalade
 
-Per `doc/automation/skill-contract.md` §3, specialized to this skill's own
+Per `doc/workflows/skill-contract.md` §3, specialized to this skill's own
 stop conditions — the attempt cap in "Attempt counter" above, and steps
 3/4/5 of the Procédure below. As R4 (no human watching the session live),
 escalating means the sequence below, not asking in a session.
@@ -158,7 +158,7 @@ Every path in this skill that ends in `automation:needs-human` — the
 attempt cap above, and steps 3/4/5 of the workflow below — follows the same
 sequence (issue #429). It is not enough to label the PR: the issue's own
 `automation:in-progress`, held since R2 claimed it
-(`doc/automation/state-machine.md` §1), is what
+(`doc/workflows/state-machine.md` §1), is what
 `dispatch-ready.mjs`'s `MAX_IN_FLIGHT` counts as "in flight" — leaving it in
 place freezes the entire backlog behind this one PR, not just this PR.
 
@@ -175,7 +175,7 @@ place freezes the entire backlog behind this one PR, not just this PR.
    the same pass — if `automation:queued` isn't posed yet, or was posed
    before `automation:needs-human`, that window could let the dispatcher
    promote the issue straight back to `automation:ready`, undoing the
-   escalation (`doc/automation/state-machine.md` §6, "Escalation frees its
+   escalation (`doc/workflows/state-machine.md` §6, "Escalation frees its
    slot").
 4. Post the synthesis (workflow step 8) naming precisely what's wrong —
    this is what a human reads instead of reconstructing the loop from label
@@ -249,7 +249,7 @@ regardless of which component performed the label sequence). The coordinator
    items, and escalate. **As R4**: escalate as described in "Escalating to a
    human" above, with the synthesis (step 8) naming precisely which items
    conflict or are unclear and why — leave their threads unresolved so a
-   human finds them in place. See `doc/automation/state-machine.md` §
+   human finds them in place. See `doc/workflows/state-machine.md` §
    Contradictory feedback.
 4. **Fix only the prioritized, unambiguous list.** If a fix reveals it can't
    be done without a larger change than the review anticipated, stop and
@@ -323,7 +323,7 @@ regardless of which component performed the label sequence). The coordinator
    This replaces narrating each individual comment inline — the synthesis is
    the one place a human (or the next run) looks for what happened, and the
    diff plus resolved threads are the record of *how*. This synthesis is
-   this skill's instance of `doc/automation/skill-contract.md` §2's
+   this skill's instance of `doc/workflows/skill-contract.md` §2's
    structured output (Statut = clean/partial/escalated; Résumé =
    `✅ Corrigé`; Questions non résolues = `⚠️ Arbitrage requis`; Traçabilité =
    the bullet above).

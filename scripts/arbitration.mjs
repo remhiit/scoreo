@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Contrat d'arbitrage (issue #497, tranche 1/5 de l'épic #496 — doc/
-// technical/automation-plan.md §2, amendement du principe directeur).
+// workflows/automation-plan.md §2, amendement du principe directeur).
 // Avant cette tranche, chacune des six conditions d'escalade du
 // coordinateur (`.claude/skills/coordinator/SKILL.md` § Escalade) mène
 // directement à `automation:needs-human`. #496 insère une étape d'arbitrage
@@ -29,7 +29,7 @@
 // `.claude/skills/coordinator/SKILL.md` § Arbitrage. La matrice
 // `arbitration` de .automation/routing-policy.yml n'est plus entièrement en
 // "observe" : le triplet `derive-vs-review` × risque `low` × verdict
-// `resolve` est passé en "apply" (doc/automation/model-routing.md §
+// `resolve` est passé en "apply" (doc/workflows/model-routing.md §
 // « Triplet actuellement en mode apply »), le seul défendable à ce stade —
 // tous les autres motifs restent en "observe".
 import { normalizeFindingSummary } from './review-verdict.mjs'
@@ -66,7 +66,7 @@ const EXPERT_MOTIFS = ['tentatives-epuisees', 'derive-vs-review', 'validation-ro
 // (#2 relecteur manquant, #4 sous-agent hors service, #5 routage sans
 // candidat, #6 budget dépassé, row #25 possession périmée du state-machine)
 // restent des escalades directes, jamais arbitrées (doc/technical/
-// automation-plan.md, épique #496, tableau « Ce que l'arbitre peut arbitrer
+// doc/workflows/automation-plan.md, épique #496, tableau « Ce que l'arbitre peut arbitrer
 // — et ce qu'il ne peut pas »).
 export const ARBITRABLE_MOTIFS = [...LEAD_MOTIFS, ...EXPERT_MOTIFS]
 

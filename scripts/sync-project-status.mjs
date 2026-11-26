@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Mirrors each issue/PR's label state onto the GitHub Project "Status" field.
-// Labels are the source of truth (doc/technical/automation-plan.md §2.4) — this
+// Labels are the source of truth (doc/workflows/automation-plan.md §2.4) — this
 // is a one-way sync, never the reverse. A closed item overrides its labels:
 // completed (issue `state_reason`, or a merged PR) always reads as "Done".
 // Two modes:

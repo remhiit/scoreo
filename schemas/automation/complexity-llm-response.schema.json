@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft-07/schema#",
   "title": "Scoreo Automation ComplexityLlmResponse",
-  "description": "Contrat de la réponse du sous-agent classifieur de complexité (issue #403, doc/technical/automation-plan.md §4 « Fallback LLM de complexité »). Consommée uniquement après validation stricte par scripts/complexity-llm.mjs#validateLlmComplexityResponse — jamais partiellement, jamais sans passer ce schéma — puis fusionnée avec le ComplexityAssessment heuristique (#402) par scripts/complexity-llm.mjs#consolidateComplexity. Documentée ici comme référence du contrat ; validée en pratique par le validateur écrit à la main (même précédent que schemas/automation/complexity-assessment.schema.json).",
+  "description": "Contrat de la réponse du sous-agent classifieur de complexité (issue #403, doc/workflows/automation-plan.md §4 « Fallback LLM de complexité »). Consommée uniquement après validation stricte par scripts/complexity-llm.mjs#validateLlmComplexityResponse — jamais partiellement, jamais sans passer ce schéma — puis fusionnée avec le ComplexityAssessment heuristique (#402) par scripts/complexity-llm.mjs#consolidateComplexity. Documentée ici comme référence du contrat ; validée en pratique par le validateur écrit à la main (même précédent que schemas/automation/complexity-assessment.schema.json).",
   "type": "object",
   "properties": {
     "level": {

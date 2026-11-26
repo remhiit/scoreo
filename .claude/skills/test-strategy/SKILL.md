@@ -1,6 +1,6 @@
 ---
 name: test-strategy
-description: Turn a spec's acceptance criteria into a leveled test strategy — which scenarios to write, at which layer (unit/integration/component/e2e), and which are mandatory vs recommended vs out of proportion. Not yet invoked by any routine (wiring it into implement-task/pr-review/site-quality is future work, out of scope of this file — see doc/technical/automation-plan.md §6); use it interactively, or as a step inside another skill's own procedure, whenever a spec's acceptance criteria need to be translated into concrete test scenarios before or during implementation.
+description: Turn a spec's acceptance criteria into a leveled test strategy — which scenarios to write, at which layer (unit/integration/component/e2e), and which are mandatory vs recommended vs out of proportion. Not yet invoked by any routine (wiring it into implement-task/pr-review/site-quality is future work, out of scope of this file — see doc/workflows/automation-plan.md §6); use it interactively, or as a step inside another skill's own procedure, whenever a spec's acceptance criteria need to be translated into concrete test scenarios before or during implementation.
 ---
 
 # Test Strategy
@@ -15,7 +15,7 @@ acceptance criterion it verifies, and whether it's mandatory, recommended, or
 out of proportion for the change at hand. It never writes the tests
 themselves — that's `implement-task`'s "Tests first" step (or a human's, run
 interactively) — and it never designs visual-regression scenarios, which
-belong to `doc/technical/visual-testing.md`'s own suite. See
+belong to `doc/workflows/visual-testing.md`'s own suite. See
 `project-conventions` for the repo's layering rules this skill routes
 scenarios against.
 
@@ -39,7 +39,7 @@ scenarios against.
 Not GitHub-triggered on its own — invoked either interactively or from inside
 another skill's own procedure, never by a label event. It therefore has
 neither a "which issue/PR" rule nor a "claim the run" step
-(`doc/automation/skill-contract.md` §1.4): both apply only to label-triggered
+(`doc/workflows/skill-contract.md` §1.4): both apply only to label-triggered
 routines, and this skill is neither.
 
 Before producing anything, check that the input actually supports it:
@@ -55,13 +55,13 @@ Before producing anything, check that the input actually supports it:
   something to list.
 - **A scenario is actually a visual-regression concern** (layout, spacing,
   dark-mode tokens, anything pixel-level) — do not design it here. Point to
-  `doc/technical/visual-testing.md` instead of duplicating its suite.
+  `doc/workflows/visual-testing.md` instead of duplicating its suite.
 
 ## Procédure
 
 ### 1. Map acceptance criteria to layers
 
-The repo runs three suites (`doc/technical/visual-testing.md` § "The repo has
+The repo runs three suites (`doc/workflows/visual-testing.md` § "The repo has
 three test suites" — this skill only ever reaches into the first two):
 
 | Layer | Where | Runner |
@@ -159,7 +159,7 @@ explicitly rather than omitting it):
 ...
 
 ### Tests visuels
-<« Aucun » si non pertinent, ou un renvoi vers doc/technical/visual-testing.md
+<« Aucun » si non pertinent, ou un renvoi vers doc/workflows/visual-testing.md
 précisant si le module/écran touché a déjà un spec `*.visual.spec.ts` — jamais
 un scénario visuel détaillé ici.>
 ```
@@ -178,7 +178,7 @@ that quietly drops the missing criteria.
 - The "Hors de proportion" bucket is present even when empty, so a reader
   knows it was considered rather than skipped.
 - The "Tests visuels" line is present, either "Aucun" (justified) or a
-  pointer to `doc/technical/visual-testing.md` — never a duplicated visual
+  pointer to `doc/workflows/visual-testing.md` — never a duplicated visual
   scenario.
 
 ## Contrôles
@@ -187,12 +187,12 @@ Before returning the strategy: every acceptance criterion in the input has at
 least one scenario or an explicit reason it needs none (e.g. already covered
 by an existing test named explicitly); every scenario names its layer, its
 type (§2), and its bucket (§3); no scenario invents a visual-regression case
-instead of pointing to `doc/technical/visual-testing.md`. A strategy that
+instead of pointing to `doc/workflows/visual-testing.md`. A strategy that
 fails any of these checks is not ready to hand back to the caller.
 
 ## Escalade
 
-Per `doc/automation/skill-contract.md` §3, specialized to this skill's one
+Per `doc/workflows/skill-contract.md` §3, specialized to this skill's one
 possible stop condition (ambiguous/incomplete input): a spec with no testable
 acceptance criterion. Since this skill has no GitHub trigger of its own, it
 never poses `automation:needs-human` itself — it states the refusal (§
@@ -208,7 +208,7 @@ going.
   them — an empty "Recommandés" or "Hors de proportion" section is a valid,
   honest output.
 - Never designs visual-regression scenarios — always redirects to
-  `doc/technical/visual-testing.md` instead of duplicating that suite's
+  `doc/workflows/visual-testing.md` instead of duplicating that suite's
   responsibility.
 - Never decides the spec's risk category or readiness verdict — that's
   `issue-to-spec`'s call, made before this skill would even run.

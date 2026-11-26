@@ -3,12 +3,12 @@ name: Automation dispatch
 # Résout, pour un événement `labeled` sur une issue ou une PR, quelle
 # routine/skill du dispatcher déclaratif (.automation/routines.yml) matche —
 # et l'expose en clair dans les logs. Zéro LLM, ne remplace pas les triggers
-# des routines Claude Code elles-mêmes (doc/technical/automation-plan.md §2,
+# des routines Claude Code elles-mêmes (doc/workflows/automation-plan.md §2,
 # §4) : les workflows existants (requeue-lost-events.yml, needs-review-label.yml,
 # ...) restent la logique métier en place, inchangée (issue #378).
 #
 # Construit aussi, quand une routine matche, le TaskContext versionné de ce
-# run (scripts/task-context.mjs, issue #401, automation-plan.md §4) et le
+# run (scripts/task-context.mjs, issue #401, doc/workflows/automation-plan.md §4) et le
 # publie comme artefact du workflow — la référence que
 # scripts/automation-log.mjs peut ensuite lier depuis le journal
 # d'exécution de la routine (LOG_CONTEXT_URL).

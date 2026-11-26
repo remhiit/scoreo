@@ -31,7 +31,7 @@ that is how a version of the catalog is published for review without deploying a
 | `src/shell/parseTokens.ts` | Reads the token declarations straight out of `packages/design-system/src/tokens/*.css` (exposed as `@scoreboards/design-system/tokens/*`), so the Tokens page shows what the CSS says |
 | `src/stories/<layer>.tsx` | The stories of one layer: data only (`Story[]`) |
 | `src/stories/<layer>.demos.tsx` | The small stateful demos those stories render (a controlled field, an open sheet): components only |
-| `src/mockups/<feature>/` | The mockup of a feature not coded yet: `index.tsx` (the `Mockup`), `screens.tsx`, `sketches/` for the components the design system lacks. Shown on the catalog's **Maquettes** page. See [`design-workflow.md`](design-workflow.md) |
+| `src/mockups/<feature>/` | The mockup of a feature not coded yet: `index.tsx` (the `Mockup`), `screens.tsx`, `sketches/` for the components the design system lacks. Shown on the catalog's **Maquettes** page. See [`doc/workflows/design-workflow.md`](design-workflow.md) |
 | `src/screens/` | The **Écrans** page: every screen of the app as it ships. `index.tsx` lists each `Screen['type']` with its states, `fixtures.ts` seeds the example data, `LiveApp.tsx` runs the app in a frame |
 | `src/pieces/` | The **Pièces de jeu** page: one file per module with game pieces (`PieceModule`: the module's `ModuleRoot` and its pieces), `demos.tsx` for the stateful ones. Imports each module's `src/design/` by relative path |
 | `src/usage/extract.ts` | The **Écran × composants** index, pure: finds the screens in a list of paths, reads their design-system imports, follows their relative imports, inverts the result |
@@ -72,13 +72,13 @@ layout that switches at a breakpoint (1000 Sabords' two columns) shows its wide 
 Open the preview on a phone to see the narrow one.
 
 A shipped feature adds its states here when it removes its mockup
-([`design-workflow.md`](design-workflow.md), step 4).
+([`doc/workflows/design-workflow.md`](design-workflow.md), step 4).
 
 ## Pièces de jeu: the modules' own components
 
 What the design system has no component for and one game alone draws (1000 Sabords' dice counter and
 score grid, Skyjo's round table and winner banner, Torī Valley's colour badge and variant picker)
-lives in that module's `src/design/` ([`module-contract.md`](module-contract.md) § "Game pieces live
+lives in that module's `src/design/` ([`module-contract.md`](../technical/module-contract.md) § "Game pieces live
 in `src/design/`"). The **Pièces de jeu** page shows each of them on its own, grouped by module, with
 its variants (tones, colours, an empty grid). Every variant renders inside the module's `ModuleRoot`,
 the element carrying `.module-<moduleId>`: the pieces' CSS is scoped under that class and would not
@@ -132,7 +132,7 @@ against the design system's real component exports, so a constant such as `HUES`
 ## Adding to it
 
 - **A feature that changes what a player sees**: its mockup comes first, under `src/mockups/`
-  — see [`design-workflow.md`](design-workflow.md).
+  — see [`doc/workflows/design-workflow.md`](design-workflow.md).
 
 - **A new design-system component**: add a story to the layer's file (and a demo if it needs
   state). The coverage test fails until you do.

@@ -2,7 +2,7 @@
 // Builds a versioned, deterministic `TaskContext` from a dispatcher GitHub
 // event (`issues`/`pull_request`), so a routine can be analyzed and routed
 // without depending on the raw shape of the webhook payload
-// (doc/technical/automation-plan.md §4). Zero LLM, zero network call — every
+// (doc/workflows/automation-plan.md §4). Zero LLM, zero network call — every
 // field is derived from the event payload plus whatever the caller already
 // has in hand (a routine name, a run id, optionally a pre-fetched diff stat
 // or changed-file list); anything not provided is marked explicitly
@@ -23,7 +23,7 @@ export const DEFAULT_LIMITS = Object.freeze({
 
 // Deliberately conservative: over-redacting a false positive costs nothing
 // (the context loses one word), under-redacting a real secret leaks it to
-// every model this context feeds (automation-plan.md §4 "risques et
+// every model this context feeds (doc/workflows/automation-plan.md §4 "risques et
 // questions ouvertes" on issue #401). Each pattern names itself so a
 // redaction can be traced back to which rule fired if that's ever needed.
 const SECRET_PATTERNS = [

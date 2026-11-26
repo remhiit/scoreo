@@ -1,4 +1,4 @@
-// RunMetrics (issue #477, doc/technical/automation-plan.md § « Métriques ») :
+// RunMetrics (issue #477, doc/workflows/automation-plan.md § « Métriques ») :
 // un enregistrement par run, à forme stable et versionnée
 // (schemas/automation/run-metrics.schema.json), qui confronte la décision de
 // routage déjà journalisée (#404/#406) à l'issue réelle du run — la donnée

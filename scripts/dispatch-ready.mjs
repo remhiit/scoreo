@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Dispatcher : lisse le débit d'événements vers R2 (doc/technical/
-// automation-plan.md §3 — au-delà du plafond de runs, les events
+// doc/workflows/automation-plan.md §3 — au-delà du plafond de runs, les events
 // excédentaires sont perdus, pas mis en file). Les specs validées par R1
 // attendent dans le label tampon `automation:queued` ; ce script promeut en `automation:ready`
 // **une seule issue à la fois**, seulement quand rien n'est déjà en vol.
@@ -89,7 +89,7 @@ function priorityRank(labelNames) {
 // `automation:ready`, or the reason it can't. Labels are checked first —
 // cheap, no network — so a caller can reject on labels alone before ever
 // fetching dependencies. `blocked` is deliberately absent from this check:
-// it's a derived display label (doc/automation/state-machine.md), never the
+// it's a derived display label (doc/workflows/state-machine.md), never the
 // dispatch condition — only the native link decides.
 export function decideDispatchPromotion(labelNames, blockers) {
   if (labelNames.includes('automation:needs-human')) {
