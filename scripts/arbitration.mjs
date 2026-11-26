@@ -65,8 +65,8 @@ const EXPERT_MOTIFS = ['tentatives-epuisees', 'derive-vs-review', 'validation-ro
 // Espace fermé des motifs arbitrables — les autres conditions d'escalade
 // (#2 relecteur manquant, #4 sous-agent hors service, #5 routage sans
 // candidat, #6 budget dépassé, row #25 possession périmée du state-machine)
-// restent des escalades directes, jamais arbitrées (doc/technical/
-// doc/workflows/automation-plan.md, épique #496, tableau « Ce que l'arbitre peut arbitrer
+// restent des escalades directes, jamais arbitrées
+// (doc/workflows/automation-plan.md, épique #496, tableau « Ce que l'arbitre peut arbitrer
 // — et ce qu'il ne peut pas »).
 export const ARBITRABLE_MOTIFS = [...LEAD_MOTIFS, ...EXPERT_MOTIFS]
 

@@ -1,6 +1,6 @@
 // Règle d'arbitrage entre les deux relecteurs du coordinateur (fonctionnel et
 // technique, issue #470) : pure, déterministe, jamais laissée au jugement du
-// coordinateur (doc/workflows/state-machine.md §8, doc/technical/
+// coordinateur (doc/workflows/state-machine.md §8,
 // doc/workflows/automation-plan.md §4 « Le coordinateur »). Un désaccord entre les deux
 // relecteurs (l'un passe, l'autre bloque) est toujours tranché par ce
 // mécanisme, jamais par une décision de la session qui les a lancés.

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Cron horaire : rattrape les événements `labeled` perdus quand une routine
-// (R2/R3/R4) a été ignorée par le plafond de runs (doc/technical/
-// doc/workflows/automation-plan.md §3 — les events dépassant le plafond sont ignorés, pas
+// (R2/R3/R4) a été ignorée par le plafond de runs
+// (doc/workflows/automation-plan.md §3 — les events dépassant le plafond sont ignorés, pas
 // mis en file). Principe « claim the run » (§4) : une routine retire son
 // label déclencheur dès qu'elle démarre. Un label déclencheur encore posé
 // longtemps après sa pose, sans `automation:in-progress`, signale donc un événement

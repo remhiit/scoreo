@@ -1,6 +1,6 @@
 #!/usr/bin/env node
-// Dispatcher : lisse le débit d'événements vers R2 (doc/technical/
-// doc/workflows/automation-plan.md §3 — au-delà du plafond de runs, les events
+// Dispatcher : lisse le débit d'événements vers R2
+// (doc/workflows/automation-plan.md §3 — au-delà du plafond de runs, les events
 // excédentaires sont perdus, pas mis en file). Les specs validées par R1
 // attendent dans le label tampon `automation:queued` ; ce script promeut en `automation:ready`
 // **une seule issue à la fois**, seulement quand rien n'est déjà en vol.
