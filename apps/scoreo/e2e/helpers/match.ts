@@ -36,3 +36,26 @@ export async function resolveTieManually(page: Page, winnerName: string): Promis
   await dialog.getByText(winnerName, { exact: true }).click()
   await dialog.getByRole('button', { name: 'Confirm' }).click()
 }
+
+/**
+ * Fills several rounds from the match's History tab: the first round is typed
+ * into its "Round 1" card, each further one goes through "Add round", which
+ * opens a "Round N" entry sheet saved with "Save round". Each entry maps a
+ * player name to that round's score.
+ */
+export async function enterRounds(
+  page: Page,
+  rounds: Array<Record<string, number>>,
+): Promise<void> {
+  const [first, ...others] = rounds
+  await enterRoundScore(page, first)
+  for (const [offset, scores] of others.entries()) {
+    await page.getByRole('button', { name: 'Add round' }).click()
+    const sheet = page.getByRole('dialog', { name: `Round ${offset + 2}` })
+    for (const [name, value] of Object.entries(scores)) {
+      await sheet.getByRole('spinbutton', { name, exact: true }).fill(String(value))
+    }
+    await sheet.getByRole('button', { name: 'Save round' }).click()
+    await sheet.waitFor({ state: 'detached' })
+  }
+}
