@@ -283,10 +283,10 @@ exactly what to add, without further interpretation.
 
 ## 5. Worked example — `implement-task` (R2), unmodified
 
-Illustrating §1–§4 against the existing `.claude/skills/implement-task/
+Illustrating §1–§4 against the existing `dev-workflow:implement-task
 SKILL.md` (read, not edited, by this ticket):
 
-| Template section | Where it already lives in `implement-task/SKILL.md` | Gap, if any |
+| Template section | Where it already lives in `project-conventions/implement-task.md` | Gap, if any |
 |---|---|---|
 | Frontmatter | `description` names "This is the R2 step in doc/workflows/automation-plan.md" | Conformant |
 | Objectif | Opening paragraph: "Executes a single GitHub issue's spec... as one branch, one commit, one PR" | Conformant |

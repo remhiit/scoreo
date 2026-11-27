@@ -11,6 +11,7 @@
 | [`workflows/state-machine.md`](workflows/state-machine.md) | The formal state machine backing the automation plan: labels, transitions, retry/failure rules |
 | [`workflows/deployment.md`](workflows/deployment.md) | CI/CD and deployment |
 | [`technical/migrations.md`](technical/migrations.md) | Data migration history |
+| [`adr/`](adr/README.md) | Architecture Decision Records: one decision the code cannot tell per file, format and index |
 | [`glossary.md`](glossary.md) | Project term definitions |
 | [`workflows/visual-testing.md`](workflows/visual-testing.md) | The visual regression suite and its baselines |
 | [`workflows/design-workflow.md`](workflows/design-workflow.md) | The mockup-before-code rule: when a feature needs a mockup, how it is built, validated and retired |
