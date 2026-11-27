@@ -1,10 +1,10 @@
-import { fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, within } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import { BulletList } from './BulletList'
 import { DetailList, DetailRow } from './DetailList'
 import { EmptyState } from './EmptyState'
 import { FilterBar } from './FilterBar'
-import { ListRow } from './ListRow'
+import { List, ListRow } from './ListRow'
 import { SegmentedControl, TabPanel, Tabs } from './SegmentedControl'
 import { StandingsCard } from './StandingsCard'
 import { StatRow } from './StatRow'
@@ -43,6 +43,55 @@ describe('ListRow', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Delete' }))
     expect(onDelete).toHaveBeenCalledOnce()
     expect(screen.getByRole('button', { name: 'Delete' })).toHaveClass('sc-row__action--danger')
+  })
+})
+
+describe('List', () => {
+  it('exposes a list whose rows are list items named by their title', () => {
+    render(
+      <List>
+        <ListRow
+          title="Alice"
+          subtitle="3W 1L"
+          actions={[{ icon: 'edit', label: 'Edit', onClick: () => {} }]}
+        />
+        <ListRow title="Bruno" />
+      </List>,
+    )
+    const list = screen.getByRole('list')
+    expect(screen.getAllByRole('listitem')).toHaveLength(2)
+    const alice = within(list).getByRole('listitem', { name: 'Alice' })
+    expect(within(alice).getByRole('button', { name: 'Edit' })).toBeInTheDocument()
+  })
+
+  it('names a row by its label when the title is not plain text', () => {
+    render(
+      <List>
+        <ListRow title={<strong>Skyjo</strong>} label="Skyjo, 6 nov." />
+      </List>,
+    )
+    expect(screen.getByRole('listitem', { name: 'Skyjo, 6 nov.' })).toBeInTheDocument()
+  })
+
+  it('stays a valid empty list without rows', () => {
+    render(<List>{[]}</List>)
+    expect(screen.getByRole('list')).toBeEmptyDOMElement()
+    expect(screen.queryByRole('listitem')).toBeNull()
+  })
+
+  it('leaves a row outside a List without the listitem role', () => {
+    render(<ListRow title="Alice" />)
+    expect(screen.queryByRole('listitem')).toBeNull()
+  })
+
+  it('wraps a clickable StatRow in a list item that keeps its button', () => {
+    render(
+      <List>
+        <StatRow title="Camille" rate={0.7} value="70%" onClick={() => {}} />
+      </List>,
+    )
+    const item = screen.getByRole('listitem')
+    expect(within(item).getByRole('button', { name: /Camille/ })).toBeInTheDocument()
   })
 })
 

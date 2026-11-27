@@ -33,7 +33,7 @@ export const MOLECULE_STORIES: Story[] = [
     layer: 'molecules',
     covers: ['ListRow', 'List'],
     usage:
-      'La ligne qui porte l’app : titre, sous-titre, joueurs, date, badge. `selectable` teinte toute la ligne ; les actions carrées collent au bord.',
+      'La ligne qui porte l’app : titre, sous-titre, joueurs, date, badge. `selectable` teinte toute la ligne ; les actions carrées collent au bord. `List` est exposée comme une liste (`role="list"`) et chaque ligne comme un élément nommé par son titre, ou par `label` quand le titre n’est pas du texte simple.',
     variants: [
       {
         name: 'Partie avec actions',

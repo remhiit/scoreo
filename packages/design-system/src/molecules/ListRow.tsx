@@ -1,7 +1,8 @@
-import type { ReactNode } from 'react'
+import { useId, type ReactNode } from 'react'
 import { cx } from '../cx'
 import { Icon } from '../atoms/Icon'
 import type { IconName } from '../atoms/icons'
+import { InListContext, useInList } from './listContext'
 
 export interface RowAction {
   icon: IconName
@@ -30,6 +31,11 @@ export interface ListRowProps {
   onSelect?: () => void
   /** Square icon actions, flush to the row edge, full row height. */
   actions?: RowAction[]
+  /**
+   * Accessible name of the row as a list item. Defaults to the visible title,
+   * which is enough when `title` is plain text (e.g. the player's name).
+   */
+  label?: string
 }
 
 /**
@@ -48,10 +54,15 @@ export function ListRow({
   highlighted = false,
   onSelect,
   actions = [],
+  label,
 }: ListRowProps) {
+  const inList = useInList()
+  const titleId = useId()
   const text = (
     <span className="sc-row__text">
-      <span className="sc-row__title">{title}</span>
+      <span id={titleId} className="sc-row__title">
+        {title}
+      </span>
       {subtitle !== undefined && <span className="sc-row__subtitle">{subtitle}</span>}
       {players !== undefined && <span className="sc-row__players">{players}</span>}
       {date !== undefined && <span className="sc-row__date">{date}</span>}
@@ -70,6 +81,9 @@ export function ListRow({
         selectable && selected && 'sc-row--selected',
         highlighted && 'sc-row--highlighted',
       )}
+      role={inList ? 'listitem' : undefined}
+      aria-label={inList ? label : undefined}
+      aria-labelledby={inList && label === undefined ? titleId : undefined}
     >
       {onSelect ? (
         <button
@@ -107,7 +121,15 @@ export interface ListProps {
   children: ReactNode
 }
 
-/** Vertical run of rows, 8px apart. */
+/**
+ * Vertical run of rows, 8px apart. Exposed as a `list` whose rows are its
+ * `listitem`s, so assistive tech announces the list and its length, and a row
+ * can be found by name (`getByRole('listitem', { name: 'Alice' })`).
+ */
 export function List({ children }: ListProps) {
-  return <div className="sc-list">{children}</div>
+  return (
+    <div className="sc-list" role="list">
+      <InListContext.Provider value={true}>{children}</InListContext.Provider>
+    </div>
+  )
 }
