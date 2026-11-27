@@ -197,6 +197,17 @@ describe('HomeScreen', () => {
     expect(playerRepo.getAll(true)[0].name).toBe('')
   })
 
+  it('exposes each player row as a list item named after the player', () => {
+    const { props, playerRepo } = buildProps()
+    playerRepo.save({ id: 'p1', name: 'Alice', active: true })
+    playerRepo.save({ id: 'p2', name: 'Bob', active: true })
+    render(<HomeScreen {...props} />)
+
+    const alice = screen.getByRole('listitem', { name: 'Alice' })
+    fireEvent.click(within(alice).getByRole('button', { name: 'Edit' }))
+    expect(screen.getByText('Rename Alice')).toBeInTheDocument()
+  })
+
   it('renames a player', () => {
     const { props, playerRepo } = buildProps()
     playerRepo.save({ id: 'p1', name: 'Alice', active: true })
