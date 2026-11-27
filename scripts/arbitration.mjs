@@ -39,8 +39,9 @@ const ROUTING_POLICY_PATH = '.automation/routing-policy.yml'
 const VALID_MODES = ['observe', 'apply']
 
 // Motifs de la condition 1 (spec ambiguë, jamais après une review) :
-// tranchés par `arbiter-lead`, qui ne lit que la spec de l'issue,
-// `doc/functional/`, le diff et les findings du relecteur fonctionnel —
+// tranchés par `arbiter-lead`, qui ne lit que la spec de l'issue, les e2e
+// (`apps/scoreo/e2e/`), `doc/utilisateur/`, le diff et les findings du
+// relecteur fonctionnel —
 // jamais la review technique.
 const LEAD_MOTIFS = ['spec-ambigue', 'derive-vs-spec']
 // Motifs de la condition 3 (boucle de correctif non convergée, toujours

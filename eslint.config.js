@@ -67,7 +67,7 @@ const GAME_PIECE_RULES = {
 
 /**
  * Every scoring module composes @scoreboards/design-system the way the host
- * does (doc/technical/module-contract.md § "A module wears Scoreo's look"):
+ * does (ADR-0036, doc/adr/0036-modules-wear-scoreo-look.md):
  * the host's no-className/no-style/no-lucide rules over each
  * `packages/module-*` source, its component tests aside. Its `src/design/`
  * folder — where a module writes its game pieces' classes and CSS — lifts the

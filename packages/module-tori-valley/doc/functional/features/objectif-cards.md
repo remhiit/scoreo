@@ -6,7 +6,7 @@
 
 Each landscape (Bamboo, Cherry Blossom, Mountain, Water, Village) has 3 difficulty variants (A/B/C) — **15 Objectif cards**, all transcribed below.
 
-`doc/functional/features/scoring.md` mentions "16 cards": the deck also contains a Torī scoring reference card (transcribed in the annex at the end), which most likely accounts for the 16th. To confirm once the physical deck is counted; if a 16th Objectif card exists, it is still missing here.
+[`scoring.md`](scoring.md) mentions "16 cards": the deck also contains a Torī scoring reference card (transcribed in the annex at the end), which most likely accounts for the 16th. To confirm once the physical deck is counted; if a 16th Objectif card exists, it is still missing here.
 
 ## Bamboo
 

@@ -40,8 +40,9 @@ The coordinator's prompt gives you:
 - The PR diff (when one exists, never on `spec-ambigue` alone).
 
 You never fetch anything yourself beyond what your read-only tools allow on
-this repository's checked-out files (e.g. the spec in `doc/` for an unfamiliar
-feature area, never external sources). You never call a GitHub API, never open
+this repository's checked-out files (e.g. the e2e specs in `apps/scoreo/e2e/`
+and the user guide in `doc/utilisateur/` for an unfamiliar feature area,
+never external sources). You never call a GitHub API, never open
 a browser, and never write to any file.
 
 ## What you must never do

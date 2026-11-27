@@ -70,7 +70,7 @@ export default function Flip7ModuleScreen({
   )
 
   // The round being entered must survive a reload — the whole reason the draft
-  // trio exists (see `doc/technical/module-contract.md`). A reopened match is
+  // trio exists (see ADR-0043, `doc/adr/0043-single-draft-slot.md`). A reopened match is
   // already stored on the host's side: it never touches the draft slot, which
   // may hold another, unfinished game.
   useEffect(() => {

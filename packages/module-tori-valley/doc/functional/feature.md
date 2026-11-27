@@ -32,7 +32,7 @@ The module owns the game.
    a different set of players is ignored and the grid starts blank.
 
 Reopening, editing, deleting, exporting, and looking up a player's stats are all Scoreo's — see the
-workspace's [`doc/functional/`](../../../../doc/functional/feature.md).
+workspace's user guide, [`doc/utilisateur/`](../../../../doc/utilisateur/README.md).
 
 ## Language
 

@@ -148,8 +148,13 @@ outillage). Voir « Mockup first » ci-dessus.>
 ```
 
 The `## Stratégie de tests` seed refers to `implement-task`'s step 4 "Tests
-first". `## Fichiers impactés` names files per `doc/reference.md`'s tables
-(e.g. `apps/scoreo/src/ui/<screen>/<screen>Reducer.ts` (+ test)).
+first". `## Fichiers impactés` names files as they are in the code (e.g.
+`apps/scoreo/src/ui/<screen>/<screen>Reducer.ts` (+ test)), found by reading
+`apps/scoreo/src/` and `packages/`; a visible change names its e2e spec in
+`apps/scoreo/e2e/` (see that README's « Journeys → specs » table), and a
+decision the code cannot tell names the new ADR it calls for in `doc/adr/`.
+Before specifying, read the index of `doc/adr/README.md` for the decisions
+already in force.
 
 ## Traçabilité
 

@@ -39,8 +39,8 @@ The coordinator's prompt gives you:
   finding is too vague to guide a fix). Know which one you're judging.
 
 You never fetch anything yourself beyond what your read-only tools allow on
-this repository's checked-out files (e.g. the technical documentation in
-`doc/` for unfamiliar code areas, never external sources). You never call a
+this repository's checked-out files (e.g. the ADRs in `doc/adr/` and the
+code itself for unfamiliar code areas, never external sources). You never call a
 GitHub API, never open a browser, and never write to any file.
 
 ## What you must never do

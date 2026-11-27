@@ -29,6 +29,7 @@ three test suites" — this skill only ever reaches into the first two):
 
 
 E2E is the most expensive suite here: reserve it for what nothing smaller can
-catch (`doc/reference.md`'s existing `e2e/*.spec.ts` list is the precedent to
-match). Visual-regression scenarios belong to `doc/workflows/visual-testing.md`'s
+catch, except that every behavior a player can see has one (the
+« Journeys → specs » table of `apps/scoreo/e2e/README.md` is the precedent to
+match, and a new journey adds its row there). Visual-regression scenarios belong to `doc/workflows/visual-testing.md`'s
 own suite (`*.visual.spec.ts`), never to this skill's output.

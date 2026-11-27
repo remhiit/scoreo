@@ -98,7 +98,7 @@ export function extractRelevantFiles(body) {
 }
 
 // Bounded, deterministic mapping from a file path to its workspace package
-// (doc/technical/architecture.md § Repository layout): the host app
+// (ADR-0025, doc/adr/0025-pnpm-monorepo-and-modules.md): the host app
 // (`apps/scoreo/`) collapses to "scoreo", a `packages/<name>/` file maps to
 // `<name>`, anything else (root config, `doc/`, `.github/`, ...) to "root".
 export function derivePackages(filePaths) {

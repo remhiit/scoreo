@@ -11,7 +11,7 @@ Suites de tests pour la synchronisation Google Drive, toutes exécutables sous V
 
 ## Approche : mocker `window.google`/`fetch` plutôt que des tautologies
 
-L'ancienne suite Kotlin ne pouvait pas réellement charger Google Identity Services dans son environnement de test — beaucoup de ses tests se contentaient d'appeler `login()`/`refreshToken()` puis d'asserter `true`, n'exerçant en pratique que le chemin "GIS pas chargé, retry". La suite TS installe un faux `window.google.accounts.oauth2` (`installMockGis()` dans `googleAuthService.test.ts`) et un `fetch` mocké pour `googleDriveClient.test.ts`, ce qui permet de vérifier le comportement réel (succès, erreur, retry, refresh silencieux, "cloud wins" au pull) avec des assertions signifiantes plutôt que des tautologies. Voir le tableau d'audit détaillé dans `doc/reference.md` (section Tests).
+L'ancienne suite Kotlin ne pouvait pas réellement charger Google Identity Services dans son environnement de test — beaucoup de ses tests se contentaient d'appeler `login()`/`refreshToken()` puis d'asserter `true`, n'exerçant en pratique que le chemin "GIS pas chargé, retry". La suite TS installe un faux `window.google.accounts.oauth2` (`installMockGis()` dans `googleAuthService.test.ts`) et un `fetch` mocké pour `googleDriveClient.test.ts`, ce qui permet de vérifier le comportement réel (succès, erreur, retry, refresh silencieux, "cloud wins" au pull) avec des assertions signifiantes plutôt que des tautologies.
 
 ## Fichiers de test
 
@@ -34,7 +34,7 @@ pnpm --filter scoreo exec vitest run src/infrastructure/google
 
 ## Limitations actuelles
 
-1. **Pas de test E2E avec un vrai compte Google** — le login/logout/refresh réel avec un compte de test est vérifié manuellement (voir la recette fonctionnelle dans `doc/functional/feature.md`), pas dans la suite automatisée.
+1. **Pas de test E2E avec un vrai compte Google** — le login/logout/refresh réel avec un compte de test est vérifié manuellement (voir le parcours décrit dans le guide de l'utilisateur, `doc/utilisateur/synchronisation.md`), pas dans la suite automatisée.
 2. **`fetch` mocké, pas une vraie requête HTTP** — les tests vérifient le contrat (requête envoyée, réponse interprétée), pas la connectivité réseau réelle.
 
 ## Maintenance
@@ -47,6 +47,5 @@ pnpm --filter scoreo exec vitest run src/infrastructure/google
 
 ### Check-list avant commit
 - [ ] `pnpm test` passe
-- [ ] Nouveaux cas de test documentés dans `doc/reference.md` si le compte total change
 - [ ] Mocks (`mockGoogleDriveClient.ts`, `installMockGis()`) à jour avec les signatures réelles
 - [ ] Happy path et cas d'erreur couverts

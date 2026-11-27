@@ -6,8 +6,8 @@ A **score counter** for the physical card game Skyjo, not a digital simulator of
 and play the real cards at the table; the module only tracks what the group already computes by
 hand — each round's total per player — and applies the rules that turn those totals into a running
 score and, eventually, a winner. There is no card grid, no flip animation, no deck: see
-`doc/technical/architecture.md` for why that boundary was chosen deliberately over simulating the
-game.
+[ADR-0051](../../../../doc/adr/0051-skyjo-counter-not-simulator.md) for why that boundary was chosen
+deliberately over simulating the game.
 
 ## The rules this module implements
 

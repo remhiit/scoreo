@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 PWA React + TypeScript de suivi de scores entre amis. MVI-style (reducer/action/state par écran, via `useReducer`). Architecture hexagonale (Ports & Adapters). 100% local-first (localStorage), sync cloud optionnelle via Google Drive.
 
-Le dépôt est un **monorepo pnpm** : Scoreo est l'application hôte (`apps/scoreo/`, la seule déployée) et les compteurs de points dédiés à un jeu deviennent des **modules** (`packages/`, chargés à la demande). Toutes les commandes se lancent depuis la racine du workspace ; voir « Arborescence clé » et `doc/technical/architecture.md` § *Repository layout*.
+Le dépôt est un **monorepo pnpm** : Scoreo est l'application hôte (`apps/scoreo/`, la seule déployée) et les compteurs de points dédiés à un jeu deviennent des **modules** (`packages/`, chargés à la demande). Toutes les commandes se lancent depuis la racine du workspace ; voir « Arborescence clé » et l'ADR-0025 (`doc/adr/0025-pnpm-monorepo-and-modules.md`).
 
 ## Langue
 
@@ -46,21 +46,22 @@ Pas de dépendance Gradle/JVM : tout passe par `package.json` (pnpm). Tests unit
 
 ## Avant d'explorer le code
 
-Lire ces fichiers dans l'ordre. Tout le contexte nécessaire y est :
+Il n'y a plus de documentation fonctionnelle ni technique de référence : ce que le code dit se lit dans le code, ce qu'il ne dit pas se lit dans les ADR, ce qu'un joueur peut faire se lit dans les e2e. Lire dans l'ordre :
 
-0. `doc/reference.md` — Tableaux de référence (reducers, use cases, models, ports, adapters, navigation, tests)
-1. `doc/glossary.md` — Définitions (Reducer, Action, State, Port, Adapter, Use Case)
-2. `doc/technical/architecture.md` — Stack, patterns, persistence, backward compat
-3. `doc/functional/feature.md` — User flow complet, navigation, import (6 fichiers)
-4. `doc/technical/migrations.md` — Migrations de données (si pertinent)
+1. `doc/adr/README.md` — l'index des ADR (Architecture Decision Records) : les décisions que le code ne dit pas (architecture hexagonale, MVI, local-first, compatibilité ascendante et migrations, contrat des modules, maquette avant le code…). Lire les ADR `Accepted` qui touchent le changement.
+2. Le code — `apps/scoreo/src/` (une couche par dossier, un dossier par écran), `packages/shared-domain/` (les modèles et leurs schémas zod), `packages/module-api/` (le contrat des modules, types et JSDoc), `packages/design-system/` (son `README.md`).
+3. `apps/scoreo/e2e/README.md` — le tableau « Journeys → specs » : chaque parcours joueur et le spec Playwright qui le prouve.
+4. `doc/utilisateur/` — le guide de l'utilisateur, si le changement est visible.
 
 ## Arborescence clé
 
 | Dossier | Contenu |
 |---|---|
 | `apps/scoreo/` | L'app hôte : `index.html`, `public/`, `src/`, `e2e/` (Playwright, comportement), `tests/visual/` (Playwright, pixels — voir `doc/workflows/visual-testing.md`), `scripts/`, ses configs Vite/Vitest/Playwright/TS et son `package.json` (React, zod, vite, vitest) |
-| `packages/` | Le contrat et les modules de comptage. `module-api/` (contrat entre Scoreo et la grille de saisie d'un jeu, zéro code runtime, n’importe que des types de `shared-domain`) et `shared-domain/` (`Player`, `GameType`, `Match`, `PlayerScore` avec leurs schémas zod et fonctions pures, les enums, `newId`, `Result` — une seule définition pour tout le workspace) ; puis un dossier par module : `module-tori-valley/` (absorbé depuis `remhiit/toriValleyScoreBoard`, sans coquille standalone depuis #330). Voir `doc/technical/module-contract.md` |
+| `packages/` | Le contrat et les modules de comptage. `module-api/` (contrat entre Scoreo et la grille de saisie d'un jeu, zéro code runtime, n’importe que des types de `shared-domain`) et `shared-domain/` (`Player`, `GameType`, `Match`, `PlayerScore` avec leurs schémas zod et fonctions pures, les enums, `newId`, `Result` — une seule définition pour tout le workspace) ; puis un dossier par module : `module-tori-valley/` (absorbé depuis `remhiit/toriValleyScoreBoard`, sans coquille standalone depuis #330). Le contrat : les types de `module-api/` et les ADR des modules (index de `doc/adr/README.md`) |
 | Racine | `package.json` privé (scripts `pnpm -r`, eslint/prettier/tsc), `tsconfig.base.json`, `eslint.config.js`, `vitest.config.ts` (tests de `scripts/` uniquement), `lighthouserc.json`, `doc/`, `schemas/`, `scripts/`, `.github/`, `.claude/` |
+| `doc/adr/` | Les ADR : une décision que le code ne dit pas par fichier, numérotées, immuables (format, cycle de vie et index dans `doc/adr/README.md`, vérifiés par `node scripts/check-adr.mjs`) |
+| `apps/scoreo/e2e/` | Les e2e Playwright, référence de ce qu'un joueur peut faire ; son `README.md` tient le tableau « Journeys → specs » |
 | `doc/utilisateur/` | Le guide de l'utilisateur, en français, écran par écran ; les guides et règles des compteurs restent dans `packages/module-*/doc/` et y sont liés |
 | `doc/workflows/` | La chaîne d'automatisation et les règles de travail (spec, file, coordinateur, revue, fusion ; maquettes, catalogue, CI/CD, guides de test). Point d'entrée : `doc/workflows/README.md` |
 | `apps/scoreo/src/domain/` | `model/` (types + schémas zod), `port/` (interfaces repository) |
@@ -76,7 +77,7 @@ Lire ces fichiers dans l'ordre. Tout le contexte nécessaire y est :
 | `schemas/import/` | Schémas JSON du format d'import (versionnés, `v1.0`/`v1.1`) |
 | `packages/module-mille-sabords/` | 1000 Sabords porté du Kotlin, avec sa doc. Son domaine est vérifié contre l'oracle `legacy/` par un test différentiel golden (`tests/golden/`), pas par relecture |
 | `legacy/1ksabord-kotlin/` | **Temporaire.** L'app Kotlin/JS de 1000 Sabords absorbée avec son historique, gardée comme **oracle** du portage TypeScript : ses 107 tests tournent en CI (`kotlin-legacy.yml`) et doivent rester verts. Supprimée avec son workflow une fois le portage livré. Ne rien y développer |
-| `packages/module-*/doc/` | La doc d'un jeu vit dans le paquet de son module, à côté du code qui l'implémente : règles, guide, doc technique et ressources (le PDF des règles de 1000 Sabords, celui de Torī et ses scans de cartes). `doc/` à la racine ne garde que ce qui concerne le dépôt entier |
+| `packages/module-*/doc/` | La doc d'un jeu vit dans le paquet de son module, à côté du code qui l'implémente : règles, guide et ressources (le PDF des règles de 1000 Sabords, celui de Torī et ses scans de cartes). `doc/` à la racine ne garde que ce qui concerne le dépôt entier |
 | `packages/design-system/` | **Toute** décision visuelle de l'app : tokens Catppuccin, atomes → gabarits en composants React + CSS préfixé `sc-`. Voir son `README.md` |
 | `apps/catalog/` | Le catalogue vivant du design system : chaque composant rendu par son vrai code, couche par couche, dans les 4 thèmes. Sa page **Écrans** fait tourner les vrais écrans de l'app et des modules sur des données d'exemple (`src/screens/`, via l'export `scoreo/catalog`) : un écran du routeur sans trace n'y compile pas. Outil, jamais déployé ; un composant sans fiche y fait échouer `pnpm test`. Voir `doc/workflows/design-catalog.md` |
 | `ds_temp/scoreo-design/` | Copie figée (30/09/2026) de l'export Claude Design vers lequel les écrans ont migré. La référence visuelle est désormais `apps/catalog/` ; dossier à supprimer |
@@ -95,7 +96,7 @@ Skills partagés (transitoires, utilisés par le pipeline automatisé) : `issue-
 
 Workflows : le plugin `workflows` du même dépôt enchaîne les skills de Matt Pocock et d'ecc par type de tâche. Avec Rémi : `/workflows:feature` (interview, maquette, spec, tickets prêts), `/workflows:refacto`, `/workflows:spike`. Sans humain : `/workflows:livrer #N` (ticket prêt → PR, un agent neuf par étape), `/workflows:bug`, `/workflows:maintenance`. Leur surcouche Scoreo : `.claude/skills/project-conventions/<workflow>.md`. Un ticket confié au pipeline (tout label `automation:*` : `queued`, `ready`, `in-progress`…) reste au `coordinator` : jamais deux orchestrateurs sur une issue.
 
-Ajouter un compteur de points pour un nouveau jeu : `.claude/skills/new-scoring-module/` — la checklist complète, du paquet aux gardes à étendre, avec les pièges qui ont coûté de vrais bugs ici. Le contrat lui-même est dans `doc/technical/module-contract.md`.
+Ajouter un compteur de points pour un nouveau jeu : `.claude/skills/new-scoring-module/` — la checklist complète, du paquet aux gardes à étendre, avec les pièges qui ont coûté de vrais bugs ici. Le contrat lui-même : les types et la JSDoc de `packages/module-api/`, et les ADR des modules dans `doc/adr/`.
 
 ## Règles
 
@@ -106,15 +107,17 @@ Ajouter un compteur de points pour un nouveau jeu : `.claude/skills/new-scoring-
 - Interface Repository dans `domain/port/`. Implémentation dans `infrastructure/`.
 - Tout modèle sérialisé (`Player`, `GameType`, `Match`, `PlayerScore`) doit être **backward-compatible**.
 - Ajouter un champ ? Toujours fournir un `.default()` dans le schéma zod correspondant.
-- Supprimer/renommer un champ ? Migration obligatoire dans `doc/technical/migrations.md`.
-- Toute évolution du code (nouveau use case, reducer, modèle, screen, port) doit mettre à jour la documentation correspondante dans `doc/`.
+- Ajouter, supprimer ou renommer un champ sérialisé ? Une ADR de migration dans `doc/adr/` (ADR-0004, ADR-0042), écrite dans la même PR.
+- Une nouvelle décision que le code ne dit pas (un champ retiré, la règle d'un contrat, la raison d'un choix) a son ADR (`doc/adr/README.md` : format, cycle de vie, index régénéré par `node scripts/check-adr.mjs --write`). Une ADR `Accepted` n'est jamais réécrite sur le fond : on la remplace par une nouvelle (`supersedes`).
+- Tout comportement visible ajouté ou modifié a son e2e dans `apps/scoreo/e2e/` (et sa ligne dans le tableau de son `README.md`), et la page correspondante de `doc/utilisateur/` est à jour. Aucun e2e existant n'est supprimé, affaibli ou passé en `skip`/`fixme` sans raison écrite dans la spec.
 
 ## Pre-commit Checklist
 
 Avant de committer une évolution Reducer/Action/State/UseCase/Model/Port :
 
-- [ ] Fichier `.md` correspondant a été mis à jour (`doc/reference.md`, `doc/functional/feature.md`, `doc/functional/features/*.md`, ou `doc/technical/*.md`)
-- [ ] Si nouveau champ optionnel sérialisé : entrée ajoutée à `doc/technical/migrations.md` (changelog de schéma)
+- [ ] Changement visible : e2e ajouté ou étendu dans `apps/scoreo/e2e/`, tableau « Journeys → specs » de son `README.md` et page de `doc/utilisateur/` à jour
+- [ ] Nouvelle décision que le code ne dit pas : ADR ajoutée dans `doc/adr/`, index régénéré (`node scripts/check-adr.mjs --write`)
+- [ ] Champ sérialisé ajouté, supprimé ou renommé : `.default()` zod pour un ajout, et ADR de migration
 - [ ] Tests modifiés/ajoutés si changement de comportement public
 - [ ] Changement visible : l'écran livré correspond à la maquette validée, les esquisses sont promues dans le design system (avec leur fiche du catalogue) et le dossier de maquette est retiré
 - [ ] Message de commit décrit clairement l'évolution (pas "Fix", "Update" vague)
@@ -126,7 +129,7 @@ Ajouter la confirmation d'archivage pour les types de jeu
 - Ajout des actions showArchiveConfirm/archiveGameType/dismissArchiveConfirm
 - Ajout de archiveConfirmGameTypeId à GameTypeState
 - Bouton Archiver (🗑) avec modale de confirmation dans la vue détail
-- Mise à jour de doc/functional/features/games.md avec le flow d'archivage
+- e2e archive-game-type.spec.ts et doc/utilisateur/jeux.md mis à jour avec le flow d'archivage
 - ArchiveGameTypeUseCase testé
 ```
 

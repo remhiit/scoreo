@@ -424,9 +424,9 @@ that label itself either.
 
 **Review round (#470).** Two freshly-launched, isolated sub-agents run
 `pr-review`'s checklist (§1-§2 of that skill), each restricted to its own
-disjoint corpus — functional (issue spec, diff, `doc/functional/`) and
-technical (diff, `doc/technical/architecture.md`, `project-conventions`,
-never the issue spec) — neither reading the other's prompt, reply, or PR
+disjoint corpus — functional (issue spec, diff, the e2e suite
+`apps/scoreo/e2e/` with its README's table, `doc/utilisateur/`) and
+technical (diff, `doc/adr/`, `project-conventions`, never the issue spec) — neither reading the other's prompt, reply, or PR
 review. Neither claims `automation:needs-review` (none was posted) nor
 posts a verdict label — each returns its own findings (severity, and
 `corpus: in`/`out` for anything formed outside its assigned corpus) to the

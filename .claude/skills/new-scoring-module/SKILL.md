@@ -13,7 +13,9 @@ ordinary `Match`es in Scoreo's history and statistics; the module reads and
 writes them in `shared-domain`'s models, the game's rules are read from its
 manifest, and the module's grid is the game's only grid. This skill does not
 restate the contract — the
-contract is `doc/technical/module-contract.md`, **read it first.** What
+contract is the module-contract ADRs in `doc/adr/` (ADR-0025 to ADR-0028, ADR-0031,
+ADR-0034, ADR-0036, ADR-0038, ADR-0040, ADR-0043, ADR-0045 to ADR-0048) and
+the types of `packages/module-api/src/` with their JSDoc, **read them first.** What
 follows is the order of operations, and the traps that are invisible until
 they bite. It invokes no autonomous routine — it runs in-session, whenever a
 new game gets its own point counter, or when reviewing whether an existing
@@ -22,7 +24,8 @@ module respects the contract.
 ## Entrées requises
 
 Which game is being added (or which existing module is under review), and
-`doc/technical/module-contract.md` already read. There is no triggering
+the contract (the module ADRs listed above and `packages/module-api/src/`)
+already read. There is no triggering
 issue/PR assumed — this is an in-session skill invoked directly, not a
 routine.
 
@@ -114,8 +117,8 @@ Conforms to `ScoringModuleScreenProps`, MVI like every Scoreo screen: a pure red
 A new module adopts Scoreo's identity: no palette of its own. Its screen **composes
 `@scoreboards/design-system`** exactly as the rest of Scoreo does — no `className`, no `style`, no
 `lucide-react` import (`<Icon name="…" />` instead) — and the design system's semantic tokens are the
-only colours, spacings and radii it uses. The contract is `doc/technical/module-contract.md` §
-"A module wears Scoreo's look".
+only colours, spacings and radii it uses. The contract is ADR-0036 ("A module wears Scoreo's
+look") and ADR-0035.
 
 - **The app's lint rules apply on their own.** `eslint.config.js` holds every
   `packages/module-*/src/**` to them by glob — nothing to register, and no way to opt out: a
@@ -175,9 +178,12 @@ A new module is a **row in an existing table**, not a new test:
 
 ### 8. The documentation
 
-`packages/module-<game>/doc/` — the game's rules, its guide, its resources, its technical notes.
-A module carries its own doc; the workspace's `doc/` keeps what belongs to the repository. Then one
-row in `doc/reference.md`.
+`packages/module-<game>/doc/` — the game's rules, its user guide and its resources (ADR-0033). A
+module carries its own doc; the workspace's `doc/` keeps what belongs to the repository. No
+technical notes: what the module's code does is read in its code, and a decision that code cannot
+tell is an ADR in `doc/adr/` (format in `doc/adr/README.md`). Then one row in the games table of
+`doc/utilisateur/README.md`, linking the module's rules and guide, and the module's journey in the
+« Journeys → specs » table of `apps/scoreo/e2e/README.md`.
 
 ### 9. Quality review (two isolated sub-agents)
 
@@ -191,7 +197,8 @@ reasoning nor the other sub-agent's findings — the same isolation principle as
 this level, so each sub-agent reads the local diff (`git diff` against the base branch) and returns
 its findings to this session, never a GitHub review.
 
-**Contract-compliance sub-agent** reads `doc/technical/module-contract.md`, `project-conventions`,
+**Contract-compliance sub-agent** reads the module-contract ADRs in `doc/adr/` (listed at the top of
+this file), `packages/module-api/src/`, `project-conventions`,
 the traps this file itself documents (the bundle trap of step 2, the styles trap of step 5, the
 single registry file of step 6), and the local diff — never the implementation's own reasoning. It
 checks explicitly:
@@ -202,7 +209,7 @@ checks explicitly:
   `registry.test.ts` freezes the manifest's `winCondition` and player range;
 - the hexagonal layering is respected (pure reducer / use case / port / adapter);
 - any new serialized field carries a zod `.default()`;
-- the doc is present (`packages/module-<game>/doc/` plus a row in `doc/reference.md`).
+- the doc is present (`packages/module-<game>/doc/` plus its row in `doc/utilisateur/README.md`).
 
 **Game-rules sub-agent** reads the game's rules doc in `packages/module-<game>/doc/`, the description
 of what is expected (given to it by this session), and the reducer/screen diff (`src/ui/module/`) —
@@ -258,7 +265,7 @@ allowed fix round — this step is satisfied and § Sorties obligatoires can be 
   one — and `apps/scoreo/tests/visual/` a new spec with
   baselines recorded in the container (step 7).
 - `packages/module-<game>/doc/` populated and one row added to
-  `doc/reference.md` (step 8).
+  `doc/utilisateur/README.md`'s games table (step 8).
 - Step 9's quality review passed: both isolated sub-agents (contract-
   compliance, game-rules) reported no `blocking`/`important` finding,
   either on the first round or after the one allowed fix-and-re-review
@@ -279,7 +286,7 @@ restored.
 
 Per `doc/workflows/skill-contract.md` §3 — in particular, a scope mismatch
 discovered mid-work (e.g. the target game doesn't fit the existing
-module precedents, or the contract in `doc/technical/module-contract.md` doesn't
+module precedents, or the contract (the module ADRs, `packages/module-api/src/`) doesn't
 cover a case this game needs) is grounds to stop and ask rather than
 improvising a new pattern silently.
 

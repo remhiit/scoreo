@@ -9,12 +9,12 @@ import { readInitialAccent, readInitialFlavor } from '../ui/theme/themeManager'
 
 /**
  * TS-081: replays a realistic real-world localStorage export captured from the
- * oldest documented Kotlin format (see doc/technical/migrations.md) through every
+ * oldest documented Kotlin format (see the migration ADRs in doc/adr/, ADR-0017) through every
  * TS adapter, and asserts the full data survives with no loss — the only guarantee
  * existing users have that the cutover won't erase their local-first data.
  *
  * "Oldest documented format" combines, in the same snapshot, every backward-compat
- * case migrations.md describes: pre-archive players/game types (no `active` field),
+ * case the migration ADRs describe: pre-archive players/game types (no `active` field),
  * pre-tie-break game types (no tieBreakRule/tieBreakCondition/tieBreakLabel), v1
  * matches (12-char ids, ISO date strings, no manualWinners/secondaryPlayerScores),
  * and the legacy `scoreo_theme` binary toggle instead of `scoreo_flavor`/`scoreo_accent`.
@@ -133,7 +133,7 @@ describe('cross-migration: real old-format localStorage export', () => {
   it('migrates the legacy scoreo_theme binary toggle to a Catppuccin flavor, accent defaults to mauve', () => {
     expect(readInitialFlavor()).toBe('mocha')
     expect(readInitialAccent()).toBe('mauve')
-    // scoreo_theme is read but never deleted (see migrations.md) — a rollback would still find it
+    // scoreo_theme is read but never deleted (see ADR-0015) — a rollback would still find it
     expect(localStorage.getItem('scoreo_theme')).toBe('dark')
   })
 

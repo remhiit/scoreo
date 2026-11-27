@@ -189,7 +189,8 @@ the steps named.
    `domain/port/`, implementation in `infrastructure/`. Before introducing a
    new abstraction (a helper module, a new port, a new shared component),
    search the existing codebase for one that already covers the need
-   (`doc/reference.md`'s tables are the fastest index) and extend it instead
+   (search the code itself — `apps/scoreo/src/`, `packages/` — and the
+   index of `doc/adr/README.md` for a decision that already settles it) and extend it instead
    — a new abstraction is justified only once nothing existing fits, and
    that justification belongs in the plan (step 3), not discovered by a
    reviewer later. Stay inside the issue's `## Périmètre`/`## Fichiers
@@ -198,8 +199,9 @@ the steps named.
    justification recorded in the plan and the PR body, not a silent
    "while I was in there" — when in doubt, leave it out and note it instead
    under "Questions non résolues" in step 10. Any new field on a
-   serialized model gets a zod `.default()`; any removal/rename gets a
-   migration entry in `doc/technical/migrations.md`.
+   serialized model gets a zod `.default()`; any addition, removal or
+   rename of a serialized field gets its migration ADR in `doc/adr/`
+   (ADR-0004, ADR-0042), written in this same PR.
 
 ### Step 6 — verify green
 
@@ -230,13 +232,33 @@ the steps named.
    PR removes the mockup folder: the feature exists now, the mockup stays in
    git history.
 
-### Step 8 — docs
+### Step 8 — e2e, ADR and user guide
 
-8. **Update `doc/`** per `CLAUDE.md`'s Pre-commit Checklist: the matching
-   `doc/reference.md` table row, `doc/functional/feature.md` or
-   `doc/functional/features/*.md` for user-facing behavior,
-   `doc/technical/migrations.md` for schema changes. A diff that adds a
-   reducer/use case/model/port/adapter/screen without a matching doc update
+8. **Leave the e2e, the ADRs and the user guide matching the code**, per
+   `CLAUDE.md`'s Pre-commit Checklist. Since #690 there is no functional or
+   technical reference documentation to update: what a player can do is
+   read in the e2e suite, what the code cannot tell is read in the ADRs, and
+   everything else is read in the code (types and JSDoc included).
+   - **Visible behavior → e2e.** Every behavior a player can see that this
+     diff adds or changes has its Playwright spec in `apps/scoreo/e2e/`
+     (new, or an existing one extended), following the conventions of
+     `apps/scoreo/e2e/README.md`, and its row in that README's « Journeys →
+     specs » table. Never delete, loosen or `skip`/`fixme` an existing e2e
+     unless the issue's spec says why in writing.
+   - **New decision → ADR.** A decision the code cannot tell — a removed
+     field, the rule of a contract, the reason for a choice — gets a new
+     ADR in `doc/adr/`, in the format and life cycle of
+     `doc/adr/README.md` (next free number, front matter, never rewriting an
+     `Accepted` ADR in substance: a change of mind supersedes it), then the
+     index regenerated with `node scripts/check-adr.mjs --write`.
+   - **Serialized field → migration ADR.** Adding, removing or renaming a
+     field of `Player`/`GameType`/`Match`/`PlayerScore` (or `MatchDraft`)
+     comes with its migration ADR (ADR-0004, ADR-0042), on top of the zod
+     `.default()` an added field needs.
+   - **Visible change → user guide.** The matching page of
+     `doc/utilisateur/` (French, screen by screen) describes the new
+     behavior.
+   A diff with a visible change and no e2e, or a new decision and no ADR,
    is not done yet.
 
 ### Step 9 — commit
@@ -321,7 +343,8 @@ below):
 - One branch, `feat/<issue-number>-<slug>` (step 2).
 - One commit, message = the issue's title, plus `Skill`/`Model` trailers
   (step 9).
-- `doc/` updated per `CLAUDE.md`'s Pre-commit Checklist (step 8).
+- e2e, ADRs and `doc/utilisateur/` updated per `CLAUDE.md`'s Pre-commit
+  Checklist (step 8).
 - One PR, `Closes #N` in the body, structured per the six fields of
   `doc/workflows/skill-contract.md` §2 (step 10) — this is this skill's
   instance of that structured output format.

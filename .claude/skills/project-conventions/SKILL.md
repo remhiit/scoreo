@@ -39,11 +39,16 @@ file in `remhiit/workflows`), so routine prompts naming the old path keep workin
 
 1. `CLAUDE.md` — stack, pnpm commands, directory tree, layering rules,
    backward-compat rules, pre-commit checklist, commit style.
-2. `doc/reference.md` — which reducer/use case/model/port/adapter exists
-   today, per screen.
-3. `doc/glossary.md` — Reducer/Action/State/Use Case/Port/Adapter.
-4. `doc/technical/architecture.md` — stack, patterns, persistence,
-   backward-compat rationale.
+2. `doc/adr/README.md` — the index of the Architecture Decision Records:
+   the decisions the code cannot tell (architecture, backward-compat,
+   migrations, the module contract, the design workflow). Read the
+   `Accepted` ADRs that touch the change.
+3. The code itself — `apps/scoreo/src/` (one folder per layer and per
+   screen), `packages/` (`shared-domain`, `module-api` and its JSDoc,
+   `design-system`, the modules): what exists today is read there, not in a
+   reference table.
+4. `apps/scoreo/e2e/README.md` — the « Journeys → specs » table: what a
+   player can do, and the spec that proves it.
 
 ## verifications
 
@@ -68,23 +73,28 @@ file in `remhiit/workflows`), so routine prompts naming the old path keep workin
   wrong: route it through a Use Case called from the screen component.
 - **UI = composition of the design system** (`CLAUDE.md` § Règles): no
   `className`, `style`, CSS or `lucide-react` import in `apps/scoreo/src/`.
-- Before adding an abstraction, search `doc/reference.md`'s tables for one
-  that already covers the need.
+- Before adding an abstraction, search the code (`apps/scoreo/src/`,
+  `packages/`) for one that already covers the need, and `doc/adr/` for a
+  decision that already settles it.
 
 ## compatibilite
 
 Every serialized model field (`Player`/`GameType`/`Match`/`PlayerScore`) is
 backward-compatible. A new field needs a zod `.default()` in the matching
-`*.schema.ts`. Removing or renaming a field needs a migration entry in
-`doc/technical/migrations.md` — never silently.
+`*.schema.ts`. Removing or renaming a field needs
+a migration ADR in `doc/adr/` (ADR-0004, ADR-0042) — never silently. An
+added field gets its migration ADR too (the precedents: ADR-0037,
+ADR-0039).
 
 ## docs
 
 Doc updates are part of the change (`CLAUDE.md`'s Pre-commit Checklist): a
-new reducer/use case/model/port/adapter/screen updates `doc/reference.md`,
-user-facing behavior updates `doc/functional/feature.md` or
-`doc/functional/features/*.md`, a schema change updates
-`doc/technical/migrations.md`. Code without its `doc/` update is not done.
+behavior a player can see has its e2e in `apps/scoreo/e2e/` and its row in
+that README's table, and the matching page of `doc/utilisateur/`; a decision
+the code cannot tell has its ADR (`doc/adr/README.md` for the format and
+life cycle, index regenerated with `node scripts/check-adr.mjs --write`); a
+serialized field added, removed or renamed has its migration ADR. Code
+without them is not done.
 
 ## ui
 

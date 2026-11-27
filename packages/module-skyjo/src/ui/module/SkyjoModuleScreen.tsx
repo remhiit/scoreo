@@ -59,7 +59,7 @@ export default function SkyjoModuleScreen({
   )
 
   // The turn in progress must survive a reload — the whole reason the draft
-  // trio exists (see `doc/technical/module-contract.md`). Not when reopening:
+  // trio exists (see ADR-0043, `doc/adr/0043-single-draft-slot.md`). Not when reopening:
   // that match is already saved on the host's side, and writing it here would
   // clobber the draft of a new game in progress, or leave its rounds behind
   // for the next new game with the same players to pick up.

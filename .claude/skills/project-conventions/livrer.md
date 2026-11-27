@@ -30,8 +30,10 @@ Scoreo replaces the two default axes with its own two corpora, functional and
 technical: `pr-review.md` § "Context isolation (coordinator sub-agent only)"
 for what each reviewer may read, § "1. Run the checklist (Scoreo checklist with corpus tags)" for the items of
 each corpus, § "2. Classify every finding — Scoreo additions" for the classification. The
-functional reviewer reads the issue's spec, the diff and `doc/functional/`;
-the technical reviewer reads the diff and never the issue. Each follows
+functional reviewer reads the issue's spec, the diff, the e2e suite
+(`apps/scoreo/e2e/` and its README's table) and `doc/utilisateur/`; the
+technical reviewer reads the diff, `doc/adr/` and `project-conventions`, and
+never the issue. Each follows
 `mattpocock-skills:code-review` for its corpus only, on the spot, plus that
 checklist.
 

@@ -903,10 +903,10 @@ humaine, jamais un `true` par défaut.
 Sélection mécanique, jamais un choix du coordinateur : `arbiter-lead` pour
 les deux motifs de la condition 1 (il ne lit que la spec de l'issue, le
 diff (s'il en existe un) et les findings du relecteur fonctionnel — jamais
-`doc/functional/` en tant que tel, jamais la review technique),
+les e2e ni `doc/utilisateur/` en tant que tels, jamais la review technique),
 `arbiter-expert` pour les cinq motifs de la condition 3 (diff, les findings
-du relecteur technique, la tentative de correctif — jamais `doc/technical/
-architecture.md`/`project-conventions` en tant que tels, jamais les
+du relecteur technique, la tentative de correctif — jamais `doc/adr/`/
+`project-conventions` en tant que tels, jamais les
 findings du relecteur fonctionnel, jamais la spec de l'issue). Corpus
 identique des deux côtés — ici et dans le prompt que construit le
 coordinateur (`.claude/skills/coordinator/SKILL.md` § Arbitrage step 5) et

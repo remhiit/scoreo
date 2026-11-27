@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft-07/schema#",
   "title": "Scoreo Automation Routines",
-  "description": "Contrat de .automation/routines.yml — mapping déclaratif label → routine → skill pour le dispatcher d'automatisation (doc/workflows/automation-plan.md §4, doc/workflows/state-machine.md). Documenté ici comme référence du contrat ; validé en pratique par le validateur écrit à la main scripts/automation-dispatch.mjs (même précédent que schemas/import/, cf. doc/technical/architecture.md).",
+  "description": "Contrat de .automation/routines.yml — mapping déclaratif label → routine → skill pour le dispatcher d'automatisation (doc/workflows/automation-plan.md §4, doc/workflows/state-machine.md). Documenté ici comme référence du contrat ; validé en pratique par le validateur écrit à la main scripts/automation-dispatch.mjs (même précédent que schemas/import/).",
   "type": "object",
   "properties": {
     "version": {

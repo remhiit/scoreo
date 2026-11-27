@@ -21,7 +21,7 @@
 //     Scoreo's flavour, the rest would pin one.
 //
 //
-// See doc/technical/module-contract.md.
+// See ADR-0036 (doc/adr/0036-modules-wear-scoreo-look.md).
 import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { join, sep } from 'node:path'
 import { pathToFileURL } from 'node:url'
@@ -377,7 +377,7 @@ function main() {
       }[kind]
       console.error(`  - ${file}: ${detail} → ${why}`)
     }
-    console.error('\nSee doc/technical/module-contract.md.')
+    console.error('\nSee doc/adr/0036-modules-wear-scoreo-look.md.')
     process.exit(1)
   }
 
