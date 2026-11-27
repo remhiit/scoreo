@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# One-time repo setup for the automation plan (doc/technical/automation-plan.md, Phase 0).
+# One-time repo setup for the automation plan (doc/workflows/automation-plan.md, Phase 0).
 #
 # Run manually by a repo admin with the GitHub CLI authenticated
 # (`gh auth login`, `repo` + `admin:repo_hook` scopes). Not part of CI:
@@ -71,7 +71,7 @@ else
 fi
 
 echo "== Branch protection (main) =="
-# required_approving_review_count: 0 — no approval mechanism (see automation-plan.md
+# required_approving_review_count: 0 — no approval mechanism (see doc/workflows/automation-plan.md
 # §3): the review verdict is a commit status (claude/review), not a GitHub approval,
 # since every routine acts under the same GitHub identity and can't approve its own PR.
 gh api "repos/$REPO/branches/main/protection" -X PUT \

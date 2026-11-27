@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// ModelRouter (issue #404, doc/automation/model-routing.md § Algorithme du
+// ModelRouter (issue #404, doc/workflows/model-routing.md § Algorithme du
 // routeur) : sélectionne, de façon explicable et reproductible, le meilleur
 // modèle de sous-agent pour une routine à partir de son TaskContext (#401),
 // de son ComplexityAssessment (#402), du RiskAssessment produit par
@@ -33,7 +33,7 @@ const COST_SCORE = { low: 1, medium: 0.5, high: 0 }
 const LATENCY_SCORE = { fast: 1, medium: 0.5, slow: 0 }
 
 // Poids par défaut du score pondéré (somme = 100), documentés dans
-// doc/automation/model-routing.md § Score pondéré. `policyPreference` et
+// doc/workflows/model-routing.md § Score pondéré. `policyPreference` et
 // `historicalPerformance` sont neutralisés (retirés puis le reste
 // renormalisé) pour un candidat qui n'en porte pas — voir computeWeightedScore.
 export const DEFAULT_SCORE_WEIGHTS = Object.freeze({

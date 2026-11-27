@@ -58,9 +58,11 @@ Lire ces fichiers dans l'ordre. Tout le contexte nécessaire y est :
 
 | Dossier | Contenu |
 |---|---|
-| `apps/scoreo/` | L'app hôte : `index.html`, `public/`, `src/`, `e2e/` (Playwright, comportement), `tests/visual/` (Playwright, pixels — voir `doc/technical/visual-testing.md`), `scripts/`, ses configs Vite/Vitest/Playwright/TS et son `package.json` (React, zod, vite, vitest) |
+| `apps/scoreo/` | L'app hôte : `index.html`, `public/`, `src/`, `e2e/` (Playwright, comportement), `tests/visual/` (Playwright, pixels — voir `doc/workflows/visual-testing.md`), `scripts/`, ses configs Vite/Vitest/Playwright/TS et son `package.json` (React, zod, vite, vitest) |
 | `packages/` | Le contrat et les modules de comptage. `module-api/` (contrat entre Scoreo et la grille de saisie d'un jeu, zéro code runtime, n’importe que des types de `shared-domain`) et `shared-domain/` (`Player`, `GameType`, `Match`, `PlayerScore` avec leurs schémas zod et fonctions pures, les enums, `newId`, `Result` — une seule définition pour tout le workspace) ; puis un dossier par module : `module-tori-valley/` (absorbé depuis `remhiit/toriValleyScoreBoard`, sans coquille standalone depuis #330). Voir `doc/technical/module-contract.md` |
 | Racine | `package.json` privé (scripts `pnpm -r`, eslint/prettier/tsc), `tsconfig.base.json`, `eslint.config.js`, `vitest.config.ts` (tests de `scripts/` uniquement), `lighthouserc.json`, `doc/`, `schemas/`, `scripts/`, `.github/`, `.claude/` |
+| `doc/utilisateur/` | Le guide de l'utilisateur, en français, écran par écran ; les guides et règles des compteurs restent dans `packages/module-*/doc/` et y sont liés |
+| `doc/workflows/` | La chaîne d'automatisation et les règles de travail (spec, file, coordinateur, revue, fusion ; maquettes, catalogue, CI/CD, guides de test). Point d'entrée : `doc/workflows/README.md` |
 | `apps/scoreo/src/domain/` | `model/` (types + schémas zod), `port/` (interfaces repository) |
 | `apps/scoreo/src/application/` | Use cases (opérations métier, zéro dépendance framework) |
 | `apps/scoreo/src/infrastructure/` | `localStorage/` (adapters), `google/` (sync Google Drive : OAuth, DriveClient, DriveSyncAdapter, SyncConfig), `migration/` (migration Match v1→v2), `testing/` (fakes in-memory pour les tests) |
@@ -76,7 +78,7 @@ Lire ces fichiers dans l'ordre. Tout le contexte nécessaire y est :
 | `legacy/1ksabord-kotlin/` | **Temporaire.** L'app Kotlin/JS de 1000 Sabords absorbée avec son historique, gardée comme **oracle** du portage TypeScript : ses 107 tests tournent en CI (`kotlin-legacy.yml`) et doivent rester verts. Supprimée avec son workflow une fois le portage livré. Ne rien y développer |
 | `packages/module-*/doc/` | La doc d'un jeu vit dans le paquet de son module, à côté du code qui l'implémente : règles, guide, doc technique et ressources (le PDF des règles de 1000 Sabords, celui de Torī et ses scans de cartes). `doc/` à la racine ne garde que ce qui concerne le dépôt entier |
 | `packages/design-system/` | **Toute** décision visuelle de l'app : tokens Catppuccin, atomes → gabarits en composants React + CSS préfixé `sc-`. Voir son `README.md` |
-| `apps/catalog/` | Le catalogue vivant du design system : chaque composant rendu par son vrai code, couche par couche, dans les 4 thèmes. Sa page **Écrans** fait tourner les vrais écrans de l'app et des modules sur des données d'exemple (`src/screens/`, via l'export `scoreo/catalog`) : un écran du routeur sans trace n'y compile pas. Outil, jamais déployé ; un composant sans fiche y fait échouer `pnpm test`. Voir `doc/technical/design-catalog.md` |
+| `apps/catalog/` | Le catalogue vivant du design system : chaque composant rendu par son vrai code, couche par couche, dans les 4 thèmes. Sa page **Écrans** fait tourner les vrais écrans de l'app et des modules sur des données d'exemple (`src/screens/`, via l'export `scoreo/catalog`) : un écran du routeur sans trace n'y compile pas. Outil, jamais déployé ; un composant sans fiche y fait échouer `pnpm test`. Voir `doc/workflows/design-catalog.md` |
 | `ds_temp/scoreo-design/` | Copie figée (30/09/2026) de l'export Claude Design vers lequel les écrans ont migré. La référence visuelle est désormais `apps/catalog/` ; dossier à supprimer |
 
 ## Workflow
@@ -87,14 +89,18 @@ Lire ces fichiers dans l'ordre. Tout le contexte nécessaire y est :
 - **Développe** : je dis de développer → tu prends la première issue `P0` ouverte non assignée (à défaut la priorité suivante disponible), tu la réalises, tu commit, tu ouvres une PR référençant `Closes #N`, puis tu passes à la suivante.
 - Un commit par issue. Message de commit = titre de l'issue.
 
-Voir `doc/technical/automation-plan.md` pour l'architecture d'automatisation cible (labels comme bus d'événements, skills, phases de mise en autonomie).
+Voir `doc/workflows/automation-plan.md` pour l'architecture d'automatisation cible (labels comme bus d'événements, skills, phases de mise en autonomie).
+
+Skills partagés (transitoires, utilisés par le pipeline automatisé) : `issue-to-spec`, `implement-task`, `pr-review`, `address-feedback`, `change-risk`, `test-strategy` et `site-quality` viennent du plugin `dev-workflow` du dépôt [`remhiit/workflows`](https://github.com/remhiit/workflows) (nom complet `dev-workflow:<skill>`). Sur le web, le plugin se charge depuis le compte claude.ai (les plugins déclarés dans `.claude/settings.json` ne se chargent pas dans une session cloud) ; `.claude/settings.json` le déclare pour le CLI local. Ce qui est propre à Scoreo pour ces skills vit dans leur surcouche, `.claude/skills/project-conventions/` (`SKILL.md` + un fichier par skill), qui gagne sur le skill partagé. Un manque générique se corrige dans `remhiit/workflows`, pas ici.
+
+Workflows : le plugin `workflows` du même dépôt enchaîne les skills de Matt Pocock et d'ecc par type de tâche. Avec Rémi : `/workflows:feature` (interview, maquette, spec, tickets prêts), `/workflows:refacto`, `/workflows:spike`. Sans humain : `/workflows:livrer #N` (ticket prêt → PR, un agent neuf par étape), `/workflows:bug`, `/workflows:maintenance`. Leur surcouche Scoreo : `.claude/skills/project-conventions/<workflow>.md`. Un ticket confié au pipeline (tout label `automation:*` : `queued`, `ready`, `in-progress`…) reste au `coordinator` : jamais deux orchestrateurs sur une issue.
 
 Ajouter un compteur de points pour un nouveau jeu : `.claude/skills/new-scoring-module/` — la checklist complète, du paquet aux gardes à étendre, avec les pièges qui ont coûté de vrais bugs ici. Le contrat lui-même est dans `doc/technical/module-contract.md`.
 
 ## Règles
 
 - **UI = composition du design system.** L'app n'écrit ni `className`, ni `style`, ni CSS, ni import `lucide-react` : elle assemble les composants de `@scoreboards/design-system`. Un besoin visuel manquant = un composant ou une prop ajouté(e) au design system (avec son CSS, son test et sa fiche dans `apps/catalog/`), jamais un contournement local. ESLint l'impose sur tout `apps/scoreo/src/`, sans exception.
-- **Maquette avant le code.** Une feature qui change ce que voit un joueur (écran, composant, mise en page, état visible) est d'abord maquettée dans `apps/catalog/src/mockups/<feature>/` et validée par la fusion de sa PR de maquette ; sans elle, la spec reste `NEEDS_CLARIFICATION`. Règle complète : `doc/technical/design-workflow.md`.
+- **Maquette avant le code.** Une feature qui change ce que voit un joueur (écran, composant, mise en page, état visible) est d'abord maquettée dans `apps/catalog/src/mockups/<feature>/` et validée par la fusion de sa PR de maquette ; sans elle, la spec reste `NEEDS_CLARIFICATION`. Règle complète : `doc/workflows/design-workflow.md`.
 - Reducer dans `ui/*/`. Reçoit une `Action` → produit un `State`.
 - Use Case dans `application/`. Opération métier, zéro dépendance framework.
 - Interface Repository dans `domain/port/`. Implémentation dans `infrastructure/`.

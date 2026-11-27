@@ -1,5 +1,5 @@
 # Seuils de bande de complexité (score 0-100) consommés par
-# scripts/complexity-assessment.mjs (issue #402, doc/technical/automation-plan.md §4).
+# scripts/complexity-assessment.mjs (issue #402, doc/workflows/automation-plan.md §4).
 # Versionné séparément du calcul lui-même pour pouvoir ajuster les bandes
 # sans toucher au code — même logique que .automation/routines.yml pour le
 # mapping label → routine.

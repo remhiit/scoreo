@@ -1,143 +1,24 @@
 ---
 name: site-quality
-description: Weekly hygiene pass on the Scoreo repo — dependency updates, dead doc links, Lighthouse score regressions, PWA manifest/service-worker validity. One PR per category, never a combined PR. Use for scheduled/weekly maintenance, or when asked to check for outdated deps, broken doc links, or Lighthouse regressions. This is the R5 step in doc/technical/automation-plan.md.
+description: Transition alias — this skill now lives in the shared plugin as `dev-workflow:site-quality`, with Scoreo's overlay in `.claude/skills/project-conventions/site-quality.md`. Kept so routine prompts that still point at this path keep working; delete once every prompt names `dev-workflow:site-quality`.
 ---
 
-# Site Quality
+# site-quality — transition alias
 
-## Objectif
+This skill moved to the shared `dev-workflow` plugin (repository
+`remhiit/workflows`). This file only redirects, so that routine prompts and
+older references to `.claude/skills/site-quality/SKILL.md` keep working.
 
-Runs the routine hygiene checks the repo already has tooling for, and opens
-**one PR per category** — a combined PR mixing a dependency bump with a doc
-fix is harder to review and riskier to revert. Each PR goes through
-`ci.yml`/`pr-review` like any other PR; this skill doesn't bypass that. It
-only fixes what its four categories below cover — anything else it surfaces
-becomes a normal issue via `issue-to-spec` (see "What this skill does not
-do").
+1. Invoke the skill `dev-workflow:site-quality` with the Skill tool and follow it.
+2. If that skill is not available in this session (plugin not loaded, e.g. in
+   a sub-agent or a routine), read
+   `plugins/dev-workflow/skills/site-quality/SKILL.md` from the `remhiit/workflows`
+   repository (default branch) with the GitHub file-reading tool, and follow
+   it. Say in your output which of the two you used.
+3. Either way, the shared skill reads Scoreo's overlay:
+   `.claude/skills/project-conventions/SKILL.md`, then
+   `.claude/skills/project-conventions/site-quality.md`. The overlay wins on conflict.
 
-## Entrées requises
-
-None beyond the repo itself at its current default-branch HEAD — this skill
-builds its own worklist each run from live tooling output (`pnpm outdated`,
-`check-doc-links.mjs`, recent Lighthouse CI artifacts, the current
-`apps/scoreo/public/` contents), not from a triggering issue or PR.
-
-## Préconditions
-
-None GitHub-specific: this skill's trigger is a weekly cron
-(`doc/automation/state-machine.md` §3, R5), not a `labeled` event on a
-specific issue/PR, so it has neither a "which issue/PR" rule nor a "claim
-the run" step (`doc/automation/skill-contract.md` §1.4) — both apply only to
-label-triggered routines. Each of the four categories below is independent;
-running the same category twice in the same week should find nothing new to
-fix if the previous run's PR already merged.
-
-## Procédure
-
-### 1. Dependencies
-
-`pnpm outdated`. **It exits with code 1 whenever it finds any outdated
-package** — that's the command reporting results, not an error. Don't treat
-a non-zero exit here as a failure to stop on; read the printed table and
-keep going. (Contrast with `pnpm lint`/`typecheck`/`test`/`build` elsewhere
-in this repo's tooling, where non-zero really does mean broken.)
-
-For each outdated package, weigh:
-
-- Patch/minor bumps with no breaking changes noted in the changelog: safe to
-  bump directly.
-- Major bumps, or anything touching the build pipeline (`vite`, `vitest`,
-  `typescript`, `eslint`): bump one at a time, run the full check suite
-  (`pnpm lint && pnpm typecheck && pnpm test && pnpm build`) before deciding
-  it's safe — a red `ci.yml` on the resulting PR means don't force it (see
-  PR #63 in this repo's history: a Vite 5→8 dependency bump failed CI and
-  was correctly never merged).
-
-Group related bumps (e.g. all `@vitejs/*` packages together) into one PR;
-unrelated packages get separate PRs.
-
-### 2. Dead doc links
-
-Run `node scripts/check-doc-links.mjs`. It only catches relative links under
-`doc/` pointing to files that don't exist — if it reports a broken link,
-either fix the target path or fix/remove the link. This category is usually
-either "nothing to do" or a one-line fix; open a PR only if there's actually
-something broken.
-
-### 3. Lighthouse regressions
-
-`lighthouserc.json` runs in `warn` mode (see `ci.yml`'s `lighthouse` job) —
-it won't block anything on its own. Check recent Lighthouse CI artifacts
-(uploaded per PR) against the measured baseline (performance 0.96,
-accessibility 0.95, best-practices 0.96, SEO 0.90 as of the Phase 0 CI
-work). A meaningful drop below baseline is worth its own PR investigating
-the regression; don't chase single-point noise between runs.
-
-### 4. PWA validity
-
-Check `apps/scoreo/public/manifest.json` and `apps/scoreo/public/sw.js` are still internally
-consistent with the app: icon paths in the manifest resolve
-(`apps/scoreo/public/icon-192.png`, `apps/scoreo/public/icon-512.png`), `sw.js`'s cached asset list
-(if any) matches what `pnpm build` actually emits, and the deploy workflow's
-"Verify all apps/scoreo/public/ assets are in the artifact" step (`deploy.yml`) still
-passes conceptually — i.e. nothing new was added to `apps/scoreo/public/` without a
-corresponding reference.
-
-## Traçabilité
-
-Per `doc/automation/skill-contract.md` § "Traçabilité" (#494): every PR this
-skill opens (§ Procédure) carries a **Traçabilité** field in its body —
-`skill \`site-quality\`` + `modèle \`<id>\`` — alongside whatever else the
-PR description already says about the category fixed. This skill always
-runs as its own Claude Code Remote session (R5, cron-triggered — never a
-coordinator sub-agent), so `<id>` always comes from calling `get_session`
-(no `session_id`) and reading `session_context.model`. Normalize that value
-the way `skill-contract.md` § "Traçabilité" states it: strip a
-context-window suffix (`claude-opus-5[1m]` → `claude-opus-5`), and prefer
-`external_metadata.last_served_model` when it is present and differs from
-`session_context.model` — a turn-scoped fallback changes what served the run
-without changing what the session is set to, and that call can come back
-with no usable `session_context.model` at all.
-If that call fails, `<id>` is `inconnu` with the reason stated alongside it,
-never guessed.
-
-## Sorties obligatoires
-
-Zero or more PRs, at most one per category actually touched this run — never
-a combined PR mixing categories (see Objectif). A category with nothing to
-fix (the common case for doc links and PWA validity) produces no PR at all;
-this skill has no obligation to open one every run. Each PR opened carries
-the Traçabilité field above in its body, and still goes through
-`ci.yml`/`pr-review` like any other PR — this skill's own "Contrôles" below
-is what it runs before opening one, not a substitute for that downstream
-review.
-
-## Contrôles
-
-Category-specific, per §1 above: a major/build-pipeline dependency bump
-requires the full check suite green (`pnpm lint && pnpm typecheck && pnpm
-test && pnpm build`) before it's judged safe to open as a PR; a doc-link fix
-or PWA-validity fix is verified by re-running the same tool that found the
-problem (`check-doc-links.mjs`, a manifest/service-worker re-check). A
-Lighthouse regression PR has no gate of its own beyond `ci.yml`'s own
-`warn`-mode job — the point of that PR is to investigate the regression, not
-to already have fixed it before opening.
-
-## Escalade
-
-Sans objet — this skill's categories are additive hygiene work, not a
-review/fix loop with a retry cap, and it has no triggering issue/PR to judge
-as ambiguous. When a category surfaces something outside its own scope (see
-"What this skill does not do" below), the response is to open a normal
-issue via `issue-to-spec`, not to escalate to `automation:needs-human` —
-there is no run to protect a backlog slot for (`doc/automation/
-skill-contract.md` §3 is about a routine that owns an in-flight claim; this
-skill never claims one).
-
-## Limites — what this skill does not do
-
-It does not touch `apps/scoreo/public/`, `apps/scoreo/src/domain/model/`, ports/adapters, or
-navigation as part of a "quick fix" — those are the same categories excluded
-from the `automation:enabled` whitelist in `automation-plan.md` §5 for a reason. If a
-hygiene pass surfaces something in those areas, open a normal issue via
-`issue-to-spec` instead of folding it into a hygiene PR.
+Remove this alias once the R2–R5 routine prompts (`doc/workflows/deployment.md`)
+and every coordinator sub-agent launch name `dev-workflow:site-quality` directly and a
+run has confirmed the plugin loads there.

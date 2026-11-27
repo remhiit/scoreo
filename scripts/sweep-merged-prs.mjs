@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Rattrapage horaire pour la limite structurelle documentée dans
-// doc/technical/automation-plan.md (Phase 5, #208/#212) : `auto-merge-sync.yml`
+// doc/workflows/automation-plan.md (Phase 5, #208/#212) : `auto-merge-sync.yml`
 // attend en synchrone (60 x 20s) que son propre auto-merge complète avant de
 // fermer les issues liées dans le même job. Si ce délai expire — la PR #264 a
 // dû être remise à jour sur `main` par l'auto-merge, ce qui a relancé la CI et

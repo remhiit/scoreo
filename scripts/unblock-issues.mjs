@@ -15,7 +15,7 @@
 // completely untouched, `blocked` included — only a human re-queues it.
 // The dispatcher (scripts/dispatch-ready.mjs) decides when a
 // `automation:queued` issue actually becomes `automation:ready`.
-// Zero LLM (doc/technical/automation-plan.md §2.2).
+// Zero LLM (doc/workflows/automation-plan.md §2.2).
 import { readFileSync } from 'node:fs'
 import { pathToFileURL } from 'node:url'
 

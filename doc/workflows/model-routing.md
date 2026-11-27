@@ -5,7 +5,7 @@ Documente le contrat versionné consommé par le futur skill coordinateur
 complexité : `.automation/model-catalog.yml` (catalogue des modèles
 disponibles) et `.automation/routing-policy.yml` (politique de routage).
 Issue #400, dans le prolongement de l'arbitrage d'architecture #423 — voir
-`doc/technical/automation-plan.md` § « Routage par sous-agent » pour le
+`doc/workflows/automation-plan.md` § « Routage par sous-agent » pour le
 contexte complet (pourquoi router, option retenue, périmètre de l'épic).
 
 Les deux fichiers sont validés en CI par le job `automation-config` de
@@ -158,7 +158,7 @@ résolution retombe sur `sonnet-5` (un modèle de sous-agent Claude Code),
 sans que le schéma en soit changé — le champ `fallback` référence n'importe
 quel identifiant du même catalogue, indépendamment de son `provider`. Un
 appel réel à un fournisseur externe (endpoint, secret, adapter) reste hors
-scope de ce contrat — voir `doc/technical/automation-plan.md` § « Routage
+scope de ce contrat — voir `doc/workflows/automation-plan.md` § « Routage
 par sous-agent », option B.
 
 ## Algorithme du routeur (`scripts/model-router.mjs`, issue #404)
@@ -291,7 +291,7 @@ zéro appel réseau — même précédent que le reste de ce contrat.
 ### `extractRiskLevel(issueBody)`
 
 Lit la section `## Catégorie de risque` du corps d'une issue — même format
-que `issue-to-spec/SKILL.md` produit, `**Faible**` ou `**Élevé**` en tête de
+que `project-conventions/issue-to-spec.md` produit, `**Faible**` ou `**Élevé**` en tête de
 section — et renvoie `{ level: 'low' | 'high', source }`. Section absente,
 vide, ou portant un libellé qui n'est ni l'un ni l'autre → `null`, jamais un
 niveau deviné : un appelant ne doit jamais traiter `null` comme `'low'` par
@@ -380,7 +380,7 @@ optionnel porte l'enregistrement structuré du run — `RunMetrics`, assemblé
 par `scripts/run-metrics.mjs#buildRunMetrics` et validé par
 `validateRunMetrics` — dont le contrat complet (champs, complétude,
 rédaction des secrets) est documenté par
-`doc/technical/automation-plan.md` § « Métriques » et par
+`doc/workflows/automation-plan.md` § « Métriques » et par
 `schemas/automation/run-metrics.schema.json`.
 
 ## Matrice d'activation (`scripts/routing-activation.mjs`, issue #476)
@@ -388,7 +388,7 @@ rédaction des secrets) est documenté par
 Remplace le drapeau global `dry_run` de #406 par une résolution fine, un
 triplet à la fois plutôt que toutes les routines et toutes les bandes d'un
 coup — l'activation réelle du routage doit commencer par les tâches
-réversibles et peu risquées, puis s'étendre (doc/technical/automation-plan.md
+réversibles et peu risquées, puis s'étendre (doc/workflows/automation-plan.md
 §5 « Passage du dry-run à l'activation contrôlée »), jamais basculer d'un
 seul geste.
 
@@ -825,7 +825,7 @@ lui-même).
 ## Arbitrage (`scripts/arbitration.mjs`, issue #497)
 
 À distinguer de l'« arbitrage » de `scripts/review-verdict.mjs#computeReviewVerdict`
-(`doc/automation/state-machine.md` § « scripts/review-verdict.mjs », l'étape
+(`doc/workflows/state-machine.md` § « scripts/review-verdict.mjs », l'étape
 mécanique propre du coordinateur qui combine les deux findings de review en
 un verdict) — même mot, deux mécanismes distincts et sans rapport ; cette
 section ne concerne que le second, `arbiter-lead`/`arbiter-expert` ci-dessous.
@@ -834,7 +834,7 @@ Tranche 1/5 de l'épique #496 : insère une étape d'arbitrage **avant**
 `automation:needs-human`, pour les deux conditions d'escalade du
 coordinateur (`.claude/skills/coordinator/SKILL.md` § Escalade) qui sont des
 **jugements** — pas un fait manquant, une panne, une configuration ou un
-garde-fou volontaire. Voir `doc/technical/automation-plan.md` §2,
+garde-fou volontaire. Voir `doc/workflows/automation-plan.md` §2,
 amendement du principe directeur « aucune décision d'automatisation prise
 par un LLM sans validation humaine », pour la portée exacte de cette
 exception et ses cinq limites.
@@ -1012,7 +1012,7 @@ structurellement pas le droit de lire.
 - **`escalate`** → `escalate`, l'escalade humaine continue, enrichie de
   `reasoning`.
 
-### Les cinq garde-fous (rappel, détaillés dans `automation-plan.md` §2)
+### Les cinq garde-fous (rappel, détaillés dans `doc/workflows/automation-plan.md` §2)
 
 1. Un arbitrage par run maximum — `budgets.coordinator.per_run.arbitrations: 1`
    (`scripts/routing-budget.mjs#checkBudget`, #478 ; voir § « Budgets »

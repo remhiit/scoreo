@@ -7,7 +7,7 @@ canonical statement of when a skill must stop and escalate to
 `automation:needs-human`.
 
 This document defines the contract only — it does not migrate any existing
-skill to it. `automation-plan.md` §2 principle 5 ("tout le savoir-faire vit
+skill to it. `doc/workflows/automation-plan.md` §2 principle 5 ("tout le savoir-faire vit
 dans les skills") is why a shared shape matters: eight files
 (`project-conventions`, `issue-to-spec`, `implement-task`, `pr-review`,
 `address-feedback`, `site-quality`, `weekly-report`, `new-scoring-module`)
@@ -19,7 +19,7 @@ routine skills — `implement-task`, `pr-review`, `address-feedback`,
 autonomous routine — by #427 (risk Élevé), split by risk profile so their
 merge policies can differ. No `SKILL.md` is touched by this document.
 
-`doc/automation/state-machine.md` stays the formal contract for *labels and
+`doc/workflows/state-machine.md` stays the formal contract for *labels and
 transitions* (which label a routine claims, which it poses, in what order).
 This document is the formal contract for *skill file shape and reporting* —
 the two are complementary: state-machine.md tells a routine what to do with
@@ -35,7 +35,7 @@ being present and locatable, not about matching a heading string verbatim).
 
 1. **Frontmatter** — `name` and `description`. The description states which
    routine (R1…R6), if any, invokes this skill, matching the mapping in
-   `automation-plan.md` §6 and `doc/automation/state-machine.md` §3.
+   `doc/workflows/automation-plan.md` §6 and `doc/workflows/state-machine.md` §3.
 2. **Objectif** — one paragraph: what this skill accomplishes and, briefly,
    what it deliberately does not (the boundary with adjacent skills, e.g.
    `address-feedback` fixes flagged scope, it doesn't re-review).
@@ -55,7 +55,7 @@ being present and locatable, not about matching a heading string verbatim).
      § Which issue, `pr-review`/`address-feedback` § Which PR).
    - **Claim the run** — for a label-triggered routine, remove the trigger
      label and add `automation:in-progress` as the *first* action, before
-     any other label write (`doc/automation/state-machine.md` §5 "Claim the
+     any other label write (`doc/workflows/state-machine.md` §5 "Claim the
      run, always first"). A skill with no GitHub trigger (interactive-only,
      like `issue-to-spec`) has no claim step.
 5. **Procédure** — the ordered steps. No fixed shape beyond "ordered and
@@ -85,7 +85,7 @@ being present and locatable, not about matching a heading string verbatim).
    scope it must not expand into, actions reserved for a human or a
    different component (e.g. `implement-task` never merges its own PR;
    `address-feedback` never "while I'm here" refactors adjacent code; no
-   skill batches more than one ticket/PR per run — `automation-plan.md` §2
+   skill batches more than one ticket/PR per run — `doc/workflows/automation-plan.md` §2
    principle 6).
 
 ## 2. Common structured output format (R2/R3/R4)
@@ -115,7 +115,7 @@ description, a verdict comment, or a synthesis comment is this skill's
 instance of this format — not literally render this table into every
 GitHub comment. `scripts/automation-log.mjs`'s journal remains the
 machine-generated summary derived from these fields (today wired for R3's
-verdict only, per `automation-plan.md` § Journal d'exécution idempotent);
+verdict only, per `doc/workflows/automation-plan.md` § Journal d'exécution idempotent);
 this format is what a skill's own free-text output should already contain
 so that wiring a journal call for R2/R4/R5 later is a mechanical extraction,
 not a rewrite of what the routine reports.
@@ -128,7 +128,7 @@ executed it — the only prior trace was `routine` (the journal's own field)
 and the optional `routing` field, and `routing` only ever states a
 *theoretical* routing decision (`RoutingDecision`, #404), never the model a
 sub-agent actually ran with (the activation matrix, #476, declares
-`observe` everywhere as of this writing — see `automation-plan.md` §7 —
+`observe` everywhere as of this writing — see `doc/workflows/automation-plan.md` §7 —
 so `routing.selectedModel` and the model actually used are the same today,
 but nothing guarantees that once activation ever moves to `apply`). The
 **Traçabilité** field above is deliberately a separate field from
@@ -213,7 +213,7 @@ comment posted before this change is never rewritten retroactively.
 
 Stated once, here, referenced by every skill's "Escalade" section (§1.8)
 rather than re-derived. The exact label mechanics per entity (which labels
-are removed/added, in what order) are `doc/automation/state-machine.md`'s
+are removed/added, in what order) are `doc/workflows/state-machine.md`'s
 job — rows #6, #19, #20, and §5–§7 there; this section is the shorter,
 skill-facing summary of *when*, independent of entity:
 
@@ -283,12 +283,12 @@ exactly what to add, without further interpretation.
 
 ## 5. Worked example — `implement-task` (R2), unmodified
 
-Illustrating §1–§4 against the existing `.claude/skills/implement-task/
+Illustrating §1–§4 against the existing `dev-workflow:implement-task
 SKILL.md` (read, not edited, by this ticket):
 
-| Template section | Where it already lives in `implement-task/SKILL.md` | Gap, if any |
+| Template section | Where it already lives in `project-conventions/implement-task.md` | Gap, if any |
 |---|---|---|
-| Frontmatter | `description` names "This is the R2 step in doc/technical/automation-plan.md" | Conformant |
+| Frontmatter | `description` names "This is the R2 step in doc/workflows/automation-plan.md" | Conformant |
 | Objectif | Opening paragraph: "Executes a single GitHub issue's spec... as one branch, one commit, one PR" | Conformant |
 | Entrées requises | Implicit — "the spec" (the issue body written by `issue-to-spec`) — never stated as its own section | Gap: no explicit "assumes the issue already carries acceptance criteria, impacted files, risk category" statement |
 | Préconditions | § Which issue (item selection) + step 1's "claim" via `automation:ready`→`automation:in-progress` swap | Conformant, under a different heading name |
@@ -301,6 +301,6 @@ SKILL.md` (read, not edited, by this ticket):
 This is exactly the shape #427 will act on for the five routine skills: most
 sections already exist under working names, and the gaps are additive
 (state an assumption, add a checklist, add a pointer) rather than
-structural rewrites — consistent with `automation-plan.md`'s "un run = un
+structural rewrites — consistent with `doc/workflows/automation-plan.md`'s "un run = un
 ticket" applying just as much to a low-risk documentation change as to a
 code change.

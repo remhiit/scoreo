@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft-07/schema#",
   "title": "Scoreo Automation Routing Decision",
-  "description": "Contrat de la décision produite par le routeur pur scripts/model-router.mjs#routeModel (issue #404, doc/automation/model-routing.md § Algorithme du routeur). Une décision par run : le modèle sélectionné (ou l'absence de candidat), la chaîne de fallback ordonnée restante, et chaque candidat évalué avec ses raisons d'exclusion — jamais un score nu sans justification. Documenté ici comme référence du contrat ; validé en pratique par le validateur écrit à la main scripts/model-router.mjs#validateRoutingDecision (même précédent que schemas/automation/complexity-assessment.schema.json).",
+  "description": "Contrat de la décision produite par le routeur pur scripts/model-router.mjs#routeModel (issue #404, doc/workflows/model-routing.md § Algorithme du routeur). Une décision par run : le modèle sélectionné (ou l'absence de candidat), la chaîne de fallback ordonnée restante, et chaque candidat évalué avec ses raisons d'exclusion — jamais un score nu sans justification. Documenté ici comme référence du contrat ; validé en pratique par le validateur écrit à la main scripts/model-router.mjs#validateRoutingDecision (même précédent que schemas/automation/complexity-assessment.schema.json).",
   "type": "object",
   "properties": {
     "version": {

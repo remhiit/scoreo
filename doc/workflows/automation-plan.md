@@ -30,7 +30,7 @@ remettre en cause revient à refaire le plan.
    fermer un ticket, poser un label : GitHub Actions. Les routines ne font que
    ce qui demande du jugement : coder, reviewer. Dans le même esprit, **aucune
    décision d'automatisation n'est prise par un LLM sans validation humaine**
-   — formulation déjà employée telle quelle par doc/automation/model-routing.md
+   — formulation déjà employée telle quelle par doc/workflows/model-routing.md
    § « Calibration » (#481, qui **propose** des ajustements de politique à
    un humain, sans jamais les appliquer elle-même).
 
@@ -60,7 +60,7 @@ remettre en cause revient à refaire le plan.
      arbitrations: 1` (#478), jamais contourné par un second arbitrage si le
      premier ne converge pas : l'escalade humaine reprend la main.
 
-   Voir doc/automation/model-routing.md § « Arbitrage » pour le détail des
+   Voir doc/workflows/model-routing.md § « Arbitrage » pour le détail des
    cinq fonctions et de la table des motifs.
 3. **Push, pas pull.** Les runs de routine sont un budget rare (5/jour en Pro,
    15 en Max). Aucune routine ne « surveille » ni ne « poll » : elle est
@@ -201,7 +201,7 @@ dans la boucle.
 ### Dépendances entre issues (`blocked_by`)
 
 Les issues qui déclarent une section `## Dépendances` (format documenté dans
-`issue-to-spec/SKILL.md`, une ligne `Dépend de #N (raison)` par bloqueur) le
+`project-conventions/issue-to-spec.md`, une ligne `Dépend de #N (raison)` par bloqueur) le
 font en texte libre — illisible par API. `.github/workflows/sync-issue-dependencies.yml`
 (zéro LLM, cohérent avec le principe directeur §2.2) se déclenche sur
 `issues` `opened`/`edited` et **réconcilie** le lien natif GitHub `blocked_by`
@@ -215,7 +215,7 @@ retire tous ses liens. Une issue **sans** section `## Dépendances` n'est
 jamais touchée, dans aucune direction : c'est ce qui protège les liens posés
 à la main. Le repérage de la section est ancré en début de ligne (une
 mention en prose de son nom, entre backticks ou dans un bloc de code — y
-compris l'exemple de format documenté dans `issue-to-spec/SKILL.md` lui-même
+compris l'exemple de format documenté dans `project-conventions/issue-to-spec.md` lui-même
 — ne détourne pas le match) ; si plusieurs titres `## Dépendances` existent
 dans un même corps, le premier (de haut en bas) fait autorité, les suivants
 sont ignorés. Idempotent (un lien déjà posé renvoie 422, ignoré ; un lien
@@ -282,7 +282,7 @@ leur lien natif `GET .../dependencies/blocked_by` (posé par
 `sync-issue-dependencies.yml`), dans l'ordre de priorité, avec arrêt à la
 première dont tous les bloqueurs sont fermés. Le label `blocked` n'est
 **jamais** lu par cette décision : c'est un signal d'affichage dérivé
-(`doc/automation/state-machine.md` §2), pas la source de vérité — celle-ci
+(`doc/workflows/state-machine.md` §2), pas la source de vérité — celle-ci
 est le lien natif, dans les deux sens (un `blocked` obsolète sans lien
 n'empêche rien ; un lien ouvert sans label bloque quand même). Une réponse
 404 ou une liste vide sur `blocked_by` vaut « non bloquée », jamais
@@ -357,7 +357,7 @@ l'action effectuée.
 
 ### Dispatcher déclaratif : `.automation/routines.yml`
 
-Le mapping label → routine → skill (table de `doc/automation/state-machine.md`
+Le mapping label → routine → skill (table de `doc/workflows/state-machine.md`
 §2) vivait jusqu'ici dupliqué en texte libre dans cette section, dans
 `state-machine.md` et dans chaque `SKILL.md`. `.automation/routines.yml`
 en devient la version machine-lisible : une entrée par routine (`entity`,
@@ -579,7 +579,7 @@ Trois fonctions pures, zéro effet de bord, zéro réseau, comme le reste de
 - `resolveClassifierModel(routingPolicy, modelCatalog)` — résout le modèle
   de sous-agent déclaré par `.automation/routing-policy.yml` pour la clé
   `routines.classification` (une entrée hors du jeu des routines dispatchées,
-  voir `doc/automation/model-routing.md`) : un seul candidat par bande, à
+  voir `doc/workflows/model-routing.md`) : un seul candidat par bande, à
   poids 100, **jamais** une escalade par bande de complexité (circulaire :
   le classifieur existe pour déterminer cette bande). Cas limite spécifié
   (#403) : une politique ne nommant aucun modèle de classification est un
@@ -644,7 +644,7 @@ par commit status via label, déclencheurs disponibles — ne bougent pas.
 | #401 `TaskContext` | Livrée | Inchangée, consommée par le coordinateur |
 | #402 `ComplexityAssessment` | Livrée | Inchangée, entrée du routage |
 | #403 fallback LLM de complexité | Conservée, spec révisée, non prioritaire | Sous C l'appel devient un sous-agent classifieur : plus de secret, plus d'adapter, plus de budget fournisseur — la spec actuelle (API, `Secrets`) est caduque |
-| #404 moteur de routage | Livrée | `scripts/model-router.mjs#routeModel` — voir `doc/automation/model-routing.md` § Algorithme du routeur. Fonction pure inchangée dans son principe ; la dimension « disponibilité fournisseur » reste dans le score/les filtres pour rester générique au contrat #400, mais reste neutre (défaut : disponible) tant qu'aucun appelant ne fournit de signal réel sous le routage par sous-agent |
+| #404 moteur de routage | Livrée | `scripts/model-router.mjs#routeModel` — voir `doc/workflows/model-routing.md` § Algorithme du routeur. Fonction pure inchangée dans son principe ; la dimension « disponibilité fournisseur » reste dans le score/les filtres pour rester générique au contrat #400, mais reste neutre (défaut : disponible) tant qu'aucun appelant ne fournit de signal réel sous le routage par sous-agent |
 | #405 adapters multi-provider | **Fermée** | Sous C, aucun appelant dans le dépôt. À rouvrir avec le mode API ou le chantier d'extraction, pas avant |
 | #406 dry-run | Livrée | Le chaînage appartient au coordinateur, pas au dispatcher : le dry-run journalise la décision de modèle sans changer le sous-agent réellement lancé — voir § « Mode dry-run » ci-dessous |
 | #407 activation progressive | Conservée, à découper après #430 | Reste `NEEDS_CLARIFICATION` : huit chantiers, dimensionnement conditionné par le coordinateur |
@@ -676,7 +676,7 @@ capacités, paliers de qualité/coût/latence, limites de risque/complexité,
 routine — capacités requises, candidats pondérés par bande de complexité,
 `min_score`, `fallback` de bande, `risk_overrides`). `.automation/routines.yml`
 référence désormais une `routing_policy` par routine plutôt que de dupliquer
-la politique. Contrat documenté dans `doc/automation/model-routing.md`
+la politique. Contrat documenté dans `doc/workflows/model-routing.md`
 (exemple multi-provider, exemple de fallback circulaire) et en JSON Schema
 (`schemas/automation/model-catalog.schema.json`,
 `schemas/automation/routing-policy.schema.json`), validé en pratique par
@@ -729,7 +729,7 @@ même run, et jamais la sortie de l'autre relecteur. La ligne de partage est
 la provenance du contexte, pas son volume : un résumé du raisonnement de
 l'implémenteur (ou de l'autre relecteur) est aussi interdit que sa sortie
 brute. L'interdiction est écrite des deux côtés — `coordinator/SKILL.md` (ce
-que le coordinateur transmet à chacun) et `pr-review/SKILL.md` § « Context
+que le coordinateur transmet à chacun) et `project-conventions/pr-review.md` § « Context
 isolation (coordinator sub-agent only) », qui porte désormais une variante
 par corpus — pour qu'un sous-agent de review qui irait chercher plus de
 contexte de sa propre initiative ne perce pas l'isolation par la porte de
@@ -783,7 +783,7 @@ plutôt que de les faire transiter par les labels déclencheurs existants.
 `automation:in-progress` sur l'**issue** pendant toute la durée du run
 (implémentation + jusqu'à trois tours de review/correctif), exactement
 comme R2 le fait aujourd'hui pour la durée du cycle R3 ↔ R4 (§1 de
-`doc/automation/state-machine.md`). Un crash en cours de run se lit donc
+`doc/workflows/state-machine.md`). Un crash en cours de run se lit donc
 dans l'état des labels de la même façon qu'un R2/R4 mort aujourd'hui, et se
 rattrape par le même mécanisme, sans rien construire de nouveau : le
 balayeur de possession périmée (`requeue-lost-events.mjs`,
@@ -936,7 +936,7 @@ détecterait normalement une spec incomplète ou ambiguë sur l'issue
 déclenchante (verdict absent ou `NEEDS_CLARIFICATION`, section obligatoire
 manquante) — jamais pour les deux autres motifs de cette même vérification,
 le label `blocked` ou une issue devenue non actionnable —, le coordinateur
-lance un quatrième sous-agent avant d'escalader : `issue-to-spec/SKILL.md`
+lance un quatrième sous-agent avant d'escalader : `project-conventions/issue-to-spec.md`
 « as the coordinator's sub-agent ». Ce sous-agent reste fidèle à la règle
 « jamais interactif tout seul » d'`issue-to-spec` : il ne pose jamais de
 question à un humain, complète l'issue existante (jamais une nouvelle
@@ -975,7 +975,7 @@ modules qu'elles composent :
 
 - `extractRiskLevel(issueBody)` lit la section `## Catégorie de risque` du
   corps d'une issue (même format que celui produit par
-  `issue-to-spec/SKILL.md` : `**Faible**`/`**Élevé**` en tête de section) et
+  `project-conventions/issue-to-spec.md` : `**Faible**`/`**Élevé**` en tête de section) et
   renvoie `{ level, source }` — section absente, vide, ou portant un
   libellé qui n'est ni l'un ni l'autre → `null`, jamais un niveau deviné.
 - `resolveRoutingDryRun({ taskContext, issueBody, labels, routines,
@@ -1116,7 +1116,7 @@ modèle l'avait réellement exécuté — seul `routine` (le champ propre au
 journal ci-dessus) et le champ optionnel `routing` (§ « Routage par
 sous-agent », #423/#404) en approchaient, et `routing` ne porte qu'une
 décision *théorique* de routage (`RoutingDecision`), jamais le modèle
-effectivement utilisé. `doc/automation/skill-contract.md` §2 ajoute un
+effectivement utilisé. `doc/workflows/skill-contract.md` §2 ajoute un
 sixième champ au format structuré commun, **Traçabilité** (`skill` + `model`,
 distinct de `routing`), documenté là avec la règle d'obtention du modèle
 réellement exécuté (`get_session` pour une routine tournant comme sa propre
@@ -1139,7 +1139,7 @@ marqueur (`coordinator-review-functional`/`coordinator-review-technical`),
 donc porte son propre `executedBy` — un relecteur en échec vaut `inconnu`
 dans *son* entrée seule, sans toucher celle de son pair ; la synthèse du
 coordinateur restitue la même attribution en prose à côté des findings de
-chacun (`doc/automation/skill-contract.md` § « Le rôle "review", scindé en
+chacun (`doc/workflows/skill-contract.md` § « Le rôle "review", scindé en
 deux relecteurs »). Changement strictement additif : aucun champ
 existant n'est renommé ni supprimé, et un commentaire de journal déjà posté
 avant #494 n'est jamais réécrit rétroactivement — seuls les nouveaux runs
@@ -1168,14 +1168,14 @@ même titre qu'un run d'implémentation.
 `pr-review` depuis #378, mais le dispatcher qui le valide reste
 observationnel (§ ci-dessus, « Ce nouveau workflow ne remplace pas le
 déclenchement réel des routines ») — le champ ne faisait donc rien tant
-qu'aucun composant ne le lisait. `pr-review/SKILL.md` § « Skip a duplicate
+qu'aucun composant ne le lisait. `project-conventions/pr-review.md` § « Skip a duplicate
 review » est ce composant : en tout premier geste après avoir « claim » le
 run (avant même le checklist), R3 relit le journal idempotent `pr-review`
 de la PR (§ ci-dessus) et compare son `Commit analysé` au HEAD SHA courant.
 Même SHA et statut déjà terminal (`succeeded`/`failed`, pas `running`) →
 cette review a déjà eu lieu, R3 repose juste le label correspondant sans
 rejouer le checklist ni poster une seconde review. Ça couvre la classe de
-double-fire des incidents #94/#99 (`doc/automation/state-machine.md` §5)
+double-fire des incidents #94/#99 (`doc/workflows/state-machine.md` §5)
 même quand deux déclenchements `automation:needs-review` sur le même commit
 survivent tous les deux au « claim the run » (livraison de webhook
 dupliquée, ou une relance de `requeue-lost-events.mjs` qui recouvre un run
@@ -1197,13 +1197,13 @@ Le format de sortie change en même temps : R3 ne rend plus un verdict
 binaire conforme/à corriger par point de checklist, mais une liste de
 *findings* classés par sévérité (`blocking`/`important`/`suggestion`/
 `uncertain`), chacun avec une recommandation concrète
-(`pr-review/SKILL.md` § Output). Le verdict global en découle
+(`project-conventions/pr-review.md` § Output). Le verdict global en découle
 mécaniquement : `automation:needs-fix` seulement s'il existe au moins un
 finding `blocking`/`important` — une PR qui n'a que des `suggestion`/
 `uncertain` reste `automation:review-pass`, ces findings restant visibles
 dans la review pour un humain sans déclencher R4 (`address-feedback` ne
 lit d'ailleurs que les findings `blocking`/`important` de la review,
-`address-feedback/SKILL.md` § Workflow). R3 publie cette synthèse comme une
+`project-conventions/address-feedback.md` § Workflow). R3 publie cette synthèse comme une
 vraie review PR (`pull_request_review_write`, `event: COMMENT` — jamais
 `APPROVE`/`REQUEST_CHANGES`, §3) plutôt qu'un commentaire libre : les
 findings localisés et actionnables deviennent des commentaires inline,
@@ -1221,7 +1221,7 @@ problème — une ligne de diff, ou à défaut la section de spec ou l'absence
 constatée quand le finding ne porte pas sur une ligne précise), l'**impact**
 (la conséquence concrète si ce n'est pas corrigé) et le **niveau de
 confiance** (`high`/`medium`/`low`, indépendant de la sévérité). Ces trois
-champs et un exemple complet imitable sont dans `pr-review/SKILL.md` §
+champs et un exemple complet imitable sont dans `project-conventions/pr-review.md` §
 Output.
 
 La confiance n'ajoute pas un cinquième niveau : elle contraint la sévérité
@@ -1231,20 +1231,20 @@ avec confiance basse » (`uncertain` étant déjà le niveau « ne peut pas êtr
 tranché depuis le diff seul »). Conséquence directe : `address-feedback`
 n'a jamais besoin de lire le champ confiance, la sévérité seule reste
 l'unique signal qui détermine son périmètre — inchangé depuis #379/#380
-(`address-feedback/SKILL.md` § Workflow).
+(`project-conventions/address-feedback.md` § Workflow).
 
 ---
 
 Table complète des transitions état → événement → routine → état cible,
 catégorisation des labels (métier/contrôle/résultat) et règles de reprise/
-échec/retry : voir `doc/automation/state-machine.md`, le contrat formel
+échec/retry : voir `doc/workflows/state-machine.md`, le contrat formel
 dérivé de cette section et de la §4.
 
 ## 5. Labels (le bus d'événements)
 
 Tous les labels de la machine à états portent le préfixe `automation:`
 (issue #415 — table complète, catégories et combinaisons valides/interdites
-dans `doc/automation/state-machine.md` §2).
+dans `doc/workflows/state-machine.md` §2).
 
 | Label | Rôle |
 |---|---|
@@ -1314,7 +1314,7 @@ déclaration, à deux points d'application :
 - **Le coordinateur**, avant de poser lui-même `automation:enabled` en fin
   de run (`coordinator/SKILL.md` § « Converged ») — jamais son propre
   jugement sur le diff final seul, toujours confirmé par cette fonction ;
-  `implement-task/SKILL.md` step 11 (R2 solo) fait de même.
+  `project-conventions/implement-task.md` step 11 (R2 solo) fait de même.
 - **Le job CI `risk-controls`** (`.github/workflows/risk-controls.yml`, un
   workflow dédié plutôt qu'un job de `ci.yml` — voir plus bas pourquoi), sur
   `opened`/`synchronize`/`reopened`/`labeled` : si la PR porte
@@ -1329,7 +1329,7 @@ déclaration, à deux points d'application :
   vit dans son propre workflow, pas dans le `pull_request:` (sans `types:`,
   donc limité par défaut à `opened`/`synchronize`/`reopened`) de `ci.yml` :
   `automation:enabled` est posé via un événement `labeled` séparé
-  (`implement-task/SKILL.md` step 11, `coordinator/SKILL.md` §
+  (`project-conventions/implement-task.md` step 11, `coordinator/SKILL.md` §
   « Converged », ou un humain), jamais dans le même événement qui a fait
   tourner `ci.yml` — un job resté dans `ci.yml` ne se serait donc jamais
   redéclenché sur le cas réel qu'il est censé couvrir, laissant
@@ -1436,10 +1436,10 @@ fermeture (§ « Converged » étape 4 / § Escalade étape 3), et pose
 `upsertAutomationLog`. Contrôle à deux points, pas une surveillance
 continue : une oscillation `false → true → false` entièrement résorbée
 avant la fermeture n'est pas détectée — limite connue, documentée dans
-`doc/automation/model-routing.md` § « Rollback ».
+`doc/workflows/model-routing.md` § « Rollback ».
 
 Procédure complète (fichier et clé à changer, délai avant effet — le run
-suivant — et vérification) : `doc/automation/model-routing.md` § « Rollback ».
+suivant — et vérification) : `doc/workflows/model-routing.md` § « Rollback ».
 Testable entièrement sans exécuter de routine :
 `scripts/routing-activation.test.mjs` (priorité de l'interrupteur, absence,
 valeur invalide, distinction de `reason`, table de vérité de
@@ -1504,7 +1504,7 @@ séquence d'escalade déjà documentée (§ Escalade du skill, nouvelle conditio
 6), qui pose les mêmes labels que toute autre escalade de ce skill et
 journalise le `checkBudget` exact qui a arrêté le run.
 
-Procédure complète et contrat détaillé : `doc/automation/model-routing.md`
+Procédure complète et contrat détaillé : `doc/workflows/model-routing.md`
 § « Budgets ». Testable entièrement sans exécuter de routine :
 `scripts/routing-budget.test.mjs` (décision, portées indépendantes, absence,
 compteurs indisponibles, refus au chargement) et
@@ -1538,7 +1538,7 @@ proposition — le motif est nommé (`skipped`), jamais omis.
 Consommé uniquement par `weekly-report/SKILL.md` (R6, § ci-dessous) sous
 forme d'une section de rapport supplémentaire — aucune routine ni
 déclencheur créé pour cette tranche, le principe directeur explicite de
-#481. Procédure complète : `doc/automation/model-routing.md` §
+#481. Procédure complète : `doc/workflows/model-routing.md` §
 « Calibration ». Testable entièrement sans exécuter de routine :
 `scripts/routing-calibration.test.mjs` (agrégation, période vide, rejets,
 propositions, non-application).
@@ -1549,14 +1549,14 @@ propositions, non-application).
 
 > Contrat de forme (template `SKILL.md`, format de sortie structuré des
 > routines, checklist de conformité, conditions d'escalade
-> `automation:needs-human`) : `doc/automation/skill-contract.md`. Appliqué
+> `automation:needs-human`) : `doc/workflows/skill-contract.md`. Appliqué
 > aux skills interactifs (#426) puis aux cinq skills de routine (#427).
 
 | Skill | Contenu |
 |---|---|
 | `project-conventions` | Délègue au `CLAUDE.md` : stack, commandes pnpm, arbo, architecture hexagonale, conventions de commit |
 | `issue-to-spec` | Format de spec : contexte, périmètre/hors-scope, critères d'acceptation testables, comportements d'erreur/cas limites, stratégie de tests, fichiers impactés, risques/questions ouvertes, **catégorie de risque** (détermine le label `automation:enabled`), **verdict de readiness** (`READY_FOR_IMPLEMENTATION`/`NEEDS_CLARIFICATION`, obligatoire, n'affirme que la complétude de la spec — l'état de blocage par dépendance est porté exclusivement par le label `blocked` et le lien natif `blocked_by`, #449) |
-| `implement-task` | Vérifie le verdict `READY_FOR_IMPLEMENTATION` avant de commencer, plan écrit avant tout code (fichiers, tests prévus, risques), recherche d'une abstraction existante avant d'en créer une nouvelle, budget de changement (aucun refactor hors périmètre sans justification explicite), branche `feat/<issue>-<slug>`, tests d'abord, `pnpm lint typecheck test build` vert, vérif visuelle, PR structurée en 5 champs (`doc/automation/skill-contract.md` §2) avec `Closes #N`, mise à jour de `doc/` (pre-commit checklist du `CLAUDE.md`), escalade vers `automation:needs-human` sur spec non prête, divergence majeure avec le plan ou validation qui reste rouge |
+| `implement-task` | Vérifie le verdict `READY_FOR_IMPLEMENTATION` avant de commencer, plan écrit avant tout code (fichiers, tests prévus, risques), recherche d'une abstraction existante avant d'en créer une nouvelle, budget de changement (aucun refactor hors périmètre sans justification explicite), branche `feat/<issue>-<slug>`, tests d'abord, `pnpm lint typecheck test build` vert, vérif visuelle, PR structurée en 5 champs (`doc/workflows/skill-contract.md` §2) avec `Closes #N`, mise à jour de `doc/` (pre-commit checklist du `CLAUDE.md`), escalade vers `automation:needs-human` sur spec non prête, divergence majeure avec le plan ou validation qui reste rouge |
 | `pr-review` | Checklist **subjective uniquement** : conformité à la spec, respect de l'archi hexagonale, backward-compat des schémas zod, doc à jour, dette introduite. Le mécanisable est déjà en CI. Chaque finding porte gravité, preuve, impact, niveau de confiance et recommandation (#385) ; la confiance basse force la gravité `uncertain` plutôt que de coexister avec `blocking`/`important`, et `address-feedback` continue de ne lire que la gravité. Comme sous-agent du coordinateur, tourne en deux instances aux corpus disjoints — fonctionnelle (spec + `doc/functional/`) et technique (`doc/technical/architecture.md` + `project-conventions`, jamais la spec) — chaque finding portant alors un sixième champ `corpus` (`in`/`out`, #470) |
 | `address-feedback` | Corriger le périmètre signalé. Ne pas refondre. Ne retraite jamais un thread de review déjà résolu, priorise `blocking` avant `important`, ignore `suggestion`/`uncertain` (#379), bascule sur `automation:needs-human` en cas de retour contradictoire/ambigu ou de suite de checks qui reste rouge, publie une synthèse (corrigé / non appliqué / arbitrage requis) à chaque run (issue #380) |
 | `site-quality` | Deps, liens de doc, Lighthouse, PWA. Utilisée par R5 |
@@ -1778,7 +1778,7 @@ Démarrée en parallèle du gate de la Phase 2 (pas en violation du principe
 gate a besoin) :
 
 - [x] **Routine créée** (`trig_01Y4gg6E5uMfD9XWFpBBxrt8`, cron `0 6 * * 1` —
-      chaque lundi 6h UTC), pointée vers `.claude/skills/site-quality`. À
+      chaque lundi 6h UTC), pointée vers `dev-workflow:site-quality`. À
       la différence de R3, un trigger planifié est créable directement par
       outil, pas seulement depuis claude.ai/code/routines — aucune étape
       manuelle ici.
@@ -1797,13 +1797,13 @@ consultée alors semblait indiquer. Rémi a trouvé en pratique un déclencheur
 GitHub natif sur les événements Issue dans l'interface. Même mécanisme que
 R3 : trigger `issues`, action `labeled`, filtré `Labels is one of ready`.
 Chaque événement qui matche démarre sa propre session avec le ticket précis
-dans son contexte — cf. `implement-task/SKILL.md` § « Which issue » — donc
+dans son contexte — cf. `project-conventions/implement-task.md` § « Which issue » — donc
 même avec plusieurs tickets `ready` en attente simultanément, chaque session
 sait exactement lequel traiter, sans l'indirection Action + secrets
-`ROUTINE_ID`/`ROUTINE_TOKEN` (supprimée, cf. `deployment.md` § Issue
+`ROUTINE_ID`/`ROUTINE_TOKEN` (supprimée, cf. `doc/workflows/deployment.md` § Issue
 Implementation (R2)).
 
-- [x] `.claude/skills/implement-task/SKILL.md` — section « Which issue »
+- [x] `.claude/skills/project-conventions/implement-task.md` — section « Which issue »
       ajoutée (contexte du trigger pour R2, sélection manuelle sinon)
 - [x] `.github/workflows/dispatch-ready.yml` et les secrets `ROUTINE_ID`/
       `ROUTINE_TOKEN` supprimés — plus nécessaires
@@ -1831,7 +1831,7 @@ pas seulement des changements triviaux.
 **Renfort (2026-09-03, issue #381) — R2 vers une exécution idempotente et
 traçable :** la Phase 4 avait rodé le chemin heureux (une issue, une PR) ;
 restaient trois angles morts pour un run interrompu ou rejoué sans
-nettoyage manuel. `implement-task/SKILL.md` gagne :
+nettoyage manuel. `project-conventions/implement-task.md` gagne :
 
 - une garde en tout premier geste (avant même le claim du label) : si
   `closed_by_pull_requests` de l'issue liste déjà une PR ouverte, R2
@@ -1849,7 +1849,7 @@ nettoyage manuel. `implement-task/SKILL.md` gagne :
   sait cassé ou une issue laissée bloquée en silence sur
   `automation:in-progress`.
 
-`doc/automation/state-machine.md` §4 (rows #4-#6) documente ces gardes
+`doc/workflows/state-machine.md` §4 (rows #4-#6) documente ces gardes
 comme le contrat formel ; `.automation/routines.yml` reste inchangé — la
 garde « une seule PR par issue » est une vérification sémantique du
 contenu de la skill, pas un critère déclaratif que le dispatcher peut
@@ -1868,7 +1868,7 @@ le label spécifique nommé par l'événement. Les deux livraisons de webhook
 (`labeled: P2` et `labeled: ready`) ont donc chacune matché le filtre,
 produisant deux PR quasi identiques (#100 et #101, toutes deux `Closes
 #99`). #101 fermée comme doublon, #100 conservée et mergée. Correctif :
-`issue-to-spec/SKILL.md` (PR #103) exige désormais que `ready` soit posé
+`project-conventions/issue-to-spec.md` (PR #103) exige désormais que `ready` soit posé
 seul, dans son propre appel, toujours en dernier.
 
 ### Phase 5 — R4 et auto-merge ⬅️ *en cours*
@@ -1884,7 +1884,7 @@ déterministe (`auto-merge-sync.yml`) qui active/désactive le auto-merge
 natif GitHub à la pose/au retrait du label — pas une routine, zéro LLM,
 cohérent avec le principe directeur §2.2.
 
-- [x] `.claude/skills/address-feedback/SKILL.md` — section « Which PR »
+- [x] `.claude/skills/project-conventions/address-feedback.md` — section « Which PR »
       et logique du compteur `attempt-N` explicitées (mécanique identique
       à `pr-review`/`implement-task`)
 - [x] `.github/workflows/auto-merge-sync.yml` écrit — active/désactive
@@ -1901,18 +1901,18 @@ le 2026-07-16.**
 **Incident (2026-07-16) — chaîne de déclenchements R4 sur la PR #111 :**
 le premier vrai cycle `needs-fix` → R4 a mis au jour un défaut de
 conception (repéré et diagnostiqué par Rémi, pas par une session Claude
-Code) : `address-feedback/SKILL.md` posait `attempt-1` sans retirer
+Code) : `project-conventions/address-feedback.md` posait `attempt-1` sans retirer
 `needs-fix` au préalable. Le trigger GitHub de R4 matche tant que
 `needs-fix` est présent, donc ce dépôt de `attempt-1` a lui-même
 re-déclenché R4, qui a reposé `attempt-2` (toujours avec `needs-fix`
 présent), puis `attempt-3` → `needs-human` — le tout en about une minute,
 sans trois vrais essais de correction (le seul vrai correctif nécessaire,
-la mise à jour de `deployment.md`, avait déjà été poussé par l'un des
+la mise à jour de `doc/workflows/deployment.md`, avait déjà été poussé par l'un des
 runs). Correctif : principe général « claim the run » ajouté à l'§4 —
 toute routine déclenchée par un label doit le retirer et poser
 `in-progress` en tout premier geste, avant de poser quoi que ce soit
-d'autre. Appliqué à `address-feedback/SKILL.md` (retire `needs-fix` avant
-`attempt-N`) et rétroactivement à `pr-review/SKILL.md` (retire
+d'autre. Appliqué à `project-conventions/address-feedback.md` (retire `needs-fix` avant
+`attempt-N`) et rétroactivement à `project-conventions/pr-review.md` (retire
 `needs-review` en premier geste plutôt qu'au dernier — R3 n'avait pas
 encore été prise en défaut sur ce point précis, mais partageait la même
 fragilité de principe).
@@ -2051,9 +2051,9 @@ escalade la possession périmée au lieu de geler l'item) et #468 (garde
 
 - [x] `.claude/skills/coordinator/SKILL.md` écrite.
 - [x] Isolation du sous-agent de review écrite des deux côtés
-      (`coordinator/SKILL.md` et `pr-review/SKILL.md` § « Context isolation
+      (`coordinator/SKILL.md` et `project-conventions/pr-review.md` § « Context isolation
       (coordinator sub-agent only) »), et les deltas de sous-agent écrits
-      dans `implement-task/SKILL.md`/`address-feedback/SKILL.md`.
+      dans `project-conventions/implement-task.md`/`project-conventions/address-feedback.md`.
 - [x] `.automation/routines.yml` : `coordinator` déclaré sur le couple
       `issue`/`automation:ready`, en remplacement de l'entrée
       `implement-task` sur ce même couple.
@@ -2095,7 +2095,7 @@ le coordinateur à un seul relecteur, activer le déclencheur GitHub avec deux
 relecteurs n'est pas plus justifié qu'avec un seul (même préalable non
 vérifié qu'en Phase 5 bis, voir ci-dessous).
 
-- [x] `.claude/skills/pr-review/SKILL.md` : la section « Context isolation
+- [x] `.claude/skills/project-conventions/pr-review.md` : la section « Context isolation
       (coordinator sub-agent only) » porte désormais une variante
       **fonctionnelle** (spec + diff + `doc/functional/`) et une variante
       **technique** (diff + `doc/technical/architecture.md` +
@@ -2120,7 +2120,7 @@ vérifié qu'en Phase 5 bis, voir ci-dessous).
       champ `findings` optionnel attribuant chaque finding à son ou ses
       relecteurs — testés (`scripts/automation-log.test.mjs`), pas encore
       alimentés par un workflow réel (même statut que `metrics`, #469).
-- [x] R3 (PR humaines/R5) continue d'utiliser `pr-review/SKILL.md` sans
+- [x] R3 (PR humaines/R5) continue d'utiliser `project-conventions/pr-review.md` sans
       changement de comportement — les deux nouvelles variantes ne
       s'activent que sous instruction explicite « as the coordinator's
       functional/technical-corpus review sub-agent ».
@@ -2142,7 +2142,7 @@ R6 hebdo. C'est le rapport qui pilote l'élargissement de la liste blanche `auto
       ouvertes > 3 jours, issues `needs-human`, décompte
       `review-pass`/`needs-fix` de la semaine (approximatif — voir la
       section « Ce que ce rapport ne peut pas mesurer » de la skill),
-      incidents `automation-plan.md` depuis le rapport précédent,
+      incidents `doc/workflows/automation-plan.md` depuis le rapport précédent,
       recommandation explicite sur la liste blanche `auto`. Livrable :
       issue `Rapport hebdo <date>`, `P3`, sans `ready`.
 - [ ] Rodage interactif (2-3 runs réels) avant de considérer la skill
@@ -2214,7 +2214,7 @@ R6 hebdo. C'est le rapport qui pilote l'élargissement de la liste blanche `auto
     dans `Banner.tsx`, rendu sans `<h2>` qui le précède sur l'accueil.
 
   Pistes (à trancher par une maquette, la correction change ce que voit un
-  joueur — `design-workflow.md`) : étapes en `--text` (5.65:1 sur le fond
+  joueur — `doc/workflows/design-workflow.md`) : étapes en `--text` (5.65:1 sur le fond
   teinté), titre dans une teinte primaire assombrie ou fond de bannière
   moins saturé, et niveau de titre fourni par l'appelant (prop) ou titre non
   sémantique. Les captures de `tests/visual/` de l'accueil devront être
@@ -2227,7 +2227,7 @@ R6 hebdo. C'est le rapport qui pilote l'élargissement de la liste blanche `auto
   d'action. Le titre est rendu en `<p>` semi-gras au lieu de `<h3>`, ce qui
   règle `heading-order`. Aucune capture de `tests/visual/` n'était à
   régénérer : la suite ne photographie que les modules, pas l'accueil
-  (`visual-testing.md`).
+  (`doc/workflows/visual-testing.md`).
 
 - **Qui exécute les routines, et où s'applique le choix de modèle — tranché
   (#423, 2026-09-07).** Option C : routage par sous-agent à l'intérieur du

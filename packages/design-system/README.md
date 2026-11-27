@@ -8,7 +8,7 @@ no stylesheet, no icon glyph of its own. `eslint.config.js` enforces it on
 
 Every component is shown, by its own code, in the catalog (`apps/catalog/`, `pnpm catalog`):
 one page per layer below, in the four flavors and fourteen accents. A component without a story
-there fails `pnpm test`. See [`doc/technical/design-catalog.md`](../../doc/technical/design-catalog.md).
+there fails `pnpm test`. See [`doc/workflows/design-catalog.md`](../../doc/workflows/design-catalog.md).
 The Claude Design export in [`ds_temp/scoreo-design/`](../../ds_temp/scoreo-design/README.md) was
 the target the screens were migrated onto; it is a frozen copy, the catalog is the reference.
 

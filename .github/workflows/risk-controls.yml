@@ -2,7 +2,7 @@ name: Risk Controls
 
 # Split out of ci.yml (issue #479 follow-up, PR #485 review): the guard has
 # to run on `labeled` too, since `automation:enabled` is posed via a
-# separate label event (implement-task/SKILL.md step 11,
+# separate label event (project-conventions/implement-task.md step 11,
 # coordinator/SKILL.md § "Converged", or a human), never in the same
 # `opened`/`synchronize` event that runs CI. Keeping this in `ci.yml`'s
 # `pull_request:` trigger (opened/synchronize/reopened only, by default)

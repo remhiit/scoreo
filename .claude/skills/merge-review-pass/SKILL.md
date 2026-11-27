@@ -1,6 +1,6 @@
 ---
 name: merge-review-pass
-description: Merges open remhiit/scoreo pull requests that passed review (label `automation:review-pass`), one at a time in oldest-created-first order, rebasing each onto main and waiting for CI + `claude/review` before merging. Use when asked to merge review-pass PRs, run a merge pass, or after a wave of Dependabot/site-quality (R5) PRs is waiting. Fills a gap in the pipeline documented in doc/technical/automation-plan.md: these PRs never carry the `automation:enabled` label, so the native auto-merge (auto-merge-sync.yml) never picks them up on its own.
+description: Merges open remhiit/scoreo pull requests that passed review (label `automation:review-pass`), one at a time in oldest-created-first order, rebasing each onto main and waiting for CI + `claude/review` before merging. Use when asked to merge review-pass PRs, run a merge pass, or after a wave of Dependabot/site-quality (R5) PRs is waiting. Fills a gap in the pipeline documented in doc/workflows/automation-plan.md: these PRs never carry the `automation:enabled` label, so the native auto-merge (auto-merge-sync.yml) never picks them up on its own.
 ---
 
 # Merge Review Pass
@@ -8,7 +8,7 @@ description: Merges open remhiit/scoreo pull requests that passed review (label 
 ## Objectif
 
 Merges, one at a time, the PRs that passed automated review (R3,
-`pr-review`) but that nothing else merges on its own. `automation-plan.md`
+`pr-review`) but that nothing else merges on its own. `doc/workflows/automation-plan.md`
 §4 hands merging to `auto-merge-sync.yml`, a zero-LLM Action that only acts
 on PRs carrying the `automation:enabled` label — a label only
 `implement-task` (R2) poses, and only on its own low-risk PRs. Dependabot
@@ -34,9 +34,9 @@ See `project-conventions` for the monorepo's base pnpm commands and layout.
 Not GitHub-triggered by a single event: this skill searches for its own
 work (every open `automation:review-pass` PR) rather than reacting to one
 named PR, so it has neither a "which PR" rule nor a "claim the run" step
-(`doc/automation/skill-contract.md` §1.4 — both apply only to
+(`doc/workflows/skill-contract.md` §1.4 — both apply only to
 label-triggered routines reacting to one item; this skill discovers a set
-itself, and is explicitly "not yet a routine" per its `automation-plan.md`
+itself, and is explicitly "not yet a routine" per its `doc/workflows/automation-plan.md`
 §6 entry).
 
 Before rebasing anything:
@@ -220,7 +220,7 @@ merged — it's left aside per §6/§7, never forced through.
 
 ## Escalade
 
-Per `doc/automation/skill-contract.md` §3. This skill never poses
+Per `doc/workflows/skill-contract.md` §3. This skill never poses
 `automation:needs-human` itself — it has no claim step (§ Préconditions)
 and a CI failure or functional conflict already has its own owner
 (`address-feedback`/R4, §6). It stops and reports, rather than guessing,
@@ -246,7 +246,7 @@ when:
   (R4)'s job, not this skill's.
 - Never merges more than one PR at a time, and never rebases the whole
   batch up front — each PR is rebased right before its own turn
-  (`automation-plan.md` §2 principle 6, "one run, one item").
+  (`doc/workflows/automation-plan.md` §2 principle 6, "one run, one item").
 - Never force-pushes without `--lease` — a plain force could silently
   discard a commit pushed by Dependabot or a human in between.
 - Never poses or removes a GitHub label itself beyond what pushing

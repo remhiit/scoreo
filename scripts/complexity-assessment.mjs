@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Évaluation déterministe de complexité d'une issue/PR — un ComplexityAssessment
 // (niveau/score/confiance/dimensions/raisons/provenance, issue #402,
-// doc/technical/automation-plan.md §4). Zéro LLM, zéro appel réseau, comme
+// doc/workflows/automation-plan.md §4). Zéro LLM, zéro appel réseau, comme
 // task-context.mjs (#401) dont ce script consomme la sortie (`TaskContext`) :
 // chaque dimension est dérivée d'un signal déjà présent dans ce contexte —
 // jamais un second appel API. Complexité (effort de raisonnement/mise en
@@ -266,7 +266,7 @@ function computeDimensions(taskContext, spec) {
   // `dependencies.declaredAvailable === false` signifie seulement qu'aucune
   // section "## Dépendances" n'existe dans le corps, ce que
   // sync-issue-dependencies.mjs#extractBlockerNumbers (et le §4 de
-  // automation-plan.md qui en découle) traite déjà comme "zéro dépendance
+  // doc/workflows/automation-plan.md qui en découle) traite déjà comme "zéro dépendance
   // déclarée", jamais comme "signal inconnu" — à la différence de `novelty`
   // ou `fileVolume`, où l'absence de section rend le compte proprement
   // indéterminable (rien à compter). `declaredAvailable` n'est donc

@@ -43,7 +43,7 @@ export interface Story {
 /**
  * A mockup: the screens of a feature not coded yet, composed from the real
  * components with example data, reviewed before any code is written
- * (doc/technical/design-workflow.md). One folder per feature under
+ * (doc/workflows/design-workflow.md). One folder per feature under
  * `src/mockups/<id>/`, whose `index.tsx` default-exports this.
  */
 export interface Mockup {

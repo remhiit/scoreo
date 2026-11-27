@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Parses the "## Dépendances" section of an issue body ("Dépend de #N (raison)"
-// lines, documented in issue-to-spec/SKILL.md) and reconciles GitHub's native
+// lines, documented in project-conventions/issue-to-spec.md) and reconciles GitHub's native
 // `blocked_by` links against it, so that downstream automation (e.g. auto-ready
 // on unblock) can query real dependency data via GET .../dependencies/blocked_by
 // instead of parsing free text itself.
@@ -38,13 +38,13 @@ async function api(method, path, body) {
 // or between inline backticks — never starts a line with "##", so it can't
 // be mistaken for the heading. A fenced code block (```…```) is stripped out
 // before the search for the same reason: it can legitimately contain a line
-// that starts with "## Dépendances" (issue-to-spec/SKILL.md's own example of
+// that starts with "## Dépendances" (project-conventions/issue-to-spec.md's own example of
 // the format is exactly such a fence) without being the real section
 // (regression: #432's Contexte cited the section name and hijacked the old
 // unanchored match).
 // If several "## Dépendances" headings exist in the body, the FIRST one
 // (top to bottom) is authoritative; any later duplicate is ignored — this is
-// a deliberate, documented choice (doc/technical/automation-plan.md), not an
+// a deliberate, documented choice (doc/workflows/automation-plan.md), not an
 // accident of the regex.
 //
 // Returns `null` when no section is found (caller must not touch any link),

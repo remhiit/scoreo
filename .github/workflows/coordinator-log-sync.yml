@@ -12,8 +12,8 @@ jobs:
   sync:
     # The coordinator (#469) posts `automation:coordinator-owned` once, at PR
     # creation (implementation round done), and `automation:attempt-N` before
-    # each fix sub-agent it launches — see doc/technical/automation-plan.md
-    # § "Le coordinateur" and doc/automation/state-machine.md §8. It then ends
+    # each fix sub-agent it launches — see doc/workflows/automation-plan.md
+    # § "Le coordinateur" and doc/workflows/state-machine.md §8. It then ends
     # the run on `automation:review-pass` (converged, § "Converged" step 1) or
     # `automation:needs-human` (escalated, § Escalade step 1), both posted
     # while `automation:coordinator-owned` is still on the PR — those two are

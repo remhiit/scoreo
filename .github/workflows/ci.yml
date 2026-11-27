@@ -103,7 +103,7 @@ jobs:
     runs-on: ubuntu-latest
     # Screenshot baselines are font-rendering-sensitive, so this job must run in
     # the very image the baselines were recorded in — see
-    # doc/technical/visual-testing.md.
+    # doc/workflows/visual-testing.md.
     # apps/scoreo/scripts/visual-in-container.sh runs the same image locally.
     container:
       image: mcr.microsoft.com/playwright:v1.65.1-noble
@@ -159,6 +159,19 @@ jobs:
 
       - name: Check doc/ relative links
         run: node scripts/check-doc-links.mjs
+
+  adr:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Check doc/adr/ numbering, headers, supersession and index
+        run: node scripts/check-adr.mjs
 
   automation-config:
     runs-on: ubuntu-latest

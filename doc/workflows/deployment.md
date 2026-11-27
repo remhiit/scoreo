@@ -4,7 +4,7 @@
 
 **File**: `.github/workflows/ci.yml`
 
-Runs on every `push` to `main` and every `pull_request`, as five independent jobs. The `push` trigger is scoped to `main` only — without that, a push to a branch with an open PR fires both the `push` and `pull_request: synchronize` events for the same commit, doubling every job for no benefit (10 check runs instead of 5, observed on PRs #64–#68 before this was fixed).
+Runs on every `push` to `main` and every `pull_request`, as independent jobs (the main ones below). The `push` trigger is scoped to `main` only — without that, a push to a branch with an open PR fires both the `push` and `pull_request: synchronize` events for the same commit, doubling every job for no benefit (10 check runs instead of 5, observed on PRs #64–#68 before this was fixed).
 
 | Job | What it runs | Blocking? |
 |---|---|---|
@@ -12,10 +12,11 @@ Runs on every `push` to `main` and every `pull_request`, as five independent job
 | `test` | `pnpm test` | Yes |
 | `build` | `pnpm typecheck` then `pnpm build` | Yes |
 | `doc-links` | `node scripts/check-doc-links.mjs` — fails on any relative Markdown link under `doc/` pointing to a non-existent file | Yes |
+| `adr` | `node scripts/check-adr.mjs` — fails when an ADR under `doc/adr/` breaks the format or life cycle of `doc/adr/README.md` (missing or duplicated number, decreasing dates, missing header field, unknown status, unmatched supersession) or when the README index differs from the files (regenerate it with `--write`) | Turns the job red, but not a required status check: `setup-repo.sh` does not list it, and adding it is a branch-protection change left to a repo admin |
 | `design-tokens` | `node scripts/check-design-tokens.mjs` — fails if a raw px/duration/easing value in `packages/design-system/src/**/*.css` or a module's game pieces (`packages/module-*/src/design/**/*.css`) exactly matches a design token (see `doc/technical/architecture.md` §Design tokens) | Yes |
 | `lighthouse` | Builds, then runs Lighthouse CI against `apps/scoreo/dist/` using `lighthouserc.json` (assertions at `error` level since #183) | Turns the job red on a failing assertion, but not a required status check — no `continue-on-error`, report uploaded as a build artifact |
 
-Each job name (`lint`, `test`, `build`, `doc-links`) is meant to be set as a required status check in branch protection (see `setup-repo.sh`). `lighthouse` is deliberately left out of that required list — its assertions run at `error` level, with `minScore` thresholds (`lighthouserc.json`) recalibrated below the Phase 0 baseline (performance 0.96, accessibility 0.95, best-practices 0.96, SEO 0.90 — the `pwa` category was dropped since Lighthouse 12 no longer computes it by default): accessibility ≥ 0.90, best-practices ≥ 0.90 and SEO ≥ 0.85 (~0.05 below baseline, an anti-noise margin), while `performance` was recalibrated much further down to ≥ 0.60 after direct runner measurements showed 25+ points of CPU-variance noise on GitHub Actions (see `doc/technical/automation-plan.md` §9). A red `lighthouse` run is a visible signal on the PR, not yet a merge blocker.
+Each job name (`lint`, `test`, `build`, `doc-links`) is meant to be set as a required status check in branch protection (see `setup-repo.sh`). `lighthouse` is deliberately left out of that required list — its assertions run at `error` level, with `minScore` thresholds (`lighthouserc.json`) recalibrated below the Phase 0 baseline (performance 0.96, accessibility 0.95, best-practices 0.96, SEO 0.90 — the `pwa` category was dropped since Lighthouse 12 no longer computes it by default): accessibility ≥ 0.90, best-practices ≥ 0.90 and SEO ≥ 0.85 (~0.05 below baseline, an anti-noise margin), while `performance` was recalibrated much further down to ≥ 0.60 after direct runner measurements showed 25+ points of CPU-variance noise on GitHub Actions (see `doc/workflows/automation-plan.md` §9). A red `lighthouse` run is a visible signal on the PR, not yet a merge blocker.
 
 The `lighthouse` job's "Upload Lighthouse report" step needs `include-hidden-files: true` — `actions/upload-artifact@v4` excludes dotfiles/dotdirs by default, and Lighthouse CI writes its report to `.lighthouseci/` (per `lighthouserc.json`'s `upload.outputDir`). Without that flag the step silently uploads nothing (`No files were found`, a warning, not a failure — R5's 2026-07-14 run caught this after several prior runs had gone unnoticed).
 
@@ -27,7 +28,7 @@ This ensures type errors, lint issues, test failures, dead doc links, or build b
 
 **File**: `setup-repo.sh`
 
-One-time repo configuration for `doc/technical/automation-plan.md` Phase 0: creates the automation labels (`automation:ready`, `automation:needs-fix`, `automation:enabled`, `automation:attempt-1/2/3`, …), enables `allow_auto_merge`, sets `main` branch protection (`enforce_admins: true`, 0 required approvals, required status checks `lint`/`test`/`build`/`doc-links`), and can set the `GOOGLE_CLIENT_ID` and `PROJECT_TOKEN` secrets.
+One-time repo configuration for `doc/workflows/automation-plan.md` Phase 0: creates the automation labels (`automation:ready`, `automation:needs-fix`, `automation:enabled`, `automation:attempt-1/2/3`, …), enables `allow_auto_merge`, sets `main` branch protection (`enforce_admins: true`, 0 required approvals, required status checks `lint`/`test`/`build`/`doc-links`), and can set the `GOOGLE_CLIENT_ID` and `PROJECT_TOKEN` secrets.
 
 Run manually by a repo admin with `gh` authenticated (not by CI or a routine — it changes shared repo configuration):
 
@@ -44,11 +45,11 @@ GOOGLE_CLIENT_ID=xxx PROJECT_TOKEN=xxx ./setup-repo.sh
 One-shot migration (issue #415) from the earlier unprefixed automation
 labels (`queued`, `ready`, `in-progress`, `needs-review`, `review-pass`,
 `needs-fix`, `needs-human`, `attempt-1/2/3`, `auto`) to their
-`automation:`-prefixed equivalent — see `doc/automation/state-machine.md`
+`automation:`-prefixed equivalent — see `doc/workflows/state-machine.md`
 §2 for the full taxonomy. Not a workflow — run manually by a repo admin,
 **after** `setup-repo.sh` has created the new labels and every consumer
 (workflows, scripts, skills) has been deployed on `main`, per
-`automation-plan.md`'s "Stratégie de bascule":
+`doc/workflows/automation-plan.md`'s "Stratégie de bascule":
 
 ```bash
 GH_TOKEN=xxx REPO_OWNER=remhiit REPO_NAME=scoreo node scripts/migrate-automation-labels.mjs
@@ -99,7 +100,7 @@ gap.
 
 **File**: `.github/workflows/project-sync.yml` + `scripts/sync-project-status.mjs`
 
-Mirrors each issue/PR's labels onto the `Status` field of the [Scoreo GitHub Project](https://github.com/users/remhiit/projects/1) — one-way only, labels are the source of truth (`doc/technical/automation-plan.md` §2.4). Never writes labels back from the board.
+Mirrors each issue/PR's labels onto the `Status` field of the [Scoreo GitHub Project](https://github.com/users/remhiit/projects/1) — one-way only, labels are the source of truth (`doc/workflows/automation-plan.md` §2.4). Never writes labels back from the board.
 
 A closed item overrides its labels: `state_reason: completed` on an issue, or a merged PR (no native `stateReason`, so `state: MERGED` stands in for the same signal), always sets `Done` — even if `automation:in-progress` was never removed (it isn't, cf. `close-linked-issues.mjs` and issue #195). A `not_planned` close (or a PR closed without merging) imposes no status.
 
@@ -127,9 +128,9 @@ First match wins, in that priority order. If none of these labels are present, t
 
 **Files**: a Claude Code Routine (created via [claude.ai/code/routines](https://claude.ai/code/routines))
 
-Automates `.claude/skills/implement-task` for issues that have already been groomed interactively (R1, `issue-to-spec`) and carry the `automation:ready` label.
+Automates `dev-workflow:implement-task` for issues that have already been groomed interactively (R1, `issue-to-spec`) and carry the `automation:ready` label.
 
-The Routine's only GitHub trigger is `issues`, action **labeled**, filtered to `Labels is one of automation:ready`. Each matching event starts its own independent session with that specific issue in its triggering context — `implement-task/SKILL.md`'s "Which issue" section covers identifying it, so several issues carrying `automation:ready` at once each get their own session rather than being ambiguous. Follows `implement-task` exactly: branch, tests first, `pnpm lint typecheck test build` green, visual check for UI changes, doc updates, PR referencing `Closes #N`. One run = one issue, never a batch.
+The Routine's only GitHub trigger is `issues`, action **labeled**, filtered to `Labels is one of automation:ready`. Each matching event starts its own independent session with that specific issue in its triggering context — `project-conventions/implement-task.md`'s "Which issue" section covers identifying it, so several issues carrying `automation:ready` at once each get their own session rather than being ambiguous. Follows `implement-task` exactly: branch, tests first, `pnpm lint typecheck test build` green, visual check for UI changes, doc updates, PR referencing `Closes #N`. One run = one issue, never a batch.
 
 The resulting PR flows through the same `automation:needs-review` → R3 → `review-status-sync.yml` pipeline as any other PR — R2 doesn't self-review.
 
@@ -138,12 +139,20 @@ The resulting PR flows through the same `automation:needs-review` → R3 → `re
 Routine at [claude.ai/code/routines](https://claude.ai/code/routines):
 
 1. **Name**: `R2 — Implementation (Scoreo)`.
-2. **Prompt**:
+2. **Prompt** (current, through the transition alias):
    ```
    Implement the GitHub issue from your triggering context by following
    .claude/skills/implement-task/SKILL.md exactly.
    ```
-3. **Repository**: `remhiit/scoreo`.
+   Target prompt, to apply only once the account plugin loads in routines
+   (today it does not: R3 got `Unknown skill: dev-workflow:pr-review` on
+   27/11/2026, and the transition alias is what keeps the routine working):
+   ```
+   Implement the GitHub issue from your triggering context by following the
+   dev-workflow:implement-task skill exactly (Scoreo overlay:
+   .claude/skills/project-conventions/implement-task.md).
+   ```
+3. **Repositories**: `remhiit/scoreo`, plus `remhiit/workflows` (read only: the shared skills, read from there when the account plugin is not loaded in the routine).
 4. **Trigger**:
    - GitHub event → Issue → **labeled**
    - Filter → **Labels is one of `automation:ready`**.
@@ -155,10 +164,10 @@ Routine at [claude.ai/code/routines](https://claude.ai/code/routines):
 
 **Files**: a Claude Code Routine (created via [claude.ai/code/routines](https://claude.ai/code/routines) — not reachable from any tool in a session) + `.github/workflows/needs-review-label.yml` + `.github/workflows/review-status-sync.yml`
 
-Automates the subjective review pass from `.claude/skills/pr-review`. Split into a queueing step, a judgment step (LLM), and a translation step (deterministic), because (a) a routine's GitHub trigger only accepts one specific action or every action in a category — not a multi-select of a few — so `pull_request.labeled` alone can't be combined with `opened`/`synchronize` on the same trigger, and (b) no Claude Code session — interactive or routine — has a tool that can post a raw commit status; only the usual GitHub MCP tools (issues, PRs, labels) are available.
+Automates the subjective review pass from `dev-workflow:pr-review`. Split into a queueing step, a judgment step (LLM), and a translation step (deterministic), because (a) a routine's GitHub trigger only accepts one specific action or every action in a category — not a multi-select of a few — so `pull_request.labeled` alone can't be combined with `opened`/`synchronize` on the same trigger, and (b) no Claude Code session — interactive or routine — has a tool that can post a raw commit status; only the usual GitHub MCP tools (issues, PRs, labels) are available.
 
 1. **`needs-review-label.yml`** triggers on `pull_request.opened`/`ready_for_review`/`synchronize` (skipping drafts), **first** removes any stale `automation:review-pass`/`automation:needs-fix` from a prior pass, **then** adds `automation:needs-review` — zero LLM, just queues the PR. Covering `synchronize` means every new push (including a rebase/force-push) re-queues a review; without it, `claude/review` stays stuck on whatever SHA got the last review and blocks merge once the branch moves past it (hit repeatedly on PRs #91/#93 before this was added). A PR carrying `automation:coordinator-owned` is skipped (the coordinator already reviewed it): there, `review-status-carry.yml` carries `claude/review` to the new SHA when the PR's diff is unchanged (`git patch-id`), and removing the label by hand (`unlabeled`) is what queues it for R3. Removing the stale verdict label matters too: GitHub only fires `pull_request.labeled` on an actual absent→present transition, so if R3 reaches the same verdict again on the new commit and the label were still there from before, `review-status-sync.yml` would never fire and `claude/review` would stay stuck exactly the same way. **Order matters**: removing the stale labels *before* adding `automation:needs-review` means those removals happen while `automation:needs-review` isn't present yet, so they don't themselves match R3's trigger filter below — doing it the other way round double-fired R3 on PR #94 (the add's `labeled` event, then the removal's `unlabeled` event, both matching while `automation:needs-review` was already present).
-2. **The Routine**'s GitHub trigger is `pull_request`, **all actions**, filtered to `Labels is one of automation:needs-review` — this filter is what lets one trigger stand in for the `opened`/`synchronize` combination it can't express directly. `pr-review` removes `automation:needs-review` as its very first action ("claim the run" — see `automation-plan.md` §4), not its last, so no label it posts afterward can itself re-match this filter. Re-adding `automation:needs-review` on the next push (or manually) queues another pass.
+2. **The Routine**'s GitHub trigger is `pull_request`, **all actions**, filtered to `Labels is one of automation:needs-review` — this filter is what lets one trigger stand in for the `opened`/`synchronize` combination it can't express directly. `pr-review` removes `automation:needs-review` as its very first action ("claim the run" — see `doc/workflows/automation-plan.md` §4), not its last, so no label it posts afterward can itself re-match this filter. Re-adding `automation:needs-review` on the next push (or manually) queues another pass.
 3. **`review-status-sync.yml`** triggers on `pull_request.labeled`, checks for `automation:review-pass`/`automation:needs-fix`, and sets the `claude/review` commit status (`success`/`failure`) via `GITHUB_TOKEN` — no LLM involved, pure deterministic translation of a label into a status GitHub can gate on.
 
 ### Creating the Routine (manual, one-time)
@@ -166,12 +175,20 @@ Automates the subjective review pass from `.claude/skills/pr-review`. Split into
 Routine at [claude.ai/code/routines](https://claude.ai/code/routines):
 
 1. **Name**: `R3 — PR Review (Scoreo)`.
-2. **Prompt**:
+2. **Prompt** (current, through the transition alias):
    ```
    Review the pull request from your triggering context by following
    .claude/skills/pr-review/SKILL.md exactly.
    ```
-3. **Repository**: `remhiit/scoreo`.
+   Target prompt, to apply only once the account plugin loads in routines
+   (today it does not: R3 got `Unknown skill: dev-workflow:pr-review` on
+   27/11/2026, and the transition alias is what keeps the routine working):
+   ```
+   Review the pull request from your triggering context by following the
+   dev-workflow:pr-review skill exactly (Scoreo overlay:
+   .claude/skills/project-conventions/pr-review.md).
+   ```
+3. **Repositories**: `remhiit/scoreo`, plus `remhiit/workflows` (read only: the shared skills, read from there when the account plugin is not loaded in the routine).
 4. **Trigger**:
    - GitHub event → Pull request → **all actions**
    - Filter → **Labels is one of `automation:needs-review`**.
@@ -183,22 +200,31 @@ Routine at [claude.ai/code/routines](https://claude.ai/code/routines):
 
 **Files**: a Claude Code Routine (created via [claude.ai/code/routines](https://claude.ai/code/routines)) + `.github/workflows/auto-merge-sync.yml`
 
-Automates `.claude/skills/address-feedback` for PRs R3 sends back with `automation:needs-fix`. The Routine's GitHub trigger is `pull_request`, action **labeled** (not "all actions" — an `unlabeled` event never matches this action, so removing a label can't itself double-fire R4, unlike the Phase 2 incident in `automation-plan.md`), filtered to `Labels is one of automation:needs-fix`.
+Automates `dev-workflow:address-feedback` for PRs R3 sends back with `automation:needs-fix`. The Routine's GitHub trigger is `pull_request`, action **labeled** (not "all actions" — an `unlabeled` event never matches this action, so removing a label can't itself double-fire R4, unlike the Phase 2 incident in `doc/workflows/automation-plan.md`), filtered to `Labels is one of automation:needs-fix`.
 
-R4 manages its own `automation:attempt-1`/`automation:attempt-2`/`automation:attempt-3` counter as the first step of `address-feedback/SKILL.md` ("Claim the run") — no separate Action for that, the same way R3 already manages `automation:review-pass`/`automation:needs-fix`/`automation:needs-review` itself. That first step removes `automation:needs-fix` and any existing `automation:attempt-N` right away, before anything else — this is the "claim the run" principle (`automation-plan.md` §4): scoping the trigger to `labeled` isn't enough on its own, since R4 posting its *own* `automation:attempt-N` label while `automation:needs-fix` was still present re-triggered R4 on PR #111 (chained straight through to `automation:needs-human` in about a minute). At `automation:attempt-3`, R4 stops instead of trying a 4th time: removes `automation:in-progress` and `automation:enabled`, adds `automation:needs-human` (`automation:needs-fix` is already gone by this point). Otherwise it pushes a fix, which `needs-review-label.yml` (`synchronize`) picks up on its own to re-queue R3 — R4 doesn't need to touch `automation:needs-review` itself.
+R4 manages its own `automation:attempt-1`/`automation:attempt-2`/`automation:attempt-3` counter as the first step of `project-conventions/address-feedback.md` ("Claim the run") — no separate Action for that, the same way R3 already manages `automation:review-pass`/`automation:needs-fix`/`automation:needs-review` itself. That first step removes `automation:needs-fix` and any existing `automation:attempt-N` right away, before anything else — this is the "claim the run" principle (`doc/workflows/automation-plan.md` §4): scoping the trigger to `labeled` isn't enough on its own, since R4 posting its *own* `automation:attempt-N` label while `automation:needs-fix` was still present re-triggered R4 on PR #111 (chained straight through to `automation:needs-human` in about a minute). At `automation:attempt-3`, R4 stops instead of trying a 4th time: removes `automation:in-progress` and `automation:enabled`, adds `automation:needs-human` (`automation:needs-fix` is already gone by this point). Otherwise it pushes a fix, which `needs-review-label.yml` (`synchronize`) picks up on its own to re-queue R3 — R4 doesn't need to touch `automation:needs-review` itself.
 
 ### Creating the Routine (done — 2026-07-16)
 
 The routine shell (name, prompt, `create_new_session_on_fire: true`) was created by tool (`trig_014VemW9wW5MopAjDHaaiYK7`, poke-only — no schedule, never fires on its own). Tool-created schedule/poke shells can't attach MCP connectors they don't themselves hold, so the trigger and connectors below were finished manually by Rémi through the web UI. R4 is operational: trigger and connectors are both configured, for reference —
 
 1. **R4 — Address Feedback (Scoreo)** at [claude.ai/code/routines](https://claude.ai/code/routines).
-2. **Prompt**:
+2. **Prompt** (current, through the transition alias):
    ```
    Address the pull request feedback from your triggering context by
    following .claude/skills/address-feedback/SKILL.md exactly, starting
    with its attempt-counter step.
    ```
-3. **Repository**: `remhiit/scoreo`.
+   Target prompt, to apply only once the account plugin loads in routines
+   (today it does not: R3 got `Unknown skill: dev-workflow:pr-review` on
+   27/11/2026, and the transition alias is what keeps the routine working):
+   ```
+   Address the pull request feedback from your triggering context by
+   following the dev-workflow:address-feedback skill exactly (Scoreo overlay:
+   .claude/skills/project-conventions/address-feedback.md), starting
+   with its attempt-counter step.
+   ```
+3. **Repositories**: `remhiit/scoreo`, plus `remhiit/workflows` (read only: the shared skills, read from there when the account plugin is not loaded in the routine).
 4. **Trigger**:
    - GitHub event → Pull request → **labeled**
    - Filter → **Labels is one of `automation:needs-fix`**.
@@ -210,7 +236,7 @@ The routine shell (name, prompt, `create_new_session_on_fire: true`) was created
 
 Zero-LLM Action, triggered on `pull_request.labeled`/`unlabeled` filtered to the `automation:enabled` label: on add, calls `gh pr merge --auto --squash` to enable GitHub's native auto-merge (waits for required checks — including `claude/review` — then squash-merges on its own); on remove, calls `gh pr merge --disable-auto`. The disable path matters: once native auto-merge is enabled, GitHub doesn't automatically turn it off just because a label changed — R4 escalating to `automation:needs-human` at `automation:attempt-3` removes `automation:enabled`, and this Action is what actually stops the pending merge from going through once checks eventually pass.
 
-On the `labeled` (add) path, the job then waits in place (polling `gh pr view --json state`, ~20s interval, ~20 min ceiling) for that auto-merge to actually complete, then closes any issues referenced by closing keywords in the PR's body directly in this same job — invoking `scripts/close-linked-issues.mjs` with `PR_NUMBER` set instead of relying on `GITHUB_EVENT_PATH`. This exists because a merge completed by GitHub's native auto-merge is attributed to the `GITHUB_TOKEN` identity, and GitHub never spawns a new workflow run for an event triggered by the `GITHUB_TOKEN` — so `pull_request.closed` never reaches `close-linked-issues.yml` for these merges (confirmed on #208/#212, see `doc/technical/automation-plan.md` Phase 5). Acting within the same job sidesteps that limit entirely, since no new `workflow_run` is needed. If the poll times out without a merge, the job exits cleanly — nothing to close.
+On the `labeled` (add) path, the job then waits in place (polling `gh pr view --json state`, ~20s interval, ~20 min ceiling) for that auto-merge to actually complete, then closes any issues referenced by closing keywords in the PR's body directly in this same job — invoking `scripts/close-linked-issues.mjs` with `PR_NUMBER` set instead of relying on `GITHUB_EVENT_PATH`. This exists because a merge completed by GitHub's native auto-merge is attributed to the `GITHUB_TOKEN` identity, and GitHub never spawns a new workflow run for an event triggered by the `GITHUB_TOKEN` — so `pull_request.closed` never reaches `close-linked-issues.yml` for these merges (confirmed on #208/#212, see `doc/workflows/automation-plan.md` Phase 5). Acting within the same job sidesteps that limit entirely, since no new `workflow_run` is needed. If the poll times out without a merge, the job exits cleanly — nothing to close.
 
 `automation:enabled` is applied by R2 (`implement-task`) at PR-open time when the issue's risk was assessed **Faible** and the diff still matches that — never by R1, never predicted before the diff exists.
 
@@ -222,7 +248,7 @@ On the `labeled` (add) path, the job then waits in place (polling `gh pr view --
 
 Zero-LLM Action, triggered on `pull_request.closed` filtered to `github.event.pull_request.merged == true`. Parses the merged PR's body for closing keywords (`close`/`closes`/`closed`, `fix`/`fixes`/`fixed`, `resolve`/`resolves`/`resolved`, case-insensitive, followed by one or more `#N` references) and explicitly closes each referenced issue in this repo via the REST API (`PATCH /issues/{n}` with `state: closed`, `state_reason: completed`) — using its own `GITHUB_TOKEN`, scoped `issues: write` in this workflow's `permissions:` block. Cross-repo references (`owner/repo#N`) are ignored; issues already closed are skipped.
 
-Exists because GitHub's own "Closes #N" auto-close was observed to silently not fire for PRs merged through `auto-merge-sync.yml`'s native auto-merge — see `doc/technical/automation-plan.md` Phase 5, incidents #128 and #139. This workflow remains the safety net for **manually-merged** PRs (by Rémi, via the UI), which aren't affected by the `GITHUB_TOKEN` recursive-trigger limit described under Auto-Merge above; the bot-merged path is now handled directly inside `auto-merge-sync.yml` itself (#223), since this workflow's own `pull_request.closed` trigger can't fire for those merges either.
+Exists because GitHub's own "Closes #N" auto-close was observed to silently not fire for PRs merged through `auto-merge-sync.yml`'s native auto-merge — see `doc/workflows/automation-plan.md` Phase 5, incidents #128 and #139. This workflow remains the safety net for **manually-merged** PRs (by Rémi, via the UI), which aren't affected by the `GITHUB_TOKEN` recursive-trigger limit described under Auto-Merge above; the bot-merged path is now handled directly inside `auto-merge-sync.yml` itself (#223), since this workflow's own `pull_request.closed` trigger can't fire for those merges either.
 
 The `scripts/close-linked-issues.mjs` module is shared between the two workflows: `resolvePullRequest()` fetches the PR by number from the API when `PR_NUMBER` is set (used by `auto-merge-sync.yml`), and falls back to reading the `pull_request.closed` event payload from `GITHUB_EVENT_PATH` otherwise (used by this workflow).
 
@@ -232,13 +258,13 @@ The `scripts/close-linked-issues.mjs` module is shared between the two workflows
 
 **Files**: a Claude Code Routine (`trig_01Y4gg6E5uMfD9XWFpBBxrt8`, created by tool — a schedule trigger doesn't need the web UI, unlike R2/R3's GitHub triggers)
 
-Runs `.claude/skills/site-quality` on a schedule: dependency updates, dead doc links, Lighthouse regressions, PWA manifest/service-worker validity — one PR per category with something to report, never a combined PR, and nothing opened for a clean category. Every PR it opens flows through the same `automation:needs-review` → R3 → `review-status-sync.yml` pipeline as any other PR — R5 doesn't self-review or apply `automation:needs-review` itself.
+Runs `dev-workflow:site-quality` on a schedule: dependency updates, dead doc links, Lighthouse regressions, PWA manifest/service-worker validity — one PR per category with something to report, never a combined PR, and nothing opened for a clean category. Every PR it opens flows through the same `automation:needs-review` → R3 → `review-status-sync.yml` pipeline as any other PR — R5 doesn't self-review or apply `automation:needs-review` itself.
 
 ### Creating the Routine
 
 1. **Name**: `R5 — Hygiène hebdo (Scoreo)`.
-2. **Prompt**: a one-line pointer to `.claude/skills/site-quality/SKILL.md`.
-3. **Repository**: `remhiit/scoreo`.
+2. **Prompt** (current, through the transition alias): a one-line pointer to `.claude/skills/site-quality/SKILL.md`. Target prompt, once the account plugin loads in routines: a pointer to the `dev-workflow:site-quality` skill (Scoreo overlay: `.claude/skills/project-conventions/site-quality.md`).
+3. **Repositories**: `remhiit/scoreo`, plus `remhiit/workflows` (read only: the shared skills, read from there when the account plugin is not loaded in the routine).
 4. **Trigger**: schedule, cron `0 6 * * 1` (every Monday 06:00 UTC).
 5. **Connectors**: leave at their default (GitHub MCP tools included); no extra network access needed.
 
