@@ -4,7 +4,7 @@
 // once required checks pass, outside any workflow run. GitHub's own closing-
 // keyword parsing ("Closes #N") should apply regardless, but in practice this
 // repo observed linked issues staying open after such auto-merges (#120, #122,
-// #114 — see doc/technical/automation-plan.md Phase 5, #139), while a manually
+// #114 — see doc/workflows/automation-plan.md Phase 5, #139), while a manually
 // merged PR (#121) closed its linked issue normally. This script parses the
 // merged PR's body for closing keywords itself and closes the referenced
 // issues explicitly, with its own `issues: write` token.
@@ -15,7 +15,7 @@
 //   complete and then closes issues in the same job run — this path exists
 //   because GitHub never spawns a new workflow run for events triggered by
 //   the GITHUB_TOKEN, so `pull_request.closed` never reaches this script's
-//   own dedicated trigger for those merges — see #208/#212, automation-plan.md
+//   own dedicated trigger for those merges — see #208/#212, doc/workflows/automation-plan.md
 //   Phase 5).
 // - Otherwise: read the `pull_request.closed` event payload from
 //   `GITHUB_EVENT_PATH` (used by `close-linked-issues.yml`, the safety net for

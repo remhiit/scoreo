@@ -30,7 +30,7 @@ routine.
 
 None beyond having read the contract above. This skill is not
 GitHub-triggered, so it has neither a "which issue/PR" rule nor a "claim the
-run" step (`doc/automation/skill-contract.md` §1.4).
+run" step (`doc/workflows/skill-contract.md` §1.4).
 
 ## Procédure
 
@@ -85,7 +85,7 @@ import of the screen.
 
 **Mockup first.** Before writing the screen, mock it up in the catalog
 (`apps/catalog/src/mockups/module-<game>/`) and have it validated by the merge
-of its PR — `doc/technical/design-workflow.md` is the rule. The mockup
+of its PR — `doc/workflows/design-workflow.md` is the rule. The mockup
 composes the design system inside an `ImmersiveTemplate`, as the module will;
 its game pieces (a die, a card, a score cell nothing else has) are drafted
 under the mockup's `sketches/`, then move to the module's `src/design/` in
@@ -168,7 +168,7 @@ A new module is a **row in an existing table**, not a new test:
   `scripts/module-packages.test.mjs` fails for any `module-*` package without one.
 - `apps/scoreo/tests/visual/` — one spec plus baselines, recorded **in the container**
   (`pnpm --filter scoreo test:visual:container --update-snapshots`), never on your own machine.
-  Read `doc/technical/visual-testing.md` first; two traps live there:
+  Read `doc/workflows/visual-testing.md` first; two traps live there:
   - a fixture match id must be a **real UUID**, or `migrateMatches` rewrites it, the module finds no
     match, and it opens an empty grid that photographs perfectly plausibly;
   - wait on an **exact** restored value before capturing, never a loose `\d+`, for the same reason.
@@ -277,7 +277,7 @@ restored.
 
 ## Escalade
 
-Per `doc/automation/skill-contract.md` §3 — in particular, a scope mismatch
+Per `doc/workflows/skill-contract.md` §3 — in particular, a scope mismatch
 discovered mid-work (e.g. the target game doesn't fit the existing
 module precedents, or the contract in `doc/technical/module-contract.md` doesn't
 cover a case this game needs) is grounds to stop and ask rather than

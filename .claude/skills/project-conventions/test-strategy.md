@@ -17,7 +17,7 @@ same numbering.
 
 ## Scoreo test layers
 
-The repo runs three suites (`doc/technical/visual-testing.md` § "The repo has
+The repo runs three suites (`doc/workflows/visual-testing.md` § "The repo has
 three test suites" — this skill only ever reaches into the first two):
 
 | Layer | Where | Runner |
@@ -30,5 +30,5 @@ three test suites" — this skill only ever reaches into the first two):
 
 E2E is the most expensive suite here: reserve it for what nothing smaller can
 catch (`doc/reference.md`'s existing `e2e/*.spec.ts` list is the precedent to
-match). Visual-regression scenarios belong to `doc/technical/visual-testing.md`'s
+match). Visual-regression scenarios belong to `doc/workflows/visual-testing.md`'s
 own suite (`*.visual.spec.ts`), never to this skill's output.

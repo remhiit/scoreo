@@ -3,7 +3,7 @@
 // valide .automation/routines.yml contre le contrat documenté dans
 // schemas/automation/routines.schema.json, puis — pour un événement GitHub
 // `labeled` donné — résout quelle routine matche. Zéro LLM (principe
-// directeur #2, doc/technical/automation-plan.md §2) : ce script ne fait que
+// directeur #2, doc/workflows/automation-plan.md §2) : ce script ne fait que
 // centraliser le mapping et l'exposer, il ne remplace pas les triggers des
 // routines Claude Code elles-mêmes (§4).
 import { readFileSync } from 'node:fs'
@@ -137,7 +137,7 @@ export function validateRoutinesConfig(config) {
       const triggerKey = `${routine.entity}:${routine.trigger_label}`
       if (seenTriggers.has(triggerKey)) {
         errors.push(
-          `routines.${name}: le label déclencheur "${routine.trigger_label}" sur "${routine.entity}" est déjà utilisé par une autre routine — un même événement labellisé matcherait plusieurs routines (voir doc/technical/automation-plan.md §4, incident #99)`,
+          `routines.${name}: le label déclencheur "${routine.trigger_label}" sur "${routine.entity}" est déjà utilisé par une autre routine — un même événement labellisé matcherait plusieurs routines (voir doc/workflows/automation-plan.md §4, incident #99)`,
         )
       }
       seenTriggers.add(triggerKey)
@@ -149,7 +149,7 @@ export function validateRoutinesConfig(config) {
 
 // Toute routine déclenchée par un label la retire et pose
 // `automation:in-progress` en tout premier geste ("claim the run",
-// automation-plan.md §4) — la cible est donc toujours la même, quelle que
+// doc/workflows/automation-plan.md §4) — la cible est donc toujours la même, quelle que
 // soit la routine.
 export const CLAIM_LABEL = 'automation:in-progress'
 

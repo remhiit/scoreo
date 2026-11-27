@@ -8,4 +8,4 @@ This file is Scoreo's overlay for the shared workflow `workflows:spike` (plugin 
   `CLAUDE.md` § Langue), named `<topic>-decision.md`; the summary to Rémi is
   in French.
 - A prototype that touches the UI goes in `apps/catalog/src/mockups/<topic>/`
-  (`doc/technical/design-workflow.md`), never in `apps/scoreo/src/`.
+  (`doc/workflows/design-workflow.md`), never in `apps/scoreo/src/`.

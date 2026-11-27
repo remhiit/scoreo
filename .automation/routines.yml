@@ -1,6 +1,6 @@
 # Mapping déclaratif label → routine → skill pour le dispatcher d'automatisation.
 # Source de vérité machine-lisible du tableau documenté dans
-# doc/automation/state-machine.md §2 — toute nouvelle routine se déclare ici,
+# doc/workflows/state-machine.md §2 — toute nouvelle routine se déclare ici,
 # sans copier un workflow complet (issue #378).
 #
 # Validé en CI (job `automation-config` de ci.yml) et résolu à chaque
@@ -9,7 +9,7 @@
 # schemas/automation/routines.schema.json.
 #
 # `routing_policy` référence une entrée de .automation/routing-policy.yml
-# (contrat de routage par sous-agent, doc/automation/model-routing.md,
+# (contrat de routage par sous-agent, doc/workflows/model-routing.md,
 # issue #400) — jamais la politique complète dupliquée ici.
 #
 # `coordinator` (issue #469) fusionne R2/R3/R4 en une session unique pour le

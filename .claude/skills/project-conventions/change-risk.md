@@ -63,7 +63,7 @@ différentes) mais se recoupent :
 - `issue-to-spec`'s **Faible**/**Élevé** est une décision binaire prise une
   fois, à la création de l'issue, sur la seule base des fichiers impactés
   *prévus* — elle gouverne l'éligibilité à `automation:enabled`
-  (`doc/technical/automation-plan.md` §5).
+  (`doc/workflows/automation-plan.md` §5).
 - Ce skill produit une évaluation à trois niveaux, faite sur le diff *réel*
   (ou la spec à défaut), enrichie de preuves et de mitigations — elle sert
   de guide de profondeur de validation à `implement-task`, `test-strategy`,

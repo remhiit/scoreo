@@ -19,6 +19,6 @@ older references to `.claude/skills/pr-review/SKILL.md` keep working.
    `.claude/skills/project-conventions/SKILL.md`, then
    `.claude/skills/project-conventions/pr-review.md`. The overlay wins on conflict.
 
-Remove this alias once the R2–R5 routine prompts (`doc/technical/deployment.md`)
+Remove this alias once the R2–R5 routine prompts (`doc/workflows/deployment.md`)
 and every coordinator sub-agent launch name `dev-workflow:pr-review` directly and a
 run has confirmed the plugin loads there.

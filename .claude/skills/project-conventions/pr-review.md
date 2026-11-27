@@ -176,12 +176,12 @@ reviewed.
 
 `.automation/routines.yml` declares `deduplicate_by: head_sha` for this
 routine — this step is what actually enforces it (the dispatcher itself is
-observability-only, `automation-plan.md` §4 "Dispatcher déclaratif"). Two
+observability-only, `doc/workflows/automation-plan.md` §4 "Dispatcher déclaratif"). Two
 `labeled(automation:needs-review)` deliveries for the same commit are
 possible even with "claim the run" in place (e.g. a duplicate webhook
 delivery, or `requeue-lost-events.mjs` re-posing the label on a run that was
 actually still in flight) — the class of double-fire behind incidents #94
-and #99 (`doc/automation/state-machine.md` §5).
+and #99 (`doc/workflows/state-machine.md` §5).
 
 **As either of the coordinator's review sub-agents** (#469/#470): skip this
 step too — the `pr-review` journal only exists once the coordinator posts a
@@ -211,7 +211,7 @@ itself, only reads it.
 
 ## Traçabilité
 
-Per `doc/automation/skill-contract.md` § "Traçabilité" (#494): this skill's
+Per `doc/workflows/skill-contract.md` § "Traçabilité" (#494): this skill's
 own instance of the structured output (the formal PR review, § "Post the
 review" below) carries the model that actually ran it, `<id>` (e.g.
 `claude-sonnet-5`, never the marketing name).
@@ -290,7 +290,7 @@ finding formed on it anyway is out-of-corpus, see that same section).
    Flag it even if it's not blocking — that's the point of a subjective
    review.
 6. **Mockup conformance** _(functional)_. When the spec's `## Maquette`
-   section names a mockup (`doc/technical/design-workflow.md`), compare the
+   section names a mockup (`doc/workflows/design-workflow.md`), compare the
    delivered screens with the mockup's `screens.tsx` as it stands on the
    default branch: a gap the PR does not explain is a finding. So is a
    sketch shipped from `apps/catalog/src/mockups/*/sketches/` instead of
@@ -380,7 +380,7 @@ goes only in the review's summary body, not scattered as inline noise.
    example finding above, not a trimmed-down version of it.
 3. `pull_request_review_write` `method: submit_pending`, `event: COMMENT` —
    **never** `APPROVE` or `REQUEST_CHANGES` (no auto-approval mechanism,
-   `automation-plan.md` §3). The submit `body` is the synthesis: every
+   `doc/workflows/automation-plan.md` §3). The submit `body` is the synthesis: every
    finding (inline ones too, so the review reads standalone) grouped by
    severity, plus the overall verdict line from "Output" above.
 
@@ -451,7 +451,7 @@ Once a run reaches a terminal outcome (not the dedup-skip or moved-HEAD
 guards, which stop earlier by design):
 
 - One formal PR review (Procédure §4) — this skill's instance of
-  `doc/automation/skill-contract.md` §2's structured output, its submitted
+  `doc/workflows/skill-contract.md` §2's structured output, its submitted
   body carrying every finding grouped by severity plus the verdict line
   (Statut/Résumé), each inline comment its own Artefact, the checklist
   itself the Validations record, and a Traçabilité line (§ "Traçabilité"
@@ -485,7 +485,7 @@ the diff alone becomes an `uncertain` finding in the review (Procédure §2),
 not a stop condition. The two points where a run *does* stop early — "Skip
 a duplicate review" and "Guard against a moved HEAD" — are deduplication/
 race guards that re-pose the queue label for another pass, not escalations
-to `automation:needs-human` (`doc/automation/skill-contract.md` §3).
+to `automation:needs-human` (`doc/workflows/skill-contract.md` §3).
 
 ## Limites
 

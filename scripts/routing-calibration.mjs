@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Rapport de calibration du routage (issue #481, tranche 6/6 de #407,
-// doc/technical/automation-plan.md § « Calibration du routage »).
+// doc/workflows/automation-plan.md § « Calibration du routage »).
 // Confronte les enregistrements `RunMetrics` (#477) déjà publiés dans le
 // journal du coordinateur à la politique de routage courante
 // (`.automation/routing-policy.yml`) et **propose** des ajustements de
@@ -27,7 +27,7 @@ import { validateRunMetrics } from './run-metrics.mjs'
 export const CALIBRATION_VERSION = 1
 
 // Seuils de signal du moteur de calibration — arbitraires mais documentés
-// (doc/automation/model-routing.md § Calibration), volontairement prudents
+// (doc/workflows/model-routing.md § Calibration), volontairement prudents
 // pour une première version : sous `ciGreenLow`, la bande sous-performe
 // (motif de durcissement du `min_score`) ; au-dessus de `ciGreenHigh` avec
 // zéro escalade, elle performe assez bien pour desserrer le seuil et

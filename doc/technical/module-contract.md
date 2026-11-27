@@ -359,6 +359,11 @@ the signal: it is promoted (renamed `sc-`, with its CSS and test, in the right a
 modules compose it from there. `src/design/` holds what is specific to one game, never a component
 waiting to be shared.
 
+**Every piece has its sheet in the catalog.** Each component a module's `src/design/index.ts` exports
+(its `ModuleRoot` aside) is shown on the design catalog's **Pièces de jeu** page, under that module's
+root; `apps/catalog/src/catalog.test.tsx` fails until a new piece has its entry in
+`apps/catalog/src/pieces/` ([`doc/workflows/design-catalog.md`](../workflows/design-catalog.md) § "Pièces de jeu").
+
 **The root wrapper is a game piece too.** The element carrying `.module-<moduleId>` sets a
 `className`, so it lives in `src/design/` (e.g.
 `src/design/ModuleRoot.tsx`, rendering `<div className="module-<moduleId>">{children}</div>`), and the
@@ -404,7 +409,7 @@ only the pair holds it.
   also the one definition of "a module package" (`packages/module-*` but `module-api`) both CSS
   guards walk.
 - What none of these can see, `apps/scoreo/tests/visual/` does: see
-  [`visual-testing.md`](visual-testing.md).
+  [`doc/workflows/visual-testing.md`](../workflows/visual-testing.md).
 
 Anything that must paint before scripts run belongs in `index.html`'s splash, not in a module's
 stylesheet: the sheet ships inside the JS chunk, so it arrives too late.

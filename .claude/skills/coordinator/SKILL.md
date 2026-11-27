@@ -1,6 +1,6 @@
 ---
 name: coordinator
-description: Fuses R2 (implementation), R3 (review) and R4 (fix) into a single Claude Code session that drives an issue from `automation:ready` to a reviewed, corrected PR without any label-driven handoff between steps. Invoked in place of `implement-task` on the same GitHub trigger (`issues.labeled`, filter `automation:ready`) — or by hand, in manual mode, on any issue Rémi names (`/coordinator #N`), bypassing the routine pipeline entirely (see "Mode manuel"). Delegates each step to a fresh sub-agent running that step's own skill (`implement-task`, `pr-review`, `address-feedback`) via the `Agent` tool — review runs as two isolated sub-agents on disjoint corpora, functional and technical, neither getting context from the implementation step or from each other (see "Context isolation" below), arbitrated by the mechanical rule in `scripts/review-verdict.mjs`. This is tranches 3 and 4 of #430 in doc/technical/automation-plan.md.
+description: Fuses R2 (implementation), R3 (review) and R4 (fix) into a single Claude Code session that drives an issue from `automation:ready` to a reviewed, corrected PR without any label-driven handoff between steps. Invoked in place of `implement-task` on the same GitHub trigger (`issues.labeled`, filter `automation:ready`) — or by hand, in manual mode, on any issue Rémi names (`/coordinator #N`), bypassing the routine pipeline entirely (see "Mode manuel"). Delegates each step to a fresh sub-agent running that step's own skill (`implement-task`, `pr-review`, `address-feedback`) via the `Agent` tool — review runs as two isolated sub-agents on disjoint corpora, functional and technical, neither getting context from the implementation step or from each other (see "Context isolation" below), arbitrated by the mechanical rule in `scripts/review-verdict.mjs`. This is tranches 3 and 4 of #430 in doc/workflows/automation-plan.md.
 ---
 
 # Coordinator
@@ -37,7 +37,7 @@ reading both reviews and picking a side.
 **Boundary with `pr-review` as a standalone routine.** A PR opened by a
 human or by R5 (`site-quality`) never goes through this skill — it still
 gets queued for review the existing way, `automation:needs-review` →
-standalone R3 (`doc/automation/state-machine.md` row #12/#13). This skill
+standalone R3 (`doc/workflows/state-machine.md` row #12/#13). This skill
 only ever owns a PR it opened itself, on an issue it claimed.
 
 ## Mode manuel (run demandé par Rémi, hors routines)
@@ -280,7 +280,7 @@ skills, and the declarative config, but does **not** itself flip a live
 GitHub Routine trigger onto this skill — exactly like every other routine in
 this repo's history (R2/R3/R4/R5), whose actual activation has always been a
 separate, manual step (a human configuring the trigger at
-claude.ai/code/routines, per `automation-plan.md` §7's phase log). What this
+claude.ai/code/routines, per `doc/workflows/automation-plan.md` §7's phase log). What this
 PR *does* change is `.automation/routines.yml`'s declarative entry for the
 `automation:ready` trigger (§ "Fichiers impactés" below) — the
 observability/validation layer, not the live trigger — so a human deciding
@@ -303,7 +303,7 @@ triplet (routine × complexity band × risk level) via
 missing from the matrix, or the matrix itself absent, always resolves
 `observe`; so does any triplet whose risk is `high`, whatever the matrix
 declares) or `apply`. The matrix this skill ships with (and every matrix
-until a human deliberately flips a triplet, per `automation-plan.md` §5
+until a human deliberately flips a triplet, per `doc/workflows/automation-plan.md` §5
 "Passage du dry-run à l'activation contrôlée") declares `observe`
 everywhere, so every `Agent` call in this skill keeps launching without an
 explicit `model` override for as long as that holds, exactly as
@@ -393,7 +393,7 @@ fix rounds — than today; this section caps that, with a stop as the *only*
 outcome of a crossed limit, never a silent fallback to a cheaper model,
 whatever the resolved risk level. `scripts/routing-budget.mjs` is the pure
 decision layer this whole section calls into (`loadBudgets`, `checkBudget`)
-— see `doc/automation/model-routing.md` § "Budgets" for its full contract.
+— see `doc/workflows/model-routing.md` § "Budgets" for its full contract.
 
 1. Keep a `subagentsLaunched` counter in this session's own memory, starting
    at 0 for this run. Immediately before every `Agent` call this skill
@@ -444,7 +444,7 @@ an automatic relaunch.
 
 ## Traçabilité (#494)
 
-Per `doc/automation/skill-contract.md` § "Traçabilité": every
+Per `doc/workflows/skill-contract.md` § "Traçabilité": every
 `upsertAutomationLog` call this skill makes on the issue's
 `coordinator-implement` journal (§ "Routage" step 5, § "Converged" step 4,
 § Escalade step 3) passes `executedBy: { skill: 'coordinator', model: <id> }`
@@ -619,9 +619,9 @@ Before launching the fix sub-agent, post `automation:attempt-N` on the PR
 survives a crash and resume exactly like R4's own counter does). **Never**
 post `automation:needs-fix` on this PR — that label is R4's own live
 routine trigger (`pull_request.labeled`, filter `automation:needs-fix`,
-`doc/automation/state-machine.md` §3); posting it here would start a
+`doc/workflows/state-machine.md` §3); posting it here would start a
 second, independent `address-feedback` session racing this one on the same
-branch, exactly the double-fire class `automation-plan.md` §4 already
+branch, exactly the double-fire class `doc/workflows/automation-plan.md` §4 already
 documents for R2/R3/R4's own labels. `automation:coordinator-owned` guards
 `needs-review-label.yml`'s output (#468) but there is no equivalent guard on
 a routine's own native trigger — the only safe fix is to never emit the
@@ -673,7 +673,7 @@ Reached when a review round (§ 2, first pass or after a fix round) finds no
    in-corpus findings, not either reviewer's alone.
 2. Re-check the risk category against the **final** diff (implementation
    plus every fix round), the same whitelist `project-conventions/implement-task.md` step
-   11 and `automation-plan.md` §5 use: post `automation:enabled` only if it
+   11 and `doc/workflows/automation-plan.md` §5 use: post `automation:enabled` only if it
    still reads Faible end to end — a diff that grew to touch a serialized
    model, a port/adapter, `apps/scoreo/public/`, Vite/TS config, or
    navigation during a fix round loses eligibility even if the original
@@ -757,7 +757,7 @@ otherwise reach § 4.
 
 On a converged run (§ 4):
 
-- One PR, `Closes #N`, structured per `doc/automation/skill-contract.md` §2
+- One PR, `Closes #N`, structured per `doc/workflows/skill-contract.md` §2
   (the implementation sub-agent's own PR description already carries this;
   this skill doesn't rewrite it).
 - Two formal PR reviews per round, one from each isolated sub-agent (§ 2,
@@ -773,7 +773,7 @@ On a converged run (§ 4):
 - `automation:coordinator-owned` kept on the PR, issue's
   `automation:in-progress` removed (§ 4).
 - One synthesis comment on the PR (`add_issue_comment`) — this skill's own
-  instance of `doc/automation/skill-contract.md` §2's six fields: Statut
+  instance of `doc/workflows/skill-contract.md` §2's six fields: Statut
   (converged / escalated), Résumé (rounds run, final verdict), Artefacts
   (PR, commits, review(s)), Validations (which of `implement-task`'s five
   checks passed, on which round), Questions non résolues (any
@@ -843,7 +843,7 @@ still carries exactly these three raw values, and is still **not** fed by
 `coordinator-log-sync.yml`: that Action fires off the label events this
 skill posts mid-run, and a session has no tool to edit a comment it already
 posted (same limitation `pr-review`'s own journal already lives with,
-`automation-plan.md` § "R3 idempotent"). That field is unchanged by what
+`doc/workflows/automation-plan.md` § "R3 idempotent"). That field is unchanged by what
 follows; it is not this section's channel.
 
 **`RunMetrics`, a structured record per run (#477).** The three
@@ -917,7 +917,7 @@ inspectable, resumable-by-a-human state (§ "Claim the run").
 
 ## Escalade
 
-Per `doc/automation/skill-contract.md` §3, applied at the same three points
+Per `doc/workflows/skill-contract.md` §3, applied at the same three points
 `implement-task`/`address-feedback` already define, run by this skill
 instead of by a standalone R2/R4:
 
@@ -946,7 +946,7 @@ instead of by a standalone R2/R4:
      case of `project-conventions/address-feedback.md` step 3) — in both cases the drift
      was flagged by a review sub-agent's finding, not discovered by the
      coordinator itself, and both are the same motif per
-     `doc/automation/state-machine.md` § "Contradictory feedback" (a
+     `doc/workflows/state-machine.md` § "Contradictory feedback" (a
      conflicting/ambiguous item is escalated on the same terms as a scope
      mismatch, not treated as a fourth distinct cause).
    - **Échec de validation après le budget d'itérations** — the full check
@@ -992,7 +992,7 @@ routing/budget failure) and never arbitrated — they escalade directly.
 The arbitration attempt follows this sequence:
 
 1. **Determine the motif** — a label for why escalation was triggered. Each
-   condition maps to one or more motifs per `doc/automation/
+   condition maps to one or more motifs per `doc/workflows/
    state-machine.md` row #26/#27 and the mappings in
    `scripts/arbitration.mjs#LEAD_MOTIFS`/`#EXPERT_MOTIFS`:
    - Condition 1 → `spec-ambigue` or `derive-vs-spec`.
@@ -1061,7 +1061,7 @@ The arbitration attempt follows this sequence:
    outright) — an invalid verdict is not a real arbitration outcome to
    attribute a disagreement-rate reading to, so it never counts as "the
    arbiter returned a structured verdict" for this label (same reading as
-   `doc/automation/state-machine.md`'s `automation:arbitrated` row). Never
+   `doc/workflows/state-machine.md`'s `automation:arbitrated` row). Never
    removed automatically. Never read by any automated gate; never affects
    convergence or escalation decisions. A human analyzing logs can filter PRs
    arbitrated this way for analysis.
@@ -1103,7 +1103,7 @@ issue's `automation:in-progress` for the whole run):
    equivalent, remove `automation:enabled` if present, add
    `automation:needs-human`. Never add `automation:needs-fix` here either —
    the PR is done with automation, not queued for another R4 round.
-2. On the **issue**, in this exact order (`doc/automation/state-machine.md`
+2. On the **issue**, in this exact order (`doc/workflows/state-machine.md`
    §6 "Escalation frees its slot" — reversing it lets the issue promote
    itself straight back to `automation:ready` in the window between steps):
    add `automation:needs-human`, add `automation:queued`, only then remove
@@ -1203,7 +1203,7 @@ issue's `automation:in-progress` for the whole run):
   already enforces, just checked here instead.
 - Never merges its own PR, and never removes `automation:needs-human` —
   same as every other skill in this pipeline.
-- Never batches more than one issue per run (`automation-plan.md` §2
+- Never batches more than one issue per run (`doc/workflows/automation-plan.md` §2
   principle 6) — same as `implement-task`.
 - Does not itself apply the multi-model routing decision it now computes and
   journals (§ "Routage (dry-run, #406)") — wiring an actual `model` override

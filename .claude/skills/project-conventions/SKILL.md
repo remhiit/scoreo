@@ -88,7 +88,7 @@ user-facing behavior updates `doc/functional/feature.md` or
 
 ## ui
 
-A change visible to a player follows `doc/technical/design-workflow.md`:
+A change visible to a player follows `doc/workflows/design-workflow.md`:
 mockup first in `apps/catalog/src/mockups/<feature>/`, validated by merging
 its PR; the delivered screen matches it; sketches are promoted into
 `packages/design-system/` with their catalog story; the mockup folder is
@@ -111,20 +111,20 @@ mandatory `## Maquette` section (`project-conventions/issue-to-spec.md`).
 ## risque
 
 `issue-to-spec`'s binary category follows the `automation:enabled`
-whitelist in `doc/technical/automation-plan.md` §5; `change-risk`'s surfaces
+whitelist in `doc/workflows/automation-plan.md` §5; `change-risk`'s surfaces
 are listed in `project-conventions/change-risk.md`.
 
 ## pipeline
 
-Scoreo runs an automation pipeline driven by labels (`doc/automation/
-state-machine.md`, `doc/technical/automation-plan.md`): routines R2–R5, the
+Scoreo runs an automation pipeline driven by labels (`doc/workflows/
+state-machine.md`, `doc/workflows/automation-plan.md`): routines R2–R5, the
 `coordinator` and its sub-agents. Each per-skill overlay states that skill's
 claim step, labels, escalation sequence and sub-agent deltas. The shared
-contract every skill follows is `doc/automation/skill-contract.md`.
+contract every skill follows is `doc/workflows/skill-contract.md`.
 
 ## tracabilite
 
-Per `doc/automation/skill-contract.md` § "Traçabilité": commits carry
+Per `doc/workflows/skill-contract.md` § "Traçabilité": commits carry
 `Skill: <skill>` and `Model: <id>` trailers; PRs, reviews and syntheses carry
 a « Traçabilité » line naming the skill and `<id>`. `<id>` is the machine
 model id: as a standalone session, `get_session` (strip a `[1m]` suffix,

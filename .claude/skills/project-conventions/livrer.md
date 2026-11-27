@@ -38,5 +38,5 @@ checklist.
 ## PR
 
 Body per `implement-task.md` § "Step 10 — PR" (the six fields of
-`doc/automation/skill-contract.md` §2), with `Closes #N`. Ready for review,
+`doc/workflows/skill-contract.md` §2), with `Closes #N`. Ready for review,
 not draft; no `automation:*` label.

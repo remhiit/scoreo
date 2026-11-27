@@ -83,12 +83,12 @@ context, not a GitHub event.
 Always run interactively, never as an autonomous routine (see frontmatter
 description above). This skill has no GitHub trigger, so it has neither a
 "which issue/PR" rule nor a "claim the run" step
-(`doc/automation/skill-contract.md` §1.4) — both apply only to
+(`doc/workflows/skill-contract.md` §1.4) — both apply only to
 label-triggered routines.
 
 ## Sizing
 
-One issue = one PR-sized unit of work (`automation-plan.md`'s "un run = un
+One issue = one PR-sized unit of work (`doc/workflows/automation-plan.md`'s "un run = un
 ticket" principle). If the description covers more than one independent
 change, split it into multiple issues rather than writing one spec that spans
 several unrelated files.
@@ -102,7 +102,7 @@ A feature that changes what a player sees — a screen or a region of one, a
 design-system component or prop, a layout, a visible state (empty, error,
 loading, finished, a dialog) — is mocked up and validated **before** its
 spec can be `READY_FOR_IMPLEMENTATION`. The rule, its exemptions and the
-mockup's layout are defined once in `doc/technical/design-workflow.md`;
+mockup's layout are defined once in `doc/workflows/design-workflow.md`;
 follow it rather than restating it:
 
 1. Build the mockup in `apps/catalog/src/mockups/<feature>/` (`index.tsx`,
@@ -126,7 +126,7 @@ documentation, tooling.
 mockup — never build one in that mode. An issue that needs one and whose
 `## Maquette` section names no merged mockup PR returns
 `NEEDS_CLARIFICATION`, its checklist item being « maquette à produire et à
-faire valider (doc/technical/design-workflow.md) ».
+faire valider (doc/workflows/design-workflow.md) ».
 
 
 ### Spec format — Scoreo additions
@@ -161,10 +161,10 @@ fin de corps — jamais avant `## Verdict de readiness`. `<id>` est
 l'identifiant machine du modèle qui exécute cette session (ex.
 `claude-sonnet-5` — jamais le nom marketing), obtenu par `get_session` (sans
 `session_id`, donc sur cette session elle-même) et son
-`session_context.model`, per `doc/automation/skill-contract.md` § « Traçabilité »
+`session_context.model`, per `doc/workflows/skill-contract.md` § « Traçabilité »
 — cette skill tourne comme sa propre session Claude Code Remote, jamais
 comme un sous-agent du coordinateur. Normalise cette valeur comme le dit
-`doc/automation/skill-contract.md` § « Traçabilité » : retire le suffixe de
+`doc/workflows/skill-contract.md` § « Traçabilité » : retire le suffixe de
 fenêtre de contexte (`claude-opus-5[1m]` → `claude-opus-5`) et préfère
 `external_metadata.last_served_model` quand il est présent et diffère de
 `session_context.model` — un fallback à la portée du tour change ce qui a
@@ -196,7 +196,7 @@ Une ligne par bloqueur, forme exacte `Dépend de #N (raison)` — c'est le
 format que `.github/workflows/sync-issue-dependencies.yml` parse pour
 réconcilier le lien natif GitHub `blocked_by` avec cette section (pose ce
 qui manque, retire ce qui n'est plus déclaré — zéro LLM, cf.
-`doc/technical/automation-plan.md` §2.2 et §4). Sans cette section, aucune
+`doc/workflows/automation-plan.md` §2.2 et §4). Sans cette section, aucune
 automatisation ne sait que l'issue est bloquée, et aucun lien `blocked_by`
 n'est jamais touché — c'est ce qui protège un lien posé à la main.
 
@@ -213,7 +213,7 @@ jamais en écrire plusieurs.
 ### Determining the risk category
 
 This is the one field that isn't free-form — it comes straight from the
-`automation:enabled` whitelist in `automation-plan.md` §5:
+`automation:enabled` whitelist in `doc/workflows/automation-plan.md` §5:
 
 - **Faible** (eligible for `automation:enabled` later, at `implement-task`'s
   discretion): content/copy changes, documentation, dependency bumps, local
@@ -231,7 +231,7 @@ across an issue's files after the fact.
 
 Before creating the issue, compute one verdict from the spec draft and state
 it to the user as part of your summary — this is the structured output
-`doc/automation/skill-contract.md` §2's "Statut" field calls for, this
+`doc/workflows/skill-contract.md` §2's "Statut" field calls for, this
 skill's instance of it: no PR/comment to post since R1 is interactive, but
 the verdict must still be said out loud, not just implied by what you do
 next. No implementation runs without a `READY_FOR_IMPLEMENTATION` verdict
@@ -265,7 +265,7 @@ duplicate that state.
   infer from the codebase, an unclear risk category. **Don't create the
   issue yet.** List, as a checklist, exactly what's missing and the precise
   question to ask for each item, then ask the user directly — this is the
-  interactive path of `doc/automation/skill-contract.md` §3: a human is
+  interactive path of `doc/workflows/skill-contract.md` §3: a human is
   present, so ask rather than guess. Re-run this verdict once they answer.
   **As the coordinator's sub-agent** (#506): there is no human to ask —
   leave the issue untouched and return this checklist as
@@ -297,7 +297,7 @@ verdict to the coordinator (§ "As the coordinator's sub-agent" above).
    blocker issue still open, `automation:queued` otherwise — never
    `automation:ready` directly. Posing several `automation:ready` at
    once would fire that many R2 events simultaneously; past the run cap
-   (5/day on Pro), the excess events are lost (`automation-plan.md` §3). The
+   (5/day on Pro), the excess events are lost (`doc/workflows/automation-plan.md` §3). The
    dispatcher (`scripts/dispatch-ready.mjs`, zero LLM, same workflow as the
    hourly sweeper) promotes one `automation:queued` issue to
    `automation:ready` at a time, only once nothing is already
@@ -322,10 +322,10 @@ verdict to the coordinator (§ "As the coordinator's sub-agent" above).
 - The queue label (`automation:queued` or `blocked`), added last, in its own
   call, never combined with another label.
 - The readiness verdict stated out loud to the user, per "Determining the
-  readiness verdict" above — this skill's instance of `doc/automation/
+  readiness verdict" above — this skill's instance of `doc/workflows/
   skill-contract.md` §2's "Statut" field.
 - A `## Traçabilité` section at the very end of the issue body (see "Spec
-  format" above) — this skill's instance of `doc/automation/skill-contract.md`
+  format" above) — this skill's instance of `doc/workflows/skill-contract.md`
   §2's "Traçabilité" field.
 - `automation:enabled` is never added here (see Limites).
 
@@ -341,7 +341,7 @@ verdict means these controls failed and the issue must not be created yet.
 
 ## Escalade
 
-Per `doc/automation/skill-contract.md` §3, specialized to this skill's only
+Per `doc/workflows/skill-contract.md` §3, specialized to this skill's only
 possible stop condition (ambiguous/incomplete input): a `NEEDS_CLARIFICATION`
 verdict. Since this skill is interactive, escalating means asking the user
 directly rather than guessing — see "Determining the readiness verdict"

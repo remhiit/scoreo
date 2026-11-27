@@ -30,7 +30,7 @@ pnpm dev                                                  # run Scoreo, then sta
 ```
 
 Its visual regression baselines live with Scoreo's (`pnpm --filter scoreo test:visual:container`,
-see the workspace's `doc/technical/visual-testing.md`).
+see the workspace's `doc/workflows/visual-testing.md`).
 
 ## Documentation
 

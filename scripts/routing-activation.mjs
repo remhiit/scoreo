@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Matrice d'activation du routage par sous-agent (issue #476, tranche 1/6 de
-// #407 — doc/technical/automation-plan.md §5 « Passage du dry-run à
+// #407 — doc/workflows/automation-plan.md §5 « Passage du dry-run à
 // l'activation contrôlée »). Remplace le drapeau global `dry_run` de #406
 // par une résolution fine (routine × bande de complexité × niveau de
 // risque) → `observe` ou `apply`, déclarée dans la section `activation` de
@@ -122,7 +122,7 @@ export function resolveActivation(policy, { routine, band, riskLevel }) {
 }
 
 // Détecte la transition « rollback intervenu pendant ce run » (issue #490,
-// suivi explicite de #480 — voir doc/automation/model-routing.md §
+// suivi explicite de #480 — voir doc/workflows/model-routing.md §
 // « Rollback » / « Run en vol : le journal le signale explicitement »).
 // `openedRollback` est la valeur de `policy.rollback` capturée à l'ouverture
 // du journal (.claude/skills/coordinator/SKILL.md § « Routage » étape 5,
@@ -133,7 +133,7 @@ export function resolveActivation(policy, { routine, band, riskLevel }) {
 // actif à l'ouverture (`true → true`, déjà couvert par la `reason` de
 // resolveActivation ci-dessus, pas par ce champ) ni une oscillation
 // `false → true → false` entièrement résorbée avant la fermeture — limite
-// connue, documentée dans doc/automation/model-routing.md § « Rollback ».
+// connue, documentée dans doc/workflows/model-routing.md § « Rollback ».
 export function detectRollbackDuringRun(openedRollback, closedRollback) {
   return !openedRollback && closedRollback === true
 }

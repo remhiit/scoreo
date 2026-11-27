@@ -1,7 +1,7 @@
 import { defineConfig, devices } from '@playwright/test'
 
 /**
- * Visual regression suite — see doc/technical/visual-testing.md.
+ * Visual regression suite — see doc/workflows/visual-testing.md.
  *
  * Deliberately separate from the two other suites: Vitest/jsdom asserts on the
  * DOM and stays fast, `e2e/` drives real flows and asserts on behaviour, and

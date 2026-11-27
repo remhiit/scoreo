@@ -1,7 +1,7 @@
 # Design workflow — a mockup before the code
 
 A feature that changes what a player sees is **mocked up and validated before it is coded**. The
-mockup is built in the design catalog (`apps/catalog/`, see [`design-catalog.md`](design-catalog.md))
+mockup is built in the design catalog (`apps/catalog/`, see [`doc/workflows/design-catalog.md`](design-catalog.md))
 from the real design-system components, so what is validated is what can be built — and every
 design-system change the feature needs is named, and drafted, before the first line of the feature.
 
@@ -45,7 +45,10 @@ tooling. When in doubt, the spec says why no mockup is needed in its `## Maquett
 4. **Build** (`implement-task`). Read the mockup first. Promote each sketch into the design system
    (component, CSS, test, catalog story); never ship a sketch as is. The visual check compares the
    delivered screen with the mockup; a deliberate difference is stated in the PR. The PR **removes
-   the mockup folder**: the feature now exists, and the mockup stays in git history.
+   the mockup folder**: the feature now exists, and the mockup stays in git history. In its place,
+   the PR adds the states the mockup showed to the screen's entry on the catalog's **Écrans** page
+   (`apps/catalog/src/screens/`, seeded in `fixtures.ts`): that page is the lasting trace of every
+   shipped screen, run by the app's own code.
 5. **Review** (`pr-review`). An unexplained gap between the merged mockup and the delivered screen,
    or a sketch left outside the design system, is a finding.
 

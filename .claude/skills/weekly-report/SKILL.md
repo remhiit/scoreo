@@ -1,6 +1,6 @@
 ---
 name: weekly-report
-description: Build the weekly observability report for the Scoreo automation pipeline — open PR age, needs-human escalations, R3 pass/fail rate, incidents logged since last report, and a recommendation on the `automation:enabled` whitelist. Use for the scheduled Monday report, or when asked to check pipeline health. This is the R6 step in doc/technical/automation-plan.md.
+description: Build the weekly observability report for the Scoreo automation pipeline — open PR age, needs-human escalations, R3 pass/fail rate, incidents logged since last report, and a recommendation on the `automation:enabled` whitelist. Use for the scheduled Monday report, or when asked to check pipeline health. This is the R6 step in doc/workflows/automation-plan.md.
 ---
 
 # Weekly Report
@@ -8,12 +8,12 @@ description: Build the weekly observability report for the Scoreo automation pip
 ## Objectif
 
 Builds the data-driven case for expanding, holding, or restricting the `automation:enabled`
-whitelist (`automation-plan.md` §5) — the plan explicitly forbids growing
+whitelist (`doc/workflows/automation-plan.md` §5) — the plan explicitly forbids growing
 that whitelist "on intuition" (§1, Phase 6). This skill only reports; it
 never edits the whitelist itself. See `project-conventions` for repo layout
 conventions referenced below.
 
-**Not yet autonomous.** Per `automation-plan.md` §6 ("une skill non éprouvée
+**Not yet autonomous.** Per `doc/workflows/automation-plan.md` §6 ("une skill non éprouvée
 en interactif ne passe pas en autonome"), this skill runs interactively
 until it's been rodée on a few real weeks. Creating the scheduled routine
 that fires it is Rémi's call, made after that rodage — out of scope for
@@ -35,7 +35,7 @@ not from anything pre-loaded in context.
   - **Interactive** (asked directly, or during rodage): same workflow, run on
     demand.
 - **Claim the run**: not applicable — this skill has no GitHub label trigger
-  to claim (`doc/automation/skill-contract.md` §1.4's "claim the run" step
+  to claim (`doc/workflows/skill-contract.md` §1.4's "claim the run" step
   applies only to label-triggered routines; R6 is cron-triggered and reads,
   never claims, other entities' labels).
 
@@ -83,9 +83,9 @@ State the counts and the resulting `automation:needs-fix` rate (the plan's main
 indicator, per this issue's acceptance criteria) — this rate is what the
 recommendation in §5 leans on.
 
-#### 4. Incidents consignés dans `automation-plan.md` depuis le rapport précédent
+#### 4. Incidents consignés dans `doc/workflows/automation-plan.md` depuis le rapport précédent
 
-`get_file_contents` on `doc/technical/automation-plan.md`. Each incident is
+`get_file_contents` on `doc/workflows/automation-plan.md`. Each incident is
 its own `**Incident (YYYY-MM-DD) — ...**` paragraph under a Phase section.
 List every one dated inside the reporting window, with a one-line summary
 and which phase/routine it was found in.
@@ -192,7 +192,7 @@ effectivement tourné.
 2. Pour chaque commentaire, extraire la routine (ligne `- Routine :`) et la
    ligne `- Exécuté par :` (`skill`/`model`). Un commentaire sans cette ligne
    (journal antérieur à #494, jamais réécrit rétroactivement — voir
-   `doc/automation/skill-contract.md` § « Traçabilité ») est compté à part,
+   `doc/workflows/skill-contract.md` § « Traçabilité ») est compté à part,
    jamais confondu avec un `modèle inconnu` explicite.
 3. Regrouper par routine, lister le ou les modèles distincts observés dans
    la fenêtre (un seul aujourd'hui dans la quasi-totalité des cas, tant que
@@ -231,7 +231,7 @@ Le rapport est une **issue GitHub**, jamais une PR ni un commentaire :
 - Exactement une issue GitHub par run (Procédure § Livrable), jamais une PR
   ni un commentaire — corps = les sept sections de données (§1-§7, dont 6.5 
   « Arbitrages ») plus la limite de mesure. C'est l'instance propre à cette skill de la sortie
-  structurée de `doc/automation/skill-contract.md` §2 : Statut = la
+  structurée de `doc/workflows/skill-contract.md` §2 : Statut = la
   recommandation (§5) ; Résumé = les compteurs R3 (§3) ; Artefacts = le lien
   vers l'issue elle-même ; Validations = sans objet (skill de reporting, pas
   de code) ; Questions non résolues = « Ce que ce rapport ne peut pas
@@ -239,7 +239,7 @@ Le rapport est une **issue GitHub**, jamais une PR ni un commentaire :
   routine) plus, pour ce rapport lui-même, `skill \`weekly-report\`` +
   `modèle \`<id>\`` (obtenu via `get_session`, cette skill tournant toujours
   comme sa propre session — jamais un sous-agent du coordinateur).
-  Normalise cette valeur comme le dit `doc/automation/skill-contract.md`
+  Normalise cette valeur comme le dit `doc/workflows/skill-contract.md`
   § « Traçabilité » : retire le suffixe de fenêtre de contexte
   (`claude-opus-5[1m]` → `claude-opus-5`) et préfère
   `external_metadata.last_served_model` quand il est présent et diffère de
@@ -260,7 +260,7 @@ approximation non signalée comme telle serait plus trompeuse qu'utile).
 ## Escalade
 
 Sans objet — ce skill ne peut jamais échouer au sens de
-`doc/automation/skill-contract.md` §3 (pas d'entrée ambiguë à interpréter,
+`doc/workflows/skill-contract.md` §3 (pas d'entrée ambiguë à interpréter,
 pas de boucle review/fix à plafonner, pas de code à valider) : il lit un
 état GitHub déjà existant et publie un rapport. Une source de données
 indisponible ou incomplète se documente dans le rapport lui-même (§ Ce que

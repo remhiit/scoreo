@@ -2,7 +2,7 @@
 
 ## Prerequisites
 
-- A `GOOGLE_CLIENT_ID` must be configured at build time (see `doc/technical/deployment.md`)
+- A `GOOGLE_CLIENT_ID` must be configured at build time (see `doc/workflows/deployment.md`)
 - Without it, the Sync entry in the burger menu is hidden
 
 ## Connection

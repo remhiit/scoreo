@@ -151,5 +151,5 @@ Enough to absorb a stray antialiased edge, far too little to hide a layout shift
 Chromium only, two viewport widths (phone 412, desktop 1280). More browsers would
 multiply the committed PNGs for little signal on a phone-first PWA. These specs
 assert **pixels only** — behaviour, reducers and use cases stay in the Vitest and
-e2e suites. See [`architecture.md`](architecture.md) for how the layers fit
+e2e suites. See [`architecture.md`](../technical/architecture.md) for how the layers fit
 together.

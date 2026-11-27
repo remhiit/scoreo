@@ -7,7 +7,7 @@ This file is Scoreo's overlay for the shared workflow `workflows:feature` (plugi
 - **Mockup first.** A feature a player sees is mocked up in the catalog and
   validated by the merge of its mockup PR before any spec: rule and procedure
   in `issue-to-spec.md` § "Mockup first (features a player sees)" and
-  `doc/technical/design-workflow.md`. This runs at the workflow's step 3,
+  `doc/workflows/design-workflow.md`. This runs at the workflow's step 3,
   after the interview.
 - **Spec format.** After `to-spec`, complete the issue with Scoreo's
   mandatory sections, so the pipeline can read it: `## Maquette`
