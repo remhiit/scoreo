@@ -1,6 +1,6 @@
 ---
 title: GameType.scoringMode, scoring by rounds won
-decision: GameType gains scoringMode ('POINTS' default | 'ROUNDS_WON') as a separate field rather than a fourth WinCondition, and changing how rounds become a score rescores the game's matches at that moment, never at load.
+decision: GameType gains scoringMode ('POINTS' default | 'ROUNDS_WON') as a separate field rather than a fourth WinCondition; a game's rules apply to its whole history (no per-match rule snapshot), so changing how rounds become a score rescores the game's matches at that moment, never at load.
 status: Accepted
 date: 2026-10-21
 sources: commit 94e7975, issue #568, PR #589; commit 8fa8d07, issue #593, PR #665 (compensation); commit fa3067c, issue #643, PR #651 (module guards on merge)
@@ -36,6 +36,12 @@ winner the player who won the **fewest** rounds (winners, Elo, trophies inverted
 the game goes back to `POINTS` everywhere, without rescoring its matches. Those matches are then
 flagged "inconsistent data" if their stored score matches their detail under neither mode, otherwise
 read as is; re-editing the game back to `ROUNDS_WON` rescores them.
+
+**A game's rules apply to its whole history.** Matches store scores and winners, but winners, Elo,
+statistics and trophies are derived from the game type's current rules when read; there is no
+per-match rule snapshot, which would make one game count two ways. Changing a game's rules is
+therefore a deliberate act that rewrites how all its past matches are read, retroactively; a rules
+change shows up in past winners, Elo and trophies, as intended.
 
 **Changing the mode rescores and rewrites matches.** `Match.playerScores` stores the score in the
 game's mode; `Match.rounds` always keeps raw points. When `UpdateGameTypeUseCase` changes how rounds
