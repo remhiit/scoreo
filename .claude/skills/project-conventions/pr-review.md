@@ -316,6 +316,7 @@ already catch isn't in scope — see "Out of scope" above; don't turn a
 stylistic nit CI already enforces into a finding. If the checklist turns up
 nothing, publish the review anyway with an explicit pass verdict (see
 "Post the review" below) — this template only applies to findings that
+exist, it's not a mandatory minimum count.
 
 The overall verdict follows directly from the findings, not a separate
 judgment call:
@@ -376,13 +377,13 @@ goes only in the review's summary body, not scattered as inline noise.
 2. For each localized, actionable finding, `add_comment_to_pending_review`
    with the `path`/`line` it applies to, body starting with its severity
    (e.g. `**blocking**: ...`) followed by evidence, impact, confidence, and
-   the recommendation — the same five-part shape as "Output" and the
+   the recommendation — the same six-part shape as the shared skill's § 2 « Classer chaque constat » and the
    example finding above, not a trimmed-down version of it.
 3. `pull_request_review_write` `method: submit_pending`, `event: COMMENT` —
    **never** `APPROVE` or `REQUEST_CHANGES` (no auto-approval mechanism,
    `doc/workflows/automation-plan.md` §3). The submit `body` is the synthesis: every
    finding (inline ones too, so the review reads standalone) grouped by
-   severity, plus the overall verdict line from "Output" above.
+   severity, plus the overall verdict line from the shared skill's § 3 « Verdict ».
 
 Skip this step for an ad hoc interactive review the user asked for
 directly — just report the findings and verdict in the conversation.
