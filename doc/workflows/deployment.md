@@ -4,7 +4,7 @@
 
 **File**: `.github/workflows/ci.yml`
 
-Runs on every `push` to `main` and every `pull_request`, as five independent jobs. The `push` trigger is scoped to `main` only — without that, a push to a branch with an open PR fires both the `push` and `pull_request: synchronize` events for the same commit, doubling every job for no benefit (10 check runs instead of 5, observed on PRs #64–#68 before this was fixed).
+Runs on every `push` to `main` and every `pull_request`, as independent jobs (the main ones below). The `push` trigger is scoped to `main` only — without that, a push to a branch with an open PR fires both the `push` and `pull_request: synchronize` events for the same commit, doubling every job for no benefit (10 check runs instead of 5, observed on PRs #64–#68 before this was fixed).
 
 | Job | What it runs | Blocking? |
 |---|---|---|
@@ -12,6 +12,7 @@ Runs on every `push` to `main` and every `pull_request`, as five independent job
 | `test` | `pnpm test` | Yes |
 | `build` | `pnpm typecheck` then `pnpm build` | Yes |
 | `doc-links` | `node scripts/check-doc-links.mjs` — fails on any relative Markdown link under `doc/` pointing to a non-existent file | Yes |
+| `adr` | `node scripts/check-adr.mjs` — fails when an ADR under `doc/adr/` breaks the format or life cycle of `doc/adr/README.md` (missing or duplicated number, decreasing dates, missing header field, unknown status, unmatched supersession) or when the README index differs from the files (regenerate it with `--write`) | Turns the job red, but not a required status check: `setup-repo.sh` does not list it, and adding it is a branch-protection change left to a repo admin |
 | `design-tokens` | `node scripts/check-design-tokens.mjs` — fails if a raw px/duration/easing value in `packages/design-system/src/**/*.css` or a module's game pieces (`packages/module-*/src/design/**/*.css`) exactly matches a design token (see `doc/technical/architecture.md` §Design tokens) | Yes |
 | `lighthouse` | Builds, then runs Lighthouse CI against `apps/scoreo/dist/` using `lighthouserc.json` (assertions at `error` level since #183) | Turns the job red on a failing assertion, but not a required status check — no `continue-on-error`, report uploaded as a build artifact |
 

@@ -24,14 +24,18 @@ export interface ModuleMatch {
   readonly rounds: PlayerScore[][]
   /**
    * The winner(s), as the module's own tie-breaks decide them. Several ids when
-   * the module declares a tie at the first place.
+   * the module declares a tie at the first place. Stored as handed back, never
+   * recomputed from the scores — which is why a module-bound game's tie-break
+   * rule is `MANUAL_SELECTION`.
    */
   readonly manualWinners: string[]
   /**
    * The module's own state for this match, stored opaquely by the host and
    * handed straight back when the match is reopened. The host never reads
    * inside `data`; `version` belongs to the module, which migrates its own
-   * payload. `null` stores none.
+   * payload. `null` stores none. The host stamps the `moduleId` beside it,
+   * so a payload is never handed to another module: reopening a match scored
+   * by a different module starts a fresh grid.
    */
   readonly moduleData: { readonly version: number; readonly data: unknown } | null
 }
