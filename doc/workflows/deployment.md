@@ -139,7 +139,14 @@ The resulting PR flows through the same `automation:needs-review` → R3 → `re
 Routine at [claude.ai/code/routines](https://claude.ai/code/routines):
 
 1. **Name**: `R2 — Implementation (Scoreo)`.
-2. **Prompt**:
+2. **Prompt** (current, through the transition alias):
+   ```
+   Implement the GitHub issue from your triggering context by following
+   .claude/skills/implement-task/SKILL.md exactly.
+   ```
+   Target prompt, to apply only once the account plugin loads in routines
+   (today it does not: R3 got `Unknown skill: dev-workflow:pr-review` on
+   27/11/2026, and the transition alias is what keeps the routine working):
    ```
    Implement the GitHub issue from your triggering context by following the
    dev-workflow:implement-task skill exactly (Scoreo overlay:
@@ -168,7 +175,14 @@ Automates the subjective review pass from `dev-workflow:pr-review`. Split into a
 Routine at [claude.ai/code/routines](https://claude.ai/code/routines):
 
 1. **Name**: `R3 — PR Review (Scoreo)`.
-2. **Prompt**:
+2. **Prompt** (current, through the transition alias):
+   ```
+   Review the pull request from your triggering context by following
+   .claude/skills/pr-review/SKILL.md exactly.
+   ```
+   Target prompt, to apply only once the account plugin loads in routines
+   (today it does not: R3 got `Unknown skill: dev-workflow:pr-review` on
+   27/11/2026, and the transition alias is what keeps the routine working):
    ```
    Review the pull request from your triggering context by following the
    dev-workflow:pr-review skill exactly (Scoreo overlay:
@@ -195,7 +209,15 @@ R4 manages its own `automation:attempt-1`/`automation:attempt-2`/`automation:att
 The routine shell (name, prompt, `create_new_session_on_fire: true`) was created by tool (`trig_014VemW9wW5MopAjDHaaiYK7`, poke-only — no schedule, never fires on its own). Tool-created schedule/poke shells can't attach MCP connectors they don't themselves hold, so the trigger and connectors below were finished manually by Rémi through the web UI. R4 is operational: trigger and connectors are both configured, for reference —
 
 1. **R4 — Address Feedback (Scoreo)** at [claude.ai/code/routines](https://claude.ai/code/routines).
-2. **Prompt**:
+2. **Prompt** (current, through the transition alias):
+   ```
+   Address the pull request feedback from your triggering context by
+   following .claude/skills/address-feedback/SKILL.md exactly, starting
+   with its attempt-counter step.
+   ```
+   Target prompt, to apply only once the account plugin loads in routines
+   (today it does not: R3 got `Unknown skill: dev-workflow:pr-review` on
+   27/11/2026, and the transition alias is what keeps the routine working):
    ```
    Address the pull request feedback from your triggering context by
    following the dev-workflow:address-feedback skill exactly (Scoreo overlay:
@@ -241,7 +263,7 @@ Runs `dev-workflow:site-quality` on a schedule: dependency updates, dead doc lin
 ### Creating the Routine
 
 1. **Name**: `R5 — Hygiène hebdo (Scoreo)`.
-2. **Prompt**: a one-line pointer to the `dev-workflow:site-quality` skill (Scoreo overlay: `.claude/skills/project-conventions/site-quality.md`).
+2. **Prompt** (current, through the transition alias): a one-line pointer to `.claude/skills/site-quality/SKILL.md`. Target prompt, once the account plugin loads in routines: a pointer to the `dev-workflow:site-quality` skill (Scoreo overlay: `.claude/skills/project-conventions/site-quality.md`).
 3. **Repositories**: `remhiit/scoreo`, plus `remhiit/workflows` (read only: the shared skills, read from there when the account plugin is not loaded in the routine).
 4. **Trigger**: schedule, cron `0 6 * * 1` (every Monday 06:00 UTC).
 5. **Connectors**: leave at their default (GitHub MCP tools included); no extra network access needed.

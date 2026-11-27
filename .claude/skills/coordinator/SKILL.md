@@ -641,7 +641,11 @@ across the two reviewers and already excludes anything tagged
 by hand). The `reviewers` attribution on each finding
 (`["functional"]`/`["technical"]`/both) is informational only —
 `address-feedback` acts on severity alone, unchanged by this split. Follow
-that skill's procedure "as the coordinator's fix sub-agent" (unchanged
+the `dev-workflow:address-feedback` skill's procedure (invoke it with the
+Skill tool — if it is not available, follow the transition alias
+`.claude/skills/address-feedback/SKILL.md` instead; it reads its Scoreo
+overlay `.claude/skills/project-conventions/address-feedback.md`) "as the
+coordinator's fix sub-agent" (unchanged
 otherwise: gather/prioritize/fix, never push on red, resolve fixed threads,
 publish the synthesis comment).
 The delta from a standalone R4 run, stated in `project-conventions/address-feedback.md`
