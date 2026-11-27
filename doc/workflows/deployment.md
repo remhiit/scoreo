@@ -128,9 +128,9 @@ First match wins, in that priority order. If none of these labels are present, t
 
 **Files**: a Claude Code Routine (created via [claude.ai/code/routines](https://claude.ai/code/routines))
 
-Automates `.claude/skills/implement-task` for issues that have already been groomed interactively (R1, `issue-to-spec`) and carry the `automation:ready` label.
+Automates `dev-workflow:implement-task` for issues that have already been groomed interactively (R1, `issue-to-spec`) and carry the `automation:ready` label.
 
-The Routine's only GitHub trigger is `issues`, action **labeled**, filtered to `Labels is one of automation:ready`. Each matching event starts its own independent session with that specific issue in its triggering context — `implement-task/SKILL.md`'s "Which issue" section covers identifying it, so several issues carrying `automation:ready` at once each get their own session rather than being ambiguous. Follows `implement-task` exactly: branch, tests first, `pnpm lint typecheck test build` green, visual check for UI changes, doc updates, PR referencing `Closes #N`. One run = one issue, never a batch.
+The Routine's only GitHub trigger is `issues`, action **labeled**, filtered to `Labels is one of automation:ready`. Each matching event starts its own independent session with that specific issue in its triggering context — `project-conventions/implement-task.md`'s "Which issue" section covers identifying it, so several issues carrying `automation:ready` at once each get their own session rather than being ambiguous. Follows `implement-task` exactly: branch, tests first, `pnpm lint typecheck test build` green, visual check for UI changes, doc updates, PR referencing `Closes #N`. One run = one issue, never a batch.
 
 The resulting PR flows through the same `automation:needs-review` → R3 → `review-status-sync.yml` pipeline as any other PR — R2 doesn't self-review.
 
@@ -139,12 +139,20 @@ The resulting PR flows through the same `automation:needs-review` → R3 → `re
 Routine at [claude.ai/code/routines](https://claude.ai/code/routines):
 
 1. **Name**: `R2 — Implementation (Scoreo)`.
-2. **Prompt**:
+2. **Prompt** (current, through the transition alias):
    ```
    Implement the GitHub issue from your triggering context by following
    .claude/skills/implement-task/SKILL.md exactly.
    ```
-3. **Repository**: `remhiit/scoreo`.
+   Target prompt, to apply only once the account plugin loads in routines
+   (today it does not: R3 got `Unknown skill: dev-workflow:pr-review` on
+   27/11/2026, and the transition alias is what keeps the routine working):
+   ```
+   Implement the GitHub issue from your triggering context by following the
+   dev-workflow:implement-task skill exactly (Scoreo overlay:
+   .claude/skills/project-conventions/implement-task.md).
+   ```
+3. **Repositories**: `remhiit/scoreo`, plus `remhiit/workflows` (read only: the shared skills, read from there when the account plugin is not loaded in the routine).
 4. **Trigger**:
    - GitHub event → Issue → **labeled**
    - Filter → **Labels is one of `automation:ready`**.
@@ -156,7 +164,7 @@ Routine at [claude.ai/code/routines](https://claude.ai/code/routines):
 
 **Files**: a Claude Code Routine (created via [claude.ai/code/routines](https://claude.ai/code/routines) — not reachable from any tool in a session) + `.github/workflows/needs-review-label.yml` + `.github/workflows/review-status-sync.yml`
 
-Automates the subjective review pass from `.claude/skills/pr-review`. Split into a queueing step, a judgment step (LLM), and a translation step (deterministic), because (a) a routine's GitHub trigger only accepts one specific action or every action in a category — not a multi-select of a few — so `pull_request.labeled` alone can't be combined with `opened`/`synchronize` on the same trigger, and (b) no Claude Code session — interactive or routine — has a tool that can post a raw commit status; only the usual GitHub MCP tools (issues, PRs, labels) are available.
+Automates the subjective review pass from `dev-workflow:pr-review`. Split into a queueing step, a judgment step (LLM), and a translation step (deterministic), because (a) a routine's GitHub trigger only accepts one specific action or every action in a category — not a multi-select of a few — so `pull_request.labeled` alone can't be combined with `opened`/`synchronize` on the same trigger, and (b) no Claude Code session — interactive or routine — has a tool that can post a raw commit status; only the usual GitHub MCP tools (issues, PRs, labels) are available.
 
 1. **`needs-review-label.yml`** triggers on `pull_request.opened`/`ready_for_review`/`synchronize` (skipping drafts), **first** removes any stale `automation:review-pass`/`automation:needs-fix` from a prior pass, **then** adds `automation:needs-review` — zero LLM, just queues the PR. Covering `synchronize` means every new push (including a rebase/force-push) re-queues a review; without it, `claude/review` stays stuck on whatever SHA got the last review and blocks merge once the branch moves past it (hit repeatedly on PRs #91/#93 before this was added). A PR carrying `automation:coordinator-owned` is skipped (the coordinator already reviewed it): there, `review-status-carry.yml` carries `claude/review` to the new SHA when the PR's diff is unchanged (`git patch-id`), and removing the label by hand (`unlabeled`) is what queues it for R3. Removing the stale verdict label matters too: GitHub only fires `pull_request.labeled` on an actual absent→present transition, so if R3 reaches the same verdict again on the new commit and the label were still there from before, `review-status-sync.yml` would never fire and `claude/review` would stay stuck exactly the same way. **Order matters**: removing the stale labels *before* adding `automation:needs-review` means those removals happen while `automation:needs-review` isn't present yet, so they don't themselves match R3's trigger filter below — doing it the other way round double-fired R3 on PR #94 (the add's `labeled` event, then the removal's `unlabeled` event, both matching while `automation:needs-review` was already present).
 2. **The Routine**'s GitHub trigger is `pull_request`, **all actions**, filtered to `Labels is one of automation:needs-review` — this filter is what lets one trigger stand in for the `opened`/`synchronize` combination it can't express directly. `pr-review` removes `automation:needs-review` as its very first action ("claim the run" — see `doc/workflows/automation-plan.md` §4), not its last, so no label it posts afterward can itself re-match this filter. Re-adding `automation:needs-review` on the next push (or manually) queues another pass.
@@ -167,12 +175,20 @@ Automates the subjective review pass from `.claude/skills/pr-review`. Split into
 Routine at [claude.ai/code/routines](https://claude.ai/code/routines):
 
 1. **Name**: `R3 — PR Review (Scoreo)`.
-2. **Prompt**:
+2. **Prompt** (current, through the transition alias):
    ```
    Review the pull request from your triggering context by following
    .claude/skills/pr-review/SKILL.md exactly.
    ```
-3. **Repository**: `remhiit/scoreo`.
+   Target prompt, to apply only once the account plugin loads in routines
+   (today it does not: R3 got `Unknown skill: dev-workflow:pr-review` on
+   27/11/2026, and the transition alias is what keeps the routine working):
+   ```
+   Review the pull request from your triggering context by following the
+   dev-workflow:pr-review skill exactly (Scoreo overlay:
+   .claude/skills/project-conventions/pr-review.md).
+   ```
+3. **Repositories**: `remhiit/scoreo`, plus `remhiit/workflows` (read only: the shared skills, read from there when the account plugin is not loaded in the routine).
 4. **Trigger**:
    - GitHub event → Pull request → **all actions**
    - Filter → **Labels is one of `automation:needs-review`**.
@@ -184,22 +200,31 @@ Routine at [claude.ai/code/routines](https://claude.ai/code/routines):
 
 **Files**: a Claude Code Routine (created via [claude.ai/code/routines](https://claude.ai/code/routines)) + `.github/workflows/auto-merge-sync.yml`
 
-Automates `.claude/skills/address-feedback` for PRs R3 sends back with `automation:needs-fix`. The Routine's GitHub trigger is `pull_request`, action **labeled** (not "all actions" — an `unlabeled` event never matches this action, so removing a label can't itself double-fire R4, unlike the Phase 2 incident in `doc/workflows/automation-plan.md`), filtered to `Labels is one of automation:needs-fix`.
+Automates `dev-workflow:address-feedback` for PRs R3 sends back with `automation:needs-fix`. The Routine's GitHub trigger is `pull_request`, action **labeled** (not "all actions" — an `unlabeled` event never matches this action, so removing a label can't itself double-fire R4, unlike the Phase 2 incident in `doc/workflows/automation-plan.md`), filtered to `Labels is one of automation:needs-fix`.
 
-R4 manages its own `automation:attempt-1`/`automation:attempt-2`/`automation:attempt-3` counter as the first step of `address-feedback/SKILL.md` ("Claim the run") — no separate Action for that, the same way R3 already manages `automation:review-pass`/`automation:needs-fix`/`automation:needs-review` itself. That first step removes `automation:needs-fix` and any existing `automation:attempt-N` right away, before anything else — this is the "claim the run" principle (`doc/workflows/automation-plan.md` §4): scoping the trigger to `labeled` isn't enough on its own, since R4 posting its *own* `automation:attempt-N` label while `automation:needs-fix` was still present re-triggered R4 on PR #111 (chained straight through to `automation:needs-human` in about a minute). At `automation:attempt-3`, R4 stops instead of trying a 4th time: removes `automation:in-progress` and `automation:enabled`, adds `automation:needs-human` (`automation:needs-fix` is already gone by this point). Otherwise it pushes a fix, which `needs-review-label.yml` (`synchronize`) picks up on its own to re-queue R3 — R4 doesn't need to touch `automation:needs-review` itself.
+R4 manages its own `automation:attempt-1`/`automation:attempt-2`/`automation:attempt-3` counter as the first step of `project-conventions/address-feedback.md` ("Claim the run") — no separate Action for that, the same way R3 already manages `automation:review-pass`/`automation:needs-fix`/`automation:needs-review` itself. That first step removes `automation:needs-fix` and any existing `automation:attempt-N` right away, before anything else — this is the "claim the run" principle (`doc/workflows/automation-plan.md` §4): scoping the trigger to `labeled` isn't enough on its own, since R4 posting its *own* `automation:attempt-N` label while `automation:needs-fix` was still present re-triggered R4 on PR #111 (chained straight through to `automation:needs-human` in about a minute). At `automation:attempt-3`, R4 stops instead of trying a 4th time: removes `automation:in-progress` and `automation:enabled`, adds `automation:needs-human` (`automation:needs-fix` is already gone by this point). Otherwise it pushes a fix, which `needs-review-label.yml` (`synchronize`) picks up on its own to re-queue R3 — R4 doesn't need to touch `automation:needs-review` itself.
 
 ### Creating the Routine (done — 2026-07-16)
 
 The routine shell (name, prompt, `create_new_session_on_fire: true`) was created by tool (`trig_014VemW9wW5MopAjDHaaiYK7`, poke-only — no schedule, never fires on its own). Tool-created schedule/poke shells can't attach MCP connectors they don't themselves hold, so the trigger and connectors below were finished manually by Rémi through the web UI. R4 is operational: trigger and connectors are both configured, for reference —
 
 1. **R4 — Address Feedback (Scoreo)** at [claude.ai/code/routines](https://claude.ai/code/routines).
-2. **Prompt**:
+2. **Prompt** (current, through the transition alias):
    ```
    Address the pull request feedback from your triggering context by
    following .claude/skills/address-feedback/SKILL.md exactly, starting
    with its attempt-counter step.
    ```
-3. **Repository**: `remhiit/scoreo`.
+   Target prompt, to apply only once the account plugin loads in routines
+   (today it does not: R3 got `Unknown skill: dev-workflow:pr-review` on
+   27/11/2026, and the transition alias is what keeps the routine working):
+   ```
+   Address the pull request feedback from your triggering context by
+   following the dev-workflow:address-feedback skill exactly (Scoreo overlay:
+   .claude/skills/project-conventions/address-feedback.md), starting
+   with its attempt-counter step.
+   ```
+3. **Repositories**: `remhiit/scoreo`, plus `remhiit/workflows` (read only: the shared skills, read from there when the account plugin is not loaded in the routine).
 4. **Trigger**:
    - GitHub event → Pull request → **labeled**
    - Filter → **Labels is one of `automation:needs-fix`**.
@@ -233,13 +258,13 @@ The `scripts/close-linked-issues.mjs` module is shared between the two workflows
 
 **Files**: a Claude Code Routine (`trig_01Y4gg6E5uMfD9XWFpBBxrt8`, created by tool — a schedule trigger doesn't need the web UI, unlike R2/R3's GitHub triggers)
 
-Runs `.claude/skills/site-quality` on a schedule: dependency updates, dead doc links, Lighthouse regressions, PWA manifest/service-worker validity — one PR per category with something to report, never a combined PR, and nothing opened for a clean category. Every PR it opens flows through the same `automation:needs-review` → R3 → `review-status-sync.yml` pipeline as any other PR — R5 doesn't self-review or apply `automation:needs-review` itself.
+Runs `dev-workflow:site-quality` on a schedule: dependency updates, dead doc links, Lighthouse regressions, PWA manifest/service-worker validity — one PR per category with something to report, never a combined PR, and nothing opened for a clean category. Every PR it opens flows through the same `automation:needs-review` → R3 → `review-status-sync.yml` pipeline as any other PR — R5 doesn't self-review or apply `automation:needs-review` itself.
 
 ### Creating the Routine
 
 1. **Name**: `R5 — Hygiène hebdo (Scoreo)`.
-2. **Prompt**: a one-line pointer to `.claude/skills/site-quality/SKILL.md`.
-3. **Repository**: `remhiit/scoreo`.
+2. **Prompt** (current, through the transition alias): a one-line pointer to `.claude/skills/site-quality/SKILL.md`. Target prompt, once the account plugin loads in routines: a pointer to the `dev-workflow:site-quality` skill (Scoreo overlay: `.claude/skills/project-conventions/site-quality.md`).
+3. **Repositories**: `remhiit/scoreo`, plus `remhiit/workflows` (read only: the shared skills, read from there when the account plugin is not loaded in the routine).
 4. **Trigger**: schedule, cron `0 6 * * 1` (every Monday 06:00 UTC).
 5. **Connectors**: leave at their default (GitHub MCP tools included); no extra network access needed.
 

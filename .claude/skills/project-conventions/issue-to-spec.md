@@ -1,0 +1,370 @@
+# Scoreo overlay — `issue-to-spec`
+
+This file is Scoreo's overlay for the shared skill `dev-workflow:issue-to-spec`
+(plugin `dev-workflow` from the `remhiit/workflows` marketplace). The shared
+skill reads it after `CLAUDE.md` and `project-conventions/SKILL.md`; where the
+two disagree, **this file wins**. It holds only what is specific to Scoreo:
+its paths and commands, and its automation pipeline (labels, routines R2–R5,
+the coordinator and its sub-agents, traceability). Everything generic lives in
+the shared skill, so an improvement made there reaches Scoreo unless this
+file overrides that point.
+
+Section titles keep the names they had when this skill lived in
+`.claude/skills/issue-to-spec/SKILL.md`, so a reference such as
+`issue-to-spec/SKILL.md` § "X" elsewhere in the repo now means § "X" of this file.
+Step numbers ("step 6") refer to the shared skill's procedure, which keeps the
+same numbering.
+
+### As the coordinator's sub-agent
+
+When launched by `.claude/skills/coordinator/SKILL.md` (#506,
+§ "Spec (sous-agent issue-to-spec, optional)") rather than interactively,
+this procedure runs unchanged except for these deltas, stated again at the
+exact point they replace below:
+
+- **Entrées requises** — the input is the existing issue the coordinator
+  named (an issue number in the prompt), never a user's direct description:
+  read that issue fresh via GitHub tools, the same "built fresh from
+  GitHub, never forwarded from context" rule every coordinator sub-agent
+  follows. There is no conversation context to fall back on.
+- **Sizing / Labels** — there is no new issue to create and no size to
+  judge: this mode only completes the body of that same existing issue, in
+  place (`mcp__github__issue_write`, method `update` — never `create`).
+  Never poses a priority label (`P0`…`P3`) or a queue label
+  (`automation:queued`/`blocked`): the issue already carries the priority
+  it was created with, and its queue state is `automation:in-progress`,
+  already claimed by the coordinator for this run's entire lifetime — this
+  sub-agent never touches either.
+- **Determining the readiness verdict** — complete only what the codebase
+  and the issue's existing content let you deduce without asking a
+  question, the same "never simulate interactivity" rule every coordinator
+  sub-agent follows. The interactive path below ("ask the user directly")
+  never applies here: no human is present. If, even after deducing
+  everything you can, a `## Risques et questions ouvertes` item, an
+  untestable acceptance criterion, an inferable-but-not-inferred edge case,
+  or an unclear risk category still needs a real human answer, do not guess
+  one — leave the issue body untouched and return `NEEDS_CLARIFICATION` to
+  the coordinator, with the same checklist of exactly what's missing and
+  the precise question for each item this skill would otherwise have put to
+  the user.
+- **Labels / the interactive grooming gate** — the human confirmation this
+  skill normally requires before creating an issue (§ "Labels", § Contrôles)
+  doesn't apply here: there is no separate issue to create and no human to
+  confirm with. Reaching your own `READY_FOR_IMPLEMENTATION` verdict is
+  itself the gate — write the completed spec straight back to the issue
+  (`issue_write`, method `update`), keeping the exact section order of
+  "Spec format" above (the mandatory trailing `## Traçabilité` included,
+  naming this sub-agent's own model), then return that verdict to the
+  coordinator. This is the only GitHub write this mode ever makes.
+- **Escalade** — there is no user to ask directly: return
+  `NEEDS_CLARIFICATION` to the coordinator instead (previous bullet), never
+  create or edit anything while that verdict stands. The coordinator
+  performs the actual escalation to a human from there
+  (`coordinator/SKILL.md` § "Spec (sous-agent issue-to-spec, optional)").
+- **Traçabilité** — `get_session` doesn't apply to an in-process sub-agent;
+  read the model self-reported in this sub-agent's own system prompt
+  instead (#423), the same mechanism every other coordinator sub-agent
+  uses, and self-report it back to the coordinator in your final reply (it
+  has no other channel to learn it).
+
+Everything else — the spec format itself, the risk-category rule, and the
+"one issue = one PR-sized change" principle applied to what's already on
+the issue — is unchanged from the interactive procedure below.
+
+
+## Entrées requises
+
+The user's direct description of a feature or fix, given interactively.
+There is no triggering issue or PR — this skill starts from conversation
+context, not a GitHub event.
+
+## Préconditions
+
+Always run interactively, never as an autonomous routine (see frontmatter
+description above). This skill has no GitHub trigger, so it has neither a
+"which issue/PR" rule nor a "claim the run" step
+(`doc/workflows/skill-contract.md` §1.4) — both apply only to
+label-triggered routines.
+
+## Sizing
+
+One issue = one PR-sized unit of work (`doc/workflows/automation-plan.md`'s "un run = un
+ticket" principle). If the description covers more than one independent
+change, split it into multiple issues rather than writing one spec that spans
+several unrelated files.
+
+
+## Procédure — Scoreo specifics
+
+### Mockup first (features a player sees)
+
+A feature that changes what a player sees — a screen or a region of one, a
+design-system component or prop, a layout, a visible state (empty, error,
+loading, finished, a dialog) — is mocked up and validated **before** its
+spec can be `READY_FOR_IMPLEMENTATION`. The rule, its exemptions and the
+mockup's layout are defined once in `doc/workflows/design-workflow.md`;
+follow it rather than restating it:
+
+1. Build the mockup in `apps/catalog/src/mockups/<feature>/` (`index.tsx`,
+   `screens.tsx`, `sketches/` for what the design system lacks), composing the
+   real components with realistic example data; show *today* next to
+   *proposed* when an existing screen changes. `pnpm --filter
+   @scoreboards/catalog test` must pass.
+2. Open a PR titled `Maquette : <feature>` with only that folder, publish
+   its preview (`pnpm --filter @scoreboards/catalog build:preview`, then
+   `apps/catalog/dist/catalog.html` as an Artifact) and give the user both
+   links.
+3. The mockup is validated when the user merges that PR. Until then the
+   verdict stays `NEEDS_CLARIFICATION`, its checklist naming the mockup PR
+   to review. Revise the mockup on the same PR when the user comments.
+
+Exempt (say why in `## Maquette`): a wording change, a bug fix that brings a
+screen back to its validated look, pure logic with no visible change,
+documentation, tooling.
+
+**As the coordinator's sub-agent** (#506): there is no human to validate a
+mockup — never build one in that mode. An issue that needs one and whose
+`## Maquette` section names no merged mockup PR returns
+`NEEDS_CLARIFICATION`, its checklist item being « maquette à produire et à
+faire valider (doc/workflows/design-workflow.md) ».
+
+
+### Spec format — Scoreo additions
+
+Use the shared skill's format, in French, with one extra mandatory section
+right after `## Périmètre`:
+
+```markdown
+## Maquette
+
+<Obligatoire. Pour une feature qui change ce que voit un joueur : le dossier
+`apps/catalog/src/mockups/<feature>/`, la PR de maquette fusionnée (#N),
+le lien d'aperçu, et les changements du design system qu'elle nomme
+(composant ou prop à créer, icône à ajouter) — les critères d'acceptation
+renvoient à ses écrans. Sinon : « Sans objet — <raison> » (libellé,
+correctif qui rétablit l'écran validé, logique sans effet visible, doc,
+outillage). Voir « Mockup first » ci-dessus.>
+
+```
+
+The `## Stratégie de tests` seed refers to `implement-task`'s step 4 "Tests
+first". `## Fichiers impactés` names files per `doc/reference.md`'s tables
+(e.g. `apps/scoreo/src/ui/<screen>/<screen>Reducer.ts` (+ test)).
+
+## Traçabilité
+
+Créée avec le skill `issue-to-spec`, modèle `<id>`.
+```
+
+La dernière section, `## Traçabilité`, est obligatoire et toujours en toute
+fin de corps — jamais avant `## Verdict de readiness`. `<id>` est
+l'identifiant machine du modèle qui exécute cette session (ex.
+`claude-sonnet-5` — jamais le nom marketing), obtenu par `get_session` (sans
+`session_id`, donc sur cette session elle-même) et son
+`session_context.model`, per `doc/workflows/skill-contract.md` § « Traçabilité »
+— cette skill tourne comme sa propre session Claude Code Remote, jamais
+comme un sous-agent du coordinateur. Normalise cette valeur comme le dit
+`doc/workflows/skill-contract.md` § « Traçabilité » : retire le suffixe de
+fenêtre de contexte (`claude-opus-5[1m]` → `claude-opus-5`) et préfère
+`external_metadata.last_served_model` quand il est présent et diffère de
+`session_context.model` — un fallback à la portée du tour change ce qui a
+servi le run sans changer ce à quoi la session est réglée, et cet appel peut
+ne renvoyer aucun `session_context.model` exploitable. Si `get_session`
+échoue ou n'est pas disponible, `<id>` devient `inconnu` et le motif est dit
+dans la même phrase (« modèle `inconnu` — get_session indisponible ») plutôt
+que deviné.
+
+#### Section « Dépendances » (optionnelle)
+
+Quand cette issue ne peut pas être implémentée avant qu'une autre soit
+fermée, ajoute une section `## Dépendances` juste après `## Hors scope` (ou
+`## Risques et questions ouvertes` si `Hors scope` est absent). Cette
+section ne change pas le verdict de readiness — une spec par ailleurs
+complète reste `READY_FOR_IMPLEMENTATION` même bloquée (voir « Determining
+the readiness verdict » ci-dessous) — elle détermine seulement le label de
+file posé en **Labels** ci-dessous (`blocked` tant que le bloqueur cité
+reste ouvert, `automation:queued` sinon) :
+
+```markdown
+## Dépendances
+
+Dépend de #114 (pose le port dont ce ticket a besoin)
+Dépend de #117 (même raison)
+```
+
+Une ligne par bloqueur, forme exacte `Dépend de #N (raison)` — c'est le
+format que `.github/workflows/sync-issue-dependencies.yml` parse pour
+réconcilier le lien natif GitHub `blocked_by` avec cette section (pose ce
+qui manque, retire ce qui n'est plus déclaré — zéro LLM, cf.
+`doc/workflows/automation-plan.md` §2.2 et §4). Sans cette section, aucune
+automatisation ne sait que l'issue est bloquée, et aucun lien `blocked_by`
+n'est jamais touché — c'est ce qui protège un lien posé à la main.
+
+Cette section fait autorité : le parseur ancre son repérage en début de
+ligne (une vraie ligne `## Dépendances`, pas une occurrence ailleurs dans le
+corps), donc n'y cite jamais le nom de la section en prose ni dans un
+exemple de format (backticks ou bloc de code) en dehors de cette section
+elle-même — une telle mention ne détourne plus le parseur, mais reste
+trompeuse à la lecture. S'il existe plusieurs titres `## Dépendances` dans
+un même corps, seul le premier (de haut en bas) est pris en compte ; ne
+jamais en écrire plusieurs.
+
+
+### Determining the risk category
+
+This is the one field that isn't free-form — it comes straight from the
+`automation:enabled` whitelist in `doc/workflows/automation-plan.md` §5:
+
+- **Faible** (eligible for `automation:enabled` later, at `implement-task`'s
+  discretion): content/copy changes, documentation, dependency bumps, local
+  refactors with no public behavior change.
+- **Élevé** (never `automation:enabled`, always manual merge): serialized models and their
+  migrations (`Player`/`GameType`/`Match`/`PlayerScore`), ports/adapters,
+  `apps/scoreo/public/` (manifest, `sw.js`), Vite/TS config, navigation
+  (`apps/scoreo/src/ui/navigation/`).
+
+If a single issue's impacted files span both categories, classify it
+**Élevé** — the whole issue takes the stricter category, don't split risk
+across an issue's files after the fact.
+
+### Determining the readiness verdict
+
+Before creating the issue, compute one verdict from the spec draft and state
+it to the user as part of your summary — this is the structured output
+`doc/workflows/skill-contract.md` §2's "Statut" field calls for, this
+skill's instance of it: no PR/comment to post since R1 is interactive, but
+the verdict must still be said out loud, not just implied by what you do
+next. No implementation runs without a `READY_FOR_IMPLEMENTATION` verdict
+— **preparing** that gate is this skill's job; **enforcing** it inside R2 is
+`implement-task`'s job (a later ticket), not done here.
+
+This verdict states one thing only: **is the spec complete and
+implementable as written**. It is independent of dependency state — whether
+`## Dépendances` cites a blocker, and whether that blocker is still open, is
+a separate, dynamic question, answered exclusively by the `blocked` label
+and the native `blocked_by` link (see "Labels" below), never by this field.
+Unlike this static text, those are actively maintained: `blocked` is cleared
+automatically the moment every cited blocker closes
+(`.github/workflows/unblock-issues.yml`, state-machine.md row #10). A verdict
+value can't update itself the same way, which is exactly why it must not
+duplicate that state.
+
+- **`READY_FOR_IMPLEMENTATION`** — every section above is filled in with
+  something concrete (not a placeholder), and every acceptance criterion is
+  testable, every identified edge case and open question has an answer, and
+  `## Maquette` either names a merged mockup PR or says why none is needed
+  (§ "Mockup first" above). This
+  holds regardless of `## Dépendances`: a spec that is otherwise complete
+  keeps this verdict even while blocked — an open blocker cited there only
+  changes which queue label **Labels** below poses (`blocked` instead of
+  `automation:queued`), never this verdict. Proceed to **Labels** below.
+- **`NEEDS_CLARIFICATION`** — the spec is missing something only the user
+  can supply: a mockup not yet validated (its PR still open, or not built
+  yet) for a feature a player sees, an untestable acceptance criterion, an unanswered question in
+  `## Risques et questions ouvertes`, an error/edge-case behavior you can't
+  infer from the codebase, an unclear risk category. **Don't create the
+  issue yet.** List, as a checklist, exactly what's missing and the precise
+  question to ask for each item, then ask the user directly — this is the
+  interactive path of `doc/workflows/skill-contract.md` §3: a human is
+  present, so ask rather than guess. Re-run this verdict once they answer.
+  **As the coordinator's sub-agent** (#506): there is no human to ask —
+  leave the issue untouched and return this checklist as
+  `NEEDS_CLARIFICATION` to the coordinator instead (§ "As the coordinator's
+  sub-agent" above).
+  This is the one case where incompleteness and blocking can coexist and
+  incompleteness still wins: a spec that is both incomplete and cites an open
+  blocker still gets `NEEDS_CLARIFICATION`, never the `blocked`-label
+  treatment below — incompleteness is the real obstacle, and it won't
+  resolve itself when the blocker closes.
+
+### Labels
+
+Once the spec is written, the verdict is `READY_FOR_IMPLEMENTATION` (never
+`NEEDS_CLARIFICATION` — that verdict means no issue exists yet), and the
+user has confirmed it (this is the interactive grooming gate — don't skip
+it). **As the coordinator's sub-agent** (#506): steps 1–3 below don't
+apply — there is no new issue to create and no label to pose; instead,
+write the completed spec back onto the existing issue and return the
+verdict to the coordinator (§ "As the coordinator's sub-agent" above).
+
+1. Create the issue with `mcp__github__issue_write` (title = a short
+   imperative summary, not the full spec).
+2. Add the priority label (`P0`…`P3` — P0 most urgent; ask the user if not
+   obvious from context) in its **own** `issue_write` call.
+3. **In a separate call**, add the queue label. This choice is about
+   dependency state, not the verdict (see "Determining the readiness
+   verdict" above): `blocked` when `## Dépendances` cites at least one
+   blocker issue still open, `automation:queued` otherwise — never
+   `automation:ready` directly. Posing several `automation:ready` at
+   once would fire that many R2 events simultaneously; past the run cap
+   (5/day on Pro), the excess events are lost (`doc/workflows/automation-plan.md` §3). The
+   dispatcher (`scripts/dispatch-ready.mjs`, zero LLM, same workflow as the
+   hourly sweeper) promotes one `automation:queued` issue to
+   `automation:ready` at a time, only once nothing is already
+   `automation:ready`/`automation:in-progress` — this bounds the event rate
+   into R2 by construction. Pose the queue label alone, in its own call,
+   last, for the same reason `automation:ready` used to be: GitHub fires one
+   `labeled` webhook per label added, and a routine's trigger filter matches
+   on the issue's *current* label state, not which label the event named
+   (issue #99). The rule "never `automation:ready` with another label in the
+   same call" still holds — it's now the dispatcher's responsibility, not
+   R1's. `unblock-issues.yml` removes `blocked` and poses `automation:queued`
+   itself once every native blocker closes (state-machine.md row #10); never
+   pose `automation:queued` on an issue you know is still blocked — the
+   dispatcher has no way to tell a premature `automation:queued` from a
+   legitimate one.
+
+## Sorties obligatoires
+
+- One GitHub issue created via `mcp__github__issue_write`, body in the spec
+  format above.
+- The priority label (`P0`…`P3`), added in its own call.
+- The queue label (`automation:queued` or `blocked`), added last, in its own
+  call, never combined with another label.
+- The readiness verdict stated out loud to the user, per "Determining the
+  readiness verdict" above — this skill's instance of `doc/workflows/
+  skill-contract.md` §2's "Statut" field.
+- A `## Traçabilité` section at the very end of the issue body (see "Spec
+  format" above) — this skill's instance of `doc/workflows/skill-contract.md`
+  §2's "Traçabilité" field.
+- `automation:enabled` is never added here (see Limites).
+
+## Contrôles
+
+Before creating the issue: every acceptance criterion is testable, every
+section of the spec format holds something concrete (no placeholder), the
+risk category is justified per "Determining the risk category", the
+readiness verdict is computed per "Determining the readiness verdict", and —
+for `READY_FOR_IMPLEMENTATION` — the user has confirmed the spec (the
+interactive grooming gate in "Labels" above). A `NEEDS_CLARIFICATION`
+verdict means these controls failed and the issue must not be created yet.
+
+## Escalade
+
+Per `doc/workflows/skill-contract.md` §3, specialized to this skill's only
+possible stop condition (ambiguous/incomplete input): a `NEEDS_CLARIFICATION`
+verdict. Since this skill is interactive, escalating means asking the user
+directly rather than guessing — see "Determining the readiness verdict"
+above — never creating an issue with unresolved questions "documented" but
+unanswered.
+
+**As the coordinator's sub-agent** (#506): there is no user to ask —
+return `NEEDS_CLARIFICATION` to the coordinator instead, with the same
+missing-items checklist this skill would otherwise have put to the user (§
+"As the coordinator's sub-agent" above). The coordinator, not this
+sub-agent, performs the actual escalation to a human from there.
+
+## Limites
+
+- Never creates the issue while the verdict is `NEEDS_CLARIFICATION`.
+- Never poses `automation:ready` directly — only `automation:queued` or
+  `blocked` (the dispatcher promotes to `automation:ready`).
+- Never poses `automation:enabled` — that's `implement-task`'s call to make
+  once the actual diff exists, not a prediction made before any code is
+  written.
+- Never batches more than one independent change into a single issue (see
+  "Sizing").
+- As the coordinator's sub-agent (#506): never creates a new issue and
+  never poses any label on it (priority, queue, or otherwise) — only edits
+  the existing issue's body, or leaves it untouched and returns
+  `NEEDS_CLARIFICATION` to the coordinator instead of asking a human.

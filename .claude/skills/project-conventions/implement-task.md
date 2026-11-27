@@ -1,0 +1,389 @@
+# Scoreo overlay — `implement-task`
+
+This file is Scoreo's overlay for the shared skill `dev-workflow:implement-task`
+(plugin `dev-workflow` from the `remhiit/workflows` marketplace). The shared
+skill reads it after `CLAUDE.md` and `project-conventions/SKILL.md`; where the
+two disagree, **this file wins**. It holds only what is specific to Scoreo:
+its paths and commands, and its automation pipeline (labels, routines R2–R5,
+the coordinator and its sub-agents, traceability). Everything generic lives in
+the shared skill, so an improvement made there reaches Scoreo unless this
+file overrides that point.
+
+Section titles keep the names they had when this skill lived in
+`.claude/skills/implement-task/SKILL.md`, so a reference such as
+`implement-task/SKILL.md` § "X" elsewhere in the repo now means § "X" of this file.
+Step numbers ("step 6") refer to the shared skill's procedure, which keeps the
+same numbering.
+
+### As the coordinator's sub-agent
+
+When launched by `.claude/skills/coordinator/SKILL.md` (#469) rather than by
+the routine's own GitHub trigger, this procedure runs unchanged except for
+two deltas, both stated again at the exact step they replace below: the
+`automation:ready` → `automation:in-progress` claim (§ "Claim the run") is
+already done by the coordinator before this sub-agent starts, and the PR
+(step 10) is opened as a draft, labelled `automation:coordinator-owned`, and
+only then marked ready for review, before returning. In the coordinator's
+manual mode (`coordinator/SKILL.md` § "Mode manuel"), step 11 is skipped
+too: `automation:enabled` is never posed, the merge stays the human's. Whatever this sub-agent writes here —
+its plan, this run's own reasoning, the PR description — is never relayed to
+the coordinator's review sub-agent of the same run; that isolation is the
+coordinator's responsibility to maintain (`coordinator/SKILL.md` § "Review
+(isolated sub-agent)"), not something this skill enforces by withholding
+output, since it has no direct channel to another sub-agent to withhold it
+from in the first place.
+
+
+## Entrées requises
+
+This skill assumes the issue already carries, per `issue-to-spec/SKILL.md`'s
+spec format: `## Périmètre` and `## Hors scope`, testable
+`## Critères d'acceptation`, `## Fichiers impactés`, a `## Catégorie de
+risque`, and a `## Verdict de readiness`. Step 1 below re-checks the verdict
+before doing any real work — this skill enforces the gate that `issue-to-spec`
+only prepares (`issue-to-spec/SKILL.md` § Determining the readiness verdict).
+A `## Dépendances` section, if present, is expected to cite only blockers
+already closed (a `blocked` label would mean otherwise — step 1's
+defense-in-depth check).
+
+
+## Préconditions
+
+### Which issue
+
+- **As R2** (fired by the routine's GitHub trigger): the issue is the one
+  from your triggering context — the `issues` `labeled` event that started
+  this run. Don't search for it; the trigger context already identifies it
+  precisely, including when several issues carry `automation:ready` at once
+  (each matching event starts its own independent session, one issue each).
+  If that issue turns out not to be actionable any more (no longer
+  `automation:ready`, already closed, etc.), **stop right there and do
+  nothing else** — never search for or pick a different `automation:ready`
+  issue instead, even if one exists. Other `automation:ready` issues waiting
+  means other R2 sessions are already each working their own (see #149: a
+  session whose triggering issue wasn't actionable searched and picked a
+  different `automation:ready` issue instead, risking a duplicate PR on an
+  issue another R2 session was already handling).
+- **Interactive, no issue named**: use an explicit selection algorithm, not
+  "first in the listing" — list open issues labeled `automation:ready`,
+  group them by priority label (`P0`…`P3`), take the highest-priority
+  non-empty group, and within that group break ties by the oldest issue
+  (lowest issue number). Don't just take the first result an
+  `automation:ready` listing happens to return without checking its
+  priority against the other candidates.
+- **Interactive, issue named**: use that one.
+
+### Claim the run (R2 only, first action)
+
+Replace `automation:ready` with `automation:in-progress` before starting, in
+every case — remove `automation:ready`, add `automation:in-progress`. A
+stale `automation:ready` left in place would mislead anyone scanning the
+backlog into thinking the issue is still unclaimed.
+
+**As the coordinator's sub-agent** (#469): skip this step — the coordinator
+already claimed the issue before launching this sub-agent. Proceed straight
+to "Guard against a duplicate branch or PR" below.
+
+### Guard against a duplicate branch or PR (R2 only, before claiming)
+
+Before touching labels or code, read the issue (`issue_read` method `get`)
+and check `closed_by_pull_requests`. If it lists any **open** PR already
+referencing this issue (a previous run created one but the label state
+wasn't updated, or another session is already on it), **stop right there
+and do nothing else** — same treatment as an issue that's no longer
+actionable (see "Which issue" above): never open a second PR for the same
+issue. Only a PR that's closed without merging (abandoned) doesn't count —
+proceed normally in that case.
+
+This is the guard behind `doc/workflows/state-machine.md` row #5: "not
+actionable" now explicitly includes "already has an open linked PR", not
+just "already claimed, closed".
+
+## Traçabilité
+
+Per `doc/workflows/skill-contract.md` § "Traçabilité" (#494): step 9's
+commit trailers and step 10's PR field both need the model that actually
+executed this run, `<id>` (e.g. `claude-sonnet-5`, never the marketing
+name).
+
+- **As R2** (this skill running as its own Claude Code Remote session):
+  call `get_session` (no `session_id`, so it reads its own session) and use
+  `session_context.model`.
+  Normalize that value the way `skill-contract.md` § "Traçabilité" states it:
+  strip a context-window suffix (`claude-opus-5[1m]` → `claude-opus-5`), and
+  prefer `external_metadata.last_served_model` when it is present and differs
+  from `session_context.model` — a turn-scoped fallback changes what served
+  the run without changing what the session is set to, and that call can come
+  back with no usable `session_context.model` at all.
+- **As the coordinator's implementation sub-agent** (#469): `get_session`
+  doesn't apply to an in-process sub-agent — read the model self-reported in
+  this sub-agent's own system prompt ("You are powered by the model named
+  ..."), the mechanism already verified in #423.
+
+If neither source is available, `<id>` is `inconnu` — never guessed — and
+the reason (e.g. "get_session indisponible") is stated alongside it in the
+same field/trailer.
+
+
+## Procédure — Scoreo specifics
+
+The shared skill's steps apply; these are Scoreo's values and additions for
+the steps named.
+
+### Step 1 — readiness, blocking and the mockup
+
+1. **Read the spec fully** — context, acceptance criteria, impacted files,
+   out-of-scope, and any `## Dépendances` section. Also read the
+   `## Verdict de readiness` line: if it is anything other than
+   `READY_FOR_IMPLEMENTATION` — missing entirely or `NEEDS_CLARIFICATION` —
+   stop; the dispatcher should never have promoted such an issue to
+   `automation:ready`, but R2 must not proceed on it if it somehow did (same
+   defense-in-depth reasoning as the `blocked`-label check below). The
+   verdict states only whether the spec is complete
+   (`issue-to-spec/SKILL.md` § Determining the readiness verdict) — it is
+   independent of dependency state, so a `## Dépendances` section on an
+   otherwise-`READY_FOR_IMPLEMENTATION` issue is never itself a stop
+   condition here. A stray `BLOCKED_BY_DEPENDENCY` value, from an issue
+   groomed before this rule existed, is informative only — never a reason to
+   stop. If the spec is ambiguous, missing acceptance criteria, or its
+   definition of done can't be checked against the stated scope, stop and
+   ask rather than guessing. As a defense-in-depth check (the dispatcher
+   should never promote a `blocked` issue to `automation:ready` in the first
+   place), also stop if the issue still carries the `blocked` label — that
+   combination means something upstream raced or broke, not that it's safe
+   to proceed; this label (and the native `blocked_by` link behind it) is
+   the sole source of truth for dependency-blocking, never the verdict. Any
+   of these is the same stop condition — release the claim
+   per "Escalade" below rather than leaving the issue silently stuck on
+   `automation:in-progress` with no PR and no comment. Releasing the claim
+   before posing the other two labels would race the hourly requeue sweep
+   into re-dispatching the issue before `automation:needs-human` protects it
+   (`doc/workflows/state-machine.md` §6 "Escalation frees its slot"), which
+   is exactly why "Escalade" fixes the order. See `doc/workflows/
+   state-machine.md` § Incomplete issue.
+
+   **The mockup** (`doc/workflows/design-workflow.md`). When the spec's
+   `## Maquette` section names a mockup, read its folder
+   (`apps/catalog/src/mockups/<feature>/`) on the default branch before
+   planning: its screens are the target, its `designSystemChanges` and
+   `sketches/` the design-system work this issue includes. A spec whose
+   `## Maquette` names a mockup PR that is not merged is not validated —
+   same stop condition as above. A spec with no `## Maquette` section at all
+   predates the rule (issues groomed before 2026-11-06): proceed, and if the
+   change is visible to a player, say in the PR that it was built without a
+   validated mockup.
+
+### Step 2 — branch
+
+2. **Branch from the latest default branch**: `feat/<issue-number>-<slug>`
+   (slug = a few kebab-case words from the title). If that branch already
+   exists remotely (an interrupted earlier run on this same issue, caught by
+   the duplicate-PR guard above finding no open PR yet), check it out and
+   continue on it instead of creating a second, differently-slugged branch
+   for the same issue.
+
+### Step 5 — layering
+
+5. **Implement**, respecting layering: Reducer in `ui/*/` (pure), Use Case in
+   `application/` (zero framework dependency), Repository interface in
+   `domain/port/`, implementation in `infrastructure/`. Before introducing a
+   new abstraction (a helper module, a new port, a new shared component),
+   search the existing codebase for one that already covers the need
+   (`doc/reference.md`'s tables are the fastest index) and extend it instead
+   — a new abstraction is justified only once nothing existing fits, and
+   that justification belongs in the plan (step 3), not discovered by a
+   reviewer later. Stay inside the issue's `## Périmètre`/`## Fichiers
+   impactés`: an edit outside that scope (an unrelated rename, a
+   restructure the acceptance criteria don't require) needs an explicit
+   justification recorded in the plan and the PR body, not a silent
+   "while I was in there" — when in doubt, leave it out and note it instead
+   under "Questions non résolues" in step 10. Any new field on a
+   serialized model gets a zod `.default()`; any removal/rename gets a
+   migration entry in `doc/technical/migrations.md`.
+
+### Step 6 — verify green
+
+6. **Verify green**: `pnpm lint && pnpm typecheck && pnpm test && pnpm build
+   && pnpm test:e2e` — all five, not a subset. This mirrors what `ci.yml`
+   will run on the PR; catch failures here rather than in CI. Build before
+   the e2e run — `playwright.config.ts` starts its server with `pnpm
+   preview`, which serves `apps/scoreo/dist/`. In the Claude Code remote environment,
+   Chromium is preinstalled (`PLAYWRIGHT_BROWSERS_PATH=/opt/pw-browsers`) —
+   do not run `playwright install`; locally, run `pnpm exec playwright
+   install chromium` first if needed. If an e2e test fails in a way that
+   looks unrelated to this diff, re-run once before concluding it's flaky —
+   don't "fix" a test at random just to make it pass. If the suite still
+   can't be made green after a reasonable effort, don't push a PR you know
+   will be red: escalate per "Escalade" below instead of leaving the branch
+   dangling or opening a PR that misrepresents its own state.
+
+### Step 7 — visual check
+
+7. **Visual check for UI changes.** If the issue touches a screen
+   (`apps/scoreo/src/ui/*/`), start the dev server and exercise the actual flow in a
+   browser — golden path and the edge cases named in the acceptance
+   criteria. Don't claim a UI change works from tests alone. When the spec
+   names a mockup, compare the delivered screen with its screens and state
+   any deliberate difference in the PR. Every sketch it drafted is promoted
+   into `packages/design-system/` (component, CSS, test, and its story in
+   `apps/catalog/src/stories/`) — never shipped from `sketches/` — and the
+   PR removes the mockup folder: the feature exists now, the mockup stays in
+   git history.
+
+### Step 8 — docs
+
+8. **Update `doc/`** per `CLAUDE.md`'s Pre-commit Checklist: the matching
+   `doc/reference.md` table row, `doc/functional/feature.md` or
+   `doc/functional/features/*.md` for user-facing behavior,
+   `doc/technical/migrations.md` for schema changes. A diff that adds a
+   reducer/use case/model/port/adapter/screen without a matching doc update
+   is not done yet.
+
+### Step 9 — commit
+
+9. **One commit.** Message = the issue's title (see `CLAUDE.md`'s good/bad
+   commit examples — describe the *why*, not "Fix" or "Update"), plus two
+   git trailers naming the skill and the model that actually executed this
+   run: `Skill: implement-task` and `Model: <id>` — `<id>` obtained per
+   "Traçabilité" below, never a guessed value. As the coordinator's
+   sub-agent, `Skill: implement-task` stays unchanged (this file's own
+   procedure is what ran, unmodified in substance) even though the
+   coordinator is what launched this sub-agent.
+
+### Step 10 — PR
+
+10. **Push and open a PR** with `Closes #N` in the body, structured per
+    `doc/workflows/skill-contract.md` §2's six fields:
+    - **Statut** — `PR opened` (this step only runs once step 6 is
+      actually green; the ambiguous/red-suite escalation path never reaches
+      here — see "Escalade" below).
+    - **Résumé** — the plan from step 3, one or two sentences on what
+      changed and why, not a diff restatement.
+    - **Artefacts** — the branch, the commit, and the `doc/` files touched
+      (step 8).
+    - **Validations** — which of step 6's five checks ran green (name them:
+      lint/typecheck/test/build/e2e), plus the visual check outcome if step
+      7 applied.
+    - **Questions non résolues** — anything noted along the way as
+      out-of-scope-but-adjacent (step 5's change-budget rule) or left
+      unresolved on purpose; "aucune" if there's nothing to flag.
+    - **Traçabilité** — one line in French, following the same template as
+      `issue-to-spec`'s own PR/issue field (`issue-to-spec/SKILL.md`):
+      ``Ouverte avec le skill `implement-task`, modèle `<id>`.`` — only the
+      *values* (`implement-task` and `<id>`) go inside backticks, never the
+      field labels themselves; `<id>` is the same one used for the commit
+      trailers above (see "Traçabilité" below for how it's obtained).
+    Open it non-draft only once step 6 is actually green — R2 never opens
+    the PR itself as `automation:needs-review`; that label is posed
+    automatically by the deterministic `needs-review-label.yml` action on PR
+    open, and it should find a PR whose author-side checks already passed.
+    **As the coordinator's sub-agent** (#469): open the PR as a **draft**,
+    add `automation:coordinator-owned` to it in its own call, and only then
+    mark it ready for review (`update_pull_request`, `draft: false`) as this
+    step's last action. That label is what keeps `needs-review-label.yml`
+    from ever queuing this PR for standalone R3 (#468) — but that Action
+    reads the labels carried by the event itself, so a PR opened non-draft
+    and labelled afterwards would already have been queued by its `opened`
+    event. Draft first, label, then `ready_for_review`: the only event that
+    reaches the Action non-draft already carries the guard. The coordinator, not
+    this sub-agent, decides afterwards whether/when `automation:needs-review`
+    ever applies to this PR.
+
+### Step 11 — `automation:enabled`
+
+11. **Label `automation:enabled`** only if the issue's spec marked risk as
+    **Faible** *and* the actual diff still matches that (re-check: did this
+    PR end up touching a serialized model, a port/adapter,
+    `apps/scoreo/public/`, Vite/TS config, or navigation despite the spec's
+    prediction? If so, don't add `automation:enabled` — the diff overrides
+    the prediction). This is never this skill's own judgment call alone:
+    `scripts/risk-controls.mjs#requiredControls({ riskLevel, activationMode })`
+    (issue #479) is the mechanical rule this re-check must agree with —
+    **Élevé** (`high`, including an issue whose `## Catégorie de risque` is
+    missing or unreadable, normalized to `high` by that same function)
+    always forbids `automation:enabled`, whatever the diff or the routing
+    activation mode. `automation:enabled` posed anyway is caught in
+    depth by `risk-controls.yml`'s `risk-controls` job
+    (`scripts/risk-controls.mjs#checkEnabledLabelAllowed`), which fails the
+    PR naming the linked issue and the violated rule even if this step's own
+    re-check somehow let it through.
+    **In the coordinator's manual mode**: skip this step entirely — never
+    pose `automation:enabled`, whatever the risk level.
+12. Move to the next `automation:ready` issue rather than batching multiple
+    issues into one PR.
+
+
+## Sorties obligatoires
+
+Once a run finishes successfully (never reached on the escalation path
+below):
+
+- One branch, `feat/<issue-number>-<slug>` (step 2).
+- One commit, message = the issue's title, plus `Skill`/`Model` trailers
+  (step 9).
+- `doc/` updated per `CLAUDE.md`'s Pre-commit Checklist (step 8).
+- One PR, `Closes #N` in the body, structured per the six fields of
+  `doc/workflows/skill-contract.md` §2 (step 10) — this is this skill's
+  instance of that structured output format.
+- `automation:enabled` posed only when risk stays Faible end to end
+  (step 11).
+
+## Contrôles
+
+Procédure step 6, before any PR is opened: `pnpm lint && pnpm typecheck &&
+pnpm test && pnpm build && pnpm test:e2e` — all five, not a subset — plus
+the visual check of step 7 for any screen touched. A run that can't get
+these green does not open a PR (see Escalade).
+
+## Escalade
+
+Per `doc/workflows/skill-contract.md` §3. This skill's own instances of
+those conditions:
+
+1. **Ambiguous or incomplete input** — step 1: missing/non-
+   `READY_FOR_IMPLEMENTATION` readiness verdict, ambiguous spec, missing
+   acceptance criteria, unverifiable definition of done, or a stray `blocked`
+   label.
+2. **Scope mismatch discovered mid-work** — step 3's plan-divergence check
+   and step 5's change-budget rule: the diff turns out to need a
+   fundamentally different or much larger change than the spec described, or
+   an out-of-scope edit can't be justified.
+3. **Validation cannot be made to pass** — step 6: the check suite stays red
+   after a good-faith fix attempt.
+
+`skill-contract.md` §3's other two conditions — "Contradictory feedback" and
+"Retry cap exhausted" — don't apply to R2: this skill runs a single pass per
+issue with no review/fix loop to contradict or cap (that loop is R3/R4's,
+on the PR this step opens).
+
+Every one of these follows the same sequence as R2's escalation
+(`doc/workflows/state-machine.md` row #6, § Incomplete issue): post a
+comment on the issue naming exactly what's blocking, then release the claim
+in this exact order — add `automation:needs-human`, add `automation:queued`,
+only then remove `automation:in-progress`. Never leave the issue silently
+parked on `automation:in-progress` with no PR and no comment. The
+interactive path (a human runs this skill directly) keeps its original
+meaning of "ask" — a person is present to answer.
+
+**As the coordinator's sub-agent** (#469): skip the label sequence above —
+this sub-agent never claimed the issue itself, so it never releases that
+claim either. Report the stop reason back to the coordinator instead; the
+coordinator (`coordinator/SKILL.md` § Escalade) performs the label sequence,
+since it's the one holding the claim for this run's entire lifetime.
+
+## Limites
+
+Cross-cutting limits, per `skill-contract.md` §1.9 — each is defined once
+elsewhere in this file; this section is the single place a reader checks for
+all of them, not a redefinition:
+
+- Never pick a different issue when the triggering one isn't actionable
+  (see "Which issue").
+- Never batch more than one issue into a single PR (Procédure step 12).
+- Don't merge the PR yourself. Merging is deterministic tooling
+  (`gh pr merge --auto --squash` once checks are green and `automation:enabled`
+  is present), not part of this skill.
+- As the coordinator's sub-agent (#469): never forward this run's own plan,
+  reasoning, or PR description narrative to another sub-agent — this skill
+  has no direct channel to the coordinator's review sub-agent, and it's the
+  coordinator's job, not this skill's, to keep that channel empty.

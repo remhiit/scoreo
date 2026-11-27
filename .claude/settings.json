@@ -10,5 +10,17 @@
         ]
       }
     ]
+  },
+  "extraKnownMarketplaces": {
+    "remhiit-workflows": {
+      "source": {
+        "source": "github",
+        "repo": "remhiit/workflows"
+      }
+    }
+  },
+  "enabledPlugins": {
+    "dev-workflow@remhiit-workflows": true,
+    "workflows@remhiit-workflows": true
   }
 }

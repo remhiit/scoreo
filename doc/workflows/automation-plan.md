@@ -201,7 +201,7 @@ dans la boucle.
 ### Dépendances entre issues (`blocked_by`)
 
 Les issues qui déclarent une section `## Dépendances` (format documenté dans
-`issue-to-spec/SKILL.md`, une ligne `Dépend de #N (raison)` par bloqueur) le
+`project-conventions/issue-to-spec.md`, une ligne `Dépend de #N (raison)` par bloqueur) le
 font en texte libre — illisible par API. `.github/workflows/sync-issue-dependencies.yml`
 (zéro LLM, cohérent avec le principe directeur §2.2) se déclenche sur
 `issues` `opened`/`edited` et **réconcilie** le lien natif GitHub `blocked_by`
@@ -215,7 +215,7 @@ retire tous ses liens. Une issue **sans** section `## Dépendances` n'est
 jamais touchée, dans aucune direction : c'est ce qui protège les liens posés
 à la main. Le repérage de la section est ancré en début de ligne (une
 mention en prose de son nom, entre backticks ou dans un bloc de code — y
-compris l'exemple de format documenté dans `issue-to-spec/SKILL.md` lui-même
+compris l'exemple de format documenté dans `project-conventions/issue-to-spec.md` lui-même
 — ne détourne pas le match) ; si plusieurs titres `## Dépendances` existent
 dans un même corps, le premier (de haut en bas) fait autorité, les suivants
 sont ignorés. Idempotent (un lien déjà posé renvoie 422, ignoré ; un lien
@@ -729,7 +729,7 @@ même run, et jamais la sortie de l'autre relecteur. La ligne de partage est
 la provenance du contexte, pas son volume : un résumé du raisonnement de
 l'implémenteur (ou de l'autre relecteur) est aussi interdit que sa sortie
 brute. L'interdiction est écrite des deux côtés — `coordinator/SKILL.md` (ce
-que le coordinateur transmet à chacun) et `pr-review/SKILL.md` § « Context
+que le coordinateur transmet à chacun) et `project-conventions/pr-review.md` § « Context
 isolation (coordinator sub-agent only) », qui porte désormais une variante
 par corpus — pour qu'un sous-agent de review qui irait chercher plus de
 contexte de sa propre initiative ne perce pas l'isolation par la porte de
@@ -936,7 +936,7 @@ détecterait normalement une spec incomplète ou ambiguë sur l'issue
 déclenchante (verdict absent ou `NEEDS_CLARIFICATION`, section obligatoire
 manquante) — jamais pour les deux autres motifs de cette même vérification,
 le label `blocked` ou une issue devenue non actionnable —, le coordinateur
-lance un quatrième sous-agent avant d'escalader : `issue-to-spec/SKILL.md`
+lance un quatrième sous-agent avant d'escalader : `project-conventions/issue-to-spec.md`
 « as the coordinator's sub-agent ». Ce sous-agent reste fidèle à la règle
 « jamais interactif tout seul » d'`issue-to-spec` : il ne pose jamais de
 question à un humain, complète l'issue existante (jamais une nouvelle
@@ -975,7 +975,7 @@ modules qu'elles composent :
 
 - `extractRiskLevel(issueBody)` lit la section `## Catégorie de risque` du
   corps d'une issue (même format que celui produit par
-  `issue-to-spec/SKILL.md` : `**Faible**`/`**Élevé**` en tête de section) et
+  `project-conventions/issue-to-spec.md` : `**Faible**`/`**Élevé**` en tête de section) et
   renvoie `{ level, source }` — section absente, vide, ou portant un
   libellé qui n'est ni l'un ni l'autre → `null`, jamais un niveau deviné.
 - `resolveRoutingDryRun({ taskContext, issueBody, labels, routines,
@@ -1168,7 +1168,7 @@ même titre qu'un run d'implémentation.
 `pr-review` depuis #378, mais le dispatcher qui le valide reste
 observationnel (§ ci-dessus, « Ce nouveau workflow ne remplace pas le
 déclenchement réel des routines ») — le champ ne faisait donc rien tant
-qu'aucun composant ne le lisait. `pr-review/SKILL.md` § « Skip a duplicate
+qu'aucun composant ne le lisait. `project-conventions/pr-review.md` § « Skip a duplicate
 review » est ce composant : en tout premier geste après avoir « claim » le
 run (avant même le checklist), R3 relit le journal idempotent `pr-review`
 de la PR (§ ci-dessus) et compare son `Commit analysé` au HEAD SHA courant.
@@ -1197,13 +1197,13 @@ Le format de sortie change en même temps : R3 ne rend plus un verdict
 binaire conforme/à corriger par point de checklist, mais une liste de
 *findings* classés par sévérité (`blocking`/`important`/`suggestion`/
 `uncertain`), chacun avec une recommandation concrète
-(`pr-review/SKILL.md` § Output). Le verdict global en découle
+(`project-conventions/pr-review.md` § Output). Le verdict global en découle
 mécaniquement : `automation:needs-fix` seulement s'il existe au moins un
 finding `blocking`/`important` — une PR qui n'a que des `suggestion`/
 `uncertain` reste `automation:review-pass`, ces findings restant visibles
 dans la review pour un humain sans déclencher R4 (`address-feedback` ne
 lit d'ailleurs que les findings `blocking`/`important` de la review,
-`address-feedback/SKILL.md` § Workflow). R3 publie cette synthèse comme une
+`project-conventions/address-feedback.md` § Workflow). R3 publie cette synthèse comme une
 vraie review PR (`pull_request_review_write`, `event: COMMENT` — jamais
 `APPROVE`/`REQUEST_CHANGES`, §3) plutôt qu'un commentaire libre : les
 findings localisés et actionnables deviennent des commentaires inline,
@@ -1221,7 +1221,7 @@ problème — une ligne de diff, ou à défaut la section de spec ou l'absence
 constatée quand le finding ne porte pas sur une ligne précise), l'**impact**
 (la conséquence concrète si ce n'est pas corrigé) et le **niveau de
 confiance** (`high`/`medium`/`low`, indépendant de la sévérité). Ces trois
-champs et un exemple complet imitable sont dans `pr-review/SKILL.md` §
+champs et un exemple complet imitable sont dans `project-conventions/pr-review.md` §
 Output.
 
 La confiance n'ajoute pas un cinquième niveau : elle contraint la sévérité
@@ -1231,7 +1231,7 @@ avec confiance basse » (`uncertain` étant déjà le niveau « ne peut pas êtr
 tranché depuis le diff seul »). Conséquence directe : `address-feedback`
 n'a jamais besoin de lire le champ confiance, la sévérité seule reste
 l'unique signal qui détermine son périmètre — inchangé depuis #379/#380
-(`address-feedback/SKILL.md` § Workflow).
+(`project-conventions/address-feedback.md` § Workflow).
 
 ---
 
@@ -1314,7 +1314,7 @@ déclaration, à deux points d'application :
 - **Le coordinateur**, avant de poser lui-même `automation:enabled` en fin
   de run (`coordinator/SKILL.md` § « Converged ») — jamais son propre
   jugement sur le diff final seul, toujours confirmé par cette fonction ;
-  `implement-task/SKILL.md` step 11 (R2 solo) fait de même.
+  `project-conventions/implement-task.md` step 11 (R2 solo) fait de même.
 - **Le job CI `risk-controls`** (`.github/workflows/risk-controls.yml`, un
   workflow dédié plutôt qu'un job de `ci.yml` — voir plus bas pourquoi), sur
   `opened`/`synchronize`/`reopened`/`labeled` : si la PR porte
@@ -1329,7 +1329,7 @@ déclaration, à deux points d'application :
   vit dans son propre workflow, pas dans le `pull_request:` (sans `types:`,
   donc limité par défaut à `opened`/`synchronize`/`reopened`) de `ci.yml` :
   `automation:enabled` est posé via un événement `labeled` séparé
-  (`implement-task/SKILL.md` step 11, `coordinator/SKILL.md` §
+  (`project-conventions/implement-task.md` step 11, `coordinator/SKILL.md` §
   « Converged », ou un humain), jamais dans le même événement qui a fait
   tourner `ci.yml` — un job resté dans `ci.yml` ne se serait donc jamais
   redéclenché sur le cas réel qu'il est censé couvrir, laissant
@@ -1778,7 +1778,7 @@ Démarrée en parallèle du gate de la Phase 2 (pas en violation du principe
 gate a besoin) :
 
 - [x] **Routine créée** (`trig_01Y4gg6E5uMfD9XWFpBBxrt8`, cron `0 6 * * 1` —
-      chaque lundi 6h UTC), pointée vers `.claude/skills/site-quality`. À
+      chaque lundi 6h UTC), pointée vers `dev-workflow:site-quality`. À
       la différence de R3, un trigger planifié est créable directement par
       outil, pas seulement depuis claude.ai/code/routines — aucune étape
       manuelle ici.
@@ -1797,13 +1797,13 @@ consultée alors semblait indiquer. Rémi a trouvé en pratique un déclencheur
 GitHub natif sur les événements Issue dans l'interface. Même mécanisme que
 R3 : trigger `issues`, action `labeled`, filtré `Labels is one of ready`.
 Chaque événement qui matche démarre sa propre session avec le ticket précis
-dans son contexte — cf. `implement-task/SKILL.md` § « Which issue » — donc
+dans son contexte — cf. `project-conventions/implement-task.md` § « Which issue » — donc
 même avec plusieurs tickets `ready` en attente simultanément, chaque session
 sait exactement lequel traiter, sans l'indirection Action + secrets
 `ROUTINE_ID`/`ROUTINE_TOKEN` (supprimée, cf. `doc/workflows/deployment.md` § Issue
 Implementation (R2)).
 
-- [x] `.claude/skills/implement-task/SKILL.md` — section « Which issue »
+- [x] `.claude/skills/project-conventions/implement-task.md` — section « Which issue »
       ajoutée (contexte du trigger pour R2, sélection manuelle sinon)
 - [x] `.github/workflows/dispatch-ready.yml` et les secrets `ROUTINE_ID`/
       `ROUTINE_TOKEN` supprimés — plus nécessaires
@@ -1831,7 +1831,7 @@ pas seulement des changements triviaux.
 **Renfort (2026-09-03, issue #381) — R2 vers une exécution idempotente et
 traçable :** la Phase 4 avait rodé le chemin heureux (une issue, une PR) ;
 restaient trois angles morts pour un run interrompu ou rejoué sans
-nettoyage manuel. `implement-task/SKILL.md` gagne :
+nettoyage manuel. `project-conventions/implement-task.md` gagne :
 
 - une garde en tout premier geste (avant même le claim du label) : si
   `closed_by_pull_requests` de l'issue liste déjà une PR ouverte, R2
@@ -1868,7 +1868,7 @@ le label spécifique nommé par l'événement. Les deux livraisons de webhook
 (`labeled: P2` et `labeled: ready`) ont donc chacune matché le filtre,
 produisant deux PR quasi identiques (#100 et #101, toutes deux `Closes
 #99`). #101 fermée comme doublon, #100 conservée et mergée. Correctif :
-`issue-to-spec/SKILL.md` (PR #103) exige désormais que `ready` soit posé
+`project-conventions/issue-to-spec.md` (PR #103) exige désormais que `ready` soit posé
 seul, dans son propre appel, toujours en dernier.
 
 ### Phase 5 — R4 et auto-merge ⬅️ *en cours*
@@ -1884,7 +1884,7 @@ déterministe (`auto-merge-sync.yml`) qui active/désactive le auto-merge
 natif GitHub à la pose/au retrait du label — pas une routine, zéro LLM,
 cohérent avec le principe directeur §2.2.
 
-- [x] `.claude/skills/address-feedback/SKILL.md` — section « Which PR »
+- [x] `.claude/skills/project-conventions/address-feedback.md` — section « Which PR »
       et logique du compteur `attempt-N` explicitées (mécanique identique
       à `pr-review`/`implement-task`)
 - [x] `.github/workflows/auto-merge-sync.yml` écrit — active/désactive
@@ -1901,7 +1901,7 @@ le 2026-07-16.**
 **Incident (2026-07-16) — chaîne de déclenchements R4 sur la PR #111 :**
 le premier vrai cycle `needs-fix` → R4 a mis au jour un défaut de
 conception (repéré et diagnostiqué par Rémi, pas par une session Claude
-Code) : `address-feedback/SKILL.md` posait `attempt-1` sans retirer
+Code) : `project-conventions/address-feedback.md` posait `attempt-1` sans retirer
 `needs-fix` au préalable. Le trigger GitHub de R4 matche tant que
 `needs-fix` est présent, donc ce dépôt de `attempt-1` a lui-même
 re-déclenché R4, qui a reposé `attempt-2` (toujours avec `needs-fix`
@@ -1911,8 +1911,8 @@ la mise à jour de `doc/workflows/deployment.md`, avait déjà été poussé par
 runs). Correctif : principe général « claim the run » ajouté à l'§4 —
 toute routine déclenchée par un label doit le retirer et poser
 `in-progress` en tout premier geste, avant de poser quoi que ce soit
-d'autre. Appliqué à `address-feedback/SKILL.md` (retire `needs-fix` avant
-`attempt-N`) et rétroactivement à `pr-review/SKILL.md` (retire
+d'autre. Appliqué à `project-conventions/address-feedback.md` (retire `needs-fix` avant
+`attempt-N`) et rétroactivement à `project-conventions/pr-review.md` (retire
 `needs-review` en premier geste plutôt qu'au dernier — R3 n'avait pas
 encore été prise en défaut sur ce point précis, mais partageait la même
 fragilité de principe).
@@ -2051,9 +2051,9 @@ escalade la possession périmée au lieu de geler l'item) et #468 (garde
 
 - [x] `.claude/skills/coordinator/SKILL.md` écrite.
 - [x] Isolation du sous-agent de review écrite des deux côtés
-      (`coordinator/SKILL.md` et `pr-review/SKILL.md` § « Context isolation
+      (`coordinator/SKILL.md` et `project-conventions/pr-review.md` § « Context isolation
       (coordinator sub-agent only) »), et les deltas de sous-agent écrits
-      dans `implement-task/SKILL.md`/`address-feedback/SKILL.md`.
+      dans `project-conventions/implement-task.md`/`project-conventions/address-feedback.md`.
 - [x] `.automation/routines.yml` : `coordinator` déclaré sur le couple
       `issue`/`automation:ready`, en remplacement de l'entrée
       `implement-task` sur ce même couple.
@@ -2095,7 +2095,7 @@ le coordinateur à un seul relecteur, activer le déclencheur GitHub avec deux
 relecteurs n'est pas plus justifié qu'avec un seul (même préalable non
 vérifié qu'en Phase 5 bis, voir ci-dessous).
 
-- [x] `.claude/skills/pr-review/SKILL.md` : la section « Context isolation
+- [x] `.claude/skills/project-conventions/pr-review.md` : la section « Context isolation
       (coordinator sub-agent only) » porte désormais une variante
       **fonctionnelle** (spec + diff + `doc/functional/`) et une variante
       **technique** (diff + `doc/technical/architecture.md` +
@@ -2120,7 +2120,7 @@ vérifié qu'en Phase 5 bis, voir ci-dessous).
       champ `findings` optionnel attribuant chaque finding à son ou ses
       relecteurs — testés (`scripts/automation-log.test.mjs`), pas encore
       alimentés par un workflow réel (même statut que `metrics`, #469).
-- [x] R3 (PR humaines/R5) continue d'utiliser `pr-review/SKILL.md` sans
+- [x] R3 (PR humaines/R5) continue d'utiliser `project-conventions/pr-review.md` sans
       changement de comportement — les deux nouvelles variantes ne
       s'activent que sous instruction explicite « as the coordinator's
       functional/technical-corpus review sub-agent ».
