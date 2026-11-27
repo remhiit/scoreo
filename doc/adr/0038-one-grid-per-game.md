@@ -25,3 +25,5 @@ hand-typed URLs).
 ## Consequences
 
 - A game without a module is unchanged.
+- Replaces only the capability-flag reading of ADR-0027 (generic grid reachable for a bound game);
+  ADR-0027's `moduleId` field and lazy binding rules stay in force.

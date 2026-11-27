@@ -1,6 +1,6 @@
 ---
 title: GameType.moduleId and lazy binding of a game to its module
-decision: GameType gains moduleId (default null), a capability flag stamped lazily by BindModuleUseCase the first time a module is played, never exported in the v1.1 file format.
+decision: GameType gains moduleId (default null), stamped lazily by BindModuleUseCase the first time a module is played, never exported in the v1.1 file format.
 status: Accepted
 date: 2026-08-22
 sources: commit 26593eb, issue #326, PR #327; commit c0e262b, issue #551, PR #552 (resolveBindingTarget)
@@ -53,3 +53,6 @@ game would be imported again under its old name, next to itself.
 - The modal lists a registered module as a game unless `resolveBindingTarget` resolves to a game
   bound to it or an active homonym, which then stands for the module.
 - Rule 2 is later restricted to consistent homonyms (ADR-0047).
+- The capability-flag reading (the generic grid still reachable for a bound game) is replaced by
+  ADR-0038, "one grid per game": a bound game is now scored only on its module's grid. The field,
+  its lazy binding rules and its absence from the v1.1 file format stay in force.

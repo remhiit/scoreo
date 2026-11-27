@@ -13,6 +13,8 @@ pointing at nothing.
 
 ## Decision
 
+Schema version: v1.x → v1.2+.
+
 Schema change: `Player` gains `active: Boolean = true` (`active: boolean`, `.default(true)` today).
 
 - Backward compatibility: old JSON without `active` deserializes with `active = true`. No explicit

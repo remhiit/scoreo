@@ -13,6 +13,8 @@ secondary metric decides.
 
 ## Decision
 
+Schema version: v1.x → v1.2+.
+
 Schema change, `GameType` adds:
 
 - `tieBreakRule: TieBreakRule = NONE`

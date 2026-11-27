@@ -12,6 +12,8 @@ A page reload, a closed tab or a phone locking mid-game must not lose the scores
 
 ## Decision
 
+Schema version: v1.x → v1.3+.
+
 New model `MatchDraft`, stored in `localStorage` under `scoreo_match_draft`, with fields:
 
 - `gameTypeId: String`

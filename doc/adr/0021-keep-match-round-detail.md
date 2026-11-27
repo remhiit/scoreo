@@ -1,6 +1,6 @@
 ---
 title: Keep the round detail of played matches (Match.rounds)
-decision: Match stores rounds as PlayerScore[][], one entry per played round, defaulted to [] for older and imported matches, with no backfill.
+decision: Match stores rounds as PlayerScore[][], one entry per played round, defaulted to [] for matches saved before the field existed, with no backfill.
 status: Accepted
 date: 2026-08-10
 sources: commit f2ecdc7, issue #249, PR #256
@@ -42,5 +42,7 @@ Out of scope of #249: storing only — nothing read the data yet (see ADR-0022).
 
 ## Consequences
 
-- Import later kept the round detail too (commit 72bea61, PR #370).
+- Imported matches getting `rounds: []` was a limit of the import format at the time, not part of
+  this decision: import later kept the round detail too (commit 72bea61, PR #370), and imported
+  matches then carry it.
 - Round detail is optional: a match with `rounds: []` contradicts nothing (ADR-0040).
