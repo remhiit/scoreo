@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test'
 import { createGameType } from './helpers/gameTypes'
+import { openMenuEntry } from './helpers/navigation'
 import { enterRoundScore, finishMatch, startMatch } from './helpers/match'
 import { addPlayer, clickPlayerRowAction } from './helpers/players'
 
@@ -31,8 +32,7 @@ test('renaming a player fixes the name and keeps their record', async ({ page })
   const row = page.getByRole('button', { name: /^Alice 1W 0L/ })
   await expect(row).toBeVisible()
 
-  await page.getByRole('button', { name: 'Menu' }).click()
-  await page.getByRole('button', { name: 'History' }).click()
+  await openMenuEntry(page, 'History')
   await expect(page.getByRole('main')).toContainText('Alice 10')
 })
 

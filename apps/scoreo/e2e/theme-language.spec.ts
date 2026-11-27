@@ -7,6 +7,8 @@ test.beforeEach(async ({ page }) => {
   await page.reload()
 })
 
+const FRAPPE_BASE = 'rgb(48, 52, 70)'
+
 test('the theme picked is applied and kept after a reload', async ({ page }) => {
   await openMenuEntry(page, 'Theme')
   let dialog = page.getByRole('dialog', { name: 'Theme' })
@@ -25,12 +27,12 @@ test('the theme picked is applied and kept after a reload', async ({ page }) => 
   )
   await dialog.getByRole('button', { name: 'Close' }).last().click()
   await expect(dialog).toHaveCount(0)
-  expect(await page.evaluate('document.documentElement.dataset.theme')).toBe('frappe')
+  // The page itself turns Frappe: its background is the flavor's base colour (#303446).
+  await expect(page.locator('body')).toHaveCSS('background-color', FRAPPE_BASE)
 
   await page.reload()
 
-  expect(await page.evaluate('document.documentElement.dataset.theme')).toBe('frappe')
-  expect(await page.evaluate('document.documentElement.dataset.accent')).toBe('peach')
+  await expect(page.locator('body')).toHaveCSS('background-color', FRAPPE_BASE)
   await openMenuEntry(page, 'Theme')
   dialog = page.getByRole('dialog', { name: 'Theme' })
   await expect(
