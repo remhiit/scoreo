@@ -1,4 +1,5 @@
-import { expect, test, type Page } from '@playwright/test'
+import { expect, test } from '@playwright/test'
+import { addGameType } from './helpers/gameTypes'
 import { chooseGame, enterRoundScore, finishMatch, startMatch } from './helpers/match'
 import { openMenuEntry } from './helpers/navigation'
 import { addPlayer } from './helpers/players'
@@ -9,20 +10,15 @@ test.beforeEach(async ({ page }) => {
   await page.reload()
 })
 
-async function addGameType(page: Page, name: string): Promise<void> {
-  await page.getByPlaceholder('Game name').fill(name)
-  await page.getByRole('combobox', { name: 'Win condition' }).selectOption('HIGHEST_SCORE')
-  await page.getByRole('button', { name: 'Add game type' }).click()
-  await expect(page.getByRole('main').getByText(name, { exact: true })).toBeVisible()
-}
-
 test('merging a duplicate game moves its matches onto the game kept', async ({ page }) => {
   await addPlayer(page, 'Alice')
   await addPlayer(page, 'Bob')
 
   await openMenuEntry(page, 'Games')
-  await addGameType(page, 'Belote')
-  await addGameType(page, 'belote')
+  for (const name of ['Belote', 'belote']) {
+    await addGameType(page, name, 'HIGHEST_SCORE')
+    await expect(page.getByRole('main').getByText(name, { exact: true })).toBeVisible()
+  }
 
   // The duplicate carries the history, as after an import that spelled the game differently.
   await openMenuEntry(page, 'Home')

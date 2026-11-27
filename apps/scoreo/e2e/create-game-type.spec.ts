@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test'
+import { addGameType, fillGameTypeForm, submitGameTypeForm } from './helpers/gameTypes'
 import { openMenuEntry } from './helpers/navigation'
 
 test.beforeEach(async ({ page }) => {
@@ -11,13 +12,12 @@ test('creating a game with its rules lists it and keeps every rule', async ({ pa
   await openMenuEntry(page, 'Games')
   await expect(page.getByText('No game types yet. Add one.')).toBeVisible()
 
-  await page.getByPlaceholder('Game name').fill('Tarot')
-  await page.getByRole('combobox', { name: 'Win condition' }).selectOption('LOWEST_SCORE')
-  await page.getByRole('combobox', { name: 'Scoring' }).selectOption('ROUNDS_WON')
-  await page.getByRole('combobox', { name: 'Tie-break rule' }).selectOption('SECONDARY_SCORE')
-  await page.getByRole('combobox', { name: 'Tie break condition:' }).selectOption('HIGHEST_SCORE')
-  await page.getByRole('textbox', { name: 'Tie break question:' }).fill('Number of cards')
-  await page.getByRole('button', { name: 'Add game type' }).click()
+  await addGameType(page, 'Tarot', 'LOWEST_SCORE', {
+    scoringMode: 'ROUNDS_WON',
+    tieBreakRule: 'SECONDARY_SCORE',
+    tieBreakCondition: 'HIGHEST_SCORE',
+    tieBreakQuestion: 'Number of cards',
+  })
 
   const main = page.getByRole('main')
   await expect(main.getByText('Tarot', { exact: true })).toBeVisible()
@@ -43,10 +43,9 @@ test('creating a game with its rules lists it and keeps every rule', async ({ pa
 test('a game with a manual win condition offers no scoring choice', async ({ page }) => {
   await openMenuEntry(page, 'Games')
 
-  await page.getByPlaceholder('Game name').fill('Custom')
-  await page.getByRole('combobox', { name: 'Win condition' }).selectOption('MANUAL')
+  await fillGameTypeForm(page, 'Custom', 'MANUAL')
   await expect(page.getByRole('combobox', { name: 'Scoring' })).toHaveCount(0)
-  await page.getByRole('button', { name: 'Add game type' }).click()
+  await submitGameTypeForm(page)
 
   await page.getByRole('main').getByRole('button', { name: 'View details' }).click()
   const detail = page.getByRole('dialog', { name: 'Custom' })
