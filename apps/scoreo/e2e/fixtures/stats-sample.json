@@ -1,0 +1,158 @@
+{
+  "version": "1.1",
+  "game": "Belote Stats",
+  "winCondition": "HIGHEST_SCORE",
+  "gameCount": 5,
+  "games": [
+    {
+      "id": "e2e-stats-1",
+      "date": 1678449600000,
+      "ranking": [
+        {
+          "name": "Alice Stats",
+          "score": 30,
+          "rank": 1
+        },
+        {
+          "name": "Bob Stats",
+          "score": 20,
+          "rank": 2
+        }
+      ],
+      "details": [
+        {
+          "scores": [
+            {
+              "name": "Alice Stats",
+              "score": 30
+            },
+            {
+              "name": "Bob Stats",
+              "score": 20
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "e2e-stats-2",
+      "date": 1678622400000,
+      "ranking": [
+        {
+          "name": "Alice Stats",
+          "score": 25,
+          "rank": 1
+        },
+        {
+          "name": "Carol Stats",
+          "score": 15,
+          "rank": 2
+        }
+      ],
+      "details": [
+        {
+          "scores": [
+            {
+              "name": "Alice Stats",
+              "score": 25
+            },
+            {
+              "name": "Carol Stats",
+              "score": 15
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "e2e-stats-3",
+      "date": 1678795200000,
+      "ranking": [
+        {
+          "name": "Bob Stats",
+          "score": 40,
+          "rank": 1
+        },
+        {
+          "name": "Alice Stats",
+          "score": 10,
+          "rank": 2
+        }
+      ],
+      "details": [
+        {
+          "scores": [
+            {
+              "name": "Bob Stats",
+              "score": 40
+            },
+            {
+              "name": "Alice Stats",
+              "score": 10
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "e2e-stats-4",
+      "date": 1680696000000,
+      "ranking": [
+        {
+          "name": "Alice Stats",
+          "score": 50,
+          "rank": 1
+        },
+        {
+          "name": "Bob Stats",
+          "score": 35,
+          "rank": 2
+        }
+      ],
+      "details": [
+        {
+          "scores": [
+            {
+              "name": "Alice Stats",
+              "score": 50
+            },
+            {
+              "name": "Bob Stats",
+              "score": 35
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "e2e-stats-5",
+      "date": 1680868800000,
+      "ranking": [
+        {
+          "name": "Carol Stats",
+          "score": 22,
+          "rank": 1
+        },
+        {
+          "name": "Bob Stats",
+          "score": 18,
+          "rank": 2
+        }
+      ],
+      "details": [
+        {
+          "scores": [
+            {
+              "name": "Carol Stats",
+              "score": 22
+            },
+            {
+              "name": "Bob Stats",
+              "score": 18
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
