@@ -43,8 +43,10 @@ c'est le cas `low` explicite du § Niveau, jamais un silence.
 **Compatibilité** n'est pas une neuvième surface au même titre que les
 huit ci-dessus : c'est une aggravation transversale, vérifiée sur toute
 surface sérialisée touchée — un champ ajouté sans `.default()` zod, ou un
-champ supprimé/renommé sans entrée dans `doc/technical/migrations.md`,
-fait toujours monter le niveau de cette surface d'un cran (voir § Niveau).
+champ supprimé/renommé sans son ADR de migration dans `doc/adr/` (ADR-0004,
+ADR-0042), fait toujours monter le niveau de cette surface d'un cran (voir
+§ Niveau) et est un **bloquant** : `pr-review` (checklist, item 3) le
+refuse quel que soit le niveau retenu.
 
 
 ## Conséquences par niveau

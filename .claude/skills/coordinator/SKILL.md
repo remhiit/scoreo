@@ -25,9 +25,9 @@ orchestrates. Each of those three jobs stays exactly `implement-task`'s,
 (`Agent` tool) rather than as an independent routine invocation — review
 runs as *two* such sub-agents, one per corpus (#470, tranche 4/4 of #430:
 the split is worth doing only because their inputs are disjoint — a
-functional reviewer reading the spec and `doc/functional/`, a technical
-reviewer reading `doc/technical/architecture.md` and `project-conventions`,
-never each other's input or each other's output). This skill also does not
+functional reviewer reading the spec, the diff, the e2e suite and
+`doc/utilisateur/`, a technical reviewer reading the diff, `doc/adr/` and
+`project-conventions`, never each other's input or each other's output). This skill also does not
 decide a review verdict: the verdict follows mechanically from
 `scripts/review-verdict.mjs`, fed both reviewers' findings (§ "The review
 verdict is mechanical" below), never this skill's own judgment call — in
@@ -512,9 +512,21 @@ without starting a review round.
 
 The review is split into two sub-agents because their inputs are disjoint,
 not because two opinions are better than one (#470) — a **functional**
-reviewer judging spec conformance against `doc/functional/`, and a
-**technical** reviewer judging architecture/backward-compat/debt against
-`doc/technical/architecture.md` and `project-conventions`. Launch both as
+reviewer judging spec conformance and its e2e coverage, and a
+**technical** reviewer judging architecture/backward-compat/debt. Their
+corpora, which share only the diff:
+
+- **functional**: the issue's spec, the diff, the e2e suite
+  (`apps/scoreo/e2e/`, including the « Journeys → specs » table of its
+  `README.md`) and the user guide (`doc/utilisateur/`) — it checks that
+  every visible acceptance criterion is covered by an e2e (added by the diff
+  or existing), that no existing e2e was deleted, weakened or switched to
+  `skip`/`fixme` without a reason written in the spec, and that the e2e
+  table and `doc/utilisateur/` are up to date for a visible change;
+- **technical**: the diff, `doc/adr/` (its index and the `Accepted` ADRs)
+  and `project-conventions`.
+
+Launch both as
 **new** `Agent` calls — never `SendMessage` back to the implementation
 sub-agent, never to each other, and never paste either one's reply into the
 other's prompt.
@@ -525,7 +537,8 @@ The **functional** reviewer's prompt contains only:
 - the PR number and the exact HEAD SHA to review (it reads the diff itself
   via `pull_request_read`);
 - an instruction to follow the `dev-workflow:pr-review` skill's procedure (invoke it with the Skill tool — if it is not available, follow the transition alias `.claude/skills/pr-review/SKILL.md` instead; it reads its Scoreo overlay `.claude/skills/project-conventions/pr-review.md`) §1–§4 "as the
-  coordinator's **functional-corpus** review sub-agent".
+  coordinator's **functional-corpus** review sub-agent", reading only the
+  spec, the diff, `apps/scoreo/e2e/` and `doc/utilisateur/`.
 
 The **technical** reviewer's prompt contains only:
 
@@ -533,7 +546,8 @@ The **technical** reviewer's prompt contains only:
   number or the issue's spec**, in any form, including a paraphrase of what
   the issue is about;
 - an instruction to follow the `dev-workflow:pr-review` skill's procedure (invoke it with the Skill tool — if it is not available, follow the transition alias `.claude/skills/pr-review/SKILL.md` instead; it reads its Scoreo overlay `.claude/skills/project-conventions/pr-review.md`) §1–§4 "as the
-  coordinator's **technical-corpus** review sub-agent".
+  coordinator's **technical-corpus** review sub-agent", reading only the
+  diff, `doc/adr/` and `project-conventions`.
 
 `project-conventions/pr-review.md`'s own text (§ "Context isolation (coordinator
 sub-agent only)") states the same restrictions from each reviewer's own

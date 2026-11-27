@@ -78,8 +78,8 @@ A shipped feature adds its states here when it removes its mockup
 
 What the design system has no component for and one game alone draws (1000 Sabords' dice counter and
 score grid, Skyjo's round table and winner banner, Torī Valley's colour badge and variant picker)
-lives in that module's `src/design/` ([`module-contract.md`](../technical/module-contract.md) § "Game pieces live
-in `src/design/`"). The **Pièces de jeu** page shows each of them on its own, grouped by module, with
+lives in that module's `src/design/` ([ADR-0036](../adr/0036-modules-wear-scoreo-look.md), game pieces in
+`src/design/`). The **Pièces de jeu** page shows each of them on its own, grouped by module, with
 its variants (tones, colours, an empty grid). Every variant renders inside the module's `ModuleRoot`,
 the element carrying `.module-<moduleId>`: the pieces' CSS is scoped under that class and would not
 apply anywhere else.

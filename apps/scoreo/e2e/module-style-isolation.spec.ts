@@ -4,7 +4,7 @@ import { addPlayer } from './helpers/players'
 
 /**
  * A scoring module adopts Scoreo's identity by composing the design system
- * (doc/technical/module-contract.md), and none of the CSS it still writes for
+ * (ADR-0036, doc/adr/0036-modules-wear-scoreo-look.md), and none of the CSS it still writes for
  * its game pieces may escape the module's screen.
  *
  * The risk is concrete: a stylesheet is not unloaded when the player navigates

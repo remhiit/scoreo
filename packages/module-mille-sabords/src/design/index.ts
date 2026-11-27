@@ -1,7 +1,7 @@
 /**
  * 1000 Sabords' game pieces: what the design system has no component for. The
  * only place in this package that writes `className` and CSS — see
- * doc/technical/module-contract.md § "Game pieces live in `src/design/`".
+ * doc/adr/0036-modules-wear-scoreo-look.md (ADR-0036), game pieces in `src/design/`.
  */
 export { DieCounter, type DieCounterProps } from './DieCounter'
 export { ModuleRoot } from './ModuleRoot'

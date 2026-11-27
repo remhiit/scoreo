@@ -75,11 +75,17 @@ per the corpus named in the launch prompt.
 > Since the move to the shared `dev-workflow:pr-review` skill, every run
 > reads `project-conventions/SKILL.md` and this file to learn its procedure;
 > that is allowed for both corpora. What the functional corpus must not do is
-> use `project-conventions` § architecture/compatibilite or
-> `doc/technical/architecture.md` as evidence for a finding.
+> use `project-conventions` § architecture/compatibilite or `doc/adr/` as
+> evidence for a finding.
 
-This run's context is exactly: the issue's spec, the diff, and
-`doc/functional/`. Nothing else.
+This run's context is exactly: the issue's spec, the diff, the e2e suite
+(`apps/scoreo/e2e/`, including the « Journeys → specs » table of its
+`README.md`), the user guide (`doc/utilisateur/`) and, for item 6 only,
+the mockup the spec's `## Maquette` names. Nothing else. Where the
+shared `dev-workflow:pr-review` skill names another functional corpus (a
+functional documentation folder), this list replaces it: since #690 the e2e
+specs are the reference for what a player can do, and this reviewer is the
+one who keeps them honest.
 
 - Fetch the issue's spec yourself (`issue_read`) — never accept a
   paraphrase of it from the prompt beyond the number.
@@ -89,19 +95,20 @@ This run's context is exactly: the issue's spec, the diff, and
   account of its work, exactly what this isolation exists to keep out.
   It's fine to note the PR *exists* and *what it claims to close* — the
   restriction is on treating the implementer's own reasoning as evidence.
-- Never open `doc/technical/architecture.md` or consult `project-conventions`
-  for this run — that's the technical reviewer's corpus, not this one's. A
+- Never open `doc/adr/` or consult `project-conventions` for this run — that's the technical reviewer's corpus, not this one's. A
   finding that genuinely needs them isn't yours to make (see "Out-of-corpus
   findings" below).
-- Ground every finding in the diff itself and `doc/functional/` — checklist
-  item 1 ("Spec conformance") and the functional half of item 4 ("Doc
-  freshness": is `doc/functional/feature.md` or `doc/functional/features/*.md`
-  stale relative to the diff's user-facing behavior) are this corpus's own.
+- Ground every finding in the diff itself, the e2e suite and
+  `doc/utilisateur/` — checklist item 1 ("Spec conformance"), item 7 ("e2e
+  coverage of visible criteria"), item 8 ("Existing e2e not weakened") and
+  the functional half of item 4 ("Doc freshness": the e2e README's
+  « Journeys → specs » table and `doc/utilisateur/` against the diff's
+  user-facing behavior) are this corpus's own.
 
 #### Technical corpus
 
-This run's context is exactly: the diff, `doc/technical/architecture.md`,
-and `project-conventions`. **Never** the issue's spec — this corpus judges
+This run's context is exactly: the diff, `doc/adr/` (its `README.md` index
+and the ADRs whose status is `Accepted`), and `project-conventions`. **Never** the issue's spec — this corpus judges
 architecture and convention compliance, not spec conformance, and reading
 the spec anyway would blur the two reviewers back into one.
 
@@ -110,12 +117,16 @@ the spec anyway would blur the two reviewers back into one.
 - Never call `issue_read` or otherwise fetch the linked issue for this run —
   not even to "understand context"; a finding that turns out to be about
   spec conformance isn't yours to make (see "Out-of-corpus findings" below).
-- Ground every finding in the diff itself, `doc/technical/architecture.md`,
-  and `project-conventions` — checklist items 2 ("Hexagonal architecture"),
+- Ground every finding in the diff itself, `doc/adr/` and
+  `project-conventions` — checklist items 2 ("Hexagonal architecture"),
   3 ("Backward-compat of serialized models"), 5 ("Debt introduced"), and the
-  technical half of item 4 ("Doc freshness": is `doc/reference.md` or
-  `doc/technical/*.md` stale relative to the diff's reducers/use
-  cases/models/ports/adapters) are this corpus's own.
+  technical half of item 4 ("Doc freshness": does the diff apply a new
+  decision the code cannot tell without its ADR, or contradict an `Accepted`
+  ADR without a new one superseding it) are this corpus's own.
+
+The two corpora share only the diff: the functional one never reads
+`doc/adr/` or `project-conventions` as evidence, the technical one never
+reads the spec, the e2e README's table or `doc/utilisateur/` as evidence.
 
 #### Both corpora
 
@@ -251,7 +262,7 @@ narrate it here.
 
 ### 1. Run the checklist (Scoreo checklist with corpus tags)
 
-As R3 or interactively, run all six items. As one of the coordinator's two
+As R3 or interactively, run all eight items. As one of the coordinator's two
 review sub-agents (#470), each item names the corpus it belongs to — run
 only the items tagged with your own corpus (§ "Context isolation" above);
 an item tagged for the other corpus isn't yours to judge on this run (a
@@ -273,17 +284,19 @@ finding formed on it anyway is out-of-corpus, see that same section).
 3. **Backward-compat of serialized models** _(technical)_. For any change to
    `Player`/`GameType`/`Match`/`PlayerScore`: does every new field have a
    zod `.default()` in the matching `*.schema.ts`? Is every removed/renamed
-   field documented in `doc/technical/migrations.md`? A missing default or
-   an undocumented removal is a blocker, not a nit.
+   field covered by a migration ADR in `doc/adr/` (ADR-0004, ADR-0042), in
+   this PR? A field added without `.default()`, or removed/renamed without
+   its migration ADR, is a blocker, not a nit.
 4. **Doc freshness** _(split — functional and technical each own a half)_.
-   Cross-check the PR's file changes against `doc/`: new reducer/use
-   case/model/port/adapter/screen → matching `doc/reference.md` row and
-   functional doc updated. The functional corpus checks
-   `doc/functional/feature.md`/`doc/functional/features/*.md` against the
-   diff's user-facing behavior; the technical corpus checks
-   `doc/reference.md`/`doc/technical/*.md` against the diff's
-   reducers/use cases/models/ports/adapters. If the code changed and the
-   doc didn't, say which file is now stale.
+   The functional corpus checks that a visible change updates the e2e
+   README's « Journeys → specs » table (`apps/scoreo/e2e/README.md`) and the
+   matching page of `doc/utilisateur/`. The technical corpus checks that a
+   new decision the code cannot tell (a removed field, a contract rule, the
+   reason for a choice) comes with its ADR, in the format and life cycle of
+   `doc/adr/README.md`, with the index regenerated
+   (`node scripts/check-adr.mjs --write`), and that an `Accepted` ADR the
+   diff contradicts is superseded by a new one, never edited in substance.
+   If the code changed and the doc didn't, say which file is now stale.
 5. **Debt introduced** _(technical)_. New `TODO`s, disabled tests, silenced
    type errors, copy-pasted logic that should have been a shared helper, a
    shortcut that only works for the happy path from the issue's examples.
@@ -299,6 +312,19 @@ finding formed on it anyway is out-of-corpus, see that same section).
    `## Maquette` section predates the rule: nothing to check. A PR that
    changes what a player sees on an issue whose `## Maquette` says « Sans
    objet » is worth a finding if the exemption no longer holds.
+7. **e2e coverage of visible criteria** _(functional)_. Every acceptance
+   criterion of the spec that a player can see (a screen, a flow, a
+   message, a state shown) is covered by an e2e spec under
+   `apps/scoreo/e2e/` — one the diff adds or changes, or one that already
+   exists and the « Journeys → specs » table of `apps/scoreo/e2e/README.md`
+   points to. A visible criterion with no e2e is a blocker: since #690 the
+   e2e suite is the reference for what a player can do, no other document
+   carries it.
+8. **Existing e2e not weakened** _(functional)_. No existing e2e spec is
+   deleted, has an assertion removed or loosened, or is switched to
+   `test.skip`/`test.fixme` (or `.only` left behind), unless the spec of the
+   issue states why in writing. A weakened e2e without that written reason
+   is a blocker, whatever the PR description says.
 
 
 ### 2. Classify every finding — Scoreo additions
@@ -501,8 +527,8 @@ to `automation:needs-human` (`doc/workflows/skill-contract.md` §3).
 - As either of the coordinator's review sub-agents (#469/#470): never reads
   anything beyond what the coordinator's own launch prompt supplied for its
   own corpus — never the other corpus's extra input (the spec, for the
-  technical reviewer; `doc/technical/architecture.md`/`project-conventions`,
-  for the functional one), never the other reviewer's reply or PR review,
+  technical reviewer; `doc/adr/`/`project-conventions`, for the functional
+  one), never the other reviewer's reply or PR review,
   never the PR description's own narrative, never a comment from the same
   run, never any journal (see "Context isolation (coordinator sub-agent
   only)"); never posts a verdict label itself (see step 5), and never posts

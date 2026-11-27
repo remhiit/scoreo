@@ -9,8 +9,9 @@ The repository is a pnpm workspace (`apps/*`, `packages/*`). Every command below
 - `apps/scoreo/` — the host PWA, and the only project deployed
 - `packages/module-tori-valley/` — the Torī Valley score counter, absorbed from its own repository and on its way to becoming a module Scoreo loads on demand
 - `apps/scoreo/src/domain`, `apps/scoreo/src/application`, `apps/scoreo/src/infrastructure`, `apps/scoreo/src/services`, `apps/scoreo/src/ui` — application source code
-- `doc/functional/` — functional documentation (features, user flows)
-- `doc/technical/` — technical documentation (architecture, design decisions)
+- `doc/adr/` — Architecture Decision Records: the decisions the code cannot tell (architecture, migrations, module contract)
+- `apps/scoreo/e2e/` — end-to-end specs, the reference for what a player can do (see its `README.md`)
+- `doc/utilisateur/` — the user guide, in French
 
 ## Running locally
 

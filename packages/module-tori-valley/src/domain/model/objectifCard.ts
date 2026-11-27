@@ -3,7 +3,7 @@ import type { LandscapeType, ObjectifVariant } from './landscape'
 
 /**
  * Scoring rules for the physical Objectif cards, transcribed in
- * doc/functional/features/objectif-cards.md.
+ * this package's doc/functional/features/objectif-cards.md.
  *
  * Rather than modelling the player's board tile by tile, each card asks for the
  * handful of counts a player can read straight off their own board — "how many

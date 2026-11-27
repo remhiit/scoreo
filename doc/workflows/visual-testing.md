@@ -20,7 +20,7 @@ against committed PNG baselines.
 The suite lives in the host, `apps/scoreo/tests/visual/`, and photographs a
 **scoring module inside Scoreo** — on the host's own `#/module/…` route, which
 renders full-screen with no host chrome (the `ScreenTemplate` header is skipped, see
-`doc/technical/module-contract.md` § *Scoring a match on the module's grid*). That is what a
+ADR-0034, [`doc/adr/0034-immersive-module-grid.md`](../adr/0034-immersive-module-grid.md)). That is what a
 player actually sees.
 
 It is the only guard of its kind, and it exists because a module's screen is the
@@ -144,12 +144,10 @@ Enough to absorb a stray antialiased edge, far too little to hide a layout shift
 2. Wait on a screen-specific locator via `expectScreenshot(page, locator, name)` —
    never screenshot on a bare `goto`, or you race the first render.
 3. Record the baselines in the container, and commit the PNGs with the spec.
-4. Add the module to the visual-tests entry in [`../reference.md`](../reference.md).
 
 ## Scope
 
 Chromium only, two viewport widths (phone 412, desktop 1280). More browsers would
 multiply the committed PNGs for little signal on a phone-first PWA. These specs
 assert **pixels only** — behaviour, reducers and use cases stay in the Vitest and
-e2e suites. See [`architecture.md`](../technical/architecture.md) for how the layers fit
-together.
+e2e suites. See [`apps/scoreo/e2e/README.md`](../../apps/scoreo/e2e/README.md) for the e2e suite.

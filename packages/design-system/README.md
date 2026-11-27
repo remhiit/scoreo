@@ -48,8 +48,8 @@ with one exception: its `src/design/` folder, where it
 may write `className` (never `style` or a `lucide-react` import) for the game
 pieces no one else needs, scoped and prefixed, reading only the semantic tokens
 — no `--ctp-*` value, no raw colour. A piece a second module needs moves here. See
-[`doc/technical/module-contract.md`](../../doc/technical/module-contract.md) §
-"A module wears Scoreo's look".
+[ADR-0036](../../doc/adr/0036-modules-wear-scoreo-look.md), "A module wears
+Scoreo's look".
 
 ## Conventions
 

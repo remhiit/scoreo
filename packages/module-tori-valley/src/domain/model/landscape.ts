@@ -7,7 +7,7 @@ export function emptyObjectifPoints(): ObjectifPoints {
   return { bamboo: 0, cherryBlossom: 0, mountain: 0, water: 0, village: 0 }
 }
 
-/** Difficulty variants an Objectif card comes in; see doc/functional/features/objectif-cards.md. */
+/** Difficulty variants an Objectif card comes in; see this package's doc/functional/features/objectif-cards.md. */
 export const OBJECTIF_VARIANTS = ['A', 'B', 'C'] as const
 export type ObjectifVariant = (typeof OBJECTIF_VARIANTS)[number]
 

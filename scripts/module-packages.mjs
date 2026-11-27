@@ -3,7 +3,7 @@
 // guard that walks the modules (check-design-tokens.mjs, check-module-styles.mjs)
 // so they can never disagree on what counts as a module.
 //
-// See doc/technical/module-contract.md.
+// See ADR-0036 (doc/adr/0036-modules-wear-scoreo-look.md).
 import { existsSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
 

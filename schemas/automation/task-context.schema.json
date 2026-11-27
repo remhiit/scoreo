@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft-07/schema#",
   "title": "Scoreo Automation TaskContext",
-  "description": "Contrat du TaskContext versionné produit pour chaque run de routine (issue #401, doc/workflows/automation-plan.md §4) : une vue stable de l'issue ou de la PR déclenchante, du code impacté et des dépendances connues, indépendante de la forme brute d'un événement GitHub. Documenté ici comme référence du contrat ; validé en pratique par le validateur écrit à la main scripts/task-context.mjs#validateTaskContext (même précédent que schemas/automation/routines.schema.json et schemas/import/, cf. doc/technical/architecture.md).",
+  "description": "Contrat du TaskContext versionné produit pour chaque run de routine (issue #401, doc/workflows/automation-plan.md §4) : une vue stable de l'issue ou de la PR déclenchante, du code impacté et des dépendances connues, indépendante de la forme brute d'un événement GitHub. Documenté ici comme référence du contrat ; validé en pratique par le validateur écrit à la main scripts/task-context.mjs#validateTaskContext (même précédent que schemas/automation/routines.schema.json et schemas/import/).",
   "type": "object",
   "properties": {
     "version": {

@@ -2,7 +2,8 @@
 
 1000 Sabords se joue **dans Scoreo**. Ce guide décrit l'écran du module ; tout ce qui l'entoure —
 les joueurs, l'historique, les statistiques, l'export, le thème — appartient à Scoreo et est
-documenté dans `doc/functional/` à la racine du dépôt.
+décrit dans le guide de l'utilisateur, [`doc/utilisateur/`](../../../../doc/utilisateur/README.md) à la
+racine du dépôt.
 
 ## Ouvrir une partie
 
@@ -36,8 +37,8 @@ du design system, icônes du jeu fermé) :
 
 Rendre la main à Scoreo **sans rien perdre** — la partie reprend où elle en était — se fait avec le
 ✕ de la barre du module, en tête d'écran : c'est l'hôte qui le dessine, identique pour tous les
-modules, et il ne jette jamais le brouillon (voir `doc/technical/module-contract.md` § *Scoring a match
-on the module's grid*).
+modules, et il ne jette jamais le brouillon (voir l'ADR-0034,
+[`doc/adr/0034-immersive-module-grid.md`](../../../../doc/adr/0034-immersive-module-grid.md)).
 
 ### Le tour en cours
 

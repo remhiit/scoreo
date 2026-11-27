@@ -204,6 +204,18 @@ The shared skill's steps 1–8 apply, with Scoreo's commands from
 `project-conventions/SKILL.md` § verifications. These are the pipeline
 additions for the steps named.
 
+### Fixing a doc-freshness, e2e or ADR finding
+
+A finding about stale documentation is fixed where Scoreo keeps it since
+#690: a visible behavior in its e2e spec (`apps/scoreo/e2e/`, plus its row in
+that README's « Journeys → specs » table) and in `doc/utilisateur/`; a
+decision the code cannot tell, or a serialized field added, removed or
+renamed, in a new ADR under `doc/adr/` (format and life cycle in
+`doc/adr/README.md`, index regenerated with `node scripts/check-adr.mjs
+--write`). There is no functional or technical reference documentation to
+update any more. A finding on a weakened e2e is fixed by restoring the
+assertion, never by rewording the spec around it.
+
 ### Step 6 — push
 
 6. **Push to the same branch** (new commit, not an amend of history that's

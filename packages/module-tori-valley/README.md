@@ -4,7 +4,8 @@ The score-entry grid and scoring rules of _[La Vallée des Torī](https://www.or
 (Origames), one of [Scoreo](../../apps/scoreo)'s games. Scoreo loads this module the first time
 someone plays the game; the match it scores is an ordinary Scoreo `Match`, in Scoreo's history and
 statistics like any other. What a module is, and what it may do, is the workspace's
-[`doc/technical/module-contract.md`](../../doc/technical/module-contract.md).
+contract: the types of [`packages/module-api`](../module-api) and the module ADRs indexed in
+[`doc/adr/README.md`](../../doc/adr/README.md).
 
 ## Structure
 
